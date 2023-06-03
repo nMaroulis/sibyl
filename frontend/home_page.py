@@ -3,15 +3,19 @@ import requests
 import plotly.graph_objects as go
 from pandas import DataFrame, to_datetime
 from src.library.overview_helper.overview_functions import check_connection, get_wallet_balances
+from library.ui_elements import fix_padding_top_and_footer
+
+
 
 st.set_page_config(layout="wide")
+fix_padding_top_and_footer()
 
 check_connection()
+st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Home Page</h1>""", unsafe_allow_html=True)
 
-st.header('Home Page')
 st.write('Overview of Account and Wallet Balance')
 
-st.write('Wallet Balance')
+
 get_wallet_balances()
 
 wo_tab, tab2 = st.tabs(['Wallet Overview', 'Tab 2'])

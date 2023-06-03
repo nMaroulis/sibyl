@@ -15,7 +15,7 @@ def read_root():
 
 
 @app.get("/coin/price_history/{symbol}")
-def get_price_history(symbol: str, interval: str = '1d', limit: int = 100) -> List[dict]:
+def get_price_history(symbol: str, interval: str = '1d', plot_type='line', limit: int = 100) -> List[dict]:
 
     headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
     url = f"{BINANCE_API_URL}/api/v3/klines?symbol={symbol.upper()}USDT&interval={interval}&limit={limit}"
@@ -27,7 +27,16 @@ def get_price_history(symbol: str, interval: str = '1d', limit: int = 100) -> Li
         except json.JSONDecodeError as error:
             return {"error": "Unable to parse response JSON."}
 
-        price_history = [{"Open Time": entry[0], "Open Price": entry[1]} for entry in data]
+        if plot_type == 'line': # requested line plot
+            price_history = [{"Open Time": entry[0], "Open Price": entry[1]} for entry in data]
+        else: # candle plot
+            price_history = [{"Open Time": entry[0],
+                              "Open Price": entry[1],
+                              "Highs": entry[2],
+                              "Lows": entry[3],
+                              "Closing Price": entry[4],
+                              } for entry in data]
+
         return price_history
     else:
         return {"error": "Failed to fetch price history"}
