@@ -16,7 +16,6 @@ def get_wallet_balances():
     url = "http://127.0.0.1:8000/account/spot/overview"
     response = requests.get(url)
     data = response.json()
-    write(data)
     wallet_list = []
     for coin in data.get('spot_balances'):
         wallet_list.append([coin, round(data.get('spot_balances').get(coin).get('free'), 4)])  # can add round(data.get('spot_balances').get(coin).get('locked')
@@ -30,15 +29,12 @@ def get_wallet_balances():
             i[0] = i[0][2:]  # remove LD symbol
             stk = i[1]
         with cols[c]:
-            if stk == 0:
+            if stk == 0:  # if balance is not staked
                 metric(i[0], i[1])
             else:
-                metric(i[0], i[1], stk)
+                metric(i[0], i[1], stk)  # if balance is staked
         c += 1
         if c > 5:
             c = 0
-
-    write('STAKING')
-
     return 0
 
