@@ -2,37 +2,24 @@ import streamlit as st
 import requests
 import plotly.graph_objects as go
 from pandas import DataFrame, to_datetime
+from src.library.overview_helper.overview_functions import check_connection, get_wallet_balances
+
+st.set_page_config(layout="wide")
+
+check_connection()
 
 st.header('Home Page')
+st.write('Overview of Account and Wallet Balance')
 
-with st.form('Get Price'):
-    cols = st.columns(3)
-    with cols[0]:
-        coin = st.selectbox(
-            'Choose Coin',
-            ('BTC', 'ETH', 'ADA'))
-    with cols[1]:
-        time_int = st.selectbox(
-            'Choose Date Interval',
-            ('1m', '5m', '15m', '30m', '1h', '4h', '12h', '1d', '3d', '1w', '1M'))
-    with cols[2]:
-        time_limit = st.number_input('Choose Sample Limit', value=500, min_value=2, max_value=10000)
+st.write('Wallet Balance')
+get_wallet_balances()
 
-    sumbit_button = st.form_submit_button('Submit')
-    if sumbit_button:
-        url = f"http://127.0.0.1:8000/coin/price_history/"+coin+"?interval="+time_int+"&limit=" + str(time_limit)
-        response = requests.get(url)
-        data = response.json()
-
-        df = DataFrame()
-
-        df['DateTime'] = [entry.get('Open Time') for entry in data]
-        df['DateTime'] = to_datetime(df['DateTime'],unit='ms')
-        df['Price'] = [entry.get('Open Price') for entry in data]
+wo_tab, tab2 = st.tabs(['Wallet Overview', 'Tab 2'])
 
 
-        fig = go.Figure(data=go.Scatter(x=df['DateTime'], y=df['Price']))
-        fig.update_layout(title=f"Price History of ada",
-                          xaxis_title="DateTime",
-                          yaxis_title="Price (USDT)")
-        st.plotly_chart(fig, use_container_width=True)
+with wo_tab:
+    st.info('💡 The locked assets in Binance are not yet available to show.')
+    st.selectbox('Choose Exchange Account', options=['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True, help="Support for Coinbase, Crypto.com, Gemini, Kraken, KuCoin TBA")
+
+with tab2:
+    st.write('Tab 2')
