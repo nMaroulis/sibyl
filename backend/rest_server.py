@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 import uvicorn, requests
 from settings import SERVER_IP, SERVER_PORT
+from config.api_key_handler import get_api_key
+from typing import List
 
 app = FastAPI()
 
@@ -18,9 +20,12 @@ def read_root():
 
 
 @app.get("/coin/price_history/{symbol}")
-def get_price_history(symbol: str, interval: str = '1d', limit: int = 100) -> list[dict]:
+def get_price_history(symbol: str, interval: str = '1d', limit: int = 100) -> List[dict]:
+
+    headers = {'X-MBX-APIKEY': get_api_key('binance')}
     url = f"https://api.binance.com/api/v3/klines?symbol={symbol.upper()}USDT&interval={interval}&limit={limit}"
-    response = requests.get(url)
+    response = requests.get(url, headers=headers)
+
     if response.status_code == 200:
         data = response.json()
         price_history = [{"Open Time": entry[0], "Open Price": entry[1]} for entry in data]
