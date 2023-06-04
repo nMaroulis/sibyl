@@ -49,3 +49,4 @@ def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Lin
         fig.update_layout(title=coin + ' Price History')
 
     plotly_chart(fig, use_container_width=True)
+    return df

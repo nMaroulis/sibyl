@@ -11,7 +11,15 @@ st.set_page_config(layout="wide")
 fix_padding_top_and_footer()
 
 check_connection()
-st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Home Page</h1>""", unsafe_allow_html=True)
+
+from PIL import Image
+
+st.markdown("""<div align="center">
+  <img src="https://repository-images.githubusercontent.com/648387594/566640d6-e1c4-426d-b2f2-bed885d07e97" style="width:20em;padding-top:0;">
+</div>""", unsafe_allow_html=True)
+# st.image("https://repository-images.githubusercontent.com/648387594/566640d6-e1c4-426d-b2f2-bed885d07e97", use_column_width=False, width=200)
+
+# st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Home Page</h1>""", unsafe_allow_html=True)
 
 st.write('Overview of Account and Wallet Balance')
 

@@ -25,14 +25,20 @@ with ph_tab:  # Price History
                 'Choose Date Interval',
                 ('1m', '5m', '15m', '30m', '1h', '4h', '12h', '1d', '3d', '1w', '1M'))
         with cols[2]:
-            time_limit = st.number_input('Choose Sample Limit', value=500, min_value=2, max_value=10000)
+            time_limit = st.number_input('Choose Sample Limit', value=500, min_value=2, max_value=1000000)
 
         plot_type = st.radio('Plot type', options=['Line Plot', 'Candle Plot'], index=0, horizontal=True)
 
         sumbit_button = st.form_submit_button('Submit')
         if sumbit_button:
-            price_history_plot(coin, time_int, time_limit, plot_type)
-
+            price_hist_df = price_history_plot(coin, time_int, time_limit, plot_type)
+            st.sidebar.download_button(
+                "Download to CSV",
+                price_hist_df.to_csv(index=False).encode('utf-8'),
+                coin+"_"+time_int+"_price_history.csv",
+                "text/csv",
+                key='download-csv'
+            )
 
 with ch_tab:  # Correlation Heatmap
     st.header('Correlation Heatmap')
