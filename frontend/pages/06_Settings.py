@@ -1,16 +1,16 @@
 import streamlit as st
-from library.ui_elements import fix_padding_top_and_footer
+from library.ui_elements import fix_page_layout
 from library.settings_helper.settings_funcs import check_api_connection, update_api_credentials
 
-st.set_page_config(layout="wide")
-fix_padding_top_and_footer()
+fix_page_layout('Settings')
 
 st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h1>""", unsafe_allow_html=True)
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 
 st.sidebar.button('Reset All Data', type='primary')
 st.write('Current Status')
-api_conn = check_api_connection()
+with st.spinner('Checking API connection'):
+    api_conn = check_api_connection()
 
 api_tab, acc_tab = st.tabs(['API Settings', 'Account Settings'])
 

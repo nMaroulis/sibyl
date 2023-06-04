@@ -1,11 +1,10 @@
 import streamlit as st
 from pandas import DataFrame, to_datetime
 from src.library.overview_helper.overview_functions import check_connection, get_wallet_balances, get_logo_header
-from library.ui_elements import fix_padding_top_and_footer
+from library.ui_elements import fix_page_layout
 
 
-st.set_page_config(layout="wide")
-fix_padding_top_and_footer()
+fix_page_layout("Sibyl")
 
 check_connection()
 

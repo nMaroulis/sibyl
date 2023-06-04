@@ -1,7 +1,16 @@
-from streamlit import markdown
+from streamlit import set_page_config, markdown, cache_resource
+from PIL import Image
 
 
-def fix_padding_top_and_footer():
+def fix_page_layout(page_name='Sibyl'):
+
+    im = Image.open("/Users/nik/PycharmProjects/sibyl/frontend/static/favicon/favicon.ico")
+    set_page_config(
+        page_title=page_name,
+        page_icon=im,
+        layout="wide",
+    )
+
     markdown("""
             <style>
                    .block-container {
@@ -24,13 +33,5 @@ def fix_padding_top_and_footer():
     right: 8em;
     }
     </style>""", unsafe_allow_html=True)
-
-    # markdown("""
-    # <footer class="css-164nlkn egzxvld1">
-    # "Developed by"
-    # <a href="//github.com/nMaroulis/sibyl" target="_blank" class="css-1vbd788 egzxvld2">
-    # Nikolaos Maroulis </a>
-    # </footer>
-    # """, unsafe_allow_html=True)
 
     return 0
