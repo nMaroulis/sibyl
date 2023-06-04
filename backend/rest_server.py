@@ -99,6 +99,21 @@ def get_spot_balance():
         return {"error": data['msg']}
 
 
+@app.get("/status/api/")
+def get_api_status(exchange: str = 'binance'):
+    print(exchange)
+    if BINANCE_API_KEY is None:
+        return {'Your Binance API Credentials are Invalid or non-existent.'}
+    account_url = f"{BINANCE_API_URL}/api/v3/ping"
+    headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
+    response = requests.get(account_url, headers=headers)
+    if response.status_code == 200:  # Check if the request was successful
+        return {'Connection to Binance API successful'}
+    else:
+        # Request was not successful, return the error message
+        return {"Error connecting to Binance API"}
+
+
 # Entry point for running the application
 if __name__ == "__main__":
 

@@ -10,6 +10,10 @@ def get_api_key(exchange="binance"):
         f = open(file_path, "r")
         api_key = json.load(f)
         f.close()
-        return [api_key[exchange]['api_credentials']['API_Key'], api_key[exchange]['api_credentials']['Secret_Key']]
-    else:
-        return ImportError
+        try:
+            credentials = [api_key[exchange]['api_credentials']['API_Key'], api_key[exchange]['api_credentials']['Secret_Key']]
+        except: # if error parsing credentials
+            return None
+        return credentials
+    else: # ImportError
+        return None
