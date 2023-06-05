@@ -31,7 +31,7 @@ def db_init():
 
     # INSERT DEFAULT PARAMS
     insert_default_query = """INSERT INTO user_conf(exchange_choice,backend_server_ip,backend_server_port,backend_server_socket_address)
-                  VALUES("binance","http://127.0.0.1:",8000, "http://127.0.0.1:8000");"""
+                  VALUES("Binance","http://127.0.0.1",8000, "http://127.0.0.1:8000/");"""
     cursor.execute(insert_default_query)
     conn.commit() # Save the changes
     # Close the cursor and the connection
@@ -39,6 +39,7 @@ def db_init():
     conn.close()
     print("db_connector :: Database created successfully.")
     return 0
+
 
 @cache_resource
 def fetch_fields():
@@ -58,17 +59,14 @@ def update_fields(exchange_choice=None, nlp_model_choice=None, backend_server_ip
     conn = sqlite3.connect('frontend/db/frontend_db.db')
     cursor = conn.cursor()
     # Update the fields if arguments are not None
-    if exchange_choice is not None:
-        cursor.execute("UPDATE user_conf SET exchange_choice = ?", (exchange_choice,))
-    if nlp_model_choice is not None:
-        cursor.execute("UPDATE user_conf SET nlp_model_choice = ?", (nlp_model_choice,))
-    if backend_server_ip is not None:
-        cursor.execute("UPDATE user_conf SET backend_server_ip = ?", (backend_server_ip,))
-    if backend_server_port is not None:
-        cursor.execute("UPDATE user_conf SET backend_server_port = ?", (backend_server_port,))
-    if backend_server_socket_address is not None:
-        cursor.execute("UPDATE user_conf SET backend_server_socket_address = ?",
-                       (backend_server_socket_address,))
+    cursor.execute("""UPDATE user_conf SET
+                      exchange_choice = COALESCE(?, exchange_choice),
+                      nlp_model_choice = COALESCE(?, nlp_model_choice),
+                      backend_server_ip = COALESCE(?, backend_server_ip),
+                      backend_server_port = COALESCE(?, backend_server_port),
+                      backend_server_socket_address = COALESCE(?, backend_server_socket_address)""",
+                   (exchange_choice, nlp_model_choice, backend_server_ip,
+                    backend_server_port, backend_server_socket_address))
     conn.commit()
     cursor.close()
     conn.close()

@@ -1,11 +1,14 @@
 import streamlit as st
 from library.ui_elements import fix_page_layout
 from library.settings_helper.settings_funcs import check_api_connection, update_api_credentials
-from frontend.db.db_connector import update_fields
+from frontend.db.db_connector import update_fields, fetch_fields
 fix_page_layout('Settings')
 
 st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h1>""", unsafe_allow_html=True)
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
+
+st.write('Current User Configurations')
+st.table(fetch_fields()[0][1:5])
 
 st.sidebar.button('Reset All Data', type='primary')
 st.write('Current Status')

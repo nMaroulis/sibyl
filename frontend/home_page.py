@@ -11,7 +11,6 @@ check_connection()
 get_logo_header()
 st.write('Overview of Account and Wallet Balance')
 
-st.write(fetch_fields())
 
 get_wallet_balances()
 
