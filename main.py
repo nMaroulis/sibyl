@@ -1,4 +1,5 @@
 import subprocess, sys, os, signal, time
+from frontend.db.db_connector import db_init, fetch_fields, update_fields
 
 backend_server = None
 frontend_ui = None
@@ -6,7 +7,9 @@ frontend_ui = None
 
 def main() -> int:
     global backend_server, frontend_ui
-    print('Starting Frontend & Backed Services...')
+    print('main :: Starting Frontend & Backend Services...')
+    db_init()  # create DB if not exists and populate with defaults
+    fetch_fields()  # print fields and initiate cache
     backend_server = subprocess.Popen("python3.11 backend/rest_server.py", shell=True)
     frontend_ui = subprocess.Popen("streamlit run frontend/home_page.py", shell=True)
 
@@ -21,7 +24,7 @@ def ctrl_handler(signum, frm):
     # if backend_server is not None:
     #     backend_server.kill()
 
-    print('Bye Bye!')
+    print('main :: Bye Bye!')
     sys.exit(0)
 
 
