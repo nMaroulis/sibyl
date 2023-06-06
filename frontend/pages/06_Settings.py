@@ -1,6 +1,7 @@
 import streamlit as st
 from library.ui_elements import fix_page_layout
-from library.settings_helper.settings_funcs import check_api_connection, update_api_credentials
+from library.settings_helper.settings_funcs import update_api_credentials
+from library.backend_connector import get_exchange_api_connection, check_backend_connection
 from frontend.db.db_connector import update_fields, fetch_fields
 fix_page_layout('Settings')
 
@@ -12,10 +13,13 @@ st.table(fetch_fields()[0][1:5])
 
 st.sidebar.button('Reset All Data', type='primary')
 st.write('Current Status')
-with st.spinner('Checking Crypto Exchange API connection'):
-    api_conn = check_api_connection()
+with st.spinner('Checking Backend Server connection'):
+    server_conn = check_backend_connection()
 
-trd_tab, back_tab, api_tab, nlp_tab = st.tabs(['Trading Settings', 'Backed Server Settings', 'Crypto Exchange API Settings', 'NLP Model API Settings'])
+with st.spinner('Checking Crypto Exchange API connection'):
+    api_conn = get_exchange_api_connection()
+
+trd_tab, back_tab, api_tab, nlp_tab = st.tabs(['Trading Settings', 'Backend Server Settings', 'Crypto Exchange API Settings', 'NLP Model API Settings'])
 
 
 with trd_tab:

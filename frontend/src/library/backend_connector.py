@@ -2,8 +2,8 @@ import requests
 from streamlit import sidebar, error, warning, success
 
 
-def get_exchange_api_status():
-    url = "http://127.0.0.1:8000/status/api/"
+def get_exchange_api_connection(exchange='binance'):
+    url = "http://127.0.0.1:8000/status/api/?exchange={exchange}/"
     response = requests.get(url)
     if response.status_code == 200:
         if response.json().get('backend_server_status') == 'success':
@@ -26,7 +26,7 @@ def get_exchange_api_status():
         return 0
 
 
-def check_connection():
+def check_backend_connection():
     url = f"http://127.0.0.1:8000/"
     response = requests.get(url)
     if response.status_code == 200:
