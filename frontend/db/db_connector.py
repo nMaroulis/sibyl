@@ -19,6 +19,7 @@ def db_init():
     conn = sqlite3.connect('frontend/db/frontend_db.db')  # Create/Connect to the SQLite database
 
     cursor = conn.cursor()  # Create a cursor object to execute SQL commands
+    # Create Table that holds the User Preferences/Configurations
     sql_create_conf_table_query = """CREATE TABLE IF NOT EXISTS user_conf (
                                     id integer PRIMARY KEY,
                                     exchange_choice text NOT NULL,
