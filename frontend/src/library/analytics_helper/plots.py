@@ -8,7 +8,7 @@ from streamlit import plotly_chart
 def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot'):
 
     if plot_type == 'Line Plot':
-        url = f"http://127.0.0.1:8000/coin/price_history/" + get_crypto_coin_dict().get(
+        url = f"http://127.0.0.1:8000/analyst/coin/price_history/" + get_crypto_coin_dict().get(
             coin) + "?interval=" + time_int + "&limit=" + str(time_limit) + "&plot_type=line"
         response = requests.get(url)
         data = response.json()
@@ -24,7 +24,7 @@ def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Lin
                           xaxis_title="DateTime",
                           yaxis_title="Price (USDT)")
     else: # candle plot
-        url = f"http://127.0.0.1:8000/coin/price_history/" + get_crypto_coin_dict().get(
+        url = f"http://127.0.0.1:8000/analyst/coin/price_history/" + get_crypto_coin_dict().get(
             coin) + "?interval=" + time_int + "&limit=" + str(time_limit) + "&plot_type=candle"
         response = requests.get(url)
         data = response.json()

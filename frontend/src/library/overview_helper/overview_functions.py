@@ -5,7 +5,7 @@ from streamlit import write, metric, columns, markdown, error, cache_data, spinn
 def get_wallet_balances():
     write('SPOT')
     with spinner('Fetching Wallet Information'):
-        url = "http://127.0.0.1:8000/account/spot/overview"
+        url = "http://127.0.0.1:8000/accountant/account/spot/overview"
         response = requests.get(url)
         data = response.json()
         wallet_list = []

@@ -2,8 +2,8 @@ import requests
 from streamlit import sidebar, error, warning, success
 
 
-def get_exchange_api_connection(exchange='binance'):
-    url = "http://127.0.0.1:8000/status/api/?exchange={exchange}/"
+def check_exchange_api_connection(exchange='binance'):
+    url = "http://127.0.0.1:8000/technician/status/api/?exchange={exchange}/"
     response = requests.get(url)
     if response.status_code == 200:
         if response.json().get('backend_server_status') == 'success':
@@ -36,3 +36,13 @@ def check_backend_connection():
         sidebar.error('📶 Server Connection Failed')
         return 0
 
+
+def check_nlp_connection(model="hugging_face"):
+    url = f"http://127.0.0.1:8000/nlp/{model}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        sidebar.success('📶 NLP API Connection Active')
+        return 1  # True
+    else:
+        sidebar.error('📶 NLP API Connection Failed')
+        return 0

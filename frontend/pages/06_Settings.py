@@ -1,7 +1,7 @@
 import streamlit as st
 from library.ui_elements import fix_page_layout
 from library.settings_helper.settings_funcs import update_api_credentials
-from library.backend_connector import get_exchange_api_connection, check_backend_connection
+from library.backend_connector import check_exchange_api_connection, check_backend_connection
 from frontend.db.db_connector import update_fields, fetch_fields
 fix_page_layout('Settings')
 
@@ -17,7 +17,7 @@ with st.spinner('Checking Backend Server connection'):
     server_conn = check_backend_connection()
 
 with st.spinner('Checking Crypto Exchange API connection'):
-    api_conn = get_exchange_api_connection()
+    api_conn = check_exchange_api_connection()
 
 trd_tab, back_tab, api_tab, nlp_tab = st.tabs(['Trading Settings', 'Backend Server Settings', 'Crypto Exchange API Settings', 'NLP Model API Settings'])
 
@@ -28,12 +28,24 @@ with trd_tab:
         st.info("💡 Currently only Binance is supported, the following will be added: Coinbase, Crypto.com, Gemini, Kraken, KuCoin")
         with st.expander('Betting Options', expanded=True):
             betting_coin = st.selectbox("Choose Betting Coin [reccomended: USDT]", ['USDT', 'BNB', 'BTC'], disabled=True)
-        submit = st.form_submit_button('Update Trading Parameters')
-        if submit:
+        trd_submit = st.form_submit_button('Update Trading Parameters')
+        if trd_submit:
             # update_betting_options(exchange)
             st.write("ok")
 with back_tab:
-    st.write('s')
+    with st.form('Backend Server Settings'):
+        bcols = st.columns([2,1])
+
+        serv_ip = st.text_input('Server IP', value=fetch_fields()[0][3], placeholder="Default: http://127.0.0.1")
+        serv_port = st.text_input('Server Port', value=fetch_fields()[0][4], placeholder="Default: 8000")
+
+        back_submit = st.form_submit_button('Update Server Settings')
+        old_serv_adr = fetch_fields()[0][5]
+        if back_submit:
+            serv_adr = serv_ip+':'+serv_port
+            update_fields(backend_server_ip=serv_ip, backend_server_port=serv_port,backend_server_socket_address=serv_adr)  # Update NLP Model Choice in frontend SQlite3 DB
+            st.success(f'Server Parameters Update Successfuly, New Configurations: [{old_serv_adr}] -> [{serv_adr}]')
+
 with api_tab:
     with st.form('Exchange API Credentials'):
         # switch with global
@@ -45,15 +57,15 @@ with api_tab:
                 placeholder_text = 'No active API Key on the Server, please initialize'
             st.text_input('API Key', placeholder=placeholder_text, type="password")
             st.text_input('Secret Key', placeholder=placeholder_text, type="password")
-        submit = st.form_submit_button('Update Credentials')
-        if submit:
+        api_submit = st.form_submit_button('Update Credentials')
+        if api_submit:
             update_api_credentials(exchange)
 with nlp_tab:
     with st.form('API Credentials'):
         nlp_model = st.selectbox('Choose NLP LLM Model API', options=['Hugging Face Falcon', 'chatGPT', 'Google Bard'], help="Update NLP Model Choice in frontend SQlite3 DB")
         with st.expander('API Credentials', expanded=True):
             st.text_input('Secret Key', placeholder="Secret Key Input", type="password")
-        submit = st.form_submit_button('Update Credentials')
-        if submit:
+        nlp_submit = st.form_submit_button('Update Credentials')
+        if nlp_submit:
             update_fields(nlp_model_choice=nlp_model)  # Update NLP Model Choice in frontend SQlite3 DB
             st.write("ok")
