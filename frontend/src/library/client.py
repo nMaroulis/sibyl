@@ -1,6 +1,8 @@
 import requests
 from streamlit import sidebar, error, warning, success
 
+"""A General purpose Client"""
+
 
 def check_exchange_api_connection(exchange='binance'):
     url = "http://127.0.0.1:8000/technician/status/api/?exchange={exchange}/"

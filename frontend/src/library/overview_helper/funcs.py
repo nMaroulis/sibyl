@@ -1,15 +1,15 @@
 import requests
 from streamlit import write, metric, columns, markdown, error, cache_data, spinner, warning
-
+from library.overview_helper.client import fetch_account_spot
 
 def get_wallet_balances():
     write('SPOT')
     with spinner('Fetching Wallet Information'):
         url = "http://127.0.0.1:8000/accountant/account/spot/overview"
         response = requests.get(url)
-        data = response.json()
+        data, status_code = fetch_account_spot()
         wallet_list = []
-        if response.status_code == 200:
+        if status_code == 200:
             if "error" in data:
                 error(
                     'Connection to the Exchange API failed. The **current** Exchange API and Secret Keys seem to be ***Invalid***, Please visit the Settings Tab to set a **Valid Exchange API & Secret Key**.')

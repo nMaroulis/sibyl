@@ -1,6 +1,6 @@
 import streamlit as st
-from src.library.overview_helper.overview_functions import get_wallet_balances, get_logo_header
-from src.library.backend_connector import check_backend_connection, check_exchange_api_connection
+from src.library.overview_helper.funcs import get_wallet_balances, get_logo_header
+from src.library.client import check_backend_connection, check_exchange_api_connection
 from library.ui_elements import fix_page_layout
 from db.db_connector import fetch_fields
 

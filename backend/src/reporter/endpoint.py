@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from reporter.fetch_news import fetch_news
 from fastapi import Query
 from typing import Optional, List
 import requests
@@ -15,23 +16,16 @@ router = APIRouter(
 )
 
 
-@router.get("/get_news/{query}")
-def get_nlp_api_status(query: str = ''):
+@router.get("/get_news/{website}")
+def get_nlp_api_status(website: str = 'coindesk'):
 
-    API_TOKEN = get_nlp_api_key()  # nlp_api
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
-    API_URL = "https://api-inference.huggingface.co/models/deepset/roberta-base-squad2"
+    # API_TOKEN = get_nlp_api_key()  # nlp_api
+    # API_URL = "https://api-inference.huggingface.co/models/nMaroulis1992/gpt-3.5-turbo"
+    # headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    # data = {"inputs": "What is 1 plus 1 ?"}
+    #
+    # response = requests.post(API_URL, headers=headers, json=data)
+    # print(response.raise_for_status())
+    res = fetch_news(website)
 
-    def query(payload):
-        data = json.dumps(payload)
-        response = requests.request("POST", API_URL, headers=headers, data=data)
-        return json.loads(response.content.decode("utf-8"))
-    data = query(
-        {
-            "inputs": {
-                "question": "How do you see Bitcoin price tomorrow?",
-                "context": "You are a Financial Expert and you have to give your professional .",
-            }
-        }
-    )
-    return 0
+    return res
