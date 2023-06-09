@@ -4,20 +4,28 @@ from urllib.parse import urljoin
 import json
 
 
-def fetch_coindesk_articles():
-    url = 'https://www.coindesk.com/tag/bitcoin/'
-    req = requests.get(url)
-    bs = BeautifulSoup(req.text, 'html.parser')
+def fetch_coindesk_articles(website='coindesk', limit=10):
     articles = []
-    for article in bs.find_all("a", {'class': 'card-title'}):
-        try:
-            title = article.text  # Get Header
-            href = article["href"]  # Get Article Link
-            body = None
-            # body = bs.find("p", {'class': 'desc'}).text
-            articles.append([title, href])
-        except AttributeError:
-            pass
+    page = ''
+    page_num = 0
+    while len(articles) < limit:
+        url = 'https://www.coindesk.com/tag/bitcoin/' + page
+        req = requests.get(url)
+        bs = BeautifulSoup(req.text, 'html.parser')
+        for article in bs.find_all('div', {'class': 'articleTextSection'}):
+            try:
+                if article.find("a", {'class': 'category'}).text == 'Markets':
+                    # print(article.find("a", {'class': 'card-title'}).text)
+                    # print(article.find("a", {'class': 'card-title'})['href'])
+                    if len(articles) < limit:
+                        articles.append([article.find("a", {'class': 'card-title'}).text, article.find("a", {'class': 'card-title'})['href']])
+            except AttributeError:
+                print('no')
+                pass
+            except KeyError:
+                print('no')
+                pass
+        page_num += 1; page = str(page_num)
     return articles
 
 
@@ -47,7 +55,7 @@ def fetch_coindesk_article_body(article_url):
         return []
 
 
-def fetch_news(website='coindesk'): # https://decrypt.co/news
+def fetch_news(website='coindesk', limit=10): # https://decrypt.co/news
 
     articles = fetch_coindesk_articles()
     response_articles = []
@@ -56,7 +64,7 @@ def fetch_news(website='coindesk'): # https://decrypt.co/news
             article_title = article[0]
             article_link = article[1]
             article_subtitle, article_body = fetch_coindesk_article_body(article_link)
-            print(article_subtitle)
+            # print(article_subtitle)
             response_articles.append([article_title, article_subtitle, article_link, article_body])
 
     json_data = json.dumps(response_articles)

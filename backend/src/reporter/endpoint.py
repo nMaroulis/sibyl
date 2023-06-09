@@ -16,8 +16,8 @@ router = APIRouter(
 )
 
 
-@router.get("/get_news/{website}")
-def get_nlp_api_status(website: str = 'coindesk'):
+@router.get("/news/{website}")
+def get_nlp_api_status(website: str = 'coindesk', limit: int = 10):
 
     # API_TOKEN = get_nlp_api_key()  # nlp_api
     # API_URL = "https://api-inference.huggingface.co/models/nMaroulis1992/gpt-3.5-turbo"
@@ -26,6 +26,6 @@ def get_nlp_api_status(website: str = 'coindesk'):
     #
     # response = requests.post(API_URL, headers=headers, json=data)
     # print(response.raise_for_status())
-    res = fetch_news(website)
+    res = fetch_news(website, limit)
 
     return res
