@@ -1,10 +1,9 @@
 from fastapi import APIRouter
 from reporter.fetch_news import fetch_news
+from reporter.text_summarization import get_text_summary
 from fastapi import Query
 from typing import Optional, List
-import requests
-from backend.settings import SERVER_IP, SERVER_PORT, BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
-from backend.config.api_key_handler import get_api_key, get_nlp_api_key
+from backend.config.api_key_handler import get_nlp_api_key
 import json
 
 
@@ -16,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.get("/news/{website}")
+@router.get("/news/articles/")
 def get_nlp_api_status(website: str = 'coindesk', limit: int = 10):
 
     # API_TOKEN = get_nlp_api_key()  # nlp_api
@@ -27,5 +26,14 @@ def get_nlp_api_status(website: str = 'coindesk', limit: int = 10):
     # response = requests.post(API_URL, headers=headers, json=data)
     # print(response.raise_for_status())
     res = fetch_news(website, limit)
+    json_data = json.dumps(res)
+    return json_data
 
-    return res
+
+@router.get("/news/summary/")
+def get_news_summary(model: str = 'sumy', website: str = 'coindesk'):
+
+    articles = fetch_news(website, 20)
+    # print(articles)
+    summary = get_text_summary(model, articles)
+    return {'summary': json.dumps(summary)}

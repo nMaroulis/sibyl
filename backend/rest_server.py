@@ -43,4 +43,4 @@ def read_root():
 if __name__ == "__main__":
 
     # Run the application using the Uvicorn server
-    uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT)
+    uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT, log_level='debug', access_log=True)

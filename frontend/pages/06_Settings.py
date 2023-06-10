@@ -24,7 +24,7 @@ trd_tab, back_tab, api_tab, nlp_tab = st.tabs(['Trading Settings', 'Backend Serv
 
 with trd_tab:
     with st.form('Trading Parameters'):
-        exchange = st.selectbox('Choose Crypto Exchange', options= ['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True)
+        exchange = st.selectbox('Choose Crypto Exchange', options= ['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True, help="Support for Coinbase, Crypto.com, Gemini, Kraken, KuCoin TBA")
         st.info("💡 Currently only Binance is supported, the following will be added: Coinbase, Crypto.com, Gemini, Kraken, KuCoin")
         with st.expander('Betting Options', expanded=True):
             betting_coin = st.selectbox("Choose Betting Coin [reccomended: USDT]", ['USDT', 'BNB', 'BTC'], disabled=True)

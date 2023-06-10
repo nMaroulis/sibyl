@@ -4,3 +4,4 @@ BUGS:
 2. footer animation
 3. moving averages, relative strength index (RSI), and Bollinger Bands
 4. print after update
+5. versel api, vader

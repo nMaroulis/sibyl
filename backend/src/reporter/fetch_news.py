@@ -20,10 +20,8 @@ def fetch_coindesk_articles(website='coindesk', limit=10):
                     if len(articles) < limit:
                         articles.append([article.find("a", {'class': 'card-title'}).text, article.find("a", {'class': 'card-title'})['href']])
             except AttributeError:
-                print('no')
                 pass
             except KeyError:
-                print('no')
                 pass
         page_num += 1; page = str(page_num)
     return articles
@@ -55,7 +53,7 @@ def fetch_coindesk_article_body(article_url):
         return []
 
 
-def fetch_news(website='coindesk', limit=10): # https://decrypt.co/news
+def fetch_news(website='coindesk', limit=10):
 
     articles = fetch_coindesk_articles()
     response_articles = []
@@ -67,5 +65,5 @@ def fetch_news(website='coindesk', limit=10): # https://decrypt.co/news
             # print(article_subtitle)
             response_articles.append([article_title, article_subtitle, article_link, article_body])
 
-    json_data = json.dumps(response_articles)
-    return json_data
+    # json_data = json.dumps(response_articles)
+    return response_articles # json_data

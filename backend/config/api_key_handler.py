@@ -5,7 +5,7 @@ import os
 # Function to import API Keys from exchange_api_keys folder
 def get_api_key(exchange="binance"):
     file_path = 'backend/config/exchange_api_keys/api_credentials.json'
-    print(file_path)
+    # print(file_path)
     if os.path.exists(file_path):  # check filepath
         f = open(file_path, "r")
         api_key = json.load(f)
@@ -21,7 +21,7 @@ def get_api_key(exchange="binance"):
 
 def get_nlp_api_key(nlp_api="hugging_face"):
     file_path = 'backend/config/exchange_api_keys/api_credentials.json'
-    print(file_path)
+    # print(file_path)
     if os.path.exists(file_path):  # check filepath
         f = open(file_path, "r")
         api_key = json.load(f)

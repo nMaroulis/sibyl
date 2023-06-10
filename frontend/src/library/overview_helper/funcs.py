@@ -1,9 +1,11 @@
 import requests
-from streamlit import write, metric, columns, markdown, error, cache_data, spinner, warning
+from streamlit import write, metric, columns, markdown, error, cache_data, spinner, warning, cache_resource
 from library.overview_helper.client import fetch_account_spot
 
+
+@cache_resource(ttl=600, show_spinner=False)
 def get_wallet_balances():
-    write('SPOT')
+    write('SPOT Balance')
     with spinner('Fetching Wallet Information'):
         url = "http://127.0.0.1:8000/accountant/account/spot/overview"
         response = requests.get(url)
