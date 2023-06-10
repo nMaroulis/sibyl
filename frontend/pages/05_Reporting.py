@@ -3,9 +3,11 @@ from library.ui_elements import fix_page_layout
 from library.nlp.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary
 import requests
 
-fix_page_layout("report")
+fix_page_layout("Report")
 
 st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypto Report</h2>""", unsafe_allow_html=True)
+# st.markdown("""<hr style="height:1px;width:10em;text-align: center; color:gray;background-color:gray;margin:auto; padding-top:0;">""", unsafe_allow_html=True)
+
 
 st.sidebar.selectbox(label="Source Website", options=['Coindesk', 'Decrypt'], disabled=True)
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)

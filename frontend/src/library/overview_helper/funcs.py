@@ -1,14 +1,12 @@
 import requests
-from streamlit import write, metric, columns, markdown, error, cache_data, spinner, warning, cache_resource
+from streamlit import write, metric, columns, markdown, error, cache_data, spinner, warning, cache_resource, sidebar, code, session_state
 from library.overview_helper.client import fetch_account_spot
-
+from frontend.db.db_connector import fetch_fields
 
 @cache_resource(ttl=600, show_spinner=False)
 def get_wallet_balances():
     write('SPOT Balance')
     with spinner('Fetching Wallet Information'):
-        url = "http://127.0.0.1:8000/accountant/account/spot/overview"
-        response = requests.get(url)
         data, status_code = fetch_account_spot()
         wallet_list = []
         if status_code == 200:
@@ -49,4 +47,20 @@ def get_logo_header():
     markdown("""<div align="center">
       <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501" style="width:20em;padding-top:0;"></div>""", unsafe_allow_html=True)
     # st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Home Page</h1>""", unsafe_allow_html=True)
+    return 0
+
+
+def populate_session_state():
+    user_confs = fetch_fields()[0]
+    # Populate Session State
+    if 'exchange' not in session_state:
+        session_state['exchange'] = user_confs[1]
+    if 'backend_server_address' not in session_state:
+        session_state['backend_server_address'] = user_confs[5]
+
+    with sidebar.expander('Configurations', expanded=False):
+        write('Crypto Exchange:')
+        code(user_confs[1], language=None)
+        write('Backend Server Address:')
+        code(user_confs[5], language=None)
     return 0

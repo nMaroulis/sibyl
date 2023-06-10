@@ -5,7 +5,7 @@ from library.client import check_exchange_api_connection, check_backend_connecti
 from frontend.db.db_connector import update_fields, fetch_fields
 fix_page_layout('Settings')
 
-st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h1>""", unsafe_allow_html=True)
+st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h2>""", unsafe_allow_html=True)
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 
 st.write('Current User Configurations')

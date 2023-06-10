@@ -5,7 +5,7 @@ from settings import SERVER_IP, SERVER_PORT
 from accountant.endpoint import router as accountant_router
 from analyst.endpoint import router as analyst_router
 # from oracle.endpoint import router as oracle_router
-# from sergeant.endpoint import router as sergeant_router
+from broker.endpoint import router as broker_router
 from reporter.endpoint import router as reporter_router
 from technician.endpoint import router as technician_router
 
@@ -14,6 +14,7 @@ from technician.endpoint import router as technician_router
 router = APIRouter()
 router.include_router(accountant_router)
 router.include_router(analyst_router)
+router.include_router(broker_router)
 router.include_router(reporter_router)
 router.include_router(technician_router)
 

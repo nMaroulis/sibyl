@@ -8,9 +8,9 @@ from library.ui_elements import fix_page_layout
 
 fix_page_layout('Analytics')
 
-st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Analytics</h1>""", unsafe_allow_html=True)
+st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Analytics</h2>""", unsafe_allow_html=True)
 
-ph_tab, ch_tab = st.tabs(['Price History', 'Correlation Heatmap'])
+ph_tab, ch_tab, cs_tab = st.tabs(['Price History', 'Correlation Heatmap', 'Causality Test'])
 
 
 with ph_tab:  # Price History
@@ -67,3 +67,7 @@ with ch_tab:  # Correlation Heatmap
             df_corr = df.corr(method='pearson')
             fig = imshow(df_corr, text_auto=True, aspect="auto", color_continuous_scale='RdBu_r')
             st.plotly_chart(fig, use_container_width=True)
+
+with cs_tab:
+    st.header('Granger Causality Test')
+

@@ -49,7 +49,7 @@ def fetch_fields():
     # Fetch all fields from the configuration table
     cursor.execute("SELECT * FROM user_conf")
     rows = cursor.fetchall()
-    print(rows)
+    # print(rows)
     cursor.close()
     conn.close()
     return rows

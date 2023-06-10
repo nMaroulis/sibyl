@@ -1,5 +1,5 @@
 import streamlit as st
-from src.library.overview_helper.funcs import get_wallet_balances, get_logo_header
+from src.library.overview_helper.funcs import get_wallet_balances, get_logo_header, populate_session_state
 from src.library.client import check_backend_connection, check_exchange_api_connection
 from library.ui_elements import fix_page_layout
 from db.db_connector import fetch_fields
@@ -7,6 +7,7 @@ from db.db_connector import fetch_fields
 
 fix_page_layout("Sibyl")
 
+populate_session_state()
 backend_online = check_backend_connection()
 
 get_logo_header()
