@@ -3,16 +3,24 @@ from library.ui_elements import fix_page_layout
 from library.settings_helper.funcs import update_api_credentials
 from library.client import check_exchange_api_connection, check_backend_connection
 from frontend.db.db_connector import update_fields, fetch_fields
+from pandas import DataFrame
 fix_page_layout('Settings')
 
 st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h2>""", unsafe_allow_html=True)
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 
 st.write('Current User Configurations')
-st.table(fetch_fields()[0][1:5])
+
+db_fields = fetch_fields()[0]  # frontend DB settings
+# print DB settings
+df_settings = DataFrame()
+df_settings['Configuration'] = ['Exchange', 'Backend Server IP', 'Backend Server Port']
+df_settings['Current Parameter'] = [db_fields[1], db_fields[3], db_fields[4]]
+st.dataframe(df_settings, hide_index=True)
+
 
 st.sidebar.button('Reset All Data', type='primary')
-st.write('Current Status')
+# st.write('Current Status')
 with st.spinner('Checking Backend Server connection'):
     server_conn = check_backend_connection()
 
@@ -34,13 +42,13 @@ with trd_tab:
             st.write("ok")
 with back_tab:
     with st.form('Backend Server Settings'):
-        bcols = st.columns([2,1])
+        bcols = st.columns([2, 1])
 
-        serv_ip = st.text_input('Server IP', value=fetch_fields()[0][3], placeholder="Default: http://127.0.0.1")
-        serv_port = st.text_input('Server Port', value=fetch_fields()[0][4], placeholder="Default: 8000")
+        serv_ip = st.text_input('Server IP', value=db_fields[3], placeholder="Default: http://127.0.0.1")
+        serv_port = st.text_input('Server Port', value=db_fields[4], placeholder="Default: 8000")
 
         back_submit = st.form_submit_button('Update Server Settings')
-        old_serv_adr = fetch_fields()[0][5]
+        old_serv_adr = db_fields[5]
         if back_submit:
             serv_adr = serv_ip+':'+serv_port
             update_fields(backend_server_ip=serv_ip, backend_server_port=serv_port,backend_server_socket_address=serv_adr)  # Update NLP Model Choice in frontend SQlite3 DB

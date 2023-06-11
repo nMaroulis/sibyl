@@ -5,10 +5,16 @@
   <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501">
 </div>
 
+[![Python](https://img.shields.io/badge/python-3.11-yellow)]()
+[![Streamlit](https://img.shields.io/badge/streamlit-%201.23-red)]()
+[![FastAPI](https://img.shields.io/badge/fastapi-%200.96-blue)]()
+[![Tensorflow](https://img.shields.io/badge/tensorflow-%202.12-orange)]()
+[![Pandas](https://img.shields.io/badge/pandas-2.0.2-lightgrey)]()
+[![Plotly](https://img.shields.io/badge/plotly-5.14.1-green)]()
 
-## A Crypto Trading Bot with an interactive Dashboard UI including:
+### A Crypto Trading Bot with an interactive Dashboard UI including:
 - Price Forecasting Models [*Oracle* Module]
-  - A collection of custom Tensorflow LSTMs, ARIMA and more...
+  - A collection of custom Tensorflow Bi-Directional LSTMs, GTUs, ARIMA models and more...
 - Data Analysis &amp; Visualization tool  [*Analyst* Module]
   - Correlation Analysis, SHAP Feature Importance, Regression Analysis
 - Customized Strategy Planning including popular Methods  [*Broker* Module]
@@ -25,12 +31,5 @@
 - TBA: A Reinforcement Learning Agent that places automatically Buy/Sell orders, based on the optimal strategy and timing.
 
 and more..
-
-[![Python](https://img.shields.io/badge/python-3.11-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-%201.23-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-%200.96-blue)]()
-[![Tensorflow](https://img.shields.io/badge/tensorflow-%202.12-orange)]()
-[![Pandas](https://img.shields.io/badge/pandas-2.0.2-lightgrey)]()
-[![Plotly](https://img.shields.io/badge/plotly-5.14.1-green)]()
 
 

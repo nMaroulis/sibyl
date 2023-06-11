@@ -8,7 +8,7 @@ from analyst.endpoint import router as analyst_router
 from broker.endpoint import router as broker_router
 from reporter.endpoint import router as reporter_router
 from technician.endpoint import router as technician_router
-
+from db.query_handler import db_init
 
 # Define Router endpoints
 router = APIRouter()
@@ -43,5 +43,6 @@ def read_root():
 # Entry point for running the application
 if __name__ == "__main__":
 
+    db_init()  # Initialize DB
     # Run the application using the Uvicorn server
     uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT, log_level='debug', access_log=True)

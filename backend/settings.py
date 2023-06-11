@@ -2,7 +2,7 @@ SERVER_IP = '127.0.0.1'
 SERVER_PORT = 8000
 
 from config.api_key_handler import get_api_key
-from config.exchange_APIs import BINANCE_API, BINANCE_API3
+from config.api_urls import BINANCE_API, BINANCE_API3
 
 
 BINANCE_API_KEY = get_api_key("binance")[0]

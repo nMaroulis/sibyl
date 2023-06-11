@@ -7,7 +7,7 @@ import json
 def fetch_coindesk_articles(website='coindesk', limit=10):
     articles = []
     page = ''
-    page_num = 0
+    page_num = 1
     while len(articles) < limit:
         url = 'https://www.coindesk.com/tag/bitcoin/' + page
         req = requests.get(url)
