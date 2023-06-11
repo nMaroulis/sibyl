@@ -6,12 +6,24 @@
 </div>
 
 
-## A Crypto Trading Bot with a Dashboard UI including:
-- Price Forecasting Model
-- Data Analysis &amp; Visualization tool
-- APIs to popular exchanges
-- Custom Strategy Planning including popular Methods and custom Algorithms
-- Profit Evaluation
+## A Crypto Trading Bot with an interactive Dashboard UI including:
+- Price Forecasting Models [*Oracle* Module]
+  - A collection of custom Tensorflow LSTMs, ARIMA and more...
+- Data Analysis &amp; Visualization tool  [*Analyst* Module]
+  - Correlation Analysis, SHAP Feature Importance, Regression Analysis
+- Customized Strategy Planning including popular Methods  [*Broker* Module]
+  - Parametrize Trading and base Buy/Sell based on Predictive Models
+  - Scalping (Greedy), DCA, Arbitrage
+- NLP models [*Reporter* Module]
+  - Webscrapper for latest crypto-related news
+  - Text Summarization NLP Models for News Summarization
+  - LLM NLP Models for Sentiment Analysis (also used in the forecasting as input)
+- Profit Evaluation  [*Analyst* Module]
+  - Tables and Plots indicating the Profit/Loss and other details of each deployed Trading Order.
+- APIs to popular exchanges [*Technician* Module]
+  - Currently supported Binance.com 
+- TBA: A Reinforcement Learning Agent that places automatically Buy/Sell orders, based on the optimal strategy and timing.
+
 and more..
 
 [![Python](https://img.shields.io/badge/python-3.11-yellow)]()
