@@ -3,7 +3,7 @@ from streamlit import write, metric, columns, markdown, error, cache_data, spinn
 from library.overview_helper.client import fetch_account_spot
 from frontend.db.db_connector import fetch_fields
 
-@cache_resource(ttl=600, show_spinner=False)
+@cache_resource(ttl=60, show_spinner=False)
 def get_wallet_balances():
     write('SPOT Balance')
     with spinner('Fetching Wallet Information'):
