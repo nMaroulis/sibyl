@@ -55,11 +55,12 @@ def add_trade_to_db(exchange='binance', datetime_buy='', asset_from='USDT', asse
     print("backend :: db :: query_handler :: add_trade_to_db :: Database Insert successfully.")
     return 0
 
-def fetch_trading_history(date_from=None, date_to=None):
+
+def fetch_trading_history(date_from=None, date_to=None, status='active'):
     conn = sqlite3.connect('backend/db/backend_db.db')
     cursor = conn.cursor()
     # Fetch all fields from the configuration table
-    cursor.execute("SELECT * FROM trading_history")
+    cursor.execute(f"SELECT exchange,datetime_buy,asset_from, asset_to, asset_from_buy_value, asset_to_buy_quantity, strategy FROM trading_history WHERE status = '{status}'")
     rows = cursor.fetchall()
     # print(rows)
     cursor.close()

@@ -6,3 +6,5 @@ BUGS:
 4. print after update
 5. versel api, vader
 6. session state
+7. set backend_address to string in clients
+8. token to frontend urls
