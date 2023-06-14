@@ -1,10 +1,221 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Sibyl App</title>
+  <title>Sibyl Documentation</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8f8f8;
+      color: #333;
+    }
+
+    h1 {
+      margin-top: 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    h2 {
+      margin-top: 30px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    h3 {
+      margin-top: 20px;
+    }
+
+    p {
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    code {
+      background-color: #f8f8f8;
+      padding: 2px 4px;
+      font-family: Consolas, monospace;
+      font-size: 0.9em;
+    }
+
+    pre {
+      background-color: #f8f8f8;
+      padding: 10px;
+      border: 1px solid #ccc;
+      overflow: auto;
+      line-height: 1.45;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 100%;
+      background-color: #333;
+      padding: 20px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      margin: 0;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #ccc;
+      font-size: 1.2em;
+      color: #fff;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar ul li {
+      margin-bottom: 10px;
+    }
+
+    .sidebar ul li a {
+      text-decoration: none;
+      color: #ccc;
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .sidebar ul li a:hover {
+      background-color: #555;
+    }
+
+    .sidebar ul li a i {
+      margin-right: 10px;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background-color: #888;
+      border-radius: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb:hover {
+      background-color: #555;
+    }
+
+    .sidebar ul ul {
+        padding-left: 20px;
+    }
+
+    .content {
+      margin-left: 280px;
+      background-color: #fff;
+      padding: 20px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .section {
+      margin-top: 40px;
+    }
+
+    .subsection {
+      margin-top: 20px;
+    }
+
+    .logo {
+      display: block;
+      margin-bottom: 20px;
+      max-width: 100%;
+      height: auto;
+    }
+
+  </style>
 </head>
 <body>
+<div class="sidebar">
+  <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501" alt="Sibyl Logo" class="logo">
+  <h2>Sibyl Documentation</h2>
+  <ul>
+    <li><a href="#introduction"><i class="fas fa-home"></i>Introduction</a></li>
+    <li><a href="#getting-started"><i class="fas fa-play"></i>Getting Started</a></li>
+    <li>
+      <a href="#features"><i class="fas fa-layer-group"></i>Features</a>
+      <ul>
+        <li><a href="#algorithmic-trading">Algorithmic Trading</a></li>
+        <li><a href="#data-analysis">Data Analysis</a></li>
+      </ul>
+    </li>
+    <li><a href="#api-reference"><i class="fas fa-code"></i>API Reference</a></li>
+  </ul>
+</div>
 
+
+  <div class="content">
+    <h1 id="introduction">Sibyl Documentation</h1>
+
+    <div class="section" id="introduction">
+      <h2>Introduction</h2>
+      <p>
+        Welcome to the documentation for Sibyl, a Python app for trading using Machine Learning algorithms. This documentation provides an overview of the app's features and how to use them.
+      </p>
+    </div>
+
+    <div class="section" id="getting-started">
+      <h2>Getting Started</h2>
+      <h3>Installation</h3>
+        <p>Clone the repository that contains all the code.</p>
+      <pre><code># git clone https://github.com/nMaroulis/sibyl.git</code></pre>
+      <p>Install the conda environment found in the conda_env.yml file.</p>
+      <pre><code># conda env create -f conda_env.yml</code><br><code># conda activate sibyl</code></pre>
+
+      <h3>Running the App</h3>
+        <p>First navigate to the sibyl folder in your system and run the main.py script which starts the Frontend and the Backend.</p>
+      <pre><code># cd ./sibyl </code><br><code># python3.11 main.py</code></pre>
+      <p>
+        Once the app is running, you can access it by opening the provided URL in your web browser.
+      </p>
+    </div>
+
+    <div class="section" id="features">
+      <h2>Features</h2>
+      <div class="subsection" id="algorithmic-trading">
+        <h3>Algorithmic Trading</h3>
+        <p>
+          Sibyl provides a range of algorithms for generating trade orders based on Machine Learning models. You can choose from different strategies and customize the parameters.
+        </p>
+        <pre><code># Example code snippet</code></pre>
+      </div>
+
+      <div class="subsection" id="data-analysis">
+        <h3>Data Analysis</h3>
+        <p>
+          With Sibyl, you can analyze historical data, perform technical analysis, and generate insights to inform your trading decisions.
+        </p>
+        <pre><code># Example code snippet</code></pre>
+      </div>
+
+      <!-- Add more feature sections as needed -->
+    </div>
+
+    <div class="section" id="api-reference">
+      <h2>API Reference</h2>
+      <p>
+        Sibyl provides a RESTful API for programmatic access. Use the API endpoints to retrieve data, place trade orders, and more.
+      </p>
+      <pre><code># Example API endpoint</code></pre>
+    </div>
+
+    <!-- Add more sections -->
+  </div>
 </body>
 </html>
