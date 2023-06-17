@@ -7,8 +7,14 @@ def fetch_trade_info_minimum_order(pair_symbol='BTCUSDT'):
     return response.json()['min_notional']
 
 
-def send_strategy(from_coin='USDT', to_coin='BTC', from_amount=1.0, strategy='greedy'):
+def send_strategy(from_coin='USDT', to_coin='BTC', from_amount=1.0, strategy='greedy', order_type='swap'):
 
-    url = f"http://127.0.0.1:8000/broker/trade/order/buy/new?from_coin={from_coin}&to_coin={to_coin}&from_amount={from_amount}&strategy={strategy}"
+    url = f"http://127.0.0.1:8000/broker/trade/order/buy/new?from_coin={from_coin}&to_coin={to_coin}&from_amount={from_amount}&strategy={strategy}&order_type={order_type}"
+    response = requests.get(url)
+    return response.json()
+
+
+def check_swap_status(exchange='binance'):
+    url = "http://127.0.0.1:8000/broker/trade/convert/info"
     response = requests.get(url)
     return response.json()

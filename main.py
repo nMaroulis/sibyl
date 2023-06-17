@@ -11,6 +11,7 @@ def main() -> int:
     db_init()  # create DB if not exists and populate with defaults
     fetch_fields()  # print fields and initiate cache
     backend_server = subprocess.Popen("python3.11 backend/rest_server.py", shell=True)
+    # time.sleep(3) # Let some time for backend to start
     frontend_ui = subprocess.Popen("streamlit run frontend/home_page.py", shell=True)
 
     return 0

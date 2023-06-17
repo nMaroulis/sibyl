@@ -7,6 +7,7 @@ This script uses the sqlite3 module to connect to an SQLite database file called
 It creates a table named "trading_history" with the specified fields: 
 """
 
+
 def db_init():
     # Check if the database file already exists
     if os.path.exists('backend/db/backend_db.db'):
@@ -20,12 +21,14 @@ def db_init():
                                     id integer PRIMARY KEY,
                                     exchange text NOT NULL,
                                     datetime_buy text NOT NULL,
+                                    orderid_buy text NOT NULL,
                                     asset_from float NOT NULL,
                                     asset_to float NOT NULL,
-                                    asset_from_buy_value float NOT NULL,
-                                    asset_to_buy_quantity float NOT NULL,
+                                    asset_from_amount float NOT NULL,
+                                    asset_to_quantity float NOT NULL,
                                     datetime_sell text NULL,
-                                    asset_from_sell_value float NULL,
+                                    orderid_sell text NOT NULL,
+                                    asset_from_sell_amount float NULL,
                                     asset_to_sell_value float NULL,
                                     profit float NULL,
                                     strategy text NOT NULL,
@@ -33,21 +36,21 @@ def db_init():
                                     status text NOT NULL
                                 );"""
     cursor.execute(sql_create_trading_history_table_query)  # execute query
-    conn.commit() # Save the changes
-    cursor.close() # Close the cursor and the connection
+    conn.commit()  # Save the changes
+    cursor.close()  # Close the cursor and the connection
     conn.close()
     print("backend :: db :: query_handler :: Database created successfully.")
     return 0
 
 
 def add_trade_to_db(exchange='binance', datetime_buy='', asset_from='USDT', asset_to="BTC",
-                    asset_from_buy_value=1.0, asset_to_buy_quantity=1.0, datetime_sell=None, asset_from_sell_value=None, asset_to_sell_value=None, profit=None, strategy='greedy', fees=0, status='active'):
+                    asset_from_amount=1.0, asset_to_buy_quantity=1.0, datetime_sell=None, asset_from_sell_value=None, asset_to_sell_value=None, profit=None, strategy='greedy', fees=0, status='active'):
     conn = sqlite3.connect('backend/db/backend_db.db')  # Create/Connect to the SQLite database
     cursor = conn.cursor()  # Create a cursor object to execute SQL commands
 
     # # INSERT PARAMS
-    cursor.execute("""INSERT INTO trading_history(exchange,datetime_buy,asset_from, asset_to, asset_from_buy_value, asset_to_buy_quantity, strategy, status)
-                  VALUES(?,?,?,?,?,?,?,?)""",(exchange, datetime_buy, asset_from, asset_to, asset_from_buy_value, asset_to_buy_quantity, strategy, status))
+    cursor.execute("""INSERT INTO trading_history(exchange,datetime_buy,asset_from, asset_to, asset_from_amount, asset_to_quantity, strategy, status)
+                  VALUES(?,?,?,?,?,?,?,?)""",(exchange, datetime_buy, asset_from, asset_to, asset_from_amount, asset_to_buy_quantity, strategy, status))
     # cursor.execute(insert_default_query)
     conn.commit()  # Save the changes
     cursor.close()  # Close the cursor and the connection
@@ -60,7 +63,7 @@ def fetch_trading_history(date_from=None, date_to=None, status='active'):
     conn = sqlite3.connect('backend/db/backend_db.db')
     cursor = conn.cursor()
     # Fetch all fields from the configuration table
-    cursor.execute(f"SELECT exchange,datetime_buy,asset_from, asset_to, asset_from_buy_value, asset_to_buy_quantity, strategy FROM trading_history WHERE status = '{status}'")
+    cursor.execute(f"SELECT exchange,datetime_buy,asset_from, asset_to, asset_from_amount, asset_to_quantity, strategy FROM trading_history WHERE status = '{status}'")
     rows = cursor.fetchall()
     # print(rows)
     cursor.close()

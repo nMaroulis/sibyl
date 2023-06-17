@@ -4,12 +4,14 @@ import time
 from library.strategy_helper.client import fetch_trade_info_minimum_order, send_strategy
 from library.crypto_dictionary_assistant import get_crypto_coin_dict
 
+
 class GreedyTrader:
 
-    def __init__(self, id='', ):
+    def __init__(self, order_type='Swap'):
         self.id = id
         self.init_time = None
         self.bet = None
+        self.order_type = order_type.lower()  # make order_type request lower_case
 
     def __eq__(self):
         return self.id, self.init_time, self.bet
@@ -22,7 +24,7 @@ class GreedyTrader:
             with expander('Trading Parameters', expanded=True):
                 bt_cols0 = columns(3)
                 with bt_cols0[0]:
-                    bet = number_input('Buying Bet [USDT]:', min_value=0.1, max_value=10.0, value=1.0)
+                    bet = number_input('Buying Bet [USDT]:', min_value=0.1, max_value=100000.0, value=1.0)
                 with bt_cols0[1]:
                     stop_loss = number_input('Profit [%]:', min_value=0, max_value=100000, value=0)
                     caption("if option is left to **0**, the **Greediness Level** will define an automatic Profit")
@@ -34,7 +36,7 @@ class GreedyTrader:
             crypto_list.insert(0, 'Auto')
             target_coin = selectbox('Crypto Asset:', options=crypto_list, index=1)
 
-            bt_cols1 = columns([1,2])
+            bt_cols1 = columns([1, 2])
             with bt_cols1[0]:
                 selectbox('Time Horizon:', options=['Open', '15 Minutes', '30 Minutes', '1 Hour', '6 Hours', '12 Hours',
                                                     '1 Day', '3 Days', '1 Week', '1 Month', '6 Months'], index=0)
@@ -48,10 +50,11 @@ class GreedyTrader:
                 with spinner('Checking Strategy Validity...'):
                     pair_symbol = target_coin+'USDT'
                     min_order_limit = fetch_trade_info_minimum_order(pair_symbol)
+                    print(min_order_limit)
                     if bet >= min_order_limit:
                         success("The minimum buy order Limit of " + str(min_order_limit) + "for the " + pair_symbol + " is satisfied.")
                         write("sending Strategy to Server.")
-                        res = send_strategy(from_coin='USDT', to_coin=target_coin, from_amount=bet, strategy='greedy:'+strategy_type)
+                        res = send_strategy(from_coin='USDT', to_coin=target_coin, from_amount=bet, strategy='greedy:'+strategy_type, order_type=self.order_type)
                         if "error" in res:
                             error('Server Response ' + str(res))
                         else:
