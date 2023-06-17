@@ -1,11 +1,39 @@
 from library.nlp.client import fetch_news, fetch_news_summary
-from streamlit import write, warning, expander, markdown, image, plotly_chart
+from streamlit import write, warning, expander, markdown, image, plotly_chart, caption
 import json
-import plotly.graph_objects as go
+from requests import get as requests_get
+from plotly.graph_objects import Figure, Bar
 
 
 def get_fear_and_greed_index_gauge_plot():
-    image(image="https://alternative.me/crypto/fear-and-greed-index.png", caption="Fear & Greed Index (fetched from alternative.me)", )
+    res = requests_get("https://api.alternative.me/fng/?limit=30")
+    fg_indexes = []
+    colors = []
+    fg_status = 'Neutral'
+    for v in res.json()['data']:
+        fg_indexes.append([v['timestamp'], v['value']])
+        fg_index = int(v['value'])
+        if fg_index <= 20:
+            colors.append('red')
+        elif 20 < fg_index <= 45:
+            colors.append('orange')
+        elif 45 < fg_index <= 55:
+            colors.append('blue')
+            fg_status = 'Neutral'
+        elif 55 < fg_index <= 80:
+            colors.append('green')
+        else:  # > 80
+            colors.append('grey')
+
+    fig = Figure(data=[Bar(
+        x=[x[0] for x in fg_indexes],
+        y=[x[1] for x in fg_indexes],
+        marker_color=colors  # marker color can be a single color value or an iterable
+    )])
+    fig.update_layout(title_text='Fear & Greed index the past Month. Current: '+ fg_status)
+    plotly_chart(fig, use_container_width=True)
+    caption('Source: alternative.me')
+
     with expander('Fear & Greed Index'):
         markdown("""The crypto market behaviour is very emotional. People tend to get greedy when the market is rising 
         which results in FOMO (Fear of missing out). Also, people often sell their coins in irrational reaction of seeing 
@@ -14,8 +42,9 @@ def get_fear_and_greed_index_gauge_plot():
         When Investors are getting too greedy, that means the market is due for a correction. Therefore, we analyze the current 
         sentiment of the Bitcoin market and crunch the numbers into a simple meter from 0 to 100. Zero means "Extreme Fear", 
         while 100 means "Extreme Greed". See below for further information on our data sources.""")
-
-    # st.image(image="https://alternative.me/crypto/fear-and-greed-index.png", caption="Fear & Greed Index (fetched from alternative.me)", )
+    # direct Image
+    # image(image="https://alternative.me/crypto/fear-and-greed-index.png", caption="Fear & Greed Index (fetched from alternative.me)", )
+    # GAUGE PLOT
     # fig = go.Figure(go.Indicator(
     #     domain={'x': [0, 1], 'y': [0, 1]},
     #     value=50,

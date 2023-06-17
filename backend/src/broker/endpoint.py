@@ -33,13 +33,16 @@ def get_active_trade_orders():
 @router.get("/trade/order/buy/new")
 def send_new_buy_order(from_coin: str = 'USDT', to_coin: str = 'BTC', from_amount: float = 1.0, strategy: str = 'greedy', order_type: str = 'swap'):
     gb = GreedyBroker(time.time(), from_coin, to_coin, from_amount, order_type)
-    print(gb.get_fields_for_db())
+    print(gb.get_db_fields())
     response = gb.send_buy_order()
     if "success" in response:
-        df_fields = gb.get_fields_for_db()
-        add_trade_to_db(exchange=df_fields[0], datetime_buy=df_fields[1], asset_from=df_fields[2], asset_to=df_fields[3],
-                        asset_from_amount=df_fields[4], asset_to_buy_quantity=df_fields[5], strategy=df_fields[6],
-                        status=df_fields[7])
+        db_fields = gb.get_db_fields()
+        add_trade_to_db(exchange=db_fields[0], datetime_buy=db_fields[1], orderid_buy=db_fields[2],
+                        asset_from=db_fields[3], asset_to=db_fields[4], asset_from_amount=db_fields[5],
+                        asset_to_quantity=db_fields[6], asset_to_price=db_fields[7], datetime_sell=db_fields[8],
+                        orderid_sell=db_fields[9], asset_to_sell_price=db_fields[10], order_type=db_fields[11],
+                        strategy=db_fields[12], status=db_fields[13])
+        print('Backend :: Broker :: endpoint :: ', gb)
     return response
 
 
@@ -96,4 +99,3 @@ def send_new_convert_order():  # Alternative to BUY order with No fees in Binanc
             return {"success": "Binance Convert API is enabled!"}
 
     return {"error": "Binance Convert API is NOT enabled!"}
-

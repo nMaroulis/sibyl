@@ -8,3 +8,4 @@ BUGS:
 6. session state
 7. set backend_address to string in clients
 8. token to frontend urls
+9. session state balances

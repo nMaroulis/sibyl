@@ -26,11 +26,12 @@ def db_init():
                                     asset_to float NOT NULL,
                                     asset_from_amount float NOT NULL,
                                     asset_to_quantity float NOT NULL,
+                                    asset_to_price float NOT NULL,
                                     datetime_sell text NULL,
-                                    orderid_sell text NOT NULL,
-                                    asset_from_sell_amount float NULL,
-                                    asset_to_sell_value float NULL,
+                                    orderid_sell text NULL,
+                                    asset_to_sell_price float NULL,
                                     profit float NULL,
+                                    order_type text NULL,
                                     strategy text NOT NULL,
                                     fees text NULL,
                                     status text NOT NULL
@@ -43,14 +44,18 @@ def db_init():
     return 0
 
 
-def add_trade_to_db(exchange='binance', datetime_buy='', asset_from='USDT', asset_to="BTC",
-                    asset_from_amount=1.0, asset_to_buy_quantity=1.0, datetime_sell=None, asset_from_sell_value=None, asset_to_sell_value=None, profit=None, strategy='greedy', fees=0, status='active'):
+def add_trade_to_db(exchange='binance', datetime_buy='', orderid_buy='', asset_from='USDT', asset_to="BTC",
+                    asset_from_amount=1.0, asset_to_quantity=1.0, asset_to_price=0, datetime_sell=None, orderid_sell='', asset_to_sell_price=None, profit=None, order_type='trade', strategy='greedy', fees=0, status='active'):
     conn = sqlite3.connect('backend/db/backend_db.db')  # Create/Connect to the SQLite database
     cursor = conn.cursor()  # Create a cursor object to execute SQL commands
 
     # # INSERT PARAMS
-    cursor.execute("""INSERT INTO trading_history(exchange,datetime_buy,asset_from, asset_to, asset_from_amount, asset_to_quantity, strategy, status)
-                  VALUES(?,?,?,?,?,?,?,?)""",(exchange, datetime_buy, asset_from, asset_to, asset_from_amount, asset_to_buy_quantity, strategy, status))
+    cursor.execute("""INSERT INTO trading_history(exchange, datetime_buy, orderid_buy, asset_from, asset_to, 
+    asset_from_amount, asset_to_quantity, asset_to_price, datetime_sell, orderid_sell, asset_to_sell_price, order_type,
+    strategy, status)
+                  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (exchange, datetime_buy, orderid_buy, asset_from, asset_to,
+                                               asset_from_amount, asset_to_quantity, asset_to_price, datetime_sell,
+                                               orderid_sell, asset_to_sell_price, order_type, strategy, status))
     # cursor.execute(insert_default_query)
     conn.commit()  # Save the changes
     cursor.close()  # Close the cursor and the connection
@@ -63,7 +68,9 @@ def fetch_trading_history(date_from=None, date_to=None, status='active'):
     conn = sqlite3.connect('backend/db/backend_db.db')
     cursor = conn.cursor()
     # Fetch all fields from the configuration table
-    cursor.execute(f"SELECT exchange,datetime_buy,asset_from, asset_to, asset_from_amount, asset_to_quantity, strategy FROM trading_history WHERE status = '{status}'")
+    cursor.execute(f"SELECT exchange, datetime_buy, orderid_buy, asset_from, asset_to, asset_from_amount, "
+                   f"asset_to_quantity, asset_to_price, datetime_sell, orderid_sell, asset_to_sell_price, "
+                   f"order_type, strategy, status FROM trading_history WHERE status = '{status}'")
     rows = cursor.fetchall()
     # print(rows)
     cursor.close()

@@ -12,3 +12,9 @@ with th_tab:
     st.write('Trading History Report')
 with vs_tab:
     st.write('Visual Inspection')
+
+import requests
+
+url='http://127.0.0.1:8000/broker/trade/order/active'
+res = requests.get(url)
+st.write(res.text)

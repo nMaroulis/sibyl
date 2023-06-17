@@ -16,7 +16,8 @@ def get_wallet_balances():
                 return 0
             else:
                 for coin in data.get('spot_balances'):
-                    wallet_list.append([coin, round(data.get('spot_balances').get(coin).get('free'), 4)])  # can add round(data.get('spot_balances').get(coin).get('locked')
+                    wallet_list.append([coin, data.get('spot_balances').get(coin).get('free')])
+                    # wallet_list.append([coin, round(data.get('spot_balances').get(coin).get('free'), 4)])  # can add round(data.get('spot_balances').get(coin).get('locked')
 
                 cols = columns(6)  # max number of spot in the same row
                 c = 0

@@ -7,22 +7,24 @@ import time
 class Broker:
 
     def __init__(self, datetime=None, trade_from='USDT', trade_to='BTC', from_amount=1.0, order_type='swap'):
-        self.strategy = None
-        self.sub_strategy = None
+        self.strategy = None  # Strategy Type
+        self.sub_strategy = None  # Subcategory of Strategy
         self.datetime = datetime
         self.trade_from = trade_from
         self.trade_to = trade_to
         self.trading_pair = trade_to + trade_from
         self.from_amount = from_amount
         self.quantity_bought = None  # populated after the buy order has been completed
-        self.sell_order = 1.0  # what price to sell the coin in order to make profit
+        self.current_trade_to_price = 1.0
+        self.sell_order_price = 1.0  # what price to sell the coin in order to make profit
+        self.datetime_sell = None
         self.profit_percentage = 5
         self.order_type = order_type
         self.buy_order_id = None   # if swap then this is the quote
         self.sell_order_id = None
 
     def __str__(self):
-        return f"{self.datetime},{self.trade_from},{self.trade_to},{self.trading_pair},{self.from_amount},{self.quantity_bought},{self.sell_order},{self.profit_percentage},{self.strategy}"
+        return f"{self.datetime}: Bought {self.quantity_bought} {self.trade_to} for {self.from_amount} {self.trade_from}, in order to sell it at a price of {self.sell_order_price}"
 
     def fetch_sell_order_price(self):  # Fetches the current price of the coin and returns the price after the x% expected profit, in order to make the sell order
 
@@ -31,11 +33,7 @@ class Broker:
         print(response.text)
         if response.status_code == 200:
             data = response.json()
-            count_after_decimal = str(float(data['price']))[::-1].find('.')
-
-            sell_order = round(float(data['price']) * (1 + self.profit_percentage / 100), count_after_decimal)
-            print(float(data['price']))
-            self.sell_order = sell_order
+            self.current_trade_to_price = float(data['price'])
             return response.status_code
         else:
             print('Broker :: fetch_sell_order_price :: Failed to retrieve current price.')
@@ -73,9 +71,9 @@ class Broker:
         {"symbol": "ADAUSDT", "orderId": 10xInt, "orderListId": -1, "clientOrderId": "str",
          "transactTime": "timestamp", "price": "0.00000000", "origQty": "17.90000000", "executedQty": "17.90000000",
          "cummulativeQuoteQty": "4.99768000", "status": "FILLED", "timeInForce": "GTC", "type": "MARKET", "side": "BUY",
-         "workingTime": 1686582543034, "fills": [
+         "workingTime": "timestamp", "fills": [
             {"price": "0.27920000", "qty": "17.90000000", "commission": "0.00001618", "commissionAsset": "BNB",
-             "tradeId": 439694546}], "selfTradePreventionMode": "NONE"}
+             "tradeId": 10xInt}], "selfTradePreventionMode": "NONE"}
         """
         print("backend :: GreedyBroker :: post_buy_order :: response status ", response.status_code)
         print("backend :: GreedyBroker :: post_buy_order :: response body ", response.text)
@@ -140,9 +138,9 @@ class Broker:
         timestamp = int(time.time() * 1000)
         url = f"{BINANCE_API_URL}/api/v3/order"  # endpoint URL for creating a new order
 
-        print(self.quantity_bought, self.sell_order)
+        print(self.quantity_bought, self.sell_order_price)
         # Build the query string
-        query_string = f'symbol={self.trading_pair}&side=SELL&type=LIMIT&timeInForce=GTC&quantity={self.quantity_bought}&price={self.sell_order}&timestamp={timestamp}'
+        query_string = f'symbol={self.trading_pair}&side=SELL&type=LIMIT&timeInForce=GTC&quantity={self.quantity_bought}&price={self.sell_order_price}&timestamp={timestamp}'
         signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'),
                              hashlib.sha256).hexdigest()
         query_string += f'&signature={signature}'
@@ -156,10 +154,10 @@ class Broker:
         print("backend :: GreedyBroker :: post_sell_order :: response body ", response.text)
         """
         response body:
-        {"symbol":"ADAUSDT","orderId":4008157831,"orderListId":-1,"clientOrderId":"sXaU5jsuEIowtrYMsUVfhO",
-        "transactTime":1686583266703,"price":"0.29260000","origQty":"17.90000000","executedQty":"0.00000000",
+        {"symbol":"ADAUSDT","orderId":10xInt,"orderListId":-1,"clientOrderId":"str",
+        "transactTime":timestamp,"price":"0.29260000","origQty":"17.90000000","executedQty":"0.00000000",
         "cummulativeQuoteQty":"0.00000000","status":"NEW","timeInForce":"GTC","type":"LIMIT","side":"SELL",
-        "workingTime":1686583266703,"fills":[],"selfTradePreventionMode":"NONE"}
+        "workingTime":timestamp,"fills":[],"selfTradePreventionMode":"NONE"}
         """
 
         if response.status_code == 200:
@@ -170,5 +168,5 @@ class Broker:
 
         return response.status_code
 
-    def get_fields_for_db(self):
-        return ["binance", self.datetime, self.trade_from, self.trade_to, self.from_amount, self.quantity_bought, self.buy_order_id, self.sell_order_id, self.order_type, 'Greedy [Moderate]', 'active']
+    def get_db_fields(self):
+        return ["binance", self.datetime, self.trade_from, self.trade_to, self.from_amount, self.quantity_bought, self.buy_order_id, self.sell_order_id, self.order_type, 'Strategy', 'active']

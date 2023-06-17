@@ -24,7 +24,7 @@ class GreedyTrader:
             with expander('Trading Parameters', expanded=True):
                 bt_cols0 = columns(3)
                 with bt_cols0[0]:
-                    bet = number_input('Buying Bet [USDT]:', min_value=0.1, max_value=100000.0, value=1.0)
+                    bet = number_input('Buying Bet [USDT]:', min_value=1.0, max_value=100000.0, value=50.0)
                 with bt_cols0[1]:
                     stop_loss = number_input('Profit [%]:', min_value=0, max_value=100000, value=0)
                     caption("if option is left to **0**, the **Greediness Level** will define an automatic Profit")
@@ -34,7 +34,7 @@ class GreedyTrader:
             crypto_list = list(get_crypto_coin_dict().values())
             crypto_list.sort()
             crypto_list.insert(0, 'Auto')
-            target_coin = selectbox('Crypto Asset:', options=crypto_list, index=1)
+            target_coin = selectbox('Crypto Asset:', options=crypto_list, index=6)
 
             bt_cols1 = columns([1, 2])
             with bt_cols1[0]:
@@ -52,7 +52,7 @@ class GreedyTrader:
                     min_order_limit = fetch_trade_info_minimum_order(pair_symbol)
                     print(min_order_limit)
                     if bet >= min_order_limit:
-                        success("The minimum buy order Limit of " + str(min_order_limit) + "for the " + pair_symbol + " is satisfied.")
+                        success("The **Minimum buy order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " is satisfied!")
                         write("sending Strategy to Server.")
                         res = send_strategy(from_coin='USDT', to_coin=target_coin, from_amount=bet, strategy='greedy:'+strategy_type, order_type=self.order_type)
                         if "error" in res:
