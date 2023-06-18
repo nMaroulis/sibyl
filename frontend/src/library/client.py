@@ -1,5 +1,6 @@
 import requests
-from streamlit import sidebar, error, warning, success
+from streamlit import sidebar, error, warning, success, spinner, experimental_rerun
+import time
 
 """A General purpose Client"""
 
@@ -30,13 +31,18 @@ def check_exchange_api_connection(exchange='binance'):
 
 def check_backend_connection():
     url = f"http://127.0.0.1:8000/"
-    response = requests.get(url)
-    if response.status_code == 200:
-        sidebar.success('📶 Server Connection Active')
-        return 1  # True
-    else:
-        sidebar.error('📶 Server Connection Failed')
-        return 0
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            sidebar.success('📶 Server Connection Active')
+            return 1  # True
+        else:
+            sidebar.error('📶 Server Connection Failed')
+            return 0
+    except requests.exceptions.ConnectionError:
+        with spinner('Failed to establish a new connection to Backend Server, refreshing in 5 seconds'):
+            time.sleep(5)
+            experimental_rerun()
 
 
 def check_nlp_connection(model="hugging_face"):

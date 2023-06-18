@@ -22,7 +22,7 @@ with cols[1]:
         if "success" in swap_status:
             st.success(swap_status)
         else:
-            st.write(swap_status)
+            st.error(swap_status)
 
 st.warning("Currently only one Active Strategy is supported.")
 

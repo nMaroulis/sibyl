@@ -120,6 +120,7 @@ def get_news_sentiment(model='vader', website='coindesk'):
                    {'range': [0.6, 0.8], 'color': '#4aa84e'},
                    {'range': [0.8, 1], 'color': '#009a60'}],
         'threshold': {'line': {'color': "darkblue", 'width': 4}, 'thickness': 1, 'value': sentiment_score}}))
-    plotly_chart(fig, use_container_width=True)
+    # fig.update(config=dict(displayModeBar=False))
+    plotly_chart(fig, use_container_width=True, config=dict(displayModeBar=False))
 
     return 1
