@@ -47,7 +47,7 @@ def sumy_text_summarizer(doc, summ_type='lsa'):
         summary = summarizer(parser.document, 2)
     else:
         summarizer_lsa = LsaSummarizer()
-        summary = summarizer_lsa(parser.document, 2) # LSA Summarizer
+        summary = summarizer_lsa(parser.document, 4) # LSA Summarizer
     text_summary = ""
     for sentence in summary:
         text_summary += str(sentence)

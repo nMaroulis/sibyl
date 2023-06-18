@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from reporter.fetch_news import fetch_news
 from reporter.text_summarization import get_text_summary
+from reporter.text_sentiment import get_text_sentiment
 from fastapi import Query
 from typing import Optional, List
 from backend.config.api_key_handler import get_nlp_api_key
@@ -37,3 +38,12 @@ def get_news_summary(model: str = 'sumy', website: str = 'coindesk'):
     # print(articles)
     summary = get_text_summary(model, articles)
     return {'summary': json.dumps(summary)}
+
+
+@router.get("/news/sentiment/")
+def get_news_sentiment(model: str = 'vader', website: str = 'coindesk'):
+
+    articles = fetch_news(website, 20)
+
+    sentiment = get_text_sentiment(model, articles)
+    return {'sentiment_compound': sentiment}
