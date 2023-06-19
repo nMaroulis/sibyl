@@ -6,11 +6,11 @@ from db.db_connector import fetch_fields
 
 
 fix_page_layout("Sibyl")
+get_logo_header()
 
 populate_session_state()
 backend_online = check_backend_connection()
 
-get_logo_header()
 
 wo_tab, tab2 = st.tabs(['Wallet Overview', 'Tab 2'])
 with wo_tab:

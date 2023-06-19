@@ -6,7 +6,7 @@ import json
 import requests
 import hmac, hashlib
 import time
-from backend.db.query_handler import add_trade_to_db, fetch_trading_history
+from backend.db.query_handler import add_trade_to_db, fetch_trading_history, update_strategy_status
 from backend.src.broker.greedy import GreedyBroker
 
 
@@ -18,16 +18,10 @@ router = APIRouter(
 )
 
 
-@router.get("/trade/order/active")
-def get_active_trade_orders():
-    active_trade_strategies = fetch_trading_history()
+@router.get("/trade/strategy/history")
+def get_active_trade_orders(status: str = 'all'):
+    active_trade_strategies = fetch_trading_history(status=status)
     return active_trade_strategies
-
-
-@router.get("/trade/order/inactive")
-def get_active_trade_orders():
-    inactive_trade_strategies = fetch_trading_history(status='inactive')
-    return inactive_trade_strategies
 
 
 @router.get("/trade/order/buy/new")
@@ -99,3 +93,57 @@ def send_new_convert_order():  # Alternative to BUY order with No fees in Binanc
             return {"success": "Binance Convert API is enabled!"}
 
     return {"error": "Binance Convert API is NOT enabled!"}
+
+
+@router.get("/trade/order/status/update")
+def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
+    """
+    NEW: The order has been created and is active but has not been executed yet.
+    PARTIALLY_FILLED: The order has been partially filled, meaning that a portion of the requested quantity has been executed, but there are still remaining unfilled quantities.
+    FILLED: The order has been completely filled, indicating that the entire requested quantity has been executed.
+    CANCELED: The order has been canceled either by the user or due to other conditions, such as time in force (TIF) expiration or insufficient funds.
+    PENDING_CANCEL: The order is in the process of being canceled.
+    REJECTED: The order has been rejected, usually due to invalid parameters or other error conditions.
+    EXPIRED: The order has expired and was not executed within the specified time frame.
+    INVALID: The order is considered invalid, often due to incorrect parameters or other issues.
+    """
+    active_orders = fetch_trading_history(status='all')  # (active, partially completed)
+    url = f"{BINANCE_API_URL}/api/v3/order"
+
+    for i in active_orders:
+        symbol_from = i[3]
+        symbol_to = i[4]
+        symbol_pair = symbol_to + symbol_from
+        order_id = i[9]
+
+        # Create the request parameters
+        params = {
+            'symbol': symbol_pair,  # Replace with the symbol of your asset
+            'orderId': order_id,
+            'timestamp': int(time.time() * 1000),
+            'recvWindow': 5000,
+        }
+        query_string = '&'.join([f'{key}={params[key]}' for key in params])
+        signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'),
+                             hashlib.sha256).hexdigest()
+        query_string += f'&signature={signature}'
+        headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
+        response = requests.get(f'{url}?{query_string}', headers=headers)
+        # Process the response
+        new_status = 'active'
+        if response.status_code == 200:
+            order_status = response.json()
+            if order_status['status'] == 'NEW':
+                pass  # remain active
+            elif order_status['status'] == 'PARTIALLY_FILLED':
+                new_status = 'partially_completed'
+            elif order_status['status'] == 'FILLED':
+                new_status = 'completed'
+            else:  # CANCELLED, PENDING_CANCEL, REJECTED, EXPIRED, INVALID
+                new_status = 'cancelled'
+            update_strategy_status(sell_id=order_id, asset_from=symbol_from, asset_to=symbol_to,
+                                       new_status=new_status)
+            print(f"Status: {order_status['status']}")
+        else:
+            print(f"Error occurred. Status code: {response.status_code}, Response: {response.text}")
+    return {"success": "Trading History DB Updated"}

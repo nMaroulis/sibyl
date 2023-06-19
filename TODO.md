@@ -9,3 +9,4 @@ BUGS:
 7. set backend_address to string in clients
 8. token to frontend urls
 9. session state balances
+10. make the signature url and params in a function. give params url, get whole url, params, headers

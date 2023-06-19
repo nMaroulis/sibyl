@@ -67,12 +67,38 @@ def add_trade_to_db(exchange='binance', datetime_buy='', orderid_buy='', asset_f
 def fetch_trading_history(date_from=None, date_to=None, status='active'):
     conn = sqlite3.connect('backend/db/backend_db.db')
     cursor = conn.cursor()
-    # Fetch all fields from the configuration table
-    cursor.execute(f"SELECT exchange, datetime_buy, orderid_buy, asset_from, asset_to, asset_from_amount, "
-                   f"asset_to_quantity, asset_to_price, datetime_sell, orderid_sell, asset_to_sell_price, "
-                   f"order_type, strategy, status FROM trading_history WHERE status = '{status}'")
+
+    if status == 'all':
+        cursor.execute(f"SELECT exchange, datetime_buy, orderid_buy, asset_from, asset_to, asset_from_amount, "
+                       f"asset_to_quantity, asset_to_price, datetime_sell, orderid_sell, asset_to_sell_price, "
+                       f"order_type, strategy, status FROM trading_history")
+    else:
+        # Fetch all fields from the configuration table
+        cursor.execute(f"SELECT exchange, datetime_buy, orderid_buy, asset_from, asset_to, asset_from_amount, "
+                       f"asset_to_quantity, asset_to_price, datetime_sell, orderid_sell, asset_to_sell_price, "
+                       f"order_type, strategy, status FROM trading_history WHERE status = '{status}'")
     rows = cursor.fetchall()
     # print(rows)
     cursor.close()
     conn.close()
     return rows
+
+
+def update_strategy_status(sell_id=None, asset_from='USDT', asset_to='BTC', new_status='active'):
+    conn = sqlite3.connect('backend/db/backend_db.db')
+    cursor = conn.cursor()
+    update_query = """
+        UPDATE trading_history
+        SET status = ?
+        WHERE orderid_sell = ? AND asset_from = ? AND asset_to = ?;
+    """
+    query_success = True
+    try:
+        cursor.execute(update_query, (new_status, sell_id, asset_from, asset_to))
+        conn.commit()
+    except:
+        query_success = False
+
+    cursor.close()
+    conn.close()
+    return query_success
