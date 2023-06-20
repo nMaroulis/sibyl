@@ -111,7 +111,7 @@ class Broker:
         if response.status_code == 200:
             try:
                 buy_order_id = response.json()['quoteId']
-                print(response.json())
+                # print(response.json())
                 # accept the Quote
                 url = f"{BINANCE_API_URL}/sapi/v1/convert/acceptQuote"
                 timestamp = str(int(time.time() * 1000))

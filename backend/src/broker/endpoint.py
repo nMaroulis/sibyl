@@ -8,6 +8,7 @@ import hmac, hashlib
 import time
 from backend.db.query_handler import add_trade_to_db, fetch_trading_history, update_strategy_status
 from backend.src.broker.greedy import GreedyBroker
+from datetime import datetime
 
 
 # APIRouter creates path operations for user module
@@ -26,7 +27,7 @@ def get_active_trade_orders(status: str = 'all'):
 
 @router.get("/trade/order/buy/new")
 def send_new_buy_order(from_coin: str = 'USDT', to_coin: str = 'BTC', from_amount: float = 1.0, strategy: str = 'greedy', order_type: str = 'swap'):
-    gb = GreedyBroker(time.time(), from_coin, to_coin, from_amount, order_type)
+    gb = GreedyBroker(time.strftime('%Y-%m-%d %H:%M:%S'), from_coin, to_coin, from_amount, order_type)
     print(gb.get_db_fields())
     response = gb.send_buy_order()
     if "success" in response:
@@ -129,8 +130,10 @@ def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
         query_string += f'&signature={signature}'
         headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
         response = requests.get(f'{url}?{query_string}', headers=headers)
+        # print(response.text)
         # Process the response
         new_status = 'active'
+        time_sold = None
         if response.status_code == 200:
             order_status = response.json()
             if order_status['status'] == 'NEW':
@@ -138,12 +141,32 @@ def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
             elif order_status['status'] == 'PARTIALLY_FILLED':
                 new_status = 'partially_completed'
             elif order_status['status'] == 'FILLED':
+                url_to_get_time_sold = f"{BINANCE_API_URL}/api/v3/myTrades"
+                res_time_sold = requests.get(f'{url_to_get_time_sold}?{query_string}', headers=headers)
+                time_sold = res_time_sold.json()[0]['time']  # str()
+                time_sold = str(datetime.utcfromtimestamp(time_sold//1000).strftime('%Y-%m-%d %H:%M:%S'))
                 new_status = 'completed'
             else:  # CANCELLED, PENDING_CANCEL, REJECTED, EXPIRED, INVALID
                 new_status = 'cancelled'
             update_strategy_status(sell_id=order_id, asset_from=symbol_from, asset_to=symbol_to,
-                                       new_status=new_status)
-            print(f"Status: {order_status['status']}")
+                                       new_status=new_status, time_sold=time_sold)
         else:
             print(f"Error occurred. Status code: {response.status_code}, Response: {response.text}")
     return {"success": "Trading History DB Updated"}
+
+
+@router.get("/trade/order/status/single_order")
+def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
+
+    url = f"{BINANCE_API_URL}/api/v3/myTrades"
+    params = {'symbol': symbol,'orderId': order_id,'timestamp': int(time.time() * 1000),'recvWindow': 5000}
+    query_string = '&'.join([f'{key}={params[key]}' for key in params])
+    signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'),
+                         hashlib.sha256).hexdigest()
+    query_string += f'&signature={signature}'
+    headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
+    response = requests.get(f'{url}?{query_string}', headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error": 'Trade not found!'}

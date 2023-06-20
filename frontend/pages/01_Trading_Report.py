@@ -36,8 +36,8 @@ trade_strategies = res.json()
 
 df_strategy = pd.DataFrame(columns=['Exchange', 'DateTime', 'buy_orderId', 'from_asset', 'to_asset', 'from_amount',
                                     'quantity_bought', 'from_price', 'DateTime [Sell]', 'sell_orderId', 'price_to_sell',
-                                    'Order Type', 'Strategy', 'Status'], data=trade_strategies)
-df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
+                                    'Order Type', 'Strategy', 'Status'], data=trade_strategies) # df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
+
 st.dataframe(df_strategy)
 
 

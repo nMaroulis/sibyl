@@ -10,3 +10,4 @@ BUGS:
 8. token to frontend urls
 9. session state balances
 10. make the signature url and params in a function. give params url, get whole url, params, headers
+11. get commision also for trades

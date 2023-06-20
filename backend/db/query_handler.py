@@ -84,17 +84,17 @@ def fetch_trading_history(date_from=None, date_to=None, status='active'):
     return rows
 
 
-def update_strategy_status(sell_id=None, asset_from='USDT', asset_to='BTC', new_status='active'):
+def update_strategy_status(sell_id=None, asset_from='USDT', asset_to='BTC', new_status='active', time_sold='pending'):
     conn = sqlite3.connect('backend/db/backend_db.db')
     cursor = conn.cursor()
     update_query = """
         UPDATE trading_history
-        SET status = ?
+        SET status = ?, datetime_sell = ?
         WHERE orderid_sell = ? AND asset_from = ? AND asset_to = ?;
     """
     query_success = True
     try:
-        cursor.execute(update_query, (new_status, sell_id, asset_from, asset_to))
+        cursor.execute(update_query, (new_status, time_sold, sell_id, asset_from, asset_to))
         conn.commit()
     except:
         query_success = False
