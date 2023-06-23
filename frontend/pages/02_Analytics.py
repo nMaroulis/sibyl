@@ -14,6 +14,7 @@ ph_tab, ch_tab, cs_tab = st.tabs(['Price History', 'Correlation Heatmap', 'Causa
 
 
 with ph_tab:  # Price History
+    st.subheader("Price History Line Plot")
     with st.form('Get Price'):
         cols = st.columns(3)
         with cols[0]:
@@ -40,10 +41,10 @@ with ph_tab:  # Price History
             )
 
 with ch_tab:  # Correlation Heatmap
-    st.header('Correlation Heatmap')
+    st.subheader('Correlation Heatmap')
     st.write('Generate a Correlation Heatmap for the selected Crypto Coins')
     with st.form('Correlation Heatmap'):
-        coins = st.multiselect(label='Choose Coins to Correlate', options=list(get_crypto_coin_dict().keys()), max_selections=100)  # get the keys from the coin dict
+        coins = st.multiselect(label='Choose Coins to Correlate', options=list(get_crypto_coin_dict().keys()), max_selections=40)  # get the keys from the coin dict
         cols = st.columns(2)
         with cols[0]:
             time_int = st.selectbox(
@@ -53,21 +54,26 @@ with ch_tab:  # Correlation Heatmap
             time_limit = st.number_input('Choose Sample Limit', value=500, min_value=2, max_value=10000)
         st.radio('Type of Correlation Formula', options=['pearson', 'spearman', 'Distance', 'MIC', 'Regression Coefficients'], index=0, horizontal=True, disabled=True, help='Feature coming soon')
         sumbit_button = st.form_submit_button('Submit')
+        invalid_coins =[]
         if sumbit_button:
             df = DataFrame()
 
             for coin in coins:
-                url = f"http://127.0.0.1:8000/coin/price_history/" + get_crypto_coin_dict().get(
+                url = f"http://127.0.0.1:8000/analyst/coin/price_history/" + get_crypto_coin_dict().get(
                     coin) + "?interval=" + time_int + "&limit=" + str(time_limit)
                 response = requests.get(url)
-                data = response.json()
+                try:
+                    data = response.json()
+                    df[coin] = [entry.get('Open Price') for entry in data]
+                except requests.exceptions.JSONDecodeError:
+                    invalid_coins.append(coin)
 
-                df[coin] = [entry.get('Open Price') for entry in data]
+            if len(invalid_coins) > 0:
+                st.warning('Price for **' + str(invalid_coins) + '** could not be fetched from the Server.')
 
             df_corr = df.corr(method='pearson')
             fig = imshow(df_corr, text_auto=True, aspect="auto", color_continuous_scale='RdBu_r')
             st.plotly_chart(fig, use_container_width=True)
 
 with cs_tab:
-    st.header('Granger Causality Test')
-
+    st.subheader('Granger Causality Test')

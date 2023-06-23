@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 from library.ui_elements import fix_page_layout
-from library.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot
+from library.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot, get_trading_history_line_plot
 
 
 fix_page_layout('Report')
@@ -16,6 +16,19 @@ with th_tab:
     st.markdown("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Trading History Table</h5>""",
                 unsafe_allow_html=True)
     df = trading_history_table(strat_status)
+    df['show_plot'] = False
+    df.insert(0, 'Status', df.pop('Status'))
+    df.insert(0, 'show_plot', df.pop('show_plot'))
+
+    edited_df = st.data_editor(df, use_container_width=True, hide_index=True)
+
+    df_to_plot = edited_df.loc[edited_df["show_plot"] == True]
+    if df_to_plot.shape[0] > 0:
+        fig = get_trading_history_line_plot(df_to_plot)  # & (edited_df["show_plot"] == True)
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+
+
 with vs_tab:
     st.markdown("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Trading History Bar Plot</h5>""",
                 unsafe_allow_html=True)
