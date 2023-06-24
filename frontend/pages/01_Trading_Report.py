@@ -21,16 +21,17 @@ with th_tab:
     df.insert(0, 'show_plot', df.pop('show_plot'))
 
     edited_df = st.data_editor(df, use_container_width=True, hide_index=True)
+    st.info("💡 The **DateTime** above refers to the **UTC** timestamp. So times may be different than your local time.")
 
-    df_to_plot = edited_df.loc[edited_df["show_plot"] == True]
+    df_to_plot = edited_df.loc[edited_df["show_plot"] == True].copy()
     if df_to_plot.shape[0] > 0:
-        fig = get_trading_history_line_plot(df_to_plot)  # & (edited_df["show_plot"] == True)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
+        with st.spinner("Generating Trade History Plot..."):
+            fig = get_trading_history_line_plot(df_to_plot)  # & (edited_df["show_plot"] == True)
+            if fig is not None:
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 
 with vs_tab:
     st.markdown("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Trading History Bar Plot</h5>""",
                 unsafe_allow_html=True)
     get_status_barplot(df['Status'])
-

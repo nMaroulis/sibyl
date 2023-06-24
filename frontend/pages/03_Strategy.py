@@ -8,9 +8,8 @@ fix_page_layout('strategy')
 
 st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Trading Strategy</h2>""", unsafe_allow_html=True)
 
-
-st.info("The ***Swap*** option converts the assets with 0 Fees, while the ***Trade*** option ")
 st.caption("Make sure to enable the Binance Convert API in order to have 0 fees. If the backend server doesn't find a valid Convert API, the standard buy/sell order will be used. In that case make sure to have BNB in your account in order to minimize the fees.")
+st.info("The ***Swap*** option converts the assets with 0 Fees, while the ***Trade*** option ")
 
 # cols = st.columns(2)
 order_type = st.sidebar.radio('Choose Buy/Sell Order Type', options=['Swap', 'Trade'], index=1)

@@ -2,7 +2,7 @@ from backend.settings import BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRE
 import requests
 import hmac, hashlib
 import time
-
+from datetime import datetime
 
 class Broker:
 
@@ -81,6 +81,7 @@ class Broker:
             try:
                 self.quantity_bought = response.json()['executedQty']
                 self.buy_order_id = response.json()['orderId']
+                self.datetime = str(datetime.utcfromtimestamp(response.json()['transactTime'] // 1000).strftime('%Y-%m-%d %H:%M:%S')) # response.json()['transactTime']  # overwrite Datetime with the Datetime of Buy
             except KeyError:
                 return -1
 

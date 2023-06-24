@@ -1,9 +1,10 @@
-from streamlit import sidebar, spinner, dataframe, plotly_chart
+from streamlit import sidebar, spinner, dataframe, plotly_chart, warning
 from library.history_helper.client import update_trading_history, fetch_trading_history
-from pandas import DataFrame, to_datetime
+from pandas import DataFrame, to_datetime, isnull
 from plotly.express import bar
 from plotly.graph_objects import Figure, Scatter
 from library.analytics_helper.plots import price_history_plot
+from library.crypto_dictionary_assistant import get_crypto_coin_dict_inv
 
 
 def sidebar_update_history():
@@ -47,62 +48,99 @@ def get_status_barplot(status_series=None):
 
 
 def get_trading_history_line_plot(trade_df=None, target_coin='Bitcoin [BTC]'):
-    price_hist_df = price_history_plot(target_coin, '1h', 500,  'Line Plot', False)
-    print(price_hist_df)
-    # trade_df = DataFrame({
-    #     'buy_datetime': ['2023-06-02', '2023-06-04', '2023-06-01', '2023-06-03'],
-    #     'sell_datetime': ['2023-06-03', '2023-06-05', '2023-06-02', '2023-06-04'],
-    #     'status': ['profit', 'loss', 'profit', 'loss']
-    # })
+
+    if trade_df.shape[0] > 5:
+        warning("💡 A maximum of **5 Trades** can be plotted concurrently!")  # trade_df = trade_df[0:4]
+        return None
+    if len(list(trade_df['to_asset'].unique())) > 2:
+        warning("⚠️ A maximum of **2** different traded Coins [to_asset] can be plotted concurrently!")  # trade_df = trade_df[0:4]
+        return None
+
+    trade_df['DateTime'] = to_datetime(trade_df['DateTime']).dt.round('30min')
+    trade_df['DateTime [Sell]'] = to_datetime(trade_df['DateTime [Sell]']).dt.round('30min')
+    print(trade_df['DateTime'], trade_df['DateTime [Sell]'])
+    coins_list = list(trade_df['to_asset'].unique())
+    more_that_one_coins_flag = False
+    if len(coins_list) > 1:
+        coins_list = coins_list[0:2]
+        more_that_one_coins_flag = True
+    print(coins_list)
+
+    # Get Historic Prices
+    price_hist_df = price_history_plot(get_crypto_coin_dict_inv().get(coins_list[0]), '30m', 500,  'Line Plot', False)
+    col_name = coins_list[0] + ' Price'
+    price_hist_df[col_name] = price_hist_df['Price']
+    if more_that_one_coins_flag:
+        price_hist_df_tmp = price_history_plot(get_crypto_coin_dict_inv().get(coins_list[1]), '30m', 500, 'Line Plot', False)
+        col_name1 = coins_list[1] + ' Price'
+        price_hist_df[col_name1] = price_hist_df_tmp['Price']
 
     # Convert datetime columns to pandas DateTime objects
-    price_hist_df['DateTime'] = to_datetime(price_hist_df['DateTime'])
-    trade_df['DateTime'] = to_datetime(trade_df['DateTime']).dt.round('H')
-    trade_df['DateTime [Sell]'] = to_datetime(trade_df['DateTime [Sell]']).dt.round('H')
+    price_hist_df['DateTime'] = to_datetime(price_hist_df['DateTime']).dt.round('30min')
+    print(price_hist_df)
 
-    # Create a dictionary to map status values to numerical symbols
-    status_symbols = {'Greedy': 106, 'Oracle': 206}
+    # Support a maximum of 4 concurrent plots
+    # Different marker shape for each buy/sell order
+    status_symbols = [100, 106, 206, 0]
+    # status_symbols = {'Greedy': 106, 'Oracle': 206} # Create a dictionary to map status values to numerical symbols
+    from plotly.subplots import make_subplots
+
     # Create the figure
-    fig = Figure()
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
     # Add the line plot
     fig.add_trace(Scatter(
         x=price_hist_df['DateTime'],
-        y=price_hist_df['Price'],
+        y=price_hist_df[col_name],
         mode='lines',
-        name=target_coin+' Price'
+        name=coins_list[0]+' Price'
     ))
+
+    if more_that_one_coins_flag:
+        fig.add_trace(Scatter(
+            x=price_hist_df['DateTime'],
+            y=price_hist_df[col_name1],
+            mode='lines',
+            name=coins_list[1]+' Price',
+        ), secondary_y=True,)
 
     # Iterate over each buy/sell pair and add a separate scatter trace
     for i, pair in trade_df.iterrows():
         buy_dt = pair['DateTime']
         sell_dt = pair['DateTime [Sell]']
         status = pair['Strategy']
+        price_col = pair['to_asset'] + ' Price'
+
+        if pair['to_asset'] == coins_list[0]:
+            secondary_plot = False
+        else:
+            secondary_plot = True
 
         # Add scatter trace for the buy point
         fig.add_trace(Scatter(
             x=[buy_dt],
-            y=[price_hist_df[price_hist_df['DateTime'] == buy_dt]['Price'].values[0]],
+            y=[price_hist_df[price_hist_df['DateTime'] == buy_dt][price_col].values[0]],
             mode='markers',
-            marker=dict(color='green', size=16, symbol=status_symbols[status]),
-            name=f'Buy {i + 1}',
-            text=f'Buy Date: {buy_dt}<br>Buy Price: {price_hist_df[price_hist_df["DateTime"] == buy_dt]["Price"].values[0]}',
+            marker=dict(color='green', size=16, symbol=status_symbols[i]),
+            name=f'Buy {i+1}: {status}',
+            text=f'Buy Date: {buy_dt}<br>Buy Price: {price_hist_df[price_hist_df["DateTime"] == buy_dt][price_col].values[0]}',
             hoverinfo='text'
-        ))
+        ), secondary_y=secondary_plot)
 
-        # Add scatter trace for the sell point
-        fig.add_trace(Scatter(
-            x=[sell_dt],
-            y=[price_hist_df[price_hist_df['DateTime'] == sell_dt]['Price'].values[0]],
-            mode='markers',
-            marker=dict(color='red', size=16, symbol=status_symbols[status]),
-            name=f'Sell {i + 1}',
-            text=f'Sell Date: {sell_dt}<br>Sell Price: {price_hist_df[price_hist_df["DateTime"] == sell_dt]["Price"].values[0]}',
-            hoverinfo='text'
-        ))
+        if not isnull(sell_dt):  # 'NaT'
+            # Add scatter trace for the sell point
+            fig.add_trace(Scatter(
+                x=[sell_dt],
+                y=[price_hist_df[price_hist_df['DateTime'] == sell_dt][price_col].values[0]], # add [] around y, if it doesnt work
+                mode='markers',
+                marker=dict(color='red', size=16, symbol=status_symbols[i]),
+                name=f'Sell {i+1}: {status}',
+                text=f'Sell Date: {sell_dt}<br>Sell Price: {price_hist_df[price_hist_df["DateTime"] == sell_dt][price_col].values[0]}',
+                hoverinfo='text'
+            ), secondary_y=secondary_plot)
 
     # Set plot layout
     fig.update_layout(
-        title= target_coin + ' Price with Buy/Sell Points',
+        title= str(coins_list) + ' Price with Buy/Sell Points',
         xaxis_title='Date',
         yaxis_title='Price'
     )
