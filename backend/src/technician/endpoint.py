@@ -16,7 +16,6 @@ router = APIRouter(
 
 @router.get("/status/api/")
 def get_api_status(exchange: str = 'binance'):
-    print(exchange)
     if BINANCE_API_KEY is None:
         return {'backend_server_status': 'no_api_key'}  # API key is not set
     account_url = f"{BINANCE_API_URL}/api/v3/ping"

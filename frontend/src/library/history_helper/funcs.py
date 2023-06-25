@@ -1,10 +1,10 @@
 from streamlit import sidebar, spinner, dataframe, plotly_chart, warning
 from library.history_helper.client import update_trading_history, fetch_trading_history
 from pandas import DataFrame, to_datetime, isnull
-from plotly.express import bar
-from plotly.graph_objects import Figure, Scatter
+from plotly.graph_objects import Figure, Scatter, Pie
 from library.analytics_helper.plots import price_history_plot
 from library.crypto_dictionary_assistant import get_crypto_coin_dict_inv
+from plotly.subplots import make_subplots
 
 
 def sidebar_update_history():
@@ -39,11 +39,14 @@ def get_status_barplot(status_series=None):
         'completed': '#0073CF',
         'cancelled': '#E34234'
     }
-    status_counts = status_series.value_counts().reindex(
-        ['active', 'partially_completed', 'completed', 'cancelled'], fill_value=0)
-    fig = bar(status_counts, x=status_counts.index, y=status_counts.values, color=status_counts.index,
-              color_discrete_map=colors)
-    fig.update_layout(xaxis={'type': 'category'}, yaxis_title='Number of Occurrences')
+    # status_counts = status_series.value_counts().reindex(
+    #     ['active', 'partially_completed', 'completed', 'cancelled'], fill_value=0)
+    # fig = bar(status_counts, x=status_counts.index, y=status_counts.values, color=status_counts.index,
+    #           color_discrete_map=colors)
+    # fig.update_layout(xaxis={'type': 'category'}, yaxis_title='Number of Occurrences')
+    status_counts = status_series.value_counts()
+    fig = Figure(data=[Pie(labels=status_counts.index, values=status_counts.values, hole=0.5, textinfo='value+percent')])
+    fig.update_traces(marker=dict(colors=[colors[status] for status in status_counts.index]))
     plotly_chart(fig, config=dict(displayModeBar=False))
 
 
@@ -58,13 +61,11 @@ def get_trading_history_line_plot(trade_df=None, target_coin='Bitcoin [BTC]'):
 
     trade_df['DateTime'] = to_datetime(trade_df['DateTime']).dt.round('30min')
     trade_df['DateTime [Sell]'] = to_datetime(trade_df['DateTime [Sell]']).dt.round('30min')
-    print(trade_df['DateTime'], trade_df['DateTime [Sell]'])
     coins_list = list(trade_df['to_asset'].unique())
     more_that_one_coins_flag = False
     if len(coins_list) > 1:
         coins_list = coins_list[0:2]
         more_that_one_coins_flag = True
-    print(coins_list)
 
     # Get Historic Prices
     price_hist_df = price_history_plot(get_crypto_coin_dict_inv().get(coins_list[0]), '30m', 500,  'Line Plot', False)
@@ -77,13 +78,11 @@ def get_trading_history_line_plot(trade_df=None, target_coin='Bitcoin [BTC]'):
 
     # Convert datetime columns to pandas DateTime objects
     price_hist_df['DateTime'] = to_datetime(price_hist_df['DateTime']).dt.round('30min')
-    print(price_hist_df)
 
     # Support a maximum of 4 concurrent plots
     # Different marker shape for each buy/sell order
-    status_symbols = [100, 106, 206, 0]
+    status_symbols = [100, 106, 102, 101, 117] # open circle, triangle-down, diamond, square, star
     # status_symbols = {'Greedy': 106, 'Oracle': 206} # Create a dictionary to map status values to numerical symbols
-    from plotly.subplots import make_subplots
 
     # Create the figure
     fig = make_subplots(specs=[[{"secondary_y": True}]])

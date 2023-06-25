@@ -20,10 +20,10 @@ with th_tab:
     df.insert(0, 'Status', df.pop('Status'))
     df.insert(0, 'show_plot', df.pop('show_plot'))
 
-    edited_df = st.data_editor(df, use_container_width=True, hide_index=True)
+    edited_df = st.data_editor(df, use_container_width=True, hide_index=True, num_rows='fixed', disabled=['Exchange', 'DateTime', 'buy_orderId', 'from_asset', 'to_asset', 'from_amount','quantity_bought', 'from_price', 'DateTime [Sell]', 'sell_orderId', 'price_to_sell', 'Order Type', 'Strategy', 'Status'])
     st.info("💡 The **DateTime** above refers to the **UTC** timestamp. So times may be different than your local time.")
 
-    df_to_plot = edited_df.loc[edited_df["show_plot"] == True].copy()
+    df_to_plot = edited_df.loc[edited_df["show_plot"] == True].copy().reset_index(drop=True)
     if df_to_plot.shape[0] > 0:
         with st.spinner("Generating Trade History Plot..."):
             fig = get_trading_history_line_plot(df_to_plot)  # & (edited_df["show_plot"] == True)

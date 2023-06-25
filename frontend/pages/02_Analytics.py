@@ -54,7 +54,7 @@ with ch_tab:  # Correlation Heatmap
             time_limit = st.number_input('Choose Sample Limit', value=500, min_value=2, max_value=10000)
         st.radio('Type of Correlation Formula', options=['pearson', 'spearman', 'Distance', 'MIC', 'Regression Coefficients'], index=0, horizontal=True, disabled=True, help='Feature coming soon')
         sumbit_button = st.form_submit_button('Submit')
-        invalid_coins =[]
+        invalid_coins = []
         if sumbit_button:
             df = DataFrame()
 

@@ -6,7 +6,7 @@ import time
 
 
 def check_exchange_api_connection(exchange='binance'):
-    url = "http://127.0.0.1:8000/technician/status/api/?exchange={exchange}/"
+    url = f"http://127.0.0.1:8000/technician/status/api/?exchange={exchange}/"
     response = requests.get(url)
     if response.status_code == 200:
         if response.json().get('backend_server_status') == 'success':

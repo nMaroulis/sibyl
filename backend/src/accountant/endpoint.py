@@ -14,25 +14,34 @@ router = APIRouter(
 )
 
 
+@router.get("/account/spot/pair/price")
+def get_crypto_pair_price(pair: str = 'BTCUSDT'):
+    # Binance API endpoint for ticker price
+    url = f"{BINANCE_API_URL}/api/v3/ticker/price"
+    params = {'symbol': pair}
+    response = requests.get(url, params=params)
+    if response.status_code == 200:  # Checking if the request was successful
+        data = response.json()
+        pair_price = data['price']
+        return {"price": pair_price}
+    else:
+        return {"error": 'Could not fetch price'}
+
+
 @router.get("/account/spot/overview")
 def get_spot_balance():
 
     # Binance API endpoint
     account_url = f"{BINANCE_API_URL}/api/v3/account"
-
     # Request headers and parameters
     headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
     params = {'timestamp': int(time.time() * 1000), }
-
     # Generate the query string
     query_string = '&'.join([f'{key}={value}' for key, value in params.items()])
-
     # Create a signature
     signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
-
     # Add the signature to the request parameters
     params['signature'] = signature
-
     # Send the GET request to Binance API
     response = requests.get(account_url, headers=headers, params=params)
     try:
@@ -44,22 +53,32 @@ def get_spot_balance():
         spot_balances = {}  # all balance
         locked_earn_balances = {}  # Retrieve the locked Earn balances
         staked_balances = {}  # Retrieve the staked balances
-
         for asset in data['balances']:
             if float(asset['free']) > 0.0 or float(asset['locked']) > 0.0:
+
+                fetched_price = get_crypto_pair_price(asset['asset']+'USDT')
+                asset_price = 1.0  # default price, for BUSD, USDT prices in USDT
+                if "error" not in fetched_price:
+                    asset_price = fetched_price['price']
+                    # if asset_price == 0:
+                    #     asset_price = 1.0
+
                 spot_balances[asset['asset']] = {
                     'free': float(asset['free']),
-                    'locked': float(asset['locked'])
+                    'locked': float(asset['locked']),
+                    'price': asset_price
                 }
                 if asset['asset'].startswith('LD'):
                     locked_earn_balances[asset['asset']] = {
                         'free': float(asset['free']),
-                        'locked': float(asset['locked'])
+                        'locked': float(asset['locked']),
+                        'price': asset_price
                     }
                 if asset['asset'].startswith('ST'):
                     staked_balances[asset['asset']] = {
                         'free': float(asset['free']),
-                        'locked': float(asset['locked'])
+                        'locked': float(asset['locked']),
+                        'price': asset_price
                     }
         # print(json.dumps(spot_balances, indent=4))
         return {'spot_balances': spot_balances,

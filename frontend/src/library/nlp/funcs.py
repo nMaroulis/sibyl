@@ -3,6 +3,7 @@ from streamlit import write, warning, expander, markdown, image, plotly_chart, c
 import json
 from requests import get as requests_get
 from plotly.graph_objects import Figure, Bar, Indicator
+import plotly.graph_objects as go
 from datetime import datetime
 
 
@@ -106,8 +107,8 @@ def get_news_sentiment(model='vader', website='coindesk'):
         domain={'x': [0, 1], 'y': [0, 1]},
         value=sentiment_score,
         mode="gauge+number",
-        title={'text': "Sentiment"},
-        gauge={'axis': {'range': [-1, 1], 'tickcolor': "darkblue"},'bar': {'color': "darkblue"},
+        title={'text': "Sentiment Score"},
+        gauge={'axis': {'range': [-1, 1], 'tickcolor': "#41424C"},'bar': {'color': "#41424C"},
                'steps': [
                    {'range': [-1, -0.8], 'color': '#ed0022'},
                    {'range': [-0.8, -0.6], 'color': '#f43021'},
@@ -119,7 +120,9 @@ def get_news_sentiment(model='vader', website='coindesk'):
                    {'range': [0.4, 0.6], 'color': '#92b73a'},
                    {'range': [0.6, 0.8], 'color': '#4aa84e'},
                    {'range': [0.8, 1], 'color': '#009a60'}],
-        'threshold': {'line': {'color': "darkblue", 'width': 4}, 'thickness': 1, 'value': sentiment_score}}))
+        'threshold': {'line': {'color': "#41424C", 'width': 4}, 'thickness': 1, 'value': sentiment_score}}))
+
+    fig.update_layout(margin=go.layout.Margin(t=0))
     # fig.update(config=dict(displayModeBar=False))
     plotly_chart(fig, use_container_width=True, config=dict(displayModeBar=False))
 
