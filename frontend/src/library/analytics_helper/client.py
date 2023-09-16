@@ -1,5 +1,5 @@
 import requests
-from library.crypto_dictionary_assistant import get_crypto_coin_dict
+from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict
 
 
 def fetch_price_history(coin='BTC', time_int='1d', time_limit=500, plot_type='line'):

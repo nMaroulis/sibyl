@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
-from library.ui_elements import fix_page_layout
-from library.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot, get_trading_history_line_plot
+from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot, get_trading_history_line_plot
 
 
 fix_page_layout('Report')

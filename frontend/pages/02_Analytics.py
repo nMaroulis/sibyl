@@ -1,10 +1,10 @@
 import streamlit as st
 import requests
 from pandas import DataFrame, to_datetime
-from library.crypto_dictionary_assistant import get_crypto_coin_dict
+from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict
 from plotly.express import imshow
-from library.analytics_helper.plots import price_history_plot
-from library.ui_elements import fix_page_layout
+from frontend.src.library.analytics_helper.plots import price_history_plot
+from frontend.src.library.ui_elements import fix_page_layout
 
 fix_page_layout('Analytics')
 

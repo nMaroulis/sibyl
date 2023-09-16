@@ -1,4 +1,4 @@
-from library.nlp.client import fetch_news, fetch_news_summary, fetch_news_sentiment
+from frontend.src.library.nlp.client import fetch_news, fetch_news_summary, fetch_news_sentiment
 from streamlit import write, warning, expander, markdown, image, plotly_chart, caption, code
 import json
 from requests import get as requests_get

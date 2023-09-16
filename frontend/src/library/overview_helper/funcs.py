@@ -1,6 +1,6 @@
 from streamlit import write, metric, columns, markdown, error, cache_data, spinner, warning, cache_resource, sidebar,\
-    code, session_state, plotly_chart, data_editor, column_config
-from library.overview_helper.client import fetch_account_spot
+    code, session_state, plotly_chart, data_editor, column_config, toggle
+from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.db.db_connector import fetch_fields
 from plotly.graph_objects import Figure, Pie, Layout
 import plotly.graph_objects as go
@@ -79,6 +79,8 @@ def get_wallet_balances():
                     wallet_list_df.insert(0, 'icon', wallet_list_df.pop('icon'))
                     data_editor(wallet_list_df, column_config={"icon": column_config.ImageColumn("")}, hide_index=True,
                                 disabled=True, use_container_width=True)
+
+                    toggle('Hide Small Balances')
                 with cols[1]:
                     markdown(
                         """<h6 style='text-align: left;margin-top:1em;margin-bottom:0;'></h6>""",unsafe_allow_html=True)

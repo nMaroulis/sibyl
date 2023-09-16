@@ -1,9 +1,9 @@
-from streamlit import sidebar, spinner, dataframe, plotly_chart, warning
-from library.history_helper.client import update_trading_history, fetch_trading_history
+from streamlit import sidebar, spinner, dataframe, plotly_chart, warning, error
+from frontend.src.library.history_helper.client import update_trading_history, fetch_trading_history
 from pandas import DataFrame, to_datetime, isnull
 from plotly.graph_objects import Figure, Scatter, Pie
-from library.analytics_helper.plots import price_history_plot
-from library.crypto_dictionary_assistant import get_crypto_coin_dict_inv
+from frontend.src.library.analytics_helper.plots import price_history_plot
+from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict_inv
 from plotly.subplots import make_subplots
 
 
@@ -29,7 +29,7 @@ def trading_history_table(strat_status='all'):
                                data=trade_strategies)
     # df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
     # dataframe(df_strategy)
-    return df_strategy
+    return df_strategy.sort_values(by='DateTime', ascending=False)
 
 
 def get_status_barplot(status_series=None):
@@ -114,6 +114,9 @@ def get_trading_history_line_plot(trade_df=None, target_coin='Bitcoin [BTC]'):
         else:
             secondary_plot = True
 
+        if len(price_hist_df[price_hist_df['DateTime'] == buy_dt][price_col].values) <1:
+            error('Plot for old dates is not supported yet!')
+            return None
         # Add scatter trace for the buy point
         fig.add_trace(Scatter(
             x=[buy_dt],

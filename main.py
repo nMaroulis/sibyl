@@ -12,7 +12,7 @@ def main() -> int:
     fetch_fields()  # print fields and initiate cache
     backend_server = subprocess.Popen("python3.11 backend/rest_server.py", shell=True)
     # time.sleep(3) # Let some time for backend to start
-    frontend_ui = subprocess.Popen("streamlit run frontend/home_page.py", shell=True)
+    frontend_ui = subprocess.Popen("streamlit run frontend/Home_Page.py", shell=True)
 
     return 0
 

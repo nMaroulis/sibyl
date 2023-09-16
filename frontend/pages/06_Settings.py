@@ -1,7 +1,7 @@
 import streamlit as st
-from library.ui_elements import fix_page_layout
-from library.settings_helper.funcs import update_api_credentials
-from library.client import check_exchange_api_connection, check_backend_connection
+from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.settings_helper.funcs import update_api_credentials
+from frontend.src.library.client import check_exchange_api_connection, check_backend_connection
 from frontend.db.db_connector import update_fields, fetch_fields
 from pandas import DataFrame
 fix_page_layout('Settings')

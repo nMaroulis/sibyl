@@ -1,7 +1,7 @@
 import streamlit as st
-from library.ui_elements import fix_page_layout
-from library.strategy_helper.greedy import GreedyTrader
-from library.strategy_helper.client import check_swap_status
+from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.strategy_helper.greedy import GreedyTrader
+from frontend.src.library.strategy_helper.client import check_swap_status
 
 
 fix_page_layout('strategy')

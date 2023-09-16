@@ -6,7 +6,7 @@
 </div>
 
 [![Python](https://img.shields.io/badge/python-3.11-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-%201.23-red)]()
+[![Streamlit](https://img.shields.io/badge/streamlit-%201.26-red)]()
 [![FastAPI](https://img.shields.io/badge/fastapi-%200.96-blue)]()
 [![Tensorflow](https://img.shields.io/badge/tensorflow-%202.12-orange)]()
 [![Pandas](https://img.shields.io/badge/pandas-2.0.2-lightgrey)]()

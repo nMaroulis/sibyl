@@ -1,6 +1,6 @@
 import streamlit as st
-from library.ui_elements import fix_page_layout
-from library.nlp.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment
+from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.nlp.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment
 import requests
 
 fix_page_layout("Report")

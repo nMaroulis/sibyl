@@ -1,3 +1,3 @@
 import streamlit as st
-from library.ui_elements import fix_page_layout
+from frontend.src.library.ui_elements import fix_page_layout
 
