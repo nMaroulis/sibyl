@@ -7,10 +7,10 @@
 
 [![Python](https://img.shields.io/badge/python-3.11-yellow)]()
 [![Streamlit](https://img.shields.io/badge/streamlit-%201.26-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-%200.96-blue)]()
+[![FastAPI](https://img.shields.io/badge/fastapi-%200.103-blue)]()
 [![Tensorflow](https://img.shields.io/badge/tensorflow-%202.12-orange)]()
-[![Pandas](https://img.shields.io/badge/pandas-2.0.2-lightgrey)]()
-[![Plotly](https://img.shields.io/badge/plotly-5.14.1-green)]()
+[![Pandas](https://img.shields.io/badge/pandas-2.1.0-lightgrey)]()
+[![Plotly](https://img.shields.io/badge/plotly-5.17-green)]()
 
 ### A Crypto Trading Bot with an interactive Dashboard UI including:
 - Price Forecasting Models [*Oracle* Module]

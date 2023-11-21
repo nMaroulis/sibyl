@@ -12,6 +12,9 @@ st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypt
 st.sidebar.selectbox(label="Source Website", options=['Coindesk', 'Decrypt'], disabled=True)
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)
 st.sidebar.selectbox(label="Sentiment NLP Model", options=['Vader', 'chatGPT'])
+st.sidebar.button("Sibyl LLM Chatbot", disabled=True)
+
+
 
 cols = st.columns([3,1])
 with cols[0]:

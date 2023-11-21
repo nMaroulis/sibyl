@@ -140,6 +140,43 @@
       height: auto;
     }
 
+.tab {
+      overflow: hidden;
+      border-bottom: 1px solid #ccc;
+      background-color: #f8f8f8;
+    }
+
+    /* Style for tab buttons */
+    .tab button {
+      background-color: inherit;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 10px 15px;
+      transition: 0.3s;
+      font-size: 15px;
+      margin: 0;
+      border-bottom: 2px solid transparent;
+    }
+
+    /* Change background color and border color of tabs on hover */
+    .tab button:hover {
+      background-color: #ddd;
+    }
+
+    /* Set active tab */
+    .tab button.active {
+      background-color: #fff;
+      border-bottom: 2px solid #3498db;
+    }
+
+    /* Style for tab content */
+    .tabcontent {
+      display: none;
+      padding: 20px;
+      border-top: 1px solid #ccc;
+    }
+
   </style>
 </head>
 <body>
@@ -162,7 +199,7 @@
 
 
   <div class="content">
-    <h1 id="introduction">Sibyl Documentation</h1>
+    <h1 id="introduction_header">Sibyl Documentation</h1>
 
     <div class="section" id="introduction">
       <h2>Introduction</h2>
@@ -174,10 +211,37 @@
     <div class="section" id="getting-started">
       <h2>Getting Started</h2>
       <h3>Installation</h3>
-        <p>Clone the repository that contains all the code.</p>
+
+      <p>Clone the repository that contains all the code.</p>
       <pre><code># git clone https://github.com/nMaroulis/sibyl.git</code></pre>
-      <p>Install the conda environment found in the conda_env.yml file.</p>
-      <pre><code># conda env create -f conda_env.yml</code><br><code># conda activate sibyl</code></pre>
+
+      <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'method1')">Conda Environment</button>
+        <button class="tablinks" onclick="openTab(event, 'method2')">Python Pip</button>
+        <button class="tablinks" onclick="openTab(event, 'method3')">Python Virtual Environment</button>
+
+      </div>
+
+      <!-- Tab content for installation options -->
+      <div id="method1" class="tabcontent" style="display: block;">
+        <h3>Conda Environment</h3>
+        <p>Install the conda environment found in the conda_env.yml file.</p>
+        <pre><code># conda env create -f conda_env.yml</code><br><code># conda activate sibyl</code></pre>
+      </div>
+
+      <div id="method2" class="tabcontent">
+        <h3>Python Pip</h3>
+        <p>Install the pip libraries found in the requirements.txt file in the home folder.</p>
+        <pre><code># pip install -r requirements.txt</code></pre>
+      </div>
+
+      <div id="method3" class="tabcontent">
+        <h3>Python Virtual Environment</h3>
+        <p>Create a separate Virtual Environment</p>
+        <p>Install the pip libraries found in the requirements.txt file.</p>
+        <pre><code># python3 -m venv sibyl</code><br><code># source sibyl/bin/activate</code></pre>
+        <pre><code># pip install -r requirements.txt</code></pre>
+      </div>
 
       <h3>Running the App</h3>
         <p>First navigate to the sibyl folder in your system and run the main.py script which starts the Frontend and the Backend.</p>
@@ -217,6 +281,31 @@
     </div>
 
     <!-- Add more sections -->
-  </div>
+
+    <h3>Congratulations, You made it!!!</h3>
+  <img style="border: 5px solid #555;" src="https://media.tenor.com/sIzMTGPxIeMAAAAC/well-done.gif" alt="Good Job" width="320px">
+
+
+  </div>υ
+
+
+  <script>
+    // JavaScript to handle tab functionality
+    function openTab(evt, tabName) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
+    }
+  </script>
+
+
 </body>
 </html>
