@@ -1,5 +1,5 @@
 import requests
-from streamlit import sidebar, error, warning, success, spinner, experimental_rerun, toast
+from streamlit import sidebar, error, warning, success, spinner, rerun, toast
 import time
 
 """A General purpose Client"""
@@ -53,7 +53,7 @@ def check_backend_connection():
     except requests.exceptions.ConnectionError:
         with spinner('Failed to establish a new connection to Backend Server, refreshing in 5 seconds'):
             time.sleep(5)
-            experimental_rerun()
+            rerun()
 
 
 def check_nlp_connection(model="hugging_face"):

@@ -1,5 +1,5 @@
 from streamlit import write, form, form_submit_button, slider, select_slider, text_input, number_input, expander, \
-    columns, markdown, caption, selectbox, spinner, success, error, experimental_rerun, toast
+    columns, markdown, caption, selectbox, spinner, success, error, rerun, toast
 import time
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, send_strategy
 from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict
@@ -63,7 +63,7 @@ class GreedyTrader:
                             success('Server Response ' + str(res))
                             with spinner('Refreshing Page:'):
                                 time.sleep(4)
-                                experimental_rerun()
+                                rerun()
                     else:
                         error("The **Minimum Buy Order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " is NOT satisfied.")
                         toast('⛔ Please raise the Buy Order Amount!')
