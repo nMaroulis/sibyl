@@ -1,6 +1,8 @@
 import requests
+from streamlit import cache_data
 
 
+@cache_data(show_spinner="Checking Asset Options Validity...")
 def fetch_trade_info_minimum_order(pair_symbol='BTCUSDT'):
     url = 'http://127.0.0.1:8000/broker/trade/info/minimum_order?symbol=' + pair_symbol
     response = requests.get(url)
@@ -14,6 +16,7 @@ def send_strategy(from_coin='USDT', to_coin='BTC', from_amount=1.0, strategy='gr
     return response.json()
 
 
+@cache_data
 def check_swap_status(exchange='binance'):
     url = "http://127.0.0.1:8000/broker/trade/convert/info"
     response = requests.get(url)

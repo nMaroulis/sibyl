@@ -49,10 +49,12 @@ with ch_tab:  # Correlation Heatmap
         with cols[0]:
             time_int = st.selectbox(
                 'Choose Date Interval',
-                ('1m', '5m', '15m', '30m', '1h', '4h', '12h', '1d', '3d', '1w', '1M'))
+                ('1m', '5m', '15m', '30m', '1h', '4h', '12h', '1d', '3d', '1w', '1M'), index=2)
         with cols[1]:
             time_limit = st.number_input('Choose Sample Limit', value=500, min_value=2, max_value=10000)
         st.radio('Type of Correlation Formula', options=['pearson', 'spearman', 'Distance', 'MIC', 'Regression Coefficients'], index=0, horizontal=True, disabled=True, help='Feature coming soon')
+        use_diff = st.toggle('Use Delta', help='Calculate the Correlation based on the Diff (change in price) of each Coin and not its actual price')
+
         sumbit_button = st.form_submit_button('Submit')
         invalid_coins = []
         if sumbit_button:
@@ -65,6 +67,9 @@ with ch_tab:  # Correlation Heatmap
                 try:
                     data = response.json()
                     df[coin] = [entry.get('Open Price') for entry in data]
+                    df = df.astype(float)  # cast object to float
+                    if use_diff:
+                        df = df.diff()
                 except requests.exceptions.JSONDecodeError:
                     invalid_coins.append(coin)
 
@@ -77,3 +82,4 @@ with ch_tab:  # Correlation Heatmap
 
 with cs_tab:
     st.subheader('Granger Causality Test')
+    st.warning('Not yet Supported')
