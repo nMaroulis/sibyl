@@ -19,6 +19,14 @@ def sidebar_update_history():
             else:
                 sidebar.error(res.json())
 
+def highlight_profit(val):
+    color = 'grey'  # default color for zero or null
+    if val > 0:
+        color = 'green'
+    elif val < 0:
+        color = 'red'
+    return f'background-color: {color}'
+
 
 def trading_history_table(strat_status='all'):
     trade_strategies = fetch_trading_history(strat_status)
@@ -27,6 +35,11 @@ def trading_history_table(strat_status='all'):
                                         'price_to_sell',
                                         'Order Type', 'Strategy', 'Status'],
                                data=trade_strategies)
+    df_strategy['Profit [%]'] = round(df_strategy['price_to_sell'] / df_strategy['from_price'], 2)
+    df_strategy.loc[df_strategy['DateTime [Sell]'].isnull(), 'Profit [%]'] = None
+
+    #df_strategy.style.applymap(highlight_profit, subset=['Profit'])
+
     # df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
     # dataframe(df_strategy)
     return df_strategy.sort_values(by='DateTime', ascending=False)

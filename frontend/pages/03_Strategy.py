@@ -5,6 +5,7 @@ from frontend.src.library.strategy_helper.client import check_swap_status
 from frontend.src.library.strategy_helper.funcs import get_strategy_instructions
 from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, send_strategy
+import time
 
 fix_page_layout('strategy')
 
@@ -26,7 +27,7 @@ with st.container(border=True):
     with col00:
         st.session_state['buy_amount'] = st.number_input('Buying Amount:', min_value=1.0, max_value=100000.0, value=50.0)
     with col01:
-        st.session_state['buy_asset'] = st.selectbox('Buying Asset', options=['USDT'], disabled=True)
+        st.session_state['from_coin'] = st.selectbox('Buying Asset', options=['USDT'], disabled=True)
         st.caption("Currently only USDT is available as an Asset to use for Trading.")
     with col02:
         crypto_list = list(get_crypto_coin_dict().values())
@@ -35,7 +36,7 @@ with st.container(border=True):
         st.session_state['target_coin'] = st.selectbox('Crypto Asset:', options=crypto_list, index=6)
         st.caption("Currently only USDT is available as an Asset to use for Trading.")
 
-    pair_symbol = st.session_state['target_coin'] + 'USDT'
+    pair_symbol = st.session_state['target_coin'] + st.session_state['from_coin']
     min_order_limit = fetch_trade_info_minimum_order(pair_symbol)
     if st.session_state['buy_amount'] >= min_order_limit:
         st.success("The **Minimum buy order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is satisfied!")
@@ -52,7 +53,7 @@ with st.container(border=True):
             st.success(swap_status)
         else:
             st.session_state['order_type'] = st.radio('Choose Buy/Sell Order Type', options=['Trade', 'Swap'], index=0, horizontal=True, disabled=True)
-            st.warning('🔁 Binance Convert API is not enabled, only Trade option can be used!')
+            st.warning('🔁 Binance Convert API is not enabled on your Account, only Trade option can be used!')
 
     col10, col11 = st.columns(2)
     with col10:
@@ -64,17 +65,29 @@ with st.container(border=True):
         st.caption("if option is left to **0**, the **Algorithm** will define an automatic Stop Loss")
 
 st.markdown("""<h4 style='text-align: left;margin-top:1em; padding-top:0;'>3. Algorithm ⚙️</h4>""", unsafe_allow_html=True)
-# st.warning("Currently only one Active Strategy is supported.")
 algo_choice = st.selectbox('Choose Algorithm', options=['Greedy', 'Forecasting Model', 'Arbitrage Trading', 'DCA', 'Sibyl Algorithm'])
-# greedy_tab, oracle_tab, arb_tab, dca_tab, sibyl_tabl = st.tabs(['Greedy', 'Forecasting Model', 'Arbitrage Trading', 'DCA', 'Sibyl Algorithm'])
-if algo_choice == 'Greedy':
-    st.write('The **Greedy** algorithm (or **Scalping**) places a buy order immediately after it is initiated and sells after it has achieved a profit of X%. X is based on the parameters of the algorithm.')
-    st.write('The current **Payoff ratio** based on Trading History using the Greedy Algorithm is *Not Available*')
-    strategy_object = GreedyTrader(order_type=st.session_state['order_type'])
-    strategy_object.get_form()
-elif algo_choice == 'Sibyl Algorithm':
-    st.write('The Sibyl Algorithm uses ***Reinforcement Learning*** in order to automatically define the best Strategy, '
-             'Time Period, Crypto Coin and Order amount and places the trade order when the agent decides.')
-    st.markdown(""":red[TBA]""")
-else:
-    st.markdown(""":red[TBA]""")
+with st.container(border=True):
+    if algo_choice == 'Greedy':
+        strategy_object = GreedyTrader(order_type=st.session_state['order_type'])
+        strategy_object.get_form()
+    elif algo_choice == 'Sibyl Algorithm':
+        st.write('The Sibyl Algorithm uses ***Reinforcement Learning*** in order to automatically define the best Strategy, '
+                 'Time Period, Crypto Coin and Order amount and places the trade order when the agent decides.')
+        st.markdown(""":red[TBA]""")
+    else:
+        st.markdown(""":red[TBA]""")
+
+# SUBMIT
+submit = st.button('Initiate Strategy')
+if submit:
+    with st.spinner('Sending Strategy to Server....'):
+        res = strategy_object.submit_strategy()
+        if "error" in res:
+            st.error('Server Response ' + str(res))
+            st.toast('⛔ Trade was NOT Executed!')
+        else:
+            st.toast('✅ Trade was successfully Executed!')
+            st.success('Server Response ' + str(res))
+            with st.spinner('Refreshing Page:'):
+                time.sleep(4)
+                st.rerun()
