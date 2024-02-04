@@ -1,4 +1,7 @@
-import subprocess, sys, os, signal, time
+import sys, os
+if os.path.abspath(os.path.dirname(__file__)) not in sys.path:
+    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+import subprocess, signal, time
 from frontend.db.db_connector import db_init, fetch_fields, update_fields
 
 backend_server = None
@@ -10,9 +13,13 @@ def main() -> int:
     print('main :: Starting Frontend & Backend Services...')
     db_init()  # create DB if not exists and populate with defaults
     fetch_fields()  # print fields and initiate cache
-    backend_server = subprocess.Popen("python3.11 backend/rest_server.py", shell=True)
-    # time.sleep(3) # Let some time for backend to start
-    frontend_ui = subprocess.Popen("streamlit run frontend/Home_Page.py", shell=True)
+
+    # SPAWN Frontend & Backend subprocesses
+    env = os.environ.copy()
+    env['PYTHONPATH'] = ':'.join(sys.path)  # Add the modified sys.path to PYTHONPATH
+    backend_server = subprocess.Popen("python3.11 backend/rest_server.py", shell=True, env=env)
+    time.sleep(2)  # Let some time for backend to start
+    frontend_ui = subprocess.Popen("streamlit run frontend/Home_Page.py", shell=True, env=env)
 
     return 0
 

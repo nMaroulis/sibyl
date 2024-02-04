@@ -1,4 +1,4 @@
-from streamlit import write, metric, columns, markdown, error, cache_data, spinner, warning, cache_resource, sidebar,\
+from streamlit import write, metric, columns, markdown, error, cache_data, spinner, info, cache_resource, sidebar,\
     code, session_state, plotly_chart, data_editor, column_config, toggle
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.db.db_connector import fetch_fields
@@ -85,16 +85,29 @@ def get_wallet_balances():
                     markdown(
                         """<h6 style='text-align: left;margin-top:1em;margin-bottom:0;'></h6>""",unsafe_allow_html=True)
 
-                    fig = Figure(data=[Pie(labels=pie_chart_labels, values=pie_chart_values, hole=0.6, textinfo='percent')])
+                    # Get Top N
+                    if len(pie_chart_values) > 10:
+                        label_value_pairs = list(zip(pie_chart_labels, pie_chart_values))
+                        sorted_pairs = sorted(label_value_pairs, key=lambda x: x[1], reverse=True)
+                        top_n_pairs = sorted_pairs[:10]
+                        top_n_labels, top_n_values = zip(*top_n_pairs)
+                        top_n_labels = top_n_labels + ('Other',)
+                        top_n_values = top_n_values + (sum(pie_chart_values) - sum(top_n_values),)
+                    else:
+                        top_n_labels, top_n_values = pie_chart_labels, pie_chart_values
+
+                    fig = Figure(data=[Pie(labels=top_n_labels, values=top_n_values, hole=0.6, textinfo='percent')])
                     fig.update_layout(margin= go.layout.Margin(t=0))
                     fig.update_layout(legend=dict(
                         orientation="h",
                         yanchor="bottom",
                         y=1.02,
                         xanchor="right",
-                        x=1
-                    ))
+                        x=1,
+                    ))# , margin=dict(l=20, t=20, r=20, b=0)
                     plotly_chart(fig, config=dict(displayModeBar=False), use_container_width=True)
+                    markdown('<p style="text-align:center;font-size:5;color:grey">A maximum of 10 Coins can be displayed.</p>', unsafe_allow_html=True)
+            info('💡 The locked assets in Binance are not yet available to show.')
         else:
             error("Connection to Backend Server failed. Please visit the Settings Tab to set a **IP** and **PORT**, or check start application manually via the **main.py** script")
     return 0

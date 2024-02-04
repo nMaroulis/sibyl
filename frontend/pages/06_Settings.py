@@ -36,7 +36,7 @@ with trd_tab:
         exchange = st.selectbox('Choose Crypto Exchange', options= ['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True, help="Support for Coinbase, Crypto.com, Gemini, Kraken, KuCoin TBA")
         st.info("💡 Currently only Binance is supported, the following will be added: Coinbase, Crypto.com, Gemini, Kraken, KuCoin")
         with st.expander('Betting Options', expanded=True):
-            betting_coin = st.selectbox("Choose Betting Coin [reccomended: USDT]", ['USDT', 'BNB', 'BTC'], disabled=True)
+            betting_coin = st.selectbox("Choose Betting Coin [recommended: USDT]", ['USDT', 'BNB', 'BTC'], disabled=True)
         trd_submit = st.form_submit_button('Update Trading Parameters')
         if trd_submit:
             # update_betting_options(exchange)
@@ -59,19 +59,24 @@ with api_tab:
     with st.form('Exchange API Credentials'):
         # switch with global
         exchange = st.selectbox('Choose Crypto Exchange', options=['Binance', 'Coinbase'], disabled=True)
+        if api_conn:
+            st.success('✅ A valid API key is already active.')
+        else:
+            st.warning('⚠️ No active API Key found on the Server, please initialize.')
+
+        st.caption('In case you have a Binance Account and have not activated the API yet, see instructions below:')
+        st.page_link("https://www.binance.com/en/support/faq/how-to-create-api-keys-on-binance-360002502072", label="Binance FAQ", icon="🌐")
+
         with st.expander('API Credentials', expanded=True):
-            if api_conn:
-                placeholder_text = 'An active API key is already active'
-            else:
-                placeholder_text = 'No active API Key on the Server, please initialize'
-            st.text_input('API Key', placeholder=placeholder_text, type="password")
-            st.text_input('Secret Key', placeholder=placeholder_text, type="password")
+            st.text_input('API Key', placeholder='Type or Copy/Paste API Key here...', type="password")
+            st.text_input('Secret Key', placeholder='Type or Copy/Paste Secret Key here...', type="password")
+            st.radio(label="Account Type", options=['Personal', 'Testnet'], horizontal=True)
         api_submit = st.form_submit_button('Update Credentials')
         if api_submit:
             update_api_credentials(exchange)
 with nlp_tab:
     with st.form('API Credentials'):
-        nlp_model = st.selectbox('Choose NLP LLM Model API', options=['Hugging Face Falcon', 'chatGPT', 'Google Bard'], help="Update NLP Model Choice in frontend SQlite3 DB")
+        nlp_model = st.selectbox('Choose NLP LLM Model API', options=['Hugging Face Falcon', 'OpenAI API', 'Google Gemini API'], help="Update NLP Model Choice in frontend SQlite3 DB")
         with st.expander('API Credentials', expanded=True):
             st.text_input('Secret Key', placeholder="Secret Key Input", type="password")
         nlp_submit = st.form_submit_button('Update Credentials')

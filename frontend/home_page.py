@@ -12,15 +12,12 @@ st.sidebar.selectbox('Exchange', options=['Binance', 'Coindesk'], disabled=True)
 populate_session_state()
 
 
-# wo_tab, tab2 = st.tabs(['Wallet Overview', 'Tab 2'])
-# with wo_tab:
 # st.selectbox('Choose Exchange Account', options=['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True, help="Support for Coinbase, Crypto.com, Gemini, Kraken, KuCoin TBA")
 # st.subheader('Overview of Account and Wallet Balance')
 st.markdown("""<h5 style='text-align: left;margin-top:2em;'>Overview of Account and Wallet Balance</h5>""",
             unsafe_allow_html=True)
 st.sidebar.caption('This information is updated every hour. Press the Button below to Update now.')
 st.sidebar.button('Update', type='primary')
-st.info('💡 The locked assets in Binance are not yet available to show.')
 
 backend_online = check_backend_connection()
 

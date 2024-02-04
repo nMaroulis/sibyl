@@ -8,6 +8,7 @@ from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dic
 class GreedyTrader:
 
     def __init__(self, order_type='Swap'):
+        self.chosen_id = None
         self.id = id
         self.init_time = None
         self.bet = None
@@ -23,17 +24,17 @@ class GreedyTrader:
 
         from extra_streamlit_components import tab_bar, TabBarItemData
 
-        chosen_id = tab_bar(data=[
+        self.chosen_id = tab_bar(data=[
             TabBarItemData(id=1, title="Automatic", description="Choose Level"),
             TabBarItemData(id=2, title="Profit", description="Percentage"),
             TabBarItemData(id=3, title="Profit", description="Absolute Value"),
         ], default=1)
 
         bt_cols1 = columns([1, 2])
-        if chosen_id == "1":
+        if self.chosen_id == "1":
             self.custom_profit = number_input('Profit [%]:', min_value=0.0, max_value=10000.0, value=0.0)
             caption("if option is left to **0**, the **Greediness Level** will define an automatic Profit")
-        elif chosen_id == "2":
+        elif self.chosen_id == "2":
             self.strategy_type = select_slider('Greediness Level:', options=['Very Low', 'Low', 'Moderate', 'High', 'Extreme'], value='Moderate')
             caption("The higher the Greediness level choice is, the Profit Percentage increases, while the Stop Loss decreases, hence the **Higher** the **Risk**.")
         else:
