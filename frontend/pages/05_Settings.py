@@ -19,7 +19,6 @@ df_settings['Configuration'] = ['Exchange', 'Backend Server IP', 'Backend Server
 df_settings['Current Parameter'] = [db_fields[1], db_fields[3], db_fields[4]]
 st.dataframe(df_settings, hide_index=True)
 
-
 st.sidebar.button('Reset All Data', type='primary')
 # st.write('Current Status')
 with st.spinner('Checking Backend Server connection'):
@@ -28,7 +27,7 @@ with st.spinner('Checking Backend Server connection'):
 with st.spinner('Checking Crypto Exchange API connection'):
     api_conn = check_exchange_api_connection()
 
-trd_tab, back_tab, api_tab, nlp_tab = st.tabs(['Trading Settings', 'Backend Server Settings', 'Crypto Exchange API Settings', 'NLP Model API Settings'])
+trd_tab, back_tab, api_tab, nlp_tab, price_tab = st.tabs(['Trading Settings', 'Backend Server Settings', 'Crypto Exchange API Settings', 'NLP Model API Settings', 'Price History API'])
 
 
 with trd_tab:
@@ -83,3 +82,12 @@ with nlp_tab:
         if nlp_submit:
             update_fields(nlp_model_choice=nlp_model)  # Update NLP Model Choice in frontend SQlite3 DB
             st.write("ok")
+with price_tab:
+    with st.form('Crypto Price Credentials'):
+        exchange = st.selectbox('Choose Price History API', options=['CoinCap API'], disabled=True)
+        st.info("💡 The crypto prices are fetched through the Binance API and the CoinCap API (https://docs.coincap.io/). If the limit is reached, please use a custom API key.")
+
+        st.text_input('API Key', placeholder="Fill API Key here...")
+        ph_submit = st.form_submit_button('Update API Key')
+        if ph_submit:
+            st.write("Not yet Supported.")

@@ -43,6 +43,19 @@ def get_price_history(symbol: str, interval: str = '1d', plot_type='line', limit
         return []  # {"error": "Failed to fetch price history"}
 
 
+def get_coin_full_name(coin_symbol):
+    url = f"https://api.coingecko.com/api/v3/coins/{coin_symbol}"
+    response = requests.get(url)
+    try:
+        data = response.json()
+        if 'name' in data:
+            return data['name']
+        else:
+            return None
+    except Exception as e:
+        return None
+
+
 @router.get("/exchange_info/available_coins")
 def get_price_history():
 

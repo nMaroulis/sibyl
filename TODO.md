@@ -13,3 +13,4 @@ BUGS:
 11. get commission also for trades
 12. add exchange to all queries
 13. backend address as var in client
+14. fix fetch_price_history function not returning enough values

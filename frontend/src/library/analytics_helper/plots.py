@@ -6,16 +6,16 @@ from frontend.src.library.analytics_helper.client import fetch_price_history
 
 def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True, full_name=False):
     df = DataFrame()
+    fig = None
     if plot_type == 'Line Plot':
         data = fetch_price_history(coin, time_int, time_limit, 'line', full_name)
         df['DateTime'] = [entry.get('Open Time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
         df['Price'] = [entry.get('Open Price') for entry in data]
 
-        fig = Figure(data=Scatter(x=df['DateTime'], y=df['Price']))
-        fig.update_layout(title=f"Price History of ada",
-                          xaxis_title="DateTime",
-                          yaxis_title="Price (USDT)")
+        if show_plot:
+            fig = Figure(data=Scatter(x=df['DateTime'], y=df['Price']))
+            fig.update_layout(title=f"Price History of ada", xaxis_title="DateTime",  yaxis_title="Price (USDT)")
     else:  # candle plot
 
         data = fetch_price_history(coin, time_int, time_limit, 'candle', full_name)
@@ -26,15 +26,16 @@ def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Lin
         df['Lows'] = [entry.get('Lows') for entry in data]
         df['Closing Price'] = [entry.get('Closing Price') for entry in data]
 
-        fig = Figure(data=Candlestick(
-            x=df['DateTime'],
-            open=df['Open Price'],
-            high=df['Highs'],
-            low=df['Lows'],
-            close=df['Closing Price']
-        ))
-        # Set the chart title
-        fig.update_layout(title=coin + ' Price History')
-    if show_plot:
+        if show_plot:
+            fig = Figure(data=Candlestick(
+                x=df['DateTime'],
+                open=df['Open Price'],
+                high=df['Highs'],
+                low=df['Lows'],
+                close=df['Closing Price']
+            ))
+            fig.update_layout(title=coin + ' Price History')
+
+    if show_plot and fig is not None:
         plotly_chart(fig, use_container_width=True)
     return df

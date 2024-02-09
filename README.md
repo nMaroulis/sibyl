@@ -5,12 +5,13 @@
   <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501">
 </div>
 
-[![Python](https://img.shields.io/badge/python-3.11-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-%201.26-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-%200.103-blue)]()
-[![Tensorflow](https://img.shields.io/badge/tensorflow-%202.12-orange)]()
-[![Pandas](https://img.shields.io/badge/pandas-2.1.0-lightgrey)]()
-[![Plotly](https://img.shields.io/badge/plotly-5.17-green)]()
+[![Python](https://img.shields.io/badge/python-v3.11-yellow)]()
+[![Streamlit](https://img.shields.io/badge/streamlit-v1.31-red)]()
+[![FastAPI](https://img.shields.io/badge/fastapi-v0.109-blue)]()
+[![Tensorflow](https://img.shields.io/badge/tensorflow-v2.15-orange)]()
+[![Plotly](https://img.shields.io/badge/statsmodels-v0.14-pink)]()
+[![Pandas](https://img.shields.io/badge/pandas-v2.2.0-lightgrey)]()
+[![Plotly](https://img.shields.io/badge/plotly-v5.18-green)]()
 
 ### A Crypto Trading Bot with an interactive Dashboard UI including:
 - Price Forecasting Models [*Oracle* Module]
