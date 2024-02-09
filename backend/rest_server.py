@@ -1,3 +1,8 @@
+import os, sys
+# Environment Check
+script_path = os.path.abspath(os.path.dirname(__file__))[0:-8]
+if script_path not in sys.path:
+    sys.path.insert(0, script_path)
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn, requests
@@ -22,14 +27,7 @@ router.include_router(technician_router)
 app = FastAPI()
 
 # origins = ["http://127.0.0.1:8000"]
-#
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=origins,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+# app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 app.include_router(router)
 
@@ -42,7 +40,6 @@ def read_root():
 
 # Entry point for running the application
 if __name__ == "__main__":
-
     db_init()  # Initialize DB
     # Run the application using the Uvicorn server
     uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT, log_level='debug', access_log=True)

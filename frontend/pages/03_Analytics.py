@@ -5,21 +5,21 @@ from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dic
 from plotly.express import imshow
 from frontend.src.library.analytics_helper.plots import price_history_plot
 from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.analytics_helper.client import fetch_available_coins
 
 fix_page_layout('Analytics')
-
 st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Analytics</h2>""", unsafe_allow_html=True)
 
 ph_tab, ch_tab, cs_tab = st.tabs(['Price History', 'Correlation Heatmap', 'Causality Test'])
-
-
 with ph_tab:  # Price History
-    st.subheader("Price History Line Plot")
+    st.markdown("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Crypto Price History</h5>""",
+             unsafe_allow_html=True)
+    st.write("Choose a coin and a time interval and visualize in a line-plot 📈 the price over time.")
     with st.form('Get Price'):
         cols = st.columns(3)
         with cols[0]:
             coin = st.selectbox(label='Choose Coin',
-                                options=list(get_crypto_coin_dict().keys()))  # get the keys from the coin dict
+                                options=fetch_available_coins())  # list(get_crypto_coin_dict().keys()))  # get the keys from the coin dict
         with cols[1]:
             time_int = st.selectbox(
                 'Choose Date Interval',
@@ -31,7 +31,7 @@ with ph_tab:  # Price History
 
         sumbit_button = st.form_submit_button('Submit')
         if sumbit_button:
-            price_hist_df = price_history_plot(coin, time_int, time_limit, plot_type)
+            price_hist_df = price_history_plot(coin, time_int, time_limit, plot_type, True, False)
             st.sidebar.download_button(
                 "Download to CSV",
                 price_hist_df.to_csv(index=False).encode('utf-8'),
@@ -41,7 +41,9 @@ with ph_tab:  # Price History
             )
 
 with ch_tab:  # Correlation Heatmap
-    st.subheader('Correlation Heatmap')
+    st.markdown("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Correlation Heatmap</h5>""",
+             unsafe_allow_html=True)
+
     st.write('Generate a Correlation Heatmap for the selected Crypto Coins')
     with st.form('Correlation Heatmap'):
         coins = st.multiselect(label='Choose Coins to Correlate', options=list(get_crypto_coin_dict().keys()), max_selections=40)  # get the keys from the coin dict
@@ -81,5 +83,6 @@ with ch_tab:  # Correlation Heatmap
             st.plotly_chart(fig, use_container_width=True)
 
 with cs_tab:
-    st.subheader('Granger Causality Test')
-    st.warning('Not yet Supported')
+    st.markdown("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Granger Causality Test</h5>""",
+             unsafe_allow_html=True)
+    st.warning('Not yet Supported ⚠️')

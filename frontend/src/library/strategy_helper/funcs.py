@@ -2,9 +2,9 @@ from extra_streamlit_components import stepper_bar
 from streamlit import write, container, expander, info, markdown
 
 
-def get_strategy_instructions():
+def get_strategy_instructions(exp=False):
 
-    with expander('Trading Instructions', expanded=True):
+    with expander('Trading Instructions', expanded=exp):
         str_val = stepper_bar(steps=["Asset Options", "Trading Options", "Algorithm & Parameters", "Submission"], lock_sequence=False)
 
         if str_val == 0:

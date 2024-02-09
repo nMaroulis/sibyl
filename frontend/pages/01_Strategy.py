@@ -11,6 +11,7 @@ fix_page_layout('strategy')
 
 st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Trading Strategy</h2>""", unsafe_allow_html=True)
 st.caption("Make sure to enable the Binance Convert API in order to have 0 fees. If the backend server doesn't find a valid Convert API, the standard buy/sell order will be used. In that case make sure to have BNB in your account in order to minimize the fees.")
+st.caption("Expand instruction below 👇👇 to get instructions on how to deploy a new strategy.")
 
 
 get_strategy_instructions()
@@ -27,13 +28,13 @@ with st.container(border=True):
     with col00:
         st.session_state['buy_amount'] = st.number_input('Buying Amount:', min_value=1.0, max_value=100000.0, value=50.0)
     with col01:
-        st.session_state['from_coin'] = st.selectbox('Buying Asset', options=['USDT'], disabled=True)
+        st.session_state['from_coin'] = st.selectbox('Base Asset (from)', options=['USDT'], disabled=True)
         st.caption("Currently only USDT is available as an Asset to use for Trading.")
     with col02:
         crypto_list = list(get_crypto_coin_dict().values())
         crypto_list.sort()
         crypto_list.insert(0, 'Auto')
-        st.session_state['target_coin'] = st.selectbox('Crypto Asset:', options=crypto_list, index=6)
+        st.session_state['target_coin'] = st.selectbox('Quote Asset (to):', options=crypto_list, index=6)
         st.caption("Currently only USDT is available as an Asset to use for Trading.")
 
     pair_symbol = st.session_state['target_coin'] + st.session_state['from_coin']

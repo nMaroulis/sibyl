@@ -30,19 +30,21 @@ def highlight_profit(val):
 
 def trading_history_table(strat_status='all'):
     trade_strategies = fetch_trading_history(strat_status)
-    df_strategy = DataFrame(columns=['Exchange', 'DateTime', 'buy_orderId', 'from_asset', 'to_asset', 'from_amount',
-                                        'quantity_bought', 'from_price', 'DateTime [Sell]', 'sell_orderId',
-                                        'price_to_sell',
-                                        'Order Type', 'Strategy', 'Status'],
-                               data=trade_strategies)
-    df_strategy['Profit [%]'] = round(df_strategy['price_to_sell'] / df_strategy['from_price'], 2)
-    df_strategy.loc[df_strategy['DateTime [Sell]'].isnull(), 'Profit [%]'] = None
+    if trade_strategies is None:
+        return None
+    else:
+        df_strategy = DataFrame(columns=['Exchange', 'DateTime', 'buy_orderId', 'from_asset', 'to_asset', 'from_amount',
+                                            'quantity_bought', 'from_price', 'DateTime [Sell]', 'sell_orderId',
+                                            'price_to_sell',
+                                            'Order Type', 'Strategy', 'Status'],
+                                   data=trade_strategies)
+        df_strategy['Profit [%]'] = round(df_strategy['price_to_sell'] / df_strategy['from_price'], 2)
+        df_strategy.loc[df_strategy['DateTime [Sell]'].isnull(), 'Profit [%]'] = None
 
-    #df_strategy.style.applymap(highlight_profit, subset=['Profit'])
-
-    # df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
-    # dataframe(df_strategy)
-    return df_strategy.sort_values(by='DateTime', ascending=False)
+        # df_strategy.style.applymap(highlight_profit, subset=['Profit'])
+        # df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
+        # dataframe(df_strategy)
+        return df_strategy.sort_values(by='DateTime', ascending=False)
 
 
 def get_status_barplot(status_series=None):

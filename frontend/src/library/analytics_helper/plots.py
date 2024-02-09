@@ -4,10 +4,10 @@ from streamlit import plotly_chart
 from frontend.src.library.analytics_helper.client import fetch_price_history
 
 
-def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True):
+def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True, full_name=False):
     df = DataFrame()
     if plot_type == 'Line Plot':
-        data = fetch_price_history(coin, time_int, time_limit, 'line')
+        data = fetch_price_history(coin, time_int, time_limit, 'line', full_name)
         df['DateTime'] = [entry.get('Open Time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
         df['Price'] = [entry.get('Open Price') for entry in data]
@@ -18,7 +18,7 @@ def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Lin
                           yaxis_title="Price (USDT)")
     else:  # candle plot
 
-        data = fetch_price_history(coin, time_int, time_limit, 'candle')
+        data = fetch_price_history(coin, time_int, time_limit, 'candle', full_name)
         df['DateTime'] = [entry.get('Open Time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
         df['Open Price'] = [entry.get('Open Price') for entry in data]
