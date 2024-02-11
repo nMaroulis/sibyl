@@ -4,6 +4,7 @@ from streamlit import cache_data
 
 @cache_data(show_spinner="Checking Asset Options Validity...")
 def fetch_trade_info_minimum_order(pair_symbol='BTCUSDT'):
+
     url = 'http://127.0.0.1:8000/broker/trade/info/minimum_order?symbol=' + pair_symbol
     response = requests.get(url)
     return response.json()['min_notional']

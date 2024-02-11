@@ -1,7 +1,8 @@
 from pandas import DataFrame, to_datetime
 from plotly.graph_objects import Figure, Scatter, Candlestick
-from streamlit import plotly_chart
+from streamlit import plotly_chart, warning
 from frontend.src.library.analytics_helper.client import fetch_price_history
+from plotly.express import imshow
 
 
 def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True, full_name=True):
@@ -39,3 +40,23 @@ def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Lin
     if show_plot and fig is not None:
         plotly_chart(fig, use_container_width=True)
     return df
+
+
+def price_history_correlation_heatmap(coins, time_int_c='1d', time_limit_c=500, use_diff=False):
+    df = DataFrame()
+    invalid_coins = []
+    for coin in coins:
+        price_hist_df = price_history_plot(coin, time_int_c, time_limit_c, 'Line Plot', False, True)
+        if price_hist_df.shape[0] < 2:
+            invalid_coins.append(coin)
+        else:
+            df[coin] = price_hist_df['Price'].astype(float)
+    if use_diff:
+        df = df.diff()
+
+    if len(invalid_coins) > 0:
+        warning('Price for **' + str(invalid_coins) + '** could not be fetched from the Server.')
+
+    df_corr = df.corr(method='pearson')
+    fig = imshow(df_corr, text_auto=True, aspect="auto", color_continuous_scale='RdBu_r')
+    plotly_chart(fig, use_container_width=True)

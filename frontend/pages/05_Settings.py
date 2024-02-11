@@ -85,7 +85,8 @@ with nlp_tab:
 with price_tab:
     with st.form('Crypto Price Credentials'):
         exchange = st.selectbox('Choose Price History API', options=['CoinCap API', 'CoinGecko API', 'CoinMarketCap API'], disabled=True)
-        st.info("💡 The crypto prices are fetched through the Binance API and the CoinCap API (https://docs.coincap.io/). If the limit is reached, please use a custom API key.")
+        st.write("The crypto prices are fetched through the Binance API and the CoinCap API (https://docs.coincap.io/). If the limit is reached, please use a custom API key.")
+        st.info('💡 These APIs are also used to create the Coin Symbol-Name Map. (e.g. BTC → Bitcoin [BTC])')
         st.text_input('API Key', placeholder="Fill API Key here...")
         ph_submit = st.form_submit_button('Update API Key')
         if ph_submit:

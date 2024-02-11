@@ -48,6 +48,8 @@ def get_crypto_coin_listing_name(crypto_name='Bitcoin [BTC]'):
 
 
 def get_crypto_name_regex(crypto_name='Bitcoin [BTC]'):
-    coin_name = ''.join(crypto_name.split('[')[1].split(']')[0])
-    return coin_name
-
+    if '[' in crypto_name and ']' in crypto_name:
+        coin_name = ''.join(crypto_name.split('[')[1].split(']')[0])
+        return coin_name
+    else:
+        return crypto_name

@@ -5,6 +5,7 @@ from frontend.src.library.strategy_helper.client import check_swap_status
 from frontend.src.library.strategy_helper.funcs import get_strategy_instructions
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, send_strategy
 from frontend.src.library.analytics_helper.client import fetch_available_coins
+from frontend.src.library.crypto_dictionary_assistant import get_crypto_name_regex
 import time
 
 fix_page_layout('strategy')
@@ -34,15 +35,16 @@ with st.container(border=True):
         crypto_list = fetch_available_coins()
         crypto_list.sort()
         crypto_list.insert(0, 'Auto')
-        st.session_state['target_coin'] = st.selectbox('Quote Asset (to):', options=crypto_list, index=6)
+        st.session_state['target_coin'] = st.selectbox('Quote Asset (to):', options=crypto_list, index=1)
         st.caption("Currently only USDT is available as an Asset to use for Trading.")
 
-    pair_symbol = st.session_state['target_coin'] + st.session_state['from_coin']
-    min_order_limit = fetch_trade_info_minimum_order(pair_symbol)
-    if st.session_state['buy_amount'] >= min_order_limit:
-        st.success("The **Minimum buy order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is satisfied!")
-    else:
-        st.error("The **Minimum Buy Order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is NOT satisfied.")
+    if st.session_state['target_coin'] != 'Auto':
+        pair_symbol = get_crypto_name_regex(st.session_state['target_coin']) + st.session_state['from_coin']
+        min_order_limit = fetch_trade_info_minimum_order(pair_symbol)
+        if st.session_state['buy_amount'] >= min_order_limit:
+            st.success("The **Minimum buy order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is satisfied!")
+        else:
+            st.error("The **Minimum Buy Order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is NOT satisfied.")
 
 st.markdown("""<h4 style='text-align: left;margin-top:1em; padding-top:0;'>2. Trading Options 📈</h4>""", unsafe_allow_html=True)
 with st.container(border=True):
