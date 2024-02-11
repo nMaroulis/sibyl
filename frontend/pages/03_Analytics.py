@@ -18,8 +18,7 @@ with ph_tab:  # Price History
     with st.form('Get Price'):
         cols = st.columns(3)
         with cols[0]:
-            coin = st.selectbox(label='Choose Coin',
-                                options=fetch_available_coins())  # list(get_crypto_coin_dict().keys()))  # get the keys from the coin dict
+            coin = st.selectbox(label='Choose Coin', options=fetch_available_coins())  # get the keys from the coin dict
         with cols[1]:
             time_int = st.selectbox(
                 'Choose Date Interval',
@@ -31,7 +30,7 @@ with ph_tab:  # Price History
 
         sumbit_button = st.form_submit_button('Submit')
         if sumbit_button:
-            price_hist_df = price_history_plot(coin, time_int, time_limit, plot_type, True, False)
+            price_hist_df = price_history_plot(coin, time_int, time_limit, plot_type, True, True)
             st.sidebar.download_button(
                 "Download to CSV",
                 price_hist_df.to_csv(index=False).encode('utf-8'),
@@ -46,7 +45,7 @@ with ch_tab:  # Correlation Heatmap
 
     st.write('Generate a Correlation Heatmap for the selected Crypto Coins')
     with st.form('Correlation Heatmap'):
-        coins = st.multiselect(label='Choose Coins to Correlate', options=list(get_crypto_coin_dict().keys()), max_selections=40)  # get the keys from the coin dict
+        coins = st.multiselect(label='Choose Coins to Correlate', options=fetch_available_coins(), max_selections=40)
         cols = st.columns(2)
         with cols[0]:
             time_int = st.selectbox(

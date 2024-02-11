@@ -46,5 +46,20 @@ def get_binance_testnet_api_keys():
         except:  # if error parsing credentials
             return None
         return credentials
-    else: # ImportError
+    else:  # ImportError
+        return None
+
+
+def get_coinmarketcap_api_key():
+    file_path = 'backend/config/exchange_api_keys/api_credentials.json'
+    if os.path.exists(file_path):  # check filepath
+        f = open(file_path, "r")
+        api_key = json.load(f)
+        f.close()
+        try:
+            credentials = api_key['coinmarketcap']['api_credentials']['API_Key']
+        except:  # if error parsing credentials
+            return None
+        return credentials
+    else:  # ImportError
         return None

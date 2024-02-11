@@ -2,8 +2,6 @@ from streamlit import write, form, form_submit_button, button, select_slider, nu
     columns, session_state, caption, spinner, success, error, rerun, toast, divider
 import time
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, send_strategy
-from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict
-
 
 class GreedyTrader:
 

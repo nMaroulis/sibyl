@@ -4,7 +4,7 @@ from streamlit import plotly_chart
 from frontend.src.library.analytics_helper.client import fetch_price_history
 
 
-def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True, full_name=False):
+def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True, full_name=True):
     df = DataFrame()
     fig = None
     if plot_type == 'Line Plot':

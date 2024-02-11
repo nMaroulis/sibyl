@@ -3,8 +3,8 @@ from frontend.src.library.ui_elements import fix_page_layout
 from frontend.src.library.strategy_helper.greedy import GreedyTrader
 from frontend.src.library.strategy_helper.client import check_swap_status
 from frontend.src.library.strategy_helper.funcs import get_strategy_instructions
-from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, send_strategy
+from frontend.src.library.analytics_helper.client import fetch_available_coins
 import time
 
 fix_page_layout('strategy')
@@ -31,7 +31,7 @@ with st.container(border=True):
         st.session_state['from_coin'] = st.selectbox('Base Asset (from)', options=['USDT'], disabled=True)
         st.caption("Currently only USDT is available as an Asset to use for Trading.")
     with col02:
-        crypto_list = list(get_crypto_coin_dict().values())
+        crypto_list = fetch_available_coins()
         crypto_list.sort()
         crypto_list.insert(0, 'Auto')
         st.session_state['target_coin'] = st.selectbox('Quote Asset (to):', options=crypto_list, index=6)

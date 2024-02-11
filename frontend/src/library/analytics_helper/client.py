@@ -1,9 +1,9 @@
 import requests
-from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict, get_crypto_name_regex
+from frontend.src.library.crypto_dictionary_assistant import get_crypto_name_regex
 from streamlit import cache_data
 
 
-def fetch_price_history(symbol='BTC', time_int='1d', time_limit=500, plot_type='line', full_name=False):
+def fetch_price_history(symbol='Bitcoin [BTC]', time_int='1d', time_limit=500, plot_type='line', full_name=True):
 
     if full_name:
         symbol = get_crypto_name_regex(symbol)  # get_crypto_coin_dict().get(symbol)
