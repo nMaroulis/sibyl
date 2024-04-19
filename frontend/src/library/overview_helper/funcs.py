@@ -133,7 +133,7 @@ def populate_session_state():
     if 'backend_server_address' not in session_state:
         session_state['backend_server_address'] = user_confs[5]
 
-    with sidebar.expander('Configurations', expanded=False):
+    with sidebar.popover('Configurations'):
         write('Crypto Exchange:')
         code(user_confs[1], language=None)
         write('Backend Server Address:')

@@ -16,8 +16,8 @@ populate_session_state()
 # st.subheader('Overview of Account and Wallet Balance')
 st.markdown("""<h5 style='text-align: left;margin-top:2em;'>Overview of Account and Wallet Balance</h5>""",
             unsafe_allow_html=True)
-st.sidebar.caption('This information is updated every hour. Press the Button below to Update now.')
-st.sidebar.button('Update', type='primary')
+st.caption('This information is updated every hour. Press the Button below to Update now.')
+st.button('Update 🔄', type='secondary')
 
 backend_online = check_backend_connection()
 
