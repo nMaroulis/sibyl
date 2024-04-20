@@ -6,12 +6,13 @@
 </div>
 
 [![Python](https://img.shields.io/badge/python-v3.11-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-v1.31-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-v0.109-blue)]()
+[![Streamlit](https://img.shields.io/badge/streamlit-v1.33-red)]()
+[![FastAPI](https://img.shields.io/badge/fastapi-v0.110-blue)]()
 [![Tensorflow](https://img.shields.io/badge/tensorflow-v2.15-orange)]()
-[![Plotly](https://img.shields.io/badge/statsmodels-v0.14-pink)]()
-[![Pandas](https://img.shields.io/badge/pandas-v2.2.0-lightgrey)]()
-[![Plotly](https://img.shields.io/badge/plotly-v5.18-green)]()
+[![Statsmodels](https://img.shields.io/badge/statsmodels-v0.14-pink)]()
+[![Pandas](https://img.shields.io/badge/pandas-v2.2.2-lightgrey)]()
+[![Plotly](https://img.shields.io/badge/plotly-v5.19-green)]()
+[![Sklearn](https://img.shields.io/badge/Scikit_Learn-v1.4.2-purple)]()
 
 ### A Crypto Trading Bot with an interactive Dashboard UI including:
 - Price Forecasting Models [*Oracle* Module]

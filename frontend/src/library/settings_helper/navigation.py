@@ -15,16 +15,17 @@ CRYPTO_APIS = {'Binance API': "https://www.logo.wine/a/logo/Binance/Binance-Vert
 
 LLM_APIS = {'OpenAI API': "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFJYCiV_aHxCRPoVcLeOChZWnb_qVxSQMm4Jr-C_x_0A&s",
                 'Gemini API': "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQV1QWx0soc08N7wU8LjH95wZTkF_q13tg1KH4AOTs3xw&s",
-                'Kraken API': "https://huggingface.co/dfurman/Falcon-7B-Chat-v0.1/resolve/main/falcon.webp"
+                'HF Falcon API': "https://huggingface.co/dfurman/Falcon-7B-Chat-v0.1/resolve/main/falcon.webp"
             }
 
 
+def show_status_cards(only_exchange=False):
 
-def show_status_cards():
     # EXCHANGE APIS
     global CRYPTO_APIS
     status_card_style()
-    # status_card_header("Exchange APIs")
+    if only_exchange:
+        status_card_header("Exchange APIs")
     api_cols = columns(4)
     i = 0
     statuses = ['Active', 'Active', 'Unavailable', 'Unavailable']
@@ -32,6 +33,9 @@ def show_status_cards():
         with api_cols[i]:
             status_card(k, v, statuses[i])
         i += 1
+
+    if only_exchange:
+        return
 
     # LLM APIS
     i = 0
@@ -41,6 +45,5 @@ def show_status_cards():
         with api_cols[i]:
             status_card(k, v, statuses[i])
         i += 1
-
 
     return

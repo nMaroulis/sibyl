@@ -1,5 +1,3 @@
-
-
 from config.api_key_handler import get_api_key
 from config.api_urls import BINANCE_API, BINANCE_API3, BINANCE_TESTNET_API
 

@@ -12,17 +12,17 @@ fix_page_layout('Settings')
 st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h2>""", unsafe_allow_html=True)
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 st.sidebar.info(f'⚙️Sibyl Version **{UI_VERSION}**')
-st.write('Current User Configurations')
+st.write('The cards below indicate current connection status of each API. Go to the bottom ')
 
 show_status_cards()
 
 db_fields = fetch_fields()[0]  # frontend DB settings
 # print DB settings
-df_settings = DataFrame()
-df_settings['Configuration'] = ['Exchange API', 'Backend Server IP', 'Backend Server Port', 'LLM API']
-df_settings['Current Parameter'] = [db_fields[1], db_fields[3], db_fields[4], '']
-df_settings['Status'] = ['🟢', '🟢', '🟢', '🟠']
-st.dataframe(df_settings, hide_index=True)
+# df_settings = DataFrame()
+# df_settings['Configuration'] = ['Exchange API', 'Backend Server IP', 'Backend Server Port', 'LLM API']
+# df_settings['Current Parameter'] = [db_fields[1], db_fields[3], db_fields[4], '']
+# df_settings['Status'] = ['🟢', '🟢', '🟢', '🟠']
+# st.dataframe(df_settings, hide_index=True)
 
 st.sidebar.button('Reset All Data', type='primary')
 # st.write('Current Status')

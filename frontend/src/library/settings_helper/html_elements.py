@@ -108,13 +108,16 @@ def status_card_style():
                 color: #666;
             }
             
-            .settings-card-illustration- img {
-                width: 100px;
-                height: 100px;
-                border-radius: 100%;
-                overflow: hidden;
-                margin: 0 auto;
-                box-shadow: 0 10px 15px rgba(247, 228, 63, 0.5); /* Added shadow for 3D effect */
+            .settings-card-illustration-K img {
+                box-shadow: 0 10px 15px rgba(138,43,226, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .settings-card-illustration-C img {
+                box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .settings-card-illustration-O img {
+                box-shadow: 0 10px 15px rgba(95,158,160, 0.5); /* Added shadow for 3D effect */
             }
             
         </style>
@@ -137,8 +140,8 @@ def status_card(name, logo, status='Active'):
 
     html(f"""
         <div class="settings-card settings-card-{status}">
-            <div class="settings-card-illustration">
-                <img src="{logo}" width="120px" />
+            <div class="settings-card-illustration settings-card-illustration-{name[0]}">
+                <img src="{logo}" width="120px" alt=""/>
             </div>
             <h3>{name}</h3>
             <button>{status}</button>
