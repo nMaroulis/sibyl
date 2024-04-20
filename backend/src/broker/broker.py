@@ -4,6 +4,7 @@ import hmac, hashlib
 import time
 from datetime import datetime
 
+
 class Broker:
 
     def __init__(self, datetime=None, trade_from='USDT', trade_to='BTC', from_amount=1.0, order_type='swap'):

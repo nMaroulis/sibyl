@@ -5,12 +5,16 @@ from frontend.src.library.client import check_exchange_api_connection, check_bac
 from frontend.db.db_connector import update_fields, fetch_fields
 from pandas import DataFrame
 from settings.settings import UI_VERSION
+from frontend.src.library.settings_helper.navigation import show_status_cards
+
 fix_page_layout('Settings')
 
 st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h2>""", unsafe_allow_html=True)
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 st.sidebar.info(f'⚙️Sibyl Version **{UI_VERSION}**')
 st.write('Current User Configurations')
+
+show_status_cards()
 
 db_fields = fetch_fields()[0]  # frontend DB settings
 # print DB settings

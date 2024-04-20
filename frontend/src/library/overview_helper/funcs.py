@@ -1,5 +1,5 @@
 from streamlit import write, metric, columns, markdown, error, cache_data, spinner, info, cache_resource, sidebar,\
-    code, session_state, plotly_chart, data_editor, column_config, toggle
+    code, session_state, plotly_chart, data_editor, column_config, toggle, html
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.db.db_connector import fetch_fields
 from plotly.graph_objects import Figure, Pie, Layout
@@ -77,10 +77,14 @@ def get_wallet_balances():
 
                     wallet_list_df['icon'] = wallet_list_df['Asset'].map(icon_dict).fillna('https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/IKNBTK7JKVEWHGGBKEQMN2HZMM.png')
                     wallet_list_df.insert(0, 'icon', wallet_list_df.pop('icon'))
+
+                    html(""" <div style="box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);">""")
                     data_editor(wallet_list_df, column_config={"icon": column_config.ImageColumn("")}, hide_index=True,
                                 disabled=True, use_container_width=True)
 
                     toggle('Hide Small Balances')
+                    html(""" </div>""")
+
                 with cols[1]:
                     markdown(
                         """<h6 style='text-align: left;margin-top:1em;margin-bottom:0;'></h6>""",unsafe_allow_html=True)
