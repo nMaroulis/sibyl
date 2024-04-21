@@ -159,7 +159,7 @@ def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
 def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
 
     url = f"{BINANCE_API_URL}/api/v3/myTrades"
-    params = {'symbol': symbol,'orderId': order_id,'timestamp': int(time.time() * 1000),'recvWindow': 5000}
+    params = {'symbol': symbol, 'orderId': order_id, 'timestamp': int(time.time() * 1000), 'recvWindow': 5000}
     query_string = '&'.join([f'{key}={params[key]}' for key in params])
     signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'),
                          hashlib.sha256).hexdigest()

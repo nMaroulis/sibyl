@@ -42,7 +42,7 @@ class GreedyBroker(Broker):
             return {
                 "success": f"Successfully bought {self.quantity_bought} {self.trade_to} worth {self.from_amount} {self.trade_from}!"}
         else:  # Error occurred
-            # This means that buy order was done successfuly but the limit-sell order failed
+            # This means that buy order was done successfully but the limit-sell order failed
             # Sell now what was bought
             return {"error": "Buy order failed - Sell Order was Unsuccessful"}
 

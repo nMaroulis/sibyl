@@ -35,4 +35,3 @@ if st.session_state['backend_status'] == 'Active':  # if connection with backend
 else:
     st.error("Connection to Backend Server failed. Please visit the Settings Tab to set a **IP** and **PORT**, or check start application manually via the **main.py** script")
 
-

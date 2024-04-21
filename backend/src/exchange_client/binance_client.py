@@ -111,7 +111,7 @@ class BinanceClient(ExchangeAPIClient):
             # Request was not successful, return the error message
             return {"error": data['msg']}
 
-    def fetch_available_coins(self, symbol):
+    def fetch_available_coins(self):
 
         headers = {'X-MBX-APIKEY': self.api_key}
         url = f"{self.api_base_url}/api/v1/exchangeInfo"

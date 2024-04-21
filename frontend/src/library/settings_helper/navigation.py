@@ -63,10 +63,10 @@ def show_status_cards(only_exchange=False):
 def show_homepage_status_cards():
     global CRYPTO_APIS
     status_card_style()
-    statuses = ["Active", session_state["binance_api_status"], session_state["binance_testnet_api_status"], session_state["kraken_api_status"], session_state["coinbase_api_status"]]
+    statuses = [session_state['backend_status'], session_state["binance_api_status"], session_state["binance_testnet_api_status"], session_state["kraken_api_status"], session_state["coinbase_api_status"]]
     api_cols = columns(5)
     with api_cols[0]:
-        status_card('Backend Server', "https://mdevelopers.com/storage/backend1_a9b6dc2f.png", session_state['backend_status'])
+        status_card('Backend Server', "https://mdevelopers.com/storage/backend1_a9b6dc2f.png", statuses[0])
     i = 1
     for k, v in CRYPTO_APIS.items():
         with api_cols[i]:
