@@ -17,15 +17,9 @@ st.write('The cards below indicate current connection status of each API. Go to 
 show_status_cards()
 
 db_fields = fetch_fields()[0]  # frontend DB settings
-# print DB settings
-# df_settings = DataFrame()
-# df_settings['Configuration'] = ['Exchange API', 'Backend Server IP', 'Backend Server Port', 'LLM API']
-# df_settings['Current Parameter'] = [db_fields[1], db_fields[3], db_fields[4], '']
-# df_settings['Status'] = ['🟢', '🟢', '🟢', '🟠']
-# st.dataframe(df_settings, hide_index=True)
 
 st.sidebar.button('Reset All Data', type='primary')
-# st.write('Current Status')
+
 with st.spinner('Checking Backend Server connection'):
     server_conn = check_backend_connection()
 

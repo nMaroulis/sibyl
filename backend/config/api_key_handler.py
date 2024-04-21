@@ -1,13 +1,12 @@
 import json
 import os
 
+CREDENTIALS_FILE_PATH = 'backend/config/api_keys/api_credentials.json'
 
-# Function to import API Keys from exchange_api_keys folder
-def get_api_key(exchange="binance"):
-    file_path = 'backend/config/exchange_api_keys/api_credentials.json'
-    # print(file_path)
-    if os.path.exists(file_path):  # check filepath
-        f = open(file_path, "r")
+
+def init_json(exchange="binance"):
+    if os.path.exists(CREDENTIALS_FILE_PATH):  # check filepath
+        f = open(CREDENTIALS_FILE_PATH, "r")
         api_key = json.load(f)
         f.close()
         try:
@@ -19,11 +18,24 @@ def get_api_key(exchange="binance"):
         return None
 
 
+# Function to import API Keys from api_keys folder
+def get_api_key(exchange="binance"):
+    if os.path.exists(CREDENTIALS_FILE_PATH):  # check filepath
+        f = open(CREDENTIALS_FILE_PATH, "r")
+        api_key = json.load(f)
+        f.close()
+        try:
+            credentials = [api_key[exchange]['api_credentials']['API_Key'], api_key[exchange]['api_credentials']['Secret_Key']]
+        except Exception as e:  # if error parsing credentials
+            return None
+        return credentials
+    else: # ImportError
+        return None
+
+
 def get_nlp_api_key(nlp_api="hugging_face"):
-    file_path = 'backend/config/exchange_api_keys/api_credentials.json'
-    # print(file_path)
-    if os.path.exists(file_path):  # check filepath
-        f = open(file_path, "r")
+    if os.path.exists(CREDENTIALS_FILE_PATH):  # check filepath
+        f = open(CREDENTIALS_FILE_PATH, "r")
         api_key = json.load(f)
         f.close()
         try:
@@ -36,9 +48,8 @@ def get_nlp_api_key(nlp_api="hugging_face"):
 
 
 def get_binance_testnet_api_keys():
-    file_path = 'backend/config/exchange_api_keys/api_credentials.json'
-    if os.path.exists(file_path):  # check filepath
-        f = open(file_path, "r")
+    if os.path.exists(CREDENTIALS_FILE_PATH):  # check filepath
+        f = open(CREDENTIALS_FILE_PATH, "r")
         api_key = json.load(f)
         f.close()
         try:
@@ -51,9 +62,8 @@ def get_binance_testnet_api_keys():
 
 
 def get_coinmarketcap_api_key():
-    file_path = 'backend/config/exchange_api_keys/api_credentials.json'
-    if os.path.exists(file_path):  # check filepath
-        f = open(file_path, "r")
+    if os.path.exists(CREDENTIALS_FILE_PATH):  # check filepath
+        f = open(CREDENTIALS_FILE_PATH, "r")
         api_key = json.load(f)
         f.close()
         try:
@@ -62,4 +72,18 @@ def get_coinmarketcap_api_key():
             return None
         return credentials
     else:  # ImportError
+        return None
+
+
+def check_exists(api_name):
+    if os.path.exists(CREDENTIALS_FILE_PATH):
+        f = open(CREDENTIALS_FILE_PATH, "r")
+        api_key = json.load(f)
+        f.close()
+        try:
+            credentials = api_key[api_name]['api_credentials']['API_Key']
+        except Exception as e:  # if error parsing credentials
+            return None
+        return credentials
+    else: # ImportError
         return None

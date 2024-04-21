@@ -7,7 +7,6 @@ from backend.config.api_key_handler import get_api_key, get_nlp_api_key
 from backend.src.analyst.analyst_functions import get_coin_symbol_name_map, update_coin_symbol_name_map
 import json
 
-
 # APIRouter creates path operations for user module
 router = APIRouter(
     prefix="/analyst",
@@ -45,7 +44,7 @@ def get_price_history(symbol: str, interval: str = '1d', plot_type='line', limit
 
 
 @router.get("/exchange_info/available_coins")
-def get_price_history():
+def get_available_coins():
 
     headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
     url = f"{BINANCE_API_URL}/api/v1/exchangeInfo"

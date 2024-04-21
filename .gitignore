@@ -1,4 +1,4 @@
-/backend/config/exchange_api_keys/api_credentials.json
+/backend/config/api_keys/api_credentials.json
 /.idea/
 /TODO.md
 /notebooks/.ipynb_checkpoints/

@@ -7,9 +7,9 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 
 
-def get_wallet_balances():
+def get_wallet_balances(exchange_api='Binance'):
     with spinner('Fetching Wallet Information'):
-        data, status_code = fetch_account_spot()
+        data, status_code = fetch_account_spot(exchange_api)
         wallet_list = []
         if status_code == 200:
             if "error" in data:

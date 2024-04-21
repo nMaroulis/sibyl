@@ -2,9 +2,9 @@ from fastapi import APIRouter
 from fastapi import Query
 from typing import Optional, List
 import requests
-from backend.settings import SERVER_IP, SERVER_PORT, BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
-from backend.config.api_key_handler import get_api_key, get_nlp_api_key
-import hashlib, hmac, json, time
+from backend.src.exchange_client.binance_client import BinanceClient
+from backend.src.exchange_client.binance_testnet_client import BinanceTestnetClient
+
 
 # APIRouter creates path operations for user module
 router = APIRouter(
@@ -16,76 +16,12 @@ router = APIRouter(
 
 @router.get("/account/spot/pair/price")
 def get_crypto_pair_price(pair: str = 'BTCUSDT'):
-    # Binance API endpoint for ticker price
-    url = f"{BINANCE_API_URL}/api/v3/ticker/price"
-    params = {'symbol': pair}
-    response = requests.get(url, params=params)
-    if response.status_code == 200:  # Checking if the request was successful
-        data = response.json()
-        pair_price = data['price']
-        return {"price": pair_price}
-    else:
-        return {"error": 'Could not fetch price'}
+    # API endpoint for ticker price
+    response = BinanceTestnetClient().get_crypto_pair_price(pair)
+    return response
 
 
-@router.get("/account/spot/overview")
-def get_spot_balance():
-
-    # Binance API endpoint
-    account_url = f"{BINANCE_API_URL}/api/v3/account"
-    # Request headers and parameters
-    headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
-    params = {'timestamp': int(time.time() * 1000), }
-    # Generate the query string
-    query_string = '&'.join([f'{key}={value}' for key, value in params.items()])
-    # Create a signature
-    signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
-    # Add the signature to the request parameters
-    params['signature'] = signature
-    # Send the GET request to Binance API
-    response = requests.get(account_url, headers=headers, params=params)
-    try:
-        data = response.json()
-    except json.JSONDecodeError as error:
-        return {"error": "Unable to parse response JSON."}
-
-    if response.status_code == 200:  # Check if the request was successful
-        spot_balances = {}  # all balance
-        locked_earn_balances = {}  # Retrieve the locked Earn balances
-        staked_balances = {}  # Retrieve the staked balances
-        for asset in data['balances']:
-            if float(asset['free']) > 0.0 or float(asset['locked']) > 0.0:
-
-                fetched_price = get_crypto_pair_price(asset['asset']+'USDT')
-                asset_price = 1.0  # default price, for BUSD, USDT prices in USDT
-                if "error" not in fetched_price:
-                    asset_price = fetched_price['price']
-                    # if asset_price == 0:
-                    #     asset_price = 1.0
-
-                spot_balances[asset['asset']] = {
-                    'free': float(asset['free']),
-                    'locked': float(asset['locked']),
-                    'price': asset_price
-                }
-                if asset['asset'].startswith('LD'):
-                    locked_earn_balances[asset['asset']] = {
-                        'free': float(asset['free']),
-                        'locked': float(asset['locked']),
-                        'price': asset_price
-                    }
-                if asset['asset'].startswith('ST'):
-                    staked_balances[asset['asset']] = {
-                        'free': float(asset['free']),
-                        'locked': float(asset['locked']),
-                        'price': asset_price
-                    }
-        # print(json.dumps(spot_balances, indent=4))
-        return {'spot_balances': spot_balances,
-                'locked_earn_balances': locked_earn_balances,
-                'staked_balances': staked_balances,
-                }
-    else:
-        # Request was not successful, return the error message
-        return {"error": data['msg']}
-
+@router.get("/account/spot/overview/{exchange_id}")
+def get_spot_balance(exchange_id: str = 'binance_testnet'):
+    response = BinanceTestnetClient().get_spot_balance()
+    return response

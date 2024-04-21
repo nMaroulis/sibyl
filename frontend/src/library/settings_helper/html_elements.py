@@ -15,8 +15,13 @@ def status_card_style():
                 transition: transform 1.5s ease;
             }
             
-            .settings-card-Active {
+            .settings-card-Act {
                 box-shadow: 0 10px 20px rgba(11, 66, 6, 0.6); 
+                transition: transform 0.6s ease;
+            }
+            
+            .settings-card-Inv {
+                box-shadow: 0 10px 20px rgba(205,92,92, 0.6); 
                 transition: transform 0.6s ease;
             }
             
@@ -86,11 +91,16 @@ def status_card_style():
                 transform: scale(0.9);
             }
             
-            .settings-card-Active button{
+            .settings-card-Act button{
                 color: white;
                 background-color: #81c784;
             }
 
+            .settings-card-Inv button{
+                color: white;
+                background-color: #DC143C;
+            }
+            
             .status_header {
                 display: flex;
                 align-items: center;
@@ -108,15 +118,19 @@ def status_card_style():
                 color: #666;
             }
             
-            .settings-card-illustration-K img {
+            .settings-card-illustration-Kr img {
                 box-shadow: 0 10px 15px rgba(138,43,226, 0.5); /* Added shadow for 3D effect */
             }
             
-            .settings-card-illustration-C img {
+            .settings-card-illustration-Co img {
                 box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
             }
             
-            .settings-card-illustration-O img {
+            .settings-card-illustration-Ba img {
+                box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .settings-card-illustration-Op img {
                 box-shadow: 0 10px 15px rgba(95,158,160, 0.5); /* Added shadow for 3D effect */
             }
             
@@ -139,8 +153,8 @@ def status_card_header(title=""):
 def status_card(name, logo, status='Active'):
 
     html(f"""
-        <div class="settings-card settings-card-{status}">
-            <div class="settings-card-illustration settings-card-illustration-{name[0]}">
+        <div class="settings-card settings-card-{status[0:3]}">
+            <div class="settings-card-illustration settings-card-illustration-{name[0:2]}">
                 <img src="{logo}" width="120px" alt=""/>
             </div>
             <h3>{name}</h3>

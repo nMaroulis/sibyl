@@ -15,6 +15,7 @@ from backend.src.reporter.endpoint import router as reporter_router
 from backend.src.technician.endpoint import router as technician_router
 from db.query_handler import db_init
 
+
 # Define Router endpoints
 router = APIRouter()
 router.include_router(accountant_router)
@@ -30,6 +31,13 @@ app = FastAPI()
 # app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 app.include_router(router)
+
+
+# Init Exchange Clients
+# binance_client = BinanceClient()
+# binance_testnet_client = BinanceTestnetClient()
+# kraken_client = KrakenClient()
+# coinbase_client = CoinbaseClient()
 
 
 # Route for the root path "/"
