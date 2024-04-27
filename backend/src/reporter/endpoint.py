@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.get("/news/articles/")
+@router.get("/news/articles")
 def get_nlp_api_status(website: str = 'coindesk', limit: int = 10):
 
     # API_TOKEN = get_nlp_api_key()  # nlp_api
@@ -31,7 +31,7 @@ def get_nlp_api_status(website: str = 'coindesk', limit: int = 10):
     return json_data
 
 
-@router.get("/news/summary/")
+@router.get("/news/summary")
 def get_news_summary(model: str = 'sumy', website: str = 'coindesk'):
 
     articles = fetch_news(website, 20)
@@ -40,7 +40,7 @@ def get_news_summary(model: str = 'sumy', website: str = 'coindesk'):
     return {'summary': json.dumps(summary)}
 
 
-@router.get("/news/sentiment/")
+@router.get("/news/sentiment")
 def get_news_sentiment(model: str = 'vader', website: str = 'coindesk'):
 
     articles = fetch_news(website, 20)

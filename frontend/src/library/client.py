@@ -6,7 +6,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 
 
 def check_exchange_api_connection(exchange='binance'):
-    url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/exchange/{exchange}"
+    url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/{exchange}"
     response = requests.get(url)
     if response.status_code == 200:
         if response.json().get('backend_server_status') == 'success':

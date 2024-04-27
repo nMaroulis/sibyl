@@ -11,6 +11,7 @@ def get_price_history_form():
         cols = columns(3)
         with cols[0]:
             coin = selectbox(label='Choose Coin', options=fetch_available_coins())  # get the keys from the coin dict
+            exchange_api = selectbox(label='Choose Exchange', options=['binance_testnet'])
         with cols[1]:
             time_int = selectbox(
                 'Choose Date Interval',
@@ -22,7 +23,7 @@ def get_price_history_form():
 
         sumbit_button = form_submit_button('Submit')
         if sumbit_button:
-            price_hist_df = price_history_plot(coin, time_int, time_limit, plot_type, True, True)
+            price_hist_df = price_history_plot(exchange_api, coin, time_int, time_limit, plot_type, True, True)
             sidebar.download_button(
                 "Download to CSV",
                 price_hist_df.to_csv(index=False).encode('utf-8'),

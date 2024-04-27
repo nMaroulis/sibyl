@@ -5,11 +5,11 @@ from frontend.src.library.analytics_helper.client import fetch_price_history
 from plotly.express import imshow
 
 
-def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True, full_name=True):
+def price_history_plot(exchange_api='binance_testnet', coin='BTC', time_int='1d', time_limit=500, plot_type='Line Plot', show_plot=True, full_name=True):
     df = DataFrame()
     fig = None
     if plot_type == 'Line Plot':
-        data = fetch_price_history(coin, time_int, time_limit, 'line', full_name)
+        data = fetch_price_history(exchange_api, coin, time_int, time_limit, 'line', full_name)
         df['DateTime'] = [entry.get('Open Time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
         df['Price'] = [entry.get('Open Price') for entry in data]
@@ -19,7 +19,7 @@ def price_history_plot(coin='BTC', time_int='1d', time_limit=500, plot_type='Lin
             fig.update_layout(title=f"Price History of ada", xaxis_title="DateTime",  yaxis_title="Price (USDT)")
     else:  # candle plot
 
-        data = fetch_price_history(coin, time_int, time_limit, 'candle', full_name)
+        data = fetch_price_history(exchange_api, coin, time_int, time_limit, 'candle', full_name)
         df['DateTime'] = [entry.get('Open Time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
         df['Open Price'] = [entry.get('Open Price') for entry in data]

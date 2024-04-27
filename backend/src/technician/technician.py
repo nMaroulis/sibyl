@@ -5,10 +5,7 @@ import time
 from datetime import datetime
 from backend.src.technician.api_router import APIS
 from backend.config.api_key_handler import check_exists
-from backend.src.exchange_client.binance_client import BinanceClient
-from backend.src.exchange_client.binance_testnet_client import BinanceTestnetClient
-from backend.src.exchange_client.kraken_client import KrakenClient
-from backend.src.exchange_client.coinbase_client import CoinbaseClient
+from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 
 class Technician:
@@ -20,13 +17,13 @@ class Technician:
     def api_status_check(api_name="all"):
         res = {}
         if api_name == "binance" or api_name == "all" or api_name == "exchanges":
-            res['binance'] = BinanceClient().check_status()
+            res['binance'] = ExchangeClientFactory.get_client("binance").check_status()
         if api_name == "binance_testnet" or api_name == "all" or api_name == "exchanges":
-            res['binance_testnet'] = BinanceTestnetClient().check_status()
+            res['binance_testnet'] = ExchangeClientFactory.get_client("binance_testnet").check_status()
         if api_name == "kraken" or api_name == "all" or api_name == "exchanges":
-            res['kraken'] = KrakenClient().check_status()
+            res['kraken'] = ExchangeClientFactory.get_client("kraken").check_status()
         if api_name == "coinbase" or api_name == "all" or api_name == "exchanges":
-            res['coinbase'] = CoinbaseClient().check_status()
+            res['coinbase'] = ExchangeClientFactory.get_client("coinbase").check_status()
 
         if api_name == "openai" or api_name == "all" or api_name == "llms":
             res["openai"] = 'Active' if check_exists("openai") is not None else 'Unavailable'

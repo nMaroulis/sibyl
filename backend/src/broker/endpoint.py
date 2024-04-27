@@ -43,7 +43,6 @@ def send_new_buy_order(from_coin: str = 'USDT', to_coin: str = 'BTC', from_amoun
 
 @router.get("/trade/info/minimum_order")
 def is_buy_order_possible(symbol: str = 'BTCUSDT'):
-    # Binance API endpoint for exchange information
     url = f"{BINANCE_API_URL}/api/v3/exchangeInfo?symbol={symbol}"  # {symbol}&quantity={quantity}&price={price}"
     response = requests.get(url)  # Send a GET request to retrieve the trading pairs' details
     exchange_info = response.json()

@@ -5,6 +5,7 @@ from backend.src.analyst.analyst_functions import get_coin_symbol_name_map, upda
 from backend.config.api_key_handler import get_api_key
 import time
 import hmac, hashlib
+from datetime import datetime
 
 
 class BinanceClient(ExchangeAPIClient):
@@ -48,6 +49,7 @@ class BinanceClient(ExchangeAPIClient):
             pair_price = data['price']
             return {"price": pair_price}
         else:
+            print(f'backend :: {self.name} Exchange API client :: get_crypto_pair_price for pair ({pair}) :: Failed to retrieve current price.')
             return {"error": 'Could not fetch price'}
 
     def get_spot_balance(self):
@@ -172,3 +174,155 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return []  # {"error": "Failed to fetch price history"}
 
+    def get_minimum_buy_order(self, symbol="BTCUSDT"):
+        url = f"{self.api_base_url}/api/v3/exchangeInfo?symbol={symbol}"  # {symbol}&quantity={quantity}&price={price}"
+        response = requests.get(url)  # Send a GET request to retrieve the trading pairs' details
+        exchange_info = response.json()
+        minimum_buy = -1
+        # print(exchange_info['symbols'][0]['filters'])
+        # Find the symbol in the exchange information
+        try:
+            for symbol_info in exchange_info['symbols'][0]['filters']:
+                if symbol_info['filterType'] == 'NOTIONAL':
+                    minimum_buy = float(symbol_info['minNotional'])
+                    # print(symbol_info['minNotional'])
+        except KeyError:
+            return {'min_notional': -1}
+        except AttributeError:
+            return {'min_notional': -1}
+
+        return {'min_notional': minimum_buy}  # If the symbol is not found, return False
+
+    """ TRADE FUNCTIONS """
+    def post_buy_order(self, trading_pair='', from_amount=5):
+
+        url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
+
+        # Set the request parameters
+        params = {
+            'symbol': trading_pair,  # Trading pair symbol for ADA/USDT
+            'side': 'BUY',  # Buy order
+            'type': 'MARKET',  # Market order type
+            # 'quantity': 3,  # Quantity of Crypto to buy
+            'quoteOrderQty': from_amount,  # Quantity of USDT to spend
+            'recvWindow': 5000,  # Optional, receive window in milliseconds
+            'timestamp': int(time.time() * 1000)  # Timestamp in milliseconds
+        }
+        # Generate the query string
+        query_string = '&'.join([f'{key}={params[key]}' for key in params])
+        # Sign the query string
+        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'),
+                             hashlib.sha256).hexdigest()
+        # Add the API key and signature to the request headers
+        headers = {
+            'X-MBX-APIKEY': self.api_key,
+        }
+        # Add the signature to the query string
+        query_string += f'&signature={signature}'
+        # Make the API request
+        response = requests.post(f'{url}?{query_string}', headers=headers)
+        """
+        response body:
+        {"symbol": "ADAUSDT", "orderId": 10xInt, "orderListId": -1, "clientOrderId": "str",
+         "transactTime": "timestamp", "price": "0.00000000", "origQty": "17.90000000", "executedQty": "17.90000000",
+         "cummulativeQuoteQty": "4.99768000", "status": "FILLED", "timeInForce": "GTC", "type": "MARKET", "side": "BUY",
+         "workingTime": "timestamp", "fills": [
+            {"price": "0.27920000", "qty": "17.90000000", "commission": "0.00001618", "commissionAsset": "BNB",
+             "tradeId": 10xInt}], "selfTradePreventionMode": "NONE"}
+        """
+        print("backend :: BinanceExchange client :: post_buy_order :: response status ", response.status_code)
+        print("backend :: BinanceExchange client :: post_buy_order :: response body ", response.text)
+        if response.status_code == 200:
+            try:
+                quantity_bought = response.json()['executedQty']
+                buy_order_id = response.json()['orderId']
+                buy_datetime = str(datetime.utcfromtimestamp(response.json()['transactTime'] // 1000).strftime('%Y-%m-%d %H:%M:%S')) # response.json()['transactTime']  # overwrite Datetime with the Datetime of Buy
+                return quantity_bought, buy_order_id, buy_datetime
+            except KeyError:
+                return None
+        else:
+            return None  # "transactTime"
+
+    def post_swap_order(self, trade_from='USDT', trade_to='BTC', from_amount=5):  # Alternative to BUY order with No fees in Binance
+
+        url = f"{self.api_base_url}/sapi/v1/convert/getQuote"
+        timestamp = str(int(time.time() * 1000))
+        params = {
+            'fromAsset': trade_from,
+            'toAsset': trade_to,
+            'fromAmount': from_amount,
+            'walletType': 'SPOT',
+            'recvWindow': '5000',
+            'timestamp': timestamp,
+        }
+        headers = {
+            'X-MBX-APIKEY': self.api_key
+        }
+        query_string = '&'.join([f'{key}={params[key]}' for key in params])
+        signature = hmac.new(self.api_secret_key.encode('utf-8'),
+                             query_string.encode('utf-8'),
+                             hashlib.sha256).hexdigest()
+        query_string += f'&signature={signature}'
+        response = requests.post(f'{url}?{query_string}', headers=headers)
+
+        if response.status_code == 200:
+            try:
+                buy_order_id = response.json()['quoteId']
+                # print(response.json())
+                # accept the Quote
+                url = f"{self.api_base_url}/sapi/v1/convert/acceptQuote"
+                timestamp = str(int(time.time() * 1000))
+                params = {
+                    'quoteId': buy_order_id,
+                    'recvWindow': '5000',
+                    'timestamp': timestamp,
+                }
+                query_string = '&'.join([f'{key}={params[key]}' for key in params])
+                signature = hmac.new(self.api_secret_key.encode('utf-8'),
+                                     query_string.encode('utf-8'),
+                                     hashlib.sha256).hexdigest()
+                query_string += f'&signature={signature}'
+                response = requests.post(f'{url}?{query_string}', headers=headers)
+                buy_order_id = response.json()['orderId']
+                quantity_bought = response.json()['toAmount']
+                return buy_order_id, quantity_bought, timestamp
+            except KeyError:
+                return None
+        else:
+            return None
+
+    def post_sell_order(self, trading_pair, quantity_bought, sell_order_price):
+
+        timestamp = int(time.time() * 1000)
+        url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
+
+        print(quantity_bought, sell_order_price)
+        # Build the query string
+        query_string = f'symbol={trading_pair}&side=SELL&type=LIMIT&timeInForce=GTC&quantity={quantity_bought}&price={sell_order_price}&timestamp={timestamp}'
+        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+        query_string += f'&signature={signature}'
+        headers = {
+            'X-MBX-APIKEY': self.api_key,
+        }
+
+        # Send to the request URL
+        response = requests.post(f'{url}?{query_string}', headers=headers)
+        print("backend :: BinanceExchange client :: post_sell_order :: response status ", response.status_code)
+        print("backend :: BinanceExchange client :: post_sell_order :: response body ", response.text)
+        """
+        response body:
+        {"symbol":"ADAUSDT","orderId":10xInt,"orderListId":-1,"clientOrderId":"str",
+        "transactTime":timestamp,"price":"0.29260000","origQty":"17.90000000","executedQty":"0.00000000",
+        "cummulativeQuoteQty":"0.00000000","status":"NEW","timeInForce":"GTC","type":"LIMIT","side":"SELL",
+        "workingTime":timestamp,"fills":[],"selfTradePreventionMode":"NONE"}
+        """
+
+        if response.status_code == 200:
+            try:
+                sell_order_id = response.json()['orderId']
+                return sell_order_id
+            except KeyError:
+                return None
+        else:
+            return None
+        # return response.status_code
