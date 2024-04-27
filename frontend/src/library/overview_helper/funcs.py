@@ -8,6 +8,7 @@ from pandas import DataFrame
 
 
 def get_wallet_balances(exchange_api='Binance'):
+    exchange_api = exchange_api.replace(' ', '_').lower()
     with spinner('Fetching Wallet Information'):
         data, status_code = fetch_account_spot(exchange_api)
         wallet_list = []

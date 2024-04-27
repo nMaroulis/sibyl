@@ -1,4 +1,4 @@
-from streamlit import markdown, write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect
+from streamlit import markdown, write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, session_state
 from frontend.src.library.analytics_helper.plots import price_history_plot, price_history_correlation_heatmap
 from frontend.src.library.analytics_helper.client import fetch_available_coins
 
@@ -11,7 +11,7 @@ def get_price_history_form():
         cols = columns(3)
         with cols[0]:
             coin = selectbox(label='Choose Coin', options=fetch_available_coins())  # get the keys from the coin dict
-            exchange_api = selectbox(label='Choose Exchange', options=['binance_testnet'])
+            exchange_api = selectbox(label='Choose Exchange', options=session_state["available_exchange_apis"])
         with cols[1]:
             time_int = selectbox(
                 'Choose Date Interval',
@@ -23,6 +23,7 @@ def get_price_history_form():
 
         sumbit_button = form_submit_button('Submit')
         if sumbit_button:
+            exchange_api = exchange_api.replace(' ', '_').lower()
             price_hist_df = price_history_plot(exchange_api, coin, time_int, time_limit, plot_type, True, True)
             sidebar.download_button(
                 "Download to CSV",
