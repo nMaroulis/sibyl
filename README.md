@@ -17,12 +17,12 @@
 
 # Sibyl - Your AI-Powered Crypto Trading Hub with a UI
 
-Welcome to **Sibyl**! This application is your centralized hub for all things crypto. With Sybil, you can connect multiple crypto exchange accounts, deploy smart trading strategies, and access a wide range of AI-powered tools—all within a secure, locally deployed environment.
+Welcome to **Sibyl**! This application is your centralized hub for all things crypto. With Sibyl, you can connect multiple crypto exchange accounts, deploy smart trading strategies, and access a wide range of AI-powered tools—all within a secure, locally deployed environment.
 
 ## Key Features
 
 ### Interactive Dashboard UI
-Our intuitive dashboard provides a comprehensive view of your crypto activities. Manage your trading strategies, analyze market trends, and keep an eye on the latest news—all in one place.
+The intuitive dashboard provides a comprehensive view of your crypto activities. Manage your trading strategies, analyze market trends, and keep an eye on the latest news—all in one place.
 
 
 ### AI-Driven Smart Trading Strategies - Oracle Module 🔮
@@ -42,7 +42,7 @@ Sibyl offers powerful data analysis and visualization tools to support your trad
 Visualize the data with custom plots and tables for clear insights.
 
 ### NLP Models - Reporter Module 🕵🏻‍
-Stay informed with our Natural Language Processing (NLP) tools:
+Stay informed with the Natural Language Processing (NLP) tools:
 
 - Web scraping for the latest crypto news
 - Text summarization for quick news highlights
@@ -76,5 +76,5 @@ Sibyl is designed for local deployment, ensuring your data stays secure. You hav
 
 ---
 
-If you have any questions or suggestions, please open an issue or submit a pull request. I'm excited to see how you use Sybil to enhance your crypto trading experience!
+If you have any questions or suggestions, please open an issue or submit a pull request. I'm excited to see how you use Sibyl to enhance your crypto trading experience!
 

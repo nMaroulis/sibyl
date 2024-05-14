@@ -43,4 +43,4 @@ COPY sibyl/backend/ .
 EXPOSE 8000
 
 # Activate the Conda environment and run the backend
-CMD ["/bin/bash", "-c", "conda run -n sibyl uvicorn rest_server:app --host 0.0.0.0 --port 8000"]
+CMD ["/bin/bash", "-c", "conda run -n sibyl python rest_server.py"]
