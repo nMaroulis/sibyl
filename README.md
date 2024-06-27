@@ -17,9 +17,11 @@
 
 # Sibyl - Your AI-Powered Crypto Trading Hub with a UI
 
-<hr>
-<span style="color: red; font-size: 16px;">pre-alpha version</span>
-<br>
+[//]: # (<hr>)
+
+[//]: # (<span style="color: red; font-size: 16px;">pre-alpha version</span>)
+
+[//]: # (<br>)
 
 Welcome to **Sibyl**! This application is your centralized hub for all things crypto. With Sibyl, you can connect multiple crypto exchange accounts, deploy smart trading strategies, and access a wide range of AI-powered tools—all within a secure, locally deployed environment.
 
