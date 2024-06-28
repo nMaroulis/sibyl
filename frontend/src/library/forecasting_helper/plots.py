@@ -1,4 +1,4 @@
-from streamlit import spinner, dataframe, metric, write, plotly_chart
+from streamlit import spinner, dataframe, metric, write, plotly_chart, html
 from plotly.graph_objects import Figure, Scatter
 from frontend.src.library.forecasting_helper.funcs import calc_rsi, calc_ema, calc_bollinger_bands
 import pandas as pd
@@ -6,7 +6,34 @@ import pandas as pd
 
 def show_analytics(coin, df):
     with spinner('The Oracle is forecasting the future...'):
-        dataframe(df)
+        # dataframe(df)
+        html("""
+
+            <style>
+                .status_header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 4px 0;
+                }
+                .status_line {
+                    flex-grow: 1;
+                    height: 1px;
+                    background-color: #ddd; /* Color of the line */
+                }
+                .status_title {
+                    padding: 0 20px;
+                    font-size: 21px;
+                    color: #666;
+                }
+            </style>
+            <div class="status_header">
+                <div class="status_line"></div>
+                <div class="status_title">Oracle Result</div>
+                <div class="status_line"></div>
+            </div>
+
+        """)
         metric(f'{coin} Price in USDT', float(df['Closing Price'].iloc[-1]),
                round(float(df['Closing Price'].iloc[-1]) - float(df['Closing Price'].iloc[-2]), 6))
     return

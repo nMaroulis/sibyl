@@ -1,4 +1,4 @@
-from streamlit import set_page_config, markdown, cache_resource
+from streamlit import set_page_config, markdown, cache_resource, logo
 from PIL import Image
 
 
@@ -10,11 +10,11 @@ def fix_page_layout(page_name='Sibyl'):
         page_icon=im,
         layout="wide",
     )
-
+    logo("assets/logo_transparent.png", icon_image="assets/logo_brand.png",)
     markdown("""
             <style>
                    .block-container {
-                        padding-top: 1rem;
+                        padding-top: 2.2rem;
                     }
             </style>
             """, unsafe_allow_html=True)
@@ -22,16 +22,16 @@ def fix_page_layout(page_name='Sibyl'):
     # padding - left: 5rem;
     # padding - right: 5rem;
 
-    markdown("""
-    <style>
-    footer { visibility: hidden;}
-    footer:after {
-    content: 'developed by Nikolaos Maroulis';
-    visibility: visible;
-    position: relative;
-    top:5px;
-    right: 8em;
-    }
-    </style>""", unsafe_allow_html=True)
+    # markdown("""
+    # <style>
+    # footer { visibility: hidden;}
+    # footer:after {
+    # content: 'developed by Nikolaos Maroulis';
+    # visibility: visible;
+    # position: relative;
+    # top:50px;
+    # right: 8em;
+    # }
+    # </style>""", unsafe_allow_html=True)
 
     return 0

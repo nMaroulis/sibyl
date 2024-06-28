@@ -6,9 +6,9 @@
 </div>
 
 [![Python](https://img.shields.io/badge/python-v3.11-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-v1.33-red)]()
+[![Streamlit](https://img.shields.io/badge/streamlit-v1.36-red)]()
 [![FastAPI](https://img.shields.io/badge/fastapi-v0.110-blue)]()
-[![Tensorflow](https://img.shields.io/badge/tensorflow-v2.15-orange)]()
+[![Tensorflow](https://img.shields.io/badge/tensorflow-v2.17-orange)]()
 [![Statsmodels](https://img.shields.io/badge/statsmodels-v0.14-pink)]()
 [![Pandas](https://img.shields.io/badge/pandas-v2.2.2-lightgrey)]()
 [![Plotly](https://img.shields.io/badge/plotly-v5.19-green)]()

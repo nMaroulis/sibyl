@@ -1,11 +1,12 @@
 import streamlit as st
-from src.library.overview_helper.funcs import get_wallet_balances, get_logo_header, populate_session_state
-from src.library.client import check_backend_connection, check_exchange_api_connection
-from src.library.ui_elements import fix_page_layout
-from db.db_connector import fetch_fields
-from src.library.settings_helper.navigation import show_homepage_status_cards
+from frontend.src.library.overview_helper.funcs import get_wallet_balances, get_logo_header, populate_session_state
+from frontend.src.library.client import check_backend_connection, check_exchange_api_connection
+from frontend.src.library.ui_elements import fix_page_layout
+from frontend.db.db_connector import fetch_fields
+from frontend.src.library.settings_helper.navigation import show_homepage_status_cards
 from frontend.src.library.overview_helper.navigation import api_status_check
 fix_page_layout("Sibyl")
+
 get_logo_header()
 
 populate_session_state()
@@ -34,4 +35,3 @@ if st.session_state['backend_status'] == 'Active':  # if connection with backend
         get_wallet_balances(exchange_api)
 else:
     st.error("Connection to Backend Server failed. Please visit the Settings Tab to set a **IP** and **PORT**, or check start application manually via the **main.py** script")
-

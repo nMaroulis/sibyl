@@ -28,7 +28,7 @@ WORKDIR /app/sibyl/frontend
 COPY sibyl/frontend/ .
 
 # Activate the Conda environment and run the frontend
-CMD ["/bin/bash", "-c", "conda run -n sibyl streamlit run --server.port 8501 home_page.py"]
+CMD ["/bin/bash", "-c", "conda run -n sibyl streamlit run --server.port 8501 index_router.py"]
 
 # Use a Python base image for backend
 FROM base AS backend
