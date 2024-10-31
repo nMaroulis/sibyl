@@ -50,4 +50,5 @@ def read_root():
 if __name__ == "__main__":
     db_init()  # Initialize DB
     # Run the application using the Uvicorn server
+    print("Starting Server")
     uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT, log_level='debug', access_log=True)

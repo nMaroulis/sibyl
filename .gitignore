@@ -2,3 +2,5 @@
 /.idea/
 /TODO.md
 /notebooks/.ipynb_checkpoints/
+/.sibyl_venv/
+/tests/*

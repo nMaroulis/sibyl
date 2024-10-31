@@ -1,5 +1,11 @@
 from nltk import sent_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
+from nltk import data, download
+
+try:
+    data.find('tokenizers/punkt_tab/english.pickle')
+except LookupError:
+    download('punkt_tab')
 
 
 def get_text_sentiment(model='vader', articles=None):
