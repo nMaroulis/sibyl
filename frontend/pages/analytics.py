@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout
-from frontend.src.library.analytics_helper.ui_elements import get_price_history_form, get_correlation_heatmap_form
+from frontend.src.library.analytics_helper.ui_elements import get_price_history_form, get_correlation_heatmap_form, get_price_analytics_form
 from frontend.src.library.overview_helper.navigation import api_status_check
 
 fix_page_layout('Analytics')
@@ -11,8 +11,8 @@ if "available_exchange_apis" not in st.session_state:
         api_status_check()
 
 ph_tab, ch_tab, cs_tab = st.tabs(['Price History', 'Correlation Heatmap', 'Causality Test'])
-with ph_tab:  # Price History
-    get_price_history_form()
+with ph_tab:  # Price History Analysis
+    get_price_analytics_form()
 with ch_tab:  # Correlation Heatmap
     get_correlation_heatmap_form()
 with cs_tab:
