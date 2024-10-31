@@ -2,7 +2,7 @@ from streamlit import set_page_config, markdown, cache_resource, logo
 from PIL import Image
 
 
-def fix_page_layout(page_name='Sibyl'):
+def fix_page_layout(page_name: str = 'Sibyl'):
 
     im = Image.open("/Users/nik/PycharmProjects/sibyl/frontend/static/favicon/favicon.ico")
     set_page_config(
@@ -14,7 +14,7 @@ def fix_page_layout(page_name='Sibyl'):
     markdown("""
             <style>
                    .block-container {
-                        padding-top: 2.2rem;
+                        padding-top: 2.5rem;
                     }
             </style>
             """, unsafe_allow_html=True)

@@ -2,7 +2,6 @@ import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout
 from frontend.src.library.analytics_helper.client import fetch_available_coins
 from frontend.src.library.analytics_helper.plots import price_history_plot
-from frontend.src.library.forecasting_helper.plots import show_line_plot_with_analytics, show_analytics
 from frontend.src.library.overview_helper.navigation import api_status_check
 
 fix_page_layout('🔮 forecasting')

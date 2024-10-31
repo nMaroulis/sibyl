@@ -68,9 +68,9 @@ Sibyl supports API connections with major crypto exchanges. Currently supported:
 - Binance Testnet
 
 Additional exchanges are planned for future releases.
-- Kraken
 - Coinbase
 - Uniswap
+- Kraken
 
 ## Roadmap
 The development roadmap includes exciting new features:

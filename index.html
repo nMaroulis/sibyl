@@ -335,14 +335,6 @@
       </div>
 
       <div class="settings-card" style="display:inline-block;">
-          <div class="settings-card-illustration settings-card-illustration-K">
-              <img src="https://media.licdn.com/dms/image/D4E0BAQFm8yg0gGJN1A/company-logo_200_200/0/1697458897774/krakenfx_logo?e=2147483647&v=beta&t=CTWrqJakEEIx4lAPmddjLjt7e4Xi0HQqDTi7k9p3RPM" width="120px" alt=""/>
-          </div>
-          <h3>Kraken API</h3>
-          <button>Unavailable</button>
-      </div>
-
-      <div class="settings-card" style="display:inline-block;">
           <div class="settings-card-illustration settings-card-illustration-C">
               <img src="https://alternative.me/media/256/coinbase-icon-kdtz42w4efva6qiu-c.png" width="120px" alt=""/>
           </div>
@@ -350,6 +342,13 @@
           <button>Unavailable</button>
       </div>
 
+      <div class="settings-card" style="display:inline-block;">
+          <div class="settings-card-illustration settings-card-illustration-K">
+              <img src="https://media.licdn.com/dms/image/D4E0BAQFm8yg0gGJN1A/company-logo_200_200/0/1697458897774/krakenfx_logo?e=2147483647&v=beta&t=CTWrqJakEEIx4lAPmddjLjt7e4Xi0HQqDTi7k9p3RPM" width="120px" alt=""/>
+          </div>
+          <h3>Kraken API</h3>
+          <button>Unavailable</button>
+      </div>
 
     </div>
 
@@ -363,45 +362,50 @@
       <pre><code># git clone https://github.com/nMaroulis/sibyl.git</code></pre>
 
       <div class="tab">
-        <button class="tablinks active" onclick="openTab(event, 'method1')">Conda Environment</button>
-        <button class="tablinks" onclick="openTab(event, 'method2')">Python Pip</button>
-        <button class="tablinks" onclick="openTab(event, 'method3')">Python Virtual Environment</button>
-        <button class="tablinks" onclick="openTab(event, 'method4')">Docker Container</button>
+        <button class="tablinks" onclick="openTab(event, 'method1')">Python Virtual Environment</button>
+        <button class="tablinks" onclick="openTab(event, 'method2')">Docker Container</button>
+        <button class="tablinks" onclick="openTab(event, 'method3')">Python Pip</button>
+        <button class="tablinks active" onclick="openTab(event, 'method4')">Conda Environment</button>
 
       </div>
 
       <!-- Tab content for installation options -->
+
       <div id="method1" class="tabcontent" style="display: block;">
-        <h3>Conda Environment</h3>
-        <p>Install the conda environment found in the conda_env.yml file.</p>
-        <pre><code># conda env create -f conda_env.yml</code><br><code># conda activate sibyl</code></pre>
+        <h3>Python Virtual Environment</h3>
+        <p>Install python3.12 in your system</p>
+        <pre><code>$ brew install python@3.12 # macOS</code></pre>
+        <pre><code>$ sudo apt install python==3.12  # Linux apt</code></pre>
+
+        <p>Create a separate Virtual Environment</p>
+        <pre><code>$ python3.12 -m venv sibyl</code><br><code>$ source sibyl/bin/activate</code></pre>
+        <p>Install the pip libraries found in the requirements.txt file.</p>
+        <pre><code>$ pip install -r requirements.txt</code></pre>
       </div>
 
       <div id="method2" class="tabcontent">
-        <h3>Python Pip</h3>
-        <p>Install the pip libraries found in the requirements.txt file in the home folder.</p>
-        <pre><code># pip install -r requirements.txt</code></pre>
+        <h3>Docker Container</h3>
+        <p>Open the Project directory through the terminal and locate the <strong>Dockerfile</strong></p>
+        <pre><code>$ docker build -t sibyl_image .</code></pre>
+        <p>This will give you an image on your local machine that you can create a container from. To do so, you'll need to run the following docker run command.</p>
+        <pre><code>$ docker run -p 8501:8501 -p 8000:8000 --detach sibyl_image</code></pre>
       </div>
 
       <div id="method3" class="tabcontent">
-        <h3>Python Virtual Environment</h3>
-        <p>Create a separate Virtual Environment</p>
-        <p>Install the pip libraries found in the requirements.txt file.</p>
-        <pre><code># python3 -m venv sibyl</code><br><code># source sibyl/bin/activate</code></pre>
-        <pre><code># pip install -r requirements.txt</code></pre>
+        <h3>Python Pip</h3>
+        <p>Install the pip libraries found in the requirements.txt file in the home folder.</p>
+        <pre><code>$ pip install -r requirements.txt</code></pre>
       </div>
 
       <div id="method4" class="tabcontent">
-        <h3>Docker Container</h3>
-        <p>Open the Project directory through the terminal and locate the <strong>Dockerfile</strong></p>
-        <pre><code># docker build --tag 'sibyl_image' .</code></pre>
-        <p>This will give you an image on your local machine that you can create a container from. To do so, you'll need to run the following docker run command.</p>
-        <pre><code># docker run --detach 'sibyl_image'</code></pre>
+        <h3>Conda Environment</h3>
+        <p>Install the conda environment found in the conda_env.yml file.</p>
+        <pre><code>$ conda env create -f conda_env.yml</code><br><code># conda activate sibyl</code></pre>
       </div>
 
       <h3>Running the App</h3>
         <p>First navigate to the sibyl folder in your system and run the main.py script which starts the Frontend and the Backend.</p>
-      <pre><code># cd ./sibyl </code><br><code># python3.11 main.py</code></pre>
+      <pre><code>$ cd ./sibyl </code><br><code># python3.11 main.py</code></pre>
       <p>
         Once the app is running, you can access it by opening the provided URL in your web browser.
       </p>
