@@ -10,7 +10,7 @@ def update_trading_history():
 
 
 @cache_resource(ttl=120)
-def fetch_trading_history(strat_status='all'):
+def fetch_trading_history(strat_status: str = 'all'):
     url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/strategy/history?status={strat_status}'
     res = requests.get(url)
     # st.write(res.text)

@@ -39,7 +39,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return 'Invalid Credentials'
 
-    def get_crypto_pair_price(self, pair='BTCUSDT'):
+    def get_crypto_pair_price(self, pair: str = 'BTCUSDT'):
         # Binance API endpoint for ticker price
         url = f"{self.api_base_url}/api/v3/ticker/price"
         params = {'symbol': pair}
@@ -152,7 +152,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return {"Error": "Failed to fetch available coins"}
 
-    def fetch_price_history(self, symbol='BTC', interval='1d', plot_type='line', limit=100):
+    def fetch_price_history(self, symbol: str = 'BTC', interval: str = '1d', plot_type: str = 'line', limit: int = 100):
         headers = {'X-MBX-APIKEY': self.api_key}
         url = f"{self.api_base_url}/api/v3/klines?symbol={symbol.upper()}&interval={interval}&limit={limit}"
         response = requests.get(url, headers=headers)
@@ -174,7 +174,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return []  # {"error": "Failed to fetch price history"}
 
-    def get_minimum_buy_order(self, symbol="BTCUSDT"):
+    def get_minimum_buy_order(self, symbol: str = "BTCUSDT"):
         url = f"{self.api_base_url}/api/v3/exchangeInfo?symbol={symbol}"  # {symbol}&quantity={quantity}&price={price}"
         response = requests.get(url)  # Send a GET request to retrieve the trading pairs' details
         exchange_info = response.json()
@@ -194,7 +194,7 @@ class BinanceClient(ExchangeAPIClient):
         return {'min_notional': minimum_buy}  # If the symbol is not found, return False
 
     """ TRADE FUNCTIONS """
-    def post_buy_order(self, trading_pair='', from_amount=5):
+    def post_buy_order(self, trading_pair: str = '', from_amount: int = 5):
 
         url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
 
@@ -243,7 +243,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return None  # "transactTime"
 
-    def post_swap_order(self, trade_from='USDT', trade_to='BTC', from_amount=5):  # Alternative to BUY order with No fees in Binance
+    def post_swap_order(self, trade_from: str = 'USDT', trade_to: str = 'BTC', from_amount: int = 5):  # Alternative to BUY order with No fees in Binance
 
         url = f"{self.api_base_url}/sapi/v1/convert/getQuote"
         timestamp = str(int(time.time() * 1000))
@@ -291,7 +291,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return None
 
-    def post_sell_order(self, trading_pair, quantity_bought, sell_order_price):
+    def post_sell_order(self, trading_pair: str, quantity_bought, sell_order_price):
 
         timestamp = int(time.time() * 1000)
         url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order

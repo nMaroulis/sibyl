@@ -139,7 +139,7 @@ def status_card_style():
     return
 
 
-def status_card_header(title=""):
+def status_card_header(title: str = ""):
     html(f"""        
         <div class="status_header">
             <div class="status_line"></div>
@@ -150,7 +150,7 @@ def status_card_header(title=""):
     return
 
 
-def status_card(name, logo, status='Active'):
+def status_card(name: str, logo: str, status: str = 'Active'):
 
     html(f"""
         <div class="settings-card settings-card-{status[0:3]}">

@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 
 
-def get_wallet_balances(exchange_api='Binance'):
+def get_wallet_balances(exchange_api : str ='Binance'):
     exchange_api = exchange_api.replace(' ', '_').lower()
     with spinner('Fetching Wallet Information'):
         data, status_code = fetch_account_spot(exchange_api)

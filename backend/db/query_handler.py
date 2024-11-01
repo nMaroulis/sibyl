@@ -44,7 +44,7 @@ def db_init():
     return 0
 
 
-def add_trade_to_db(exchange='binance', datetime_buy='', orderid_buy='', asset_from='USDT', asset_to="BTC",
+def add_trade_to_db(exchange: str = 'binance', datetime_buy: str = '', orderid_buy: str = '', asset_from: str = 'USDT', asset_to: str = "BTC",
                     asset_from_amount=1.0, asset_to_quantity=1.0, asset_to_price=0, datetime_sell=None, orderid_sell='', asset_to_sell_price=None, profit=None, order_type='trade', strategy='greedy', fees=0, status='active'):
     conn = sqlite3.connect('backend/db/backend_db.db')  # Create/Connect to the SQLite database
     cursor = conn.cursor()  # Create a cursor object to execute SQL commands
@@ -64,7 +64,7 @@ def add_trade_to_db(exchange='binance', datetime_buy='', orderid_buy='', asset_f
     return 0
 
 
-def fetch_trading_history(date_from=None, date_to=None, status='active'):
+def fetch_trading_history(date_from: str = None, date_to: str = None, status: str = 'active'):
     conn = sqlite3.connect('backend/db/backend_db.db')
     cursor = conn.cursor()
 

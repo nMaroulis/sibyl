@@ -70,7 +70,7 @@ def get_fear_and_greed_index_gauge_plot():
 
 
 # @cache_data(ttl=3600)  #  cache result for 1 hour
-def get_latest_news(website='coindesk', limit=10):
+def get_latest_news(website: str = 'coindesk', limit: int = 10):
 
     articles = fetch_news(website, limit)
     if len(list(articles)) > 0:
@@ -186,12 +186,12 @@ def get_latest_news(website='coindesk', limit=10):
         warning('No Articles Found! Connection to Coindesk Website might be lost.')
 
 
-def get_news_summary(model='spacy', website='coindesk'):
+def get_news_summary(model: str = 'spacy', website: str = 'coindesk'):
     summary = fetch_news_summary(model, website)
     html(f"""<p>{summary}</p>""")
 
 
-def get_news_sentiment(model='vader', website='coindesk'):
+def get_news_sentiment(model: str = 'vader', website: str = 'coindesk'):
     sentiment_score = fetch_news_sentiment()
     # # GAUGE PLOT
     fig = Figure(Indicator(

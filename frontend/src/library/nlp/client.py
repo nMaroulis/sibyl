@@ -5,7 +5,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 
 
 @cache_resource(ttl=3600, show_spinner=None)  # cache result for 1 hour2
-def fetch_news(website='coindesk', limit=10):
+def fetch_news(website: str = 'coindesk', limit: int = 10):
     url = f"{BACKEND_SERVER_ADDRESS}/reporter/news/articles?website={website}&limit={limit}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -15,7 +15,7 @@ def fetch_news(website='coindesk', limit=10):
 
 
 @cache_resource(ttl=3600, show_spinner=None)  # cache result for 1 hour2
-def fetch_news_summary(model='spacy', website='coindesk'):
+def fetch_news_summary(model: str = 'spacy', website: str = 'coindesk'):
     url = f"{BACKEND_SERVER_ADDRESS}/reporter/news/summary?model={model}&website={website}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -33,7 +33,7 @@ def fetch_news_summary(model='spacy', website='coindesk'):
 
 
 @cache_resource(ttl=3600, show_spinner=None)  # cache result for 1 hour2
-def fetch_news_sentiment(model='vader', website='coindesk'):
+def fetch_news_sentiment(model: str= 'vader', website: str = 'coindesk'):
     url = f"{BACKEND_SERVER_ADDRESS}/reporter/news/sentiment?model={model}&website={website}"
     response = requests.get(url)
     if response.status_code == 200:

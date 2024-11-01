@@ -5,7 +5,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 """A General purpose Client"""
 
 
-def check_exchange_api_connection(exchange='binance'):
+def check_exchange_api_connection(exchange: str = 'binance'):
     url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/{exchange}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -53,7 +53,7 @@ def check_backend_connection():
             rerun()
 
 
-def check_nlp_connection(model="hugging_face"):
+def check_nlp_connection(model: str = "hugging_face"):
     url = f"{BACKEND_SERVER_ADDRESS}/nlp/{model}"
     response = requests.get(url)
     if response.status_code == 200:

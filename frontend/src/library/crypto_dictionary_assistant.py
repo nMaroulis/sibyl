@@ -43,11 +43,11 @@ def get_crypto_coin_dict_inv():
     return crypto_coin_dict
 
 
-def get_crypto_coin_listing_name(crypto_name='Bitcoin [BTC]'):
+def get_crypto_coin_listing_name(crypto_name: str = 'Bitcoin [BTC]'):
     return get_crypto_coin_dict().get(crypto_name)
 
 
-def get_crypto_name_regex(crypto_name='Bitcoin [BTC]'):
+def get_crypto_name_regex(crypto_name: str = 'Bitcoin [BTC]'):
     if '[' in crypto_name and ']' in crypto_name:
         coin_name = ''.join(crypto_name.split('[')[1].split(']')[0])
         return coin_name

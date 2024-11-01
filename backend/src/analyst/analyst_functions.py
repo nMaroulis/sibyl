@@ -11,7 +11,7 @@ def get_coin_symbol_name_map():
     return coins_data
 
 
-def update_coin_symbol_name_map(api="coincap"):
+def update_coin_symbol_name_map(api: str = "coincap"):
     coin_dict = {}
 
     if api == "coincap":

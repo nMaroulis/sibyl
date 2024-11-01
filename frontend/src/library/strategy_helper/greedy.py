@@ -5,7 +5,7 @@ from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum
 
 class GreedyTrader:
 
-    def __init__(self, order_type='Swap'):
+    def __init__(self, order_type: str ='Swap'):
         self.chosen_id = None
         self.id = id
         self.init_time = None

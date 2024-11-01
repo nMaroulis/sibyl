@@ -7,7 +7,7 @@ from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 
 class Broker:
 
-    def __init__(self, exchange_client: ExchangeAPIClient, datetime=None, trade_from='USDT', trade_to='BTC', from_amount=1.0, order_type='swap'):
+    def __init__(self, exchange_client: ExchangeAPIClient, datetime=None, trade_from: str = 'USDT', trade_to: str = 'BTC', from_amount: float = 1.0, order_type: str = 'swap'):
 
         self.exchange_client = exchange_client
         self.strategy = None  # Strategy Type
@@ -48,7 +48,7 @@ class Broker:
             return -1
 
     def post_buy_order(self):
-        self.exchange_client.post_buy_order(self.trading_pair, self.from_amount)
+        response = self.exchange_client.post_buy_order(self.trading_pair, self.from_amount)
         
         # TEMP SOLUTION
         return response.status_code  # "transactTime"

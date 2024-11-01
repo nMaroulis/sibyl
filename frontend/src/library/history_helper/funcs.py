@@ -28,7 +28,7 @@ def highlight_profit(val):
     return f'background-color: {color}'
 
 
-def trading_history_table(strat_status='all'):
+def trading_history_table(strat_status: str = 'all'):
     trade_strategies = fetch_trading_history(strat_status)
     if trade_strategies is None:
         return None
