@@ -39,7 +39,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return 'Invalid Credentials'
 
-    def get_crypto_pair_price(self, pair: str = 'BTCUSDT'):
+    def get_crypto_pair_price(self, pair: str):
         # Binance API endpoint for ticker price
         url = f"{self.api_base_url}/api/v3/ticker/price"
         params = {'symbol': pair}
@@ -194,10 +194,10 @@ class BinanceClient(ExchangeAPIClient):
         return {'min_notional': minimum_buy}  # If the symbol is not found, return False
 
     """ TRADE FUNCTIONS """
-    def post_buy_order(self, trading_pair: str = '', from_amount: int = 5):
+    def post_buy_order(self, trade_from: str, trade_to: str, from_amount: int):
 
         url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
-
+        trading_pair = f"{trade_to}{trade_from}"
         # Set the request parameters
         params = {
             'symbol': trading_pair,  # Trading pair symbol for ADA/USDT
@@ -243,7 +243,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return None  # "transactTime"
 
-    def post_swap_order(self, trade_from: str = 'USDT', trade_to: str = 'BTC', from_amount: int = 5):  # Alternative to BUY order with No fees in Binance
+    def post_swap_order(self, trade_from: str, trade_to: str, from_amount: int):  # Alternative to BUY order with No fees in Binance
 
         url = f"{self.api_base_url}/sapi/v1/convert/getQuote"
         timestamp = str(int(time.time() * 1000))
@@ -286,16 +286,17 @@ class BinanceClient(ExchangeAPIClient):
                 buy_order_id = response.json()['orderId']
                 quantity_bought = response.json()['toAmount']
                 return buy_order_id, quantity_bought, timestamp
-            except KeyError:
+            except KeyError as e:
+                print(f"binance_client :: post_swap_order {e}")
                 return None
         else:
             return None
 
-    def post_sell_order(self, trading_pair: str, quantity_bought, sell_order_price):
+    def post_sell_order(self, trade_from: str, trade_to: str, quantity_bought: float, sell_order_price: float):
 
         timestamp = int(time.time() * 1000)
         url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
-
+        trading_pair = f"{trade_to}{trade_from}"
         print(quantity_bought, sell_order_price)
         # Build the query string
         query_string = f'symbol={trading_pair}&side=SELL&type=LIMIT&timeInForce=GTC&quantity={quantity_bought}&price={sell_order_price}&timestamp={timestamp}'

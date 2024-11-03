@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 
 
-def get_wallet_balances(exchange_api : str ='Binance'):
+def get_wallet_balances(exchange_api: str):
     exchange_api = exchange_api.replace(' ', '_').lower()
     with spinner('Fetching Wallet Information'):
         data, status_code = fetch_account_spot(exchange_api)
@@ -53,9 +53,7 @@ def get_wallet_balances(exchange_api : str ='Binance'):
 
                 cols = columns(2)  # max number of spot in the same row
                 with cols[0]:
-                    markdown(
-                        """<h6 style='text-align: left;margin-top:1em;'>SPOT Balance</h6>""",
-                        unsafe_allow_html=True)
+                    html("<h6 style='text-align: left;margin-top:1em;'>SPOT Balance</h6>")
 
                     wallet_list_df = DataFrame(wallet_list, columns=['Asset', 'SPOT Amount'])
                     wallet_list_df['Staked Amount'] = stk
@@ -87,8 +85,7 @@ def get_wallet_balances(exchange_api : str ='Binance'):
                     html(""" </div>""")
 
                 with cols[1]:
-                    markdown(
-                        """<h6 style='text-align: left;margin-top:1em;margin-bottom:0;'></h6>""",unsafe_allow_html=True)
+                    html("<h6 style='text-align: left;margin-top:1em;margin-bottom:0;'></h6>")
 
                     # Get Top N
                     if len(pie_chart_values) > 10:
@@ -111,7 +108,7 @@ def get_wallet_balances(exchange_api : str ='Binance'):
                         x=1,
                     ))# , margin=dict(l=20, t=20, r=20, b=0)
                     plotly_chart(fig, config=dict(displayModeBar=False), use_container_width=True)
-                    markdown('<p style="text-align:center;font-size:5;color:grey">A maximum of 10 Coins can be displayed.</p>', unsafe_allow_html=True)
+                    html('<p style="text-align:center;font-size:5;color:grey">A maximum of 10 Coins can be displayed.</p>')
             info('💡 The locked assets in Binance are not yet available to show.')
         else:
             error("Connection to Backend Server failed. Please visit the Settings Tab to set a **IP** and **PORT**, or check start application manually via the **main.py** script")
@@ -124,8 +121,8 @@ def get_logo_header():
     # image = Image.open('./static/home_logo.png')
     # st.image(image, use_column_width=False, width=200)
     # <img src="https://repository-images.githubusercontent.com/648387594/566640d6-e1c4-426d-b2f2-bed885d07e97" style="width:20em;padding-top:0;">
-    markdown("""<div align="center">
-      <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501" style="width:20em;padding-top:0;"></div>""", unsafe_allow_html=True)
+    html("""<div align="center">
+      <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501" style="width:20em;padding-top:0;"></div>""")
     # st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Home Page</h1>""", unsafe_allow_html=True)
     return 0
 

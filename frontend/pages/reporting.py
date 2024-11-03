@@ -5,9 +5,7 @@ import requests
 
 fix_page_layout("Report")
 
-st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypto Report</h2>""", unsafe_allow_html=True)
-# st.markdown("""<hr style="height:1px;width:10em;text-align: center; color:gray;background-color:gray;margin:auto; padding-top:0;">""", unsafe_allow_html=True)
-
+st.html("<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypto Report</h2>")
 
 st.sidebar.selectbox(label="Source Website", options=['Coindesk', 'Decrypt'], disabled=True)
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)
@@ -16,8 +14,7 @@ st.sidebar.button("Sibyl LLM Chatbot", disabled=True)
 
 st.html("""
 <style>
-
-[data-testid="column"] {
+[data-testid="stColumn"] {
     background-color: #f9f9f9;
     box-shadow: 10px 10px 23px rgba(0, 0, 0, 0.4);
     border-radius: 15px;
@@ -27,11 +24,7 @@ st.html("""
 </style>
 """)
 
-# st.markdown("""<h4 style='text-align: left;margin-top:1em; padding-top:0;'>News Summary</h4>""",
-#             unsafe_allow_html=True)
-
 st.html("""
-
     <style>
         .status_header {
             display: flex;

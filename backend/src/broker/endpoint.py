@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi import Query
 from typing import Optional, List
-from backend.settings import SERVER_IP, SERVER_PORT, BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
+from backend.settings import BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
 import json
 import requests
 import hmac, hashlib
@@ -9,6 +9,8 @@ import time
 from backend.db.query_handler import add_trade_to_db, fetch_trading_history, update_strategy_status
 from backend.src.broker.greedy import GreedyBroker
 from datetime import datetime
+from pydantic import BaseModel
+from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 
 # APIRouter creates path operations for user module
@@ -24,25 +26,42 @@ def get_active_trade_orders(status: str = 'all'):
     active_trade_strategies = fetch_trading_history(status=status)
     return active_trade_strategies
 
+class TradeParams(BaseModel):
+    exchange_api: str
+    from_coin: str = 'USDT'
+    to_coin: str
+    from_amount: float
+    strategy: str
+    strategy_params: dict
+    order_type: str
 
-@router.get("/trade/order/buy/new")
-def send_new_buy_order(from_coin: str = 'USDT', to_coin: str = 'BTC', from_amount: float = 1.0, strategy: str = 'greedy', order_type: str = 'swap'):
-    gb = GreedyBroker(time.strftime('%Y-%m-%d %H:%M:%S'), from_coin, to_coin, from_amount, order_type)
-    print(gb.get_db_fields())
-    response = gb.send_buy_order()
+@router.post("/trade/order/buy/new") # TODO FIX HERE
+def send_new_buy_order(trade_params: TradeParams):
+
+    client = ExchangeClientFactory.get_client(trade_params.exchange_api)
+    if trade_params.strategy == 'greedy':
+        broker_client = GreedyBroker(client, time.strftime('%Y-%m-%d %H:%M:%S'), trade_params.from_coin, trade_params.to_coin, trade_params.from_amount, trade_params.order_type, trade_params.strategy_params)
+    else:
+        raise HTTPException(status_code=400, detail="Strategy not found.")
+
+    response = broker_client.init_trading_algorithm()
+    print(broker_client.get_db_fields())
     if "success" in response:
-        db_fields = gb.get_db_fields()
+        db_fields = broker_client.get_db_fields()
         add_trade_to_db(exchange=db_fields[0], datetime_buy=db_fields[1], orderid_buy=db_fields[2],
                         asset_from=db_fields[3], asset_to=db_fields[4], asset_from_amount=db_fields[5],
                         asset_to_quantity=db_fields[6], asset_to_price=db_fields[7], datetime_sell=db_fields[8],
                         orderid_sell=db_fields[9], asset_to_sell_price=db_fields[10], order_type=db_fields[11],
                         strategy=db_fields[12], status=db_fields[13])
-        print('Backend :: Broker :: endpoint :: ', gb)
-    return response
+        print('Backend :: Broker :: endpoint :: ', broker_client)
+        return response
+    else:
+        return response
+        # raise HTTPException(status_code=400, detail="Strategy failed")
 
 
 @router.get("/trade/info/minimum_order")
-def is_buy_order_possible(symbol: str = 'BTCUSDT'):
+def is_buy_order_possible(symbol: str):
     url = f"{BINANCE_API_URL}/api/v3/exchangeInfo?symbol={symbol}"  # {symbol}&quantity={quantity}&price={price}"
     response = requests.get(url)  # Send a GET request to retrieve the trading pairs' details
     exchange_info = response.json()

@@ -29,12 +29,12 @@ class CoinbaseClient(ExchangeAPIClient):
     def get_minimum_buy_order(self, symbol: str):
         pass
 
-    def post_buy_order(self, trading_pair: str, from_amount: float):
+    def post_buy_order(self, trade_from: str, trade_to: str, from_amount: float):
         pass
 
     def post_swap_order(self, trade_from: str, trade_to: str,
                         from_amount: float):  # Alternative to BUY order with No fees in Binance
         pass
 
-    def post_sell_order(self, trading_pair: str, quantity_bought: str, sell_order_price: float):
+    def post_sell_order(self, trade_from: str, trade_to: str, quantity_bought: float, sell_order_price: float):
         pass

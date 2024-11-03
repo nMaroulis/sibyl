@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from fastapi import Query
 from typing import Optional, List
 import requests
-from backend.src.exchange_client.binance_testnet_client import BinanceTestnetClient
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 # APIRouter creates path operations for user module
