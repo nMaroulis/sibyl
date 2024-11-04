@@ -12,7 +12,7 @@ class BinanceClient(ExchangeAPIClient):
 
     def __init__(self):
         super().__init__()
-        self.name = 'Binance'
+        self.name = 'binance'
         self.api_base_url = 'https://api.binance.com'  # 'https://api1.binance.com', 'https://api2.binance.com', 'https://api3.binance.com', 'https://api4.binance.com'
         # Set API Keys
         api_creds = get_api_key("binance")
@@ -292,14 +292,14 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return None
 
-    def post_sell_order(self, trade_from: str, trade_to: str, quantity_bought: float, sell_order_price: float):
+    def post_sell_order(self, trade_from: str, trade_to: str, quantity: float, sell_order_price: float):
 
         timestamp = int(time.time() * 1000)
         url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
-        trading_pair = f"{trade_to}{trade_from}"
-        print(quantity_bought, sell_order_price)
+        trading_pair = f"{trade_from}{trade_to}"
+        print(f"backend :: BinanceExchange client :: post_sell_order :: Sell order for {quantity} {trade_from} at {sell_order_price} {trade_to}")
         # Build the query string
-        query_string = f'symbol={trading_pair}&side=SELL&type=LIMIT&timeInForce=GTC&quantity={quantity_bought}&price={sell_order_price}&timestamp={timestamp}'
+        query_string = f'symbol={trading_pair}&side=SELL&type=LIMIT&timeInForce=GTC&quantity={quantity}&price={sell_order_price}&timestamp={timestamp}'
         signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
         query_string += f'&signature={signature}'
         headers = {
@@ -326,4 +326,3 @@ class BinanceClient(ExchangeAPIClient):
                 return None
         else:
             return None
-        # return response.status_code

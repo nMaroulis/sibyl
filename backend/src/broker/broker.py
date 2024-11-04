@@ -2,7 +2,7 @@ import requests
 import time
 from datetime import datetime
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
-
+from typing import List, Any
 
 class Broker:
 
@@ -30,5 +30,5 @@ class Broker:
     def init_trading_algorithm(self) -> dict:
         pass
 
-    def get_db_fields(self):
-        return [self.exchange_client.name.lower(), self.datetime, self.trade_from, self.trade_to, self.from_amount, self.quantity_bought, self.buy_order_id, self.sell_order_id, self.order_type, 'Strategy', 'active']
+    def get_db_fields(self) -> list[Any]:
+        return [self.exchange_client.name, self.datetime, self.trade_from, self.trade_to, self.from_amount, self.quantity_bought, self.buy_order_id, self.sell_order_id, self.order_type, 'Strategy', 'active']

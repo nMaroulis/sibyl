@@ -71,6 +71,7 @@ def show_line_plot_with_analytics(coin: str, price_hist_df: DataFrame):
 
     return
 
+
 def price_history_plot(exchange_api: str = 'binance_testnet', coin: str ='BTC', time_int: str = '1d', time_limit: int = 500, plot_type : str = 'Line Plot', show_plot=True, full_name=True):
     df = DataFrame()
     fig = None
@@ -112,7 +113,7 @@ def price_history_correlation_heatmap(coins, time_int_c='1d', time_limit_c=500, 
     df = DataFrame()
     invalid_coins = []
     for coin in coins:
-        price_hist_df = price_history_plot(coin, time_int_c, time_limit_c, 'Line Plot', False, True)
+        price_hist_df = price_history_plot(coin, time_int_c, time_limit_c, 'Line Plot', False, True) # TODO - ADD DEFAULT PRICE HISTORY
         if price_hist_df.shape[0] < 2:
             invalid_coins.append(coin)
         else:

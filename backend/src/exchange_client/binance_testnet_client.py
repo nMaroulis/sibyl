@@ -6,7 +6,7 @@ class BinanceTestnetClient(BinanceClient):
 
     def __init__(self):
         super().__init__()
-        self.name = 'Binance Testnet'
+        self.name = 'binance_testnet'
         self.api_base_url = 'https://testnet.binance.vision'
         # Set API Keys
         api_creds = get_api_key("binance_testnet")

@@ -21,8 +21,8 @@ class GreedyBroker(Broker):
             elif self.strategy_params['type'] == "auto":
                 auto_greedy_dict ={
                     'Very Low': 1.0,
-                    'Low': 3.0,
-                    'Moderate': 7.5,
+                    'Low': 2.5,
+                    'Moderate': 4.5,
                     'High': 10.0,
                     'Extreme': 20.0
                 }
@@ -49,7 +49,7 @@ class GreedyBroker(Broker):
             #     return {"error": "Buy order failed :: Trade Buy Order was Unsuccessful"}
 
         # SELL ORDER
-        self.sell_order_id = self.exchange_client.post_sell_order(self.trade_from, self.trade_to, self.quantity_bought, self.sell_order_price)
+        self.sell_order_id = self.exchange_client.post_sell_order(self.trade_to, self.trade_from, self.quantity_bought, self.sell_order_price)
 
         # Process the response
         if self.sell_order_id is not None:
@@ -61,6 +61,6 @@ class GreedyBroker(Broker):
             return {"error": "Buy order failed - Sell Order was Unsuccessful"}
 
     def get_db_fields(self):  # Override Function
-        return [self.exchange_client.name.lower(), self.datetime, self.buy_order_id, self.trade_from, self.trade_to, self.from_amount, self.quantity_bought,
+        return [self.exchange_client.name, self.datetime, self.buy_order_id, self.trade_from, self.trade_to, self.from_amount, self.quantity_bought,
                 self.current_trade_to_price, self.datetime_sell,
                 self.sell_order_id, self.sell_order_price, self.order_type, self.strategy, 'active']

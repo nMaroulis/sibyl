@@ -38,7 +38,7 @@ with st.container(border=False):
         st.session_state['from_coin'] = st.selectbox('Base Asset (from)', options=['USDT'], disabled=True)
         st.caption("Currently only USDT is available as an Asset to use for Trading.")
     with col02:
-        crypto_list = fetch_available_coins()
+        crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'])
         crypto_list.sort()
         crypto_list.insert(0, 'Auto')
         st.session_state['target_coin'] = st.selectbox('Quote Asset (to):', options=crypto_list, index=1)

@@ -1,3 +1,4 @@
+from plotly.graph_objs import Figure
 from streamlit import sidebar, spinner, dataframe, plotly_chart, warning, error
 from frontend.src.library.history_helper.client import update_trading_history, fetch_trading_history
 from pandas import DataFrame, to_datetime, isnull
@@ -65,7 +66,7 @@ def get_status_barplot(status_series=None):
     plotly_chart(fig, config=dict(displayModeBar=False))
 
 
-def get_trading_history_line_plot(trade_df=None, target_coin='Bitcoin [BTC]'):
+def get_trading_history_line_plot(trade_df: DataFrame) -> Figure | None:
 
     if trade_df.shape[0] > 5:
         warning("💡 A maximum of **5 Trades** can be plotted concurrently!")  # trade_df = trade_df[0:4]
@@ -83,11 +84,11 @@ def get_trading_history_line_plot(trade_df=None, target_coin='Bitcoin [BTC]'):
         more_that_one_coins_flag = True
 
     # Get Historic Prices
-    price_hist_df = price_history_plot(trade_df["Exchange"], get_crypto_coin_dict_inv().get(coins_list[0]), '30m', 500,  'Line Plot', False, False)
+    price_hist_df = price_history_plot("binance", coins_list[0], '30m', 500,  'Line Plot', False, False)
     col_name = coins_list[0] + ' Price'
     price_hist_df[col_name] = price_hist_df['Price']
     if more_that_one_coins_flag:
-        price_hist_df_tmp = price_history_plot(trade_df["Exchange"], get_crypto_coin_dict_inv().get(coins_list[1]), '30m', 500, 'Line Plot', False,False)
+        price_hist_df_tmp = price_history_plot("binance", coins_list[1], '30m', 500, 'Line Plot', False,False)
         col_name1 = coins_list[1] + ' Price'
         price_hist_df[col_name1] = price_hist_df_tmp['Price']
 
@@ -129,7 +130,7 @@ def get_trading_history_line_plot(trade_df=None, target_coin='Bitcoin [BTC]'):
         else:
             secondary_plot = True
 
-        if len(price_hist_df[price_hist_df['DateTime'] == buy_dt][price_col].values) <1:
+        if len(price_hist_df[price_hist_df['DateTime'] == buy_dt][price_col].values) < 1:
             error('Plot for old dates is not supported yet!')
             return None
         # Add scatter trace for the buy point

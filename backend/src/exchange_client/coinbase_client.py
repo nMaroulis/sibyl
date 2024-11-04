@@ -6,7 +6,7 @@ class CoinbaseClient(ExchangeAPIClient):
 
     def __init__(self):
         super().__init__()
-        self.name = 'Coinbase'
+        self.name = 'coinbase'
         self.api_base_url = "https://api.prime.coinbase.com/v1"
         # Set API Keys
         self.api_key, self.api_secret_key = None, None
@@ -36,5 +36,5 @@ class CoinbaseClient(ExchangeAPIClient):
                         from_amount: float):  # Alternative to BUY order with No fees in Binance
         pass
 
-    def post_sell_order(self, trade_from: str, trade_to: str, quantity_bought: float, sell_order_price: float):
+    def post_sell_order(self, trade_from: str, trade_to: str, quantity: float, sell_order_price: float):
         pass

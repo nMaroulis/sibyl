@@ -6,7 +6,7 @@ pages = {
     ],
     "Trading": [
         st.Page("pages/strategy.py", title="Strategy", icon=":material/strategy:"),
-        st.Page("pages/trading_Report.py", title="Trading Report", icon=":material/youtube_searched_for:"),
+        st.Page("pages/trading_report.py", title="Trading Report", icon=":material/youtube_searched_for:"),
     ],
     "Analytics": [
         st.Page("pages/analytics.py", title="Analytics", icon=":material/query_stats:"),
