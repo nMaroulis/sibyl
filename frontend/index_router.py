@@ -11,6 +11,7 @@ pages = {
     "Analytics": [
         st.Page("pages/analytics.py", title="Analytics", icon=":material/query_stats:"),
         st.Page("pages/forecasting.py", title="Forecasting", icon=":material/timeline:"),
+        st.Page("pages/explorer.py", title="Blockchain Explorer", icon=":material/explore:"),
     ],
     "News": [
         st.Page("pages/reporting.py", title="Reporting", icon=":material/newspaper:")

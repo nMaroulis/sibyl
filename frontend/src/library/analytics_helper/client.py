@@ -5,7 +5,6 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 
 
 def fetch_price_history(exchange_api: str, symbol: str, time_int: str, time_limit: int, plot_type: str = 'line', full_name=True):
-    print("AAAAAAAAA", symbol)
     if full_name:
         symbol = get_crypto_name_regex(symbol)  # get_crypto_coin_dict().get(symbol)
     symbol += 'USDT'  # USDT is the default
@@ -15,7 +14,7 @@ def fetch_price_history(exchange_api: str, symbol: str, time_int: str, time_limi
 
 
 @cache_data(ttl=100000) # TODO REMOVE DEFAULT VALUE, FIX METHOD CALLS
-def fetch_available_coins(exchange_api: str = 'binance_testnet'):
+def fetch_available_coins(exchange_api: str = 'binance'):
 
     url = f"{BACKEND_SERVER_ADDRESS}/analyst/exchange_info/available_coins/{exchange_api}"
     response = requests.get(url)

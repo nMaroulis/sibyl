@@ -2,6 +2,7 @@ from streamlit import write, form, selectbox, radio, form_submit_button, sidebar
 from frontend.src.library.analytics_helper.plots import price_history_plot, price_history_correlation_heatmap, show_line_plot_with_analytics, show_analytics
 from frontend.src.library.analytics_helper.client import fetch_available_coins
 
+
 def get_price_analytics_form():
     html("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Crypto Analysis</h5>""")
     with form(key='forecasting_form', border=True, clear_on_submit=False):
@@ -9,7 +10,11 @@ def get_price_analytics_form():
         with cols[0]:
             coin = selectbox(label='Choose Crypto Asset', options=fetch_available_coins())
         with cols[1]:
-            exchange_api = selectbox(label='Choose Exchange', options=session_state["available_exchange_apis"])
+            if len(session_state["available_exchange_apis"]) == 0:
+                exchange_api = "binance"
+                selectbox(label='Choose Exchange', options=[], disabled=True)
+            else:
+                exchange_api = selectbox(label='Choose Exchange', options=session_state["available_exchange_apis"])
         with cols[2]:
             time_limit = number_input('Choose Sample Time Limit', value=1000, min_value=100, max_value=1000000)
 
@@ -85,6 +90,7 @@ def get_price_history_form():
 def get_correlation_heatmap_form():
     html("<h5 style='text-align: left;margin-top:0; padding-top:0;'>Correlation Heatmap</h5>")
     write('Generate a Correlation Heatmap for the selected Crypto Coins')
+    caption("This function currently uses the Binance API to fetch the price")
     with form('Correlation Heatmap'):
         coins = multiselect(label='Choose Coins to Correlate', options=fetch_available_coins(), max_selections=40)
         cols1 = columns(2)

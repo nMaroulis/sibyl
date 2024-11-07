@@ -33,7 +33,6 @@ def post_strategy(exchange_api: str, from_coin: str, to_coin: str, from_amount: 
     if response.status_code == 200:
         return response.json()
     else:
-        print("AAAAAAAAAAAAAAAAAAA", response.json())
         return response.json()
 
 

@@ -113,7 +113,7 @@ def price_history_correlation_heatmap(coins, time_int_c='1d', time_limit_c=500, 
     df = DataFrame()
     invalid_coins = []
     for coin in coins:
-        price_hist_df = price_history_plot(coin, time_int_c, time_limit_c, 'Line Plot', False, True) # TODO - ADD DEFAULT PRICE HISTORY
+        price_hist_df = price_history_plot("binance", coin, time_int_c, time_limit_c, 'Line Plot', False, True) # TODO - ADD DEFAULT PRICE HISTORY
         if price_hist_df.shape[0] < 2:
             invalid_coins.append(coin)
         else:
