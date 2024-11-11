@@ -1,10 +1,4 @@
 from fastapi import APIRouter
-from fastapi import Query
-from typing import Optional, List
-import requests
-from backend.settings import SERVER_IP, SERVER_PORT, BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
-from backend.config.api_key_handler import get_api_key, get_nlp_api_key
-import json
 from backend.src.technician.technician import Technician
 
 # APIRouter creates path operations for user module

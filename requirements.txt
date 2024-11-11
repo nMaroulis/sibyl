@@ -23,6 +23,7 @@ cymem==2.0.8
 daal==2023.2.1
 daal4py==2023.2.1
 docopt==0.6.2
+extra-streamlit-components==0.1.71
 fastapi==0.115.4
 flatbuffers==24.3.25
 fonttools==4.54.1

@@ -1,14 +1,7 @@
 import streamlit as st
-import requests
-import pandas as pd
-import matplotlib.pyplot as plt
-import datetime
 from frontend.src.library.explorer_helper.client import fetch_blocks
 from frontend.src.library.explorer_helper.plots import plot_block_height_weight_tx_count
-from plotly import express as px
 from frontend.src.library.ui_elements import fix_page_layout
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 fix_page_layout('🧭 explorer')
 st.html("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Blockchain Explorer</h2>""")

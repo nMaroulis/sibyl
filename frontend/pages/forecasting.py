@@ -1,8 +1,8 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout
-from frontend.src.library.analytics_helper.client import fetch_available_coins
-from frontend.src.library.analytics_helper.plots import price_history_plot
 from frontend.src.library.overview_helper.navigation import api_status_check
+from frontend.src.library.forecasting_helper.plots import plot_forecast
+
 
 fix_page_layout('🔮 forecasting')
 st.html("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypto Analysis & Forecasting</h2>""")
@@ -15,4 +15,16 @@ if "available_exchange_apis" not in st.session_state:
     with st.spinner("Checking API Availability Status..."):
         api_status_check()
 
-st.write("TBD")
+with st.form("oracle_form"):
+    c0, c1, c2 = st.columns(3)
+
+    with c0:
+        coin = st.selectbox("Choose Coin", ["BTC"], disabled=True)
+    with c1:
+        st.selectbox("Choose Interval", ["1d"])
+    with c2:
+        st.number_input("Choose Forecasting Period", min_value=1, max_value=30, value=7, disabled=True)
+    sub = st.form_submit_button("Summon the Oracle 🔮")
+    if sub:
+        with st.spinner(f"Oracle is predicting the future of {coin}..."):
+            plot_forecast("BTC", "1d", 7)
