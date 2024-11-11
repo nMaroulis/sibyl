@@ -21,7 +21,7 @@ class Oracle:
         self.current_btc_price = None
 
     def fetch_dataset(self):
-        start_date = (datetime.today() - timedelta(days=self.lookback+1)).strftime('%Y-%m-%d')
+        start_date = (datetime.today() - timedelta(days=self.lookback)).strftime('%Y-%m-%d')
         end_date = datetime.today().strftime('%Y-%m-%d')
         bitcoin = yf.download('BTC-USD', start=start_date, end=end_date)
         self.dataset['bitcoin_price'] = bitcoin['Adj Close']
