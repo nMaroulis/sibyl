@@ -1,6 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 from typing import List, Tuple
+import re
+
+
+def clean_text(text: str):
+    text = re.sub(r"\s*Add reaction\s*$", "", text)
+    text = re.sub(r"(?:\s*#[\w\s-]+)+\s*$", "", text)
+    return text.strip()  # Remove any extra spaces
+
 
 def fetch_crypto_articles_from_cointelegraph(limit: int = 10) -> List[Tuple[str, str, str, str]]:
     """
@@ -40,7 +48,8 @@ def fetch_crypto_articles_from_cointelegraph(limit: int = 10) -> List[Tuple[str,
             article_url = "https://cointelegraph.com" + link['href']  # Construct the full URL
             # Fetch the article content from the individual article page
             article_content = fetch_article_text(article_url)
-            articles_list.append((title_text, subtitle.get_text(), article_url, article_content))
+            article_text = clean_text(article_content)
+            articles_list.append((title_text, subtitle.get_text(), article_url, article_text))
 
     return articles_list
 
