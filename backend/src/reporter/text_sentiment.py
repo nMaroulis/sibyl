@@ -37,7 +37,6 @@ def get_text_sentiment(model: str = 'vader', articles=None):
 
 def vader_text_sentiment(doc: str):
     # nltk.download('vader_lexicon')
-
     sid = SentimentIntensityAnalyzer()  # Initialize VADER sentiment analyzer
     sentences = sent_tokenize(doc)  # Tokenize article into sentences
 
