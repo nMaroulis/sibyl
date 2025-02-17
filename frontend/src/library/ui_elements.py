@@ -4,10 +4,10 @@ from PIL import Image
 
 def fix_page_layout(page_name: str = 'Sibyl'):
 
-    im = Image.open("/Users/nik/PycharmProjects/sibyl/frontend/static/favicon/favicon.ico")
+    # im = Image.open("/frontend/static/favicon/favicon.ico")
     set_page_config(
         page_title=page_name,
-        page_icon=im,
+        # page_icon=im,
         layout="wide",
     )
     logo("assets/logo_transparent.png", icon_image="assets/logo_brand.png",)

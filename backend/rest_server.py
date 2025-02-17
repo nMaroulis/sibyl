@@ -14,6 +14,7 @@ from backend.src.broker.endpoint import router as broker_router
 from backend.src.reporter.endpoint import router as reporter_router
 from backend.src.technician.endpoint import router as technician_router
 from backend.src.explorer.endpoint import router as explorer_router
+from backend.src.stock_analyst.endpoint import router as stock_analyst_router
 from db.query_handler import db_init
 
 
@@ -26,7 +27,7 @@ router.include_router(explorer_router)
 router.include_router(oracle_router)
 router.include_router(reporter_router)
 router.include_router(technician_router)
-
+router.include_router(stock_analyst_router)
 
 app = FastAPI()
 

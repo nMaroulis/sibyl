@@ -19,7 +19,7 @@ def init_json(exchange="binance"):
 
 
 # Function to import API Keys from api_keys folder
-def get_api_key(exchange="binance"):
+def get_api_key(exchange: str) -> list[str | None]:
     if os.path.exists(CREDENTIALS_FILE_PATH):  # check filepath
         f = open(CREDENTIALS_FILE_PATH, "r")
         api_key = json.load(f)
@@ -27,13 +27,13 @@ def get_api_key(exchange="binance"):
         try:
             credentials = [api_key[exchange]['api_credentials']['API_Key'], api_key[exchange]['api_credentials']['Secret_Key']]
         except Exception as e:  # if error parsing credentials
-            return None
+            return [None, None]
         return credentials
     else: # ImportError
-        return None
+        return [None, None]
 
 
-def get_nlp_api_key(nlp_api="hugging_face"):
+def get_nlp_api_key(nlp_api: str = "hugging_face") -> str | None:
     if os.path.exists(CREDENTIALS_FILE_PATH):  # check filepath
         f = open(CREDENTIALS_FILE_PATH, "r")
         api_key = json.load(f)
