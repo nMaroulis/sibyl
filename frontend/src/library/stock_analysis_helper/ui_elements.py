@@ -127,7 +127,7 @@ def display_company_info(info: dict, stock_symbol: str):
                 f"""
                 <div class="officer-card">
                     <p class="officer-title">{officer.get('title', 'N/A')}</p>
-                    <p class="officer-name">{officer.get('name', 'N/A')} - {officer.get('title', 'N/A')}</p>
+                    <p class="officer-name">{officer.get('name', 'N/A')}</p>
                     <p class="officer-details">
                         <strong>Age:</strong> {officer.get('age', 'N/A')} | 
                         <strong>Total Pay (FY 2024):</strong> ${officer.get('totalPay', 'N/A')}
