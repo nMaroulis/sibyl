@@ -4,7 +4,7 @@ from frontend.src.library.analytics_helper.ui_elements import get_price_history_
 from frontend.src.library.overview_helper.navigation import api_status_check
 
 fix_page_layout('Analytics')
-st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Analytics</h2>""", unsafe_allow_html=True)
+st.html("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Analytics</h2>""")
 
 if "available_exchange_apis" not in st.session_state:
     with st.spinner("Checking API Availability Status..."):

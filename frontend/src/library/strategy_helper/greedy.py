@@ -2,7 +2,7 @@ from streamlit import write, form, form_submit_button, button, select_slider, nu
     columns, session_state, caption, spinner, success, error, rerun, toast, divider, selectbox
 import time
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, post_strategy
-from extra_streamlit_components import tab_bar, TabBarItemData
+# from extra_streamlit_components import tab_bar, TabBarItemData
 import re
 
 class GreedyTrader:

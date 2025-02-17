@@ -72,6 +72,13 @@ Additional exchanges are planned for future releases.
 - Uniswap
 - Kraken
 
+### Evaluate Stock - Stock Analysis Module 📊
+Choose a Company from a list of available company stocks and:
+
+- Get Company's Information
+- Analysis if a stock is worth buying or not based on various indicators
+- Future Release: Rating based on custom ML model
+
 ## Roadmap
 The development roadmap includes exciting new features:
 
