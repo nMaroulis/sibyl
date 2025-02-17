@@ -163,7 +163,7 @@ def get_latest_news(website: str = 'cointelegraph', limit: int = 10):
             article_subtitle = article[1]
             article_link = article[2]
             article_body = article[3]
-            article_p = "\n".join(article_body)
+            article_p = article_body  # "\n".join(article_body)
 
             ep_num = '0' + str(c) if c < 10 else str(c)
             html(f"""

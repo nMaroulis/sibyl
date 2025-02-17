@@ -68,7 +68,8 @@ def display_company_info(info: dict, stock_symbol: str):
 
 
     # Risk Section
-    st.header("Risk & Governance")
+    st.html("</br>")
+    st.subheader("Risk & Governance")
 
     c0, c1, c2, c3, c4 = st.columns(5)
     with c0:
@@ -88,17 +89,54 @@ def display_company_info(info: dict, stock_symbol: str):
         st.pyplot(risk_gauge(info.get('shareHolderRightsRisk'))) if 'shareHolderRightsRisk' in info else st.write("N/A")
 
     # Leadership Section
-    st.header("Leadership Team")
-    exp = True
-    for officer in info.get("companyOfficers", []):
-        with st.expander(f"{officer.get('title', 'N/A')}", expanded=exp):
-            st.subheader(f"{officer.get('name', 'N/A')} - {officer.get('title', 'N/A')}")
-            st.write(
-                f"**Age:** {officer.get('age', 'N/A')} | **Total Pay (FY 2024):** ${officer.get('totalPay', 'N/A')}")
-        exp = False
-
+    st.subheader("Leadership Team")
+    st.html(
+        """
+        <style>
+            .officer-card {
+                background-color: #f9f9f9;
+                border-radius: 10px;
+                padding: 10px;
+                margin: 5px 0;
+                box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+                transition: 0.3s;
+            }
+            .officer-card:hover {
+                background-color: #f1f1f1;
+            }
+            .officer-title {
+                font-size: 20px;
+                font-weight: bold;
+                color: #333;
+            }
+            .officer-name {
+                font-size: 16px;
+                font-weight: bold;
+                color: #444;
+            }
+            .officer-details {
+                font-size: 14px;
+                color: #667;
+            }
+        </style>
+        """)
+    cols = st.columns(2)
+    for index, officer in enumerate(info.get("companyOfficers", [])):
+        with cols[index % 2]:
+            st.html(
+                f"""
+                <div class="officer-card">
+                    <p class="officer-title">{officer.get('title', 'N/A')}</p>
+                    <p class="officer-name">{officer.get('name', 'N/A')} - {officer.get('title', 'N/A')}</p>
+                    <p class="officer-details">
+                        <strong>Age:</strong> {officer.get('age', 'N/A')} | 
+                        <strong>Total Pay (FY 2024):</strong> ${officer.get('totalPay', 'N/A')}
+                    </p>
+                </div>
+                """)
     # Stock Performance Section
-    st.header("Stock Performance & Forecasts")
+    st.html("</br>")
+    st.subheader("Stock Performance & Forecasts")
     col1, col2 = st.columns(2)
     with col1:
         st.write(f"**52 Week High:** ${info.get('fiftyTwoWeekHigh', 'N/A')}")
@@ -106,6 +144,7 @@ def display_company_info(info: dict, stock_symbol: str):
     with col2:
         st.write(f"**Target Mean Price:** ${info.get('targetMeanPrice', 'N/A')}")
 
+    st.html("</br>")
     st.subheader("Yahoo Finance Analyst Opinions")
     st.write(f"{info.get('numberOfAnalystOpinions', 'N/A')} **Analysts** generated the following recommendation **{info.get('recommendationKey', 'N/A')}** with a score of **{info.get('recommendationMean', 'N/A')}**.")
     # st.write(f"**Recommended Action**:")
