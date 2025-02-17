@@ -7,8 +7,18 @@ try:
 except LookupError:
     download('punkt_tab')
 
+try:
+    data.find('sentiment/vader_lexicon.zip')
+except LookupError:
+    download('vader_lexicon')
 
-def get_text_sentiment(model='vader', articles=None):
+# try:
+#     data.find('tokenizers/punkt.zip')
+# except LookupError:
+#     download('punkt')
+
+
+def get_text_sentiment(model: str = 'vader', articles=None):
     doc = ""
 
     if articles is not None:
@@ -25,8 +35,9 @@ def get_text_sentiment(model='vader', articles=None):
         return 0
 
 
-def vader_text_sentiment(doc):
+def vader_text_sentiment(doc: str):
     # nltk.download('vader_lexicon')
+
     sid = SentimentIntensityAnalyzer()  # Initialize VADER sentiment analyzer
     sentences = sent_tokenize(doc)  # Tokenize article into sentences
 

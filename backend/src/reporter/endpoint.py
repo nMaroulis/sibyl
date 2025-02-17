@@ -45,5 +45,7 @@ def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
 
     articles = fetch_news(website, 20)
 
+    print(len(articles))
     sentiment = get_text_sentiment(model, articles)
+    print(sentiment)
     return {'sentiment_compound': sentiment}

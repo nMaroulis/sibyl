@@ -54,14 +54,14 @@ st.html("""
 
 cols = st.columns([4, 2], gap='medium')
 with cols[0]:
-    with st.spinner('Fetching News Summary from NLP Model'):
+    with st.spinner('Fetching News Summary from NLP Model...'):
         get_news_summary(nlp_model_summ, 'cointelegraph')
 with cols[1]:
-    with st.container():
-
-        get_news_sentiment()
-        st.caption(
-            "The Sentiment Index on the right is created using the NLP Model based on the news fetched by the Web Scrapper Module.")
+    with st.spinner('Calculating News Sentiment...'):
+        with st.container():
+            get_news_sentiment()
+            st.caption(
+                "The Sentiment Index on the right is created using the NLP Model based on the news fetched by the Web Scrapper Module.")
 
 tabs = st.tabs(['Crypto Sentiment Indexes', 'Latest Articles'])
 with tabs[0]:
