@@ -24,7 +24,16 @@ st.sidebar.button('Update 🔄', type='secondary')
 exchange_api = st.selectbox('Choose Exchange', options=st.session_state["available_exchange_apis"])
 if st.session_state['backend_status'] == 'Active':  # if connection with backend is on, fetch wallet information, check exchange API Key
     if len(st.session_state["available_exchange_apis"]) <= 0:
-        st.write("No Exchanges Available")
+        html_content = """
+        <div style="text-align: center; color: #5E5E5E; font-weight: bold; font-size: 24px;">
+            <br>
+            No Exchange API connected.
+            <br>
+        </div>
+        """
+        st.html(html_content)
+        st.link_button("Go to Settings", "http://localhost:8501/settings", use_container_width=True, type="tertiary",
+                       icon=":material/settings:")
     else:
         get_wallet_balances(exchange_api)
 else:

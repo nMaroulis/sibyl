@@ -10,7 +10,6 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.text_rank import TextRankSummarizer
 from sumy.summarizers.lsa import LsaSummarizer
 # from gensim.summarize import summarizer
-from backend.src.reporter.fetch_news import fetch_news
 
 
 def get_text_summary(model='sumy', articles=None):

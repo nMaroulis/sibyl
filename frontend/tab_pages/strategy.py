@@ -115,7 +115,6 @@ else:
         No Exchange API connected.
         <br>
     </div>
-    
     """
-    st.markdown(html_content, unsafe_allow_html=True)
+    st.html(html_content)
     st.link_button("Go to Settings", "http://localhost:8501/settings", use_container_width=True, type="tertiary", icon=":material/settings:")

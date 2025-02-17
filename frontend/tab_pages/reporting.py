@@ -6,7 +6,7 @@ fix_page_layout("Report")
 
 st.html("<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypto Report</h2>")
 
-st.sidebar.selectbox(label="Source Website", options=['Coindesk', 'Decrypt'], disabled=True)
+st.sidebar.selectbox(label="Source Website", options=['Cointelegraph', 'Coindesk', 'Decrypt'], disabled=True)
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)
 st.sidebar.selectbox(label="Sentiment NLP Model", options=['Vader', 'chatGPT'])
 st.sidebar.button("Sibyl LLM Chatbot", disabled=True)
@@ -55,7 +55,7 @@ st.html("""
 cols = st.columns([4, 2], gap='medium')
 with cols[0]:
     with st.spinner('Fetching News Summary from NLP Model'):
-        get_news_summary(nlp_model_summ, 'coindesk')
+        get_news_summary(nlp_model_summ, 'cointelegraph')
 with cols[1]:
     with st.container():
 
@@ -68,5 +68,5 @@ with tabs[0]:
     get_fear_and_greed_index_gauge_plot()
 with tabs[1]:
     # st.subheader('Coinbase News')
-    with st.spinner('Fetching Latest Crypto News from Coindesk'):
+    with st.spinner('Fetching Latest Crypto News from Cointelegraph'):
         get_latest_news()

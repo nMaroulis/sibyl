@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.get("/news/articles")
-def get_nlp_api_status(website: str = 'coindesk', limit: int = 10):
+def get_nlp_api_status(website: str = 'cointelegraph', limit: int = 10):
 
     # API_TOKEN = get_nlp_api_key()  # nlp_api
     # API_URL = "https://api-inference.huggingface.co/models/nMaroulis1992/gpt-3.5-turbo"
@@ -32,16 +32,16 @@ def get_nlp_api_status(website: str = 'coindesk', limit: int = 10):
 
 
 @router.get("/news/summary")
-def get_news_summary(model: str = 'sumy', website: str = 'coindesk'):
+def get_news_summary(model: str = 'sumy', website: str = 'cointelegraph'):
 
+    print(model, website)
     articles = fetch_news(website, 20)
-    # print(articles)
     summary = get_text_summary(model, articles)
     return {'summary': json.dumps(summary)}
 
 
 @router.get("/news/sentiment")
-def get_news_sentiment(model: str = 'vader', website: str = 'coindesk'):
+def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
 
     articles = fetch_news(website, 20)
 

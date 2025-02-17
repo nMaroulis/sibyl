@@ -1,0 +1,3 @@
+[theme]
+base = "light"
+primaryColor = "#1E90FF"  # Optional: Customize the primary color

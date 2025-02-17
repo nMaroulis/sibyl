@@ -70,7 +70,7 @@ def get_fear_and_greed_index_gauge_plot():
 
 
 # @cache_data(ttl=3600)  #  cache result for 1 hour
-def get_latest_news(website: str = 'coindesk', limit: int = 10):
+def get_latest_news(website: str = 'cointelegraph', limit: int = 10):
 
     articles = fetch_news(website, limit)
     if len(list(articles)) > 0:
@@ -153,10 +153,10 @@ def get_latest_news(website: str = 'coindesk', limit: int = 10):
         </style>
 
         <div class="container">
-          <h3 class="center">Coindesk Top 10 News</h3>
+          <h3 class="center">Cointelegraph Top 10 News</h3>
         """)
 
-        articles = fetch_news('coindesk', 10)
+        articles = fetch_news('cointelegraph', 10)
         c = 1
         for article in articles:
             article_title = article[0]
@@ -181,17 +181,18 @@ def get_latest_news(website: str = 'coindesk', limit: int = 10):
                   </article>
             """)
             c += 1
-        html("""</div><h4 class="episode_center"><a href="" target="_blank" rel="">News from Coindesk</a></h4>""")
+        html("""</div><h4 class="episode_center"><a href="" target="_blank" rel="">News from Cointelegraph</a></h4>""")
     else:
-        warning('No Articles Found! Connection to Coindesk Website might be lost.')
+        warning('No Articles Found! Connection to Cointelegraph Website might be lost.')
 
 
-def get_news_summary(model: str = 'spacy', website: str = 'coindesk'):
+def get_news_summary(model: str, website: str = 'cointelegraph'):
+    print(model, website)
     summary = fetch_news_summary(model, website)
     html(f"""<p>{summary}</p>""")
 
 
-def get_news_sentiment(model: str = 'vader', website: str = 'coindesk'):
+def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
     sentiment_score = fetch_news_sentiment()
     # # GAUGE PLOT
     fig = Figure(Indicator(

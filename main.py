@@ -19,6 +19,7 @@ def main() -> int:
     env['PYTHONPATH'] = ':'.join(sys.path)  # Add the modified sys.path to PYTHONPATH
     backend_server = subprocess.Popen("python3.12 backend/rest_server.py", shell=True, env=env)
     time.sleep(2)  # Let some time for backend to start
+    os.environ["STREAMLIT_CONFIG"] = "frontend/.streamlit/config.toml"
     frontend_ui = subprocess.Popen("streamlit run frontend/index_router.py", shell=True, env=env)
 
     return 0
