@@ -24,20 +24,20 @@ class Oracle:
         start_date = (datetime.today() - timedelta(days=self.lookback)).strftime('%Y-%m-%d')
         end_date = datetime.today().strftime('%Y-%m-%d')
         bitcoin = yf.download('BTC-USD', start=start_date, end=end_date)
-        self.dataset['bitcoin_price'] = bitcoin['Adj Close']
+        self.dataset['bitcoin_price'] = bitcoin['Close']  # Adj Close
         self.current_btc_price = self.dataset['bitcoin_price'].values
         sp500 = yf.download('^GSPC', start=start_date, end=end_date)
-        self.dataset['sp500_price'] = sp500['Adj Close']
+        self.dataset['sp500_price'] = sp500['Close']
         gold = yf.download('GC=F', start=start_date, end=end_date)
-        self.dataset['gold_price'] = gold['Adj Close']
+        self.dataset['gold_price'] = gold['Close']
         usd_index = yf.download('DX-Y.NYB', start=start_date, end=end_date)
-        self.dataset['usd_index'] = usd_index['Adj Close']
+        self.dataset['usd_index'] = usd_index['Close']
         vol_index = yf.download('^VIX', start=start_date, end=end_date)
-        self.dataset['volatility_index'] = vol_index['Adj Close']
+        self.dataset['volatility_index'] = vol_index['Close']
         irx = yf.download('^IRX', start=start_date, end=end_date)
-        self.dataset['interest_rate'] = irx['Adj Close']
+        self.dataset['interest_rate'] = irx['Close']
         oil = yf.download('CL=F', start=start_date, end=end_date)
-        self.dataset['oil_price'] = oil['Adj Close']
+        self.dataset['oil_price'] = oil['Close']
 
         self.dataset.ffill(inplace=True)
         self.dataset.dropna(inplace=True)
@@ -69,7 +69,9 @@ class Oracle:
 
     def generate_btc_prediction(self):
         self.fetch_dataset()
+        print(self.dataset)
         self.dataset_preprocessing()
+        print(self.dataset)
         self.create_model_input()
         y_pred = self.generate_model_prediction()
         return self.generate_output(y_pred)

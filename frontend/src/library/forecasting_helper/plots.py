@@ -8,7 +8,6 @@ def plot_forecast(coin: str, interval: str, forecast_samples: int):
 
     data = fetch_oracle_forecast(coin, interval, forecast_samples)
     df = pd.DataFrame(data)
-
     limit = df.shape[0] - forecast_samples
     metric("Price Diff.", round(float(df[-2:-1]['price'].values),2), delta=round(float(df[-2:-1]['price'].values)- float(df[limit-1:limit]['price'].values),2))
     fig = go.Figure()
