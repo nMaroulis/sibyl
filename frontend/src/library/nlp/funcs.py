@@ -1,5 +1,5 @@
 from frontend.src.library.nlp.client import fetch_news, fetch_news_summary, fetch_news_sentiment
-from streamlit import write, warning, expander, markdown, image, plotly_chart, caption, code, html
+from streamlit import write, warning, expander, markdown, image, plotly_chart, caption, code, html, error as st_error
 import json
 from requests import get as requests_get
 from plotly.graph_objects import Figure, Bar, Indicator
@@ -19,37 +19,40 @@ def get_fear_and_greed_index_gauge_plot():
         caption('Source: alternative.me')
 
     res = requests_get("https://api.alternative.me/fng/?limit=60")
-    fg_indexes = []
-    colors = []
-    fg_status = 'Neutral'
-    for v in res.json()['data']:
+    if res.status_code == 200:
+        fg_indexes = []
+        colors = []
+        fg_status = 'Neutral'
+        for v in res.json()['data']:
 
-        fg_indexes.append([datetime.fromtimestamp(int(v['timestamp'])), v['value']])
-        fg_index = int(v['value'])
-        if fg_index <= 20:
-            colors.append('#ed0022')
-            fg_status = "Extreme fear"
-        elif 20 < fg_index <= 45:
-            colors.append('#ffad00')
-            fg_status = "Fear"
-        elif 45 < fg_index <= 55:
-            colors.append('#c6bf22')
-            fg_status = 'Neutral'
-        elif 55 < fg_index <= 80:
-            colors.append('#92b73a')
-            fg_status = "Greed"
-        else:  # > 80
-            colors.append('#009a60')
-            fg_status = "High Greed"
+            fg_indexes.append([datetime.fromtimestamp(int(v['timestamp'])), v['value']])
+            fg_index = int(v['value'])
+            if fg_index <= 20:
+                colors.append('#ed0022')
+                fg_status = "Extreme fear"
+            elif 20 < fg_index <= 45:
+                colors.append('#ffad00')
+                fg_status = "Fear"
+            elif 45 < fg_index <= 55:
+                colors.append('#c6bf22')
+                fg_status = 'Neutral'
+            elif 55 < fg_index <= 80:
+                colors.append('#92b73a')
+                fg_status = "Greed"
+            else:  # > 80
+                colors.append('#009a60')
+                fg_status = "High Greed"
 
-    fig = Figure(data=[Bar(
-        x=[x[0] for x in fg_indexes],
-        y=[x[1] for x in fg_indexes],
-        marker_color=colors  # marker color can be a single color value or an iterable
-    )])
-    fig.update_yaxes(range=[0, 100])
-    fig.update_layout(title_text='Fear & Greed index the past Month.\nCurrent: ' + fg_status)
-    plotly_chart(fig, use_container_width=True)
+        fig = Figure(data=[Bar(
+            x=[x[0] for x in fg_indexes],
+            y=[x[1] for x in fg_indexes],
+            marker_color=colors  # marker color can be a single color value or an iterable
+        )])
+        fig.update_yaxes(range=[0, 100])
+        fig.update_layout(title_text='Fear & Greed index the past Month.\nCurrent: ' + fg_status)
+        plotly_chart(fig, use_container_width=True)
+    else:
+        st_error("Failed to fetch data from **alternative API**, check your **internet connection**.", icon=":material/error:")
 
     # direct Image
     # image(image="https://alternative.me/crypto/fear-and-greed-index.png", caption="Fear & Greed Index (fetched from alternative.me)", )
@@ -187,35 +190,36 @@ def get_latest_news(website: str = 'cointelegraph', limit: int = 10):
 
 
 def get_news_summary(model: str, website: str = 'cointelegraph'):
-    print(model, website)
     summary = fetch_news_summary(model, website)
     html(f"""<p>{summary}</p>""")
 
 
 def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
     sentiment_score = fetch_news_sentiment()
-    # # GAUGE PLOT
-    fig = Figure(Indicator(
-        domain={'x': [0, 1], 'y': [0, 1]},
-        value=sentiment_score,
-        mode="gauge+number",
-        title={'text': "Sentiment Score"},
-        gauge={'axis': {'range': [-1, 1], 'tickcolor': "#41424C"},'bar': {'color': "#41424C"},
-               'steps': [
-                   {'range': [-1, -0.8], 'color': '#ed0022'},
-                   {'range': [-0.8, -0.6], 'color': '#f43021'},
-                   {'range': [-0.6, -0.4], 'color': '#fc6114'},
-                   {'range': [-0.4, -0.2], 'color': '#ff8c00'},
-                   {'range': [-0.2, 0], 'color': '#ffad00'},
-                   {'range': [0, 0.2], 'color': '#edbd02'},
-                   {'range': [0.2, 0.4], 'color': '#c6bf22'},
-                   {'range': [0.4, 0.6], 'color': '#92b73a'},
-                   {'range': [0.6, 0.8], 'color': '#4aa84e'},
-                   {'range': [0.8, 1], 'color': '#009a60'}],
-        'threshold': {'line': {'color': "#41424C", 'width': 4}, 'thickness': 1, 'value': sentiment_score}}))
+    if sentiment_score:
+        # # GAUGE PLOT
+        fig = Figure(Indicator(
+            domain={'x': [0, 1], 'y': [0, 1]},
+            value=sentiment_score,
+            mode="gauge+number",
+            title={'text': "Sentiment Score"},
+            gauge={'axis': {'range': [-1, 1], 'tickcolor': "#41424C"},'bar': {'color': "#41424C"},
+                   'steps': [
+                       {'range': [-1, -0.8], 'color': '#ed0022'},
+                       {'range': [-0.8, -0.6], 'color': '#f43021'},
+                       {'range': [-0.6, -0.4], 'color': '#fc6114'},
+                       {'range': [-0.4, -0.2], 'color': '#ff8c00'},
+                       {'range': [-0.2, 0], 'color': '#ffad00'},
+                       {'range': [0, 0.2], 'color': '#edbd02'},
+                       {'range': [0.2, 0.4], 'color': '#c6bf22'},
+                       {'range': [0.4, 0.6], 'color': '#92b73a'},
+                       {'range': [0.6, 0.8], 'color': '#4aa84e'},
+                       {'range': [0.8, 1], 'color': '#009a60'}],
+            'threshold': {'line': {'color': "#41424C", 'width': 4}, 'thickness': 1, 'value': sentiment_score}}))
 
-    fig.update_layout(margin=go.layout.Margin(t=0, b=0), height=200, showlegend=False)
-    # fig.update(config=dict(displayModeBar=False))
-    plotly_chart(fig, use_container_width=True, config=dict(displayModeBar=False))
-
+        fig.update_layout(margin=go.layout.Margin(t=0, b=0), height=200, showlegend=False)
+        # fig.update(config=dict(displayModeBar=False))
+        plotly_chart(fig, use_container_width=True, config=dict(displayModeBar=False))
+    else:
+        st_error("Text Sentiment Failed! Check NLP settings", icon=":material/error:")
     return 1

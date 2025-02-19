@@ -160,5 +160,7 @@ def get_stock_analysis(stock_symbol: str):
         st.error("Invalid stock symbol", icon=":material/error:")
     stock_details = fetch_stock_details(symbol)
     # write(get_stock_details(symbol))
-
-    display_company_info(stock_details["info"], symbol)
+    if stock_details:
+        display_company_info(stock_details["info"], symbol)
+    else:
+        st.error("Failed to fetch Stock information. Please check logs to see if **YahooFinance API** reached the limit and try later.", icon=":material/error:")

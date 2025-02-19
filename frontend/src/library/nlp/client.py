@@ -41,10 +41,10 @@ def fetch_news_sentiment(model: str= 'vader', website: str = 'cointelegraph'):
             sentiment_score = response.json()['sentiment_compound']
             return sentiment_score
         except AttributeError:
-            return 'Text Sentiment Failed! Check NLP settings'
+            return None
         except KeyError:
-            return 'Text Sentiment Failed! Check NLP settings'
+            return None
         except ValueError:
-            return 'Text Sentiment Failed! Check NLP settings'
+            return None
     else:
-        return 'Text Sentiment Failed! Check NLP settings'
+        return None

@@ -10,4 +10,4 @@ def fetch_stock_details(stock_symbol: str):
         res = response.json()
         return res['data']
     else:
-        return {}
+        return None
