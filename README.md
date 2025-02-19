@@ -7,12 +7,12 @@
 
 [![Python](https://img.shields.io/badge/python-v3.12-yellow)]()
 [![Streamlit](https://img.shields.io/badge/streamlit-v1.42-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-v0.115-blue)]()
-[![Tensorflow](https://img.shields.io/badge/tensorflow-v2.16.2-orange)]()
+[![FastAPI](https://img.shields.io/badge/fastapi-v0.115.8-blue)]()
+[![Tensorflow](https://img.shields.io/badge/tensorflow-v2.18.0-orange)]()
 [![Statsmodels](https://img.shields.io/badge/statsmodels-v0.14-pink)]()
 [![Pandas](https://img.shields.io/badge/pandas-v2.2.3-lightgrey)]()
-[![Plotly](https://img.shields.io/badge/plotly-v5.24-green)]()
-[![Sklearn](https://img.shields.io/badge/Scikit_Learn-v1.5.2-purple)]()
+[![Plotly](https://img.shields.io/badge/plotly-v6.0.0-green)]()
+[![Sklearn](https://img.shields.io/badge/Scikit_Learn-v1.6.1-purple)]()
 
 
 # Sibyl - Your AI-Powered Crypto Trading Hub with a UI

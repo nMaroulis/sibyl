@@ -1,6 +1,7 @@
 from nltk import sent_tokenize
-from nltk.sentiment import SentimentIntensityAnalyzer
+# from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk import data, download
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer  # Use vaderSentiment instead of NLTK
 
 try:
     data.find('tokenizers/punkt_tab/english.pickle')

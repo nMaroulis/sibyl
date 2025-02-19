@@ -14,7 +14,6 @@ router = APIRouter(
 def get_bitcoin_(stock_symbol: str):
     try:
         stock_details = get_stock_details(stock_symbol)
-        print(stock_details)
         return {"status": "success", "data": stock_details}
     except Exception as e:
         raise HTTPException(status_code=404, detail="HF client failed")

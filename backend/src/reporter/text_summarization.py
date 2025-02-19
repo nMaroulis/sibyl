@@ -1,6 +1,6 @@
-import spacy
-# SpaCy
+# SpaCy - TEMPORARILY DISABLE SPACY
 from spacy.lang.en.stop_words import STOP_WORDS
+from spacy import load as spacy_load
 from string import punctuation
 from collections import Counter
 from heapq import nlargest
@@ -12,7 +12,7 @@ from sumy.summarizers.lsa import LsaSummarizer
 # from gensim.summarize import summarizer
 
 
-def get_text_summary(model='sumy', articles=None):
+def get_text_summary(model: str = 'sumy', articles=None):
     doc = ""
 
     if articles is not None:
@@ -21,8 +21,9 @@ def get_text_summary(model='sumy', articles=None):
                 doc += article[0] + ". " + article[1]
                 for p in article[3]:
                     doc += p
-        if model == 'spacy':
-            return spacy_text_summarizer(doc)
+        if model == 'spacy': # Temporarily unavailable
+            # return spacy_text_summarizer(doc)
+            return sumy_text_summarizer(doc)
         elif model == 'gensim':
             return gensim_text_summarizer(doc)
         elif model == 'sumy':
@@ -32,13 +33,13 @@ def get_text_summary(model='sumy', articles=None):
     else:
         return []
 
-
-def gensim_text_summarizer(doc):
+## GENSIM
+def gensim_text_summarizer(doc: str):
     # summary = summarize(doc)
     return []
 
-
-def sumy_text_summarizer(doc, summ_type='lsa'):
+## SUMY
+def sumy_text_summarizer(doc: str, summ_type: str = 'lsa'):
     parser = PlaintextParser.from_string(doc, Tokenizer("english"))
 
     if summ_type == 'textrank':
@@ -53,10 +54,26 @@ def sumy_text_summarizer(doc, summ_type='lsa'):
 
     return text_summary
 
+## SPACY
 
-def spacy_text_summarizer(doc):
+_nlp = None
 
-    nlp = spacy.load('en_core_web_sm')
+def get_spacy_model():
+    # Load spaCy model, downloading it if necessary.
+    global _nlp
+    if _nlp is None:  # Load model only if it's not already loaded
+        try:
+            _nlp = spacy_load('en_core_web_sm')
+        except OSError:
+            print("Downloading 'en_core_web_sm' model...")
+            import spacy.cli
+            spacy.cli.download("en_core_web_sm")
+            _nlp = spacy.load('en_core_web_sm')
+    return _nlp
+
+def spacy_text_summarizer(doc: str):
+
+    nlp = get_spacy_model()
     doc = nlp(doc)
     print("Reporter :: Spacy Model :: sentences_num:", len(list(doc.sents)), ' doc characters:', len(doc))
 
