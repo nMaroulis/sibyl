@@ -15,7 +15,7 @@ from backend.src.reporter.endpoint import router as reporter_router
 from backend.src.technician.endpoint import router as technician_router
 from backend.src.explorer.endpoint import router as explorer_router
 from backend.src.stock_analyst.endpoint import router as stock_analyst_router
-from db.trade_history_db_client import db_init
+from db.trade_history_db_client import TradeHistoryDBClient
 
 
 # Define Router endpoints
@@ -44,7 +44,7 @@ def read_root():
 
 # Entry point for running the application
 if __name__ == "__main__":
-    db_init()  # Initialize DB
+    TradeHistoryDBClient.db_init()  # Initialize DB
     # Run the application using the Uvicorn server
     print("Starting Server")
     uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT, log_level='debug', access_log=True)

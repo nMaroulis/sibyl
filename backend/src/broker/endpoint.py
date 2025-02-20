@@ -6,7 +6,7 @@ import json
 import requests
 import hmac, hashlib
 import time
-from backend.db.trade_history_db_client import add_trade_to_db, fetch_trading_history, update_strategy_status
+from backend.db.trade_history_db_client import TradeHistoryDBClient
 from backend.src.broker.greedy import GreedyBroker
 from datetime import datetime
 from pydantic import BaseModel
@@ -23,7 +23,7 @@ router = APIRouter(
 
 @router.get("/trade/strategy/history")
 def get_active_trade_orders(status: str = 'all'):
-    active_trade_strategies = fetch_trading_history(status=status)
+    active_trade_strategies = TradeHistoryDBClient.fetch_trading_history(status=status)
     return active_trade_strategies
 
 class TradeParams(BaseModel):
@@ -48,7 +48,7 @@ def send_new_buy_order(trade_params: TradeParams):
     print(broker_client.get_db_fields())
     if "success" in response:
         db_fields = broker_client.get_db_fields()
-        add_trade_to_db(exchange=db_fields[0], datetime_buy=db_fields[1], orderid_buy=db_fields[2],
+        TradeHistoryDBClient.add_trade_to_db(exchange=db_fields[0], datetime_buy=db_fields[1], orderid_buy=db_fields[2],
                         asset_from=db_fields[3], asset_to=db_fields[4], asset_from_amount=db_fields[5],
                         asset_to_quantity=db_fields[6], asset_to_price=db_fields[7], datetime_sell=db_fields[8],
                         orderid_sell=db_fields[9], asset_to_sell_price=db_fields[10], order_type=db_fields[11],
@@ -126,7 +126,7 @@ def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
     EXPIRED: The order has expired and was not executed within the specified time frame.
     INVALID: The order is considered invalid, often due to incorrect parameters or other issues.
     """
-    active_orders = fetch_trading_history(status='all')  # (active, partially completed)
+    active_orders = TradeHistoryDBClient.fetch_trading_history(status='all')  # (active, partially completed)
     url = f"{BINANCE_API_URL}/api/v3/order"
 
     for i in active_orders:
@@ -166,7 +166,7 @@ def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
                 new_status = 'completed'
             else:  # CANCELLED, PENDING_CANCEL, REJECTED, EXPIRED, INVALID
                 new_status = 'cancelled'
-            update_strategy_status(sell_id=order_id, asset_from=symbol_from, asset_to=symbol_to,
+            TradeHistoryDBClient.update_strategy_status(sell_id=order_id, asset_from=symbol_from, asset_to=symbol_to,
                                        new_status=new_status, time_sold=time_sold)
         else:
             print(f"Error occurred. Status code: {response.status_code}, Response: {response.text}")
