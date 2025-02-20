@@ -17,7 +17,8 @@ pages = {
         st.Page("tab_pages/reporting.py", title="Reporting", icon=":material/newspaper:")
     ],
     "Stock Market": [
-        st.Page("tab_pages/stock_analysis.py", title="Stock Analysis", icon=":material/monitoring:")
+        st.Page("tab_pages/stock_analysis.py", title="Stock Analysis", icon=":material/monitoring:"),
+        st.Page("tab_pages/stock_portfolios.py", title="Stock Portfolios", icon=":material/account_balance_wallet:")
     ],
     "Settings": [
         st.Page("tab_pages/settings.py", title="Settings", icon=":material/settings:")
@@ -25,3 +26,4 @@ pages = {
 }
 pg = st.navigation(pages)
 pg.run()
+

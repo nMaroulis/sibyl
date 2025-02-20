@@ -40,7 +40,7 @@ class APIEncryptedDatabase:
                 if self.secret_key:
                     self.secret_key = APIEncryptedDatabase.cipher.decrypt(self.secret_key.encode()).decode()
             except InvalidToken:
-                raise ValueError("❌ Decryption failed. Invalid encryption key.")
+                raise ValueError("APIEncryptedDatabase :: ❌ Decryption failed. Invalid encryption key.")
 
     @classmethod
     def load_or_generate_key(cls):
@@ -49,9 +49,9 @@ class APIEncryptedDatabase:
             key = Fernet.generate_key()
             with open(cls.KEY_FILE, "wb") as key_file:
                 key_file.write(key)
-            print("🔑 New encryption key generated and saved.")
+            print("APIEncryptedDatabase :: 🔑 New encryption key generated and saved.")
         else:
-            print("✅ Encryption key already exists.")
+            print("APIEncryptedDatabase :: ✅ Encryption key already exists.")
 
         # Load the key
         with open(cls.KEY_FILE, "rb") as key_file:
@@ -67,25 +67,25 @@ class APIEncryptedDatabase:
         """Creates the database if it doesn't exist, otherwise does nothing."""
         db_file = cls.DATABASE_URL.replace("sqlite:///", "")
         if os.path.exists(db_file):
-            print("✅ Database already exists.")
+            print("APIEncryptedDatabase :: ✅ Database already exists.")
         else:
-            print("📦 Creating database...")
+            print("APIEncryptedDatabase :: 📦 Creating database...")
             cls.Base.metadata.create_all(cls.engine)
-            print("✅ Database initialized.")
+            print("APIEncryptedDatabase :: ✅ Database initialized.")
 
     @classmethod
     def insert_api_key(cls, name, api_key, secret_key=None, api_metadata=None):
         """Inserts a new API key into the database."""
         session = cls.Session()
         if session.query(cls.APIKeyStore).filter_by(name=name).first():
-            print(f"⚠️ API Key with name '{name}' already exists.")
+            print(f"APIEncryptedDatabase :: ⚠️ API Key with name '{name}' already exists.")
             session.close()
             return
         new_key = cls.APIKeyStore(name=name, api_key=api_key, secret_key=secret_key, api_metadata=api_metadata)
         session.add(new_key)
         session.commit()
         session.close()
-        print(f"✅ API Key '{name}' added successfully.")
+        print(f"APIEncryptedDatabase :: ✅ API Key '{name}' added successfully.")
 
     @classmethod
     def get_api_keys(cls):
@@ -107,7 +107,7 @@ class APIEncryptedDatabase:
             session.close()
             return key
         session.close()
-        print(f"⚠️ No API Key found with name '{name}'.")
+        print(f"APIEncryptedDatabase :: ⚠️ No API Key found with name '{name}'.")
         return None
 
     @classmethod
@@ -116,7 +116,7 @@ class APIEncryptedDatabase:
         session = cls.Session()
         key = session.query(cls.APIKeyStore).filter_by(name=name).first()
         if not key:
-            print(f"⚠️ No API Key found with name '{name}'.")
+            print(f"APIEncryptedDatabase :: ⚠️ No API Key found with name '{name}'.")
             session.close()
             return
 
@@ -129,7 +129,7 @@ class APIEncryptedDatabase:
 
         session.commit()
         session.close()
-        print(f"✅ API Key '{name}' updated successfully.")
+        print(f"APIEncryptedDatabase :: ✅ API Key '{name}' updated successfully.")
 
     @classmethod
     def delete_api_key(cls, name):
@@ -137,14 +137,14 @@ class APIEncryptedDatabase:
         session = cls.Session()
         key = session.query(cls.APIKeyStore).filter_by(name=name).first()
         if not key:
-            print(f"⚠️ No API Key found with name '{name}'.")
+            print(f"APIEncryptedDatabase :: ⚠️ No API Key found with name '{name}'.")
             session.close()
             return
 
         session.delete(key)
         session.commit()
         session.close()
-        print(f"🗑️ API Key '{name}' deleted successfully.")
+        print(f"APIEncryptedDatabase :: 🗑️ API Key '{name}' deleted successfully.")
 
 
 # Initialize encryption and database

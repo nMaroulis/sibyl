@@ -11,3 +11,12 @@ def fetch_stock_details(stock_symbol: str):
         return res['data']
     else:
         return None
+
+def fetch_portfolio_senates():
+    url = f"{BACKEND_SERVER_ADDRESS}/stock_analyst/portfolio/senates"
+    response = requests.get(url)
+    if response.status_code == 200:
+        res = response.json()
+        return res['data']
+    else:
+        return None
