@@ -1,13 +1,6 @@
 from fastapi import APIRouter
-from fastapi.exceptions import ResponseValidationError
 from typing import Optional, List
-import requests
-from backend.settings import BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
-from backend.config.api_key_handler import get_api_key, get_nlp_api_key
-from backend.src.analyst.analyst_functions import get_coin_symbol_name_map, update_coin_symbol_name_map
-import json
-from backend.src.exchange_client.binance_client import BinanceClient
-from backend.src.exchange_client.binance_testnet_client import BinanceTestnetClient
+from backend.src.analyst.analyst_functions import update_coin_symbol_name_map
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 

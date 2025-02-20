@@ -85,7 +85,7 @@ The development roadmap includes exciting new features:
 - A Reinforcement Learning Agent that automatically places buy/sell orders based on optimized strategies and timing.
 
 ## Security & Local Deployment
-Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.
+Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind. Every API key is stored locally on an **encrypted** sqlite Database, with a unique key generated on your local file system.
 
 ---
 

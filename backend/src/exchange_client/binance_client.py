@@ -2,7 +2,7 @@ from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 import requests
 import json
 from backend.src.analyst.analyst_functions import get_coin_symbol_name_map, update_coin_symbol_name_map
-from backend.config.api_key_handler import get_api_key
+from backend.db.api_keys_db_client import APIEncryptedDatabase
 import time
 import hmac, hashlib
 from datetime import datetime
@@ -15,12 +15,11 @@ class BinanceClient(ExchangeAPIClient):
         self.name = 'binance'
         self.api_base_url = 'https://api.binance.com'  # 'https://api1.binance.com', 'https://api2.binance.com', 'https://api3.binance.com', 'https://api4.binance.com'
         # Set API Keys
-        api_creds = get_api_key("binance")
+        api_creds = APIEncryptedDatabase.get_api_key_by_name("binance")
         if api_creds is None:
             self.api_key, self.api_secret_key = None, None
         else:
-            self.api_key = api_creds[0]
-            self.api_secret_key = api_creds[1]
+            self.api_key, self.api_secret_key = api_creds.api_key, api_creds.secret_key
 
     def check_status(self):
         if self.api_key is None or self.api_secret_key is None:

@@ -7,6 +7,7 @@ from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn, requests
 from settings import SERVER_IP, SERVER_PORT
+from backend.db.api_keys_db_client import APIEncryptedDatabase
 from backend.src.accountant.endpoint import router as accountant_router
 from backend.src.analyst.endpoint import router as analyst_router
 from backend.src.oracle.endpoint import router as oracle_router
@@ -44,7 +45,11 @@ def read_root():
 
 # Entry point for running the application
 if __name__ == "__main__":
-    TradeHistoryDBClient.db_init()  # Initialize DB
+    # Initialize Trade History DB
+    TradeHistoryDBClient.db_init()
+    # Initialize encryption and API storage database
+    APIEncryptedDatabase.init_cipher()
+    APIEncryptedDatabase.init_db()
     # Run the application using the Uvicorn server
-    print("Starting Server")
+    print("Starting Backend Server...")
     uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT, log_level='debug', access_log=True)

@@ -1,5 +1,5 @@
 from backend.src.exchange_client.binance_client import BinanceClient
-from backend.config.api_key_handler import get_api_key
+from backend.db.api_keys_db_client import APIEncryptedDatabase
 
 
 class BinanceTestnetClient(BinanceClient):
@@ -9,9 +9,8 @@ class BinanceTestnetClient(BinanceClient):
         self.name = 'binance_testnet'
         self.api_base_url = 'https://testnet.binance.vision'
         # Set API Keys
-        api_creds = get_api_key("binance_testnet")
+        api_creds = APIEncryptedDatabase.get_api_key_by_name("binance_testnet")
         if api_creds is None:
             self.api_key, self.api_secret_key = None, None
         else:
-            self.api_key = api_creds[0]
-            self.api_secret_key = api_creds[1]
+            self.api_key, self.api_secret_key = api_creds.api_key, api_creds.secret_key

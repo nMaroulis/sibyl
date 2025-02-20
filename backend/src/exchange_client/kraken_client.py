@@ -1,5 +1,5 @@
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
-from backend.config.api_key_handler import get_api_key
+from backend.db.api_keys_db_client import APIEncryptedDatabase
 
 
 class KrakenClient(ExchangeAPIClient):
@@ -9,7 +9,11 @@ class KrakenClient(ExchangeAPIClient):
         self.name = 'kraken'
         self.api_base_url = ''
         # Set API Keys
-        self.api_key, self.api_secret_key = None, None
+        api_creds = APIEncryptedDatabase.get_api_key_by_name("binance_testnet")
+        if api_creds is None:
+            self.api_key, self.api_secret_key = None, None
+        else:
+            self.api_key, self.api_secret_key = api_creds.api_key, api_creds.secret_key
 
     def check_status(self):
         return 'Unavailable'

@@ -147,12 +147,8 @@ class APIEncryptedDatabase:
         print(f"APIEncryptedDatabase :: 🗑️ API Key '{name}' deleted successfully.")
 
 
-# Initialize encryption and database
-APIEncryptedDatabase.init_cipher()
-APIEncryptedDatabase.init_db()
-
 # Example usage
-APIEncryptedDatabase.insert_api_key("kraken13e2332", "abcdeffg", "s3cr3t")
+# APIEncryptedDatabase.insert_api_key("kraken13e2332", "abcdeffg", "s3cr3t")
 
 # Retrieve and print decrypted API keys
 for key in APIEncryptedDatabase.get_api_keys():

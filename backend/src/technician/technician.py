@@ -1,10 +1,5 @@
-from backend.settings import BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
-import requests
-import hmac, hashlib
-import time
-from datetime import datetime
-from backend.src.technician.api_router import APIS
-from backend.config.api_key_handler import check_exists
+
+from backend.db.api_keys_db_client import APIEncryptedDatabase
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 
@@ -26,14 +21,13 @@ class Technician:
             res['coinbase'] = ExchangeClientFactory.get_client("coinbase").check_status()
 
         if api_name == "openai" or api_name == "all" or api_name == "llms":
-            res["openai"] = 'Active' if check_exists("openai") is not None else 'Unavailable'
+            res["openai"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("openai") is not None else 'Unavailable'
         if api_name == "gemini" or api_name == "all" or api_name == "llms":
-            res["gemini"] = 'Active' if check_exists("gemini") is not None else 'Unavailable'
+            res["gemini"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("gemini") is not None else 'Unavailable'
         if api_name == "hugging_face" or api_name == "all" or api_name == "llms":
-            res["hugging_face"] = 'Active' if check_exists("hugging_face") is not None else 'Unavailable'
+            res["hugging_face"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("hugging_face") is not None else 'Unavailable'
         if api_name == "coinmarketcap" or api_name == "all" or api_name == "llms":
-            res["coinmarketcap"] = 'Active' if check_exists("coinmarketcap") is not None else 'Unavailable'
+            res["coinmarketcap"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("coinmarketcap") is not None else 'Unavailable'
 
-        # APIS = ['binance', 'binance_testnet', 'kraken', 'coinbase', 'openai', 'gemini', 'hugging_face', 'coinmarketcap']
         return res
 

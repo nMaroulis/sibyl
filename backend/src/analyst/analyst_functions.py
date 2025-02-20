@@ -1,6 +1,6 @@
 import requests
 import json
-from backend.config.api_key_handler import get_coinmarketcap_api_key
+from backend.db.api_keys_db_client import APIEncryptedDatabase
 
 COIN_SYMBOL_NAME_MAP_PATH = 'backend/db/coin_symbol_name_map.json'
 
@@ -23,7 +23,7 @@ def update_coin_symbol_name_map(api: str = "coincap"):
             for asset in assets:
                 coin_dict[asset['symbol']] = asset['name']
     elif api == "coinmarketcap":
-        api_key = get_coinmarketcap_api_key()
+        api_key =  APIEncryptedDatabase.get_api_key_by_name("coinmarketcap")
         if api_key is None:  # If coinmarketcap key is not set, call function with coincap (free)
             update_coin_symbol_name_map("coincap")
         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/map"

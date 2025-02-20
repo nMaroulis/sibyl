@@ -2,9 +2,6 @@ from fastapi import APIRouter
 from backend.src.reporter.fetch_news import fetch_news
 from backend.src.reporter.text_summarization import get_text_summary
 from backend.src.reporter.text_sentiment import get_text_sentiment
-from fastapi import Query
-from typing import Optional, List
-from backend.config.api_key_handler import get_nlp_api_key
 import json
 
 
