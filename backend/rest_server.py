@@ -15,7 +15,7 @@ from backend.src.reporter.endpoint import router as reporter_router
 from backend.src.technician.endpoint import router as technician_router
 from backend.src.explorer.endpoint import router as explorer_router
 from backend.src.stock_analyst.endpoint import router as stock_analyst_router
-from db.query_handler import db_init
+from db.trade_history_db_client import db_init
 
 
 # Define Router endpoints

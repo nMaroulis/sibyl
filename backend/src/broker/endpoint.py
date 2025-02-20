@@ -6,7 +6,7 @@ import json
 import requests
 import hmac, hashlib
 import time
-from backend.db.query_handler import add_trade_to_db, fetch_trading_history, update_strategy_status
+from backend.db.trade_history_db_client import add_trade_to_db, fetch_trading_history, update_strategy_status
 from backend.src.broker.greedy import GreedyBroker
 from datetime import datetime
 from pydantic import BaseModel

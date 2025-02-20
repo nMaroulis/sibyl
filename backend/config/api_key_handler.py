@@ -11,7 +11,7 @@ def init_json(exchange="binance"):
         f.close()
         try:
             credentials = [api_key[exchange]['api_credentials']['API_Key'], api_key[exchange]['api_credentials']['Secret_Key']]
-        except:  # if error parsing credentials
+        except Exception as e:  # if error parsing credentials
             return None
         return credentials
     else: # ImportError

@@ -3,18 +3,18 @@ import os
 
 
 """
-This script uses the sqlite3 module to connect to an SQLite database file called backend_db.db. 
+This script uses the sqlite3 module to connect to an SQLite database file called trade_history.db. 
 It creates a table named "trading_history" with the specified fields: 
 """
 
 
 def db_init():
     # Check if the database file already exists
-    if os.path.exists('backend/db/backend_db.db'):
-        print("query_handler :: Database already exists.")
+    if os.path.exists('backend/db/trade_history.db'):
+        print("trade_history_db_client :: Database already exists.")
         return 0
 
-    conn = sqlite3.connect('backend/db/backend_db.db')  # Create/Connect to the SQLite database
+    conn = sqlite3.connect('backend/db/trade_history.db')  # Create/Connect to the SQLite database
     cursor = conn.cursor()  # Create a cursor object to execute SQL commands
 
     sql_create_trading_history_table_query = """CREATE TABLE IF NOT EXISTS trading_history (
@@ -40,13 +40,13 @@ def db_init():
     conn.commit()  # Save the changes
     cursor.close()  # Close the cursor and the connection
     conn.close()
-    print("backend :: db :: query_handler :: Database created successfully.")
+    print("backend :: db :: trade_history_db_client :: Database created successfully.")
     return 0
 
 
 def add_trade_to_db(exchange: str = 'binance', datetime_buy: str = '', orderid_buy: str = '', asset_from: str = 'USDT', asset_to: str = "BTC",
                     asset_from_amount=1.0, asset_to_quantity=1.0, asset_to_price=0, datetime_sell=None, orderid_sell='', asset_to_sell_price=None, profit=None, order_type='trade', strategy='greedy', fees=0, status='active'):
-    conn = sqlite3.connect('backend/db/backend_db.db')  # Create/Connect to the SQLite database
+    conn = sqlite3.connect('backend/db/trade_history.db')  # Create/Connect to the SQLite database
     cursor = conn.cursor()  # Create a cursor object to execute SQL commands
 
     # # INSERT PARAMS
@@ -60,12 +60,12 @@ def add_trade_to_db(exchange: str = 'binance', datetime_buy: str = '', orderid_b
     conn.commit()  # Save the changes
     cursor.close()  # Close the cursor and the connection
     conn.close()
-    print("backend :: db :: query_handler :: add_trade_to_db :: Database Insert successfully.")
+    print("backend :: db :: trade_history_db_client :: add_trade_to_db :: Database Insert successfully.")
     return 0
 
 
 def fetch_trading_history(date_from: str = None, date_to: str = None, status: str = 'active'):
-    conn = sqlite3.connect('backend/db/backend_db.db')
+    conn = sqlite3.connect('backend/db/trade_history.db')
     cursor = conn.cursor()
 
     if status == 'all':
@@ -85,7 +85,7 @@ def fetch_trading_history(date_from: str = None, date_to: str = None, status: st
 
 
 def update_strategy_status(sell_id=None, asset_from='USDT', asset_to='BTC', new_status='active', time_sold='pending'):
-    conn = sqlite3.connect('backend/db/backend_db.db')
+    conn = sqlite3.connect('backend/db/trade_history.db')
     cursor = conn.cursor()
     update_query = """
         UPDATE trading_history
