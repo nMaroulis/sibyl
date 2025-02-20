@@ -1,110 +1,159 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime
-
-# Define the base class for our ORM model
-Base = declarative_base()
+import os
+import sqlalchemy as sa
+from sqlalchemy.orm import sessionmaker, declarative_base
+from cryptography.fernet import Fernet, InvalidToken
+from dotenv import load_dotenv
 
 
-# Define the model class for the table
-class ApiCredentials(Base):
-    __tablename__ = 'api_credentials'
+class APIEncryptedDatabase:
+    # Load environment variables and define constants
+    load_dotenv('backend/db/db_paths.env')
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    api_key = Column(String, nullable=False)
-    secret_key = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    metadata = Column(String, nullable=True)  # This is the extra field
+    DATABASE_URL = os.getenv("API_KEYS_DB_PATH")
+    KEY_FILE = "backend/db/encryption_key.key"
 
-    def __repr__(self):
-        return f"<ApiCredentials(name={self.name}, api_key={self.api_key}, secret_key={self.secret_key}, created_at={self.created_at}, metadata={self.metadata})>"
+    # Initialize database engine, session, and ORM base
+    engine = sa.create_engine(DATABASE_URL, echo=True)
+    Session = sessionmaker(bind=engine)
+    Base = declarative_base()
+    cipher = None  # Placeholder for encryption cipher
 
+    # Database Model
+    class APIKeyStore(Base):
+        __tablename__ = "api_keys"
 
-# Create the DB client class
-class DBClient:
-    def __init__(self, db_url: str, password: str):
-        # Create an encrypted SQLAlchemy engine using SQLCipher
-        self.engine = create_engine(f"sqlite+sqlcipher:///{db_url}?cipher=aes-256-cbc&key={password}")
-        Base.metadata.create_all(self.engine)  # Create tables if they don't exist
-        self.Session = sessionmaker(bind=self.engine)
+        id = sa.Column(sa.Integer, primary_key=True)
+        name = sa.Column(sa.String, unique=True, nullable=False)
+        api_key = sa.Column(sa.String, nullable=False)
+        secret_key = sa.Column(sa.String, nullable=True)
+        api_metadata = sa.Column(sa.String, nullable=True)
 
-    def insert(self, name: str, api_key: str, secret_key: str, metadata: str = None):
-        """Insert a new record into the api_credentials table."""
-        session = self.Session()
-        new_record = ApiCredentials(
-            name=name,
-            api_key=api_key,
-            secret_key=secret_key,
-            metadata=metadata
-        )
-        session.add(new_record)
+        def __init__(self, name, api_key, secret_key=None, api_metadata=None):
+            self.name = name
+            self.api_key = APIEncryptedDatabase.cipher.encrypt(api_key.encode()).decode()
+            self.secret_key = APIEncryptedDatabase.cipher.encrypt(secret_key.encode()).decode() if secret_key else None
+            self.api_metadata = api_metadata
+
+        def decrypt_data(self):
+            try:
+                self.api_key = APIEncryptedDatabase.cipher.decrypt(self.api_key.encode()).decode()
+                if self.secret_key:
+                    self.secret_key = APIEncryptedDatabase.cipher.decrypt(self.secret_key.encode()).decode()
+            except InvalidToken:
+                raise ValueError("❌ Decryption failed. Invalid encryption key.")
+
+    @classmethod
+    def load_or_generate_key(cls):
+        """Loads the encryption key from a file or generates a new one."""
+        if not os.path.exists(cls.KEY_FILE):
+            key = Fernet.generate_key()
+            with open(cls.KEY_FILE, "wb") as key_file:
+                key_file.write(key)
+            print("🔑 New encryption key generated and saved.")
+        else:
+            print("✅ Encryption key already exists.")
+
+        # Load the key
+        with open(cls.KEY_FILE, "rb") as key_file:
+            return key_file.read()
+
+    @classmethod
+    def init_cipher(cls):
+        """Initializes the encryption cipher."""
+        cls.cipher = Fernet(cls.load_or_generate_key())
+
+    @classmethod
+    def init_db(cls):
+        """Creates the database if it doesn't exist, otherwise does nothing."""
+        db_file = cls.DATABASE_URL.replace("sqlite:///", "")
+        if os.path.exists(db_file):
+            print("✅ Database already exists.")
+        else:
+            print("📦 Creating database...")
+            cls.Base.metadata.create_all(cls.engine)
+            print("✅ Database initialized.")
+
+    @classmethod
+    def insert_api_key(cls, name, api_key, secret_key=None, api_metadata=None):
+        """Inserts a new API key into the database."""
+        session = cls.Session()
+        if session.query(cls.APIKeyStore).filter_by(name=name).first():
+            print(f"⚠️ API Key with name '{name}' already exists.")
+            session.close()
+            return
+        new_key = cls.APIKeyStore(name=name, api_key=api_key, secret_key=secret_key, api_metadata=api_metadata)
+        session.add(new_key)
         session.commit()
         session.close()
-        print(f"Inserted new record: {new_record}")
+        print(f"✅ API Key '{name}' added successfully.")
 
-    def update(self, record_id: int, name: str = None, api_key: str = None, secret_key: str = None,
-               metadata: str = None):
-        """Update an existing record by ID."""
-        session = self.Session()
-        record = session.query(ApiCredentials).filter(ApiCredentials.id == record_id).first()
-
-        if record:
-            if name:
-                record.name = name
-            if api_key:
-                record.api_key = api_key
-            if secret_key:
-                record.secret_key = secret_key
-            if metadata is not None:  # If provided, update metadata
-                record.metadata = metadata
-            session.commit()
-            print(f"Updated record: {record}")
-        else:
-            print(f"No record found with ID {record_id}")
-
+    @classmethod
+    def get_api_keys(cls):
+        """Retrieves and decrypts API keys from the database."""
+        session = cls.Session()
+        keys = session.query(cls.APIKeyStore).all()
+        for key in keys:
+            key.decrypt_data()
         session.close()
+        return keys
 
-    def delete(self, record_id: int):
-        """Delete a record by ID."""
-        session = self.Session()
-        record = session.query(ApiCredentials).filter(ApiCredentials.id == record_id).first()
-
-        if record:
-            session.delete(record)
-            session.commit()
-            print(f"Deleted record: {record}")
-        else:
-            print(f"No record found with ID {record_id}")
-
+    @classmethod
+    def get_api_key_by_name(cls, name):
+        """Retrieves and decrypts an API key by name."""
+        session = cls.Session()
+        key = session.query(cls.APIKeyStore).filter_by(name=name).first()
+        if key:
+            key.decrypt_data()
+            session.close()
+            return key
         session.close()
+        print(f"⚠️ No API Key found with name '{name}'.")
+        return None
 
-    def get_all(self):
-        """Fetch all records from the api_credentials table."""
-        session = self.Session()
-        records = session.query(ApiCredentials).all()
+    @classmethod
+    def update_api_key(cls, name, new_api_key=None, new_secret_key=None, new_metadata=None):
+        """Updates an existing API key by name."""
+        session = cls.Session()
+        key = session.query(cls.APIKeyStore).filter_by(name=name).first()
+        if not key:
+            print(f"⚠️ No API Key found with name '{name}'.")
+            session.close()
+            return
+
+        if new_api_key:
+            key.api_key = cls.cipher.encrypt(new_api_key.encode()).decode()
+        if new_secret_key:
+            key.secret_key = cls.cipher.encrypt(new_secret_key.encode()).decode()
+        if new_metadata is not None:
+            key.api_metadata = new_metadata
+
+        session.commit()
         session.close()
-        return records
+        print(f"✅ API Key '{name}' updated successfully.")
 
+    @classmethod
+    def delete_api_key(cls, name):
+        """Deletes an API key by name."""
+        session = cls.Session()
+        key = session.query(cls.APIKeyStore).filter_by(name=name).first()
+        if not key:
+            print(f"⚠️ No API Key found with name '{name}'.")
+            session.close()
+            return
+
+        session.delete(key)
+        session.commit()
+        session.close()
+        print(f"🗑️ API Key '{name}' deleted successfully.")
+
+
+# Initialize encryption and database
+APIEncryptedDatabase.init_cipher()
+APIEncryptedDatabase.init_db()
 
 # Example usage
-if __name__ == "__main__":
-    # DB setup
-    db_url = 'encrypted_db.db'  # Path to your encrypted database
-    db_password = 'your_encryption_password'  # The encryption key for the database
-    client = DBClient(db_url, db_password)
+APIEncryptedDatabase.insert_api_key("kraken13e2332", "abcdeffg", "s3cr3t")
 
-    # Insert a new record
-    client.insert(name="MyApp", api_key="my_api_key", secret_key="my_secret_key", metadata="Some extra data")
-
-    # Update a record by ID (example with id 1)
-    client.update(record_id=1, name="UpdatedApp", api_key="new_api_key", metadata="Updated extra data")
-
-    # Fetch all records
-    records = client.get_all()
-    for record in records:
-        print(record)
-
-    # Delete a record by ID (example with id 1)
-    client.delete(record_id=1)
+# Retrieve and print decrypted API keys
+for key in APIEncryptedDatabase.get_api_keys():
+    print(f"🔑 Name: {key.name}, API Key: {key.api_key}, Secret Key: {key.secret_key}, Metadata: {key.api_metadata}")

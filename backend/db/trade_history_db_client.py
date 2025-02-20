@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from dotenv import load_dotenv
 
 
 """
@@ -9,7 +10,8 @@ It creates a table named "trading_history" with the specified fields
 
 class TradeHistoryDBClient:
 
-    DB_PATH = 'backend/db/trade_history.db'
+    load_dotenv('backend/db/db_paths.env')
+    DB_PATH = os.getenv("TRADE_HISTORY_DB_PATH")
 
 
     @classmethod
