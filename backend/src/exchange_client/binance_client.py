@@ -83,18 +83,26 @@ class BinanceClient(ExchangeAPIClient):
         except BinanceAPIException as e:
             return {"error": str(e)}
 
-    def fetch_price_history(self, symbol: str = 'BTCUSDT', interval: str = '1d', limit: int = 100):
+    def fetch_price_history(self, symbol: str = 'BTCUSDT', interval: str = '1d', plot_type: str = 'line', limit: int = 100):
         try:
-            klines = self.client.get_klines(symbol=symbol, interval=interval, limit=limit)
-            return [{
-                "Open Time": k[0],
-                "Open Price": k[1],
-                "Highs": k[2],
-                "Lows": k[3],
-                "Closing Price": k[4]
-            } for k in klines]
-        except BinanceAPIException as e:
-            return {"error": str(e)}
+            klines = self.client.get_klines(symbol=symbol.upper(), interval=interval, limit=limit)
+
+            if plot_type == 'line':
+                price_history = [{"Open Time": entry[0], "Open Price": float(entry[1])} for entry in klines]
+            else:
+                price_history = [{
+                    "Open Time": entry[0],
+                    "Open Price": float(entry[1]),
+                    "Highs": float(entry[2]),
+                    "Lows": float(entry[3]),
+                    "Closing Price": float(entry[4])
+                } for entry in klines]
+
+            return price_history
+
+        except Exception as e:
+            print(f"Error fetching price history: {e}")
+            return []
 
     def get_minimum_buy_order(self, symbol: str = "BTCUSDT"):
         try:
@@ -189,3 +197,40 @@ class BinanceClient(ExchangeAPIClient):
         except BinanceAPIException as e:
             logging.error(f"get_order_status_detailed failed: {e}")
             return None
+
+    def test_order(self, symbol: str, side: str, quantity: float, price: float = None,
+                           order_type: str = "LIMIT", time_in_force: str = "GTC"):
+        """
+        Tests if a buy or sell order would work on Binance without executing it.
+
+        :param client: Binance Client object
+        :param symbol: Trading pair (e.g., 'BTCUSDT')
+        :param side: 'BUY' or 'SELL'
+        :param quantity: Order quantity
+        :param price: Price for limit orders (optional for market orders)
+        :param order_type: Order type ('LIMIT', 'MARKET', etc.)
+        :param time_in_force: Time in force for limit orders ('GTC', 'IOC', 'FOK')
+        :return: True if the order would be accepted, False otherwise
+        """
+        try:
+            order_params = {
+                "symbol": symbol.upper(),
+                "side": side.upper(),
+                "type": order_type.upper(),
+                "quantity": quantity,
+            }
+
+            if order_type == "LIMIT":
+                if price is None:
+                    raise ValueError("Price is required for LIMIT orders")
+                order_params["price"] = price
+                order_params["timeInForce"] = time_in_force.upper()
+
+            # Test the order
+            self.client.create_test_order(**order_params)
+
+            print("Order test successful!")
+            return True
+        except Exception as e:
+            print(f"Order test failed: {e}")
+            return False

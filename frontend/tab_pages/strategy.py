@@ -65,7 +65,7 @@ if st.session_state['trade_exchange_api']:
                     st.session_state['order_type'] = st.radio('Choose Order Type', options=['Trade', 'Swap'], index=0, horizontal=True)
                     st.success(swap_status)
                 else:
-                    st.session_state['order_type'] = st.radio('Choose Buy/Sell Order Type', options=['Trade', 'Swap'], index=0, horizontal=True, disabled=True)
+                    st.session_state['order_type'] = st.segmented_control('Choose Buy/Sell Order Type', options=['Trade', 'Swap'], default='Trade', disabled=True)
                     st.warning('🔁 Binance Convert API is not enabled on your Account, only Trade option can be used!')
             st.toggle("Futures/Margin Trading", disabled=True, help="Margin trading strategy is not currently available.")
 

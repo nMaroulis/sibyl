@@ -52,3 +52,7 @@ class ExchangeAPIClient(ABC):
     @abstractmethod
     def get_order_status_detailed(self, symbol_pair: str, order_id: str) -> dict | None:
         pass
+
+    @abstractmethod
+    def test_order(self, symbol: str, side: str, quantity: float, price: float, order_type: str, time_in_force: str):
+        pass

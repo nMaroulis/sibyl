@@ -12,9 +12,9 @@ router = APIRouter(
 )
 
 
-@router.get("/coin/price_history/{exchange_api}")
-def get_price_history(exchange_api: str = "binance_testnet", symbol: str = "BTCUSDT", interval: str = '1d', plot_type='line', limit: int = 100) -> List[dict]:
-    client = ExchangeClientFactory.get_client(exchange_api)
+@router.get("/coin/price_history")
+def get_price_history(exchange: str = "binance_testnet", symbol: str = "BTCUSDT", interval: str = '1d', plot_type='line', limit: int = 100) -> List[dict]:
+    client = ExchangeClientFactory.get_client(exchange)
     res = client.fetch_price_history(symbol, interval, plot_type, limit)
     return res
 

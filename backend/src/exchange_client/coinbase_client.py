@@ -48,3 +48,7 @@ class CoinbaseClient(ExchangeAPIClient):
 
     def get_order_status_detailed(self, symbol_pair: str, order_id: str) -> dict | None:
         pass
+
+    def test_order(self, symbol: str, side: str, quantity: float, price: float = None,
+                           order_type: str = "LIMIT", time_in_force: str = "GTC"):
+        pass

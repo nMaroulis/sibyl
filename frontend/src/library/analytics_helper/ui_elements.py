@@ -1,4 +1,4 @@
-from streamlit import write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, session_state, html, select_slider, divider, caption
+from streamlit import write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, session_state, html, select_slider, divider, caption, segmented_control
 from frontend.src.library.analytics_helper.plots import price_history_plot, price_history_correlation_heatmap, show_line_plot_with_analytics, show_analytics
 from frontend.src.library.analytics_helper.client import fetch_available_coins
 
