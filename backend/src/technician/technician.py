@@ -28,6 +28,5 @@ class Technician:
             res["hugging_face"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("hugging_face") is not None else 'Unavailable'
         if api_name == "coinmarketcap" or api_name == "all" or api_name == "llms":
             res["coinmarketcap"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("coinmarketcap") is not None else 'Unavailable'
-
         return res
 

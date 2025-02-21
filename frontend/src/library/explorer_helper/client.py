@@ -16,11 +16,9 @@ def fetch_blocks(blockchain: str, block_count: int) -> pd.DataFrame | None:
 
     try:
         if response.json().get("status") == "success":
-            print(response.json())
             blocks = response.json().get("data")
             return pd.DataFrame(blocks)
         else:
-            print(response.json())
             return None
     except Exception as e:
         print(e)

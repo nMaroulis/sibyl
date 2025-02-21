@@ -65,7 +65,6 @@ class Explorer:
         elif self.blockchain == "litecoin":
             response = requests.get(f"https://api.blockchair.com/litecoin/blocks?limit={limit}")
             if response.status_code != 200:
-                print(response, response.json())
                 return None
 
             blocks = response.json().get('data', [])
