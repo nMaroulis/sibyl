@@ -77,15 +77,23 @@ Choose a Company from a list of available company stocks and:
 
 - Get Company's Information
 - Analysis if a stock is worth buying or not based on various indicators
+- Get insights about U.S. senators' stock portfolios
 - Future Release: Rating based on custom ML model
+
+
+## Security & Local Deployment
+Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.
+### Local Databases
+#### API Key Storage 
+> All **API keys** are stored ***locally*** on an **encrypted** SQlite Database, with a **unique encryption key** generated on your local file system. This Database uses SQLAlchemy for ORM. You may find the database and the encryption key at */backend/db*
+
+> All **trades** made through Sibyl strategies are stored in a local SQlite DB without keeping any personal information.
+
 
 ## Roadmap
 The development roadmap includes exciting new features:
 
 - A Reinforcement Learning Agent that automatically places buy/sell orders based on optimized strategies and timing.
-
-## Security & Local Deployment
-Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind. Every API key is stored locally on an **encrypted** sqlite Database, with a unique key generated on your local file system.
 
 ---
 
