@@ -53,11 +53,12 @@ def send_new_buy_order(trade_params: TradeParams):
 
 
 @router.get("/trade/info/minimum_order")
-def is_buy_order_possible(exchange_api: str , symbol: str):
+def is_buy_order_possible(exchange: str , symbol: str):
 
-    client = ExchangeClientFactory.get_client(exchange_api)
+    client = ExchangeClientFactory.get_client(exchange)
     try:
         res = client.get_minimum_buy_order(symbol)
+        print(res)
         return res
     except Exception as e:
         print(e)
@@ -68,7 +69,7 @@ def is_buy_order_possible(exchange_api: str , symbol: str):
 def send_new_convert_order(exchange: str):
 
     client = ExchangeClientFactory.get_client(exchange)
-    res = client.check_swap_eligibility()  # dummy vars
+    res = client.check_swap_eligibility('USDT', 'BTC', 10)  # dummy vars
 
     return {"success": "Binance Convert API is enabled!"} if res else {"error": "Binance Convert API is NOT enabled!"}
 

@@ -6,7 +6,7 @@ import re
 @cache_data(show_spinner="Checking Asset Options Validity...")
 def fetch_trade_info_minimum_order(exchange: str, pair_symbol: str):
 
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/info/minimum_order?symbol={pair_symbol}'
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/info/minimum_order?exchange={exchange}&symbol={pair_symbol}'
     response = requests.get(url)
     return response.json()['min_notional']
 

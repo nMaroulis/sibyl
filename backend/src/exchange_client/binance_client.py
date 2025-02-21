@@ -6,6 +6,9 @@ from backend.db.api_keys_db_client import APIEncryptedDatabase
 import time
 import hmac, hashlib
 from datetime import datetime
+from binance.client import Client
+from binance.exceptions import BinanceAPIException
+import logging
 
 
 class BinanceClient(ExchangeAPIClient):
@@ -13,381 +16,176 @@ class BinanceClient(ExchangeAPIClient):
     def __init__(self):
         super().__init__()
         self.name = 'binance'
-        self.api_base_url = 'https://api.binance.com'  # 'https://api1.binance.com', 'https://api2.binance.com', 'https://api3.binance.com', 'https://api4.binance.com'
-        # Set API Keys
+        self.api_base_url = 'https://api.binance.com'  # api[1-4]
         api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
         if api_creds is None:
-            self.api_key, self.api_secret_key = None, None
+            self.client = None
         else:
-            self.api_key, self.api_secret_key = api_creds.api_key, api_creds.secret_key
+            self.client = Client(api_creds.api_key, api_creds.secret_key)
 
     def check_status(self):
-        if self.api_key is None or self.api_secret_key is None:
+        if self.client is None:
             return 'Empty Credentials'
-
-        base_url = f"{self.api_base_url}/api/v3/account"
-        timestamp = int(time.time() * 1000)
-        query_string = f"timestamp={timestamp}"
-        signature = hmac.new(self.api_secret_key.encode(), query_string.encode(), hashlib.sha256).hexdigest()
-        query_string_with_signature = f"{query_string}&signature={signature}"
-        headers = {"X-MBX-APIKEY": self.api_key}
-        url = f"{base_url}?{query_string_with_signature}"
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
+        try:
+            self.client.get_account()
             return 'Active'
-        else:
+        except BinanceAPIException:
             return 'Invalid Credentials'
 
     def get_crypto_pair_price(self, pair: str):
-        # Binance API endpoint for ticker price
-        url = f"{self.api_base_url}/api/v3/ticker/price"
-        params = {'symbol': pair}
-        response = requests.get(url, params=params)
-        if response.status_code == 200:  # Checking if the request was successful
-            data = response.json()
-            pair_price = data['price']
-            return {"price": pair_price}
-        else:
-            print(f'backend :: {self.name} Exchange API client :: get_crypto_pair_price for pair ({pair}) :: Failed to retrieve current price.')
-            return {"error": 'Could not fetch price'}
+        try:
+            price = self.client.get_symbol_ticker(symbol=pair)['price']
+            return {"price": price}
+        except BinanceAPIException as e:
+            return {"error": str(e)}
 
     def get_spot_balance(self):
-
-        # Binance API endpoint
-        account_url = f"{self.api_base_url}/api/v3/account"
-        # Request headers and parameters
-        headers = {'X-MBX-APIKEY': self.api_key}
-        params = {'timestamp': int(time.time() * 1000), }
-        # Generate the query string
-        query_string = '&'.join([f'{key}={value}' for key, value in params.items()])
-        # Create a signature
-        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'),
-                             hashlib.sha256).hexdigest()
-        # Add the signature to the request parameters
-        params['signature'] = signature
-        # Send the GET request to Binance API
-        response = requests.get(account_url, headers=headers, params=params)
+        if self.client is None:
+            return {"error": "Invalid API credentials"}
         try:
-            data = response.json()
-        except json.JSONDecodeError as error:
-            return {"error": "Unable to parse response JSON."}
+            account_info = self.client.get_account()
+            spot_balances = {}
+            locked_earn_balances, staked_balances = {}, {}
 
-        if response.status_code == 200:  # Check if the request was successful
-            spot_balances = {}  # all balance
-            locked_earn_balances = {}  # Retrieve the locked Earn balances
-            staked_balances = {}  # Retrieve the staked balances
-            for asset in data['balances']:
+            for asset in account_info['balances']:
                 if float(asset['free']) > 0.0 or float(asset['locked']) > 0.0:
+                    pair_price = 1.0
+                    if asset['asset'] != 'USDT':
+                        fetched_price = self.get_crypto_pair_price(asset['asset'] + 'USDT')
+                        if "error" not in fetched_price:
+                            pair_price = fetched_price['price']
 
-                    fetched_price = self.get_crypto_pair_price(asset['asset'] + 'USDT')
-                    asset_price = 1.0  # default price, for BUSD, USDT prices in USDT
-                    if "error" not in fetched_price:
-                        asset_price = fetched_price['price']
-                        # if asset_price == 0:
-                        #     asset_price = 1.0
-
-                    spot_balances[asset['asset']] = {
+                    balance_data = {
                         'free': float(asset['free']),
                         'locked': float(asset['locked']),
-                        'price': asset_price
+                        'price': pair_price
                     }
+
+                    spot_balances[asset['asset']] = balance_data
                     if asset['asset'].startswith('LD'):
-                        locked_earn_balances[asset['asset']] = {
-                            'free': float(asset['free']),
-                            'locked': float(asset['locked']),
-                            'price': asset_price
-                        }
+                        locked_earn_balances[asset['asset']] = balance_data
                     if asset['asset'].startswith('ST'):
-                        staked_balances[asset['asset']] = {
-                            'free': float(asset['free']),
-                            'locked': float(asset['locked']),
-                            'price': asset_price
-                        }
-            # print(json.dumps(spot_balances, indent=4))
-            return {'spot_balances': spot_balances,
-                    'locked_earn_balances': locked_earn_balances,
-                    'staked_balances': staked_balances,
-                    }
-        else:
-            # Request was not successful, return the error message
-            return {"error": data['msg']}
+                        staked_balances[asset['asset']] = balance_data
+
+            return {
+                'spot_balances': spot_balances,
+                'locked_earn_balances': locked_earn_balances,
+                'staked_balances': staked_balances
+            }
+        except BinanceAPIException as e:
+            return {"error": str(e)}
 
     def fetch_available_coins(self):
+        try:
+            exchange_info = self.client.get_exchange_info()
+            available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if 'USDT' in s['symbol']]
+            return list(set(available_coins))
+        except BinanceAPIException as e:
+            return {"error": str(e)}
 
-        headers = {'X-MBX-APIKEY': self.api_key}
-        url = f"{self.api_base_url}/api/v1/exchangeInfo"
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            try:
-                data = response.json()
-                if 'symbols' in data:
-                    # Function to return all Coins
-                    # available_coins = set()
-                    #     base_asset = symbol['baseAsset']
-                    #     quote_asset = symbol['quoteAsset']
-                    #     if base_asset not in available_coins:
-                    #         available_coins.add(base_asset)
-                    #     if quote_asset not in available_coins:
-                    #         available_coins.add(quote_asset)
-                    coin_name_dict = get_coin_symbol_name_map()
-                    available_coins = []  # = [symbol['symbol'] for symbol in data['symbols']]
-                    for symbol in data['symbols']:
-                        if 'USDT' in symbol['symbol']:
-                            s = symbol['symbol'].replace('USDT', '')
-                            if len(s) > 1:
-                                if s in coin_name_dict.keys():  # if symbol exists in dict
-                                    if coin_name_dict[s] != s:  # if name and symbol are the same, keep one
-                                        available_coins.append(f"{coin_name_dict[s]} [{s}]")
-                                    else:
-                                        available_coins.append(s)
-                                else:
-                                    available_coins.append(s)
-                    return available_coins
-                else:
-                    print("Error: Unable to fetch data from Binance API")
-                    return []
-            except json.JSONDecodeError:
-                return {"Error": "Unable to parse response JSON."}
-        else:
-            return {"Error": "Failed to fetch available coins"}
-
-    def fetch_price_history(self, symbol: str = 'BTC', interval: str = '1d', plot_type: str = 'line', limit: int = 100):
-        headers = {'X-MBX-APIKEY': self.api_key}
-        url = f"{self.api_base_url}/api/v3/klines?symbol={symbol.upper()}&interval={interval}&limit={limit}"
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            try:
-                data = response.json()
-            except json.JSONDecodeError as error:
-                return []  # {"error": "Unable to parse response JSON."}
-            if plot_type == 'line':  # requested line plot
-                price_history = [{"Open Time": entry[0], "Open Price": entry[1]} for entry in data]
-            else:  # candle plot
-                price_history = [{"Open Time": entry[0],
-                                  "Open Price": entry[1],
-                                  "Highs": entry[2],
-                                  "Lows": entry[3],
-                                  "Closing Price": entry[4],
-                                  } for entry in data]
-            return price_history
-        else:
-            return []  # {"error": "Failed to fetch price history"}
+    def fetch_price_history(self, symbol: str = 'BTCUSDT', interval: str = '1d', limit: int = 100):
+        try:
+            klines = self.client.get_klines(symbol=symbol, interval=interval, limit=limit)
+            return [{
+                "Open Time": k[0],
+                "Open Price": k[1],
+                "Highs": k[2],
+                "Lows": k[3],
+                "Closing Price": k[4]
+            } for k in klines]
+        except BinanceAPIException as e:
+            return {"error": str(e)}
 
     def get_minimum_buy_order(self, symbol: str = "BTCUSDT"):
-        url = f"{self.api_base_url}/api/v3/exchangeInfo?symbol={symbol}"  # {symbol}&quantity={quantity}&price={price}"
-        response = requests.get(url)  # Send a GET request to retrieve the trading pairs' details
-        exchange_info = response.json()
-        minimum_buy = -1
-        # Find the symbol in the exchange information
         try:
-            for symbol_info in exchange_info['symbols'][0]['filters']:
-                if symbol_info['filterType'] == 'NOTIONAL':
-                    minimum_buy = float(symbol_info['minNotional'])
-        except KeyError:
+            exchange_info = self.client.get_symbol_info(symbol)
+            for f in exchange_info['filters']:
+                if f['filterType'] == 'NOTIONAL':
+                    return {'min_notional': float(f['minNotional'])}
             return {'min_notional': -1}
-        except AttributeError:
-            return {'min_notional': -1}
+        except BinanceAPIException as e:
+            return {"error": str(e)}
 
-        return {'min_notional': minimum_buy}  # If the symbol is not found, return False
+    def post_buy_order(self, trade_from: str, trade_to: str, from_amount: float):
+        if self.client is None:
+            return {"error": "Invalid API credentials"}
+        try:
+            order = self.client.order_market(symbol=f"{trade_to}{trade_from}", quoteOrderQty=from_amount, side='BUY')
+            return order
+        except BinanceAPIException as e:
+            return {"error": str(e)}
 
-    """ TRADE FUNCTIONS """
-    def post_buy_order(self, trade_from: str, trade_to: str, from_amount: int):
+    def check_swap_eligibility(self, trade_from: str, trade_to: str, from_amount: float):
+        """Checks if a swap is eligible."""
+        try:
+            response = self.client.convert_request_quote(
+                fromAsset=trade_from,
+                toAsset=trade_to,
+                fromAmount=from_amount,
+                walletType='SPOT'
+            )
+            return response.get("quoteId")
+        except BinanceAPIException as e:
+            logging.error(f"check_swap_eligibility failed: {e}")
+            return None
 
-        url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
-        trading_pair = f"{trade_to}{trade_from}"
-        # Set the request parameters
-        params = {
-            'symbol': trading_pair,  # Trading pair symbol for ADA/USDT
-            'side': 'BUY',  # Buy order
-            'type': 'MARKET',  # Market order type
-            # 'quantity': 3,  # Quantity of Crypto to buy
-            'quoteOrderQty': from_amount,  # Quantity of USDT to spend
-            'recvWindow': 5000,  # Optional, receive window in milliseconds
-            'timestamp': int(time.time() * 1000)  # Timestamp in milliseconds
-        }
-        # Generate the query string
-        query_string = '&'.join([f'{key}={params[key]}' for key in params])
-        # Sign the query string
-        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'),
-                             hashlib.sha256).hexdigest()
-        # Add the API key and signature to the request headers
-        headers = {
-            'X-MBX-APIKEY': self.api_key,
-        }
-        # Add the signature to the query string
-        query_string += f'&signature={signature}'
-        # Make the API request
-        response = requests.post(f'{url}?{query_string}', headers=headers)
-        """
-        response body:
-        {"symbol": "ADAUSDT", "orderId": 10xInt, "orderListId": -1, "clientOrderId": "str",
-         "transactTime": "timestamp", "price": "0.00000000", "origQty": "17.90000000", "executedQty": "17.90000000",
-         "cummulativeQuoteQty": "4.99768000", "status": "FILLED", "timeInForce": "GTC", "type": "MARKET", "side": "BUY",
-         "workingTime": "timestamp", "fills": [
-            {"price": "0.27920000", "qty": "17.90000000", "commission": "0.00001618", "commissionAsset": "BNB",
-             "tradeId": 10xInt}], "selfTradePreventionMode": "NONE"}
-        """
-        print("backend :: BinanceExchange client :: post_buy_order :: response status ", response.status_code)
-        print("backend :: BinanceExchange client :: post_buy_order :: response body ", response.text)
-        if response.status_code == 200:
-            try:
-                quantity_bought = response.json()['executedQty']
-                buy_order_id = response.json()['orderId']
-                buy_datetime = str(datetime.utcfromtimestamp(response.json()['transactTime'] // 1000).strftime('%Y-%m-%d %H:%M:%S')) # response.json()['transactTime']  # overwrite Datetime with the Datetime of Buy
-                return quantity_bought, buy_order_id, buy_datetime
-            except KeyError:
-                return None
-        else:
-            return None  # "transactTime"
-
-    def check_swap_eligibility(self, trade_from: str, trade_to: str, from_amount: int):
-        url = f"{self.api_base_url}/sapi/v1/convert/getQuote"
-        timestamp = str(int(time.time() * 1000))
-        params = {
-            'fromAsset': trade_from,
-            'toAsset': trade_to,
-            'fromAmount': from_amount,
-            'walletType': 'SPOT',
-            'recvWindow': '5000',
-            'timestamp': timestamp,
-        }
-        headers = {
-            'X-MBX-APIKEY': self.api_key
-        }
-        query_string = '&'.join([f'{key}={params[key]}' for key in params])
-        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'),
-                             hashlib.sha256).hexdigest()
-        query_string += f'&signature={signature}'
-        response = requests.post(f'{url}?{query_string}', headers=headers)
-        if response.status_code == 200:
-            if "quoteId" in response.json():
-                return response
-        return None
-
-    def post_swap_order(self, trade_from: str, trade_to: str, from_amount: int):  # Alternative to BUY order with No fees in Binance
-        # https://binance-docs.github.io/apidocs/spot/en/#convert-endpoints
-
-        response = self.check_swap_eligibility(trade_from, trade_to, from_amount)
-
-        if response.status_code == 200:
-            try:
-                buy_order_id = response.json()['quoteId']
-                # accept the Quote
-                url = f"{self.api_base_url}/sapi/v1/convert/acceptQuote"
-                timestamp = str(int(time.time() * 1000))
-                params = {
-                    'quoteId': buy_order_id,
-                    'recvWindow': '5000',
-                    'timestamp': timestamp,
-                }
-                query_string = '&'.join([f'{key}={params[key]}' for key in params])
-                signature = hmac.new(self.api_secret_key.encode('utf-8'),
-                                     query_string.encode('utf-8'),
-                                     hashlib.sha256).hexdigest()
-                query_string += f'&signature={signature}'
-                response = requests.post(f'{url}?{query_string}', headers=headers)
-                buy_order_id = response.json()['orderId']
-                quantity_bought = response.json()['toAmount']
-                return buy_order_id, quantity_bought, timestamp
-            except KeyError as e:
-                print(f"binance_client :: post_swap_order {e}")
-                return None
-        else:
+    def post_swap_order(self, trade_from: str, trade_to: str, from_amount: float):
+        """Posts a swap order if eligible."""
+        quote_id = self.check_swap_eligibility(trade_from, trade_to, from_amount)
+        if not quote_id:
+            return None
+        try:
+            response = self.client.accept_convert_quote(quoteId=quote_id)
+            return response.get('orderId'), response.get('toAmount'), datetime.utcnow()
+        except BinanceAPIException as e:
+            logging.error(f"post_swap_order failed: {e}")
             return None
 
     def post_sell_order(self, trade_from: str, trade_to: str, quantity: float, sell_order_price: float):
-
-        timestamp = int(time.time() * 1000)
-        url = f"{self.api_base_url}/api/v3/order"  # endpoint URL for creating a new order
-        trading_pair = f"{trade_from}{trade_to}"
-        print(f"backend :: BinanceExchange client :: post_sell_order :: Sell order for {quantity} {trade_from} at {sell_order_price} {trade_to}")
-        # Build the query string
-        query_string = f'symbol={trading_pair}&side=SELL&type=LIMIT&timeInForce=GTC&quantity={quantity}&price={sell_order_price}&timestamp={timestamp}'
-        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
-        query_string += f'&signature={signature}'
-        headers = {
-            'X-MBX-APIKEY': self.api_key,
-        }
-
-        # Send to the request URL
-        response = requests.post(f'{url}?{query_string}', headers=headers)
-        print("backend :: BinanceExchange client :: post_sell_order :: response status ", response.status_code)
-        print("backend :: BinanceExchange client :: post_sell_order :: response body ", response.text)
-        """
-        response body:
-        {"symbol":"ADAUSDT","orderId":10xInt,"orderListId":-1,"clientOrderId":"str",
-        "transactTime":timestamp,"price":"0.29260000","origQty":"17.90000000","executedQty":"0.00000000",
-        "cummulativeQuoteQty":"0.00000000","status":"NEW","timeInForce":"GTC","type":"LIMIT","side":"SELL",
-        "workingTime":timestamp,"fills":[],"selfTradePreventionMode":"NONE"}
-        """
-
-        if response.status_code == 200:
-            try:
-                sell_order_id = response.json()['orderId']
-                return sell_order_id
-            except KeyError:
-                return None
-        else:
+        """Places a limit sell order on Binance."""
+        try:
+            order = self.client.create_order(
+                symbol=f"{trade_from}{trade_to}",
+                side=Client.SIDE_SELL,
+                type=Client.ORDER_TYPE_LIMIT,
+                timeInForce=Client.TIME_IN_FORCE_GTC,
+                quantity=quantity,
+                price=str(sell_order_price)
+            )
+            return order.get('orderId')
+        except BinanceAPIException as e:
+            logging.error(f"post_sell_order failed: {e}")
             return None
 
-
     def get_order_status(self, symbol_pair: str, order_id: str):
-        url = f"{self.api_base_url}/api/v3/myTrades"
-        params = {'symbol': symbol_pair, 'orderId': order_id, 'timestamp': int(time.time() * 1000), 'recvWindow': 5000}
-        query_string = '&'.join([f'{key}={params[key]}' for key in params])
-        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
-        query_string += f'&signature={signature}'
-        headers = {'X-MBX-APIKEY': self.api_key}
-        response = requests.get(f'{url}?{query_string}', headers=headers)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return  None # {"error": 'Trade not found!'}
+        """Fetches basic order status."""
+        try:
+            order = self.client.get_order(symbol=symbol_pair, orderId=order_id)
+            return order
+        except BinanceAPIException as e:
+            logging.error(f"get_order_status failed: {e}")
+            return None
 
-
-    def get_order_status_detailed(self, symbol_pair: str, order_id: str) -> dict | None:
-        """
-        NEW: The order has been created and is active but has not been executed yet.
-        PARTIALLY_FILLED: The order has been partially filled, meaning that a portion of the requested quantity has been executed, but there are still remaining unfilled quantities.
-        FILLED: The order has been completely filled, indicating that the entire requested quantity has been executed.
-        CANCELED: The order has been canceled either by the user or due to other conditions, such as time in force (TIF) expiration or insufficient funds.
-        PENDING_CANCEL: The order is in the process of being canceled.
-        REJECTED: The order has been rejected, usually due to invalid parameters or other error conditions.
-        EXPIRED: The order has expired and was not executed within the specified time frame.
-        INVALID: The order is considered invalid, often due to incorrect parameters or other issues.
-        """
-        url = f"{self.api_base_url}/api/v3/order"
-
-        # Create the request parameters
-        params = {
-            'symbol': symbol_pair,  # Replace with the symbol of your asset
-            'orderId': order_id,
-            'timestamp': int(time.time() * 1000),
-            'recvWindow': 5000,
-        }
-        query_string = '&'.join([f'{key}={params[key]}' for key in params])
-        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'),
-                             hashlib.sha256).hexdigest()
-        query_string += f'&signature={signature}'
-        headers = {'X-MBX-APIKEY': self.api_key}
-        response = requests.get(f'{url}?{query_string}', headers=headers)
-        # Process the response
-        new_status = 'active'
-        time_sold = None
-        if response.status_code == 200:
-            order_status = response.json()
-            if order_status['status'] == 'NEW':
-                pass  # remain active
-            elif order_status['status'] == 'PARTIALLY_FILLED':
-                new_status = 'partially_completed'
-            elif order_status['status'] == 'FILLED':
-                url_to_get_time_sold = f"{self.api_base_url}/api/v3/myTrades"
-                res_time_sold = requests.get(f'{url_to_get_time_sold}?{query_string}', headers=headers)
-                time_sold = res_time_sold.json()[0]['time']  # str()
-                time_sold = str(datetime.utcfromtimestamp(time_sold//1000).strftime('%Y-%m-%d %H:%M:%S'))
-                new_status = 'completed'
-            else:  # CANCELLED, PENDING_CANCEL, REJECTED, EXPIRED, INVALID
-                new_status = 'cancelled'
+    def get_order_status_detailed(self, symbol_pair: str, order_id: str):
+        """Fetches detailed order status."""
+        try:
+            order = self.client.get_order(symbol=symbol_pair, orderId=order_id)
+            status_map = {
+                'NEW': 'active',
+                'PARTIALLY_FILLED': 'partially_completed',
+                'FILLED': 'completed',
+                'CANCELED': 'cancelled',
+                'PENDING_CANCEL': 'cancelled',
+                'REJECTED': 'cancelled',
+                'EXPIRED': 'cancelled',
+            }
+            new_status = status_map.get(order.get('status'), 'unknown')
+            time_sold = None
+            if new_status == 'completed':
+                trades = self.client.get_my_trades(symbol=symbol_pair)
+                if trades:
+                    time_sold = datetime.utcfromtimestamp(trades[-1]['time'] // 1000).strftime('%Y-%m-%d %H:%M:%S')
             return {"status": new_status, "time_sold": time_sold}
-        else:
+        except BinanceAPIException as e:
+            logging.error(f"get_order_status_detailed failed: {e}")
             return None

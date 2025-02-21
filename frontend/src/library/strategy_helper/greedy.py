@@ -1,8 +1,6 @@
-from streamlit import write, form, form_submit_button, button, select_slider, number_input, \
-    columns, session_state, caption, spinner, success, error, rerun, toast, divider, selectbox
+from streamlit import write, select_slider, number_input, session_state, caption, segmented_control
 import time
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, post_strategy
-# from extra_streamlit_components import tab_bar, TabBarItemData
 import re
 
 class GreedyTrader:
@@ -23,7 +21,7 @@ class GreedyTrader:
             'The **Greedy** algorithm (or **Scalping**) places a buy order immediately after it is initiated and sells after it has achieved a profit of X%. X is based on the parameters of the algorithm.')
         write('The current **Payoff ratio** based on Trading History using the Greedy Algorithm is *Not Available*')
 
-        strategy_type = selectbox("Select Greedy algorithm type:", options=['Profit [Percentage]', 'Profit [Absolute Value]', 'Automatic'])
+        strategy_type = segmented_control("Select Greedy algorithm type:", options=['Profit [Percentage]', 'Profit [Absolute Value]', 'Automatic'], default='Profit [Percentage]')
 
         if strategy_type == "Profit [Percentage]":
             profit = number_input('Profit [%]:', min_value=0.0, max_value=10000.0, value=2.0)
@@ -39,11 +37,6 @@ class GreedyTrader:
             self.strategy_params = {"type": "auto", "value": alg_type}
         else:
             write("Invalid Option")
-        # self.chosen_id = tab_bar(data=[
-        #     TabBarItemData(id=1, title="Profit", description="Percentage"),
-        #     TabBarItemData(id=2, title="Profit", description="Absolute Value"),
-        #     TabBarItemData(id=3, title="Automatic", description="Choose Level"),
-        # ], default=1)
 
         return 0
 
