@@ -3,7 +3,10 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, declarative_base
 from cryptography.fernet import Fernet, InvalidToken
 from dotenv import load_dotenv
+import logging
 
+logging.basicConfig()
+logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
 
 class APIEncryptedDatabase:
     # Load environment variables and define constants
@@ -32,13 +35,15 @@ class APIEncryptedDatabase:
             self.name = name
             self.api_key = APIEncryptedDatabase.cipher.encrypt(api_key.encode()).decode()
             self.secret_key = APIEncryptedDatabase.cipher.encrypt(secret_key.encode()).decode() if secret_key else None
-            self.api_metadata = api_metadata
+            self.api_metadata = APIEncryptedDatabase.cipher.encrypt(api_metadata.encode()).decode() if api_metadata else None
 
         def decrypt_data(self):
             try:
                 self.api_key = APIEncryptedDatabase.cipher.decrypt(self.api_key.encode()).decode()
                 if self.secret_key:
                     self.secret_key = APIEncryptedDatabase.cipher.decrypt(self.secret_key.encode()).decode()
+                if self.api_metadata:
+                    self.api_metadata = APIEncryptedDatabase.cipher.decrypt(self.api_metadata.encode()).decode()
             except InvalidToken:
                 raise ValueError("APIEncryptedDatabase :: ❌ Decryption failed. Invalid encryption key.")
 
@@ -145,11 +150,3 @@ class APIEncryptedDatabase:
         session.commit()
         session.close()
         print(f"APIEncryptedDatabase :: 🗑️ API Key '{name}' deleted successfully.")
-
-
-# Example usage
-# APIEncryptedDatabase.insert_api_key("kraken13e2332", "abcdeffg", "s3cr3t")
-
-# Retrieve and print decrypted API keys
-for key in APIEncryptedDatabase.get_api_keys():
-    print(f"🔑 Name: {key.name}, API Key: {key.api_key}, Secret Key: {key.secret_key}, Metadata: {key.api_metadata}")

@@ -3,6 +3,7 @@ if os.path.abspath(os.path.dirname(__file__)) not in sys.path:
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import subprocess, signal, time
 from frontend.db.db_connector import db_init, fetch_fields, update_fields
+from streamlit.runtime.scriptrunner import add_script_run_ctx,get_script_run_ctx
 
 backend_server = None
 frontend_ui = None
@@ -20,7 +21,9 @@ def main() -> int:
     backend_server = subprocess.Popen("python3.12 backend/rest_server.py", shell=True, env=env)
     time.sleep(2)  # Let some time for backend to start
     os.environ["STREAMLIT_CONFIG"] = ".streamlit/config.toml"
+    ctx = get_script_run_ctx()
     frontend_ui = subprocess.Popen("streamlit run frontend/index_router.py", shell=True, env=env)
+    add_script_run_ctx(frontend_ui, ctx)
 
     return 0
 

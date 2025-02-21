@@ -1,3 +1,5 @@
+/backend/db/api_keys.db
+/backend/db/encryption_key.key
 /backend/config/api_keys/api_credentials.json
 /.idea/
 /TODO.md

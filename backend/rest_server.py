@@ -32,11 +32,17 @@ router.include_router(stock_analyst_router)
 
 app = FastAPI()
 
-# origins = ["http://127.0.0.1:8000"]
-# app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+# SECURITY OPTIONS
+origins = ["http://localhost:8501"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Allow only the localhost streamlit frontend
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT"],  # Restrict methods
+    allow_headers=["*"],
+)
 
 app.include_router(router)
-
 
 @app.get("/")
 def read_root():
