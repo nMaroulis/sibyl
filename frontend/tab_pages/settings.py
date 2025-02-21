@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout
-from frontend.src.library.settings_helper.funcs import insert_update_exchange_api_keys
+from frontend.src.library.settings_helper.funcs import insert_update_api_keys
 from frontend.src.library.client import check_exchange_api_connection, check_backend_connection
 from frontend.db.db_connector import update_fields, fetch_fields
 from pandas import DataFrame
@@ -72,12 +72,11 @@ with api_tab:
         api_submit = st.form_submit_button('Update Credentials')
         if api_submit:
             with st.spinner("Encrypting and sending API Keys to Backend Server..."):
-                res = insert_update_exchange_api_keys(exchange, exchange_api_key, exchange_secret_key)
+                res = insert_update_api_keys(exchange, exchange_api_key, exchange_secret_key)
             if res:
                 st.success(f"✅ {exchange} **API Key** and **Secret Key** have been successfully added/updated to the Encrypted Database.")
             else:
                 st.error(f"⚠️ Inserting **{exchange} API Key** and **Secret Key** to the Encrypted Database failed.")
-
 with nlp_tab:
     with st.form('API Credentials'):
         nlp_model = st.selectbox('Choose NLP LLM Model API', options=['Hugging Face Falcon', 'OpenAI API', 'Google Gemini API'], help="Update NLP Model Choice in frontend SQlite3 DB")
@@ -89,10 +88,11 @@ with nlp_tab:
             st.write("ok")
 with price_tab:
     with st.form('Crypto Price Credentials'):
-        exchange = st.selectbox('Choose Price History API', options=['CoinCap API', 'CoinGecko API', 'CoinMarketCap API'], disabled=True)
+        price_history_api = st.selectbox('Choose Price History API', options=['CoinCap API', 'CoinGecko API', 'CoinMarketCap API'], disabled=True)
         st.write("The crypto prices are fetched through the Binance API and the CoinCap API (https://docs.coincap.io/). If the limit is reached, please use a custom API key.")
         st.info('💡 These APIs are also used to create the Coin Symbol-Name Map. (e.g. BTC → Bitcoin [BTC])')
-        st.text_input('API Key', placeholder="Fill API Key here...")
+        price_history_api_key = st.text_input('API Key', placeholder="Fill API Key here...")
         ph_submit = st.form_submit_button('Update API Key')
         if ph_submit:
             st.write("Not yet Supported.")
+            insert_update_api_keys(price_history_api, price_history_api_key)

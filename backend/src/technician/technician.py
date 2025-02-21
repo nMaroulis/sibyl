@@ -31,12 +31,12 @@ class Technician:
 
 
     @staticmethod
-    def insert_api_key_to_db(exchange_name, api_key, secret_key) -> bool:
+    def insert_api_key_to_db(api_name: str, api_key: str, secret_key: str, api_metadata: str) -> bool:
         try:
-            if APIEncryptedDatabase.get_api_key_by_name(exchange_name):
-                APIEncryptedDatabase.update_api_key(exchange_name, api_key, secret_key)
+            if APIEncryptedDatabase.get_api_key_by_name(api_name):
+                APIEncryptedDatabase.update_api_key(api_name, api_key, secret_key, api_metadata)
             else:
-                APIEncryptedDatabase.insert_api_key(exchange_name, api_key, secret_key)
+                APIEncryptedDatabase.insert_api_key(api_name, api_key, secret_key, api_metadata)
             return True
         except Exception as e:
             print(e)

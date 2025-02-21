@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.src.technician.technician import Technician
+from typing import Optional
+
 
 # APIRouter creates path operations for user module
 router = APIRouter(
@@ -22,17 +24,21 @@ def get_api_status(api_name: str = 'binance'):
     return res
 
 
-class ExchangeAPIParams(BaseModel):
-    exchange_name: str
+class APIParams(BaseModel):
+    api_name: str
     api_key: str
-    secret_key: str
+    secret_key: Optional[str] = None
+    api_metadata: Optional[str] = None
 
-@router.post("/credentials/apis/exchange")
-def insert_update_exchange_api_keys(exchange_api_params: ExchangeAPIParams):
+@router.post("/credentials/apis/new")
+def insert_update_api_keys(api_params: APIParams):
     try:
         # check if exists (insert or update)
-        res = technician_worker.insert_api_key_to_db(exchange_api_params.exchange_name, exchange_api_params.api_key, exchange_api_params.secret_key)
-        return {'status': 'success'}
+        res = technician_worker.insert_api_key_to_db(api_params.api_name, api_params.api_key, api_params.secret_key, api_params.api_metadata)
+        if res:
+            return {'status': 'success'}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to insert API key.")
     except Exception as e:
         print(f"TECHNICIAN :: credentials/apis/exchange :: {e}")
         raise HTTPException(status_code=400, detail="Failed to insert API key.")

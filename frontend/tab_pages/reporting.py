@@ -8,7 +8,7 @@ st.html("<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypto Repo
 
 st.sidebar.selectbox(label="Source Website", options=['Cointelegraph', 'Coindesk', 'Decrypt'], disabled=True)
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)
-st.sidebar.selectbox(label="Sentiment NLP Model", options=['Vader', 'chatGPT'])
+st.sidebar.selectbox(label="Sentiment NLP Model", options=['Vader'])
 st.sidebar.button("Sibyl LLM Chatbot", disabled=True)
 
 st.html("""
