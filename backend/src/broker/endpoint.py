@@ -1,10 +1,4 @@
 from fastapi import APIRouter, HTTPException
-from fastapi import Query
-from typing import Optional, List
-from backend.settings import BINANCE_API_URL, BINANCE_API_KEY, BINANCE_API_SECRET_KEY
-import json
-import requests
-import hmac, hashlib
 import time
 from backend.db.trade_history_db_client import TradeHistoryDBClient
 from backend.src.broker.greedy import GreedyBroker
@@ -13,7 +7,6 @@ from pydantic import BaseModel
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 
-# APIRouter creates path operations for user module
 router = APIRouter(
     prefix="/broker",
     tags=["Broker"],
@@ -57,134 +50,58 @@ def send_new_buy_order(trade_params: TradeParams):
         return response
     else:
         return response
-        # raise HTTPException(status_code=400, detail="Strategy failed")
 
 
 @router.get("/trade/info/minimum_order")
-def is_buy_order_possible(symbol: str):
-    url = f"{BINANCE_API_URL}/api/v3/exchangeInfo?symbol={symbol}"  # {symbol}&quantity={quantity}&price={price}"
-    response = requests.get(url)  # Send a GET request to retrieve the trading pairs' details
-    exchange_info = response.json()
-    minimum_buy = -1
-    # print(exchange_info['symbols'][0]['filters'])
-    # Find the symbol in the exchange information
+def is_buy_order_possible(exchange_api: str , symbol: str):
+
+    client = ExchangeClientFactory.get_client(exchange_api)
     try:
-        for symbol_info in exchange_info['symbols'][0]['filters']:
-            if symbol_info['filterType'] == 'NOTIONAL':
-                minimum_buy = float(symbol_info['minNotional'])
-                # print(symbol_info['minNotional'])
-    except KeyError:
-        return {'min_notional': -1}
-    except AttributeError:
-        return {'min_notional': -1}
-
-    return {'min_notional': minimum_buy}  # If the symbol is not found, return False
+        res = client.get_minimum_buy_order(symbol)
+        return res
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=400, detail="Fetching minimum buy order failed.")
 
 
-@router.get("/trade/convert/info")  # https://binance-docs.github.io/apidocs/spot/en/#convert-endpoints
-def send_new_convert_order():  # Alternative to BUY order with No fees in Binance
-    # Send a simple getQuote request in order to see if convert/swap API is enables
-    # API endpoint URLs
-    url = BINANCE_API_URL + '/sapi/v1/convert/getQuote'
-    # Default Parameters for the conversion
-    amount = 1  # Amount of USDT to convert
-    symbol = "USDT"  # Trading pair symbol (USDT to ADA)
-    symbol_to = "BTC"  # Trading pair symbol (USDT to ADA)
-    timestamp = str(int(time.time() * 1000))
-    params = {
-        'fromAsset': symbol,
-        'toAsset': symbol_to,
-        'fromAmount': amount,
-        'walletType': 'SPOT',
-        'recvWindow': '5000',
-        'timestamp': timestamp,
-    }
-    headers = {
-        'X-MBX-APIKEY': BINANCE_API_KEY
-    }
-    query_string = '&'.join([f'{key}={params[key]}' for key in params])
-    signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'),
-                         hashlib.sha256).hexdigest()
-    query_string += f'&signature={signature}'
-    response = requests.post(f'{url}?{query_string}', headers=headers)
-    if response.status_code == 200:
-        if "quoteId" in response.json():
-            return {"success": "Binance Convert API is enabled!"}
+@router.get("/trade/convert/info")
+def send_new_convert_order(exchange: str):
 
-    return {"error": "Binance Convert API is NOT enabled!"}
+    client = ExchangeClientFactory.get_client(exchange)
+    res = client.check_swap_eligibility()  # dummy vars
+
+    return {"success": "Binance Convert API is enabled!"} if res else {"error": "Binance Convert API is NOT enabled!"}
 
 
-@router.get("/trade/order/status/update")
-def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
-    """
-    NEW: The order has been created and is active but has not been executed yet.
-    PARTIALLY_FILLED: The order has been partially filled, meaning that a portion of the requested quantity has been executed, but there are still remaining unfilled quantities.
-    FILLED: The order has been completely filled, indicating that the entire requested quantity has been executed.
-    CANCELED: The order has been canceled either by the user or due to other conditions, such as time in force (TIF) expiration or insufficient funds.
-    PENDING_CANCEL: The order is in the process of being canceled.
-    REJECTED: The order has been rejected, usually due to invalid parameters or other error conditions.
-    EXPIRED: The order has expired and was not executed within the specified time frame.
-    INVALID: The order is considered invalid, often due to incorrect parameters or other issues.
-    """
+@router.get("/trade_history/order/status/update")
+def get_order_status():
+
     active_orders = TradeHistoryDBClient.fetch_trading_history(status='all')  # (active, partially completed)
-    url = f"{BINANCE_API_URL}/api/v3/order"
 
     for i in active_orders:
+        exchange_api = i[0]
         symbol_from = i[3]
         symbol_to = i[4]
         symbol_pair = symbol_to + symbol_from
         order_id = i[9]
 
-        # Create the request parameters
-        params = {
-            'symbol': symbol_pair,  # Replace with the symbol of your asset
-            'orderId': order_id,
-            'timestamp': int(time.time() * 1000),
-            'recvWindow': 5000,
-        }
-        query_string = '&'.join([f'{key}={params[key]}' for key in params])
-        signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'),
-                             hashlib.sha256).hexdigest()
-        query_string += f'&signature={signature}'
-        headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
-        response = requests.get(f'{url}?{query_string}', headers=headers)
-        # print(response.text)
-        # Process the response
-        new_status = 'active'
-        time_sold = None
-        if response.status_code == 200:
-            order_status = response.json()
-            if order_status['status'] == 'NEW':
-                pass  # remain active
-            elif order_status['status'] == 'PARTIALLY_FILLED':
-                new_status = 'partially_completed'
-            elif order_status['status'] == 'FILLED':
-                url_to_get_time_sold = f"{BINANCE_API_URL}/api/v3/myTrades"
-                res_time_sold = requests.get(f'{url_to_get_time_sold}?{query_string}', headers=headers)
-                time_sold = res_time_sold.json()[0]['time']  # str()
-                time_sold = str(datetime.utcfromtimestamp(time_sold//1000).strftime('%Y-%m-%d %H:%M:%S'))
-                new_status = 'completed'
-            else:  # CANCELLED, PENDING_CANCEL, REJECTED, EXPIRED, INVALID
-                new_status = 'cancelled'
-            TradeHistoryDBClient.update_strategy_status(sell_id=order_id, asset_from=symbol_from, asset_to=symbol_to,
-                                       new_status=new_status, time_sold=time_sold)
+        client = ExchangeClientFactory.get_client(exchange_api)
+        res = client.get_order_status_detailed(symbol_pair, order_id)
+        if res:
+            TradeHistoryDBClient.update_strategy_status(sell_id=order_id, asset_from=symbol_from, asset_to=symbol_to, new_status=res.status, time_sold=res.time_sold)
         else:
-            print(f"Error occurred. Status code: {response.status_code}, Response: {response.text}")
+            pass
+            # print(f"Error occurred. Status code: {response.status_code}, Response: {response.text}")
     return {"success": "Trading History DB Updated"}
 
 
 @router.get("/trade/order/status/single_order")
-def get_order_status(symbol: str = 'BNBUSDT', order_id: str = ''):
+def get_single_order_status(exchange_api: str, symbol: str, order_id: str):
 
-    url = f"{BINANCE_API_URL}/api/v3/myTrades"
-    params = {'symbol': symbol, 'orderId': order_id, 'timestamp': int(time.time() * 1000), 'recvWindow': 5000}
-    query_string = '&'.join([f'{key}={params[key]}' for key in params])
-    signature = hmac.new(BINANCE_API_SECRET_KEY.encode('utf-8'), query_string.encode('utf-8'),
-                         hashlib.sha256).hexdigest()
-    query_string += f'&signature={signature}'
-    headers = {'X-MBX-APIKEY': BINANCE_API_KEY}
-    response = requests.get(f'{url}?{query_string}', headers=headers)
-    if response.status_code == 200:
-        return response.json()
+    client = ExchangeClientFactory.get_client(exchange_api)
+    res = client.get_order_status(symbol=symbol, order_id=order_id)
+    if res:
+        return res
     else:
         return {"error": 'Trade not found!'}
+

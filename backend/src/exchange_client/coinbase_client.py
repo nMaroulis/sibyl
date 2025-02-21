@@ -9,7 +9,7 @@ class CoinbaseClient(ExchangeAPIClient):
         self.name = 'coinbase'
         self.api_base_url = "https://api.prime.coinbase.com/v1"
         # Set API Keys
-        api_creds = APIEncryptedDatabase.get_api_key_by_name("binance_testnet")
+        api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
         if api_creds is None:
             self.api_key, self.api_secret_key = None, None
         else:
@@ -37,7 +37,7 @@ class CoinbaseClient(ExchangeAPIClient):
         pass
 
     def post_swap_order(self, trade_from: str, trade_to: str,
-                        from_amount: float):  # Alternative to BUY order with No fees in Binance
+                        from_amount: float):  # Alternative to BUY order with No fees
         pass
 
     def post_sell_order(self, trade_from: str, trade_to: str, quantity: float, sell_order_price: float):

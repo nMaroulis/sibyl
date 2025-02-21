@@ -15,7 +15,7 @@ class BinanceClient(ExchangeAPIClient):
         self.name = 'binance'
         self.api_base_url = 'https://api.binance.com'  # 'https://api1.binance.com', 'https://api2.binance.com', 'https://api3.binance.com', 'https://api4.binance.com'
         # Set API Keys
-        api_creds = APIEncryptedDatabase.get_api_key_by_name("binance")
+        api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
         if api_creds is None:
             self.api_key, self.api_secret_key = None, None
         else:
@@ -178,13 +178,11 @@ class BinanceClient(ExchangeAPIClient):
         response = requests.get(url)  # Send a GET request to retrieve the trading pairs' details
         exchange_info = response.json()
         minimum_buy = -1
-        # print(exchange_info['symbols'][0]['filters'])
         # Find the symbol in the exchange information
         try:
             for symbol_info in exchange_info['symbols'][0]['filters']:
                 if symbol_info['filterType'] == 'NOTIONAL':
                     minimum_buy = float(symbol_info['minNotional'])
-                    # print(symbol_info['minNotional'])
         except KeyError:
             return {'min_notional': -1}
         except AttributeError:
@@ -242,8 +240,7 @@ class BinanceClient(ExchangeAPIClient):
         else:
             return None  # "transactTime"
 
-    def post_swap_order(self, trade_from: str, trade_to: str, from_amount: int):  # Alternative to BUY order with No fees in Binance
-
+    def check_swap_eligibility(self, trade_from: str, trade_to: str, from_amount: int):
         url = f"{self.api_base_url}/sapi/v1/convert/getQuote"
         timestamp = str(int(time.time() * 1000))
         params = {
@@ -258,16 +255,23 @@ class BinanceClient(ExchangeAPIClient):
             'X-MBX-APIKEY': self.api_key
         }
         query_string = '&'.join([f'{key}={params[key]}' for key in params])
-        signature = hmac.new(self.api_secret_key.encode('utf-8'),
-                             query_string.encode('utf-8'),
+        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'),
                              hashlib.sha256).hexdigest()
         query_string += f'&signature={signature}'
         response = requests.post(f'{url}?{query_string}', headers=headers)
+        if response.status_code == 200:
+            if "quoteId" in response.json():
+                return response
+        return None
+
+    def post_swap_order(self, trade_from: str, trade_to: str, from_amount: int):  # Alternative to BUY order with No fees in Binance
+        # https://binance-docs.github.io/apidocs/spot/en/#convert-endpoints
+
+        response = self.check_swap_eligibility(trade_from, trade_to, from_amount)
 
         if response.status_code == 200:
             try:
                 buy_order_id = response.json()['quoteId']
-                # print(response.json())
                 # accept the Quote
                 url = f"{self.api_base_url}/sapi/v1/convert/acceptQuote"
                 timestamp = str(int(time.time() * 1000))
@@ -323,5 +327,67 @@ class BinanceClient(ExchangeAPIClient):
                 return sell_order_id
             except KeyError:
                 return None
+        else:
+            return None
+
+
+    def get_order_status(self, symbol_pair: str, order_id: str):
+        url = f"{self.api_base_url}/api/v3/myTrades"
+        params = {'symbol': symbol_pair, 'orderId': order_id, 'timestamp': int(time.time() * 1000), 'recvWindow': 5000}
+        query_string = '&'.join([f'{key}={params[key]}' for key in params])
+        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
+        query_string += f'&signature={signature}'
+        headers = {'X-MBX-APIKEY': self.api_key}
+        response = requests.get(f'{url}?{query_string}', headers=headers)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return  None # {"error": 'Trade not found!'}
+
+
+    def get_order_status_detailed(self, symbol_pair: str, order_id: str) -> dict | None:
+        """
+        NEW: The order has been created and is active but has not been executed yet.
+        PARTIALLY_FILLED: The order has been partially filled, meaning that a portion of the requested quantity has been executed, but there are still remaining unfilled quantities.
+        FILLED: The order has been completely filled, indicating that the entire requested quantity has been executed.
+        CANCELED: The order has been canceled either by the user or due to other conditions, such as time in force (TIF) expiration or insufficient funds.
+        PENDING_CANCEL: The order is in the process of being canceled.
+        REJECTED: The order has been rejected, usually due to invalid parameters or other error conditions.
+        EXPIRED: The order has expired and was not executed within the specified time frame.
+        INVALID: The order is considered invalid, often due to incorrect parameters or other issues.
+        """
+        url = f"{self.api_base_url}/api/v3/order"
+
+        # Create the request parameters
+        params = {
+            'symbol': symbol_pair,  # Replace with the symbol of your asset
+            'orderId': order_id,
+            'timestamp': int(time.time() * 1000),
+            'recvWindow': 5000,
+        }
+        query_string = '&'.join([f'{key}={params[key]}' for key in params])
+        signature = hmac.new(self.api_secret_key.encode('utf-8'), query_string.encode('utf-8'),
+                             hashlib.sha256).hexdigest()
+        query_string += f'&signature={signature}'
+        headers = {'X-MBX-APIKEY': self.api_key}
+        response = requests.get(f'{url}?{query_string}', headers=headers)
+        # Process the response
+        new_status = 'active'
+        time_sold = None
+        if response.status_code == 200:
+            order_status = response.json()
+            if order_status['status'] == 'NEW':
+                pass  # remain active
+            elif order_status['status'] == 'PARTIALLY_FILLED':
+                new_status = 'partially_completed'
+            elif order_status['status'] == 'FILLED':
+                url_to_get_time_sold = f"{self.api_base_url}/api/v3/myTrades"
+                res_time_sold = requests.get(f'{url_to_get_time_sold}?{query_string}', headers=headers)
+                time_sold = res_time_sold.json()[0]['time']  # str()
+                time_sold = str(datetime.utcfromtimestamp(time_sold//1000).strftime('%Y-%m-%d %H:%M:%S'))
+                new_status = 'completed'
+            else:  # CANCELLED, PENDING_CANCEL, REJECTED, EXPIRED, INVALID
+                new_status = 'cancelled'
+            return {"status": new_status, "time_sold": time_sold}
         else:
             return None

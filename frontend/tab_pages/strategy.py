@@ -47,7 +47,7 @@ if st.session_state['trade_exchange_api']:
 
         if st.session_state['target_coin'] != 'Auto':
             pair_symbol = get_crypto_name_regex(st.session_state['target_coin']) + st.session_state['from_coin']
-            min_order_limit = fetch_trade_info_minimum_order(pair_symbol)
+            min_order_limit = fetch_trade_info_minimum_order(st.session_state['trade_exchange_api'], pair_symbol)
             if st.session_state['buy_amount'] >= min_order_limit:
                 st.success("The **Minimum buy order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is satisfied!")
             else:
@@ -60,7 +60,7 @@ if st.session_state['trade_exchange_api']:
             st.caption("The Swap (Binance Convert API) enables trading with 0 fees. If not available, choose Trade option. Read the instructions at the top of the page to minimize the fees.")
 
             with st.spinner('Checking Swap Availability...'):
-                swap_status = check_swap_status()
+                swap_status = check_swap_status(st.session_state['trade_exchange_api'])
                 if "success" in swap_status:
                     st.session_state['order_type'] = st.radio('Choose Order Type', options=['Trade', 'Swap'], index=0, horizontal=True)
                     st.success(swap_status)

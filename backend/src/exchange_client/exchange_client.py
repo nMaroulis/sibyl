@@ -44,3 +44,11 @@ class ExchangeAPIClient(ABC):
     @abstractmethod
     def post_sell_order(self, trade_from: str, trade_to: str, quantity: float, sell_order_price: float):
         pass
+
+    @abstractmethod
+    def get_order_status(self, symbol_pair: str, order_id: str):
+        pass
+
+    @abstractmethod
+    def get_order_status_detailed(self, symbol_pair: str, order_id: str) -> dict | None:
+        pass

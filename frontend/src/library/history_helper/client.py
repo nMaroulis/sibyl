@@ -4,7 +4,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 
 
 def update_trading_history():
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/order/status/update'
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade_history/order/status/update'
     res = requests.get(url)
     return res
 

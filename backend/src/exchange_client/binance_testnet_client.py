@@ -9,7 +9,7 @@ class BinanceTestnetClient(BinanceClient):
         self.name = 'binance_testnet'
         self.api_base_url = 'https://testnet.binance.vision'
         # Set API Keys
-        api_creds = APIEncryptedDatabase.get_api_key_by_name("binance_testnet")
+        api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
         if api_creds is None:
             self.api_key, self.api_secret_key = None, None
         else:

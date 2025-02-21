@@ -9,7 +9,7 @@ class KrakenClient(ExchangeAPIClient):
         self.name = 'kraken'
         self.api_base_url = ''
         # Set API Keys
-        api_creds = APIEncryptedDatabase.get_api_key_by_name("binance_testnet")
+        api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
         if api_creds is None:
             self.api_key, self.api_secret_key = None, None
         else:

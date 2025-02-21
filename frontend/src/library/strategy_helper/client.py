@@ -4,7 +4,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 import re
 
 @cache_data(show_spinner="Checking Asset Options Validity...")
-def fetch_trade_info_minimum_order(pair_symbol: str):
+def fetch_trade_info_minimum_order(exchange: str, pair_symbol: str):
 
     url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/info/minimum_order?symbol={pair_symbol}'
     response = requests.get(url)
@@ -37,7 +37,7 @@ def post_strategy(exchange_api: str, from_coin: str, to_coin: str, from_amount: 
 
 
 @cache_data
-def check_swap_status(exchange: str = 'binance'):
-    url = f"{BACKEND_SERVER_ADDRESS}/broker/trade/convert/info"
+def check_swap_status(exchange: str):
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/trade/convert/info?exchange={exchange}"
     response = requests.get(url)
     return response.json()
