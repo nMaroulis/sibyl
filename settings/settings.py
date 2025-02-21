@@ -1,1 +1,1 @@
-UI_VERSION = 'v0.14.50'
+UI_VERSION = 'v0.18.00'

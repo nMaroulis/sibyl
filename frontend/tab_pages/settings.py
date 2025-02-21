@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout
-from frontend.src.library.settings_helper.funcs import update_api_credentials
+from frontend.src.library.settings_helper.funcs import insert_update_exchange_api_keys
 from frontend.src.library.client import check_exchange_api_connection, check_backend_connection
 from frontend.db.db_connector import update_fields, fetch_fields
 from pandas import DataFrame
@@ -9,7 +9,7 @@ from frontend.src.library.settings_helper.navigation import show_status_cards
 
 fix_page_layout('Settings')
 
-st.markdown("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h2>""", unsafe_allow_html=True)
+st.html("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h2>""")
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 st.sidebar.info(f'⚙️Sibyl Version **{UI_VERSION}**')
 st.write('The cards below indicate current connection status of each API. Go to the bottom ')
@@ -56,7 +56,7 @@ with back_tab:
 with api_tab:
     with st.form('Exchange API Credentials'):
         # switch with global
-        exchange = st.selectbox('Choose Crypto Exchange', options=['Binance', 'Coinbase'], disabled=True)
+        exchange = st.selectbox('Choose Crypto Exchange', options=['Binance Testnet', 'Binance'])
         if api_conn:
             st.success('✅ A valid API key is already active.')
         else:
@@ -66,12 +66,18 @@ with api_tab:
         st.page_link("https://www.binance.com/en/support/faq/how-to-create-api-keys-on-binance-360002502072", label="Binance FAQ", icon="🌐")
 
         with st.expander('API Credentials', expanded=True):
-            st.text_input('API Key', placeholder='Type or Copy/Paste API Key here...', type="password")
-            st.text_input('Secret Key', placeholder='Type or Copy/Paste Secret Key here...', type="password")
+            exchange_api_key = st.text_input('API Key', placeholder='Type or Copy/Paste API Key here...', type="password")
+            exchange_secret_key = st.text_input('Secret Key', placeholder='Type or Copy/Paste Secret Key here...', type="password")
             st.radio(label="Account Type", options=['Personal', 'Testnet'], horizontal=True)
         api_submit = st.form_submit_button('Update Credentials')
         if api_submit:
-            update_api_credentials(exchange)
+            with st.spinner("Encrypting and sending API Keys to Backend Server..."):
+                res = insert_update_exchange_api_keys(exchange, exchange_api_key, exchange_secret_key)
+            if res:
+                st.success(f"✅ {exchange} **API Key** and **Secret Key** have been successfully added/updated to the Encrypted Database.")
+            else:
+                st.error(f"⚠️ Inserting **{exchange} API Key** and **Secret Key** to the Encrypted Database failed.")
+
 with nlp_tab:
     with st.form('API Credentials'):
         nlp_model = st.selectbox('Choose NLP LLM Model API', options=['Hugging Face Falcon', 'OpenAI API', 'Google Gemini API'], help="Update NLP Model Choice in frontend SQlite3 DB")

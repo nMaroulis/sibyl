@@ -2,14 +2,13 @@
 from backend.db.api_keys_db_client import APIEncryptedDatabase
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
-
 class Technician:
 
     def __init__(self):
         pass
 
     @staticmethod
-    def api_status_check(api_name="all"):
+    def api_status_check(api_name: str ="all") -> dict:
         res = {}
         if api_name == "binance" or api_name == "all" or api_name == "exchanges":
             res['binance'] = ExchangeClientFactory.get_client("binance").check_status()
@@ -30,3 +29,15 @@ class Technician:
             res["coinmarketcap"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("coinmarketcap") is not None else 'Unavailable'
         return res
 
+
+    @staticmethod
+    def insert_api_key_to_db(exchange_name, api_key, secret_key) -> bool:
+        try:
+            if APIEncryptedDatabase.get_api_key_by_name(exchange_name):
+                APIEncryptedDatabase.update_api_key(exchange_name, api_key, secret_key)
+            else:
+                APIEncryptedDatabase.insert_api_key(exchange_name, api_key, secret_key)
+            return True
+        except Exception as e:
+            print(e)
+            return False

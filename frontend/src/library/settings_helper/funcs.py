@@ -1,6 +1,6 @@
-from streamlit import error, warning, success, write, markdown, info
+from frontend.src.library.settings_helper.client import post_exchange_api_keys
 
-
-def update_api_credentials(exchange: str = 'binance'):
-    warning('Functionality TBE')
-    return 0
+def insert_update_exchange_api_keys(exchange: str, api_key: str, secret_key: str) -> bool:
+    exchange = exchange.lower().replace(' ', '_')
+    res = post_exchange_api_keys(exchange, api_key, secret_key)
+    return res

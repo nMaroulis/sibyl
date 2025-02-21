@@ -31,7 +31,7 @@ class APIEncryptedDatabase:
         secret_key = sa.Column(sa.String, nullable=True)
         api_metadata = sa.Column(sa.String, nullable=True)
 
-        def __init__(self, name, api_key, secret_key=None, api_metadata=None):
+        def __init__(self, name: str, api_key: str, secret_key: str = None, api_metadata: str = None):
             self.name = name
             self.api_key = APIEncryptedDatabase.cipher.encrypt(api_key.encode()).decode()
             self.secret_key = APIEncryptedDatabase.cipher.encrypt(secret_key.encode()).decode() if secret_key else None
@@ -79,7 +79,7 @@ class APIEncryptedDatabase:
             print("APIEncryptedDatabase :: ✅ Database initialized.")
 
     @classmethod
-    def insert_api_key(cls, name, api_key, secret_key=None, api_metadata=None):
+    def insert_api_key(cls, name: str, api_key: str, secret_key: str = None, api_metadata: str = None):
         """Inserts a new API key into the database."""
         session = cls.Session()
         if session.query(cls.APIKeyStore).filter_by(name=name).first():
@@ -103,7 +103,7 @@ class APIEncryptedDatabase:
         return keys
 
     @classmethod
-    def get_api_key_by_name(cls, name):
+    def get_api_key_by_name(cls, name: str):
         """Retrieves and decrypts an API key by name."""
         session = cls.Session()
         key = session.query(cls.APIKeyStore).filter_by(name=name).first()
@@ -116,7 +116,7 @@ class APIEncryptedDatabase:
         return None
 
     @classmethod
-    def update_api_key(cls, name, new_api_key=None, new_secret_key=None, new_metadata=None):
+    def update_api_key(cls, name: str, new_api_key: str = None, new_secret_key: str = None, new_metadata: str = None):
         """Updates an existing API key by name."""
         session = cls.Session()
         key = session.query(cls.APIKeyStore).filter_by(name=name).first()
@@ -137,7 +137,7 @@ class APIEncryptedDatabase:
         print(f"APIEncryptedDatabase :: ✅ API Key '{name}' updated successfully.")
 
     @classmethod
-    def delete_api_key(cls, name):
+    def delete_api_key(cls, name: str):
         """Deletes an API key by name."""
         session = cls.Session()
         key = session.query(cls.APIKeyStore).filter_by(name=name).first()
