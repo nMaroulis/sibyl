@@ -8,7 +8,7 @@ def fetch_price_history(exchange: str, symbol: str, time_int: str, time_limit: i
     if full_name:
         symbol = get_crypto_name_regex(symbol)  # get_crypto_coin_dict().get(symbol)
     symbol += 'USDT'  # USDT is the default
-    url = f"{BACKEND_SERVER_ADDRESS}/analyst/coin/price_history?exchange={exchange}&symbol={symbol}&interval={time_int}&limit={str(time_limit)}&plot_type={plot_type}"
+    url = f"{BACKEND_SERVER_ADDRESS}/analyst/coin/price_history?exchange={exchange.lower().replace(" ", "_")}&symbol={symbol}&interval={time_int}&limit={str(time_limit)}&plot_type={plot_type}"
     response = requests.get(url)
     return response.json()
 
@@ -16,6 +16,6 @@ def fetch_price_history(exchange: str, symbol: str, time_int: str, time_limit: i
 @cache_data(ttl=100000) # TODO REMOVE DEFAULT VALUE, FIX METHOD CALLS
 def fetch_available_coins(exchange: str = 'binance'):
 
-    url = f"{BACKEND_SERVER_ADDRESS}/analyst/exchange_info/available_coins/{exchange}"
+    url = f"{BACKEND_SERVER_ADDRESS}/analyst/exchange_info/available_coins/{exchange.lower().replace(" ", "_")}"
     response = requests.get(url)
     return response.json()

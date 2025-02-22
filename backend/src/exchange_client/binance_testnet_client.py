@@ -1,7 +1,6 @@
 from backend.src.exchange_client.binance_client import BinanceClient
 from backend.db.api_keys_db_client import APIEncryptedDatabase
 from binance.client import Client
-from binance.exceptions import BinanceAPIException
 
 
 class BinanceTestnetClient(BinanceClient):
@@ -15,4 +14,4 @@ class BinanceTestnetClient(BinanceClient):
         if api_creds is None:
             self.client = None
         else:
-            self.client = Client(api_creds.api_key, api_creds.secret_key)
+            self.client = Client(api_creds.api_key, api_creds.secret_key, testnet=True)

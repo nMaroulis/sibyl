@@ -1,26 +1,23 @@
-from streamlit import set_page_config, markdown, cache_resource, logo
+from streamlit import set_page_config, html, cache_resource, logo
 from PIL import Image
 
 
 def fix_page_layout(page_name: str = 'Sibyl'):
 
-    im = Image.open("frontend/static/favicon/favicon.ico")
+    # im = Image.open("frontend/static/favicon/favicon-32x32.png")
     set_page_config(
         page_title=page_name,
-        page_icon=im,
+        page_icon="frontend/static/favicon/favicon-32x32.png",
         layout="wide",
     )
     logo("assets/logo_transparent.png", icon_image="assets/logo_brand.png",)
-    markdown("""
+    html("""
             <style>
                    .block-container {
                         padding-top: 2.7rem;
                     }
             </style>
-            """, unsafe_allow_html=True)
-    # padding - bottom: 0rem;
-    # padding - left: 5rem;
-    # padding - right: 5rem;
+            """)
 
     # markdown("""
     # <style>

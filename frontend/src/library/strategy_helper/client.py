@@ -3,10 +3,11 @@ from streamlit import cache_data
 from frontend.config.config import BACKEND_SERVER_ADDRESS
 import re
 
+
 @cache_data(show_spinner="Checking Asset Options Validity...")
 def fetch_trade_info_minimum_order(exchange: str, pair_symbol: str):
 
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/info/minimum_order?exchange={exchange}&symbol={pair_symbol}'
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/info/minimum_order?exchange={exchange.lower().replace(" ","_")}&symbol={pair_symbol}'
     response = requests.get(url)
     return response.json()['min_notional']
 
@@ -16,10 +17,10 @@ def extract_coin_symbol(text):
     return match.group(1) if match else text
 
 
-def post_strategy(exchange_api: str, from_coin: str, to_coin: str, from_amount: str, strategy: str, strategy_params: dict, order_type: str):
+def post_strategy(exchange: str, from_coin: str, to_coin: str, from_amount: str, strategy: str, strategy_params: dict, order_type: str):
 
     data = {
-        "exchange_api": exchange_api,
+        "exchange_api": exchange.lower().replace(" ","_"),
         "from_coin": extract_coin_symbol(from_coin),
         "to_coin": extract_coin_symbol(to_coin),
         "from_amount": from_amount,
@@ -38,6 +39,6 @@ def post_strategy(exchange_api: str, from_coin: str, to_coin: str, from_amount: 
 
 @cache_data
 def check_swap_status(exchange: str):
-    url = f"{BACKEND_SERVER_ADDRESS}/broker/trade/convert/info?exchange={exchange}"
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/trade/convert/info?exchange={exchange.lower().replace(" ","_")}"
     response = requests.get(url)
     return response.json()
