@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.overview_helper.navigation import api_status_check
-from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.strategy_helper.greedy import GreedyTrader
 from frontend.src.library.strategy_helper.client import check_swap_status
 from frontend.src.library.strategy_helper.funcs import get_strategy_instructions
@@ -11,9 +11,9 @@ import time
 from frontend.src.library.ui_elements import col_style2
 
 fix_page_layout('strategy')
+set_page_title("Trading Strategy")
 st.html(col_style2)
 
-st.html("<h2 style='text-align: center;margin-top:0; padding-top:0;'>Trading Strategy</h2>")
 st.caption("Make sure to enable the Binance Convert API in order to have 0 fees. If the backend server doesn't find a valid Convert API, the standard buy/sell order will be used. In that case make sure to have BNB in your account in order to minimize the fees.")
 st.caption("Expand instruction below 👇👇 to get instructions on how to deploy a new strategy.")
 

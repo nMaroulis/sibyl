@@ -1,5 +1,5 @@
 import requests
-import json
+from streamlit import cache_data
 from frontend.config.config import BACKEND_SERVER_ADDRESS
 
 
@@ -12,6 +12,7 @@ def fetch_stock_details(stock_symbol: str):
     else:
         return None
 
+@cache_data(ttl=3600)
 def fetch_portfolio_senates():
     url = f"{BACKEND_SERVER_ADDRESS}/stock_analyst/portfolio/senates"
     response = requests.get(url)

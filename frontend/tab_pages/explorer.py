@@ -1,11 +1,10 @@
 import streamlit as st
 from frontend.src.library.explorer_helper.client import fetch_blocks
 from frontend.src.library.explorer_helper.plots import plot_block_height_weight_tx_count
-from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 
 fix_page_layout('🧭 explorer')
-st.html("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Blockchain Explorer</h2>""")
-
+set_page_title("Blockchain Explorer")
 st.write("The **Explorer** 🧭 module has access to APIs that explore blockchain data.")
 
 

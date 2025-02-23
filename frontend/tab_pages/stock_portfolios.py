@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import re
 from frontend.src.library.stock_analysis_helper.client import fetch_portfolio_senates
-
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 
 def parse_amount(amount_str: str) -> float:
     match = re.findall(r"\d{1,3}(?:,\d{3})*", amount_str.replace("$", ""))
@@ -38,17 +38,16 @@ def process_trades(trades):
     return aggregated_df, senator_totals
 
 # Streamlit UI
-def main():
-    st.set_page_config(page_title="Senate Stock Portfolio", layout="wide")
-    st.title("📜 U.S. Senate Stock Portfolio Tracker")
+fix_page_layout("Stock Portfolio")
+set_page_title("U.S. Senate Stock Portfolio Tracker")
 
-    with st.spinner("Fetching stock transactions..."):
-        trades = fetch_portfolio_senates()
 
-    if not trades:
-        st.error("Failed to fetch data. Try again later.")
-        return
+with st.spinner("Fetching stock transactions..."):
+    trades = fetch_portfolio_senates()
 
+if not trades:
+    st.error("Failed to fetch data. Try again later.")
+else:
     df, senator_totals = process_trades(trades)
 
     st.sidebar.header("Filters")
@@ -65,4 +64,3 @@ def main():
         st.table(group[['ticker', 'total_amount', 'last_transaction']])
 
 
-main()

@@ -2,25 +2,24 @@ from streamlit import set_page_config, html, cache_resource, logo
 from PIL import Image
 
 
-def fix_page_layout(page_name: str = 'Sibyl'):
+def fix_page_layout(page_name: str, padding_top: str = '2.1rem'):
 
     # im = Image.open("frontend/static/favicon/favicon-32x32.png")
     set_page_config(
         page_title=page_name,
-        page_icon="frontend/static/favicon/favicon-32x32.png",
+        page_icon="frontend/static/favicon/favicon.ico",
         layout="wide",
     )
     logo("assets/logo_transparent.png", icon_image="assets/logo_brand.png",)
     html("""
             <style>
                    .block-container {
-                        padding-top: 2.7rem;
+                        padding-top: """ + padding_top + """;
                     }
             </style>
             """)
 
-    # markdown("""
-    # <style>
+    # html("""<style>
     # footer { visibility: hidden;}
     # footer:after {
     # content: 'developed by Nikolaos Maroulis';
@@ -28,10 +27,25 @@ def fix_page_layout(page_name: str = 'Sibyl'):
     # position: relative;
     # top:50px;
     # right: 8em;
-    # }
-    # </style>""", unsafe_allow_html=True)
+    # } </style>""")
 
     return 0
+
+def set_page_title(page_name: str):
+    html(f"""
+        <h2 style="
+            text-align: left; 
+            margin-top: 1em; 
+            padding: 0; 
+            font-size: 1.6rem; 
+            font-weight: 600; 
+            color: #333;  /* Deep gray for a refined look */
+            border-left: 5px solid #e07a5f; /* Soft orange accent */
+            padding-left: 12px; /* Spacing for the border effect */
+        ">
+            {page_name}
+        </h2>
+    """)
 
 
 col_style1 = """

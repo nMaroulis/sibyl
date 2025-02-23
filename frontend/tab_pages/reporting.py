@@ -1,10 +1,9 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.nlp.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment
 
 fix_page_layout("Report")
-
-st.html("<h2 style='text-align: center;margin-top:0; padding-top:0;'>Crypto Report</h2>")
+set_page_title("Crypto Report")
 
 st.sidebar.selectbox(label="Source Website", options=['Cointelegraph', 'Coindesk', 'Decrypt'], disabled=True)
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)

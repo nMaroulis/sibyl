@@ -1,12 +1,11 @@
 import pandas as pd
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot, get_trading_history_line_plot
 
 
 fix_page_layout('Report')
-st.html("<h2 style='text-align: center;margin-top:0; padding-top:0;'>Trading Report</h2>")
-
+set_page_title("Trading Report")
 strat_status = st.sidebar.radio('Deployed Strategy History Status:', options=['all', 'active', 'completed', 'partially_completed', 'cancelled'], index=0)
 sidebar_update_history()
 st.sidebar.selectbox('Exchange', options=['All', 'Binance'], disabled=True)

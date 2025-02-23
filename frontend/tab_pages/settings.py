@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.settings_helper.funcs import insert_update_api_keys
 from frontend.src.library.client import check_exchange_api_connection, check_backend_connection
 from frontend.db.db_connector import update_fields, fetch_fields
@@ -8,8 +8,8 @@ from settings.settings import UI_VERSION
 from frontend.src.library.settings_helper.navigation import show_status_cards
 
 fix_page_layout('Settings')
+set_page_title("Settings")
 
-st.html("""<h2 style='text-align: center;margin-top:0; padding-top:0;'>Settings</h2>""")
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 st.sidebar.info(f'⚙️Sibyl Version **{UI_VERSION}**')
 st.write('The cards below indicate current connection status of each API. Go to the bottom ')

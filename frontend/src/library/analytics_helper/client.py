@@ -18,4 +18,7 @@ def fetch_available_coins(exchange: str = 'binance'):
 
     url = f"{BACKEND_SERVER_ADDRESS}/analyst/exchange_info/available_coins/{exchange.lower().replace(" ", "_")}"
     response = requests.get(url)
-    return response.json()
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
