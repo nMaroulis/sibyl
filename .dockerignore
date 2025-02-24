@@ -13,3 +13,4 @@ Dockerfile
 docker-compose.yml
 .idea
 .sibyl_venv
+notebooks/*
