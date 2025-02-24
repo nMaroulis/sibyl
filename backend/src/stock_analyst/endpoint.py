@@ -22,10 +22,10 @@ def get_stock_info(stock_symbol: str):
 
 
 @router.get("/advisor/llm")
-def get_llm_advice(llm_model: str, stock_symbol: str):
+def get_llm_advice(stock_symbol: str, llm_api: str):
     try:
         # load LLM API client
-        llm_api_client = LLMClientFactory.get_client(llm_model)
+        llm_api_client = LLMClientFactory.get_client(llm_api)
 
         # fetch stock data
         stock_text = get_stock_info(stock_symbol)
@@ -40,6 +40,7 @@ def get_llm_advice(llm_model: str, stock_symbol: str):
 
         return {"status": "success", "data": res}
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=404, detail="LLM API failed")
 
 

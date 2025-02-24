@@ -11,7 +11,7 @@ class HuggingFaceLLM(LLMBase):
     Implements the LLMBase for Hugging Face models.
     """
 
-    def __init__(self, model_name: str = "mistralai/Mistral-7B-Instruct", device=None):
+    def __init__(self, model_name: str = "gpt2", device=None): # meta-llama/Llama-3.2-3B-Instruct
         """
         Initializes a Hugging Face model.
 

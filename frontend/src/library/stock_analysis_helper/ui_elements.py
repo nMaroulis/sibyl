@@ -1,7 +1,8 @@
 import streamlit as st
-from frontend.src.library.stock_analysis_helper.client import fetch_stock_details
+from frontend.src.library.stock_analysis_helper.client import fetch_stock_details, fetch_stock_advice
 import re
 from frontend.src.library.stock_analysis_helper.plots import risk_gauge, linear_gauge_chart
+from frontend.src.library.client import check_api_status
 
 
 def extract_symbol(stock_string) -> str | None:
@@ -153,13 +154,21 @@ def display_company_info(info: dict, stock_symbol: str):
     with c0:
         st.pyplot(linear_gauge_chart(1.4))
 
+@st.dialog("Sibyl Stock Advisor")
+def get_advice(symbol: str):
+    with st.spinner("Generating advice..."):
+        llm_advice = fetch_stock_advice(symbol, "hugging_face")
+        st.write(llm_advice)
 
 def get_stock_analysis(stock_symbol: str):
     symbol = extract_symbol(stock_symbol)
     if symbol is None:
         st.error("Invalid stock symbol", icon=":material/error:")
+    if check_api_status("hugging_face"):
+        st.write(f"Hugging Face API key is active, you can get an advice from the Sibyl Stock Advisor.")
+        if st.button("Get Advice"):
+            get_advice(symbol)
     stock_details = fetch_stock_details(symbol)
-    # write(get_stock_details(symbol))
     if stock_details:
         display_company_info(stock_details["info"], symbol)
     else:
