@@ -30,7 +30,7 @@ if st.session_state['trade_exchange_api']:
         st.cache_data.clear()
         st.rerun()
     st.divider()
-    st.html("<h4 style='text-align: left;margin-top:0; padding-top:0;'>1. Asset Options 💰</h4>")
+    st.html("<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>1. Asset Options 💰</h3>")
     with st.container(border=False):
         col00, col01, col02 = st.columns(3)
         with col00:
@@ -53,7 +53,7 @@ if st.session_state['trade_exchange_api']:
             else:
                 st.error("The **Minimum Buy Order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is NOT satisfied.")
 
-    st.markdown("""<h4 style='text-align: left;margin-top:1em; padding-top:0;'>2. Trading Options 📈</h4>""", unsafe_allow_html=True)
+    st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>2. Trading Options 📈</h3>""")
     with st.container(border=False):
         col10 = st.columns(1)
         with col10[0]:
@@ -80,8 +80,8 @@ if st.session_state['trade_exchange_api']:
             st.session_state['stop_loss'] = st.number_input('Stop-Loss [%]:', min_value=0, max_value=100, value=0)
             st.caption("if option is left to **0**, the **Algorithm** will define an automatic Stop Loss")
 
-    st.markdown("""<h4 style='text-align: left;margin-top:1em; padding-top:0;'>3. Algorithm ⚙️</h4>""", unsafe_allow_html=True)
-    algo_choice = st.selectbox('Choose Algorithm', options=['Greedy', 'Forecasting Model', 'Arbitrage Trading', 'DCA', 'Sibyl Algorithm'])
+    st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>3. Algorithm ⚙️</h3>""")
+    algo_choice = st.segmented_control('Choose Algorithm', options=['Greedy', 'Forecasting Model', 'Arbitrage Trading', 'DCA', 'Sibyl Algorithm'], default='Greedy')
     col30 = st.columns(1)
     with col30[0]:
         if algo_choice == 'Greedy':
@@ -105,7 +105,7 @@ if st.session_state['trade_exchange_api']:
             else:
                 st.toast('✅ Trade was successfully Executed!')
                 st.success('Server Response ' + str(res))
-                with st.spinner('Refreshing Page:'):
+                with st.spinner('Refreshing Page...'):
                     time.sleep(4)
                     st.rerun()
 else:

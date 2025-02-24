@@ -1,4 +1,4 @@
-from streamlit import write, select_slider, number_input, session_state, caption, segmented_control
+from streamlit import write, select_slider, number_input, session_state, caption, pills
 import time
 from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, post_strategy
 import re
@@ -21,7 +21,7 @@ class GreedyTrader:
             'The **Greedy** algorithm (or **Scalping**) places a buy order immediately after it is initiated and sells after it has achieved a profit of X%. X is based on the parameters of the algorithm.')
         write('The current **Payoff ratio** based on Trading History using the Greedy Algorithm is *Not Available*')
 
-        strategy_type = segmented_control("Select Greedy algorithm type:", options=['Profit [Percentage]', 'Profit [Absolute Value]', 'Automatic'], default='Profit [Percentage]')
+        strategy_type = pills("Select Greedy algorithm type:", options=['Profit [Percentage]', 'Profit [Absolute Value]', 'Automatic'], default='Profit [Percentage]')
 
         if strategy_type == "Profit [Percentage]":
             profit = number_input('Profit [%]:', min_value=0.0, max_value=10000.0, value=2.0)
@@ -42,7 +42,7 @@ class GreedyTrader:
 
 
     def submit_strategy(self):
-        res = post_strategy(exchange_api=session_state['trade_exchange_api'].lower().replace(" ", "_"), from_coin=session_state['from_coin'], to_coin=session_state['target_coin'],
+        res = post_strategy(exchange=session_state['trade_exchange_api'].lower().replace(" ", "_"), from_coin=session_state['from_coin'], to_coin=session_state['target_coin'],
                             from_amount=session_state['buy_amount'], strategy='greedy', strategy_params=self.strategy_params,
                             order_type=self.order_type)
         self.init_time = time.time()

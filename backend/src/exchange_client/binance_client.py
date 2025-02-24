@@ -116,12 +116,15 @@ class BinanceClient(ExchangeAPIClient):
 
     def post_buy_order(self, trade_from: str, trade_to: str, from_amount: float):
         if self.client is None:
-            return {"error": "Invalid API credentials"}
+            print("Invalid API credentials")
+            return None
         try:
             order = self.client.order_market(symbol=f"{trade_to}{trade_from}", quoteOrderQty=from_amount, side='BUY')
-            return order
+            print(order)
+            return order.get('executedQty'), order.get('orderId'), str(datetime.fromtimestamp(order.get('transactTime') // 1000).strftime('%Y-%m-%d %H:%M:%S'))
         except BinanceAPIException as e:
-            return {"error": str(e)}
+            print("Binance Client :: post_buy_order", str(e))
+            return None
 
     def check_swap_eligibility(self, trade_from: str, trade_to: str, from_amount: float):
         """Checks if a swap is eligible."""

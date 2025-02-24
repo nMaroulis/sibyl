@@ -39,8 +39,10 @@ def send_new_buy_order(trade_params: TradeParams):
 
     response = broker_client.init_trading_algorithm()
     print(broker_client.get_db_fields())
+    print("AAAAAAAAAA", response)
     if "success" in response:
         db_fields = broker_client.get_db_fields()
+        print("AAAAAA", db_fields)
         TradeHistoryDBClient.add_trade_to_db(exchange=db_fields[0], datetime_buy=db_fields[1], orderid_buy=db_fields[2],
                         asset_from=db_fields[3], asset_to=db_fields[4], asset_from_amount=db_fields[5],
                         asset_to_quantity=db_fields[6], asset_to_price=db_fields[7], datetime_sell=db_fields[8],

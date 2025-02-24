@@ -16,7 +16,7 @@ class APIEncryptedDatabase:
     KEY_FILE = "backend/db/encryption_key.key"
 
     # Initialize database engine, session, and ORM base
-    engine = sa.create_engine(DATABASE_URL, echo=True)
+    engine = sa.create_engine(DATABASE_URL, echo=False)
     Session = sessionmaker(bind=engine)
     Base = declarative_base()
     cipher = None  # Placeholder for encryption cipher
