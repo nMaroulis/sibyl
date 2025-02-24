@@ -18,7 +18,17 @@ def fix_page_layout(page_name: str, padding_top: str = '2.1rem'):
                     }
             </style>
             """)
-
+    # CUSTOM FONT
+    # html("""
+    #     <style>
+    #     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Inter:wght@300;400;600&display=swap');
+    #
+    #     html, body, h1, h2, h3, h4, h5, p {
+    #         font-family: 'Poppins', 'Inter', sans-serif;
+    #     }
+    #     </style>
+    # """)
+    # FOOTER
     # html("""<style>
     # footer { visibility: hidden;}
     # footer:after {
@@ -38,7 +48,7 @@ def set_page_title(page_name: str):
             margin-top: 1em; 
             padding: 0; 
             font-size: 1.6rem; 
-            font-weight: 600; 
+            font-weight: 700; 
             color: #333;  /* Deep gray for a refined look */
             border-left: 5px solid #e07a5f; /* Soft orange accent */
             padding-left: 12px; /* Spacing for the border effect */

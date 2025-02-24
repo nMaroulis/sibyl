@@ -5,7 +5,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 """A General purpose Client"""
 
 
-def check_exchange_api_connection(exchange: str = 'binance'):
+def check_exchange_api_connection(exchange: str = 'binance'):  # TODO reexamine here, make general purpose function
     url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/{exchange}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -16,7 +16,6 @@ def check_exchange_api_connection(exchange: str = 'binance'):
         if response.json().get('backend_server_status') == 'no_api_key':
             # warning('Connection to the Exchange API failed. **Valid Exchange API Key Missing**, Please visit the Settings Tab to set an Exchange API Key.')
             toast('⛔ Exchange API Connection Failed')
-
             return 0
         # if response.json().get('backend_server_status') == 'false_api_key':
         #     error(
@@ -53,15 +52,13 @@ def check_backend_connection():
             rerun()
 
 
-def check_nlp_connection(model: str = "hugging_face"):
-    url = f"{BACKEND_SERVER_ADDRESS}/nlp/{model}"
+def check_api_status(api_name: str) -> bool: # TODO reexamine here
+    url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/{api_name}"
     response = requests.get(url)
-    if response.status_code == 200:
-        sidebar.success('📶 NLP API Connection Active')
-        toast('✅ NLP API Connection Successful!')
-        return 1  # True
-    else:
-        sidebar.error('📶 NLP API Connection Failed')
-        toast('⛔ NLP API Connection Failed!')
-
-        return 0
+    try:
+        if response.status_code == 200 and response.json().get(api_name) == "Active":
+            return True
+    except Exception as e:
+        print(e)
+        return False
+    return False

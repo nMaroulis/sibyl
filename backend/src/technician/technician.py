@@ -8,7 +8,7 @@ class Technician:
         pass
 
     @staticmethod
-    def api_status_check(api_name: str ="all") -> dict:
+    def api_status_check(api_name: str ="all") -> dict:  # TODO reexamine this func
         res = {}
         if api_name == "binance" or api_name == "all" or api_name == "exchanges":
             res['binance'] = ExchangeClientFactory.get_client("binance").check_status()
@@ -25,7 +25,7 @@ class Technician:
             res["gemini"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("gemini") is not None else 'Unavailable'
         if api_name == "hugging_face" or api_name == "all" or api_name == "llms":
             res["hugging_face"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("hugging_face") is not None else 'Unavailable'
-        if api_name == "coinmarketcap" or api_name == "all" or api_name == "llms":
+        if api_name == "coinmarketcap" or api_name == "all":
             res["coinmarketcap"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("coinmarketcap") is not None else 'Unavailable'
         return res
 

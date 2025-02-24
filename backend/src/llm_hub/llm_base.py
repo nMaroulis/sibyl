@@ -8,7 +8,7 @@ class LLMBase(ABC):
     Supports multiple providers (Hugging Face, OpenAI API, etc.).
     """
 
-    def __init__(self, model_name: str, provider: str, api_key: Optional[str] = None):
+    def __init__(self, model_name: str, provider: str):
         """
         Initializes the LLM model.
 
@@ -18,7 +18,7 @@ class LLMBase(ABC):
         """
         self.model_name = model_name
         self.provider = provider.lower()
-        self.api_key = api_key
+        self.api_key = None
 
     @abstractmethod
     def generate_response(self, prompt: str, **kwargs) -> str:

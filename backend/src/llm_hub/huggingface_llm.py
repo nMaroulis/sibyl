@@ -1,6 +1,9 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from huggingface_hub import login
 from backend.src.llm_hub.llm_base import LLMBase
+from backend.db.api_keys_db_client import APIEncryptedDatabase
+import os
 
 
 class HuggingFaceLLM(LLMBase):
@@ -18,10 +21,16 @@ class HuggingFaceLLM(LLMBase):
         super().__init__(model_name, provider="huggingface")
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name, torch_dtype=torch.float16, device_map="auto"
-        )
+        api_creds = APIEncryptedDatabase.get_api_key_by_name("hugging_face")
+        if api_creds is None:
+            self.model = None
+        else:
+            os.environ["HF_HOME"] = api_creds.api_key
+            login(token=api_creds.api_key)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, torch_dtype=torch.float16, device_map="auto"
+            )
 
     def generate_response(self, prompt: str, max_length: int = 500, temperature: float = 0.7) -> str:
         """

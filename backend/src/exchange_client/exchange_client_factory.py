@@ -13,7 +13,7 @@ class ExchangeClientFactory:
     }
 
     @classmethod
-    def get_client(cls, exchange_name):
+    def get_client(cls, exchange_name: str):
         # Get the client class based on the exchange_name
         client_class = cls._clients.get(exchange_name.lower())
         if not client_class:

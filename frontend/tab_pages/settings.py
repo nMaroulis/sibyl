@@ -26,32 +26,9 @@ with st.spinner('Checking Backend Server connection'):
 with st.spinner('Checking Crypto Exchange API connection'):
     api_conn = check_exchange_api_connection()
 
-trd_tab, back_tab, api_tab, nlp_tab, price_tab = st.tabs(['Trading Settings', 'Backend Server Settings', 'Crypto Exchange API Settings', 'NLP Model API Settings', 'Price History API'])
+api_tab, llm_tab, price_tab, back_tab, trd_tab = st.tabs(['Crypto Exchange API Settings', 'LLM API Settings', 'Price History API', 'Backend Server Settings', 'Trading Settings'])
 
 
-with trd_tab:
-    with st.form('Trading Parameters'):
-        exchange = st.selectbox('Choose Crypto Exchange', options= ['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True, help="Support for Coinbase, Crypto.com, Gemini, Kraken, KuCoin TBA")
-        st.info("💡 Currently only Binance is supported, the following will be added: Coinbase, Crypto.com, Gemini, Kraken, KuCoin")
-        with st.expander('Betting Options', expanded=True):
-            betting_coin = st.selectbox("Choose Betting Coin [recommended: USDT]", ['USDT', 'BNB', 'BTC'], disabled=True)
-        trd_submit = st.form_submit_button('Update Trading Parameters')
-        if trd_submit:
-            # update_betting_options(exchange)
-            st.write("ok")
-with back_tab:
-    with st.form('Backend Server Settings'):
-        bcols = st.columns([2, 1])
-
-        serv_ip = st.text_input('Server IP', value=db_fields[3], placeholder="Default: http://127.0.0.1")
-        serv_port = st.text_input('Server Port', value=db_fields[4], placeholder="Default: 8000")
-
-        back_submit = st.form_submit_button('Update Server Settings')
-        old_serv_adr = db_fields[5]
-        if back_submit:
-            serv_adr = serv_ip+':'+serv_port
-            update_fields(backend_server_ip=serv_ip, backend_server_port=serv_port,backend_server_socket_address=serv_adr)  # Update NLP Model Choice in frontend SQlite3 DB
-            st.success(f'Server Parameters Update Successfuly, New Configurations: [{old_serv_adr}] -> [{serv_adr}]')
 
 with api_tab:
     with st.form('Exchange API Credentials'):
@@ -77,15 +54,20 @@ with api_tab:
                 st.success(f"✅ {exchange} **API Key** and **Secret Key** have been successfully added/updated to the Encrypted Database.")
             else:
                 st.error(f"⚠️ Inserting **{exchange} API Key** and **Secret Key** to the Encrypted Database failed.")
-with nlp_tab:
+with llm_tab:
     with st.form('API Credentials'):
-        nlp_model = st.selectbox('Choose NLP LLM Model API', options=['Hugging Face Falcon', 'OpenAI API', 'Google Gemini API'], help="Update NLP Model Choice in frontend SQlite3 DB")
+        llm_api = st.selectbox('Choose LLM Model API', options=['Hugging Face', 'OpenAI API', 'Google Gemini API'], help="Update NLP Model Choice in frontend SQlite3 DB")
         with st.expander('API Credentials', expanded=True):
-            st.text_input('Secret Key', placeholder="Secret Key Input", type="password")
-        nlp_submit = st.form_submit_button('Update Credentials')
-        if nlp_submit:
-            update_fields(nlp_model_choice=nlp_model)  # Update NLP Model Choice in frontend SQlite3 DB
-            st.write("ok")
+            llm_api_key = st.text_input('Secret Key', placeholder="Secret Key Input", type="password")
+        llm_submit = st.form_submit_button('Update Credentials')
+        if llm_submit:
+            # update_fields(nlp_model_choice=llm_api)  # Update NLP Model Choice in frontend SQlite3 DB # TODO examine here
+            res = insert_update_api_keys(llm_api, llm_api_key)
+            if res:
+                st.success(
+                    f"✅ {llm_api} **API Key** has been successfully added/updated to the Encrypted Database.")
+            else:
+                st.error(f"⚠️ Inserting **{llm_api} API Key** to the Encrypted Database failed.")
 with price_tab:
     with st.form('Crypto Price Credentials'):
         price_history_api = st.selectbox('Choose Price History API', options=['CoinCap API', 'CoinGecko API', 'CoinMarketCap API'], disabled=True)
@@ -96,3 +78,26 @@ with price_tab:
         if ph_submit:
             st.write("Not yet Supported.")
             insert_update_api_keys(price_history_api, price_history_api_key)
+with back_tab:
+    with st.form('Backend Server Settings'):
+        bcols = st.columns([2, 1])
+
+        serv_ip = st.text_input('Server IP', value=db_fields[3], placeholder="Default: http://127.0.0.1")
+        serv_port = st.text_input('Server Port', value=db_fields[4], placeholder="Default: 8000")
+
+        back_submit = st.form_submit_button('Update Server Settings')
+        old_serv_adr = db_fields[5]
+        if back_submit:
+            serv_adr = serv_ip+':'+serv_port
+            update_fields(backend_server_ip=serv_ip, backend_server_port=serv_port,backend_server_socket_address=serv_adr)  # Update NLP Model Choice in frontend SQlite3 DB
+            st.success(f'Server Parameters Update Successfuly, New Configurations: [{old_serv_adr}] -> [{serv_adr}]')
+with trd_tab:
+    with st.form('Trading Parameters'):
+        exchange = st.selectbox('Choose Crypto Exchange', options= ['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True, help="Support for Coinbase, Crypto.com, Gemini, Kraken, KuCoin TBA")
+        st.info("💡 Currently only Binance is supported, the following will be added: Coinbase, Crypto.com, Gemini, Kraken, KuCoin")
+        with st.expander('Betting Options', expanded=True):
+            betting_coin = st.selectbox("Choose Betting Coin [recommended: USDT]", ['USDT', 'BNB', 'BTC'], disabled=True)
+        trd_submit = st.form_submit_button('Update Trading Parameters')
+        if trd_submit:
+            # update_betting_options(exchange)
+            st.write("ok")
