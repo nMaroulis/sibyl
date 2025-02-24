@@ -56,7 +56,7 @@ with api_tab:
                 st.error(f"⚠️ Inserting **{exchange} API Key** and **Secret Key** to the Encrypted Database failed.")
 with llm_tab:
     with st.form('API Credentials'):
-        llm_api = st.selectbox('Choose LLM Model API', options=['Hugging Face', 'OpenAI API', 'Google Gemini API'], help="Update NLP Model Choice in frontend SQlite3 DB")
+        llm_api = st.selectbox('Choose LLM Model API', options=['Hugging Face', 'OpenAI API', 'Google Gemini API'], help="Update LLM API")
         with st.expander('API Credentials', expanded=True):
             llm_api_key = st.text_input('Secret Key', placeholder="Secret Key Input", type="password")
         llm_submit = st.form_submit_button('Update Credentials')

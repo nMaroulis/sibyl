@@ -28,13 +28,15 @@ def get_llm_advice(stock_symbol: str, llm_api: str):
         llm_api_client = LLMClientFactory.get_client(llm_api)
 
         # fetch stock data
-        stock_text = get_stock_info(stock_symbol)
+        stock_json = get_stock_info(stock_symbol)
+        stock_text =  f""" 52 Week High: ${stock_json.get('fiftyTwoWeekHigh', 'N/A')}, 52 Week Low: ${stock_json.get('fiftyTwoWeekLow', 'N/A')}, Target Mean Price: ${stock_json.get('targetMeanPrice', 'N/A')}, Yahoo Finance Analyst Opinions: {stock_json.get('numberOfAnalystOpinions', 'N/A')} Analysts generated the following recommendation {stock_json.get('recommendationKey', 'N/A')} with a score of {stock_json.get('recommendationMean', 'N/A')}."""
+
         prompt = f"""
-        You are a financial expert. Analyze the following stock information and determine if it's a good investment for short-term and long-term.
-        Stock Data:
-        {str(stock_text)}
-        Provide an evaluation, reasoning, and a confidence score (0 to 100).
-        """
+            You are a financial expert. Analyze the following stock information and determine if it's a good investment for short-term and long-term.
+            Stock Data:
+            {stock_text} 
+            Provide an evaluation, reasoning, and a confidence score (0 to 100).
+            """
         # generate response
         res = llm_api_client.generate_response(prompt, 250, 0.7)
 

@@ -164,12 +164,16 @@ def get_stock_analysis(stock_symbol: str):
     symbol = extract_symbol(stock_symbol)
     if symbol is None:
         st.error("Invalid stock symbol", icon=":material/error:")
-    if check_api_status("hugging_face"):
-        st.write(f"Hugging Face API key is active, you can get an advice from the Sibyl Stock Advisor.")
-        if st.button("Get Advice"):
-            get_advice(symbol)
     stock_details = fetch_stock_details(symbol)
     if stock_details:
+        if check_api_status("hugging_face"):
+            if st.button("Get Advice", type="primary", icon=":material/search_check:"):
+                get_advice(symbol)
+            st.caption(f"👆👆 **Hugging Face API key** is *active*, you can get an advice from the Sibyl Stock Advisor.")
+        else:
+            st.info(
+                "💡Add an API key for an LLM (e.g. Hugging Face, OpenAI API etc.) in the settings tab in order to get an advice from the Sibyl Stock Advisor LLM.")
+
         display_company_info(stock_details["info"], symbol)
     else:
         st.error("Failed to fetch Stock information. Please check logs to see if **YahooFinance API** reached the limit and try later.", icon=":material/error:")

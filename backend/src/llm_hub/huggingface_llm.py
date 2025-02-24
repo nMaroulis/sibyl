@@ -4,14 +4,14 @@ from huggingface_hub import login
 from backend.src.llm_hub.llm_base import LLMBase
 from backend.db.api_keys_db_client import APIEncryptedDatabase
 import os
-
+import platform
 
 class HuggingFaceLLM(LLMBase):
     """
     Implements the LLMBase for Hugging Face models.
     """
 
-    def __init__(self, model_name: str = "gpt2", device=None): # meta-llama/Llama-3.2-3B-Instruct
+    def __init__(self, model_name: str = "meta-llama/Llama-3.2-1B", device=None): #
         """
         Initializes a Hugging Face model.
 
@@ -19,7 +19,15 @@ class HuggingFaceLLM(LLMBase):
         :param device: "cuda" or "cpu". Defaults to auto-detecting CUDA.
         """
         super().__init__(model_name, provider="huggingface")
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+
+        # correctly set device - MPS for Apple silicon
+        if device is None:
+            if platform.system() == "Darwin" and platform.machine() == "arm64" and torch.backends.mps.is_available():
+                self.device = "mps"
+            else:
+                self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = device
 
         api_creds = APIEncryptedDatabase.get_api_key_by_name("hugging_face")
         if api_creds is None:
@@ -43,6 +51,6 @@ class HuggingFaceLLM(LLMBase):
         """
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
         with torch.no_grad():
-            output = self.model.generate(**inputs, max_length=max_length, temperature=temperature)
+            output = self.model.generate(**inputs, temperature=temperature)
 
         return self.tokenizer.decode(output[0], skip_special_tokens=True)
