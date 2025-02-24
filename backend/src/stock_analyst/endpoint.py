@@ -29,6 +29,8 @@ def get_llm_advice(stock_symbol: str, llm_api: str):
 
         # fetch stock data
         stock_json = get_stock_info(stock_symbol)
+        stock_json = stock_json['data']['info']
+
         stock_text =  f""" 52 Week High: ${stock_json.get('fiftyTwoWeekHigh', 'N/A')}, 52 Week Low: ${stock_json.get('fiftyTwoWeekLow', 'N/A')}, Target Mean Price: ${stock_json.get('targetMeanPrice', 'N/A')}, Yahoo Finance Analyst Opinions: {stock_json.get('numberOfAnalystOpinions', 'N/A')} Analysts generated the following recommendation {stock_json.get('recommendationKey', 'N/A')} with a score of {stock_json.get('recommendationMean', 'N/A')}."""
 
         prompt = f"""

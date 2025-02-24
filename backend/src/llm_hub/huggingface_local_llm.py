@@ -6,12 +6,12 @@ from backend.db.api_keys_db_client import APIEncryptedDatabase
 import os
 import platform
 
-class HuggingFaceLLM(LLMBase):
+class HuggingFaceLocalLLM(LLMBase):
     """
     Implements the LLMBase for Hugging Face models.
     """
 
-    def __init__(self, model_name: str = "meta-llama/Llama-3.2-1B", device=None): #
+    def __init__(self, model_name: str = "mistralai/Mistral-7B-Instruct-v0.3", device=None): #
         """
         Initializes a Hugging Face model.
 

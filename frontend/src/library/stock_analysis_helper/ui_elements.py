@@ -154,11 +154,11 @@ def display_company_info(info: dict, stock_symbol: str):
     with c0:
         st.pyplot(linear_gauge_chart(1.4))
 
-@st.dialog("Sibyl Stock Advisor")
+@st.dialog("Sibyl Stock Advisor", width="large")
 def get_advice(symbol: str):
     with st.spinner("Generating advice..."):
         llm_advice = fetch_stock_advice(symbol, "hugging_face")
-        st.write(llm_advice)
+        st.markdown(llm_advice)
 
 def get_stock_analysis(stock_symbol: str):
     symbol = extract_symbol(stock_symbol)

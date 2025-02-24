@@ -1,8 +1,8 @@
-from backend.src.llm_hub.huggingface_llm import HuggingFaceLLM
+from backend.src.llm_hub.huggingface_api_llm import HuggingFaceAPILLM
 
 class LLMClientFactory:
     _clients = {
-        'hugging_face': HuggingFaceLLM,
+        'hugging_face': HuggingFaceAPILLM,
     }
 
     @classmethod
