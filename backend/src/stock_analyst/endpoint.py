@@ -37,10 +37,10 @@ def get_llm_advice(stock_symbol: str, llm_api: str):
             You are a financial expert. Analyze the following stock information and determine if it's a good investment for short-term and long-term.
             Stock Data:
             {stock_text} 
-            Provide an evaluation, reasoning, and a confidence score (0 to 100).
+            Provide a brief evaluation, brief reasoning, and a confidence score (0 to 100).
             """
         # generate response
-        res = llm_api_client.generate_response(prompt, 250, 0.7)
+        res = llm_api_client.generate_response(prompt, 500, 0.7)
 
         return {"status": "success", "data": res}
     except Exception as e:

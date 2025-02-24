@@ -20,5 +20,5 @@ class HuggingFaceAPILLM(LLMBase):
 
     def generate_response(self, prompt: str, max_length: int = 500, temperature: float = 0.7) -> str:
 
-        response = self.model.text_generation(prompt, max_new_tokens=200, temperature=0.7)
+        response = self.model.text_generation(prompt, max_new_tokens=max_length, temperature=0.7)
         return response
