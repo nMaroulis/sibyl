@@ -1,5 +1,5 @@
-from frontend.src.library.nlp.client import fetch_news, fetch_news_summary, fetch_news_sentiment
-from streamlit import write, warning, expander, markdown, image, plotly_chart, caption, code, html, error as st_error
+from frontend.src.library.nlp.client import fetch_news, fetch_news_summary, fetch_news_sentiment,get_chatbot_response
+from streamlit import write, warning, expander, markdown, image, plotly_chart, caption, code, html, error as st_error, dialog
 import json
 from requests import get as requests_get
 from plotly.graph_objects import Figure, Bar, Indicator
@@ -223,3 +223,27 @@ def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
     else:
         st_error("Text Sentiment Failed! Check NLP settings", icon=":material/error:")
     return 1
+
+
+from streamlit import session_state, chat_message, chat_input
+
+@dialog("💬 AI Chatbot", width="large")
+def news_chatbot():
+
+    if "news_chatbot_messages" not in session_state:
+        session_state["news_chatbot_messages"] = []
+
+    # Display chat history
+    for message in session_state["news_chatbot_messages"]:
+        with chat_message(message["role"]):
+            write(message["content"])
+
+    if user_input := chat_input("What is up?"):
+        session_state.news_chatbot_messages.append({"role": "user", "content": user_input})
+        with chat_message("user"):
+            markdown(user_input)
+
+        with chat_message("assistant"):
+            bot_response = get_chatbot_response("hugging_face", user_input)
+            markdown(bot_response)
+        session_state.news_chatbot_messages.append({"role": "assistant", "content": bot_response})

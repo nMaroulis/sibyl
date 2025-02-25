@@ -1,8 +1,10 @@
-from backend.src.llm_hub.huggingface_api_llm import HuggingFaceAPILLM
+from backend.src.llm_hub.hf_api_llm import HuggingFaceAPILLM
+from backend.src.llm_hub.hf_api_llm_chatbot import HuggingFaceLLMChatbot
 
 class LLMClientFactory:
     _clients = {
         'hugging_face': HuggingFaceAPILLM,
+        'hugging_face_chatbot': HuggingFaceLLMChatbot,
     }
 
     @classmethod

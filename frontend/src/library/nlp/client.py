@@ -48,3 +48,17 @@ def fetch_news_sentiment(model: str= 'vader', website: str = 'cointelegraph'):
             return None
     else:
         return None
+
+
+def get_chatbot_response(llm_api: str, question: str):
+
+    url = f"{BACKEND_SERVER_ADDRESS}/reporter/news/chatbot?llm_api={llm_api}&question={question}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        try:
+            chat_res = response.json()['chat_response']
+            return chat_res
+        except Exception as e:
+            return "LLM Model failed to generate a response."
+    else:
+        return "LLM Model failed to generate a response."
