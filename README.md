@@ -85,7 +85,7 @@ Choose a Company from a list of available company stocks and:
 Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.
 ### Local Databases
 #### API Key Storage 
-> All **API keys** are stored ***locally*** on an **encrypted** SQlite Database, with a **unique encryption key** generated on your local file system. This Database uses SQLAlchemy for ORM. You may find the database and the encryption key at */backend/db*
+> All **API keys** are stored ***locally*** on an **encrypted** SQlite Database, with a **unique encryption key** generated on your local file system. This Database uses SQLAlchemy for ORM. You may find the database and the encryption key at */database*
 
 > All **trades** made through Sibyl strategies are stored in a local SQlite DB without keeping any personal information.
 

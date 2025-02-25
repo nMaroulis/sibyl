@@ -1,9 +1,9 @@
-/backend/db/api_keys.db
-/backend/db/encryption_key.key
+/database/api_keys.db
+/database/encryption_key.key
 /backend/config/api_keys/api_credentials.json
 /.idea/
 /TODO.md
 /notebooks/.ipynb_checkpoints/
 /.sibyl_venv/
 /tests/*
-/notebooks/llms/*
+/notebooks/llms/

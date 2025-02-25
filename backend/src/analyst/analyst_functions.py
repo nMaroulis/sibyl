@@ -1,8 +1,8 @@
 import requests
 import json
-from backend.db.api_keys_db_client import APIEncryptedDatabase
+from database.api_keys_db_client import APIEncryptedDatabase
 
-COIN_SYMBOL_NAME_MAP_PATH = 'backend/db/coin_symbol_name_map.json'
+COIN_SYMBOL_NAME_MAP_PATH = 'database/coin_symbol_name_map.json'
 
 
 def get_coin_symbol_name_map():

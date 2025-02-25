@@ -1,7 +1,7 @@
 from transformers import pipeline
 from huggingface_hub import InferenceClient
 from backend.src.llm_hub.llm_base import LLMBase
-from backend.db.api_keys_db_client import APIEncryptedDatabase
+from database.api_keys_db_client import APIEncryptedDatabase
 
 
 class HuggingFaceAPILLM(LLMBase):

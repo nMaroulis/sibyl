@@ -1,5 +1,5 @@
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
-from backend.db.api_keys_db_client import APIEncryptedDatabase
+from database.api_keys_db_client import APIEncryptedDatabase
 
 
 class CoinbaseClient(ExchangeAPIClient):

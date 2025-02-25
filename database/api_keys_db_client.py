@@ -10,10 +10,10 @@ logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
 
 class APIEncryptedDatabase:
     # Load environment variables and define constants
-    load_dotenv('backend/db/db_paths.env')
+    load_dotenv('database/db_paths.env')
 
     DATABASE_URL = os.getenv("API_KEYS_DB_PATH")
-    KEY_FILE = "backend/db/encryption_key.key"
+    KEY_FILE = "database/encryption_key.key"
 
     # Initialize database engine, session, and ORM base
     engine = sa.create_engine(DATABASE_URL, echo=False)

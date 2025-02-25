@@ -10,7 +10,7 @@ It creates a table named "trading_history" with the specified fields
 
 class TradeHistoryDBClient:
 
-    load_dotenv('backend/db/db_paths.env')
+    load_dotenv('database/db_paths.env')
     DB_PATH = os.getenv("TRADE_HISTORY_DB_PATH")
 
 
@@ -68,7 +68,7 @@ class TradeHistoryDBClient:
         conn.commit()  # Save the changes
         cursor.close()  # Close the cursor and the connection
         conn.close()
-        print("backend :: db :: trade_history_db_client :: add_trade_to_db :: Database Insert successfully.")
+        print("database :: trade_history_db_client :: add_trade_to_db :: Database Insert successfully.")
         return 0
 
 

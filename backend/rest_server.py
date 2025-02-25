@@ -7,7 +7,7 @@ from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn, requests
 from settings import SERVER_IP, SERVER_PORT
-from backend.db.api_keys_db_client import APIEncryptedDatabase
+from database.api_keys_db_client import APIEncryptedDatabase
 from backend.src.accountant.endpoint import router as accountant_router
 from backend.src.analyst.endpoint import router as analyst_router
 from backend.src.oracle.endpoint import router as oracle_router
@@ -16,7 +16,7 @@ from backend.src.reporter.endpoint import router as reporter_router
 from backend.src.technician.endpoint import router as technician_router
 from backend.src.explorer.endpoint import router as explorer_router
 from backend.src.stock_analyst.endpoint import router as stock_analyst_router
-from db.trade_history_db_client import TradeHistoryDBClient
+from database.trade_history_db_client import TradeHistoryDBClient
 
 
 # Define Router endpoints

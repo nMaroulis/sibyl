@@ -1,5 +1,5 @@
 from huggingface_hub import InferenceClient
-from backend.db.api_keys_db_client import APIEncryptedDatabase
+from database.api_keys_db_client import APIEncryptedDatabase
 
 
 class HuggingFaceLLMChatbot:

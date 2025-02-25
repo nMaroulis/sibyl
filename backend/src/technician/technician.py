@@ -1,5 +1,5 @@
 
-from backend.db.api_keys_db_client import APIEncryptedDatabase
+from database.api_keys_db_client import APIEncryptedDatabase
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 class Technician:
