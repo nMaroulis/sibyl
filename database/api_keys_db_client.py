@@ -108,9 +108,13 @@ class APIEncryptedDatabase:
         session = cls.Session()
         key = session.query(cls.APIKeyStore).filter_by(name=name).first()
         if key:
-            key.decrypt_data()
-            session.close()
-            return key
+            try:
+                key.decrypt_data()
+                session.close()
+                return key
+            except AttributeError as e:
+                print(e)
+                return None
         session.close()
         print(f"APIEncryptedDatabase :: ⚠️ No API Key found with name '{name}'.")
         return None

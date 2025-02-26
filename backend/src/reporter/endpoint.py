@@ -2,8 +2,10 @@ from fastapi import APIRouter, HTTPException
 from backend.src.reporter.fetch_news import fetch_news
 from backend.src.reporter.text_summarization import get_text_summary
 from backend.src.reporter.text_sentiment import get_text_sentiment
-from backend.src.llm_hub.llm_client_factory import LLMClientFactory
 import json
+from grpc import insecure_channel
+from backend.config import inference_pb2
+from backend.config import inference_pb2_grpc
 
 
 # APIRouter creates path operations for user module
@@ -42,13 +44,16 @@ def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
 def get_news_chatbot_response(llm_api: str, question: str):
     try:
         llm_api = f"{llm_api.lower().replace(" ", "_")}_chatbot"
-        chatbot = LLMClientFactory.get_client(llm_api)
-
         news_summary = get_news_summary()['summary']
         news_sentiment = get_news_sentiment()['sentiment_compound']
         prompt = (f"""You're a crypto expert. Based on the information provided below:"""
                   f"""News Summary: {news_summary} | Sentiment: {news_sentiment} Answer the following question: {question}""")
-        res = chatbot.get_response(prompt)
-        return {'chat_response': res}
+
+        channel = insecure_channel("localhost:50051")
+        stub = inference_pb2_grpc.InferenceServiceStub(channel)
+        request = inference_pb2.PredictRequest(model_name=llm_api, input_text=prompt)
+        response = stub.Predict(request)
+
+        return {'chat_response': response.output_text}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

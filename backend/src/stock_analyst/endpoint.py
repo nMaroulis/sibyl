@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from backend.src.stock_analyst.yf_client import get_stock_details
 from backend.src.stock_analyst.portfolio_archive import fetch_senate_trades
-from backend.src.llm_hub.llm_client_factory import LLMClientFactory
+from grpc import insecure_channel
+from backend.config import inference_pb2
+from backend.config import inference_pb2_grpc
 
 
 # APIRouter creates path operations for user module
@@ -24,9 +26,6 @@ def get_stock_info(stock_symbol: str):
 @router.get("/advisor/llm")
 def get_llm_advice(stock_symbol: str, llm_api: str):
     try:
-        # load LLM API client
-        llm_api_client = LLMClientFactory.get_client(llm_api)
-
         # fetch stock data
         stock_json = get_stock_info(stock_symbol)
         stock_json = stock_json['data']['info']
@@ -39,10 +38,14 @@ def get_llm_advice(stock_symbol: str, llm_api: str):
             {stock_text} 
             Provide a brief evaluation, brief reasoning, and a confidence score (0 to 100).
             """
-        # generate response
-        res = llm_api_client.generate_response(prompt, 500, 0.7)
 
-        return {"status": "success", "data": res}
+        # Call gRPC server
+        channel = insecure_channel("localhost:50051")
+        stub = inference_pb2_grpc.InferenceServiceStub(channel)
+        request = inference_pb2.PredictRequest(model_name=llm_api, input_text=prompt)
+        response = stub.Predict(request)
+
+        return {"status": "success", "data": response.output_text}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=404, detail="LLM API failed")

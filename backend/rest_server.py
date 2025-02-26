@@ -57,5 +57,5 @@ if __name__ == "__main__":
     APIEncryptedDatabase.init_cipher()
     APIEncryptedDatabase.init_db()
     # Run the application using the Uvicorn server
-    print("Starting Backend Server...")
+    print("Backend :: Starting Server...")
     uvicorn.run(app, host=SERVER_IP, port=SERVER_PORT, log_level='debug', access_log=True)

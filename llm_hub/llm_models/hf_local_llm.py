@@ -1,7 +1,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from huggingface_hub import login
-from backend.src.llm_hub.llm_base import LLMBase
+from llm_hub.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
 import os
 import platform
