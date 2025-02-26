@@ -4,6 +4,8 @@ import inference_pb2
 import inference_pb2_grpc
 from llm_hub.llm_models.llm_client_factory import LLMClientFactory
 from database.api_keys_db_client import APIEncryptedDatabase
+from dotenv import load_dotenv
+import os
 
 
 class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
@@ -18,7 +20,9 @@ class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     inference_pb2_grpc.add_InferenceServiceServicer_to_server(InferenceService(), server)
-    server.add_insecure_port("[::]:50051")
+
+    load_dotenv('llm_hub/server_config.env')
+    server.add_insecure_port(f"{os.getenv("GRPC_INFERENCE_SERVER_IP")}:{os.getenv("GRPC_INFERENCE_SERVER_PORT")}")
     server.start()
     server.wait_for_termination()
 
@@ -27,5 +31,5 @@ if __name__ == "__main__":
     # Initialize encryption and API storage database
     APIEncryptedDatabase.init_cipher()
     APIEncryptedDatabase.init_db()
-    print("gRPC :: Starting Server on port 50051...")
+    print("gRPC :: Starting Inference Server...")
     serve()
