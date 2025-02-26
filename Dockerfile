@@ -1,5 +1,7 @@
-# Use the official Python 3.12 slim image
-FROM python:3.12-slim
+# Option 1: Use the official Python 3.12 slim image
+# FROM python:3.12-slim
+# Option 2: Force AMD64 to avoid ARM-related package issues
+FROM --platform=linux/amd64 python:3.12
 
 # Set the working directory in the container
 WORKDIR /app
@@ -18,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
     libopenblas-dev \
+    libffi-dev \
+    libblas-dev \
     liblapack-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -26,7 +30,7 @@ RUN apt-get update && apt-get install -y \
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
 # Set Poetry configuration to not create a virtualenv (optional)
-RUN poetry config virtualenvs.create false
+# RUN poetry config virtualenvs.create false
 
 # Add Poetry to PATH
 ENV PATH="/root/.local/bin:$PATH"
@@ -38,10 +42,11 @@ RUN poetry --version
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Install dependencies via Poetry
-RUN poetry install --no-interaction # --without dev
+RUN poetry install --no-interaction
+# --without dev
 
 # Expose the required ports
-EXPOSE 8501 8000
+EXPOSE 8501 8000 50051
 
 # Run main.py to start both services
 CMD ["poetry", "run", "python", "-u", "main.py"]
