@@ -91,6 +91,11 @@ Sibyl is designed for local deployment, ensuring your data stays secure. You hav
 
 ## Architecture
 
+<div align="center">
+
+[//]: # (  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">)
+  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">
+</div>
 
 
 ## Roadmap
