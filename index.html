@@ -282,6 +282,10 @@
         box-shadow: 0 10px 15px rgba(95,158,160, 0.5); /* Added shadow for 3D effect */
     }
 
+    .settings-card-illustration-Op img {
+        box-shadow: 0 10px 15px rgba(95,158,160, 0.5); /* Added shadow for 3D effect */
+    }
+
 
   </style>
 </head>
@@ -316,7 +320,7 @@
     </div>
 
     <div class="section" id="apis">
-      <h2>Supported APIs</h2>
+      <h2>Supported External APIs</h2>
 
 
       <div class="settings-card settings-card-Active" style="display:inline-block;">
@@ -351,6 +355,30 @@
           <button>Unavailable</button>
       </div>
 
+      <div class="settings-card settings-card-Active" style="display:inline-block;">
+          <div class="settings-card-illustration settings-card-illustration">
+              <img src="https://cdn.worldvectorlogo.com/logos/huggingface-2.svg" width="120px" alt=""/>
+          </div>
+          <h3>Hugging Face API</h3>
+          <button>Available</button>
+      </div>
+
+      <div class="settings-card settings-card-Active" style="display:inline-block;">
+          <div class="settings-card-illustration settings-card-illustration-Op">
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFJYCiV_aHxCRPoVcLeOChZWnb_qVxSQMm4Jr-C_x_0A&s" width="120px" alt=""/>
+          </div>
+          <h3>OpenAI API</h3>
+          <button>Available</button>
+      </div>
+
+      <div class="settings-card" style="display:inline-block;">
+          <div class="settings-card-illustration settings-card-illustration-Op">
+              <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQV1QWx0soc08N7wU8LjH95wZTkF_q13tg1KH4AOTs3xw&s" width="120px" alt=""/>
+          </div>
+          <h3>Gemini API</h3>
+          <button>Unavailable</button>
+      </div>
+
     </div>
 
 
@@ -374,6 +402,7 @@
 
       <div id="method1" class="tabcontent" style="display: block;">
         <h3>Python Virtual Environment</h3>
+        <p><strong>Recommended for Apple silicon, so Pypi takes care of arm64 libraries.</strong></p>
         <p>Install python3.12 in your system</p>
         <pre><code>$ brew install python@3.12 # macOS</code></pre>
         <pre><code>$ sudo apt install python==3.12  # Linux apt</code></pre>
