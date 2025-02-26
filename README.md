@@ -89,6 +89,9 @@ Sibyl is designed for local deployment, ensuring your data stays secure. You hav
 
 > All **trades** made through Sibyl strategies are stored in a local SQlite DB without keeping any personal information.
 
+## Architecture
+
+
 
 ## Roadmap
 The development roadmap includes exciting new features:
