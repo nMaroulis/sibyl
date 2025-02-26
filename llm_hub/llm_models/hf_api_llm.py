@@ -1,4 +1,3 @@
-from transformers import pipeline
 from huggingface_hub import InferenceClient
 from llm_hub.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
@@ -18,7 +17,7 @@ class HuggingFaceAPILLM(LLMBase):
         else:
             self.model = InferenceClient(model_name, token=api_creds.api_key)
 
-    def generate_response(self, prompt: str, max_length: int = 500, temperature: float = 0.7) -> str:
+    def generate_response(self, prompt: str, max_length: int = 800, temperature: float = 0.7) -> str:
 
         response = self.model.text_generation(prompt, max_new_tokens=max_length, temperature=0.7)
         return response
