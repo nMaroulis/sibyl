@@ -34,29 +34,27 @@ def show_status_cards(only_exchange=False):
     #     CRYPTO_APIS['Backend Server'] = "https://mdevelopers.com/storage/backend1_a9b6dc2f.png"
     #     statuses.append('Active')
     #     num_cols += 1
+    html_txt = """<div class="section" id="apis">"""
 
     api_cols = columns(4)
     i = 0
     for k, v in CRYPTO_APIS.items():
-        with api_cols[i]:
-            status_card(k, v, status_list[i])
+        html_txt += status_card(k, v, status_list[i], False)
         i += 1
 
     # LLM APIS
-    i = 0
     # status_card_header("LLM APIs")
     for k, v in LLM_APIS.items():
-        with api_cols[i]:
-            status_card(k, v, status_list[i+4])
+        html_txt += status_card(k, v, status_list[i], False)
         i += 1
 
-    # LLM APIS
-    i = 0
+    # Price History APIS
     # status_card_header("LLM APIs")
     for k, v in PRICE_API.items():
-        with api_cols[i]:
-            status_card(k, v, status_list[-1])
+        html_txt += status_card(k, v, status_list[i], False)
         i += 1
+    html_txt += """</div>"""
+    html(html_txt)
     return
 
 
@@ -64,13 +62,13 @@ def show_homepage_status_cards():
     global CRYPTO_APIS
     status_card_style()
     statuses = [session_state['backend_status'], session_state["binance_api_status"], session_state["binance_testnet_api_status"], session_state["kraken_api_status"], session_state["coinbase_api_status"]]
-    api_cols = columns(5)
-    with api_cols[0]:
-        status_card('Backend Server', "https://mdevelopers.com/storage/backend1_a9b6dc2f.png", statuses[0])
-    i = 1
-    for k, v in CRYPTO_APIS.items():
-        with api_cols[i]:
-            status_card(k, v, statuses[i])
-        i += 1
 
+    i = 1
+    html_txt = """<div class="section" id="apis">"""
+    html_txt += status_card('Backend Server', "https://mdevelopers.com/storage/backend1_a9b6dc2f.png", statuses[0], False)
+    for k, v in CRYPTO_APIS.items():
+        html_txt += status_card(k, v, statuses[i],False)
+        i += 1
+    html_txt += """</div>"""
+    html(html_txt)
     return

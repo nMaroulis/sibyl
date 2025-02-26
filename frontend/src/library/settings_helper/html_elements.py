@@ -10,7 +10,8 @@ def status_card_style():
                 text-align: center;
                 padding: 10px;
                 max-width: 180px;
-                margin: 30px auto;
+                min-width: 173px;
+                margin: 30px 20px;
                 box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
                 transition: transform 1.5s ease;
             }
@@ -134,6 +135,10 @@ def status_card_style():
                 box-shadow: 0 10px 15px rgba(95,158,160, 0.5); /* Added shadow for 3D effect */
             }
             
+            .settings-card-illustration-Ge img {
+                box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
+            }
+
         </style>
     """)
     return
@@ -150,17 +155,29 @@ def status_card_header(title: str = ""):
     return
 
 
-def status_card(name: str, logo: str, status: str = 'Active'):
+def status_card(name: str, logo: str, status: str = 'Active', show: bool = True) -> str | None:
 
-    html(f"""
-        <div class="settings-card settings-card-{status[0:3]}">
-            <div class="settings-card-illustration settings-card-illustration-{name[0:2]}">
-                <img src="{logo}" width="120px" alt=""/>
+    if show:
+        html(f"""
+            <div class="settings-card settings-card-{status[0:3]}">
+                <div class="settings-card-illustration settings-card-illustration-{name[0:2]}">
+                    <img src="{logo}" width="120px" alt=""/>
+                </div>
+                <h3>{name}</h3>
+                <button>{status}</button>
             </div>
-            <h3>{name}</h3>
-            <button>{status}</button>
-        </div>
-    """)
+        """)
+    else:
+        return f"""
+            <div class="settings-card settings-card-{status[0:3]}" style="display:inline-block;">
+                <div class="settings-card-illustration settings-card-illustration-{name[0:2]}">
+                    <img src="{logo}" width="120px" alt=""/>
+                </div>
+                <h3>{name}</h3>
+                <button>{status}</button>
+            </div>
+        """
+
 
 # < div class ="settings-card settings-card-active" >
 # < div class ="settings-card-illustration" >
