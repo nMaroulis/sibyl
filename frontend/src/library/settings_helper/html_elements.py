@@ -144,7 +144,7 @@ def status_card_style():
     return
 
 
-def status_card_header(title: str = ""):
+def status_card_header(title: str):
     html(f"""        
         <div class="status_header">
             <div class="status_line"></div>

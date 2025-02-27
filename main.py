@@ -30,7 +30,7 @@ def main() -> int:
     fetch_fields()  # print fields and initiate cache
     os.environ["STREAMLIT_CONFIG"] = ".streamlit/config.toml"
     # ctx = get_script_run_ctx(suppress_warning=True)
-    frontend_ui = subprocess.Popen("streamlit run frontend/index_router.py", shell=True, env=env)
+    frontend_ui = subprocess.Popen("python3.12 -m streamlit run frontend/index_router.py", shell=True, env=env)
     # add_script_run_ctx(frontend_ui, ctx)
 
     return 0

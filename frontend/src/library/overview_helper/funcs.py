@@ -53,7 +53,7 @@ def get_wallet_balances(exchange_api: str):
 
                 cols = columns(2)  # max number of spot in the same row
                 with cols[0]:
-                    html("<h6 style='text-align: left;margin-top:1em;'>SPOT Balance</h6>")
+                    html("<h6 style='text-align: left;margin:0;'>SPOT Balance</h6>")
 
                     wallet_list_df = DataFrame(wallet_list, columns=['Asset', 'SPOT Amount'])
                     wallet_list_df['Staked Amount'] = stk
@@ -76,12 +76,12 @@ def get_wallet_balances(exchange_api: str):
 
                     wallet_list_df['icon'] = wallet_list_df['Asset'].map(icon_dict).fillna('https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/IKNBTK7JKVEWHGGBKEQMN2HZMM.png')
                     wallet_list_df.insert(0, 'icon', wallet_list_df.pop('icon'))
-
                     html(""" <div style="box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);">""")
                     data_editor(wallet_list_df, column_config={"icon": column_config.ImageColumn("")}, hide_index=True,
                                 disabled=True, use_container_width=True)
 
                     toggle('Hide Small Balances')
+                    metric("Total Balance", f"{round(wallet_list_df['Amount in USDT'].sum(),2)} USDT")
                     html(""" </div>""")
 
                 with cols[1]:
@@ -117,13 +117,8 @@ def get_wallet_balances(exchange_api: str):
 
 @cache_data
 def get_logo_header():
-    # from PIL import Image
-    # image = Image.open('./static/home_logo.png')
-    # st.image(image, use_column_width=False, width=200)
-    # <img src="https://repository-images.githubusercontent.com/648387594/566640d6-e1c4-426d-b2f2-bed885d07e97" style="width:20em;padding-top:0;">
     html("""<div align="center">
       <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501" style="width:20em;padding-top:0;"></div>""")
-    # st.markdown("""<h1 style='text-align: center;margin-top:0; padding-top:0;'>Home Page</h1>""", unsafe_allow_html=True)
     return 0
 
 

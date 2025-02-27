@@ -16,9 +16,12 @@ pages = {
     "News": [
         st.Page("tab_pages/reporting.py", title="Reporting", icon=":material/newspaper:")
     ],
+    "Crypto Wiki": [
+        st.Page("tab_pages/crypto_chatbot.py", title="Crypto Chatbot", icon=":material/forum:"),
+    ],
     "Stock Market": [
         st.Page("tab_pages/stock_analysis.py", title="Stock Analysis", icon=":material/monitoring:"),
-        st.Page("tab_pages/stock_portfolios.py", title="Stock Portfolios", icon=":material/account_balance_wallet:")
+        st.Page("tab_pages/stock_portfolios.py", title="Stock Portfolios", icon=":material/inventory:")
     ],
     "Settings": [
         st.Page("tab_pages/settings.py", title="Settings", icon=":material/settings:")
