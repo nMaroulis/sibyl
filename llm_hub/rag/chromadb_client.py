@@ -7,14 +7,14 @@ import faiss
 import random
 from rank_bm25 import BM25Okapi
 # from llm_hub.llm_models.hf_api_llm import HuggingFaceAPILLM
-
+import pickle
 
 class ChromaDBClient:
     """
     A wrapper for managing ChromaDB operations, including storing and retrieving vector embeddings.
     """
 
-    def __init__(self, db_path: str = "database/wiki_rag/chroma_db", collection_name: str = "crypto_knowledge"):
+    def __init__(self, db_path: str = "database/wiki_rag/chroma_db", collection_name: str = "crypto_knowledge", bm25_path: str = "database/wiki_rag/bm25.pkl"):
         """
         Initialize the ChromaDB client and get or create a collection.
 
@@ -28,11 +28,16 @@ class ChromaDBClient:
         self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
         # FAISS Approximate Nearest Neighbor Search
-        self.faiss_index = faiss.IndexFlatL2(384)  # 384-D embeddings
-        self.documents = []
+        self.faiss_index = None  # faiss.IndexFlatL2()
+        # self.faiss_index =
+        # self.documents = []
 
         # BM25 Keyword-based Retrieval
+        self.bm25_path = bm25_path
+        self.tokenized_docs = []
+        self.documents = []
         self.bm25 = None  # Will be initialized when documents are added
+        # self.load_bm25()
 
         # Random responses when no relevant documents are found
         self.not_found_responses = [
@@ -68,10 +73,46 @@ class ChromaDBClient:
         # # Update FAISS index
         # self.faiss_index.add(np.array(embeddings).astype("float32"))
         # self.documents.extend(documents)
-        #
+
+
         # # Update BM25 retriever
         # tokenized_corpus = [doc["text"].lower().split() for doc in documents]
         # self.bm25 = BM25Okapi(tokenized_corpus)
+        # Tokenize the documents for BM25 and update the BM25 model
+        # Tokenize the new documents for BM25 and update the BM25 model
+        # self.tokenized_docs.extend([doc.split() for doc in texts])
+        # self.bm25 = BM25Okapi(self.tokenized_docs) # Update BM25 incrementally
+        # self.save_bm25() # Save BM25 state to file for persistence
+
+
+    def load_bm25(self):
+        """
+        Load the BM25 model and documents from a file for persistence.
+        """
+        try:
+            with open(self.bm25_path, 'rb') as file:
+                data = pickle.load(file)
+                self.tokenized_docs = data.get('tokenized_docs', [])
+                self.documents = data.get('documents', [])
+                # Initialize BM25 with the existing tokenized documents
+                self.bm25 = BM25Okapi(self.tokenized_docs)
+                print("BM25 model loaded from file.")
+        except FileNotFoundError:
+            print("No BM25 model found. Starting with an empty BM25 model.")
+            self.bm25 = None
+
+    def save_bm25(self):
+        """
+        Save the current BM25 model and documents to a file for persistence.
+        """
+        with open(self.bm25_path, 'wb') as file:
+            data = {
+                'tokenized_docs': self.tokenized_docs,
+                'documents': self.documents
+            }
+            pickle.dump(data, file)
+            print("BM25 model saved to file.")
+
 
     def collection_size(self) -> int:
         """
@@ -155,6 +196,35 @@ class ChromaDBClient:
             "source": best_metadata.get("source", "Unknown"),
             "score": best_match_score,
         }
+
+
+    def hybrid_similarity_search(self, query: str, n_results: int = 5) -> List[Dict[str, str]]:
+        """
+        Perform a hybrid search using both embeddings and BM25 for better relevance.
+
+        :param query: The input query string.
+        :param n_results: Number of results to retrieve.
+        :return: List of matching documents with metadata.
+        """
+
+        hybrid_results = []
+
+        # 1. Simple Similarity Search
+        embedding_results = self.similarity_search(query, n_results=n_results)
+        for doc in embedding_results:
+            if doc["text"] not in [res["text"] for res in hybrid_results]:
+                hybrid_results.append(doc)
+
+        # 2. BM25 Keyword Retrieval
+        if self.bm25:
+            tokenized_query = query.split()
+            print(self.documents)
+            bm25_results = self.bm25.get_top_n(tokenized_query, self.documents, n_results)
+            for doc in bm25_results:
+                hybrid_results.append({"text": doc, "source": "BM25"})
+
+        return hybrid_results
+
 
     def get_final_response(self, question: str, context: str) -> str:
         """

@@ -22,7 +22,7 @@ def main() -> int:
     # time.sleep(2)  # Let some time for backend to start
 
     # ------- GRPC LLM SERVER -------
-    backend_server = subprocess.Popen("python3.12 llm_hub/grpc_server.py", shell=True, env=env)
+    grpc_server = subprocess.Popen("python3.12 llm_hub/grpc_server.py", shell=True, env=env)
 
     # ------- FRONTEND -------
     ## Frontend DB
