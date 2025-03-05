@@ -1,3 +1,5 @@
+import hashlib
+import uuid
 import chromadb
 from chromadb.utils import embedding_functions
 from sentence_transformers import SentenceTransformer, CrossEncoder
@@ -8,6 +10,7 @@ import random
 from rank_bm25 import BM25Okapi
 # from llm_hub.llm_models.hf_api_llm import HuggingFaceAPILLM
 import pickle
+
 
 class ChromaDBClient:
     """
@@ -51,23 +54,42 @@ class ChromaDBClient:
         # LLM that provides the final response
         self.llm = None # HuggingFaceAPILLM()
 
+    @staticmethod
+    def generate_doc_id(text: str) -> str:
+        """Generate a unique and consistent ID based on document text."""
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, hashlib.sha256(text.encode()).hexdigest()))
+
+
     def add_documents(self, documents: List[Dict[str, str]]) -> None:
         """
         Batch Processing: Add documents and their embeddings to the collection.
-
+        Metadata:
+            1. title: title of the document
+            2. type: [paper, article, book, other]
+            3. href: link to document
+            4. page_num: int
         :param documents: A list of dictionaries containing 'text' and 'source' keys.
         """
-        texts = [doc["text"] for doc in documents]
-        sources = [{"source": doc["source"]} for doc in documents]
-        ids = [f"doc_{i}" for i in range(len(documents))]
+        texts, ids, metadatas = [], [], []
 
+        for doc in documents:
+            texts.append(doc["text"])
+            ids.append(self.generate_doc_id(doc["text"]))
+            metadatas.append({
+                "title": doc["title"],
+                "type": doc["type"],
+                "href": doc["href"],
+                "page_num": doc["page_num"],
+            })
+
+        # Generate embeddings
         embeddings = self.embedding_model.encode(texts).tolist()
 
         self.collection.add(
             ids=ids,
             embeddings=embeddings,
             documents=texts,
-            metadatas=sources,
+            metadatas=metadatas,
         )
 
         # # Update FAISS index
