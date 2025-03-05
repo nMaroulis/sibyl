@@ -55,13 +55,13 @@ signal.signal(signal.SIGINT, ctrl_handler)
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="A script to perform tasks based on flags.")
-    parser.add_argument('--backend', help="Run only backend")
-    parser.add_argument('--wiki', help="Update RAG chroma DB with new paper embeddings.")
+    parser.add_argument('--backend', action='store_true', help="Run only backend")
+    parser.add_argument('--wiki', action='store_true', help="Update RAG chroma DB with new paper embeddings.")
     args = parser.parse_args()
 
     if args.backend:
         init_backend_server()
-    elif args.wiki_update:
+    elif args.wiki:
         update_wiki_rag_embeddings_db()
     else:
         print("No flag defined. Available flags --backend or --wiki")
