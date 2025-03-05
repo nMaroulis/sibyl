@@ -98,3 +98,69 @@ class DocumentParser:
                     )
 
         return documents
+
+    def download_crypto_books(self):
+
+        crypto_books = [
+            # {
+            #     "title": "Cryptocurrency All-in-One For Dummies",
+            #     "href": "https://content.e-bookshelf.de/media/reading/L-17782175-16eef2d176.pdf"
+            # },
+            {
+                "title": "Cryptocurrencies: A Guide to Getting Started",
+                "href": "https://www3.weforum.org/docs/WEF_Getting_Started_Cryptocurrency_2021.pdf"
+            },
+            {
+                "title": "Introduction to Cryptography and Cryptocurrencies",
+                "href": "https://assets.press.princeton.edu/chapters/s10908.pdf"
+            },
+            {
+                "title": "Complete Guide to Cryptocurrency Analysis",
+                "href": "https://masterthecrypto.com/wp-content/uploads/2017/07/COMPLETE-GUIDE-TO-CRYPTOCURRENCY-ANALYSIS-4.pdf"
+            },
+            {
+                "title": "Cryptoassets: The Guide to Bitcoin, Blockchain, and Cryptocurrency for Investment Professionals",
+                "href": "https://www.cfainstitute.org/sites/default/files/-/media/documents/article/rf-brief/rfbr-cryptoassets.pdf"
+            },
+            {
+                "title": "Bitcoin and Cryptocurrency Technologies: A Comprehensive Introduction",
+                "href": "https://pup-assets.imgix.net/onix/images/9780691171692/9780691171692.pdf"
+            },
+            # {
+            #     "title": "The Basics of Bitcoins and Blockchains",
+            #     "href": "https://bitsonblocks.net/wp-content/uploads/2018/07/the-basics-contents-draft.pdf"
+            # },
+            {
+                "title": "Bitcoin and Beyond",
+                "href": "https://library.oapen.org/bitstream/id/c8a35b6e-03a3-4116-97b9-af50ce7534b6/1000376.pdf"
+            },
+            {
+                "title": "Cryptocurrency 101",
+                "href": "https://www.cryptocurrency101.ph/wp-content/uploads/2018/05/FOR-PREVIEW-Cryptocurrency-101-BOOK.pdf"
+            },
+            {
+                "title": "Investigating Cryptocurrencies",
+                "href": "https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119549314.fmatter"
+            },
+            # {
+            #     "title": "Cryptocurrency Mining For Dummies",
+            #     "href": "https://content.e-bookshelf.de/media/reading/L-18423010-51fe843d37.pdf"
+            # },
+            {
+                "title": "The Crypto Encyclopedia: Coins, Tokens, and Digital Assets from A to Z",
+                "href": "https://www.heg-fr.ch/media/lbdfnyd1/schueffelgroenewegbaldegger2019_crypto-encyclopedia_eng.pdf"
+            },
+            {
+                "title": "Cryptocurrency Trading for Beginners Guide",
+                "href": "https://learnpriceaction.com/wp-content/uploads/2020/08/Cryptocurrency-Trading-Beginners-Guide-PDF.pdf"
+            }
+        ]
+        documents = []
+        for book in crypto_books:
+            chunks = self.download_pdf(book.href)
+            for chunk in chunks:
+                documents.append(
+                    {"title": book.title, "type": "book", "href": book.href, "page_num": chunk["page_number"], "text": chunk["text"]}
+                )
+
+        return documents
