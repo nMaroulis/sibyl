@@ -92,11 +92,11 @@ class DocumentParser:
             for paper in arxiv_client.results(search):
                 print(paper.pdf_url)
                 chunks = self.download_pdf(paper.pdf_url)
-                for chunk in chunks:
-                    documents.append(
-                        {"title": paper.title, "type": "paper", "href":paper.pdf_url, "page_num": chunk["page_number"], "text": chunk["text"]}
-                    )
-
+                if chunks:
+                    for chunk in chunks:
+                        documents.append(
+                            {"title": paper.title, "type": "paper", "href":paper.pdf_url, "page_num": chunk["page_number"], "text": chunk["text"]}
+                        )
         return documents
 
     def download_crypto_books(self):
@@ -156,11 +156,17 @@ class DocumentParser:
             }
         ]
         documents = []
-        for book in crypto_books:
-            chunks = self.download_pdf(book.href)
-            for chunk in chunks:
-                documents.append(
-                    {"title": book.title, "type": "book", "href": book.href, "page_num": chunk["page_number"], "text": chunk["text"]}
-                )
+        for i, book in enumerate(crypto_books):
+            try:
+                chunks = self.download_pdf(book['href'])
+            except Exception as e:
+                chunks = None
+                print(f"{i+1} / {len(crypto_books)}: {book['title']} - FAILED")
 
+            if chunks:
+                for chunk in chunks:
+                    documents.append(
+                        {"title": book['title'], "type": "book", "href": book['href'], "page_num": chunk["page_number"], "text": chunk["text"]}
+                    )
+                print(f"{i+1} / {len(crypto_books)}: {book['title']}")
         return documents

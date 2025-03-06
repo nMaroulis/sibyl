@@ -1,6 +1,7 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-
+from frontend.src.library.wiki_helper.client import fetch_wiki_rag_response
+import time
 
 fix_page_layout('💬 Chatbot')
 set_page_title("Crypto Wiki Chatbot 💬")
@@ -53,6 +54,13 @@ if user_input := st.chat_input("What would you like to know?"):
         st.markdown(user_input)
 
     with st.chat_message("assistant"):
-        bot_response = "Hey"
-        st.markdown(bot_response)
+        bot_response = fetch_wiki_rag_response(user_input)
+        # st.write(bot_response)
+        response_placeholder = st.empty()
+        displayed_text = ""
+        for word in bot_response.split():
+            displayed_text += word + " "
+            response_placeholder.write(displayed_text)  # Update the text
+            time.sleep(0.05)  # Add delay for effect
+
     st.session_state.wiki_chatbot_messages.append({"role": "assistant", "content": bot_response})

@@ -1,13 +1,15 @@
 from llm_hub.llm_models.hf_api_llm import HuggingFaceAPILLM
 from llm_hub.llm_models.openai_api_llm import OpenAIAPILLM
 from llm_hub.llm_models.hf_api_llm_chatbot import HuggingFaceLLMChatbot
+from llm_hub.rag.chromadb_client import ChromaDBClient
+
 
 class LLMClientFactory:
     _clients = {
         'hugging_face': HuggingFaceAPILLM,
         'hugging_face_chatbot': HuggingFaceLLMChatbot,
         'openai': OpenAIAPILLM,
-
+        'wiki_rag': ChromaDBClient,
     }
 
     @classmethod

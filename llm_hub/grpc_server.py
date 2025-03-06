@@ -9,10 +9,12 @@ import os
 
 
 class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
-    def __init__(self, model_name: str = "hugging_face"):
-        self.model = LLMClientFactory.get_client(model_name)
+    def __init__(self):
+        self.model = None # LLMClientFactory.get_client(model_name)
 
     def Predict(self, request, context):
+
+        self.model = LLMClientFactory.get_client(request.model_name)
         response_text = self.model.generate_response(request.input_text)
         return inference_pb2.PredictResponse(output_text=response_text)
 

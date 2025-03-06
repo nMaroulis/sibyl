@@ -8,7 +8,7 @@ import numpy as np
 import faiss
 import random
 from rank_bm25 import BM25Okapi
-# from llm_hub.llm_models.hf_api_llm import HuggingFaceAPILLM
+from llm_hub.llm_models.hf_api_llm import HuggingFaceAPILLM
 import pickle
 
 
@@ -52,7 +52,7 @@ class ChromaDBClient:
             "Nothing found. Let’s give it another shot!"]
 
         # LLM that provides the final response
-        self.llm = None # HuggingFaceAPILLM()
+        self.llm = HuggingFaceAPILLM()
 
     @staticmethod
     def generate_doc_id(text: str) -> str:
@@ -70,41 +70,49 @@ class ChromaDBClient:
             4. page_num: int
         :param documents: A list of dictionaries containing 'text' and 'source' keys.
         """
+        print(f"ChromaDBClient :: Adding {len(documents)} chunks of text...")
         texts, ids, metadatas = [], [], []
 
+        # Get existing IDs from the collection to avoid duplicates
+        existing_ids = list(set(self.collection.get()["ids"]))
+
         for doc in documents:
-            texts.append(doc["text"])
-            ids.append(self.generate_doc_id(doc["text"]))
-            metadatas.append({
-                "title": doc["title"],
-                "type": doc["type"],
-                "href": doc["href"],
-                "page_num": doc["page_num"],
-            })
+            new_id = self.generate_doc_id(doc["text"])
+            if new_id not in existing_ids:
+                existing_ids.append(new_id)
+                texts.append(doc["text"])
+                ids.append(new_id)
+                metadatas.append({
+                    "title": doc["title"],
+                    "type": doc["type"],
+                    "href": doc["href"],
+                    "page_num": doc["page_num"],
+                })
 
-        # Generate embeddings
-        embeddings = self.embedding_model.encode(texts).tolist()
+        if len(texts) > 0:
+            # Generate embeddings
+            embeddings = self.embedding_model.encode(texts).tolist()
 
-        self.collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=texts,
-            metadatas=metadatas,
-        )
+            self.collection.add(
+                ids=ids,
+                embeddings=embeddings,
+                documents=texts,
+                metadatas=metadatas,
+            )
 
-        # # Update FAISS index
-        # self.faiss_index.add(np.array(embeddings).astype("float32"))
-        # self.documents.extend(documents)
+            # # Update FAISS index
+            # self.faiss_index.add(np.array(embeddings).astype("float32"))
+            # self.documents.extend(documents)
 
 
-        # # Update BM25 retriever
-        # tokenized_corpus = [doc["text"].lower().split() for doc in documents]
-        # self.bm25 = BM25Okapi(tokenized_corpus)
-        # Tokenize the documents for BM25 and update the BM25 model
-        # Tokenize the new documents for BM25 and update the BM25 model
-        # self.tokenized_docs.extend([doc.split() for doc in texts])
-        # self.bm25 = BM25Okapi(self.tokenized_docs) # Update BM25 incrementally
-        # self.save_bm25() # Save BM25 state to file for persistence
+            # # Update BM25 retriever
+            # tokenized_corpus = [doc["text"].lower().split() for doc in documents]
+            # self.bm25 = BM25Okapi(tokenized_corpus)
+            # Tokenize the documents for BM25 and update the BM25 model
+            # Tokenize the new documents for BM25 and update the BM25 model
+            # self.tokenized_docs.extend([doc.split() for doc in texts])
+            # self.bm25 = BM25Okapi(self.tokenized_docs) # Update BM25 incrementally
+            # self.save_bm25() # Save BM25 state to file for persistence
 
 
     def load_bm25(self):
@@ -162,7 +170,7 @@ class ChromaDBClient:
         matches = []
         if results.get("documents"):
             for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
-                matches.append({"text": doc, "source": meta["source"]})
+                matches.append({"text": doc, "title": meta["title"], "type": meta["type"], "href": meta["href"], "page_num": meta["page_num"]})
 
         return matches
 
@@ -248,7 +256,7 @@ class ChromaDBClient:
         return hybrid_results
 
 
-    def get_final_response(self, question: str, context: str) -> str:
+    def generate_response(self, question: str) -> str:
         """
         Sends a user query and retrieved context to a Hugging Face-hosted LLM API.
 
@@ -257,15 +265,42 @@ class ChromaDBClient:
         :return: Generated response from the LLM.
         """
 
+        nearest_docs = self.similarity_search(question, 3)
+        context = ""
+        sources = ""
+        for doc in nearest_docs:
+            context += doc["text"]
+            sources += f"- {doc["type"]} (page: {doc["page_num"]}): {doc['title']} | {doc['href']}\n"
+
         prompt = f"""
-        You are an AI assistant specializing in cryptocurrency.
-        Based on the following retrieved context, answer the user's question.
+            You are a knowledgeable AI assistant specialized in cryptocurrency, blockchain, and crypto technology. 
+            Your goal is to provide accurate, clear, and concise answers based on the provided context. 
+            If the context does not contain enough relevant information, acknowledge the limitation rather than making up an answer.
+            
+            ### User Query:
+            {question}
+            
+            ### Context (Relevant Information Extracted from Documents):
+            {context}
+            
+            ### Instructions:
+            - Answer the user’s query **only using the provided context**.  
+            - If the context does not contain enough information, state:  
+              *"The provided information does not contain enough details to answer your question. Would you like me to suggest general insights based on my knowledge?"*  
+            - Keep your response factual, direct, and professional.  
+            - If necessary, reference key concepts from blockchain, DeFi, NFTs, or cryptocurrencies to clarify your answer.  
+            - Use bullet points for structured explanations when helpful.  
+            
+            ### Response:"""
 
-        Question: {question}
-        Context: {context}
+        # prompt = f"""
+        # You are an AI assistant specializing in cryptocurrency.
+        # Based on the following retrieved context, answer the user's question.
+        # Question: {question}
+        # Context: {context}
+        # Provide a concise and accurate response.
+        # """
+        res: str = self.llm.generate_response(prompt, 4000, 0.8)
 
-        Provide a concise and accurate response.
-        """
-
-        res: str = self.llm.generate_response(prompt, 1200, 0.9)
+        res += f"\n\n{sources}"
         return res
