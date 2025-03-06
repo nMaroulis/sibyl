@@ -3,7 +3,7 @@ from frontend.src.library.stock_analysis_helper.client import fetch_stock_detail
 import re
 from frontend.src.library.stock_analysis_helper.plots import risk_gauge, linear_gauge_chart
 from frontend.src.library.client import check_api_status
-
+import time
 
 def extract_symbol(stock_string) -> str | None:
 
@@ -158,7 +158,14 @@ def display_company_info(info: dict, stock_symbol: str):
 def get_advice(symbol: str):
     with st.spinner("Generating advice..."):
         llm_advice = fetch_stock_advice(symbol, "hugging_face")
-        st.markdown(llm_advice)
+
+    response_placeholder = st.empty()
+    displayed_text = ""
+    for word in llm_advice.split():
+        displayed_text += word + " "
+        response_placeholder.write(displayed_text)  # Update the text
+        time.sleep(0.05)  # Add delay for effect
+
 
 def get_stock_analysis(stock_symbol: str):
     symbol = extract_symbol(stock_symbol)

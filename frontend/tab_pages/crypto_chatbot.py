@@ -36,7 +36,6 @@ if not db_status:
 if not llm_status:
     st.link_button("Go to Settings", "http://localhost:8501/settings", type="primary", icon=":material/settings:")
 
-# st.success("**Embeddings Database** and **valid LLM API key** were successfully retrieved.", icon=":material/task_alt:")
 st.html("""<hr style="height:1px; color:#e3e3e3; background-color:#e3e3e3; padding:0; margin:0;">""")
 
 if "wiki_chatbot_messages" in st.session_state:

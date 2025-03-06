@@ -11,6 +11,6 @@ class HuggingFaceLLMChatbot:
             self.client = InferenceClient(model_name, token=api_creds.api_key)
 
 
-    def get_response(self, prompt: str, max_new_tokens: int = 250, temperature: float = 0.7):
+    def generate_response(self, prompt: str, max_new_tokens: int = 250, temperature: float = 0.7):
         response = self.client.text_generation(prompt, max_new_tokens=max_new_tokens, temperature=temperature)
         return response
