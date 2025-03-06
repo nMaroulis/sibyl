@@ -102,10 +102,10 @@ class DocumentParser:
     def download_crypto_books(self):
 
         crypto_books = [
-            # {
-            #     "title": "Cryptocurrency All-in-One For Dummies",
-            #     "href": "https://content.e-bookshelf.de/media/reading/L-17782175-16eef2d176.pdf"
-            # },
+            {
+                "title": "Cryptocurrency All-in-One For Dummies",
+                "href": "https://content.e-bookshelf.de/media/reading/L-17782175-16eef2d176.pdf"
+            },
             {
                 "title": "Cryptocurrencies: A Guide to Getting Started",
                 "href": "https://www3.weforum.org/docs/WEF_Getting_Started_Cryptocurrency_2021.pdf"
@@ -126,10 +126,6 @@ class DocumentParser:
                 "title": "Bitcoin and Cryptocurrency Technologies: A Comprehensive Introduction",
                 "href": "https://pup-assets.imgix.net/onix/images/9780691171692/9780691171692.pdf"
             },
-            # {
-            #     "title": "The Basics of Bitcoins and Blockchains",
-            #     "href": "https://bitsonblocks.net/wp-content/uploads/2018/07/the-basics-contents-draft.pdf"
-            # },
             {
                 "title": "Bitcoin and Beyond",
                 "href": "https://library.oapen.org/bitstream/id/c8a35b6e-03a3-4116-97b9-af50ce7534b6/1000376.pdf"
@@ -142,10 +138,6 @@ class DocumentParser:
                 "title": "Investigating Cryptocurrencies",
                 "href": "https://onlinelibrary.wiley.com/doi/pdf/10.1002/9781119549314.fmatter"
             },
-            # {
-            #     "title": "Cryptocurrency Mining For Dummies",
-            #     "href": "https://content.e-bookshelf.de/media/reading/L-18423010-51fe843d37.pdf"
-            # },
             {
                 "title": "The Crypto Encyclopedia: Coins, Tokens, and Digital Assets from A to Z",
                 "href": "https://www.heg-fr.ch/media/lbdfnyd1/schueffelgroenewegbaldegger2019_crypto-encyclopedia_eng.pdf"
@@ -153,7 +145,15 @@ class DocumentParser:
             {
                 "title": "Cryptocurrency Trading for Beginners Guide",
                 "href": "https://learnpriceaction.com/wp-content/uploads/2020/08/Cryptocurrency-Trading-Beginners-Guide-PDF.pdf"
-            }
+            },
+            {
+                "title": "Cryptocurrency All-in-One For Dummies (2022)",
+                "href": "https://ia802908.us.archive.org/26/items/kiana-danial-tiana-laurence-peter-kent-tyler-bain-michael-g.-solomon-cryptocurre/Kiana%20Danial%2C%20Tiana%20Laurence%2C%20Peter%20Kent%2C%20Tyler%20Bain%2C%20Michael%20G.%20Solomon%20-%20Cryptocurrency%20All-in-One%20For%20Dummies%20%28For%20Dummies%20%28Business%20%26%20Personal%20Finance%29%29-For%20Dummies%20%282022%29.pdf"
+            },
+            # {
+            #     "title": "The Basics of Bitcoins and Blockchains",
+            #     "href": "https://bitsonblocks.net/wp-content/uploads/2018/07/the-basics-contents-draft.pdf"
+            # },
         ]
         documents = []
         for i, book in enumerate(crypto_books):

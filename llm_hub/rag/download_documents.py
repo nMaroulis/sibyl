@@ -12,16 +12,18 @@ if __name__ == '__main__':
     # client.add_documents(docs)
 
     # ADD BOOKS
-    # docs = document_parser.download_crypto_books()
-    # client.add_documents(docs)
+    docs = document_parser.download_crypto_books()
+    client.add_documents(docs)
 
-    collection = client.chroma_client.get_collection("crypto_knowledge")
+    # collection = client.chroma_client.get_collection("crypto_knowledge")
+    # #
+    # # documents = collection.get(include=["metadatas"])
+    # # for i, doc in enumerate(documents["metadatas"]):
+    # #     print(f"{i+1}: {doc["title"]} - {doc["type"]}")
     #
-    # documents = collection.get(include=["metadatas"])
-    # for i, doc in enumerate(documents["metadatas"]):
-    #     print(f"{i+1}: {doc["title"]} - {doc["type"]}")
-
-    res = client.similarity_search("what consensus mechanism does bitcoin use?")
-    print(res)
-    #     if 'title' in doc.metadata:
+    # res = client.similarity_search("what consensus mechanism does bitcoin use?")
+    # print(res)
+    # #     if 'title' in doc.metadata:
     #         print(doc.metadata['title'])
+
+    exit(0)

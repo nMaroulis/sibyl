@@ -114,7 +114,6 @@ class ChromaDBClient:
             # self.bm25 = BM25Okapi(self.tokenized_docs) # Update BM25 incrementally
             # self.save_bm25() # Save BM25 state to file for persistence
 
-
     def load_bm25(self):
         """
         Load the BM25 model and documents from a file for persistence.

@@ -81,6 +81,15 @@ Choose a Company from a list of available company stocks and:
 - Future Release: Rating based on custom ML model
 
 
+### Crypto Wiki Chatbot - Wiki Module 💬
+An interactive chatbot which is based on a custom RAG system, which includes thousands of crypto-related publications, books and articles.
+After you ask a crypto-related question, the embeddings for your query are created and the most similar embeddings are found in the ***chromaDB*** Embeddings Database.
+The similarity method is a hybrid approach, using cosine similarity, BM25 keyword search matching and FAISS indexing similarity.
+
+In order to use this functionality, you have to:
+1. Provide a valid HuggingFace or OpenAI API key, to be stored in the local encrypted Database.
+2. Download the chromaDB Embeddings Database, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
+
 ## Security & Local Deployment
 Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.
 ### Local Databases
