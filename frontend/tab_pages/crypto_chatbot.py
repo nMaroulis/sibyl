@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.wiki_helper.client import fetch_wiki_rag_response
+from frontend.src.library.wiki_helper.client import fetch_wiki_rag_response, fetch_wiki_status
 import time
 
 fix_page_layout('💬 Chatbot')
@@ -30,7 +30,13 @@ with st.expander("✏️ Instructions"):
     if st.button('ℹ️ Learn more'):
         show_info()
 
-st.success("**Embeddings Database** and **valid LLM API key** were successfully retrieved.", icon=":material/task_alt:")
+db_status, llm_status = fetch_wiki_status()
+if not db_status:
+    st.button("Download Wiki RAG Database", icon=":material/download:", type="primary")
+if not llm_status:
+    st.link_button("Go to Settings", "http://localhost:8501/settings", type="primary", icon=":material/settings:")
+
+# st.success("**Embeddings Database** and **valid LLM API key** were successfully retrieved.", icon=":material/task_alt:")
 st.html("""<hr style="height:1px; color:#e3e3e3; background-color:#e3e3e3; padding:0; margin:0;">""")
 
 if "wiki_chatbot_messages" in st.session_state:
@@ -53,12 +59,13 @@ if user_input := st.chat_input("What would you like to know?"):
     with st.chat_message("user"):
         st.markdown(user_input)
 
+    # RESPONSE ELEMENT
     with st.chat_message("assistant"):
-        bot_response = fetch_wiki_rag_response(user_input)
-        # st.write(bot_response)
+        with st.spinner("Thinking..."):
+            bot_response = fetch_wiki_rag_response(user_input)
         response_placeholder = st.empty()
         displayed_text = ""
-        for word in bot_response.split():
+        for word in bot_response.split(" "):
             displayed_text += word + " "
             response_placeholder.write(displayed_text)  # Update the text
             time.sleep(0.05)  # Add delay for effect

@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from backend.src.stock_analyst.yf_client import get_stock_details
-from backend.src.stock_analyst.portfolio_archive import fetch_senate_trades
 from grpc import insecure_channel
 from backend.config import inference_pb2
 from backend.config import inference_pb2_grpc
-
+from backend.src.wiki.funcs import check_exists_chroma_db, check_exists_llm_api
 
 # APIRouter creates path operations for user module
 router = APIRouter(
@@ -27,3 +25,12 @@ def get_llm_advice(query: str):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=404, detail="LLM API failed")
+
+
+@router.get("/rag/status")
+def get_rag_status():
+    try:
+        return {"embeddings_db": check_exists_chroma_db(), "llm_api": check_exists_llm_api("hugging_face")}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=404, detail="Rag status failed!")
