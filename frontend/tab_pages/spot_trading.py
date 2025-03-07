@@ -1,8 +1,9 @@
 import streamlit as st
-from binance.enums import TIME_IN_FORCE_GTC, TIME_IN_FORCE_IOC, TIME_IN_FORCE_FOK
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions
+from frontend.src.library.spot_trade_helper.client import post_spot_trade_test
+
 
 fix_page_layout('spot trading')
 set_page_title("Spot Trading")
@@ -36,7 +37,10 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             crypto_list = ["BTC"]
             crypto_list.sort()
             to_coin = st.selectbox('Quote Asset (to):', options=crypto_list, index=0)
-        st.write(f"**Trading pair**: {to_coin+from_coin}")
+        trading_pair = to_coin+from_coin
+        st.write(f"""
+        - **Trading pair**: {trading_pair}
+        - You'll trade {quantity} {from_coin} for X {to_coin}""")
         # pair_symbol = get_crypto_name_regex(st.session_state['target_coin']) + st.session_state['from_coin']
         # min_order_limit = fetch_trade_info_minimum_order(st.session_state['trade_exchange_api'], pair_symbol)
         # if st.session_state['buy_amount'] >= min_order_limit:
@@ -46,6 +50,8 @@ if len(st.session_state["available_exchange_apis"]) > 0:
 
     st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>2. Trading Options 📈</h3>""")
     with st.container(border=False):
+
+        side = st.segmented_control("Order Side", options=["Buy", "Sell"], default="Buy")
         col10 = st.columns(1)
         with col10[0]:
             order_type = st.selectbox(
@@ -54,12 +60,18 @@ if len(st.session_state["available_exchange_apis"]) > 0:
                  "OCO"]
             )
             st.caption("Select between a Limit or Market order. Limit orders are added to the order book, often with lower 'maker' fees, while Market orders are matched instantly with existing orders, incurring 'taker' fees.")
+
+        price = None
+        stop_price = None
+        take_profit_price = None
         col20, col21, col22 = st.columns(3)
         with col20:
+
             if order_type in ["Limit", "Stop-Loss Limit", "Take-Profit Limit"]:
                 price = st.number_input("Limit Price:", min_value=0.0001, step=0.0001, format="%.4f")
             else:
                 st.number_input("Limit Price:", min_value=0.0001, step=0.0001, format="%.4f", disabled=True)
+            st.toggle("Percentage [%]", value=False)
         with col21:
             if order_type in ["Stop-Loss", "Stop-Loss Limit", "Trailing Stop"]:
                 stop_price = st.number_input("Stop Price:", min_value=0.0001, step=0.0001, format="%.4f")
@@ -70,70 +82,42 @@ if len(st.session_state["available_exchange_apis"]) > 0:
                 take_profit_price = st.number_input("Take Profit Price:", min_value=0.0001, step=0.0001, format="%.4f")
             else:
                 st.number_input("Take Profit Price:", min_value=0.0001, step=0.0001, format="%.4f", disabled=True)
-        side = st.segmented_control("Order Side", options=["Buy", "Sell"], default="Buy")
 
-# User selects trading pair
-trading_pair = st.text_input("Enter Trading Pair (e.g., BTCUSDT):", "BTCUSDT")
+        col30, col31, col32 = st.columns(3)
+        with col30:
+            time_in_force = st.pills("Time in Force:", ["GTC", "IOC", "FOK"], default="GTC")
+            with st.popover("What is time in force?", icon=":material/help:"):
+                st.write("""
+                These are Time in Force (TIF) options, which determine how long an order remains active before it is executed or canceled. They are commonly used in trading platforms, including Binance.
+                Explanation of TIF options:
+                1. TIME_IN_FORCE_GTC (Good-Til-Canceled)
+                - The order remains active until it is fully executed or manually canceled.
+                - Suitable for Limit orders, ensuring they stay open until filled at the specified price.
+                - Example: If you place a limit order to buy BTC at $50,000, it will stay open until someone is willing to sell at that price.
+                2. TIME_IN_FORCE_IOC (Immediate-Or-Cancel)
+                - The order is executed immediately (fully or partially), and any unfilled portion is canceled.
+                - Useful for traders who want quick execution without waiting.
+                - Example: If you try to buy 1 BTC at $50,000, but only 0.7 BTC is available at that price, it will buy 0.7 BTC and cancel the remaining 0.3 BTC.
+                3. TIME_IN_FORCE_FOK (Fill-Or-Kill)
+                - The order must be executed in full immediately, or it is completely canceled.
+                - Ensures you either get your exact order amount or nothing at all.
+                - Example: If you place an FOK order to buy 1 BTC at $50,000, but only 0.9 BTC is available at that price, the entire order is canceled.""")
 
-# Order type selection
-order_type = st.selectbox(
-    "Select Order Type:",
-    ["Market", "Limit", "Stop-Loss", "Stop-Loss Limit", "Take-Profit", "Take-Profit Limit", "Trailing Stop", "OCO"]
-)
+        with col31:
+            post_only = st.toggle("Post-Only Order", value=False)
+            st.caption("If enabled, the order will only be posted as a maker order, ensuring it adds liquidity.")
+        with col32:
+            iceberg_qty = st.number_input("Iceberg Quantity (Optional):", min_value=0.0, step=0.0001, format="%.4f")
 
-# Common order fields
-side = st.selectbox("Order Side:", ["BUY", "SELL"])
-quantity = st.number_input("Quantity:", min_value=0.0001, step=0.0001, format="%.4f")
-
-st.write("""
-These are Time in Force (TIF) options, which determine how long an order remains active before it is executed or canceled. They are commonly used in trading platforms, including Binance.
-Explanation of TIF options:
-1. TIME_IN_FORCE_GTC (Good-Til-Canceled)
-- The order remains active until it is fully executed or manually canceled.
-- Suitable for Limit orders, ensuring they stay open until filled at the specified price.
-- Example: If you place a limit order to buy BTC at $50,000, it will stay open until someone is willing to sell at that price.
-2. TIME_IN_FORCE_IOC (Immediate-Or-Cancel)
-- The order is executed immediately (fully or partially), and any unfilled portion is canceled.
-- Useful for traders who want quick execution without waiting.
-- Example: If you try to buy 1 BTC at $50,000, but only 0.7 BTC is available at that price, it will buy 0.7 BTC and cancel the remaining 0.3 BTC.
-3. TIME_IN_FORCE_FOK (Fill-Or-Kill)
-- The order must be executed in full immediately, or it is completely canceled.
-- Ensures you either get your exact order amount or nothing at all.
-- Example: If you place an FOK order to buy 1 BTC at $50,000, but only 0.9 BTC is available at that price, the entire order is canceled.""")
-
-time_in_force = st.selectbox("Time in Force:", [TIME_IN_FORCE_GTC, TIME_IN_FORCE_IOC, TIME_IN_FORCE_FOK])
-st.write("If enabled, the order will only be posted as a maker order, ensuring it adds liquidity.")
-post_only = st.checkbox("Post-Only Order")
-iceberg_qty = st.number_input("Iceberg Quantity (Optional):", min_value=0.0, step=0.0001, format="%.4f")
-
-price = None
-stop_price = None
-take_profit_price = None
-
-if order_type in ["Limit", "Stop-Loss Limit", "Take-Profit Limit"]:
-    price = st.number_input("Limit Price:", min_value=0.0001, step=0.0001, format="%.4f")
-if order_type in ["Stop-Loss", "Stop-Loss Limit", "Trailing Stop"]:
-    stop_price = st.number_input("Stop Price:", min_value=0.0001, step=0.0001, format="%.4f")
-if order_type in ["Take-Profit", "Take-Profit Limit"]:
-    take_profit_price = st.number_input("Take Profit Price:", min_value=0.0001, step=0.0001, format="%.4f")
-
-import requests
 # Execute trade
-if st.button("Place Test Order"):
-    url = f"http://127.0.0.1:8000/broker/trade/spot/test"
-
-    data = {
-        "exchange": "binance_testnet",
-        "order_type": order_type.lower(),
-        "trading_pair": trading_pair,
-        "side": side,
-        "quantity": quantity,
-        "price": price,
-        "stop_price": stop_price,
-        "take_profit_price": take_profit_price,
-        "time_in_force": time_in_force,
-    }
-    data = {k: v for k, v in data.items() if v is not None}
-
-    response = requests.post(url=url, json=data)
-    st.write(response.json())
+if st.button("Place Test Order", type="primary"):
+    res = post_spot_trade_test(st.session_state['trade_exchange_api'], order_type, trading_pair, side, quantity, price, stop_price, take_profit_price, time_in_force)
+    if res is None or "status" not in res.keys():
+        st.error("Something went wrong when parsing the server response.")
+    else:
+        if res["status"] == "success":
+            st.success("Order is **valid** and ready to be placed.")
+            if st.button("Place Spot Order", type="primary"):
+                st.write("nice")
+        else:
+            st.warning(f"Order is **invalid**. Error message {res["message"]}")

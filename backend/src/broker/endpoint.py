@@ -1,5 +1,4 @@
-from typing import Optional
-
+from typing import Optional, Dict
 from fastapi import APIRouter, HTTPException
 import time
 from database.trade_history_db_client import TradeHistoryDBClient
@@ -125,16 +124,13 @@ class SpotTradeParams(BaseModel):
 
 
 @router.post("/trade/spot/test")
-def post_spot_order(spot_trade_params: SpotTradeParams):
+def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
 
     client = abc.get_client(spot_trade_params.exchange)
     print(spot_trade_params)
     spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
     res = client.place_spot_test_order(**spot_trade_params_dict)
 
-    if res:
-        return {"success": 'trade is possible!'}
-    else:
-        return {"error": 'Trade not possible!'}
+    return res
 
 

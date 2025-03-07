@@ -120,7 +120,7 @@ class BinanceClient(ExchangeAPIClient):
             raise ValueError("Invalid order type")
 
 
-    def place_spot_test_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> bool:
+    def place_spot_test_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:
         """
         Same as place_spot_order but to test if the trade is possible.
 
@@ -135,9 +135,8 @@ class BinanceClient(ExchangeAPIClient):
                     type=ORDER_TYPE_MARKET,
                     quantity=quantity
                 )
-                print(res)
             elif order_type == "limit":
-                self.client.create_test_order(
+                res = self.client.create_test_order(
                     symbol=trading_pair,
                     side=side,
                     type=ORDER_TYPE_LIMIT,
@@ -146,7 +145,7 @@ class BinanceClient(ExchangeAPIClient):
                     timeInForce=time_in_force
                 )
             elif order_type == "stop-Loss":
-                self.client.create_test_order(
+                res = self.client.create_test_order(
                     symbol=trading_pair,
                     side=side,
                     type=ORDER_TYPE_STOP_LOSS,
@@ -154,7 +153,7 @@ class BinanceClient(ExchangeAPIClient):
                     stopPrice=stop_price
                 )
             elif order_type == "stop-loss limit":
-                self.client.create_test_order(
+                res = self.client.create_test_order(
                     symbol=trading_pair,
                     side=side,
                     type=ORDER_TYPE_STOP_LOSS_LIMIT,
@@ -164,7 +163,7 @@ class BinanceClient(ExchangeAPIClient):
                     timeInForce=time_in_force
                 )
             elif order_type == "take-profit":
-                self.client.create_test_order(
+                res = self.client.create_test_order(
                     symbol=trading_pair,
                     side=side,
                     type=ORDER_TYPE_TAKE_PROFIT,
@@ -172,7 +171,7 @@ class BinanceClient(ExchangeAPIClient):
                     stopPrice=take_profit_price
                 )
             elif order_type == "take-profit limit":
-                self.client.create_test_order(
+                res = self.client.create_test_order(
                     symbol=trading_pair,
                     side=side,
                     type=ORDER_TYPE_TAKE_PROFIT_LIMIT,
@@ -182,7 +181,7 @@ class BinanceClient(ExchangeAPIClient):
                     timeInForce=time_in_force
                 )
             elif order_type == "oco":
-                self.client.create_test_order(
+                res = self.client.create_test_order(
                     symbol=trading_pair,
                     side=side,
                     quantity=quantity,
@@ -190,11 +189,13 @@ class BinanceClient(ExchangeAPIClient):
                     stopPrice=stop_price
                 )
             else:
-                return False
-            return True
+                return {"status": "error", "message": "Invalid order type"}
+            if res == {}: # SUCCESS
+                return {"status": "success", "message": ""}
+            else:
+                return {"status": "error", "message": res}
         except Exception as e:
-            print(e)
-            return False
+            return {"status": "error", "message": str(e)}
 
     def fetch_market_price(self, pair: str) -> dict:
         """
