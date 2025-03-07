@@ -5,6 +5,7 @@ pages = {
         st.Page("tab_pages/wallet.py", title="Wallet", icon=":material/account_balance_wallet:"),
     ],
     "Trading": [
+        st.Page("tab_pages/spot_trading.py", title="SPOT Trading", icon=":material/price_change:"),
         st.Page("tab_pages/strategy.py", title="Strategy", icon=":material/strategy:"),
         st.Page("tab_pages/trading_report.py", title="Trading Report", icon=":material/youtube_searched_for:"),
     ],

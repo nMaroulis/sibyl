@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 import time
 from database.trade_history_db_client import TradeHistoryDBClient
@@ -66,7 +68,7 @@ def is_buy_order_possible(exchange: str , symbol: str):
 
 
 @router.get("/trade/convert/info")
-def send_new_convert_order(exchange: str):
+def send_new_convert_order(exchange: str) -> dict[str, str]:
 
     client = ExchangeClientFactory.get_client(exchange)
     res = client.check_swap_eligibility('USDT', 'BTC', 10)  # dummy vars
@@ -105,4 +107,34 @@ def get_single_order_status(exchange_api: str, symbol: str, order_id: str):
         return res
     else:
         return {"error": 'Trade not found!'}
+
+
+
+from backend.src.exchange_client_v2.exchange_client_factory import ExchangeClientFactory as abc
+
+class SpotTradeParams(BaseModel):
+    exchange: str
+    order_type: str
+    trading_pair: str
+    side: str
+    quantity: float
+    price: Optional[float] = None
+    stop_price: Optional[float] = None
+    take_profit_price: Optional[float] = None
+    time_in_force: Optional[str] = None
+
+
+@router.post("/trade/spot/test")
+def post_spot_order(spot_trade_params: SpotTradeParams):
+
+    client = abc.get_client(spot_trade_params.exchange)
+    print(spot_trade_params)
+    spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
+    res = client.place_spot_test_order(**spot_trade_params_dict)
+
+    if res:
+        return {"success": 'trade is possible!'}
+    else:
+        return {"error": 'Trade not possible!'}
+
 
