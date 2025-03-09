@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Union
 
 
 class ExchangeAPIClient(ABC):
@@ -51,7 +51,9 @@ class ExchangeAPIClient(ABC):
         Same as place_spot_order but to test if the trade is possible.
 
         Returns:
-            True if trade is possible, False if not.
+            Dict with result
+                - status: 'success' or 'error'
+                - message: Empty '' in case of success, Error message in case of error.
         """
         pass
 
@@ -77,5 +79,64 @@ class ExchangeAPIClient(ABC):
 
         Returns:
             dict: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
+        """
+        pass
+
+    @abstractmethod
+    def get_available_coins(self, pair: str = "all") -> Optional[List[str]]:
+        """
+        Fetches a list of unique base assets (coins) available for trading on the Exchange.
+
+        Args:
+            pair (str, optional):
+                - If `"all"` (default), returns all coins available for trading.
+                - If a specific trading pair (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given pair.
+
+        Returns:
+            Optional[List[str]]:
+                - A list of unique base assets that match the specified trading pair.
+                - Returns None if an error occurs.
+
+        Raises:
+            Exception: Logs an error message if the API request fails.
+        """
+        pass
+
+    @abstractmethod
+    def get_price_history(self, symbol: str, interval: str = "1d", plot_type: str = "line", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+        """
+        Fetches historical price data for a given symbol from the client.
+
+        Args:
+            symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
+            interval (str): Time interval for the price data (e.g., "1d", "1h"). Default is "1d".
+            plot_type (str): Type of data format to return. "line" returns only open prices,
+                            while other values return detailed OHLC data. Default is "line".
+            limit (int): Number of historical records to fetch. Default is 100.
+
+        Returns:
+            Optional[List[Dict[str, float]]]: A list of dictionaries containing price history data,
+                                              or None if an error occurs.
+        """
+        pass
+
+
+    @abstractmethod
+    def get_minimum_trade_value(self, symbol: str) -> Optional[Dict[str, Union[float, str]]]:
+        """
+        Retrieves the minimum trade value required for a given trading pair.
+
+        This function queries the exchange for the minimum allowable trade value,
+        typically defined in the quote currency. The implementation varies
+        depending on the exchange API.
+
+        Args:
+            symbol (str): Trading pair symbol (e.g., "BTCUSDT").
+
+        Returns:
+            Dict[str, Union[float, str]] | None:
+                - {'min_trade_value': float} if successful.
+                - None if no minimum trade value is found.
+                - None if an exception occurs.
         """
         pass

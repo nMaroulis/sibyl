@@ -2,7 +2,8 @@ import streamlit as st
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions
-from frontend.src.library.spot_trade_helper.client import post_spot_trade_test
+from frontend.src.library.spot_trade_helper.client import post_spot_trade_test, fetch_minimum_trade_value
+from frontend.src.library.analytics_helper.client import fetch_available_coins
 
 
 fix_page_layout('spot trading')
@@ -33,20 +34,20 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             from_coin = st.selectbox('Base Asset (from)', options=['USDT'], disabled=True)
             st.caption("Currently only USDT is available as an Asset to use for Trading.")
         with col02:
-            # crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'])
-            crypto_list = ["BTC"]
+            crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'])
+            # crypto_list = ["BTC"]
             crypto_list.sort()
             to_coin = st.selectbox('Quote Asset (to):', options=crypto_list, index=0)
         trading_pair = to_coin+from_coin
-        st.write(f"""
+        st.info(f"""
         - **Trading pair**: {trading_pair}
         - You'll trade {quantity} {from_coin} for X {to_coin}""")
         # pair_symbol = get_crypto_name_regex(st.session_state['target_coin']) + st.session_state['from_coin']
-        # min_order_limit = fetch_trade_info_minimum_order(st.session_state['trade_exchange_api'], pair_symbol)
-        # if st.session_state['buy_amount'] >= min_order_limit:
-        #     st.success("The **Minimum buy order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is satisfied!")
-        # else:
-        #     st.error("The **Minimum Buy Order Limit** of **" + str(min_order_limit) + "** for the " + pair_symbol + " pair is NOT satisfied.")
+        min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)
+        if quantity >= min_trade_limit:
+            st.success("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/task_alt:")
+        else:
+            st.error("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/warning:")
 
     st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>2. Trading Options 📈</h3>""")
     with st.container(border=False):
@@ -108,16 +109,30 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             st.caption("If enabled, the order will only be posted as a maker order, ensuring it adds liquidity.")
         with col32:
             iceberg_qty = st.number_input("Iceberg Quantity (Optional):", min_value=0.0, step=0.0001, format="%.4f")
+else:
+    html_content = """
+    <div style="text-align: center; color: #5E5E5E; font-weight: bold; font-size: 24px;">
+        <br>
+        No Exchange API connected.
+        <br>
+    </div>
+    """
+    st.html(html_content)
+    st.link_button("Go to Settings", "http://localhost:8501/settings", use_container_width=True, type="tertiary", icon=":material/settings:")
 
+st.divider()
+st.caption(f"By placing the order, a **test order** will be first executed. If it is successful, then the actual order will be sent to the {st.session_state['trade_exchange_api']} to be executed. If the test order fails, you'll get the trade error message.")
 # Execute trade
-if st.button("Place Test Order", type="primary"):
-    res = post_spot_trade_test(st.session_state['trade_exchange_api'], order_type, trading_pair, side, quantity, price, stop_price, take_profit_price, time_in_force)
+if st.button("Place Order", type="primary"):
+    with st.spinner("Sending Test Order..."):
+        res = post_spot_trade_test(st.session_state['trade_exchange_api'], order_type, trading_pair, side, quantity, price, stop_price, take_profit_price, time_in_force)
     if res is None or "status" not in res.keys():
-        st.error("Something went wrong when parsing the server response.")
+        st.error("Something went wrong when parsing the server response.", icon=":material/warning:")
     else:
         if res["status"] == "success":
-            st.success("Order is **valid** and ready to be placed.")
-            if st.button("Place Spot Order", type="primary"):
-                st.write("nice")
+            st.success("Test Order was **validated**, your Trade Order being placed right now...", icon=":material/task_alt:")
+            with st.spinner("Placing Order..."):
+                st.write("OK")
+                st.toast("Order has been placed.", icon=":material/task_alt:")
         else:
-            st.warning(f"Order is **invalid**. Error message {res["message"]}")
+            st.warning(f"Order is **invalid**. Error message {res["message"]}", icon=":material/warning:")

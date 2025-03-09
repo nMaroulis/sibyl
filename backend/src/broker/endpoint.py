@@ -109,7 +109,7 @@ def get_single_order_status(exchange_api: str, symbol: str, order_id: str):
 
 
 
-from backend.src.exchange_client_v2.exchange_client_factory import ExchangeClientFactory as abc
+from backend.src.exchange_client_v2.exchange_client_factory import ExchangeClientFactory as v2_exchange_client
 
 class SpotTradeParams(BaseModel):
     exchange: str
@@ -126,7 +126,7 @@ class SpotTradeParams(BaseModel):
 @router.post("/trade/spot/test")
 def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
 
-    client = abc.get_client(spot_trade_params.exchange)
+    client = v2_exchange_client.get_client(spot_trade_params.exchange)
     print(spot_trade_params)
     spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
     res = client.place_spot_test_order(**spot_trade_params_dict)
@@ -134,3 +134,14 @@ def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
     return res
 
 
+@router.get("/trade/check/minimum_value")
+def get_min_trade_value(exchange: str , symbol: str):
+
+    client = v2_exchange_client.get_client(exchange)
+
+    res = client.get_minimum_trade_value(symbol)
+
+    if res:
+        return res
+    else:
+        raise HTTPException(status_code=500, detail="Fetching minimum trade value failed.")

@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import Optional, List
 from backend.src.analyst.analyst_functions import update_coin_symbol_name_map
-from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
+from backend.src.exchange_client_v2.exchange_client_factory import ExchangeClientFactory
 
 
 # APIRouter creates path operations for user module
@@ -13,18 +13,23 @@ router = APIRouter(
 
 
 @router.get("/coin/price_history")
-def get_price_history(exchange: str = "binance_testnet", symbol: str = "BTCUSDT", interval: str = '1d', plot_type='line', limit: int = 100) -> List[dict]:
+def get_price_history(exchange: str, symbol: str, interval: str = '1d', plot_type='line', limit: int = 100) -> List[dict]:
     client = ExchangeClientFactory.get_client(exchange)
-    res = client.fetch_price_history(symbol, interval, plot_type, limit)
-    return res
+    res = client.get_price_history(symbol, interval, plot_type, limit)
+    if res:
+        return res
+    else:
+        raise HTTPException(status_code=500, detail="Failed to get price history")
 
 
 @router.get("/exchange_info/available_coins/{exchange_api}")
 def get_available_coins(exchange_api: str = 'binance_testnet'):
     client = ExchangeClientFactory.get_client(exchange_api)
-    res = client.fetch_available_coins()
-    return res
-
+    res = client.get_available_coins()
+    if res:
+        return res
+    else:
+        raise HTTPException(status_code=500, detail="Failed to get available coins")
 
 @router.put("/available_coins/symbol_name_map/update")
 def update_coin_symbol_name_map():

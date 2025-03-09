@@ -4,7 +4,7 @@ from binance.client import Client
 from binance.exceptions import BinanceAPIException
 from binance.enums import ORDER_TYPE_STOP_LOSS, ORDER_TYPE_LIMIT, ORDER_TYPE_MARKET, ORDER_TYPE_STOP_LOSS_LIMIT, \
     ORDER_TYPE_TAKE_PROFIT_LIMIT, ORDER_TYPE_TAKE_PROFIT
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Union
 
 
 class BinanceClient(ExchangeAPIClient):
@@ -125,7 +125,9 @@ class BinanceClient(ExchangeAPIClient):
         Same as place_spot_order but to test if the trade is possible.
 
         Returns:
-            True if trade is possible, False if not.
+            Dict with result
+                - status: 'success' or 'error'
+                - message: Empty '' in case of success, Error message in case of error.
         """
         try:
             if order_type == "market":
@@ -255,3 +257,103 @@ class BinanceClient(ExchangeAPIClient):
             }
         except BinanceAPIException as e:
             return {"error": str(e)}
+
+
+    def get_available_coins(self, pair: str = "all") -> Optional[List[str]]:
+        """
+        Fetches a list of unique base assets (coins) available for trading on Binance.
+
+        Args:
+            pair (str, optional):
+                - If `"all"` (default), returns all coins available for trading.
+                - If a specific trading pair (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given pair.
+
+        Returns:
+            Optional[List[str]]:
+                - A list of unique base assets that match the specified trading pair.
+                - Returns None if an error occurs.
+
+        Raises:
+            BinanceAPIException: Logs an error message if the Binance API request fails.
+        """
+        try:
+            exchange_info = self.client.get_exchange_info()
+            if pair == "all":
+                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if s['status'] == 'TRADING']
+            else:
+                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if pair in s['symbol']]
+            return list(set(available_coins))
+        except BinanceAPIException as e:
+            print(f"Binance Exchange Client :: get_available_coins :: {str(e)}")
+            return None
+
+
+    def get_price_history(self, symbol: str, interval: str = "1d", plot_type: str = "line", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+        """
+        Fetches historical price data for a given symbol from the client.
+
+        Args:
+            symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
+            interval (str): Time interval for the price data (e.g., "1d", "1h"). Default is "1d".
+            plot_type (str): Type of data format to return. "line" returns only open prices,
+                            while other values return detailed OHLC data. Default is "line".
+            limit (int): Number of historical records to fetch. Default is 100.
+
+        Returns:
+            Optional[List[Dict[str, float]]]: A list of dictionaries containing price history data,
+                                              or None if an error occurs.
+        """
+        try:
+            klines = self.client.get_klines(symbol=symbol.upper(), interval=interval, limit=limit)
+
+            if plot_type == "line":
+                return [{"Open Time": entry[0], "Open Price": float(entry[1])} for entry in klines]
+            else:
+                return [
+                    {
+                        "Open Time": entry[0],
+                        "Open Price": float(entry[1]),
+                        "Highs": float(entry[2]),
+                        "Lows": float(entry[3]),
+                        "Closing Price": float(entry[4]),
+                    }
+                    for entry in klines
+                ]
+
+        except Exception as e:
+            print(f"get_price_history :: Error fetching price history: {e}")
+            return None
+
+
+    def get_minimum_trade_value(self, symbol: str) -> Optional[Dict[str, Union[float, str]]]:
+        """
+        Retrieves the minimum trade value required for a given trading pair.
+
+        This function queries the exchange for the minimum allowable trade value,
+        typically defined in the quote currency. The implementation varies
+        depending on the exchange API.
+
+        Args:
+            symbol (str): Trading pair symbol (e.g., "BTCUSDT").
+
+        Returns:
+            Dict[str, Union[float, str]] | None:
+                - {'min_trade_value': float} if successful.
+                - None if no minimum trade value is found.
+                - None if an exception occurs.
+        """
+        try:
+            exchange_info = self.client.get_symbol_info(symbol.upper())
+            if not exchange_info:
+                return {"error": f"Symbol {symbol} not found"}
+
+            for filter_item in exchange_info.get("filters", []):
+                if filter_item.get("filterType") == "NOTIONAL":
+                    return {"min_trade_value": float(filter_item.get("minNotional", -1))}
+            return None
+        except BinanceAPIException as e:
+            print(f"Binance API error: {e}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return None
