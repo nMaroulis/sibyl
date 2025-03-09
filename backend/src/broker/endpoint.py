@@ -145,3 +145,14 @@ def get_min_trade_value(exchange: str , symbol: str):
         return res
     else:
         raise HTTPException(status_code=500, detail="Fetching minimum trade value failed.")
+
+
+@router.get("/trade/asset/current_price")
+def get_current_asset_price(exchange: str , pair_symbol: str) -> dict[str, float]:
+
+    client = v2_exchange_client.get_client(exchange)
+    res = client.get_current_asset_price(pair_symbol)
+    if res:
+        return {"price": res}
+    else:
+        raise HTTPException(status_code=500, detail="Fetching asset price failed.")

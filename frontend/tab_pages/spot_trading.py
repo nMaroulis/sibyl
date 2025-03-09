@@ -2,7 +2,7 @@ import streamlit as st
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions
-from frontend.src.library.spot_trade_helper.client import post_spot_trade_test, fetch_minimum_trade_value
+from frontend.src.library.spot_trade_helper.client import post_spot_trade_test, fetch_minimum_trade_value, fetch_current_asset_price
 from frontend.src.library.analytics_helper.client import fetch_available_coins
 
 
@@ -29,22 +29,25 @@ if len(st.session_state["available_exchange_apis"]) > 0:
     with st.container(border=False):
         col00, col01, col02 = st.columns(3)
         with col00:
-            quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)
+            quote_asset = st.selectbox('Quote Asset (from)', options=['USDT'], disabled=True)
+            st.caption("Currently only USDT is available as a Quote asset for Trading.")
         with col01:
-            from_coin = st.selectbox('Base Asset (from)', options=['USDT'], disabled=True)
-            st.caption("Currently only USDT is available as an Asset to use for Trading.")
-        with col02:
-            crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'])
-            # crypto_list = ["BTC"]
+            crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'], quote_asset=quote_asset)
             crypto_list.sort()
-            to_coin = st.selectbox('Quote Asset (to):', options=crypto_list, index=0)
-        trading_pair = to_coin+from_coin
+            base_asset = st.selectbox('Base Asset (to):', options=crypto_list, index=0)
+        with col02:
+            st.toggle("Quote Market Order", value=False) # TODO
+            quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)
+
+        trading_pair = base_asset+quote_asset
+        current_price = fetch_current_asset_price(st.session_state['trade_exchange_api'], trading_pair)
         st.info(f"""
         - **Trading pair**: {trading_pair}
-        - You'll trade {quantity} {from_coin} for X {to_coin}""")
-        # pair_symbol = get_crypto_name_regex(st.session_state['target_coin']) + st.session_state['from_coin']
+        - **{base_asset} Current price**: {current_price} USDT
+        - You'll trade {round(quantity*current_price,4)} {quote_asset} for {quantity} {base_asset}""")
+
         min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)
-        if quantity >= min_trade_limit:
+        if quantity*current_price >= min_trade_limit:
             st.success("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/task_alt:")
         else:
             st.error("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/warning:")

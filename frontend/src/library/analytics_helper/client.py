@@ -13,10 +13,10 @@ def fetch_price_history(exchange: str, symbol: str, time_int: str, time_limit: i
     return response.json()
 
 
-@cache_data(ttl=100000) # TODO REMOVE DEFAULT VALUE, FIX METHOD CALLS
-def fetch_available_coins(exchange: str = 'binance'):
+@cache_data(ttl=1000)
+def fetch_available_coins(exchange: str = "binance", quote_asset: str = "all"):
 
-    url = f"{BACKEND_SERVER_ADDRESS}/analyst/exchange_info/available_coins/{exchange.lower().replace(" ", "_")}"
+    url = f"{BACKEND_SERVER_ADDRESS}/analyst/exchange_info/available_coins?exchange={exchange.lower().replace(" ", "_")}&quote_asset={quote_asset}"
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()

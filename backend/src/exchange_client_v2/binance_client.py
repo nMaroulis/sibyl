@@ -259,18 +259,18 @@ class BinanceClient(ExchangeAPIClient):
             return {"error": str(e)}
 
 
-    def get_available_coins(self, pair: str = "all") -> Optional[List[str]]:
+    def get_available_coins(self, quote_asset: str = "all") -> Optional[List[str]]:
         """
         Fetches a list of unique base assets (coins) available for trading on Binance.
 
         Args:
-            pair (str, optional):
+            quote_asset (str, optional):
                 - If `"all"` (default), returns all coins available for trading.
-                - If a specific trading pair (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given pair.
+                - If a specific trading quote_asset (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given quote_asset.
 
         Returns:
             Optional[List[str]]:
-                - A list of unique base assets that match the specified trading pair.
+                - A list of unique base assets that match the specified trading quote_asset.
                 - Returns None if an error occurs.
 
         Raises:
@@ -278,10 +278,10 @@ class BinanceClient(ExchangeAPIClient):
         """
         try:
             exchange_info = self.client.get_exchange_info()
-            if pair == "all":
+            if quote_asset == "all":
                 available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if s['status'] == 'TRADING']
             else:
-                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if pair in s['symbol']]
+                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if quote_asset in s['symbol']]
             return list(set(available_coins))
         except BinanceAPIException as e:
             print(f"Binance Exchange Client :: get_available_coins :: {str(e)}")
@@ -356,4 +356,25 @@ class BinanceClient(ExchangeAPIClient):
             return None
         except Exception as e:
             print(f"Unexpected error: {e}")
+            return None
+
+
+    def get_current_asset_price(self, pair_symbol: str) -> float | None:
+        """
+        Function to get the current price of an asset in a specific quote currency using Binance API.
+
+        :param pair_symbol: The trading pair symbol (e.g., 'BTCUSDT', 'ETHUSDT')
+        :return: Current price of the asset in the specified quote currency
+        """
+        pair_symbol = pair_symbol.upper()
+        try:
+            # Get the current price for the symbol
+            ticker = self.client.get_symbol_ticker(symbol=pair_symbol)
+            if ticker:
+                return float(ticker['price'])
+            else:
+                print(f"Error: No data found for symbol {pair_symbol}")
+                return None
+        except Exception as e:
+            print(f"Error: {e}")
             return None

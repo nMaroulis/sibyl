@@ -22,10 +22,10 @@ def get_price_history(exchange: str, symbol: str, interval: str = '1d', plot_typ
         raise HTTPException(status_code=500, detail="Failed to get price history")
 
 
-@router.get("/exchange_info/available_coins/{exchange_api}")
-def get_available_coins(exchange_api: str = 'binance_testnet'):
-    client = ExchangeClientFactory.get_client(exchange_api)
-    res = client.get_available_coins()
+@router.get("/exchange_info/available_coins")
+def get_available_coins(exchange: str = 'binance_testnet', quote_asset: str = "all"):
+    client = ExchangeClientFactory.get_client(exchange)
+    res = client.get_available_coins(quote_asset)
     if res:
         return res
     else:
