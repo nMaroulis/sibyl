@@ -83,7 +83,7 @@ class ExchangeAPIClient(ABC):
         pass
 
     @abstractmethod
-    def get_available_coins(self, quote_asset: str = "all") -> Optional[List[str]]:
+    def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
         """
         Fetches a list of unique base assets (coins) available for trading on the Exchange.
 

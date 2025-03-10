@@ -1,20 +1,16 @@
-from streamlit import write, select_slider, number_input, session_state, caption, pills
-import time
-from frontend.src.library.strategy_helper.client import fetch_trade_info_minimum_order, post_strategy
-import re
+from streamlit import write, select_slider, number_input, caption, pills
+
 
 class GreedyTrader:
 
-    def __init__(self, order_type: str):
+    def __init__(self):
         self.chosen_id = None
         self.id = id
         self.init_time = None
-        self.bet = None
-        self.order_type = order_type.lower()  # make order_type request lower_case
         self.strategy_params = None
 
     def __eq__(self, **kwargs):
-        return self.id, self.init_time, self.bet
+        return self.id, self.init_time
 
     def get_form(self):
         write(
@@ -42,11 +38,7 @@ class GreedyTrader:
 
 
     def submit_strategy(self):
-        res = post_strategy(exchange=session_state['trade_exchange_api'].lower().replace(" ", "_"), from_coin=session_state['from_coin'], to_coin=session_state['target_coin'],
-                            from_amount=session_state['buy_amount'], strategy='greedy', strategy_params=self.strategy_params,
-                            order_type=self.order_type)
-        self.init_time = time.time()
-        return res
+        pass
 
     def set_init_time(self, datetime=None):
         self.init_time = datetime

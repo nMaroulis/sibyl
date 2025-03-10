@@ -29,15 +29,15 @@ if len(st.session_state["available_exchange_apis"]) > 0:
     with st.container(border=False):
         col00, col01, col02 = st.columns(3)
         with col00:
-            quote_asset = st.selectbox('Quote Asset (from)', options=['USDT'], disabled=True)
+            quote_asset = st.selectbox('Quote Asset', options=['USDT'], disabled=True)
             st.caption("Currently only USDT is available as a Quote asset for Trading.")
         with col01:
             crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'], quote_asset=quote_asset)
             crypto_list.sort()
-            base_asset = st.selectbox('Base Asset (to):', options=crypto_list, index=0)
+            base_asset = st.selectbox('Base Asset:', options=crypto_list, index=0)
         with col02:
-            st.toggle("Quote Market Order", value=False) # TODO
             quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)
+        st.toggle("Quote Market Order", value=False)  # TODO
 
         trading_pair = base_asset+quote_asset
         current_price = fetch_current_asset_price(st.session_state['trade_exchange_api'], trading_pair)
@@ -55,7 +55,6 @@ if len(st.session_state["available_exchange_apis"]) > 0:
     st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>2. Trading Options 📈</h3>""")
     with st.container(border=False):
 
-        side = st.segmented_control("Order Side", options=["Buy", "Sell"], default="Buy")
         col10 = st.columns(1)
         with col10[0]:
             order_type = st.selectbox(
@@ -64,6 +63,7 @@ if len(st.session_state["available_exchange_apis"]) > 0:
                  "OCO"]
             )
             st.caption("Select between a Limit or Market order. Limit orders are added to the order book, often with lower 'maker' fees, while Market orders are matched instantly with existing orders, incurring 'taker' fees.")
+            side = st.segmented_control("Order Side", options=["Buy", "Sell"], default="Buy")
 
         price = None
         stop_price = None
@@ -75,7 +75,6 @@ if len(st.session_state["available_exchange_apis"]) > 0:
                 price = st.number_input("Limit Price:", min_value=0.0001, step=0.0001, format="%.4f")
             else:
                 st.number_input("Limit Price:", min_value=0.0001, step=0.0001, format="%.4f", disabled=True)
-            st.toggle("Percentage [%]", value=False)
         with col21:
             if order_type in ["Stop-Loss", "Stop-Loss Limit", "Trailing Stop"]:
                 stop_price = st.number_input("Stop Price:", min_value=0.0001, step=0.0001, format="%.4f")
@@ -87,8 +86,15 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             else:
                 st.number_input("Take Profit Price:", min_value=0.0001, step=0.0001, format="%.4f", disabled=True)
 
-        col30, col31, col32 = st.columns(3)
-        with col30:
+        col30  = st.columns(1)
+        with col30[0]:
+            st.caption("If percentage is enable, the **Stop-Loss** and **Take-Profit** will be based on percentages and not the actual value of the Base Asset.")
+            st.toggle("Percentage [%]", value=False)
+            st.caption("If enabled, the order will only be posted as a maker order, ensuring it adds liquidity.")
+            post_only = st.toggle("Post-Only Order", value=False)
+
+        col40, col41 = st.columns(2)
+        with col40:
             time_in_force = st.pills("Time in Force:", ["GTC", "IOC", "FOK"], default="GTC")
             with st.popover("What is time in force?", icon=":material/help:"):
                 st.write("""
@@ -106,12 +112,23 @@ if len(st.session_state["available_exchange_apis"]) > 0:
                 - The order must be executed in full immediately, or it is completely canceled.
                 - Ensures you either get your exact order amount or nothing at all.
                 - Example: If you place an FOK order to buy 1 BTC at $50,000, but only 0.9 BTC is available at that price, the entire order is canceled.""")
-
-        with col31:
-            post_only = st.toggle("Post-Only Order", value=False)
-            st.caption("If enabled, the order will only be posted as a maker order, ensuring it adds liquidity.")
-        with col32:
+        with col41:
             iceberg_qty = st.number_input("Iceberg Quantity (Optional):", min_value=0.0, step=0.0001, format="%.4f")
+
+    st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>3. Exchange Parameters ⚙️</h3>""")
+    with st.container(border=False):
+        col10 = st.columns(1)
+        with col10[0]:
+            st.caption("The Swap (Binance Convert API) enables trading with 0 fees. If not available, choose Trade option. Read the instructions at the top of the page to minimize the fees.")
+            with st.spinner('Checking Swap Availability...'):
+                swap_status = {} # check_swap_status(st.session_state['trade_exchange_api'])
+                if "success" in swap_status:
+                    st.session_state['order_type'] = st.radio('Choose Order Type', options=['Trade', 'Swap'], index=0, horizontal=True)
+                    st.success(swap_status)
+                else:
+                    st.session_state['order_type'] = st.segmented_control('Choose Buy/Sell Order Type', options=['Trade', 'Swap'], default='Trade', disabled=True)
+                    st.warning('🔁 Binance Convert API is not enabled on your Account, only Trade option can be used!')
+
 else:
     html_content = """
     <div style="text-align: center; color: #5E5E5E; font-weight: bold; font-size: 24px;">

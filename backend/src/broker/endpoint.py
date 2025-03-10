@@ -20,60 +20,6 @@ def get_active_trade_orders(status: str = 'all'):
     active_trade_strategies = TradeHistoryDBClient.fetch_trading_history(status=status)
     return active_trade_strategies
 
-class TradeParams(BaseModel):
-    exchange_api: str
-    from_coin: str = 'USDT'
-    to_coin: str
-    from_amount: float
-    strategy: str
-    strategy_params: dict
-    order_type: str
-
-@router.post("/trade/order/buy/new") # TODO FIX HERE
-def send_new_buy_order(trade_params: TradeParams):
-
-    client = ExchangeClientFactory.get_client(trade_params.exchange_api)
-    if trade_params.strategy == 'greedy':
-        broker_client = GreedyBroker(client, time.strftime('%Y-%m-%d %H:%M:%S'), trade_params.from_coin, trade_params.to_coin, trade_params.from_amount, trade_params.order_type, trade_params.strategy_params)
-    else:
-        raise HTTPException(status_code=400, detail="Strategy not found.")
-
-    response = broker_client.init_trading_algorithm()
-    print(broker_client.get_db_fields())
-    if "success" in response:
-        db_fields = broker_client.get_db_fields()
-        TradeHistoryDBClient.add_trade_to_db(exchange=db_fields[0], datetime_buy=db_fields[1], orderid_buy=db_fields[2],
-                        asset_from=db_fields[3], asset_to=db_fields[4], asset_from_amount=db_fields[5],
-                        asset_to_quantity=db_fields[6], asset_to_price=db_fields[7], datetime_sell=db_fields[8],
-                        orderid_sell=db_fields[9], asset_to_sell_price=db_fields[10], order_type=db_fields[11],
-                        strategy=db_fields[12], status=db_fields[13])
-        print('Backend :: Broker :: endpoint :: ', broker_client)
-        return response
-    else:
-        return response
-
-
-@router.get("/trade/info/minimum_order")
-def is_buy_order_possible(exchange: str , symbol: str):
-
-    client = ExchangeClientFactory.get_client(exchange)
-    try:
-        res = client.get_minimum_buy_order(symbol)
-        print(res)
-        return res
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=400, detail="Fetching minimum buy order failed.")
-
-
-@router.get("/trade/convert/info")
-def send_new_convert_order(exchange: str) -> dict[str, str]:
-
-    client = ExchangeClientFactory.get_client(exchange)
-    res = client.check_swap_eligibility('USDT', 'BTC', 10)  # dummy vars
-
-    return {"success": "Binance Convert API is enabled!"} if res else {"error": "Binance Convert API is NOT enabled!"}
-
 
 @router.get("/trade_history/order/status/update")
 def get_order_status():
@@ -97,18 +43,6 @@ def get_order_status():
     return {"success": "Trading History DB Updated"}
 
 
-@router.get("/trade/order/status/single_order")
-def get_single_order_status(exchange_api: str, symbol: str, order_id: str):
-
-    client = ExchangeClientFactory.get_client(exchange_api)
-    res = client.get_order_status(symbol=symbol, order_id=order_id)
-    if res:
-        return res
-    else:
-        return {"error": 'Trade not found!'}
-
-
-
 from backend.src.exchange_client_v2.exchange_client_factory import ExchangeClientFactory as v2_exchange_client
 
 class SpotTradeParams(BaseModel):
@@ -124,12 +58,21 @@ class SpotTradeParams(BaseModel):
 
 
 @router.post("/trade/spot/test")
+def post_spot_order_test(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
+
+    client = v2_exchange_client.get_client(spot_trade_params.exchange)
+    spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
+    res = client.place_spot_test_order(**spot_trade_params_dict)
+
+    return res
+
+
+@router.post("/trade/spot/new")
 def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
 
     client = v2_exchange_client.get_client(spot_trade_params.exchange)
-    print(spot_trade_params)
     spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
-    res = client.place_spot_test_order(**spot_trade_params_dict)
+    res = client.place_spot_order(**spot_trade_params_dict)
 
     return res
 

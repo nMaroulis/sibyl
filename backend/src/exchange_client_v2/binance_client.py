@@ -259,7 +259,7 @@ class BinanceClient(ExchangeAPIClient):
             return {"error": str(e)}
 
 
-    def get_available_coins(self, quote_asset: str = "all") -> Optional[List[str]]:
+    def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
         """
         Fetches a list of unique base assets (coins) available for trading on Binance.
 
@@ -284,7 +284,7 @@ class BinanceClient(ExchangeAPIClient):
                 available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if quote_asset in s['symbol']]
             return list(set(available_coins))
         except BinanceAPIException as e:
-            print(f"Binance Exchange Client :: get_available_coins :: {str(e)}")
+            print(f"Binance Exchange Client :: get_available_assets :: {str(e)}")
             return None
 
 
