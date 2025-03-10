@@ -1,15 +1,15 @@
-from backend.src.exchange_client.binance_client import BinanceClient
-from backend.src.exchange_client.binance_testnet_client import BinanceTestnetClient
-from backend.src.exchange_client.kraken_client import KrakenClient
-from backend.src.exchange_client.coinbase_client import CoinbaseClient
+from backend.src.exchange_client_v2.kraken_client import KrakenClient
+from backend.src.exchange_client_v2.binance_client import BinanceClient
+from backend.src.exchange_client_v2.binance_testnet_client import BinanceTestnetClient
+from backend.src.exchange_client_v2.coinbase_client import CoinbaseClient
 
 
 class ExchangeClientFactory:
     _clients = {
         'binance': BinanceClient,
         'binance_testnet': BinanceTestnetClient,
-        'kraken': KrakenClient,
         'coinbase': CoinbaseClient,
+        'kraken': KrakenClient
     }
 
     @classmethod

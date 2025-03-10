@@ -1,14 +1,10 @@
-from backend.src.exchange_client.exchange_client import ExchangeAPIClient
-import requests
-import json
-from backend.src.analyst.analyst_functions import get_coin_symbol_name_map, update_coin_symbol_name_map
+from backend.src.exchange_client_v2.exchange_client import ExchangeAPIClient
 from database.api_keys_db_client import APIEncryptedDatabase
-import time
-import hmac, hashlib
-from datetime import datetime
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
-import logging
+from binance.enums import ORDER_TYPE_STOP_LOSS, ORDER_TYPE_LIMIT, ORDER_TYPE_MARKET, ORDER_TYPE_STOP_LOSS_LIMIT, \
+    ORDER_TYPE_TAKE_PROFIT_LIMIT, ORDER_TYPE_TAKE_PROFIT
+from typing import Optional, Dict, Any, List, Union
 
 
 class BinanceClient(ExchangeAPIClient):
@@ -23,7 +19,17 @@ class BinanceClient(ExchangeAPIClient):
         else:
             self.client = Client(api_creds.api_key, api_creds.secret_key)
 
-    def check_status(self):
+    def check_status(self) -> str:
+        """
+        Check the status of the Binance client connection.
+
+        Returns:
+            str: A status message indicating whether the credentials are valid or not.
+                  - 'Empty Credentials' if no client is initialized.
+                  - 'Active' if the API credentials are valid.
+                  - 'Invalid Credentials' if the API credentials are incorrect or expired.
+        """
+
         if self.client is None:
             return 'Empty Credentials'
         try:
@@ -32,14 +38,191 @@ class BinanceClient(ExchangeAPIClient):
         except BinanceAPIException:
             return 'Invalid Credentials'
 
-    def get_crypto_pair_price(self, pair: str):
+    def place_spot_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Places an order on Binance based on the given parameters.
+
+        Args:
+            order_type (str): The type of order (e.g., Market, Limit, Stop-Loss, etc.).
+            trading_pair (str): The trading pair (e.g., BTCUSDT).
+            side (str): Order side (BUY or SELL).
+            quantity (float): Quantity to trade.
+            price (Optional[float]): Price for limit orders.
+            stop_price (Optional[float]): Stop price for stop-loss or take-profit orders.
+            take_profit_price (Optional[float]): Take profit price for take-profit orders.
+            time_in_force (Optional[str]): Time in force policy.
+
+        Returns:
+            Dict[str, Any]: Response from Binance API.
+        """
+
+        if order_type == "market":
+            return self.client.order_market(
+                symbol=trading_pair,
+                side=side,
+                type=ORDER_TYPE_MARKET,
+                quantity=quantity
+            )
+        elif order_type == "limit":
+            return self.client.order_limit(
+                symbol=trading_pair,
+                side=side,
+                type=ORDER_TYPE_LIMIT,
+                quantity=quantity,
+                price=price,
+                timeInForce=time_in_force
+            )
+        elif order_type == "stop-Loss":
+            return self.client.create_order(
+                symbol=trading_pair,
+                side=side,
+                type=ORDER_TYPE_STOP_LOSS,
+                quantity=quantity,
+                stopPrice=stop_price
+            )
+        elif order_type == "stop-loss limit":
+            return self.client.create_order(
+                symbol=trading_pair,
+                side=side,
+                type=ORDER_TYPE_STOP_LOSS_LIMIT,
+                quantity=quantity,
+                price=price,
+                stopPrice=stop_price,
+                timeInForce=time_in_force
+            )
+        elif order_type == "take-profit":
+            return self.client.create_order(
+                symbol=trading_pair,
+                side=side,
+                type=ORDER_TYPE_TAKE_PROFIT,
+                quantity=quantity,
+                stopPrice=take_profit_price
+            )
+        elif order_type == "take-profit limit":
+            return self.client.create_order(
+                symbol=trading_pair,
+                side=side,
+                type=ORDER_TYPE_TAKE_PROFIT_LIMIT,
+                quantity=quantity,
+                price=price,
+                stopPrice=take_profit_price,
+                timeInForce=time_in_force
+            )
+        elif order_type == "oco":
+            return self.client.create_oco_order(
+                symbol=trading_pair,
+                side=side,
+                quantity=quantity,
+                price=price,
+                stopPrice=stop_price
+            )
+        else:
+            raise ValueError("Invalid order type")
+
+
+    def place_spot_test_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:
+        """
+        Same as place_spot_order but to test if the trade is possible.
+
+        Returns:
+            Dict with result
+                - status: 'success' or 'error'
+                - message: Empty '' in case of success, Error message in case of error.
+        """
+        try:
+            if order_type == "market":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_MARKET,
+                    quantity=quantity
+                )
+            elif order_type == "limit":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_LIMIT,
+                    quantity=quantity,
+                    price=price,
+                    timeInForce=time_in_force
+                )
+            elif order_type == "stop-Loss":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_STOP_LOSS,
+                    quantity=quantity,
+                    stopPrice=stop_price
+                )
+            elif order_type == "stop-loss limit":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_STOP_LOSS_LIMIT,
+                    quantity=quantity,
+                    price=price,
+                    stopPrice=stop_price,
+                    timeInForce=time_in_force
+                )
+            elif order_type == "take-profit":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_TAKE_PROFIT,
+                    quantity=quantity,
+                    stopPrice=take_profit_price
+                )
+            elif order_type == "take-profit limit":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_TAKE_PROFIT_LIMIT,
+                    quantity=quantity,
+                    price=price,
+                    stopPrice=take_profit_price,
+                    timeInForce=time_in_force
+                )
+            elif order_type == "oco":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    quantity=quantity,
+                    price=price,
+                    stopPrice=stop_price
+                )
+            else:
+                return {"status": "error", "message": "Invalid order type"}
+            if res == {}: # SUCCESS
+                return {"status": "success", "message": ""}
+            else:
+                return {"status": "error", "message": res}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    def fetch_market_price(self, pair: str) -> dict:
+        """
+        Fetch the current price of a given cryptocurrency trading pair.
+
+        Args:
+            pair (str): The trading pair symbol (e.g., 'BTCUSDT').
+
+        Returns:
+            dict: A dictionary containing the price or an error message.
+        """
         try:
             price = self.client.get_symbol_ticker(symbol=pair)['price']
             return {"price": price}
         except BinanceAPIException as e:
             return {"error": str(e)}
 
-    def get_spot_balance(self):
+
+    def get_spot_balance(self) -> dict:
+        """
+        Retrieve the user's spot balance, including free and locked amounts, along with current prices.
+
+        Returns:
+            dict: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
+        """
         if self.client is None:
             return {"error": "Invalid API credentials"}
         try:
@@ -51,7 +234,7 @@ class BinanceClient(ExchangeAPIClient):
                 if float(asset['free']) > 0.0 or float(asset['locked']) > 0.0:
                     pair_price = 1.0
                     if asset['asset'] != 'USDT':
-                        fetched_price = self.get_crypto_pair_price(asset['asset'] + 'USDT')
+                        fetched_price = self.fetch_market_price(asset['asset'] + 'USDT')
                         if "error" not in fetched_price:
                             pair_price = fetched_price['price']
 
@@ -75,165 +258,126 @@ class BinanceClient(ExchangeAPIClient):
         except BinanceAPIException as e:
             return {"error": str(e)}
 
-    def fetch_available_coins(self):
+
+    def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
+        """
+        Fetches a list of unique base assets (coins) available for trading on Binance.
+
+        Args:
+            quote_asset (str, optional):
+                - If `"all"` (default), returns all coins available for trading.
+                - If a specific trading quote_asset (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given quote_asset.
+
+        Returns:
+            Optional[List[str]]:
+                - A list of unique base assets that match the specified trading quote_asset.
+                - Returns None if an error occurs.
+
+        Raises:
+            BinanceAPIException: Logs an error message if the Binance API request fails.
+        """
         try:
             exchange_info = self.client.get_exchange_info()
-            available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if 'USDT' in s['symbol']]
+            if quote_asset == "all":
+                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if s['status'] == 'TRADING']
+            else:
+                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if quote_asset in s['symbol']]
             return list(set(available_coins))
         except BinanceAPIException as e:
-            return {"error": str(e)}
+            print(f"Binance Exchange Client :: get_available_assets :: {str(e)}")
+            return None
 
-    def fetch_price_history(self, symbol: str = 'BTCUSDT', interval: str = '1d', plot_type: str = 'line', limit: int = 100):
+
+    def get_price_history(self, symbol: str, interval: str = "1d", plot_type: str = "line", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+        """
+        Fetches historical price data for a given symbol from the client.
+
+        Args:
+            symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
+            interval (str): Time interval for the price data (e.g., "1d", "1h"). Default is "1d".
+            plot_type (str): Type of data format to return. "line" returns only open prices,
+                            while other values return detailed OHLC data. Default is "line".
+            limit (int): Number of historical records to fetch. Default is 100.
+
+        Returns:
+            Optional[List[Dict[str, float]]]: A list of dictionaries containing price history data,
+                                              or None if an error occurs.
+        """
         try:
             klines = self.client.get_klines(symbol=symbol.upper(), interval=interval, limit=limit)
 
-            if plot_type == 'line':
-                price_history = [{"Open Time": entry[0], "Open Price": float(entry[1])} for entry in klines]
+            if plot_type == "line":
+                return [{"Open Time": entry[0], "Open Price": float(entry[1])} for entry in klines]
             else:
-                price_history = [{
-                    "Open Time": entry[0],
-                    "Open Price": float(entry[1]),
-                    "Highs": float(entry[2]),
-                    "Lows": float(entry[3]),
-                    "Closing Price": float(entry[4])
-                } for entry in klines]
-
-            return price_history
+                return [
+                    {
+                        "Open Time": entry[0],
+                        "Open Price": float(entry[1]),
+                        "Highs": float(entry[2]),
+                        "Lows": float(entry[3]),
+                        "Closing Price": float(entry[4]),
+                    }
+                    for entry in klines
+                ]
 
         except Exception as e:
-            print(f"Error fetching price history: {e}")
-            return []
-
-    def get_minimum_buy_order(self, symbol: str = "BTCUSDT"):
-        try:
-            exchange_info = self.client.get_symbol_info(symbol)
-            for f in exchange_info['filters']:
-                if f['filterType'] == 'NOTIONAL':
-                    return {'min_notional': float(f['minNotional'])}
-            return {'min_notional': -1}
-        except BinanceAPIException as e:
-            return {"error": str(e)}
-
-    def post_buy_order(self, trade_from: str, trade_to: str, from_amount: float):
-        if self.client is None:
-            print("Invalid API credentials")
-            return None
-        try:
-            order = self.client.order_market(symbol=f"{trade_to}{trade_from}", quoteOrderQty=from_amount, side='BUY')
-            print(order)
-            return order.get('executedQty'), order.get('orderId'), str(datetime.fromtimestamp(order.get('transactTime') // 1000).strftime('%Y-%m-%d %H:%M:%S'))
-        except BinanceAPIException as e:
-            print("Binance Client :: post_buy_order", str(e))
+            print(f"get_price_history :: Error fetching price history: {e}")
             return None
 
-    def check_swap_eligibility(self, trade_from: str, trade_to: str, from_amount: float):
-        """Checks if a swap is eligible."""
-        try:
-            response = self.client.convert_request_quote(
-                fromAsset=trade_from,
-                toAsset=trade_to,
-                fromAmount=from_amount,
-                walletType='SPOT'
-            )
-            return response.get("quoteId")
-        except BinanceAPIException as e:
-            logging.error(f"check_swap_eligibility failed: {e}")
-            return None
 
-    def post_swap_order(self, trade_from: str, trade_to: str, from_amount: float):
-        """Posts a swap order if eligible."""
-        quote_id = self.check_swap_eligibility(trade_from, trade_to, from_amount)
-        if not quote_id:
-            return None
-        try:
-            response = self.client.accept_convert_quote(quoteId=quote_id)
-            return response.get('orderId'), response.get('toAmount'), datetime.utcnow()
-        except BinanceAPIException as e:
-            logging.error(f"post_swap_order failed: {e}")
-            return None
-
-    def post_sell_order(self, trade_from: str, trade_to: str, quantity: float, sell_order_price: float):
-        """Places a limit sell order on Binance."""
-        try:
-            order = self.client.create_order(
-                symbol=f"{trade_from}{trade_to}",
-                side=Client.SIDE_SELL,
-                type=Client.ORDER_TYPE_LIMIT,
-                timeInForce=Client.TIME_IN_FORCE_GTC,
-                quantity=quantity,
-                price=str(sell_order_price)
-            )
-            return order.get('orderId')
-        except BinanceAPIException as e:
-            logging.error(f"post_sell_order failed: {e}")
-            return None
-
-    def get_order_status(self, symbol_pair: str, order_id: str):
-        """Fetches basic order status."""
-        try:
-            order = self.client.get_order(symbol=symbol_pair, orderId=order_id)
-            return order
-        except BinanceAPIException as e:
-            logging.error(f"get_order_status failed: {e}")
-            return None
-
-    def get_order_status_detailed(self, symbol_pair: str, order_id: str):
-        """Fetches detailed order status."""
-        try:
-            order = self.client.get_order(symbol=symbol_pair, orderId=order_id)
-            status_map = {
-                'NEW': 'active',
-                'PARTIALLY_FILLED': 'partially_completed',
-                'FILLED': 'completed',
-                'CANCELED': 'cancelled',
-                'PENDING_CANCEL': 'cancelled',
-                'REJECTED': 'cancelled',
-                'EXPIRED': 'cancelled',
-            }
-            new_status = status_map.get(order.get('status'), 'unknown')
-            time_sold = None
-            if new_status == 'completed':
-                trades = self.client.get_my_trades(symbol=symbol_pair)
-                if trades:
-                    time_sold = datetime.utcfromtimestamp(trades[-1]['time'] // 1000).strftime('%Y-%m-%d %H:%M:%S')
-            return {"status": new_status, "time_sold": time_sold}
-        except BinanceAPIException as e:
-            logging.error(f"get_order_status_detailed failed: {e}")
-            return None
-
-    def test_order(self, symbol: str, side: str, quantity: float, price: float = None,
-                           order_type: str = "LIMIT", time_in_force: str = "GTC"):
+    def get_minimum_trade_value(self, symbol: str) -> Optional[Dict[str, Union[float, str]]]:
         """
-        Tests if a buy or sell order would work on Binance without executing it.
+        Retrieves the minimum trade value required for a given trading pair.
 
-        :param client: Binance Client object
-        :param symbol: Trading pair (e.g., 'BTCUSDT')
-        :param side: 'BUY' or 'SELL'
-        :param quantity: Order quantity
-        :param price: Price for limit orders (optional for market orders)
-        :param order_type: Order type ('LIMIT', 'MARKET', etc.)
-        :param time_in_force: Time in force for limit orders ('GTC', 'IOC', 'FOK')
-        :return: True if the order would be accepted, False otherwise
+        This function queries the exchange for the minimum allowable trade value,
+        typically defined in the quote currency. The implementation varies
+        depending on the exchange API.
+
+        Args:
+            symbol (str): Trading pair symbol (e.g., "BTCUSDT").
+
+        Returns:
+            Dict[str, Union[float, str]] | None:
+                - {'min_trade_value': float} if successful.
+                - None if no minimum trade value is found.
+                - None if an exception occurs.
         """
         try:
-            order_params = {
-                "symbol": symbol.upper(),
-                "side": side.upper(),
-                "type": order_type.upper(),
-                "quantity": quantity,
-            }
+            exchange_info = self.client.get_symbol_info(symbol.upper())
+            if not exchange_info:
+                return {"error": f"Symbol {symbol} not found"}
 
-            if order_type == "LIMIT":
-                if price is None:
-                    raise ValueError("Price is required for LIMIT orders")
-                order_params["price"] = price
-                order_params["timeInForce"] = time_in_force.upper()
-
-            # Test the order
-            self.client.create_test_order(**order_params)
-
-            print("Order test successful!")
-            return True
+            for filter_item in exchange_info.get("filters", []):
+                if filter_item.get("filterType") == "NOTIONAL":
+                    return {"min_trade_value": float(filter_item.get("minNotional", -1))}
+            return None
+        except BinanceAPIException as e:
+            print(f"Binance API error: {e}")
+            return None
         except Exception as e:
-            print(f"Order test failed: {e}")
-            return False
+            print(f"Unexpected error: {e}")
+            return None
+
+
+    def get_current_asset_price(self, pair_symbol: str) -> float | None:
+        """
+        Function to get the current price of an asset in a specific quote currency using Binance API.
+
+        :param pair_symbol: The trading pair symbol (e.g., 'BTCUSDT', 'ETHUSDT')
+        :return: Current price of the asset in the specified quote currency
+        """
+        pair_symbol = pair_symbol.upper()
+        try:
+            # Get the current price for the symbol
+            ticker = self.client.get_symbol_ticker(symbol=pair_symbol)
+            if ticker:
+                return float(ticker['price'])
+            else:
+                print(f"Error: No data found for symbol {pair_symbol}")
+                return None
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+# check_token_swap_status()
+# get_spot_trade_order_status

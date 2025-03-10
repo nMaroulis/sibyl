@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from typing import Optional, List
+from typing import List
 from backend.src.analyst.analyst_functions import update_coin_symbol_name_map
-from backend.src.exchange_client_v2.exchange_client_factory import ExchangeClientFactory
+from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 
 # APIRouter creates path operations for user module
