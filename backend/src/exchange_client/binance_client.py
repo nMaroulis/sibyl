@@ -1,4 +1,4 @@
-from backend.src.exchange_client_v2.exchange_client import ExchangeAPIClient
+from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 from database.api_keys_db_client import APIEncryptedDatabase
 from binance.client import Client
 from binance.exceptions import BinanceAPIException

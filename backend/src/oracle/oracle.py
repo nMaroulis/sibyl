@@ -48,8 +48,7 @@ class Oracle:
                           'volatility_index', 'interest_rate']])
 
     def create_model_input(self):
-        print(self.dataset.shape)
-        self.model_input = self.dataset.reshape(1, self.lookback, self.dataset.shape[1])
+        self.model_input = self.dataset.reshape(1, self.dataset.shape[0], self.dataset.shape[1])  # TODO - examine here: reshape(1, self.lookback, self.dataset.shape[1])
 
     def generate_model_prediction(self):
         y_pred = self.model.predict(self.model_input)
@@ -69,9 +68,7 @@ class Oracle:
 
     def generate_btc_prediction(self):
         self.fetch_dataset()
-        print(self.dataset)
         self.dataset_preprocessing()
-        print(self.dataset)
         self.create_model_input()
         y_pred = self.generate_model_prediction()
         return self.generate_output(y_pred)
