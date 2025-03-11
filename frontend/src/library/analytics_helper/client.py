@@ -4,11 +4,11 @@ from streamlit import cache_data
 from frontend.config.config import BACKEND_SERVER_ADDRESS
 
 
-def fetch_price_history(exchange: str, symbol: str, time_int: str, time_limit: int, plot_type: str = 'line', full_name=True):
+def fetch_price_history(exchange: str, symbol: str, time_int: str, time_limit: int, plot_type: str = 'line', full_name: bool = True):
     if full_name:
         symbol = get_crypto_name_regex(symbol)  # get_crypto_coin_dict().get(symbol)
     symbol += 'USDT'  # USDT is the default
-    url = f"{BACKEND_SERVER_ADDRESS}/analyst/coin/price_history?exchange={exchange.lower().replace(" ", "_")}&symbol={symbol}&interval={time_int}&limit={str(time_limit)}&plot_type={plot_type}"
+    url = f"{BACKEND_SERVER_ADDRESS}/analyst/asset/price_history?exchange={exchange.lower().replace(" ", "_")}&symbol={symbol}&interval={time_int}&limit={str(time_limit)}&plot_type={plot_type}"
     response = requests.get(url)
     return response.json()
 

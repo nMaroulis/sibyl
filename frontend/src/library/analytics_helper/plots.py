@@ -72,7 +72,7 @@ def show_line_plot_with_analytics(coin: str, price_hist_df: DataFrame):
     return
 
 
-def price_history_plot(exchange_api: str = 'binance_testnet', coin: str ='BTC', time_int: str = '1d', time_limit: int = 500, plot_type : str = 'Line Plot', show_plot=True, full_name=True):
+def price_history_plot(exchange_api: str, coin: str, time_int: str, time_limit: int, plot_type : str = 'Line Plot', show_plot=True, full_name=True) -> DataFrame:
     df = DataFrame()
     fig = None
     if plot_type == 'Line Plot':
