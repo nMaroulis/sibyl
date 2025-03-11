@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException
 from database.trade_history_db_client import TradeHistoryDBClient
 from datetime import datetime
@@ -15,7 +15,8 @@ router = APIRouter(
 class SpotTradeParams(BaseModel):
     exchange: str
     order_type: str
-    trading_pair: str
+    quote_asset: str
+    base_asset: str
     side: str
     quantity: float
     price: Optional[float] = None
@@ -35,12 +36,15 @@ def post_spot_order_test(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
 
 
 @router.post("/trade/spot/new")
-def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
+def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, Any]:
 
     client = ExchangeClientFactory.get_client(spot_trade_params.exchange)
     spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
     res = client.place_spot_order(**spot_trade_params_dict)
 
+    if res["status"] == "success":
+        db_res = client.add_spot_order_to_trade_history_db(spot_trade_params.quote_asset,spot_trade_params.base_asset, res["message"])
+    # TODO handle failed insertion to DB
     return res
 
 
@@ -68,15 +72,17 @@ def get_current_asset_price(exchange: str , pair_symbol: str) -> dict[str, float
         raise HTTPException(status_code=500, detail="Fetching asset price failed.")
 
 
-### TODO IMPLEMENT THE FUNCTIONS
 
 @router.get("/trade/spot/history")
-def get_active_trade_orders(status: str = 'all'):
-    active_trade_strategies = TradeHistoryDBClient.fetch_trading_history(status=status)
-    return active_trade_strategies
+def get_spot_trade_history():
+    spot_trades = TradeHistoryDBClient.fetch_trading_history()
+    return spot_trades
 
 
-@router.get("/trade/spot/order/status") # TODO - create function in exchange client, fix here
-def get_spot_order_status():
+### TODO IMPLEMENT THE FUNCTIONS
 
-    return {"status": "..."}
+#
+# @router.get("/trade/spot/order/status") # TODO - create function in exchange client, fix here
+# def get_spot_order_status():
+#
+#     return {"status": "..."}

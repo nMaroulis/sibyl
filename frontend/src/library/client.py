@@ -40,11 +40,11 @@ def check_backend_connection():
         response = requests.get(url)
         if response.status_code == 200:
             # sidebar.success('📶 Server Connection Active')
-            toast('✅ Backend Server Connection Successful!')
+            toast('Backend Server Connection Successful!', icon=":material/task_alt:")
             return 'Active'  # True
         else:
             sidebar.error('📶 Server Connection Failed')
-            toast('⛔ Backend Server Connection Failed!')
+            toast('Backend Server Connection Failed!', icon=":material/warning:")
             return 'Offline'
     except requests.exceptions.ConnectionError:
         with spinner('Failed to establish a new connection to Backend Server, refreshing in 5 seconds'):

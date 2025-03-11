@@ -10,12 +10,11 @@ def update_trading_history():
 
 
 @cache_resource(ttl=120)
-def fetch_trading_history(strat_status: str = 'all'):
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/strategy/history?status={strat_status}'
+def fetch_trading_history():
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/spot/history'
     res = requests.get(url)
-    # st.write(res.text)
     if res.status_code == 200:
-        trade_strategies = res.json()
-        return trade_strategies
+        orders = res.json()
+        return orders
     else:
         return None

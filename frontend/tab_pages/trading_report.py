@@ -6,11 +6,11 @@ from frontend.src.library.history_helper.funcs import sidebar_update_history, tr
 
 fix_page_layout('Report')
 set_page_title("Trading Report")
-strat_status = st.sidebar.radio('Deployed Strategy History Status:', options=['all', 'active', 'completed', 'partially_completed', 'cancelled'], index=0)
+# strat_status = st.sidebar.radio('Deployed Strategy History Status:', options=['all', 'active', 'completed', 'partially_completed', 'cancelled'], index=0)
 sidebar_update_history()
 st.sidebar.selectbox('Exchange', options=['All', 'Binance'], disabled=True)
 
-df = trading_history_table(strat_status)
+df = trading_history_table()
 
 if df is None:
     st.error('📶 Something went wrong while fetching the Trading History. Check server Connection.')
@@ -19,10 +19,12 @@ else:
     with th_tab:
         st.html("<h5 style='text-align: left;margin-top:0; padding-top:0;'>Trading History Table</h5>")
         df['show_plot'] = False
-        df.insert(0, 'Status', df.pop('Status'))
+        # df.insert(0, 'Status', df.pop('Status'))
         df.insert(0, 'show_plot', df.pop('show_plot'))
 
-        edited_df = st.data_editor(df, use_container_width=True, hide_index=True, num_rows='fixed', disabled=['Exchange', 'DateTime', 'buy_orderId', 'from_asset', 'to_asset', 'from_amount','quantity_bought', 'from_price', 'DateTime [Sell]', 'sell_orderId', 'price_to_sell', 'Order Type', 'Strategy', 'Status'])
+        edited_df = st.data_editor(df, use_container_width=True, hide_index=True, num_rows='fixed',
+                                   disabled=['Exchange', 'DateTime', 'Order Id', 'Quote Asset', 'Base Asset', 'Base Quantity',
+                                            'Quote Quantity', 'Side', 'Type', 'Status', 'TiF', 'Commission', 'Commission Asset', 'STPM'])
         st.info("💡 The **DateTime** above refers to the **UTC** timestamp. So times may be different than your local time.")
 
         df_to_plot = edited_df.loc[edited_df["show_plot"] == True].copy().reset_index(drop=True)

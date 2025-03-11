@@ -5,6 +5,7 @@ from binance.exceptions import BinanceAPIException
 from binance.enums import ORDER_TYPE_STOP_LOSS, ORDER_TYPE_LIMIT, ORDER_TYPE_MARKET, ORDER_TYPE_STOP_LOSS_LIMIT, \
     ORDER_TYPE_TAKE_PROFIT_LIMIT, ORDER_TYPE_TAKE_PROFIT
 from typing import Optional, Dict, Any, List, Union
+from database.trade_history_db_client import TradeHistoryDBClient
 
 
 class BinanceClient(ExchangeAPIClient):
@@ -38,13 +39,15 @@ class BinanceClient(ExchangeAPIClient):
         except BinanceAPIException:
             return 'Invalid Credentials'
 
-    def place_spot_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:
+
+    def place_spot_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:
         """
         Places an order on Binance based on the given parameters.
 
         Args:
             order_type (str): The type of order (e.g., Market, Limit, Stop-Loss, etc.).
-            trading_pair (str): The trading pair (e.g., BTCUSDT).
+            quote_asset (str): The quote asset.
+            base_asset (str): The base asset.
             side (str): Order side (BUY or SELL).
             quantity (float): Quantity to trade.
             price (Optional[float]): Price for limit orders.
@@ -52,75 +55,93 @@ class BinanceClient(ExchangeAPIClient):
             take_profit_price (Optional[float]): Take profit price for take-profit orders.
             time_in_force (Optional[str]): Time in force policy.
 
+        trading_pair (str): The trading pair to use, e.g. quote_asset: USDT, base_asset: BTC -> BTCUSDT
+
         Returns:
             Dict[str, Any]: Response from Binance API.
+
+            E.g. Binance API response: {'symbol': 'ATOMUSDT', 'orderId': 400900, 'orderListId': -1,
+            'clientOrderId': '...', 'transactTime': 1741634468553,
+            'price': '0.00000000', 'origQty': '11.00000000', 'executedQty': '11.00000000',
+            'origQuoteOrderQty': '0.00000000', 'cummulativeQuoteQty': '40.85400000',
+            'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'MARKET', 'side': 'BUY',
+            'workingTime': 1741634468553, 'fills': [{'price': '3.71400000',
+            'qty': '11.00000000', 'commission': '0.00000000',
+            'commissionAsset': 'ATOM', 'tradeId': 31700}], 'selfTradePreventionMode': 'EXPIRE_MAKER'}
         """
+        try:
+            trading_pair = f"{base_asset}{quote_asset}"
+            if order_type == "market":
+                res = self.client.order_market(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_MARKET,
+                    quantity=quantity
+                )
+            elif order_type == "limit":
+                res = self.client.order_limit(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_LIMIT,
+                    quantity=quantity,
+                    price=price,
+                    timeInForce=time_in_force
+                )
+            elif order_type == "stop-Loss":
+                res = self.client.create_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_STOP_LOSS,
+                    quantity=quantity,
+                    stopPrice=stop_price
+                )
+            elif order_type == "stop-loss limit":
+                res = self.client.create_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_STOP_LOSS_LIMIT,
+                    quantity=quantity,
+                    price=price,
+                    stopPrice=stop_price,
+                    timeInForce=time_in_force
+                )
+            elif order_type == "take-profit":
+                res = self.client.create_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_TAKE_PROFIT,
+                    quantity=quantity,
+                    stopPrice=take_profit_price
+                )
+            elif order_type == "take-profit limit":
+                res = self.client.create_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_TAKE_PROFIT_LIMIT,
+                    quantity=quantity,
+                    price=price,
+                    stopPrice=take_profit_price,
+                    timeInForce=time_in_force
+                )
+            elif order_type == "oco":
+                res = self.client.create_oco_order(
+                    symbol=trading_pair,
+                    side=side,
+                    quantity=quantity,
+                    price=price,
+                    stopPrice=stop_price
+                )
+            else:
+                raise ValueError("Invalid order type")
 
-        if order_type == "market":
-            return self.client.order_market(
-                symbol=trading_pair,
-                side=side,
-                type=ORDER_TYPE_MARKET,
-                quantity=quantity
-            )
-        elif order_type == "limit":
-            return self.client.order_limit(
-                symbol=trading_pair,
-                side=side,
-                type=ORDER_TYPE_LIMIT,
-                quantity=quantity,
-                price=price,
-                timeInForce=time_in_force
-            )
-        elif order_type == "stop-Loss":
-            return self.client.create_order(
-                symbol=trading_pair,
-                side=side,
-                type=ORDER_TYPE_STOP_LOSS,
-                quantity=quantity,
-                stopPrice=stop_price
-            )
-        elif order_type == "stop-loss limit":
-            return self.client.create_order(
-                symbol=trading_pair,
-                side=side,
-                type=ORDER_TYPE_STOP_LOSS_LIMIT,
-                quantity=quantity,
-                price=price,
-                stopPrice=stop_price,
-                timeInForce=time_in_force
-            )
-        elif order_type == "take-profit":
-            return self.client.create_order(
-                symbol=trading_pair,
-                side=side,
-                type=ORDER_TYPE_TAKE_PROFIT,
-                quantity=quantity,
-                stopPrice=take_profit_price
-            )
-        elif order_type == "take-profit limit":
-            return self.client.create_order(
-                symbol=trading_pair,
-                side=side,
-                type=ORDER_TYPE_TAKE_PROFIT_LIMIT,
-                quantity=quantity,
-                price=price,
-                stopPrice=take_profit_price,
-                timeInForce=time_in_force
-            )
-        elif order_type == "oco":
-            return self.client.create_oco_order(
-                symbol=trading_pair,
-                side=side,
-                quantity=quantity,
-                price=price,
-                stopPrice=stop_price
-            )
-        else:
-            raise ValueError("Invalid order type")
+            return {"status": "success", "message": res}
+        except BinanceAPIException as e:
+            return {"status": "error", "message": str(e)}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
 
-    def place_spot_test_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:
+    def place_spot_test_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:
         """
         Same as place_spot_order but to test if the trade is possible.
 
@@ -130,6 +151,7 @@ class BinanceClient(ExchangeAPIClient):
                 - message: Empty '' in case of success, Error message in case of error.
         """
         try:
+            trading_pair = f"{base_asset}{quote_asset}"
             if order_type == "market":
                 res = self.client.create_test_order(
                     symbol=trading_pair,
@@ -378,6 +400,27 @@ class BinanceClient(ExchangeAPIClient):
         except Exception as e:
             print(f"Error: {e}")
             return None
+
+
+    def add_spot_order_to_trade_history_db(self, quote_asset: str, base_asset: str, trade_dict: dict) -> bool:
+        """
+        Function add the successful spot trade order to the trade history DB using the TradeHistoryDBClient
+
+        Args:
+        quote_asset (str)
+        base_asset (str)
+        trade_dict: contains the information of the trade as returned by the API.
+        :return: True if successful else False.
+        """
+        try:
+            TradeHistoryDBClient.add_trade_to_db(self.name, trade_dict["transactTime"], str(trade_dict["orderId"]),
+                                                 quote_asset, base_asset, trade_dict["executedQty"],
+                                                 trade_dict["cummulativeQuoteQty"], trade_dict["side"], trade_dict["type"],
+                                                 trade_dict["status"], trade_dict["timeInForce"], None, None, trade_dict["selfTradePreventionMode"])
+            return True
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
 
 # check_token_swap_status()
 # get_spot_trade_order_status

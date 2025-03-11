@@ -20,7 +20,7 @@ show_homepage_status_cards()
 
 set_page_title("Overview of Account & Wallet Balance")
 st.sidebar.caption('This information is updated every hour. Press the Button below to Update now.')
-st.sidebar.button('Update 🔄', type='secondary')
+st.sidebar.button('Update', type='secondary', icon=":material/update:")
 
 exchange_api = st.selectbox('Choose Exchange', options=st.session_state["available_exchange_apis"])
 if st.session_state['backend_status'] == 'Active':  # if connection with backend is on, fetch wallet information, check exchange API Key

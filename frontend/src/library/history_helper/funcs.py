@@ -29,28 +29,27 @@ def highlight_profit(val):
     return f'background-color: {color}'
 
 
-def trading_history_table(strat_status: str = 'all'):
-    trade_strategies = fetch_trading_history(strat_status)
-    if trade_strategies is None:
+def trading_history_table():
+    orders = fetch_trading_history()
+    if orders is None:
         return None
     else:
-        df_strategy = DataFrame(columns=['Exchange', 'DateTime', 'buy_orderId', 'from_asset', 'to_asset', 'from_amount',
-                                            'quantity_bought', 'from_price', 'DateTime [Sell]', 'sell_orderId',
-                                            'price_to_sell',
-                                            'Order Type', 'Strategy', 'Status'],
-                                   data=trade_strategies)
-        df_strategy['Profit [%]'] = round(df_strategy['price_to_sell'] / df_strategy['from_price'], 2)
-        df_strategy.loc[df_strategy['DateTime [Sell]'].isnull(), 'Profit [%]'] = None
+        df = DataFrame(columns=['Exchange', 'DateTime', 'Order Id', 'Quote Asset', 'Base Asset', 'Base Quantity',
+                                            'Quote Quantity', 'Side', 'Type', 'Status',
+                                            'TiF', 'Commission', 'Commission Asset', 'STPM'],
+                                   data=orders)
+        # df_strategy['Profit [%]'] = round(df_strategy['price_to_sell'] / df_strategy['from_price'], 2)
+        # df_strategy.loc[df_strategy['DateTime [Sell]'].isnull(), 'Profit [%]'] = None
 
         # df_strategy.style.applymap(highlight_profit, subset=['Profit'])
         # df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
         # dataframe(df_strategy)
-        return df_strategy.sort_values(by='DateTime', ascending=False)
+        return df.sort_values(by='DateTime', ascending=False)
 
 
 def get_status_barplot(status_series=None):
     colors = {
-        'active': '#50C878',
+        'FILLED': '#50C878',
         'partially_completed': '#ADD8E6',
         'completed': '#0073CF',
         'cancelled': '#E34234'

@@ -1,5 +1,5 @@
 from extra_streamlit_components import stepper_bar
-from streamlit import write, container, expander, info, html, caption, link_button, tabs, error, info, divider
+from streamlit import write, container, expander, html, caption, link_button, tabs, error, info, divider
 
 
 def get_spot_trade_instructions(exp=False):

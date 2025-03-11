@@ -26,19 +26,22 @@ class KrakenClient(ExchangeAPIClient):
         return 'Unavailable'
 
 
-    def place_spot_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:
+    def place_spot_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:
         """
         Places an order on Exchange based on the given parameters.
 
         Args:
             order_type (str): The type of order (e.g., Market, Limit, Stop-Loss, etc.).
-            trading_pair (str): The trading pair (e.g., BTCUSDT).
+            quote_asset (str): The quote asset.
+            base_asset (str): The base asset.
             side (str): Order side (BUY or SELL).
             quantity (float): Quantity to trade.
             price (Optional[float]): Price for limit orders.
             stop_price (Optional[float]): Stop price for stop-loss or take-profit orders.
             take_profit_price (Optional[float]): Take profit price for take-profit orders.
             time_in_force (Optional[str]): Time in force policy.
+
+        trading_pair (str): The trading pair to use, e.g. quote_asset: USDT, base_asset: BTC -> BTCUSDT
 
         Returns:
             Dict[str, Any]: Response from Exchange API.
@@ -47,7 +50,7 @@ class KrakenClient(ExchangeAPIClient):
         pass
 
 
-    def place_spot_test_order(self, order_type: str, trading_pair: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:
+    def place_spot_test_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:
         """
         Same as place_spot_order but to test if the trade is possible.
 
@@ -146,5 +149,18 @@ class KrakenClient(ExchangeAPIClient):
 
         :param pair_symbol: The trading pair symbol (e.g., 'BTCUSDT', 'ETHUSDT')
         :return: Current price of the asset in the specified quote currency
+        """
+        pass
+
+
+    def add_spot_order_to_trade_history_db(self, quote_asset: str, base_asset: str, trade_dict: dict) -> bool:
+        """
+        Function add the successful spot trade order to the trade history DB using the TradeHistoryDBClient
+
+        Args:
+        quote_asset (str)
+        base_asset (str)
+        trade_dict: contains the information of the trade as returned by the API.
+        :return: True if successful else False.
         """
         pass
