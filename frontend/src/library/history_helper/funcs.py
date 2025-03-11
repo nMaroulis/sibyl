@@ -1,7 +1,7 @@
 from plotly.graph_objs import Figure
 from streamlit import sidebar, spinner, dataframe, plotly_chart, warning, error
 from frontend.src.library.history_helper.client import update_trading_history, fetch_trading_history
-from pandas import DataFrame, to_datetime, isnull
+from pandas import DataFrame, to_datetime, isnull, to_numeric, Series
 from plotly.graph_objects import Figure, Scatter, Pie
 from frontend.src.library.analytics_helper.plots import price_history_plot
 from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict_inv
@@ -38,27 +38,25 @@ def trading_history_table():
                                             'Quote Quantity', 'Side', 'Type', 'Status',
                                             'TiF', 'Commission', 'Commission Asset', 'STPM'],
                                    data=orders)
-        # df_strategy['Profit [%]'] = round(df_strategy['price_to_sell'] / df_strategy['from_price'], 2)
-        # df_strategy.loc[df_strategy['DateTime [Sell]'].isnull(), 'Profit [%]'] = None
 
-        # df_strategy.style.applymap(highlight_profit, subset=['Profit'])
-        # df_strategy['DateTime'] = pd.to_datetime(df_strategy['DateTime'], unit='s')
-        # dataframe(df_strategy)
+        df["DateTime"] = to_numeric(df["DateTime"], errors="coerce")
+        df["DateTime"] = to_datetime(df["DateTime"], unit="ms")  # Use 's' if timestamps are in seconds
+        df["DateTime"] = df["DateTime"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
         return df.sort_values(by='DateTime', ascending=False)
 
 
-def get_status_barplot(status_series=None):
+def get_status_barplot(status_series: Series):
     colors = {
-        'FILLED': '#50C878',
-        'partially_completed': '#ADD8E6',
-        'completed': '#0073CF',
-        'cancelled': '#E34234'
+        'NEW': '#ADD8E6',              # Light Blue - Order is new
+        'PARTIALLY_FILLED': '#FFD700', # Gold - Order is partially filled
+        'FILLED': '#0073CF',           # Deep Blue - Order fully executed
+        'CANCELED': '#E34234',         # Red - Order was canceled
+        'PENDING_CANCEL': '#FF8C00',   # Dark Orange - Order is pending cancellation
+        'REJECTED': '#8B0000',         # Dark Red - Order was rejected
+        'EXPIRED': '#808080',          # Gray - Order expired
+        'EXPIRED_IN_MATCH': '#A9A9A9'  # Dark Gray - Order expired while being matched
     }
-    # status_counts = status_series.value_counts().reindex(
-    #     ['active', 'partially_completed', 'completed', 'cancelled'], fill_value=0)
-    # fig = bar(status_counts, x=status_counts.index, y=status_counts.values, color=status_counts.index,
-    #           color_discrete_map=colors)
-    # fig.update_layout(xaxis={'type': 'category'}, yaxis_title='Number of Occurrences')
     status_counts = status_series.value_counts()
     fig = Figure(data=[Pie(labels=status_counts.index, values=status_counts.values, hole=0.5, textinfo='value+percent')])
     fig.update_traces(marker=dict(colors=[colors[status] for status in status_counts.index]))

@@ -1,5 +1,6 @@
 /database/api_keys.db
 /database/encryption_key.key
+/database/trade_history.db
 /backend/config/api_keys/api_credentials.json
 /.idea/
 /TODO.md
