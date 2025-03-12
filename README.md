@@ -141,7 +141,7 @@ $ docker build -t sibyl_image .
 $ docker run -p 8501:8501 -p 8000:8000 -p 50051:50051 sibyl_image
 ```
 
-Access the frontend from your browser at http://localhost:8501/settings
+Access the frontend from your browser at ```http://localhost:8501```
 
 
 ## Roadmap
