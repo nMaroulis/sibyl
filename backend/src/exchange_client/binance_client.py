@@ -436,7 +436,7 @@ class BinanceClient(ExchangeAPIClient):
             Optional[List[List[Dict[str, float]]]]: A list containing two lists (bids and asks), where each entry is a
             dictionary with:
                 - 'x' (int): The index position in the order book.
-                - 'y' (int): The volume multiplied by 100,000.
+                - 'y' (float): The volume
                 - 'price' (float): The order price.
             Returns None if the request fails.
         """
@@ -444,7 +444,6 @@ class BinanceClient(ExchangeAPIClient):
         pair_symbol = f"{base_asset}{quote_asset}"
         binance_orderbook_url = "https://api.binance.com/api/v3/depth"
         response = requests.get(binance_orderbook_url, params={"symbol": pair_symbol, "limit": limit})
-
         if response.status_code == 200:
             order_book = response.json()
             bids = order_book["bids"]
@@ -452,11 +451,11 @@ class BinanceClient(ExchangeAPIClient):
 
             # Format bids and asks into the required structure
             formatted_bids = [
-                {"x": i, "y": int(float(bid[1]) * 100000), "price": float(bid[0])}
+                {"x": i, "y": float(bid[1]), "price": float(bid[0])}
                 for i, bid in enumerate(bids)
             ]
             formatted_asks = [
-                {"x": i, "y": int(float(ask[1]) * 100000), "price": float(ask[0])}
+                {"x": i, "y": float(ask[1]), "price": float(ask[0])}
                 for i, ask in enumerate(asks)
             ]
 

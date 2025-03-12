@@ -78,11 +78,15 @@ def get_formatted_order_book(exchange: str, quote_asset: str, base_asset: str, l
     return fetch_orderbook(exchange, quote_asset, base_asset, limit)
 
 
-@fragment(run_every="5s")
+@fragment(run_every="4s")
 def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int):
 
-    data = fetch_orderbook(exchange, quote_asset, base_asset, limit)
+    data = get_formatted_order_book(exchange, quote_asset, base_asset, limit)
+
     if data:
+        max_bid_price = max(order['y'] for order in data[0])
+        max_ask_price = max(order['y'] for order in data[1])
+
         html_code = f"""
         <!DOCTYPE html>
         <html>
@@ -101,7 +105,7 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
         }}
     
         function generateBidAndAskData(n) {{
-            const data = {get_formatted_order_book(exchange, quote_asset, base_asset, limit)}
+            const data = {data}
             return data;
         }}
     
@@ -121,8 +125,10 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
                     duration: 200
                 }},
                 type: 'bar',
-                backgroundColor: '#23232f',
+                backgroundColor: '#F5F5F5',
                 marginTop: 70,
+                borderRadius: 10,  // Rounded corners
+                shadow: true,  // Enables default shadow
                 events: {{
                     load() {{
                         const chart = this,
@@ -170,7 +176,7 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
             title: {{
                 text: 'Order book live chart',
                 style: {{
-                    color: '#ffffff'
+                    color: '#23232f'
                 }}
             }},
     
@@ -224,12 +230,12 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
                     }}
                 }},
                 min: 0,
-                max: 1200000,
+                max: {max_ask_price},
                 labels: {{
                     enabled: true,
                     format: '{{#if isLast}}Asks{{/if}}',
                     style: {{
-                        color: '#ffffff',
+                        color: '#23232f',
                         fontSize: 16,
                         fontWeight: 700
                     }},
@@ -251,7 +257,7 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
                     }}
                 }},
                 min: 0,
-                max: 1200000,
+                max: {max_bid_price},
                 labels: {{
                     enabled: true,
                     format: `
@@ -259,7 +265,7 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
                         {{#if isLast}}Bids{{/if}}
                     `,
                     style: {{
-                        color: '#ffffff',
+                        color: '#23232f',
                         fontSize: 16,
                         fontWeight: 700
                     }},
@@ -286,7 +292,7 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
                     groupPadding: 0,
                     dataLabels: {{
                         enabled: true,
-                        color: '#ffffff'
+                        color: '#23232f'
                     }},
                     borderWidth: 0,
                     crisp: false
@@ -301,7 +307,7 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
                         fontSize: 14,
                         textOutline: 0
                     }},
-                    format: '{{point.y:,.0f}}'
+                    format: '{{point.y:,.5f}}'
                 }}, {{
                     align: 'left',
                     inside: true,
@@ -322,7 +328,7 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
                         fontSize: 14,
                         textOutline: 0
                     }},
-                    format: '{{point.y:,.0f}}'
+                    format: '{{point.y:,.5f}}'
                 }}, {{
                     align: 'right',
                     inside: true,

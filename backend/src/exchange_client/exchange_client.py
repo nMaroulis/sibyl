@@ -183,7 +183,7 @@ class ExchangeAPIClient(ABC):
             Optional[List[List[Dict[str, float]]]]: A list containing two lists (bids and asks), where each entry is a
             dictionary with:
                 - 'x' (int): The index position in the order book.
-                - 'y' (int): The volume multiplied by 100,000.
+                - 'y' (float): The volume.
                 - 'price' (float): The order price.
             Returns None if the request fails.
         """
