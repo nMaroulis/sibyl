@@ -52,7 +52,8 @@ def check_backend_connection():
             rerun()
 
 
-def check_api_status(api_name: str) -> bool: # TODO reexamine here
+def check_api_status(api_name: str) -> bool:
+    api_name = api_name.lower().replace(' ', '_')
     url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/{api_name}"
     response = requests.get(url)
     try:

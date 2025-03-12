@@ -9,3 +9,4 @@
 /tests/*
 /notebooks/llms/*
 /database/wiki_rag/chroma_db
+/notebooks/exchanges/*

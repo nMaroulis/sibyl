@@ -1,7 +1,7 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.settings_helper.funcs import insert_update_api_keys
-from frontend.src.library.client import check_exchange_api_connection, check_backend_connection
+from frontend.src.library.client import check_exchange_api_connection, check_backend_connection, check_api_status
 from frontend.db.db_connector import update_fields, fetch_fields
 from pandas import DataFrame
 from settings.settings import UI_VERSION
@@ -23,17 +23,17 @@ st.sidebar.button('Reset All Data', type='primary')
 with st.spinner('Checking Backend Server connection'):
     server_conn = check_backend_connection()
 
-with st.spinner('Checking Crypto Exchange API connection'):
-    api_conn = check_exchange_api_connection()
+# with st.spinner('Checking Crypto Exchange API connection'):
+#     api_conn = check_exchange_api_connection()
 
 api_tab, llm_tab, price_tab, back_tab, trd_tab = st.tabs(['Crypto Exchange API Settings', 'LLM API Settings', 'Price History API', 'Backend Server Settings', 'Trading Settings'])
-
-
 
 with api_tab:
     with st.form('Exchange API Credentials'):
         # switch with global
         exchange = st.selectbox('Choose Crypto Exchange', options=['Binance Testnet', 'Binance'])
+        with st.spinner('Checking Crypto Exchange API status...'):
+            api_conn = check_api_status(exchange)
         if api_conn:
             st.success('✅ A valid API key is already active.')
         else:
@@ -64,8 +64,7 @@ with llm_tab:
             # update_fields(nlp_model_choice=llm_api)  # Update NLP Model Choice in frontend SQlite3 DB # TODO examine here
             res = insert_update_api_keys(llm_api, llm_api_key)
             if res:
-                st.success(
-                    f"✅ {llm_api} **API Key** has been successfully added/updated to the Encrypted Database.")
+                st.success(f"✅ {llm_api} **API Key** has been successfully added/updated to the Encrypted Database.")
             else:
                 st.error(f"⚠️ Inserting **{llm_api} API Key** to the Encrypted Database failed.")
 with price_tab:
