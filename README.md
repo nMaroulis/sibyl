@@ -54,7 +54,13 @@ Stay informed with the Natural Language Processing (NLP) tools:
 - Text summarization for quick news highlights
 - Sentiment analysis using advanced language models to gauge market mood
 
-### Customized Strategy Planning - Broker Module 🎯
+
+### SPOT Trading - Broker Module 💰
+Create and place a SPOT order through the sibyl UI. This order will be first sent as a test order, and if it is validated it will be placed on your Exchange API.
+The Spot order is then saved in the TradingHistory DB, to retrieve its status and get analytics.
+
+
+### [TBD] Customized Strategy Planning - Broker Module 🎯
 Develop and deploy your own trading strategies, including:
 
 - Parametrized trading based on AI-driven models
@@ -105,6 +111,37 @@ Sibyl is designed for local deployment, ensuring your data stays secure. You hav
 [//]: # (  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">)
   <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">
 </div>
+
+
+## Deployment
+
+**1. Virtual Environment - Recommended for Apple silicon and ARM systems, so Pypi takes care of arm64 libraries.**
+
+Install Python 3.12 on your system:
+
+```sh
+# macOS
+$ brew install python@3.12 
+# Linux (apt)
+$ sudo apt install python==3.12
+
+$ cd sibyl
+
+$ python3.12 -m venv sibyl
+$ source sibyl/bin/activate
+$ pip install -r requirements.txt # poetry config file is also available
+
+$ python3.12 main.py
+```
+
+**2. Dockerfile - Recommended for x86 systems.**
+
+```sh
+$ docker build -t sibyl_image .
+$ docker run -p 8501:8501 -p 8000:8000 -p 50051:50051 sibyl_image
+```
+
+Access the frontend from your browser at http://localhost:8501/settings
 
 
 ## Roadmap
