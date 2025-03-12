@@ -79,6 +79,17 @@ def get_spot_trade_history():
     return spot_trades
 
 
+@router.get("/trade/spot/orderbook")
+def get_spot_trade_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int) -> dict[str, Any]:
+    client = ExchangeClientFactory.get_client(exchange)
+    res = client.get_orderbook(quote_asset, base_asset, limit)
+
+    if res:
+        return {"orderbook": res}
+    else:
+        raise HTTPException(status_code=500, detail="Fetching orderbook failed.")
+
+
 ### TODO IMPLEMENT THE FUNCTIONS
 
 #

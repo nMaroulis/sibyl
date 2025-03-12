@@ -164,3 +164,23 @@ class CoinbaseClient(ExchangeAPIClient):
         :return: True if successful else False.
         """
         pass
+
+
+    def get_orderbook(self, quote_asset: str, base_asset: str, limit: int) ->Optional[List[List[Dict[str, float]]]]:
+        """
+        Fetches the order book for a given trading pair from Exchange API and formats the data.
+
+        Args:
+            quote_asset (str): The quote asset (e.g., "USDT").
+            base_asset (str): The base asset (e.g., "ETH").
+            limit (int): The number of order book entries to retrieve.
+
+        Returns:
+            Optional[List[List[Dict[str, float]]]]: A list containing two lists (bids and asks), where each entry is a
+            dictionary with:
+                - 'x' (int): The index position in the order book.
+                - 'y' (int): The volume multiplied by 100,000.
+                - 'price' (float): The order price.
+            Returns None if the request fails.
+        """
+        pass

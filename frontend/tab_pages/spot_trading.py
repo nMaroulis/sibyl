@@ -1,7 +1,7 @@
 import streamlit as st
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
-from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions
+from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook
 from frontend.src.library.spot_trade_helper.client import post_spot_trade, fetch_minimum_trade_value, fetch_current_asset_price
 from frontend.src.library.analytics_helper.client import fetch_available_coins
 
@@ -51,6 +51,10 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             st.success("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/task_alt:")
         else:
             st.error("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/warning:")
+
+        show_orderbook = st.toggle("📖 Show Orderbook", value=False)
+        if show_orderbook:
+            plot_orderbook(st.session_state['trade_exchange_api'], quote_asset, base_asset, 10)
 
     st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>2. Trading Options 📈</h3>""")
     with st.container(border=False):

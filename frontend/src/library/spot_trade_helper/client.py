@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 import requests
 from streamlit import cache_data
 from frontend.config.config import BACKEND_SERVER_ADDRESS
@@ -57,5 +57,19 @@ def post_spot_trade(test_order: bool, exchange: str, order_type: str, quote_asse
 
     if response.status_code == 200 and response:
         return response.json()
+    else:
+        return None
+
+
+def fetch_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int) -> Dict[str, Any] | None:
+
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/spot/orderbook?exchange={exchange.lower().replace(" ","_")}&quote_asset={quote_asset}&base_asset={base_asset}&limit={limit}'
+    response = requests.get(url)
+    if response.status_code == 200:
+        try:
+            return response.json()['orderbook']
+        except KeyError as e:
+            print(e)
+            return None
     else:
         return None

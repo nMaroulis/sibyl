@@ -6,7 +6,7 @@ from binance.enums import ORDER_TYPE_STOP_LOSS, ORDER_TYPE_LIMIT, ORDER_TYPE_MAR
     ORDER_TYPE_TAKE_PROFIT_LIMIT, ORDER_TYPE_TAKE_PROFIT
 from typing import Optional, Dict, Any, List, Union
 from database.trade_history_db_client import TradeHistoryDBClient
-
+import requests
 
 class BinanceClient(ExchangeAPIClient):
 
@@ -421,6 +421,51 @@ class BinanceClient(ExchangeAPIClient):
         except Exception as e:
             print(f"Error: {e}")
             return False
+
+
+    def get_orderbook(self, quote_asset: str, base_asset: str, limit: int) ->Optional[List[List[Dict[str, float]]]]:
+        """
+        Fetches the order book for a given trading pair from Binance and formats the data.
+
+        Args:
+            quote_asset (str): The quote asset (e.g., "USDT").
+            base_asset (str): The base asset (e.g., "ETH").
+            limit (int): The number of order book entries to retrieve.
+
+        Returns:
+            Optional[List[List[Dict[str, float]]]]: A list containing two lists (bids and asks), where each entry is a
+            dictionary with:
+                - 'x' (int): The index position in the order book.
+                - 'y' (int): The volume multiplied by 100,000.
+                - 'price' (float): The order price.
+            Returns None if the request fails.
+        """
+        # static implementation
+        pair_symbol = f"{base_asset}{quote_asset}"
+        binance_orderbook_url = "https://api.binance.com/api/v3/depth"
+        response = requests.get(binance_orderbook_url, params={"symbol": pair_symbol, "limit": limit})
+
+        if response.status_code == 200:
+            order_book = response.json()
+            bids = order_book["bids"]
+            asks = order_book["asks"]
+
+            # Format bids and asks into the required structure
+            formatted_bids = [
+                {"x": i, "y": int(float(bid[1]) * 100000), "price": float(bid[0])}
+                for i, bid in enumerate(bids)
+            ]
+            formatted_asks = [
+                {"x": i, "y": int(float(ask[1]) * 100000), "price": float(ask[0])}
+                for i, ask in enumerate(asks)
+            ]
+
+            return [formatted_bids, formatted_asks]
+
+        else:
+            print("BinanceClient :: Failed to fetch order book data.")
+            return None
+
 
 # check_token_swap_status()
 # get_spot_trade_order_status

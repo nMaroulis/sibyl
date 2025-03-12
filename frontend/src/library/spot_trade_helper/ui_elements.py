@@ -1,5 +1,7 @@
 from extra_streamlit_components import stepper_bar
-from streamlit import write, container, expander, html, caption, link_button, tabs, error, info, divider
+from streamlit import write, container, expander, html, caption, link_button, tabs, error, info, divider, fragment, warning
+from streamlit.components.v1 import html as components_html
+from frontend.src.library.spot_trade_helper.client import fetch_orderbook
 
 
 def get_spot_trade_instructions(exp=False):
@@ -67,3 +69,301 @@ def get_spot_trade_instructions(exp=False):
                 write('First, a **test order** will be created to test if the order is possible based on the trade parameters. If it is not a message with the error from the Exchange API will be shown, otherwise the Trade will be placed.')
                 write("You can find ***Open Positions*** and ***Trading History*** in the **Trading Report module**.")
                 link_button("Trading Report", "http://localhost:8501/trading_report ", type="primary", icon=":material/youtube_searched_for:")
+
+
+import requests
+from streamlit import fragment
+
+def get_formatted_order_book(exchange: str, quote_asset: str, base_asset: str, limit: int = 10):
+    return fetch_orderbook(exchange, quote_asset, base_asset, limit)
+
+
+@fragment(run_every="5s")
+def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int):
+
+    data = fetch_orderbook(exchange, quote_asset, base_asset, limit)
+    if data:
+        html_code = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <script src="https://code.highcharts.com/highcharts.js"></script>
+        </head>
+        <body>
+        <figure class="highcharts-figure">
+            <div id="container"></div>
+            <button id="animation-toggle" class="highcharts-demo-button">Stop animation</button>
+        </figure>
+    
+        <script>
+        function getRandomNumber(min, max) {{
+            return Math.round(Math.random() * (max - min)) + min;
+        }}
+    
+        function generateBidAndAskData(n) {{
+            const data = {get_formatted_order_book(exchange, quote_asset, base_asset, limit)}
+            return data;
+        }}
+    
+        const [bidsData, asksData] = generateBidAndAskData(10);
+    
+        function updateData(chart) {{
+            const data = generateBidAndAskData(10);
+            chart.series.forEach((s, i) => {{
+                s.setData(data[i], false);
+            }});
+            chart.redraw();
+        }}
+    
+        Highcharts.chart('container', {{
+            chart: {{
+                animation: {{
+                    duration: 200
+                }},
+                type: 'bar',
+                backgroundColor: '#23232f',
+                marginTop: 70,
+                events: {{
+                    load() {{
+                        const chart = this,
+                            toggleButton = document.getElementById('animation-toggle');
+    
+                        let intervalId = null;
+                        const toggleInterval = () => {{
+                            if (intervalId) {{
+                                chart.update({{
+                                    accessibility: {{
+                                        enabled: true
+                                    }}
+                                }});
+                                clearInterval(intervalId);
+                                intervalId = null;
+                                toggleButton.innerText = 'Start animation';
+                            }} else {{
+                                chart.update({{
+                                    accessibility: {{
+                                        enabled: false
+                                    }}
+                                }});
+                                intervalId = setInterval(() => {{
+                                    if (this.series) {{
+                                        updateData(this);
+                                    }}
+                                }}, 2000);
+                                toggleButton.innerText = 'Stop animation';
+                            }}
+                        }};
+    
+                        toggleButton.addEventListener('click', toggleInterval);
+                        toggleInterval();
+                    }}
+                }}
+            }},
+    
+            accessibility: {{
+                point: {{
+                    descriptionFormat: 'Price: {{price:.1f}}USD, ' +
+                        '{{series.name}}: {{y}}'
+                }}
+            }},
+    
+            title: {{
+                text: 'Order book live chart',
+                style: {{
+                    color: '#ffffff'
+                }}
+            }},
+    
+            tooltip: {{
+                headerFormat: 'Price: <b>${{point.point.price:,.1f}}</b></br>',
+                pointFormat: '{{series.name}}: <b>{{point.y:,.0f}}</b>',
+                shape: 'rect',
+                positioner(labelWidth, _, point) {{
+                    const {{ plotX, plotY, h }} = point,
+                        negative = plotX < this.chart.yAxis[0].left;
+    
+                    return {{
+                        x: negative ? plotX + h - labelWidth + 10 : plotX - h + 10,
+                        y: plotY
+                    }};
+                }}
+            }},
+    
+            xAxis: [{{
+                reversed: true,
+                visible: false,
+                title: {{
+                    text: 'Market depth / price'
+                }},
+                accessibility: {{
+                    description: 'Bid orders'
+                }}
+            }}, {{
+                opposite: true,
+                visible: false,
+                title: {{
+                    text: 'Market depth / price'
+                }},
+                accessibility: {{
+                    description: 'Ask orders'
+                }}
+            }}],
+    
+            yAxis: [{{
+                offset: 0,
+                visible: true,
+                opposite: true,
+                gridLineWidth: 0,
+                tickAmount: 1,
+                left: '50%',
+                width: '50%',
+                title: {{
+                    text: 'Amount of ask orders',
+                    style: {{
+                        visibility: 'hidden'
+                    }}
+                }},
+                min: 0,
+                max: 1200000,
+                labels: {{
+                    enabled: true,
+                    format: '{{#if isLast}}Asks{{/if}}',
+                    style: {{
+                        color: '#ffffff',
+                        fontSize: 16,
+                        fontWeight: 700
+                    }},
+                    y: 10
+                }}
+            }}, {{
+                offset: 0,
+                visible: true,
+                opposite: true,
+                gridLineWidth: 0,
+                tickAmount: 2,
+                left: '0%',
+                width: '50%',
+                reversed: true,
+                title: {{
+                    text: 'Amount of bid orders',
+                    style: {{
+                        visibility: 'hidden'
+                    }}
+                }},
+                min: 0,
+                max: 1200000,
+                labels: {{
+                    enabled: true,
+                    format: `
+                        {{#if (eq pos 0)}}{base_asset} price in {quote_asset}{{/if}}
+                        {{#if isLast}}Bids{{/if}}
+                    `,
+                    style: {{
+                        color: '#ffffff',
+                        fontSize: 16,
+                        fontWeight: 700
+                    }},
+                    y: 10
+                }}
+            }}],
+    
+            legend: {{
+                enabled: false
+            }},
+    
+            navigation: {{
+                buttonOptions: {{
+                    theme: {{
+                        fill: 'none'
+                    }}
+                }}
+            }},
+    
+            plotOptions: {{
+                series: {{
+                    animation: false,
+                    pointPadding: 0,
+                    groupPadding: 0,
+                    dataLabels: {{
+                        enabled: true,
+                        color: '#ffffff'
+                    }},
+                    borderWidth: 0,
+                    crisp: false
+                }}
+            }},
+    
+            series: [{{
+                dataLabels: [{{
+                    align: 'right',
+                    alignTo: 'plotEdges',
+                    style: {{
+                        fontSize: 14,
+                        textOutline: 0
+                    }},
+                    format: '{{point.y:,.0f}}'
+                }}, {{
+                    align: 'left',
+                    inside: true,
+                    style: {{
+                        fontSize: 13,
+                        textOutline: 0
+                    }},
+                    format: '{{point.price:,.4f}}'
+                }}],
+                name: 'Asks',
+                color: '#ce4548',
+                data: asksData
+            }}, {{
+                dataLabels: [{{
+                    align: 'left',
+                    alignTo: 'plotEdges',
+                    style: {{
+                        fontSize: 14,
+                        textOutline: 0
+                    }},
+                    format: '{{point.y:,.0f}}'
+                }}, {{
+                    align: 'right',
+                    inside: true,
+                    style: {{
+                        fontSize: 13,
+                        textOutline: 0
+                    }},
+                    format: '{{point.price:,.4f}}'
+                }}],
+                name: 'Bids',
+                color:  '#107db7',
+                data: bidsData,
+                yAxis: 1
+            }}]
+        }});
+        </script>
+        </body>
+        </html>
+        """
+        # Display in Streamlit
+        components_html(html_code, height=400)
+    else:
+        warning(f"Failed to fetch orderbook for {quote_asset}/{base_asset}", icon=":material/two_pager:")
+
+"""
+Deprecated orderbook
+    asks_df = pd.DataFrame(order_book["asks"], columns=["Ask Price", "Ask Quantity"]).astype(float)
+    bids_df = pd.DataFrame(order_book["bids"], columns=["Bid Price", "Bid Quantity"]).astype(float)
+
+    # Sort asks (lowest first) and bids (highest first)
+    asks_df = asks_df.sort_values("Ask Price", ascending=True).reset_index(drop=True)
+    bids_df = bids_df.sort_values("Bid Price", ascending=False).reset_index(drop=True)
+
+    # Ensure same length for alignment
+    max_rows = max(len(asks_df), len(bids_df))
+    asks_df = asks_df.reindex(range(max_rows))
+    bids_df = bids_df.reindex(range(max_rows))
+
+    # Merge into one table with separate buy/sell columns
+    order_book_df = pd.concat([bids_df, asks_df], axis=1)
+
+    # Display order book with Streamlit table
+    st.table(order_book_df.style.set_properties(**{"text-align": "center"}))
+"""
