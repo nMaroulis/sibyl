@@ -18,6 +18,7 @@ technician_worker = Technician()
 def get_api_status(api_name: str = 'binance'):
     try:
         res = technician_worker.api_status_check(api_name)
+        print(res)
     except Exception as e:
         print(f"TECHNICIAN :: status/api/all :: {e}")
         res = {}

@@ -131,10 +131,10 @@ class APIEncryptedDatabase:
 
         if new_api_key:
             key.api_key = cls.cipher.encrypt(new_api_key.encode()).decode()
-        if new_secret_key:
+        if new_secret_key is not None:
             key.secret_key = cls.cipher.encrypt(new_secret_key.encode()).decode()
         if new_metadata is not None:
-            key.api_metadata = new_metadata
+            key.api_metadata = cls.cipher.encrypt(new_metadata.encode()).decode()
 
         session.commit()
         session.close()

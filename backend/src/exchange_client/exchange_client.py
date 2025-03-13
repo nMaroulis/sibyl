@@ -76,12 +76,12 @@ class ExchangeAPIClient(ABC):
 
 
     @abstractmethod
-    def get_spot_balance(self) -> dict:
+    def get_spot_balance(self) -> Dict[str, Any]:
         """
         Retrieve the user's spot balance, including free and locked amounts, along with current prices.
 
         Returns:
-            dict: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
+            Dict[str, Any]: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
         """
         pass
 

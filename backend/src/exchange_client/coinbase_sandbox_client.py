@@ -1,21 +1,28 @@
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 from database.api_keys_db_client import APIEncryptedDatabase
-from typing import Optional, Dict, Any, List, Union
+import requests, time, hmac, hashlib, base64
+from typing import Dict, Any, Optional, Union, List
 
 
-class CoinbaseClient(ExchangeAPIClient):
+class CoinbaseSandboxClient(ExchangeAPIClient):
 
     def __init__(self):
         super().__init__()
-        self.name = 'coinbase'
-        self.api_base_url = 'https://api.prime.coinbase.com/v1'
+        self.name = 'coinbase_sandbox'
+        self.api_base_url = 'https://api-public.sandbox.exchange.coinbase.com'
+        # Set API Keys
         api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
-        self.client = None
+        if api_creds:
+            self.api_key = api_creds.api_key
+            self.api_secret = api_creds.api_secret
+            self.api_passphrase = api_creds.api_metadata # metadata contains the passphrase
+        else:
+            self.api_key = None
 
 
     def check_status(self) -> str:
         """
-        Check the status of the Binance client connection.
+        Check the status of the client connection.
 
         Returns:
             str: A status message indicating whether the credentials are valid or not.
@@ -23,8 +30,65 @@ class CoinbaseClient(ExchangeAPIClient):
                   - 'Active' if the API credentials are valid.
                   - 'Invalid Credentials' if the API credentials are incorrect or expired.
         """
-        return 'Unavailable'
 
+        if self.api_key is None:
+            return 'Empty Credentials'
+        try:
+            acc = self.get_spot_balance()
+            if "error" in acc.keys():
+                return 'Invalid Credentials'
+            else:
+                return 'Active'
+        except Exception as e:
+            return 'Invalid Credentials'
+
+
+    def generate_request_headers(self, endpoint: str) -> Dict[str, str]:
+        timestamp = str(int(time.time()))
+
+        # Pre-signature string
+        message = timestamp + "GET" + endpoint
+        hmac_key = base64.b64decode(self.api_secret)
+        signature = hmac.new(hmac_key, message.encode(), hashlib.sha256).digest()
+        signature_b64 = base64.b64encode(signature).decode()
+
+        # Headers
+        headers = {
+            "CB-ACCESS-KEY": self.api_key,
+            "CB-ACCESS-SIGN": signature_b64,
+            "CB-ACCESS-TIMESTAMP": timestamp,
+            "CB-ACCESS-PASSPHRASE": self.api_passphrase,
+            "Content-Type": "application/json"
+        }
+        return headers
+
+
+    def get_spot_balance(self) -> Dict[str, Any]:
+
+        try:
+            endpoint = '/accounts'
+            headers = self.generate_request_headers(endpoint)
+            response = requests.get(self.api_base_url+endpoint, headers=headers)
+
+            if response.status_code == 200:
+                accounts = response.json()
+                # Keep only non-zero balances
+                balances = {
+                    account["currency"]: round(float(account["balance"]), 4)
+                    for account in accounts
+                    if float(account["balance"]) > 0
+                }
+
+                res_json = {
+                    'spot_balances': balances,
+                    'locked_earn_balances': {},
+                    'staked_balances': {}
+                }
+                return res_json
+            else:
+                return {"error": "Coinbase API status code {}".format(response.status_code)}
+        except Exception as e:
+            return {"error": str(e)}
 
     def place_spot_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -71,16 +135,6 @@ class CoinbaseClient(ExchangeAPIClient):
 
         Returns:
             dict: A dictionary containing the price or an error message.
-        """
-        pass
-
-
-    def get_spot_balance(self) -> Dict[str, Any]:
-        """
-        Retrieve the user's spot balance, including free and locked amounts, along with current prices.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
         """
         pass
 

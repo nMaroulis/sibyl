@@ -1,7 +1,8 @@
-from backend.src.exchange_client.kraken_client import KrakenClient
 from backend.src.exchange_client.binance_client import BinanceClient
 from backend.src.exchange_client.binance_testnet_client import BinanceTestnetClient
 from backend.src.exchange_client.coinbase_client import CoinbaseClient
+from backend.src.exchange_client.coinbase_sandbox_client import CoinbaseSandboxClient
+from backend.src.exchange_client.kraken_client import KrakenClient
 
 
 class ExchangeClientFactory:
@@ -9,6 +10,7 @@ class ExchangeClientFactory:
         'binance': BinanceClient,
         'binance_testnet': BinanceTestnetClient,
         'coinbase': CoinbaseClient,
+        'coinbase_sandbox': CoinbaseSandboxClient,
         'kraken': KrakenClient
     }
 
