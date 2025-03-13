@@ -13,7 +13,8 @@ Four states of Status
 CRYPTO_APIS = {'Binance API': "https://www.logo.wine/a/logo/Binance/Binance-Vertical2-Dark-Background-Logo.wine.svg",
                 'Binance Testnet API': "https://www.logo.wine/a/logo/Binance/Binance-Vertical2-Dark-Background-Logo.wine.svg",
                 'Kraken API': "https://media.licdn.com/dms/image/D4E0BAQFm8yg0gGJN1A/company-logo_200_200/0/1697458897774/krakenfx_logo?e=2147483647&v=beta&t=CTWrqJakEEIx4lAPmddjLjt7e4Xi0HQqDTi7k9p3RPM",
-                'Coinbase API': "https://alternative.me/media/256/coinbase-icon-kdtz42w4efva6qiu-c.png"}
+                'Coinbase API': "https://alternative.me/media/256/coinbase-icon-kdtz42w4efva6qiu-c.png",
+                'Coinbase Sandbox API': "https://back.gainium.io/uploads/Coinbase_Pro_d32bc1e094.jpeg"}
 
 LLM_APIS = {'OpenAI API': "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFJYCiV_aHxCRPoVcLeOChZWnb_qVxSQMm4Jr-C_x_0A&s",
                 'Gemini API': "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQV1QWx0soc08N7wU8LjH95wZTkF_q13tg1KH4AOTs3xw&s",
@@ -36,7 +37,7 @@ def show_status_cards(only_exchange=False):
     #     num_cols += 1
     html_txt = """<div class="section" id="apis">"""
 
-    api_cols = columns(4)
+    # api_cols = columns(4)
     i = 0
     for k, v in CRYPTO_APIS.items():
         html_txt += status_card(k, v, status_list[i], False)
@@ -61,7 +62,7 @@ def show_status_cards(only_exchange=False):
 def show_homepage_status_cards():
     global CRYPTO_APIS
     status_card_style()
-    statuses = [session_state['backend_status'], session_state["binance_api_status"], session_state["binance_testnet_api_status"], session_state["kraken_api_status"], session_state["coinbase_api_status"]]
+    statuses = [session_state['backend_status'], session_state["binance_api_status"], session_state["binance_testnet_api_status"], session_state["kraken_api_status"], session_state["coinbase_api_status"], session_state["coinbase_sandbox_api_status"] ]
 
     i = 1
     html_txt = """<div class="section" id="apis">"""

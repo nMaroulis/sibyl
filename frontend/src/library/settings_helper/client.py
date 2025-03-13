@@ -3,7 +3,7 @@ import json
 from frontend.config.config import BACKEND_SERVER_ADDRESS
 
 
-def fetch_apis_status(api_name: str = 'all'):
+def fetch_apis_status(api_name: str = 'all') -> dict:
     url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/{api_name}"
     response = requests.get(url)
     print(response.json())

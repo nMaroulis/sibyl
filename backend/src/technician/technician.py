@@ -1,6 +1,7 @@
-
 from database.api_keys_db_client import APIEncryptedDatabase
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
+from typing import Dict
+
 
 class Technician:
 
@@ -8,7 +9,7 @@ class Technician:
         pass
 
     @staticmethod
-    def api_status_check(api_name: str ="all") -> dict:  # TODO reexamine this func
+    def api_status_check(api_name: str ="all") -> Dict[str, str]:
         res = {}
         if api_name == "binance" or api_name == "all" or api_name == "exchanges":
             res['binance'] = ExchangeClientFactory.get_client("binance").check_status()
@@ -22,9 +23,9 @@ class Technician:
         if api_name == "coinbase" or api_name == "all" or api_name == "exchanges":
             res['coinbase'] = ExchangeClientFactory.get_client("coinbase").check_status()
             print(res['coinbase'])
-        # if api_name == "coinbase_sandbox" or api_name == "all" or api_name == "exchanges":
-        #     res['coinbase_sandbox'] = ExchangeClientFactory.get_client("coinbase_sandbox").check_status()
-        #     print(res['coinbase_sandbox'])
+        if api_name == "coinbase_sandbox" or api_name == "all" or api_name == "exchanges":
+            res['coinbase_sandbox'] = ExchangeClientFactory.get_client("coinbase_sandbox").check_status()
+            print(res['coinbase_sandbox'])
 
         if api_name == "openai" or api_name == "all" or api_name == "llms":
             res["openai"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("openai") is not None else 'Unavailable'

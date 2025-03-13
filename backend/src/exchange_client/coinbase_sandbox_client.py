@@ -14,7 +14,7 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
         if api_creds:
             self.api_key = api_creds.api_key
-            self.api_secret = api_creds.api_secret
+            self.api_secret = api_creds.secret_key
             self.api_passphrase = api_creds.api_metadata # metadata contains the passphrase
         else:
             self.api_key = None
