@@ -10,6 +10,7 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         super().__init__()
         self.name = 'coinbase_sandbox'
         self.api_base_url = 'https://api-public.sandbox.exchange.coinbase.com'
+        self.coinbase_base_url = 'https://api.exchange.coinbase.com'
         # Set API Keys
         api_creds = APIEncryptedDatabase.get_api_key_by_name(self.name)
         if api_creds:
@@ -73,11 +74,16 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             if response.status_code == 200:
                 accounts = response.json()
                 # Keep only non-zero balances
-                balances = {
-                    account["currency"]: round(float(account["balance"]), 4)
-                    for account in accounts
-                    if float(account["balance"]) > 0
-                }
+                balances = {}
+                for account in accounts:
+                    if float(account["balance"]) > 0:
+                        pair_price = self.fetch_market_price(f"{account["currency"]}-USDT")
+                        print(pair_price)
+                        if "error" not in pair_price:
+                            pair_price = pair_price['price']
+                        else:
+                            pair_price = 1.0
+                        balances[account["currency"]] = {'free': round(float(account["balance"]), 4), 'locked': 0.0 , 'price': pair_price}
 
                 res_json = {
                     'spot_balances': balances,
@@ -126,7 +132,7 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         pass
 
 
-    def fetch_market_price(self, pair: str) -> dict:
+    def fetch_market_price(self, pair: str) -> Dict[str, Any]:
         """
         Fetch the current price of a given cryptocurrency trading pair.
 
@@ -134,9 +140,20 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             pair (str): The trading pair symbol (e.g., 'BTCUSDT').
 
         Returns:
-            dict: A dictionary containing the price or an error message.
+            Dict[str, Any]: A dictionary containing the price or an error message.
         """
-        pass
+        try:
+            endpoint = f"/products/{pair}/ticker"
+            headers = self.generate_request_headers(endpoint)
+            response = requests.get(self.coinbase_base_url + endpoint, headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+                return {"price": data["price"]}
+            else:
+                return {"error": f"Coinbase API status code {response.status_code}"}
+        except Exception as e:
+            return {"error": str(e)}
 
 
     def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:

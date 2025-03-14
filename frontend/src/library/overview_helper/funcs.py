@@ -10,12 +10,12 @@ from pandas import DataFrame
 def get_wallet_balances(exchange_api: str):
     exchange_api = exchange_api.replace(' ', '_').lower()
     with spinner('Fetching Wallet Information'):
-        data, status_code = fetch_account_spot(exchange_api)
+        data = fetch_account_spot(exchange_api)
         wallet_list = []
-        if status_code == 200:
+        if data:
             if "error" in data:
                 error(
-                    'Connection to the Exchange API failed. The **current** Exchange API and Secret Keys seem to be ***Invalid***, Please visit the Settings Tab to set a **Valid Exchange API & Secret Key**.')
+                    'Connection to the Exchange API failed. The **current** Exchange API and Secret Keys seem to be ***Invalid***, Please visit the Settings Tab to set a **Valid Exchange API & Secret Key**.', icon=":material/warning:")
                 return 0
             else:
                 # iterate through balances response in order to show them in a table
@@ -27,21 +27,6 @@ def get_wallet_balances(exchange_api: str):
                     pie_chart_values.append(float(data.get('spot_balances').get(coin).get('free'))*float(data.get('spot_balances').get(coin).get('price')))  # price in usdt
                     # wallet_list.append([coin, round(data.get('spot_balances').get(coin).get('free'), 4)])  # can add round(data.get('spot_balances').get(coin).get('locked')
 
-                # cols = columns([1,1,1,3])  # max number of spot in the same row
-                # c = 0
-                # for i in wallet_list:
-                #     stk = 0
-                #     if i[0][0:2] == 'LD':  # LD prefix means flexible staking
-                #         i[0] = i[0][2:]  # remove LD symbol
-                #         stk = i[1]
-                #     with cols[c]:
-                #         if stk == 0:  # if balance is not staked
-                #             metric(i[0], i[1])
-                #         else:
-                #             metric(i[0], i[1], stk)  # if balance is staked
-                #     c += 1
-                #     if c > 2:
-                #         c = 0
                 # FIX Staking amounts
                 stk = []
                 for i in wallet_list:
@@ -106,7 +91,7 @@ def get_wallet_balances(exchange_api: str):
                         y=1.02,
                         xanchor="right",
                         x=1,
-                    ))# , margin=dict(l=20, t=20, r=20, b=0)
+                    ))  # , margin=dict(l=20, t=20, r=20, b=0)
                     plotly_chart(fig, config=dict(displayModeBar=False), use_container_width=True)
                     html('<p style="text-align:center;font-size:5;color:grey">A maximum of 10 Coins can be displayed.</p>')
             info('💡 The locked assets in Binance are not yet available to show.')

@@ -62,7 +62,7 @@ class KrakenClient(ExchangeAPIClient):
         pass
 
 
-    def fetch_market_price(self, pair: str) -> dict:
+    def fetch_market_price(self, pair: str) -> Dict[str, Any]:
         """
         Fetch the current price of a given cryptocurrency trading pair.
 
@@ -70,7 +70,7 @@ class KrakenClient(ExchangeAPIClient):
             pair (str): The trading pair symbol (e.g., 'BTCUSDT').
 
         Returns:
-            dict: A dictionary containing the price or an error message.
+            Dict[str, Any]: A dictionary containing the price or an error message.
         """
         pass
 
