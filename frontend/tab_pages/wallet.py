@@ -36,6 +36,7 @@ if st.session_state['backend_status'] == 'Active':  # if connection with backend
         st.link_button("Go to Settings", "http://localhost:8501/settings", use_container_width=True, type="tertiary",
                        icon=":material/settings:")
     else:
+        st.pills("Choose quote asset:", options=["USDT", 'USD', "EUR", "USDC"], default="USDT", disabled=True)
         get_wallet_balances(exchange_api)
 else:
     st.error("Connection to Backend Server failed. Please visit the Settings Tab to set a **IP** and **PORT**, or check start application manually via the **main.py** script")

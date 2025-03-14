@@ -94,7 +94,12 @@ def get_wallet_balances(exchange_api: str):
                     ))  # , margin=dict(l=20, t=20, r=20, b=0)
                     plotly_chart(fig, config=dict(displayModeBar=False), use_container_width=True)
                     html('<p style="text-align:center;font-size:5;color:grey">A maximum of 10 Coins can be displayed.</p>')
-            info('💡 The locked assets in Binance are not yet available to show.')
+            # INFO
+            if exchange_api == "binance":
+                info('💡 The locked assets in Binance are not yet available to show.')
+            elif exchange_api == "coinbase_sandbox":
+                info('💡 Price in USDT is calculated using the Coinbase API, since the Sandbox contains limited markets.')
+
         else:
             error("Connection to Backend Server failed. Please visit the Settings Tab to set a **IP** and **PORT**, or check start application manually via the **main.py** script")
     return 0
