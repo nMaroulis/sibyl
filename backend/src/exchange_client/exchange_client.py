@@ -86,22 +86,23 @@ class ExchangeAPIClient(ABC):
         pass
 
     @abstractmethod
-    def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
+    def get_available_assets(self, quote_asset: str = "all") -> Optional[Dict[str, List[str]]]:
         """
-        Fetches a list of unique base assets (coins) available for trading on the Exchange.
+        Fetches available trading pairs from Exchange and groups them by quote asset.
 
         Args:
             quote_asset (str, optional):
-                - If `"all"` (default), returns all coins available for trading.
-                - If a specific trading quote_asset (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given quote_asset.
+                - If `"all"` (default), returns all quote assets with their corresponding base assets.
+                - If a specific quote asset is provided (e.g., `"USDT"` or `"BTC"`), returns only the base assets for that quote asset.
 
         Returns:
-            Optional[List[str]]:
-                - A list of unique base assets that match the specified trading quote_asset.
+            Optional[Dict[str, List[str]]]:
+                - A dictionary where keys are quote assets and values are lists of base assets.
+                - If a specific quote asset is provided, returns a dictionary with only that quote asset.
                 - Returns None if an error occurs.
 
         Raises:
-            Exception: Logs an error message if the API request fails.
+            Exception: Logs an error message if the Exchange API request fails.
         """
         pass
 

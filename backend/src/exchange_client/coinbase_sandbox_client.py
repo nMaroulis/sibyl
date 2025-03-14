@@ -156,24 +156,56 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             return {"error": str(e)}
 
 
-    def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
+    def get_available_assets(self, quote_asset: str = "all") -> Optional[Dict[str, List[str]]]:
         """
-        Fetches a list of unique base assets (coins) available for trading on the Exchange.
+        Fetches available trading pairs from Coinbase and groups them by quote asset.
 
         Args:
             quote_asset (str, optional):
-                - If `"all"` (default), returns all coins available for trading.
-                - If a specific trading quote_asset (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given quote_asset.
+                - If `"all"` (default), returns all quote assets with their corresponding base assets.
+                - If a specific quote asset is provided (e.g., `"USDT"` or `"BTC"`), returns only the base assets for that quote asset.
 
         Returns:
-            Optional[List[str]]:
-                - A list of unique base assets that match the specified trading quote_asset.
+            Optional[Dict[str, List[str]]]:
+                - A dictionary where keys are quote assets and values are lists of base assets.
+                - If a specific quote asset is provided, returns a dictionary with only that quote asset.
                 - Returns None if an error occurs.
 
         Raises:
             Exception: Logs an error message if the API request fails.
         """
-        pass
+        try:
+            endpoint = "/products"
+            headers = self.generate_request_headers(endpoint)
+            response = requests.get(self.api_base_url + endpoint, headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+
+                # Dictionary to store quote assets and their corresponding base assets
+                assets_by_quote: Dict[str, List[str]] = {}
+
+                for product in data:
+                    base_currency = product["base_currency"]
+                    quote_currency = product["quote_currency"]
+
+                    if quote_currency not in assets_by_quote:
+                        assets_by_quote[quote_currency] = []
+
+                    assets_by_quote[quote_currency].append(base_currency)
+
+                # Apply filtering if a specific quote_asset is requested
+                if quote_asset != "all":
+                    return {quote_asset: assets_by_quote.get(quote_asset, [])}
+
+                return assets_by_quote  # Return full dictionary if "all" is requested
+
+            else:
+                return None  # Return None if API request fails
+
+        except Exception as e:
+            print(f"Error fetching available assets: {e}")
+            return None
 
 
     def get_price_history(self, symbol: str, interval: str = "1d", plot_type: str = "line", limit: int = 100) -> Optional[List[Dict[str, float]]]:

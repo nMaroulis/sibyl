@@ -7,6 +7,8 @@ from binance.enums import ORDER_TYPE_STOP_LOSS, ORDER_TYPE_LIMIT, ORDER_TYPE_MAR
 from typing import Optional, Dict, Any, List, Union
 from database.trade_history_db_client import TradeHistoryDBClient
 import requests
+import bisect
+
 
 class BinanceClient(ExchangeAPIClient):
 
@@ -221,6 +223,7 @@ class BinanceClient(ExchangeAPIClient):
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
+
     def fetch_market_price(self, pair: str) -> Dict[str, Any]:
         """
         Fetch the current price of a given cryptocurrency trading pair.
@@ -281,18 +284,48 @@ class BinanceClient(ExchangeAPIClient):
             return {"error": str(e)}
 
 
-    def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
+    # def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
+    #     """
+    #     Fetches a list of unique base assets (coins) available for trading on Binance.
+    #
+    #     Args:
+    #         quote_asset (str, optional):
+    #             - If `"all"` (default), returns all coins available for trading.
+    #             - If a specific trading quote_asset (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given quote_asset.
+    #
+    #     Returns:
+    #         Optional[List[str]]:
+    #             - A list of unique base assets that match the specified trading quote_asset.
+    #             - Returns None if an error occurs.
+    #
+    #     Raises:
+    #         BinanceAPIException: Logs an error message if the Binance API request fails.
+    #     """
+    #     try:
+    #         exchange_info = self.client.get_exchange_info()
+    #         if quote_asset == "all":
+    #             available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if s['status'] == 'TRADING']
+    #         else:
+    #             available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if quote_asset in s['symbol']]
+    #         return list(set(available_coins))
+    #     except BinanceAPIException as e:
+    #         print(f"Binance Exchange Client :: get_available_assets :: {str(e)}")
+    #         return None
+
+
+    def get_available_assets(self, quote_asset: str = "all") -> Optional[Dict[str, List[str]]]:
         """
-        Fetches a list of unique base assets (coins) available for trading on Binance.
+        Fetches available trading pairs from Binance and groups them by quote asset.
 
         Args:
             quote_asset (str, optional):
-                - If `"all"` (default), returns all coins available for trading.
-                - If a specific trading quote_asset (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given quote_asset.
+                - If `"all"` (default), returns all quote assets with their corresponding base assets.
+                - If a specific quote asset is provided (e.g., `"USDT"` or `"BTC"`), returns only the base assets for that quote asset.
 
         Returns:
-            Optional[List[str]]:
-                - A list of unique base assets that match the specified trading quote_asset.
+            Optional[Dict[str, List[str]]]:
+                - A dictionary where keys are quote assets and values are lists of base assets.
+                - If a specific quote asset is provided, returns a dictionary with only that quote asset.
                 - Returns None if an error occurs.
 
         Raises:
@@ -300,11 +333,25 @@ class BinanceClient(ExchangeAPIClient):
         """
         try:
             exchange_info = self.client.get_exchange_info()
-            if quote_asset == "all":
-                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if s['status'] == 'TRADING']
-            else:
-                available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if quote_asset in s['symbol']]
-            return list(set(available_coins))
+            # Dictionary to store quote assets and their corresponding base assets
+            assets_by_quote: Dict[str, List[str]] = {}
+
+            for symbol in exchange_info["symbols"]:
+                if symbol["status"] == "TRADING":  # Only include actively trading pairs
+                    base_currency = symbol["baseAsset"]
+                    quote_currency = symbol["quoteAsset"]
+
+                    if quote_currency not in assets_by_quote:
+                        assets_by_quote[quote_currency] = []
+
+                    bisect.insort(assets_by_quote[quote_currency], base_currency) # insert in alphabetical order
+
+            # Apply filtering if a specific quote_asset is requested
+            if quote_asset != "all":
+                return {quote_asset: assets_by_quote.get(quote_asset, [])}
+
+            return assets_by_quote  # Return full dictionary if "all" is requested
+
         except BinanceAPIException as e:
             print(f"Binance Exchange Client :: get_available_assets :: {str(e)}")
             return None

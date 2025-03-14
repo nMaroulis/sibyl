@@ -27,14 +27,18 @@ if len(st.session_state["available_exchange_apis"]) > 0:
     st.divider()
     st.html("<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>1. Asset Options 💰</h3>")
     with st.container(border=False):
+
+        with st.spinner(f"Fetching available {st.session_state['trade_exchange_api']} asset pairs..."):
+            asset_list = fetch_available_coins(st.session_state['trade_exchange_api'], quote_asset="all")
+
         col00, col01, col02 = st.columns(3)
         with col00:
-            quote_asset = st.selectbox('Quote Asset', options=['USDT'], disabled=True)
+            quote_asset = st.selectbox('Quote Asset', options=asset_list.keys())
             st.caption("Currently only USDT is available as a Quote asset for Trading.")
         with col01:
-            crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'], quote_asset=quote_asset)
-            crypto_list.sort()
-            base_asset = st.selectbox('Base Asset:', options=crypto_list, index=0)
+            # crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'], quote_asset=quote_asset)
+            # crypto_list.sort()
+            base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=0)
         with col02:
             quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)
         st.toggle("Quote Market Order", value=False)  # TODO
