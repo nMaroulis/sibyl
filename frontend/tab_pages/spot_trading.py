@@ -3,7 +3,7 @@ from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook
 from frontend.src.library.spot_trade_helper.client import post_spot_trade, fetch_minimum_trade_value, fetch_current_asset_price
-from frontend.src.library.analytics_helper.client import fetch_available_coins
+from frontend.src.library.analytics_helper.client import fetch_available_assets
 
 
 fix_page_layout('spot trading')
@@ -29,15 +29,13 @@ if len(st.session_state["available_exchange_apis"]) > 0:
     with st.container(border=False):
 
         with st.spinner(f"Fetching available {st.session_state['trade_exchange_api']} asset pairs..."):
-            asset_list = fetch_available_coins(st.session_state['trade_exchange_api'], quote_asset="all")
+            asset_list = fetch_available_assets(st.session_state['trade_exchange_api'], quote_asset="all")
 
         col00, col01, col02 = st.columns(3)
         with col00:
             quote_asset = st.selectbox('Quote Asset', options=asset_list.keys())
             st.caption("Currently only USDT is available as a Quote asset for Trading.")
         with col01:
-            # crypto_list = fetch_available_coins(st.session_state['trade_exchange_api'], quote_asset=quote_asset)
-            # crypto_list.sort()
             base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=0)
         with col02:
             quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)

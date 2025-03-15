@@ -6,6 +6,8 @@ from plotly.graph_objects import Figure, Scatter, Pie
 from frontend.src.library.analytics_helper.plots import price_history_plot
 from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict_inv
 from plotly.subplots import make_subplots
+from collections import defaultdict
+from typing import Dict, List
 
 
 def sidebar_update_history():
@@ -98,11 +100,11 @@ def get_trading_history_line_plot(trade_df: DataFrame) -> Figure | None:
         more_that_one_coins_flag = True
 
     # Get Historic Prices
-    price_hist_df = price_history_plot("binance", coins_list[0], '30m', 500,  'Line Plot', False, False)
+    price_hist_df = price_history_plot("binance", f"{coins_list[0]}USDT", '30m', 500,  'Line Plot', False, False)
     col_name = coins_list[0] + ' Price'
     price_hist_df[col_name] = price_hist_df['Price']
     if more_that_one_coins_flag:
-        price_hist_df_tmp = price_history_plot("binance", coins_list[1], '30m', 500, 'Line Plot', False,False)
+        price_hist_df_tmp = price_history_plot("binance", f"{coins_list[0]}USDT", '30m', 500, 'Line Plot', False,False)
         col_name1 = coins_list[1] + ' Price'
         price_hist_df[col_name1] = price_hist_df_tmp['Price']
 

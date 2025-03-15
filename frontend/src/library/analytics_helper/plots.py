@@ -6,7 +6,7 @@ from plotly.express import imshow
 from frontend.src.library.forecasting_helper.funcs import calc_rsi, calc_ema, calc_bollinger_bands
 
 
-def show_analytics(coin: str, df: DataFrame):
+def show_analytics(quote_asset: str, base_asset: str, df: DataFrame):
     with spinner('The Analyst is analyzing the data...'):
         # dataframe(df)
         html("""
@@ -35,12 +35,12 @@ def show_analytics(coin: str, df: DataFrame):
             </div>
 
         """)
-        metric(f'{coin} Price in USDT', float(df['Closing Price'].iloc[-1]),
+        metric(f'{base_asset} Price in {quote_asset}', float(df['Closing Price'].iloc[-1]),
                round(float(df['Closing Price'].iloc[-1]) - float(df['Closing Price'].iloc[-2]), 6))
     return
 
 
-def show_line_plot_with_analytics(coin: str, price_hist_df: DataFrame):
+def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame):
     write(
         "**Exponential Moving Average (EMA)**: A Moving Average that places more weight on recent price data, reacting faster to price changes compared to the simple moving average (SMA). It's calculated using an exponential decay formula, giving higher importance to recent data points.")
     write(
@@ -65,18 +65,18 @@ def show_line_plot_with_analytics(coin: str, price_hist_df: DataFrame):
         fig.add_trace(
             Scatter(x=price_hist_df['DateTime'], y=price_hist_df['RSI'], mode='lines', yaxis="y2", name='RSI', opacity=0.5,
                     line=dict(color='purple')))
-        fig.update_layout(title=f'{coin} Price Analysis', xaxis_title='Date', yaxis_title='Price',
+        fig.update_layout(title=f'{pair_symbol} Price Analysis', xaxis_title='Date', yaxis_title='Price',
                           yaxis2=dict(title='RSI', overlaying='y', side='right'), showlegend=True)
         plotly_chart(fig, use_container_width=True)
 
     return
 
 
-def price_history_plot(exchange_api: str, coin: str, time_int: str, time_limit: int, plot_type : str = 'Line Plot', show_plot=True, full_name=True) -> DataFrame:
+def price_history_plot(exchange_api: str, pair_symbol: str, time_int: str, time_limit: int, plot_type : str = 'Line Plot', show_plot=True, full_name=True) -> DataFrame:
     df = DataFrame()
     fig = None
     if plot_type == 'Line Plot':
-        data = fetch_price_history(exchange_api, coin, time_int, time_limit, 'line', full_name)
+        data = fetch_price_history(exchange_api, pair_symbol, time_int, time_limit, 'line', full_name)
         df['DateTime'] = [entry.get('Open Time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
         df['Price'] = [entry.get('Open Price') for entry in data]
@@ -86,7 +86,7 @@ def price_history_plot(exchange_api: str, coin: str, time_int: str, time_limit: 
             fig.update_layout(title=f"Price History of ada", xaxis_title="DateTime",  yaxis_title="Price (USDT)")
     else:  # candle plot
 
-        data = fetch_price_history(exchange_api, coin, time_int, time_limit, 'candle', full_name)
+        data = fetch_price_history(exchange_api, pair_symbol, time_int, time_limit, 'candle', full_name)
         df['DateTime'] = [entry.get('Open Time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
         df['Open Price'] = [entry.get('Open Price') for entry in data]
@@ -102,7 +102,7 @@ def price_history_plot(exchange_api: str, coin: str, time_int: str, time_limit: 
                 low=df['Lows'],
                 close=df['Closing Price']
             ))
-            fig.update_layout(title=coin + ' Price History')
+            fig.update_layout(title=pair_symbol + ' Price History')
 
     if show_plot and fig is not None:
         plotly_chart(fig, use_container_width=True)
@@ -113,7 +113,8 @@ def price_history_correlation_heatmap(coins, time_int_c='1d', time_limit_c=500, 
     df = DataFrame()
     invalid_coins = []
     for coin in coins:
-        price_hist_df = price_history_plot("binance", coin, time_int_c, time_limit_c, 'Line Plot', False, True) # TODO - ADD DEFAULT PRICE HISTORY
+        pair_symbol = f"{coin}USDT"
+        price_hist_df = price_history_plot("binance", pair_symbol, time_int_c, time_limit_c, 'Line Plot', False, True) # TODO - ADD DEFAULT PRICE HISTORY
         if price_hist_df.shape[0] < 2:
             invalid_coins.append(coin)
         else:
