@@ -12,7 +12,7 @@ def fetch_price_history(exchange: str, pair_symbol: str, time_int: str, time_lim
     return response.json()
 
 
-@cache_data(ttl=1000)
+@cache_data(ttl=3600)
 def fetch_available_assets(exchange: str, quote_asset: str):
 
     url = f"{BACKEND_SERVER_ADDRESS}/analyst/exchange_info/available_assets?exchange={exchange.lower().replace(" ", "_")}&quote_asset={quote_asset}"

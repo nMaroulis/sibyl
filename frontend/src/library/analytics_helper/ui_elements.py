@@ -1,4 +1,4 @@
-from streamlit import write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, session_state, html, select_slider, divider, caption, container, spinner
+from streamlit import write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, info, html, select_slider, divider, caption, container, spinner
 from frontend.src.library.analytics_helper.plots import price_history_plot, price_history_correlation_heatmap, show_line_plot_with_analytics, show_analytics
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 from frontend.src.library.analytics_helper.funcs import invert_dict
@@ -22,11 +22,6 @@ def get_price_analytics_form():
                 quote_asset = selectbox(label='Choose Quote Asset', options=all_assets[base_asset], index=default_index)
             with cols[1]:
                 time_limit = number_input('Choose Sample Time Limit', value=1000, min_value=100, max_value=1000000)
-                # if len(session_state["available_exchange_apis"]) == 0:
-                #     exchange_api = "binance"
-                #     selectbox(label='Choose Exchange', options=[], disabled=True)
-                # else:
-                #     exchange_api = selectbox(label='Choose Exchange', options=session_state["available_exchange_apis"])
             with cols[2]:
                 selectbox(label='Choose Exchange', options=["Binance"], disabled=True, help="The default exchange is Binance, since it contains the most markets available. Does not require an API key.")
 
@@ -71,12 +66,12 @@ def get_price_analytics_form():
 
 def get_correlation_heatmap_form():
     html("<h5 style='text-align: left;margin-top:0; padding-top:0;'>Correlation Heatmap</h5>")
-    write('Generate a Correlation Heatmap for the selected Crypto Coins')
+    write('Generate a Correlation Heatmap for the selected Crypto assets')
     caption("This function currently uses the Binance API to fetch the price")
     with form('Correlation Heatmap'):
         with spinner("Fetching available assets..."):
             base_assets = fetch_available_assets("binance", quote_asset="USDT")
-        coins = multiselect(label='Choose Coins to Correlate', options=base_assets['USDT'], max_selections=40)
+        coins = multiselect(label='Choose Assets to Correlate', options=base_assets['USDT'], max_selections=40)
         cols1 = columns(2)
         with cols1[0]:
             time_int_c = selectbox(
@@ -89,8 +84,8 @@ def get_correlation_heatmap_form():
                  horizontal=True, disabled=True, help='Feature coming soon')
         use_diff = toggle('Use Delta',
                              help='Calculate the Correlation based on the Diff (change in price) of each Coin and not its actual price')
-
-        corr_sumbit_button = form_submit_button('Submit')
-        if corr_sumbit_button:
+        info("The Quote asset for each Coin is **USDT** by default.")
+        corr_submit_button = form_submit_button('Get Correlation Heatmap', icon=":material/help:")
+        if corr_submit_button:
             price_history_correlation_heatmap(coins, time_int_c, time_limit_c, use_diff)
     return
