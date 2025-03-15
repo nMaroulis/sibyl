@@ -65,7 +65,7 @@ def get_min_trade_value(exchange: str , symbol: str):
 def get_current_asset_price(exchange: str , pair_symbol: str) -> dict[str, float]:
 
     client = ExchangeClientFactory.get_client(exchange)
-    res = client.get_current_asset_price(pair_symbol)
+    res = client.get_pair_market_price(pair_symbol)
     if res:
         return {"price": res}
     else:

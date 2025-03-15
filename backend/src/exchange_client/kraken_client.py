@@ -62,19 +62,6 @@ class KrakenClient(ExchangeAPIClient):
         pass
 
 
-    def fetch_market_price(self, pair: str) -> Dict[str, Any]:
-        """
-        Fetch the current price of a given cryptocurrency trading pair.
-
-        Args:
-            pair (str): The trading pair symbol (e.g., 'BTCUSDT').
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the price or an error message.
-        """
-        pass
-
-
     def get_spot_balance(self) -> Dict[str, Any]:
         """
         Retrieve the user's spot balance, including free and locked amounts, along with current prices.
@@ -144,7 +131,7 @@ class KrakenClient(ExchangeAPIClient):
         pass
 
 
-    def get_current_asset_price(self, pair_symbol: str) -> float | None:
+    def get_pair_market_price(self, pair_symbol: str) -> float | None:
         """
         Function to get the current price of an asset in a specific quote currency using Exchange API.
 

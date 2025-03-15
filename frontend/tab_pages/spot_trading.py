@@ -34,18 +34,22 @@ if len(st.session_state["available_exchange_apis"]) > 0:
         col00, col01, col02 = st.columns(3)
         with col00:
             quote_asset = st.selectbox('Quote Asset', options=asset_list.keys())
-            st.caption("Currently only USDT is available as a Quote asset for Trading.")
+            # st.caption("Currently only USDT is available as a Quote asset for Trading.")
         with col01:
             base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=0)
         with col02:
             quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)
         st.toggle("Quote Market Order", value=False)  # TODO
 
-        trading_pair = base_asset+quote_asset
+        if st.session_state['trade_exchange_api'] == "Coinbase" or st.session_state['trade_exchange_api'] == "Coinbase Sandbox":
+            trading_pair = f"{base_asset}-{quote_asset}"
+        else:
+            trading_pair = base_asset+quote_asset
+
         current_price = fetch_current_asset_price(st.session_state['trade_exchange_api'], trading_pair)
         st.info(f"""
         - **Trading pair**: {trading_pair}
-        - **{base_asset} Current price**: {current_price} USDT
+        - **{base_asset} Current price**: {current_price} {quote_asset}
         - You'll trade {round(quantity*current_price,4)} {quote_asset} for {quantity} {base_asset}""")
 
         min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)

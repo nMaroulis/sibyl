@@ -77,11 +77,8 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
                 balances = {}
                 for account in accounts:
                     if float(account["balance"]) > 0:
-                        pair_price = self.fetch_market_price(f"{account["currency"]}-USDT")
-                        print(pair_price)
-                        if "error" not in pair_price:
-                            pair_price = pair_price['price']
-                        else:
+                        pair_price = self.get_pair_market_price(f"{account["currency"]}-USDT")
+                        if pair_price is None:
                             pair_price = 1.0
                         balances[account["currency"]] = {'free': round(float(account["balance"]), 4), 'locked': 0.0 , 'price': pair_price}
 
@@ -117,7 +114,40 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             Dict[str, Any]: Response from Exchange API.
         """
 
-        pass
+        try:
+            endpoint = "/orders"
+            headers = self.generate_request_headers(endpoint)
+
+            trading_pair = f"{base_asset}-{quote_asset}".upper()
+
+            order_payload = {
+                "product_id": trading_pair,
+                "side": side.lower(),
+                "size": str(quantity),  # Coinbase expects size as a string
+                "type": order_type.lower(),
+            }
+
+            if order_type.lower() == "limit":
+                if not price: # ValueError
+                    return {"error": "Limit orders require a price."}
+                order_payload["price"] = str(price)
+                if time_in_force:
+                    order_payload["time_in_force"] = time_in_force.upper()
+
+            elif order_type.lower() == "stop":
+                if not stop_price: # ValueError
+                    return {"error": "Stop orders require a stop price."}
+                order_payload["stop_price"] = str(stop_price)
+
+            response = requests.post(self.api_base_url + endpoint, headers=headers, json=order_payload)
+
+            if response.status_code in [200, 201]:
+                return response.json()
+            else:
+                return {"error": f"Failed to place order: {response.text}"}
+
+        except Exception as e:
+            return {"error": f"Exception occurred: {str(e)}"}
 
 
     def place_spot_test_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:
@@ -129,31 +159,7 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
                 - status: 'success' or 'error'
                 - message: Empty '' in case of success, Error message in case of error.
         """
-        pass
-
-
-    def fetch_market_price(self, pair: str) -> Dict[str, Any]:
-        """
-        Fetch the current price of a given cryptocurrency trading pair.
-
-        Args:
-            pair (str): The trading pair symbol (e.g., 'BTCUSDT').
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the price or an error message.
-        """
-        try:
-            endpoint = f"/products/{pair}/ticker"
-            headers = self.generate_request_headers(endpoint)
-            response = requests.get(self.coinbase_base_url + endpoint, headers=headers)
-
-            if response.status_code == 200:
-                data = response.json()
-                return {"price": data["price"]}
-            else:
-                return {"error": f"Coinbase API status code {response.status_code}"}
-        except Exception as e:
-            return {"error": str(e)}
+        return {"status": "success", "message": "Coinbase API does not support test orders. Skipping this step."}
 
 
     def get_available_assets(self, quote_asset: str = "all") -> Optional[Dict[str, List[str]]]:
@@ -246,14 +252,26 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         pass
 
 
-    def get_current_asset_price(self, pair_symbol: str) -> float | None:
+    def get_pair_market_price(self, pair_symbol: str) -> float | None:
         """
         Function to get the current price of an asset in a specific quote currency using Exchange API.
 
-        :param pair_symbol: The trading pair symbol (e.g., 'BTCUSDT', 'ETHUSDT')
-        :return: Current price of the asset in the specified quote currency
+        :param pair_symbol: The trading pair symbol (e.g., 'BTC-USDT', 'ETH-USDT')
+        :return: Current price (float) of the asset in the specified quote currency, else None
         """
-        pass
+        try:
+            endpoint = f"/products/{pair_symbol}/ticker"
+            headers = self.generate_request_headers(endpoint)
+            response = requests.get(self.coinbase_base_url + endpoint, headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+                return data["price"]
+            else:
+                return None
+        except Exception as e:
+            print(f"Error fetching current asset price: {e}")
+            return None
 
 
     def add_spot_order_to_trade_history_db(self, quote_asset: str, base_asset: str, trade_dict: dict) -> bool:

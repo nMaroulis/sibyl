@@ -224,23 +224,6 @@ class BinanceClient(ExchangeAPIClient):
             return {"status": "error", "message": str(e)}
 
 
-    def fetch_market_price(self, pair: str) -> Dict[str, Any]:
-        """
-        Fetch the current price of a given cryptocurrency trading pair.
-
-        Args:
-            pair (str): The trading pair symbol (e.g., 'BTCUSDT').
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the price or an error message.
-        """
-        try:
-            price = self.client.get_symbol_ticker(symbol=pair)['price']
-            return {"price": price}
-        except BinanceAPIException as e:
-            return {"error": str(e)}
-
-
     def get_spot_balance(self) -> Dict[str, Any]:
         """
         Retrieve the user's spot balance, including free and locked amounts, along with current prices.
@@ -257,11 +240,10 @@ class BinanceClient(ExchangeAPIClient):
 
             for asset in account_info['balances']:
                 if float(asset['free']) > 0.0 or float(asset['locked']) > 0.0:
-                    pair_price = 1.0
-                    if asset['asset'] != 'USDT':
-                        fetched_price = self.fetch_market_price(asset['asset'] + 'USDT')
-                        if "error" not in fetched_price:
-                            pair_price = fetched_price['price']
+                    # if asset['asset'] != 'USDT':
+                    pair_price = self.get_pair_market_price(asset['asset'] + 'USDT')
+                    if pair_price is None:
+                        pair_price = 1.0
 
                     balance_data = {
                         'free': float(asset['free']),
@@ -282,35 +264,6 @@ class BinanceClient(ExchangeAPIClient):
             }
         except BinanceAPIException as e:
             return {"error": str(e)}
-
-
-    # def get_available_assets(self, quote_asset: str = "all") -> Optional[List[str]]:
-    #     """
-    #     Fetches a list of unique base assets (coins) available for trading on Binance.
-    #
-    #     Args:
-    #         quote_asset (str, optional):
-    #             - If `"all"` (default), returns all coins available for trading.
-    #             - If a specific trading quote_asset (e.g., `"USDT"` or `"BTC"`), returns only coins that can be traded with the given quote_asset.
-    #
-    #     Returns:
-    #         Optional[List[str]]:
-    #             - A list of unique base assets that match the specified trading quote_asset.
-    #             - Returns None if an error occurs.
-    #
-    #     Raises:
-    #         BinanceAPIException: Logs an error message if the Binance API request fails.
-    #     """
-    #     try:
-    #         exchange_info = self.client.get_exchange_info()
-    #         if quote_asset == "all":
-    #             available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if s['status'] == 'TRADING']
-    #         else:
-    #             available_coins = [s['baseAsset'] for s in exchange_info['symbols'] if quote_asset in s['symbol']]
-    #         return list(set(available_coins))
-    #     except BinanceAPIException as e:
-    #         print(f"Binance Exchange Client :: get_available_assets :: {str(e)}")
-    #         return None
 
 
     def get_available_assets(self, quote_asset: str = "all") -> Optional[Dict[str, List[str]]]:
@@ -428,7 +381,7 @@ class BinanceClient(ExchangeAPIClient):
             return None
 
 
-    def get_current_asset_price(self, pair_symbol: str) -> float | None:
+    def get_pair_market_price(self, pair_symbol: str) -> float | None:
         """
         Function to get the current price of an asset in a specific quote currency using Binance API.
 
