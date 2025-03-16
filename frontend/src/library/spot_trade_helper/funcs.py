@@ -65,6 +65,7 @@ def get_pair_market_price(quote_asset: str, base_asset: str, quantity: float) ->
     else:
         st.warning("**Failed** to fetch current trading pair **market price**.", icon=":material/counter_2:")
         st.warning("**Failed** to calculate the **quantity** of **Quote asset** necessary for this order..", icon=":material/counter_3:")
+        st.warning("**Failed** to fetch the **minimum trade value limit** for this order..", icon=":material/counter_4:")
 
     return market_price
 

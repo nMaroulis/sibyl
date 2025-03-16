@@ -36,7 +36,6 @@ if len(st.session_state["available_exchange_apis"]) > 0:
         with col00:
             default_quote_index = list(asset_list.keys()).index("USDT") if "USDT" in asset_list.keys() else 0  # making USDT appear as preselected choice
             quote_asset = st.selectbox('Quote Asset', options=asset_list.keys(), index=default_quote_index)
-            # st.caption("Currently only USDT is available as a Quote asset for Trading.")
         with col01:
             default_base_index = asset_list[quote_asset].index("BTC") if "BTC" in asset_list[quote_asset] else 0  # making BTC appear as preselected choice
             base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=default_base_index)
@@ -80,19 +79,19 @@ if len(st.session_state["available_exchange_apis"]) > 0:
         with col20:
 
             if order_type in ["Limit", "Stop-Loss Limit", "Take-Profit Limit"]:
-                price = st.number_input("Limit Price:", min_value=0.0001, step=0.0001, format="%.4f")
+                price = st.number_input("Limit Price:", min_value=0.000001, step=0.000001, format="%.6f")
             else:
-                st.number_input("Limit Price:", min_value=0.0001, step=0.0001, format="%.4f", disabled=True)
+                st.number_input("Limit Price:", min_value=0.000001, step=0.000001, format="%.6f", disabled=True)
         with col21:
             if order_type in ["Stop-Loss", "Stop-Loss Limit", "Trailing Stop"]:
-                stop_price = st.number_input("Stop Price:", min_value=0.0001, step=0.0001, format="%.4f")
+                stop_price = st.number_input("Stop Price:", min_value=0.000001, step=0.000001, format="%.6f")
             else:
-                st.number_input("Stop Price:", min_value=0.0001, step=0.0001, format="%.4f", disabled=True)
+                st.number_input("Stop Price:", min_value=0.000001, step=0.000001, format="%.6f", disabled=True)
         with col22:
             if order_type in ["Take-Profit", "Take-Profit Limit"]:
-                take_profit_price = st.number_input("Take Profit Price:", min_value=0.0001, step=0.0001, format="%.4f")
+                take_profit_price = st.number_input("Take Profit Price:", min_value=0.000001, step=0.000001, format="%.6f")
             else:
-                st.number_input("Take Profit Price:", min_value=0.0001, step=0.0001, format="%.4f", disabled=True)
+                st.number_input("Take Profit Price:", min_value=0.000001, step=0.000001, format="%.6f", disabled=True)
 
         col30  = st.columns(1)
         with col30[0]:
