@@ -66,7 +66,10 @@ def get_spot_trade_instructions(exp=False):
         if str_val == 3:
             with container(border=False):
                 html("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Submission</h5>""")
+                write("**Binance & Binance testnet**")
                 write('First, a **test order** will be created to test if the order is possible based on the trade parameters. If it is not a message with the error from the Exchange API will be shown, otherwise the Trade will be placed.')
+                write("**Coinbase & Coinbase sandbox**")
+                write("Coinbase doesn't support test orders, so this step is skipped.")
                 write("You can find ***Open Positions*** and ***Trading History*** in the **Trading Report module**.")
                 link_button("Trading Report", "http://localhost:8501/trading_report ", type="primary", icon=":material/youtube_searched_for:")
 

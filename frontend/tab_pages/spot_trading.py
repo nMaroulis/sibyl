@@ -33,10 +33,12 @@ if len(st.session_state["available_exchange_apis"]) > 0:
 
         col00, col01, col02 = st.columns(3)
         with col00:
-            quote_asset = st.selectbox('Quote Asset', options=asset_list.keys())
+            default_quote_index = list(asset_list.keys()).index("USDT") if "USDT" in asset_list.keys() else 0  # making USDT appear as preselected choice
+            quote_asset = st.selectbox('Quote Asset', options=asset_list.keys(), index=default_quote_index)
             # st.caption("Currently only USDT is available as a Quote asset for Trading.")
         with col01:
-            base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=0)
+            default_base_index = asset_list[quote_asset].index("BTC") if "BTC" in asset_list[quote_asset] else 0  # making BTC appear as preselected choice
+            base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=default_base_index)
         with col02:
             quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)
         st.toggle("Quote Market Order", value=False)  # TODO
