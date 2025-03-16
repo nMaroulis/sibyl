@@ -1,4 +1,4 @@
-from streamlit import write, metric, columns, markdown, error, cache_data, spinner, info, cache_resource, sidebar,\
+from streamlit import metric, columns, error, cache_data, spinner, info, cache_resource, sidebar,\
     code, session_state, plotly_chart, data_editor, column_config, toggle, html
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.db.db_connector import fetch_fields
@@ -7,10 +7,10 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 
 
-def get_wallet_balances(exchange_api: str):
+def get_wallet_balances(exchange_api: str, quote_asset: str = None):
     exchange_api = exchange_api.replace(' ', '_').lower()
     with spinner('Fetching Wallet Information'):
-        data = fetch_account_spot(exchange_api)
+        data = fetch_account_spot(exchange_api, quote_asset)
         wallet_list = []
         if data:
             if "error" in data:

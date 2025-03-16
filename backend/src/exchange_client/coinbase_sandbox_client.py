@@ -67,8 +67,17 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         return headers
 
 
-    def get_spot_balance(self) -> Dict[str, Any]:
+    def get_spot_balance(self, quote_asset_pair_price: str = None) -> Dict[str, Any]:
+        """
+        Retrieve the user's spot balance, including free and locked amounts, along with current prices.
 
+        Args:
+            quote_asset_pair_price (str, optional):
+                - calculate the price of each asset in the account according to the quote asset pair.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
+        """
         try:
             endpoint = '/accounts'
             headers = self.generate_request_headers(endpoint)
@@ -80,9 +89,13 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
                 balances = {}
                 for account in accounts:
                     if float(account["balance"]) > 0:
-                        pair_price = self.get_pair_market_price(f"{account["currency"]}-USDT")
-                        if pair_price is None:
-                            pair_price = 1.0
+
+                        if quote_asset_pair_price:
+                            pair_price = self.get_pair_market_price(f"{account["currency"]}-{quote_asset_pair_price}")
+                            if pair_price is None:
+                                pair_price = 1.0
+                        else:
+                            pair_price = 0.0
                         balances[account["currency"]] = {'free': round(float(account["balance"]), 4), 'locked': 0.0 , 'price': pair_price}
 
                 res_json = {

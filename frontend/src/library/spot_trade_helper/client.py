@@ -21,9 +21,9 @@ def fetch_minimum_trade_value(exchange: str, trading_pair: str):
 
 
 @cache_data(show_spinner="Fetching asset current Price...")
-def fetch_current_asset_price(exchange: str, trading_pair: str):
+def fetch_asset_market_price(exchange: str, trading_pair: str):
 
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/asset/current_price?exchange={exchange.lower().replace(" ","_")}&pair_symbol={trading_pair}'
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/asset/market_price?exchange={exchange.lower().replace(" ","_")}&pair_symbol={trading_pair}'
     response = requests.get(url)
     if response.status_code == 200:
         try:

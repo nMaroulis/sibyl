@@ -19,8 +19,8 @@ router = APIRouter(
 #     return response
 
 
-@router.get("/account/spot/overview")
-def get_spot_balance(exchange_api: str = 'binance_testnet'):
-    client = ExchangeClientFactory.get_client(exchange_api)
-    response = client.get_spot_balance()
+@router.get("/account/spot/balance")
+def get_spot_balance(exchange: str, quote_asset_pair: str = None):
+    client = ExchangeClientFactory.get_client(exchange)
+    response = client.get_spot_balance(quote_asset_pair)
     return response

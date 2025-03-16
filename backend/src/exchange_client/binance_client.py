@@ -224,9 +224,13 @@ class BinanceClient(ExchangeAPIClient):
             return {"status": "error", "message": str(e)}
 
 
-    def get_spot_balance(self) -> Dict[str, Any]:
+    def get_spot_balance(self, quote_asset_pair_price: str = None) -> Dict[str, Any]:
         """
         Retrieve the user's spot balance, including free and locked amounts, along with current prices.
+
+        Args:
+            quote_asset_pair_price (str, optional):
+                - calculate the price of each asset in the account according to the quote asset pair.
 
         Returns:
             Dict[str, Any]: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
@@ -240,11 +244,13 @@ class BinanceClient(ExchangeAPIClient):
 
             for asset in account_info['balances']:
                 if float(asset['free']) > 0.0 or float(asset['locked']) > 0.0:
-                    # if asset['asset'] != 'USDT':
-                    pair_price = self.get_pair_market_price(asset['asset'] + 'USDT')
-                    if pair_price is None:
-                        pair_price = 1.0
 
+                    if quote_asset_pair_price:
+                        pair_price = self.get_pair_market_price(asset['asset'] + quote_asset_pair_price)
+                        if pair_price is None:
+                            pair_price = 1.0
+                    else:
+                        pair_price = 0.0
                     balance_data = {
                         'free': float(asset['free']),
                         'locked': float(asset['locked']),

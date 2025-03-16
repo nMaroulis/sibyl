@@ -61,7 +61,7 @@ def get_min_trade_value(exchange: str , symbol: str):
         raise HTTPException(status_code=500, detail="Fetching minimum trade value failed.")
 
 
-@router.get("/trade/asset/current_price")
+@router.get("/trade/asset/market_price")
 def get_current_asset_price(exchange: str , pair_symbol: str) -> dict[str, float]:
 
     client = ExchangeClientFactory.get_client(exchange)

@@ -2,7 +2,8 @@ import streamlit as st
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook
-from frontend.src.library.spot_trade_helper.client import post_spot_trade, fetch_minimum_trade_value, fetch_current_asset_price
+from frontend.src.library.spot_trade_helper.client import post_spot_trade
+from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 
 
@@ -40,49 +41,24 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             default_base_index = asset_list[quote_asset].index("BTC") if "BTC" in asset_list[quote_asset] else 0  # making BTC appear as preselected choice
             base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=default_base_index)
         with col02:
-            quantity = st.number_input('Quantity:', min_value=0.0001, step=0.0001, format="%.4f", value=10.0000)
-        st.toggle("Quote Market Order", value=False)  # TODO
+            quantity = st.number_input('Quantity (Base Asset):', min_value=0.000001, step=0.000001, format="%.6f", value=10.000000)
+            # st.segmented_control("Asset Quantity", options=["Base Asset", "Quote Asset (Cost-based)"], default="Base Asset")  # TODO
 
         if st.session_state['trade_exchange_api'] == "Coinbase" or st.session_state['trade_exchange_api'] == "Coinbase Sandbox":
             trading_pair = f"{base_asset}-{quote_asset}"
         else:
             trading_pair = base_asset+quote_asset
 
+        # Get Base Asset price in Quote Asset and minimum order
+        market_price = get_pair_market_price(quote_asset, base_asset, quantity)
 
         # show available balance
-        account_balance_key = f"{st.session_state['trade_exchange_api'].lower().replace(" ", "_")}_account_balance"
-        if account_balance_key in st.session_state: # if account balance calculated
+        get_account_balance(quote_asset, quantity, market_price)
 
-            if quote_asset in st.session_state[account_balance_key].keys():
-                if quantity > st.session_state[account_balance_key][quote_asset]:
-                    st.warning(f"Warning: The quantity of **{quantity} {quote_asset}** is **larger** than your balance of **{st.session_state[account_balance_key][quote_asset]} {quote_asset}**. This order will fail.", icon=":material/warning:")
-                else:
-                    st.success(f"The quantity of **{quantity} {quote_asset}** is **lower** than your balance of **{st.session_state[account_balance_key][quote_asset]} {quote_asset}**.", icon=":material/task_alt:")
-            else:
-                st.warning(f"Warning: No available {quote_asset} in your account. This order will fail.", icon=":material/warning:")
-        else:
-            st.warning("Account balance not loaded.", icon=":material/warning:")
-
-
-        # Get Pair price
-        current_price = fetch_current_asset_price(st.session_state['trade_exchange_api'], trading_pair)
-        if current_price:
-            st.info(f"""
-            - **Trading pair**: {trading_pair}
-            - **{base_asset} Current price**: {current_price} {quote_asset}
-            - You'll trade {round(quantity*current_price,4)} {quote_asset} for {quantity} {base_asset}""")
-
-            min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)
-            if quantity*current_price >= min_trade_limit:
-                st.success("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/task_alt:")
-            else:
-                st.error("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/warning:")
-
-            show_orderbook = st.toggle("📖 Show Orderbook", value=False)
-            if show_orderbook:
-                plot_orderbook(st.session_state['trade_exchange_api'], quote_asset, base_asset, 10)
-        else:
-            st.warning("Failed to fetch current trading pair market price.", icon=":material/warning:")
+        # ORDERBOOK
+        show_orderbook = st.toggle("📖 Show Orderbook", value=False)
+        if show_orderbook:
+            plot_orderbook(st.session_state['trade_exchange_api'], quote_asset, base_asset, 10)
 
     st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>2. Trading Options 📈</h3>""")
     with st.container(border=False):
