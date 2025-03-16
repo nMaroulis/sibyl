@@ -44,11 +44,14 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             return 'Invalid Credentials'
 
 
-    def generate_request_headers(self, endpoint: str) -> Dict[str, str]:
+    def generate_request_headers(self, endpoint: str, method: str = 'GET', payload: str = "") -> Dict[str, str]:
         timestamp = str(int(time.time()))
 
         # Pre-signature string
-        message = timestamp + "GET" + endpoint
+        if method == "GET":
+            message = timestamp + "GET" + endpoint
+        elif method == "POST":
+            message = timestamp + "POST" + endpoint + payload
         hmac_key = base64.b64decode(self.api_secret)
         signature = hmac.new(hmac_key, message.encode(), hashlib.sha256).digest()
         signature_b64 = base64.b64encode(signature).decode()
@@ -116,7 +119,6 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
 
         try:
             endpoint = "/orders"
-            headers = self.generate_request_headers(endpoint)
 
             trading_pair = f"{base_asset}-{quote_asset}".upper()
 
@@ -139,15 +141,16 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
                     return {"error": "Stop orders require a stop price."}
                 order_payload["stop_price"] = str(stop_price)
 
+            headers = self.generate_request_headers(endpoint, "POST", str(order_payload))
             response = requests.post(self.api_base_url + endpoint, headers=headers, json=order_payload)
 
             if response.status_code in [200, 201]:
-                return response.json()
+                return {"status": "success", "message": response.json()}
             else:
-                return {"error": f"Failed to place order: {response.text}"}
+                return {"status":"error", "message": f"Failed to place order: {response.text}"}
 
         except Exception as e:
-            return {"error": f"Exception occurred: {str(e)}"}
+            return {"status":"error", "message": f"Exception occurred: {str(e)}"}
 
 
     def place_spot_test_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, str]:

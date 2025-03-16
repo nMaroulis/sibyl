@@ -64,6 +64,8 @@ def get_wallet_balances(exchange_api: str):
                     html(""" <div style="box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);">""")
                     data_editor(wallet_list_df, column_config={"icon": column_config.ImageColumn("")}, hide_index=True,
                                 disabled=True, use_container_width=True)
+                    # Save to dict the balance
+                    session_state[f"{exchange_api}_account_balance"] =  dict(zip(wallet_list_df['Asset'], wallet_list_df['SPOT Amount']))
 
                     toggle('Hide Small Balances')
                     metric("Total Balance", f"{round(wallet_list_df['Amount in USDT'].sum(),2)} USDT")

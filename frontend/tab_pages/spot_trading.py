@@ -48,6 +48,23 @@ if len(st.session_state["available_exchange_apis"]) > 0:
         else:
             trading_pair = base_asset+quote_asset
 
+
+        # show available balance
+        account_balance_key = f"{st.session_state['trade_exchange_api'].lower().replace(" ", "_")}_account_balance"
+        if account_balance_key in st.session_state: # if account balance calculated
+
+            if quote_asset in st.session_state[account_balance_key].keys():
+                if quantity > st.session_state[account_balance_key][quote_asset]:
+                    st.warning(f"Warning: The quantity of **{quantity} {quote_asset}** is **larger** than your balance of **{st.session_state[account_balance_key][quote_asset]} {quote_asset}**. This order will fail.", icon=":material/warning:")
+                else:
+                    st.success(f"The quantity of **{quantity} {quote_asset}** is **lower** than your balance of **{st.session_state[account_balance_key][quote_asset]} {quote_asset}**.", icon=":material/task_alt:")
+            else:
+                st.warning(f"Warning: No available {quote_asset} in your account. This order will fail.", icon=":material/warning:")
+        else:
+            st.warning("Account balance not loaded.", icon=":material/warning:")
+
+
+        # Get Pair price
         current_price = fetch_current_asset_price(st.session_state['trade_exchange_api'], trading_pair)
         if current_price:
             st.info(f"""
