@@ -241,7 +241,7 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         depending on the exchange API.
 
         Args:
-            symbol (str): Trading pair symbol (e.g., "BTCUSDT").
+            symbol (str): Trading pair symbol (e.g., "BTC-USDT").
 
         Returns:
             Dict[str, Union[float, str]] | None:
@@ -249,7 +249,21 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
                 - None if no minimum trade value is found.
                 - None if an exception occurs.
         """
-        pass
+        try:
+            endpoint = f"{self.api_base_url}/products/{symbol}"
+            response = requests.get(endpoint)
+
+            if response.status_code == 200:
+                data = response.json()
+                print(data)
+                min_trade_size = float(data.get("min_market_funds", -1))
+                return {"min_trade_value": min_trade_size}
+
+            return None # {"error": f"Symbol {symbol} not found or invalid"}
+
+        except Exception as e:
+            print(f"Error fetching minimum trade value: {e}")
+            return None
 
 
     def get_pair_market_price(self, pair_symbol: str) -> float | None:

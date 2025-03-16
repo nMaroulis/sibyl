@@ -47,20 +47,23 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             trading_pair = base_asset+quote_asset
 
         current_price = fetch_current_asset_price(st.session_state['trade_exchange_api'], trading_pair)
-        st.info(f"""
-        - **Trading pair**: {trading_pair}
-        - **{base_asset} Current price**: {current_price} {quote_asset}
-        - You'll trade {round(quantity*current_price,4)} {quote_asset} for {quantity} {base_asset}""")
+        if current_price:
+            st.info(f"""
+            - **Trading pair**: {trading_pair}
+            - **{base_asset} Current price**: {current_price} {quote_asset}
+            - You'll trade {round(quantity*current_price,4)} {quote_asset} for {quantity} {base_asset}""")
 
-        min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)
-        if quantity*current_price >= min_trade_limit:
-            st.success("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/task_alt:")
+            min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)
+            if quantity*current_price >= min_trade_limit:
+                st.success("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/task_alt:")
+            else:
+                st.error("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/warning:")
+
+            show_orderbook = st.toggle("📖 Show Orderbook", value=False)
+            if show_orderbook:
+                plot_orderbook(st.session_state['trade_exchange_api'], quote_asset, base_asset, 10)
         else:
-            st.error("The **minimum trade value limit** of **" + str(min_trade_limit) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/warning:")
-
-        show_orderbook = st.toggle("📖 Show Orderbook", value=False)
-        if show_orderbook:
-            plot_orderbook(st.session_state['trade_exchange_api'], quote_asset, base_asset, 10)
+            st.warning("Failed to fetch current trading pair market price.", icon=":material/warning:")
 
     st.html("""<h3 style='text-align: left;margin-bottom:0; padding-top:0;'>2. Trading Options 📈</h3>""")
     with st.container(border=False):
