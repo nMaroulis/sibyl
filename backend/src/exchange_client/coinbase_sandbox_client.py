@@ -1,3 +1,5 @@
+import json
+
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 from database.api_keys_db_client import APIEncryptedDatabase
 import requests, time, hmac, hashlib, base64
@@ -5,6 +7,10 @@ from typing import Dict, Any, Optional, Union, List
 
 
 class CoinbaseSandboxClient(ExchangeAPIClient):
+    """
+    API Documentation
+    https://docs.cdp.coinbase.com/exchange/reference/exchangerestapi_postorders
+    """
 
     def __init__(self):
         super().__init__()
@@ -19,7 +25,6 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             self.api_passphrase = api_creds.api_metadata # metadata contains the passphrase
         else:
             self.api_key = None
-
 
     def check_status(self) -> str:
         """
@@ -44,14 +49,16 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             return 'Invalid Credentials'
 
 
-    def generate_request_headers(self, endpoint: str, method: str = 'GET', payload: str = "") -> Dict[str, str]:
+    def generate_request_headers(self, endpoint: str, method: str = 'GET', payload: Optional[dict] = None) -> Dict[str, str]:
         timestamp = str(int(time.time()))
 
         # Pre-signature string
-        if method == "GET":
-            message = timestamp + "GET" + endpoint
-        elif method == "POST":
-            message = timestamp + "POST" + endpoint + payload
+        message = timestamp + "GET" + endpoint
+
+        if method == "POST":
+            body = json.dumps(payload, separators=(",", ":")) if payload else ""
+            message = f"{timestamp}POST{endpoint}{body}"
+
         hmac_key = base64.b64decode(self.api_secret)
         signature = hmac.new(hmac_key, message.encode(), hashlib.sha256).digest()
         signature_b64 = base64.b64encode(signature).decode()
@@ -138,10 +145,12 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             order_payload = {
                 "product_id": trading_pair,
                 "side": side.lower(),
-                "size": str(quantity),  # Coinbase expects size as a string
+                # "funds": str(0.05),  # Coinbase expects size as a string
+                "size": quantity,
                 "type": order_type.lower(),
             }
 
+            print(order_payload)
             if order_type.lower() == "limit":
                 if not price: # ValueError
                     return {"error": "Limit orders require a price."}
@@ -154,9 +163,9 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
                     return {"error": "Stop orders require a stop price."}
                 order_payload["stop_price"] = str(stop_price)
 
-            headers = self.generate_request_headers(endpoint, "POST", str(order_payload))
+            headers = self.generate_request_headers(endpoint, "POST", order_payload)
             response = requests.post(self.api_base_url + endpoint, headers=headers, json=order_payload)
-
+            print(response.json())
             if response.status_code in [200, 201]:
                 return {"status": "success", "message": response.json()}
             else:

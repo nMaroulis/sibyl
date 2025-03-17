@@ -1,5 +1,5 @@
 from extra_streamlit_components import stepper_bar
-from streamlit import write, container, expander, html, caption, link_button, tabs, error, info, divider, fragment, warning
+from streamlit import write, container, expander, html, caption, link_button, tabs, error, info, divider, fragment, warning, popover
 from streamlit.components.v1 import html as components_html
 from frontend.src.library.spot_trade_helper.client import fetch_orderbook
 
@@ -73,9 +73,6 @@ def get_spot_trade_instructions(exp=False):
                 write("You can find ***Open Positions*** and ***Trading History*** in the **Trading Report module**.")
                 link_button("Trading Report", "http://localhost:8501/trading_report ", type="primary", icon=":material/youtube_searched_for:")
 
-
-import requests
-from streamlit import fragment
 
 def get_formatted_order_book(exchange: str, quote_asset: str, base_asset: str, limit: int = 10):
     return fetch_orderbook(exchange, quote_asset, base_asset, limit)
@@ -355,6 +352,26 @@ def plot_orderbook(exchange: str, quote_asset: str, base_asset: str, limit: int)
         components_html(html_code, height=400)
     else:
         warning(f"Failed to fetch orderbook for {quote_asset}/{base_asset}", icon=":material/two_pager:")
+
+
+def time_in_force_instructions() -> None:
+    with popover("What is time in force?", icon=":material/help:"):
+        write("""
+        These are Time in Force (TIF) options, which determine how long an order remains active before it is executed or canceled. They are commonly used in trading platforms, including Binance.
+        Explanation of TIF options:
+        1. TIME_IN_FORCE_GTC (Good-Til-Canceled)
+        - The order remains active until it is fully executed or manually canceled.
+        - Suitable for Limit orders, ensuring they stay open until filled at the specified price.
+        - Example: If you place a limit order to buy BTC at $50,000, it will stay open until someone is willing to sell at that price.
+        2. TIME_IN_FORCE_IOC (Immediate-Or-Cancel)
+        - The order is executed immediately (fully or partially), and any unfilled portion is canceled.
+        - Useful for traders who want quick execution without waiting.
+        - Example: If you try to buy 1 BTC at $50,000, but only 0.7 BTC is available at that price, it will buy 0.7 BTC and cancel the remaining 0.3 BTC.
+        3. TIME_IN_FORCE_FOK (Fill-Or-Kill)
+        - The order must be executed in full immediately, or it is completely canceled.
+        - Ensures you either get your exact order amount or nothing at all.
+        - Example: If you place an FOK order to buy 1 BTC at $50,000, but only 0.9 BTC is available at that price, the entire order is canceled.""")
+
 
 """
 Deprecated orderbook

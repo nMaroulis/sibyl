@@ -1,9 +1,8 @@
 import streamlit as st
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
-from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook
-from frontend.src.library.spot_trade_helper.client import post_spot_trade
-from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price
+from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook, time_in_force_instructions
+from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price, submit_order
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 
 
@@ -103,22 +102,7 @@ if len(st.session_state["available_exchange_apis"]) > 0:
         col40, col41 = st.columns(2)
         with col40:
             time_in_force = st.pills("Time in Force:", ["GTC", "IOC", "FOK"], default="GTC")
-            with st.popover("What is time in force?", icon=":material/help:"):
-                st.write("""
-                These are Time in Force (TIF) options, which determine how long an order remains active before it is executed or canceled. They are commonly used in trading platforms, including Binance.
-                Explanation of TIF options:
-                1. TIME_IN_FORCE_GTC (Good-Til-Canceled)
-                - The order remains active until it is fully executed or manually canceled.
-                - Suitable for Limit orders, ensuring they stay open until filled at the specified price.
-                - Example: If you place a limit order to buy BTC at $50,000, it will stay open until someone is willing to sell at that price.
-                2. TIME_IN_FORCE_IOC (Immediate-Or-Cancel)
-                - The order is executed immediately (fully or partially), and any unfilled portion is canceled.
-                - Useful for traders who want quick execution without waiting.
-                - Example: If you try to buy 1 BTC at $50,000, but only 0.7 BTC is available at that price, it will buy 0.7 BTC and cancel the remaining 0.3 BTC.
-                3. TIME_IN_FORCE_FOK (Fill-Or-Kill)
-                - The order must be executed in full immediately, or it is completely canceled.
-                - Ensures you either get your exact order amount or nothing at all.
-                - Example: If you place an FOK order to buy 1 BTC at $50,000, but only 0.9 BTC is available at that price, the entire order is canceled.""")
+            time_in_force_instructions()
         with col41:
             iceberg_qty = st.number_input("Iceberg Quantity (Optional):", min_value=0.0, step=0.0001, format="%.4f")
 
@@ -140,33 +124,8 @@ if len(st.session_state["available_exchange_apis"]) > 0:
     st.caption(
         f"By placing the order, a **test order** will be first executed. If it is successful, then the actual order will be sent to the {st.session_state['trade_exchange_api']} to be executed. If the test order fails, you'll get the trade error message.")
     # Execute trade
-    if st.button("Place Order", type="primary"):
-        with st.spinner("Sending Test Order..."):
-            test_res = post_spot_trade(True, st.session_state['trade_exchange_api'], order_type, quote_asset, base_asset, side, quantity,
-                                       price, stop_price, take_profit_price, time_in_force)
-        if test_res is None or "status" not in test_res.keys():
-            st.error("Something went wrong when parsing the server response.", icon=":material/warning:")
-        else:
-            if test_res["status"] == "success":
-                st.success("Test Order was **validated**, your Trade Order being placed right now...",
-                           icon=":material/task_alt:")
-                with st.spinner("Placing Order..."):
-                    res = post_spot_trade(False, st.session_state['trade_exchange_api'], order_type, quote_asset, base_asset, side,
-                                               quantity,
-                                               price, stop_price, take_profit_price, time_in_force)
-                    if res is None or "status" not in res.keys():
-                        st.error("Something went wrong when parsing the server response.", icon=":material/warning:")
-                    else:
-                        if res["status"] == "success":
-                            st.success("Order was **placed** successfully and added to the TradeHistory DB, please find API response below.", icon=":material/task_alt:")
-                            st.link_button("You can find the SPOT order in the Trading History tab.", "http://localhost:8501/trading_report ", type="primary",
-                                        icon=":material/youtube_searched_for:")
-                            st.json(res["message"])
-                            st.toast("Your Trade Order has been placed successfully.", icon="✅")
-                        else:
-                            st.warning(f"Order is **invalid**. Error message {res["message"]}", icon=":material/warning:")
-            else:
-                st.warning(f"Test Order is **invalid**. Error message {test_res["message"]}", icon=":material/warning:")
+    if st.button("Place Order", type="primary", icon=":material/send:"):
+        submit_order(order_type, quote_asset, base_asset, side, quantity, price, stop_price, take_profit_price, time_in_force)
 else:
     html_content = """
     <div style="text-align: center; color: #5E5E5E; font-weight: bold; font-size: 24px;">

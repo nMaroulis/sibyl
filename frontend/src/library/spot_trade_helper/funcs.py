@@ -69,3 +69,38 @@ def get_pair_market_price(quote_asset: str, base_asset: str, quantity: float) ->
 
     return market_price
 
+
+def submit_order(order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: float, stop_price: float, take_profit_price: float, time_in_force: str) -> None:
+
+    with st.spinner("Sending Test Order..."):
+        test_res = post_spot_trade(True, st.session_state['trade_exchange_api'], order_type, quote_asset, base_asset,
+                                   side, quantity,
+                                   price, stop_price, take_profit_price, time_in_force)
+    if test_res is None or "status" not in test_res.keys():
+        st.error("Something went wrong when parsing the server response.", icon=":material/warning:")
+    else:
+        if test_res["status"] == "success":
+            st.success("Test Order was **validated**, your Trade Order being placed right now...",
+                       icon=":material/task_alt:")
+            with st.spinner("Placing Order..."):
+                res = post_spot_trade(False, st.session_state['trade_exchange_api'], order_type, quote_asset,
+                                      base_asset, side,
+                                      quantity,
+                                      price, stop_price, take_profit_price, time_in_force)
+                if res is None or "status" not in res.keys():
+                    st.error("Something went wrong when parsing the server response.", icon=":material/warning:")
+                else:
+                    if res["status"] == "success":
+                        st.success(
+                            "Order was **placed** successfully and added to the TradeHistory DB, please find API response below.",
+                            icon=":material/task_alt:")
+                        st.link_button("You can find the SPOT order in the Trading History tab.",
+                                       "http://localhost:8501/trading_report ", type="secondary",
+                                       icon=":material/youtube_searched_for:")
+                        st.write(f"Below is the response message returned by the {st.session_state['trade_exchange_api']} API.")
+                        st.json(res["message"])
+                        st.toast("Your Trade Order has been placed successfully.", icon="✅")
+                    else:
+                        st.warning(f"Order is **invalid**. Error message {res["message"]}", icon=":material/warning:")
+        else:
+            st.error(f"Test Order is **invalid**. Error message {test_res["message"]}", icon=":material/warning:")
