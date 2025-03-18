@@ -30,6 +30,7 @@ class Tactician:
         # Setup logging
         logging.basicConfig(filename="trade_log.log", level=logging.INFO)
 
+
     def execute_trade(self, action: str, price: float) -> Dict[str, Any]:
         """
         Executes a trade based on the strategy's signal (BUY/SELL).
@@ -43,7 +44,7 @@ class Tactician:
         """
         if action == "BUY" and self.capital > 0:
             amount = self.capital / price
-            order = self.exchange.create_order(symbol=self.symbol, side="BUY", amount=amount, price=price)
+            order = {} # self.exchange.create_order(symbol=self.symbol, side="BUY", amount=amount, price=price)
             self.position += amount
             self.capital = 0  # Fully invested
             self.trade_history.append({"action": "BUY", "price": price, "amount": amount, "status": "executed"})
@@ -51,7 +52,7 @@ class Tactician:
             return order
 
         elif action == "SELL" and self.position > 0:
-            order = self.exchange.create_order(symbol=self.symbol, side="SELL", amount=self.position, price=price)
+            order = {} # self.exchange.create_order(symbol=self.symbol, side="SELL", amount=self.position, price=price)
             self.capital = self.position * price  # Convert position back to cash
             self.position = 0
             self.trade_history.append({"action": "SELL", "price": price, "amount": self.position, "status": "executed"})
@@ -59,6 +60,7 @@ class Tactician:
             return order
 
         return {"status": "No action taken"}
+
 
     def get_trade_history(self) -> List[Dict[str, Any]]:
         """

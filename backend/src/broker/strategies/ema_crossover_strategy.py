@@ -1,6 +1,7 @@
 from backend.src.broker.strategies.strategy_base import BaseStrategy
 import pandas as pd
 import numpy as np
+import time
 
 
 class EMACrossoverStrategy(BaseStrategy):
@@ -23,6 +24,7 @@ class EMACrossoverStrategy(BaseStrategy):
         self.short_window = short_window
         self.long_window = long_window
 
+
     def calculate_ema(self, period: int) -> pd.Series:
         """
         Calculates the Exponential Moving Average (EMA).
@@ -34,6 +36,7 @@ class EMACrossoverStrategy(BaseStrategy):
             pd.Series: The EMA values.
         """
         return self.data["close"].ewm(span=period, adjust=False).mean()
+
 
     def generate_signals(self) -> pd.DataFrame:
         """
@@ -47,4 +50,4 @@ class EMACrossoverStrategy(BaseStrategy):
 
         self.data["signal"] = np.where(self.data["ema_short"] > self.data["ema_long"], "BUY",
                                        np.where(self.data["ema_short"] < self.data["ema_long"], "SELL", "HOLD"))
-        return self.data[["close", "ema_short", "ema_long", "signal"]]
+        return self.data[["timestamp", "close", "ema_short", "ema_long", "signal"]]

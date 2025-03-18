@@ -53,4 +53,4 @@ class RSIStrategy(BaseStrategy):
         self.data["rsi"] = self.calculate_rsi()
         self.data["signal"] = np.where(self.data["rsi"] < self.buy_threshold, "BUY",
                                        np.where(self.data["rsi"] > self.sell_threshold, "SELL", "HOLD"))
-        return self.data[["close", "rsi", "signal"]]
+        return self.data[["timestamp", "close", "rsi", "signal"]]

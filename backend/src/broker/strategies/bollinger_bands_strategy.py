@@ -45,4 +45,4 @@ class BollingerBandsStrategy(BaseStrategy):
         self.calculate_bollinger_bands()
         self.data["signal"] = np.where(self.data["close"] < self.data["lower_band"], "BUY",
                                        np.where(self.data["close"] > self.data["upper_band"], "SELL", "HOLD"))
-        return self.data[["close", "upper_band", "lower_band", "signal"]]
+        return self.data[["timestamp", "close", "upper_band", "lower_band", "signal"]]

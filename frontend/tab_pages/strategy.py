@@ -8,8 +8,9 @@ fix_page_layout('strategy')
 set_page_title("Trading Strategy")
 st.html(col_style2)
 
-st.caption("Expand instruction below 👇👇 to get instructions on how to deploy a new strategy.")
-get_strategy_instructions()
+st.caption("Click the button below 👇👇 to get information on the available strategies.")
+if st.button("Strategies Wiki", icon=":material/menu_book:", type="primary"):
+    get_strategy_instructions()
 
 if "available_exchange_apis" not in st.session_state:
     with st.spinner("Checking API Availability Status..."):
