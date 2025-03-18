@@ -1,7 +1,7 @@
 from backend.src.broker.strategies.strategy_base import BaseStrategy
 import pandas as pd
 import numpy as np
-import time
+from backend.src.broker.strategies.price_fetcher import PriceFetcher
 
 
 class EMACrossoverStrategy(BaseStrategy):
@@ -11,16 +11,17 @@ class EMACrossoverStrategy(BaseStrategy):
     Buys when the short EMA crosses above the long EMA and sells when the short EMA crosses below.
     """
 
-    def __init__(self, data: pd.DataFrame, short_window: int = 10, long_window: int = 50) -> None:
+    def __init__(self, data: pd.DataFrame, price_fetcher: PriceFetcher, short_window: int = 10, long_window: int = 50) -> None:
         """
         Initializes the EMA crossover strategy.
 
         Args:
             data (pd.DataFrame): The historical price data.
+            price_fetcher (PriceFetcher): fetches latest price data.
             short_window (int): The short EMA period.
             long_window (int): The long EMA period.
         """
-        super().__init__(data)
+        super().__init__(data, price_fetcher)
         self.short_window = short_window
         self.long_window = long_window
 
@@ -45,6 +46,7 @@ class EMACrossoverStrategy(BaseStrategy):
         Returns:
             pd.DataFrame: Data with EMA values and trading signals.
         """
+        self.data = self.price_fetcher.get_data()
         self.data["ema_short"] = self.calculate_ema(self.short_window)
         self.data["ema_long"] = self.calculate_ema(self.long_window)
 
