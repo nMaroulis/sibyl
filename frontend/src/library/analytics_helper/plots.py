@@ -35,8 +35,8 @@ def show_analytics(quote_asset: str, base_asset: str, df: DataFrame):
             </div>
 
         """)
-        metric(f'{base_asset} Price in {quote_asset}', float(df['Closing Price'].iloc[-1]),
-               round(float(df['Closing Price'].iloc[-1]) - float(df['Closing Price'].iloc[-2]), 6))
+        metric(f'{base_asset} Price in {quote_asset}', float(df['Close Price'].iloc[-1]),
+               round(float(df['Close Price'].iloc[-1]) - float(df['Close Price'].iloc[-2]), 6))
     return
 
 
@@ -49,13 +49,13 @@ def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame):
         "**Bollinger Bands** consist of three lines on a price chart: the middle band, the exponential moving average (EMA) over a specified period (e.g., 20 days); the upper band, calculated by adding two standard deviations to the middle band; and the lower band, calculated by subtracting two standard deviations from the middle band. Bollinger Bands help traders gauge market volatility, identify potential overbought or oversold conditions, and anticipate price reversals.")
     with spinner('Generating Line Plot...'):
 
-        price_hist_df['Moving Average'] = calc_ema("exponential", price_hist_df['Closing Price'], 5)
-        price_hist_df['RSI'] = calc_rsi(price_hist_df['Closing Price'].astype(float), 14)
-        price_hist_df['LowerBand'], price_hist_df['UpperBand'] = calc_bollinger_bands(price_hist_df['Moving Average'], price_hist_df['Closing Price'], 3)
+        price_hist_df['Moving Average'] = calc_ema("exponential", price_hist_df['Close Price'], 5)
+        price_hist_df['RSI'] = calc_rsi(price_hist_df['Close Price'].astype(float), 14)
+        price_hist_df['LowerBand'], price_hist_df['UpperBand'] = calc_bollinger_bands(price_hist_df['Moving Average'], price_hist_df['Close Price'], 3)
 
         fig = Figure()
         fig.add_trace(
-            Scatter(x=price_hist_df['DateTime'], y=price_hist_df['Closing Price'], mode='lines', name='Close Price'))
+            Scatter(x=price_hist_df['DateTime'], y=price_hist_df['Close Price'], mode='lines', name='Close Price'))
         fig.add_trace(Scatter(
             x=concat([price_hist_df['DateTime'], price_hist_df['DateTime'][::-1]]),
             y=concat([price_hist_df['UpperBand'], price_hist_df['LowerBand'][::-1]]),
@@ -72,59 +72,55 @@ def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame):
     return
 
 
-def price_history_plot(exchange_api: str, pair_symbol: str, time_int: str, time_limit: int, plot_type : str = 'Line Plot', show_plot=True, full_name=True) -> DataFrame:
-    df = DataFrame()
-    fig = None
-    if plot_type == 'Line Plot':
-        data = fetch_price_history(exchange_api, pair_symbol, time_int, time_limit, 'line', full_name)
-        df['DateTime'] = [entry.get('Open Time') for entry in data]
-        df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
-        df['Price'] = [entry.get('Open Price') for entry in data]
-
-        if show_plot:
+def price_history_plot(exchange_api: str, pair_symbol: str, time_int: str, time_limit: int, plot_type : str = 'Line Plot') -> None:
+    df = fetch_price_history(exchange_api, pair_symbol, time_int, time_limit)
+    """
+        "Open Time": entry[0],
+        "Open Price": float(entry[1]),
+        "High": float(entry[2]),
+        "Low": float(entry[3]),
+        "Close Price": float(entry[4]),
+        "Close Time": float(entry[6]),
+        "Volume": float(entry[5]),
+        "Number of trades": float(entry[8]),
+    """
+    if df:
+        fig = None
+        if plot_type == 'Line Plot':
             fig = Figure(data=Scatter(x=df['DateTime'], y=df['Price']))
             fig.update_layout(title=f"Price History of ada", xaxis_title="DateTime",  yaxis_title="Price (USDT)")
-    else:  # candle plot
-
-        data = fetch_price_history(exchange_api, pair_symbol, time_int, time_limit, 'candle', full_name)
-        df['DateTime'] = [entry.get('Open Time') for entry in data]
-        df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
-        df['Open Price'] = [entry.get('Open Price') for entry in data]
-        df['Highs'] = [entry.get('Highs') for entry in data]
-        df['Lows'] = [entry.get('Lows') for entry in data]
-        df['Closing Price'] = [entry.get('Closing Price') for entry in data]
-
-        if show_plot:
+        else:  # candle plot
             fig = Figure(data=Candlestick(
                 x=df['DateTime'],
                 open=df['Open Price'],
-                high=df['Highs'],
-                low=df['Lows'],
-                close=df['Closing Price']
+                high=df['High'],
+                low=df['Low'],
+                close=df['Close Price']
             ))
             fig.update_layout(title=pair_symbol + ' Price History')
 
-    if show_plot and fig is not None:
-        plotly_chart(fig, use_container_width=True)
-    return df
+        if fig is not None:
+            plotly_chart(fig, use_container_width=True)
 
 
 def price_history_correlation_heatmap(coins, time_int_c='1d', time_limit_c=500, use_diff=False):
-    df = DataFrame()
+    corr_df = DataFrame()
     invalid_coins = []
     for coin in coins:
         pair_symbol = f"{coin}USDT"
-        price_hist_df = price_history_plot("binance", pair_symbol, time_int_c, time_limit_c, 'Line Plot', False, True) # TODO - ADD DEFAULT PRICE HISTORY
-        if price_hist_df.shape[0] < 2:
+        df = fetch_price_history("binance", pair_symbol, time_int_c, time_limit_c)
+
+        if df is None or df.shape[0] < 2:
             invalid_coins.append(coin)
         else:
-            df[coin] = price_hist_df['Price'].astype(float)
+            corr_df[coin] = df['Close Price']
+
     if use_diff:
-        df = df.diff()
+        corr_df = corr_df.diff()
 
     if len(invalid_coins) > 0:
         warning('Price for **' + str(invalid_coins) + '** could not be fetched from the Server.')
 
-    df_corr = df.corr(method='pearson')
-    fig = imshow(df_corr, text_auto=True, aspect="auto", color_continuous_scale='RdBu_r')
+    corr_df = corr_df.corr(method='pearson')
+    fig = imshow(corr_df, text_auto=True, aspect="auto", color_continuous_scale='RdBu_r')
     plotly_chart(fig, use_container_width=True)

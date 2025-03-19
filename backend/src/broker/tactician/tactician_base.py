@@ -11,53 +11,63 @@ class Tactician:
     and log trade activity.
     """
 
-    def __init__(self, exchange: Any, symbol: str, capital: float = 1000.0) -> None:
+    def __init__(self, exchange: Any, symbol: str, capital_allocation: float = 10.0) -> None:
         """
         Initializes the TradeExecutor.
 
         Args:
             exchange (Any): The exchange object to interact with the crypto exchange.
             symbol (str): The trading symbol (e.g., 'BTC/USD').
-            capital (float): The amount of capital available for trading. Default is 1000.
+            capital_allocation (float): The amount of capital available for trading. Default is 10.
         """
         self.exchange = exchange
         self.symbol = symbol
-        self.capital = capital
-        self.position = 0  # Tracks how much of the asset we own
+        self.capital = capital_allocation
+        self.position = 0  # Tracks how much of the asset you own
         self.trade_history: List[Dict[str, Any]] = []  # Store all trade actions
         self.is_running = False  # Track if the strategy is running
-
+        self.last_order_type = "None"
         # Setup logging
-        logging.basicConfig(filename="trade_log.log", level=logging.INFO)
+        # logging.basicConfig(filename="trade_log.log", level=logging.INFO)
 
 
-    def execute_trade(self, action: str, price: float) -> Dict[str, Any]:
+    def execute_trade(self, action: str) -> Dict[str, Any]:
         """
         Executes a trade based on the strategy's signal (BUY/SELL).
 
         Args:
             action (str): The action to take, either "BUY" or "SELL".
-            price (float): The price at which to execute the trade.
 
         Returns:
             Dict[str, Any]: The response from the exchange API, indicating if the trade was successful.
         """
-        if action == "BUY" and self.capital > 0:
-            amount = self.capital / price
-            order = {} # self.exchange.create_order(symbol=self.symbol, side="BUY", amount=amount, price=price)
-            self.position += amount
-            self.capital = 0  # Fully invested
-            self.trade_history.append({"action": "BUY", "price": price, "amount": amount, "status": "executed"})
-            logging.info(f"BUY {amount:.4f} {self.symbol} at {price:.2f}")
-            return order
+        if action == "BUY":
+            if self.last_order_type != "BUY" and self.capital > 0:
+                self.last_order_type = "BUY"
+                order = self.exchange.create_buy_order(symbol=self.symbol, quote_amount=self.capital)
+                self.position += float(order["executed_base_quantity"])
+                self.capital = self.capital - float(order["executed_quote_amount"])
+                price = float(order["price"])
+                self.trade_history.append({"action": "BUY", "order_id": order["orderId"], "quote_amount": float(order["executed_quote_amount"]), "price": price, "amount": self.position, "status": "executed"})
+                print(f"Tactician :: BUY ORDER quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {price:.2f}")
 
-        elif action == "SELL" and self.position > 0:
-            order = {} # self.exchange.create_order(symbol=self.symbol, side="SELL", amount=self.position, price=price)
-            self.capital = self.position * price  # Convert position back to cash
-            self.position = 0
-            self.trade_history.append({"action": "SELL", "price": price, "amount": self.position, "status": "executed"})
-            logging.info(f"SELL {self.symbol} at {price:.2f}")
-            return order
+                return order
+            else:
+                print(f"Tactician :: BUY ORDER - NOT ENOUGH CAPITAL {self.capital} or last order was BUY")
+
+        elif action == "SELL":
+            if self.last_order_type != "SELL" and self.position > 0:
+                self.last_order_type = "SELL"
+
+                order = self.exchange.create_sell_order(symbol=self.symbol, quantity=self.position)
+                price = float(order["price"])
+                self.capital += float(order["executed_quote_amount"])
+                self.position = self.position - float(order["executed_base_quantity"])
+                self.trade_history.append({"action": "SELL", "price": price, "amount": self.position, "status": "executed"})
+                print(f"Tactician :: SELL ORDER quote: {self.capital} {self.position} {self.symbol} at {price:.2f}")
+                return order
+            else:
+                print(f"Tactician :: SELL ORDER - NOT ENOUGH POSITION {self.position}")
 
         return {"status": "No action taken"}
 
@@ -81,7 +91,7 @@ class Tactician:
         return "Running" if self.is_running else "Stopped"
 
 
-    def run_strategy(self, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0) -> None:
+    def run_strategy(self, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 2) -> None:
         """
         Runs the trading strategy in a loop, checking for signals and executing trades.
 
@@ -89,24 +99,25 @@ class Tactician:
             strategy (TradingStrategy): The strategy that generates trade signals.
             interval (int): Time interval (in seconds) between checking for new signals. Default is 5.
             min_capital (float): The minimum capital threshold for running the strategy. If capital goes below this, the strategy will stop. Default is 0.
+            trades_num (int): Number of trades to execute before stopping. Must be even to end with a SELL.
         """
         self.is_running = True  # Set the status to running
         while self.is_running:
-
-            if self.capital < min_capital:
-                logging.warning(f"Capital is below {min_capital}. Stopping strategy.")
+            if len(self.get_trade_history()) >= trades_limit: # exit after N trades, must be even to end with a sell
+                print(f"Capital {self.capital} is below {min_capital}. Stopping strategy.")
                 self.stop_strategy()
-                break  # Stop the strategy if the capital is below the threshold
+                break
 
             data = strategy.generate_signals()
             latest_signal = data.iloc[-1]["signal"]
             latest_price = data.iloc[-1]["close"]
-
+            print(f"Tactician :: data | t: {data.iloc[-1]["timestamp"].strftime("%H:%M:%S")}, p: {latest_price:.2f}, action: {latest_signal}")
             if latest_signal in ["BUY", "SELL"]:
-                self.execute_trade(latest_signal, latest_price)
+                self.execute_trade(latest_signal)
 
             time.sleep(interval)  # Wait before checking again
-        logging.info("Strategy stopped.")
+        print("Tactician :: Strategy stopped.")
+        print(f"Tactician :: {self.get_trade_history()}")
 
 
     def stop_strategy(self) -> None:
@@ -115,7 +126,7 @@ class Tactician:
 
         """
         self.is_running = False
-        logging.info("Strategy has been stopped.")
+        print("Tactician :: Strategy has been stopped.")
 
 
     def get_position_info(self) -> Dict[str, float]:

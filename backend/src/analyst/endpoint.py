@@ -13,9 +13,9 @@ router = APIRouter(
 
 
 @router.get("/asset/price_history")
-def get_price_history(exchange: str, symbol: str, interval: str = '1d', plot_type='line', limit: int = 100) -> List[dict]:
+def get_price_history(exchange: str, symbol: str, interval: str = '1d', limit: int = 100) -> List[dict]:
     client = ExchangeClientFactory.get_client(exchange)
-    res = client.get_price_history(symbol, interval, plot_type, limit)
+    res = client.get_price_history(symbol, interval, limit)
     if res:
         return res
     else:

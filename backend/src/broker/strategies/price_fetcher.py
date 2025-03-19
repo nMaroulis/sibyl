@@ -41,9 +41,10 @@ class PriceFetcher:
             timestamp = pd.Timestamp.now().floor("s")
             new_data = pd.DataFrame({"timestamp": [timestamp], "close": [price]})
             self.data = pd.concat([self.data[1:], new_data], ignore_index=True) # remove first, append new
-            print(f"PriceFetcher :: fetched data | t: {new_data["timestamp"].iloc[0].strftime("%H:%M:%S")}, p: {new_data['close'].iloc[0]:.2f} {self.data.shape}")
+            print(f"PriceFetcher :: fetched data | t: {new_data["timestamp"].iloc[0].strftime("%H:%M:%S")}, p: {new_data['close'].iloc[0]:.2f}")
             # print(self.data[0:1]["timestamp"], self.data[-2:-1]["timestamp"])
             time.sleep(self.update_interval)
+
 
     def start(self):
         """
@@ -53,6 +54,7 @@ class PriceFetcher:
         self.thread = Thread(target=self.update_price, daemon=True)
         self.thread.start()
         print(f"PriceFetcher :: thread started")
+
 
     def stop(self):
         """

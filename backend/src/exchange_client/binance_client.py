@@ -47,7 +47,7 @@ class BinanceClient(ExchangeAPIClient):
         Places an order on Binance based on the given parameters.
 
         Args:
-            order_type (str): The type of order (e.g., Market, Limit, Stop-Loss, etc.).
+            order_type (str): The type of order (e.g., market, market_quote, limit, stop-loss, etc.).
             quote_asset (str): The quote asset.
             base_asset (str): The base asset.
             side (str): Order side (BUY or SELL).
@@ -79,6 +79,13 @@ class BinanceClient(ExchangeAPIClient):
                     side=side,
                     type=ORDER_TYPE_MARKET,
                     quantity=quantity
+                )
+            elif order_type == "market_quote":
+                res = self.client.order_market(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_MARKET,
+                    quoteOrderQty=quantity # this quantity specifies the amount of quote asset to be spent for this transaction. e.g. for BTCUSDT buy 10 USDT worth of BTC
                 )
             elif order_type == "limit":
                 res = self.client.order_limit(
@@ -160,6 +167,13 @@ class BinanceClient(ExchangeAPIClient):
                     side=side,
                     type=ORDER_TYPE_MARKET,
                     quantity=quantity
+                )
+            elif order_type == "market_quote":
+                res = self.client.create_test_order(
+                    symbol=trading_pair,
+                    side=side,
+                    type=ORDER_TYPE_MARKET,
+                    quoteOrderQty=quantity
                 )
             elif order_type == "limit":
                 res = self.client.create_test_order(
@@ -316,16 +330,29 @@ class BinanceClient(ExchangeAPIClient):
             return None
 
 
-    def get_price_history(self, symbol: str, interval: str = "1d", plot_type: str = "line", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+    def get_price_history(self, symbol: str, interval: str = "1d", limit: int = 100) -> Optional[List[Dict[str, float]]]:
         """
         Fetches historical price data for a given symbol from the client.
 
         Args:
             symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
             interval (str): Time interval for the price data (e.g., "1d", "1h"). Default is "1d".
-            plot_type (str): Type of data format to return. "line" returns only open prices,
-                            while other values return detailed OHLC data. Default is "line".
             limit (int): Number of historical records to fetch. Default is 100.
+
+        :binance client get_klines response:
+            {    1499040000000,  # Open time
+                "0.01634790",  # Open
+                "0.80000000",  # High
+                "0.01575800",  # Low
+                "0.01577100",  # Close
+                "148976.11427815",  # Volume
+                1499644799999,  # Close time
+                "2434.19055334",  # Quote asset volume
+                308,  # Number of trades
+                "1756.87402397",  # Taker buy base asset volume
+                "28.46694368",  # Taker buy quote asset volume
+                "17928899.62484339"  # Can be ignored
+            }
 
         Returns:
             Optional[List[Dict[str, float]]]: A list of dictionaries containing price history data,
@@ -333,21 +360,19 @@ class BinanceClient(ExchangeAPIClient):
         """
         try:
             klines = self.client.get_klines(symbol=symbol.upper(), interval=interval, limit=limit)
-
-            if plot_type == "line":
-                return [{"Open Time": entry[0], "Open Price": float(entry[1])} for entry in klines]
-            else:
-                return [
-                    {
-                        "Open Time": entry[0],
-                        "Open Price": float(entry[1]),
-                        "Highs": float(entry[2]),
-                        "Lows": float(entry[3]),
-                        "Closing Price": float(entry[4]),
-                    }
-                    for entry in klines
-                ]
-
+            return [
+                {
+                    "Open Time": entry[0],
+                    "Open Price": float(entry[1]),
+                    "High": float(entry[2]),
+                    "Low": float(entry[3]),
+                    "Close Price": float(entry[4]),
+                    "Close Time": float(entry[6]),
+                    "Volume": float(entry[5]),
+                    "Number of trades": float(entry[8]),
+                }
+                for entry in klines
+            ]
         except Exception as e:
             print(f"get_price_history :: Error fetching price history: {e}")
             return None

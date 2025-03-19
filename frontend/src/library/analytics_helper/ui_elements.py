@@ -1,8 +1,8 @@
-from streamlit import write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, info, html, select_slider, divider, caption, container, spinner
+from streamlit import write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, info, html, select_slider, divider, caption, container, spinner, pills
 from frontend.src.library.analytics_helper.plots import price_history_plot, price_history_correlation_heatmap, show_line_plot_with_analytics, show_analytics
-from frontend.src.library.analytics_helper.client import fetch_available_assets
+from frontend.src.library.analytics_helper.client import fetch_available_assets, fetch_price_history
 from frontend.src.library.analytics_helper.funcs import invert_dict
-
+from pandas import DataFrame, to_datetime
 
 def get_price_analytics_form():
     html("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Crypto Analysis</h5>""")
@@ -30,7 +30,7 @@ def get_price_analytics_form():
                                          '4 hours', '12 hours', '1 day', '2 days', '3 days', '5 days',
                                          '1 week', '1 month'], value='30 minutes')
 
-            advanced_analytics = toggle("Advanced Analytics", value=True, help="Advanced statistics include RSI, Bollinger Bands and more.")
+            pills("Metrics", options=["RSI", "EMA", "Bollinger Bands"],disabled=True)
             plot_type = radio('Plot type', options=['Line Plot', 'Candle Plot'], index=0, horizontal=True)
             caption("For Price Forecasting summon the Oracle 🔮 in the forecasting tab.")
             divider()  # html("""<hr style="height:1px;width:12em;text-align:left; color:gray; background-color:gray; padding-top:0;">""")
@@ -41,19 +41,20 @@ def get_price_analytics_form():
                                  '1 hour': '1h', '4 hours': '4h',
                                  '12 hours': '12h', '1 day': '1d', '2 days': '2d', '3 days': '3d', '5 days': '5d',
                                  '1 week': '1w', '1 month': '1M'}
-                if advanced_analytics:
-                    price_hist_df = price_history_plot(exchange_api, f"{base_asset}{quote_asset}", time_int_dict[time_int], time_limit, 'Candle Plot', False,
-                                                       True)
-                    # SHOW ANALYTICS
-                    show_analytics(quote_asset, base_asset, price_hist_df)
-                    # SHOW LINE PLOT
-                    show_line_plot_with_analytics(f"{base_asset}{quote_asset}", price_hist_df)
+
+                if plot_type == 'Candle Plot':
+                    price_history_plot("binance", f"{base_asset}{quote_asset}", time_int_dict[time_int], time_limit, "Candle Plot")
                 else:
-                    price_hist_df = price_history_plot(exchange_api, f"{base_asset}{quote_asset}", time_int_dict[time_int], time_limit, plot_type, True, True)
+                    # Fetch data
+                    df = fetch_price_history("binance", f"{base_asset}{quote_asset}", time_int_dict[time_int], time_limit)
+                    # SHOW ANALYTICS
+                    show_analytics(quote_asset, base_asset, df)
+                    # SHOW LINE PLOT
+                    show_line_plot_with_analytics(f"{base_asset}{quote_asset}", df)
 
                 sidebar.download_button(
                     "Download to CSV",
-                    price_hist_df.to_csv(index=False).encode('utf-8'),
+                    df.to_csv(index=False).encode('utf-8'),
                     f"{base_asset}{quote_asset}_{time_int}_price_history.csv",
                     "text/csv",
                     key='download-csv',

@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from typing import List, Dict, Any
 
 
@@ -7,6 +6,13 @@ class Evaluator:
     """
     A class to evaluate the performance of a trading strategy based on its trade history.
     It computes various financial metrics such as profit, Sharpe ratio, maximum drawdown, win rate, and more.
+
+    Example usage:
+        $ tactician = Tactician(exchange, symbol)
+        $ tactician.run_strategy(strategy)
+        $ evaluator = Evaluator(tactician.get_trade_history())
+        $ metrics = evaluator.evaluate()
+        $ print(metrics)
     """
 
     def __init__(self, trade_history: List[Dict[str, Any]], risk_free_rate: float = 0.0) -> None:
@@ -212,9 +218,3 @@ class Evaluator:
 
         return evaluation_results
 
-# Example usage:
-# tactician = Tactician(exchange, symbol)
-# tactician.run_strategy(strategy)
-# evaluator = Evaluator(tactician.get_trade_history())
-# metrics = evaluator.evaluate()
-# print(metrics)

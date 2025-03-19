@@ -96,15 +96,13 @@ class CoinbaseClient(ExchangeAPIClient):
         """
         pass
 
-    def get_price_history(self, symbol: str, interval: str = "1d", plot_type: str = "line", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+    def get_price_history(self, symbol: str, interval: str = "1d", limit: int = 100) -> Optional[List[Dict[str, float]]]:
         """
         Fetches historical price data for a given symbol from the client.
 
         Args:
             symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
             interval (str): Time interval for the price data (e.g., "1d", "1h"). Default is "1d".
-            plot_type (str): Type of data format to return. "line" returns only open prices,
-                            while other values return detailed OHLC data. Default is "line".
             limit (int): Number of historical records to fetch. Default is 100.
 
         Returns:
