@@ -25,7 +25,7 @@ def get_price_analytics_form():
             with cols[2]:
                 selectbox(label='Choose Exchange', options=["Binance"], disabled=True, help="The default exchange is Binance, since it contains the most markets available. Does not require an API key.")
 
-            time_int = select_slider('Choose Time Frame ⏱️',
+            time_int = select_slider('Choose Time Interval ⏱️',
                                         ['1 minute', '5 minutes', '15 minutes', '30 minutes', '1 hour',
                                          '4 hours', '12 hours', '1 day', '2 days', '3 days', '5 days',
                                          '1 week', '1 month'], value='30 minutes')

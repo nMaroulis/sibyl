@@ -362,14 +362,14 @@ class BinanceClient(ExchangeAPIClient):
             klines = self.client.get_klines(symbol=symbol.upper(), interval=interval, limit=limit)
             return [
                 {
-                    "Open Time": entry[0],
-                    "Open Price": float(entry[1]),
-                    "High": float(entry[2]),
-                    "Low": float(entry[3]),
-                    "Close Price": float(entry[4]),
-                    "Close Time": float(entry[6]),
-                    "Volume": float(entry[5]),
-                    "Number of trades": float(entry[8]),
+                    "open_time": entry[0],
+                    "open_price": float(entry[1]),
+                    "high": float(entry[2]),
+                    "low": float(entry[3]),
+                    "close_price": float(entry[4]),
+                    "close_time": float(entry[6]),
+                    "volume": float(entry[5]),
+                    "trades_num": float(entry[8]),
                 }
                 for entry in klines
             ]

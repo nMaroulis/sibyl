@@ -1,6 +1,5 @@
 import pandas as pd
 from abc import ABC, abstractmethod
-from backend.src.broker.strategies.price_fetcher import PriceFetcher
 
 
 class BaseStrategy(ABC):
@@ -9,21 +8,20 @@ class BaseStrategy(ABC):
 
     Attributes:
         data (pd.DataFrame): The historical price data.
-        price_fetcher (PriceFetcher): fetches latest price data.
     """
 
-    def __init__(self, data: pd.DataFrame, price_fetcher: PriceFetcher) -> None:
+    def __init__(self) -> None:
         """
         Initializes the trading strategy with market data.
 
-        Args:
+        Vars:
             data (pd.DataFrame): A DataFrame containing price data with a 'close' column.
         """
-        self.data = data
-        self.price_fetcher = price_fetcher
+        self.data = None
+
 
     @abstractmethod
-    def generate_signals(self) -> pd.DataFrame:
+    def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Abstract method to generate trading signals.
 
@@ -31,4 +29,3 @@ class BaseStrategy(ABC):
             pd.DataFrame: The modified DataFrame including trading signals.
         """
         pass
-

@@ -15,15 +15,15 @@ def fetch_price_history(exchange: str, pair_symbol: str, time_int: str, time_lim
 
         data = response.json()
         df = DataFrame()
-        df['DateTime'] = [entry.get('Open Time') for entry in data]
+        df['DateTime'] = [entry.get('open_time') for entry in data]
         df['DateTime'] = to_datetime(df['DateTime'], unit='ms')
-        df['Open Price'] = [entry.get('Open Price') for entry in data]
-        df['High'] = [entry.get('High') for entry in data]
-        df['Low'] = [entry.get('Low') for entry in data]
-        df['Close Price'] = [entry.get('Close Price') for entry in data]
-        df['Close Time'] = [entry.get('Close Time') for entry in data]
-        df['Volume'] = [entry.get('Volume') for entry in data]
-        df['Number of trades'] = [entry.get('Number of trades') for entry in data]
+        df['Open Price'] = [entry.get('open_price') for entry in data]
+        df['High'] = [entry.get('high') for entry in data]
+        df['Low'] = [entry.get('low') for entry in data]
+        df['Close Price'] = [entry.get('close_price') for entry in data]
+        df['Close Time'] = [entry.get('close_time') for entry in data]
+        df['Volume'] = [entry.get('volume') for entry in data]
+        df['Number of trades'] = [entry.get('trades_num') for entry in data]
         return df
     else:
         return None

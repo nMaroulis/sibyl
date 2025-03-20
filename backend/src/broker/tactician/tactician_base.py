@@ -2,7 +2,10 @@ from backend.src.broker.strategies.strategy_base import BaseStrategy
 import logging
 from typing import Any, Dict, List
 import time
-
+import threading
+import json
+import os
+import pandas as pd
 
 class Tactician:
     """
@@ -27,8 +30,48 @@ class Tactician:
         self.trade_history: List[Dict[str, Any]] = []  # Store all trade actions
         self.is_running = False  # Track if the strategy is running
         self.last_order_type = "None"
+
+        # Threading
+        self.thread = None
+        self.thread_id = None
+        self.history_file = "./trade_history.json"
+        self.pid_file = "./tactician_pid.txt"
+
+        # Data
+        self.dataset = None
         # Setup logging
         # logging.basicConfig(filename="trade_log.log", level=logging.INFO)
+
+
+    def _save_trade_history(self) -> None:
+        """Save trade history to a JSON file."""
+        with open(self.history_file, "w") as f:
+            json.dump(self.trade_history, f, indent=4)
+
+
+    def _load_trade_history(self):
+        """Load trade history from a JSON file if it exists."""
+        try:
+            if os.path.exists(self.history_file):
+                with open(self.history_file, "r") as f:
+                    self.trade_history = json.load(f)
+                return self.trade_history
+            else:
+                return None
+        except Exception as e:
+            print(e)
+            return None
+
+    def _save_pid(self):
+        """Save the thread ID (not an actual PID, but useful for tracking)."""
+        with open(self.pid_file, "w") as f:
+            f.write(str(self.thread_id))
+
+
+    def _clear_pid(self):
+        """Remove the PID file when the strategy stops."""
+        if os.path.exists(self.pid_file):
+            os.remove(self.pid_file)
 
 
     def execute_trade(self, action: str) -> Dict[str, Any]:
@@ -48,9 +91,9 @@ class Tactician:
                 self.position += float(order["executed_base_quantity"])
                 self.capital = self.capital - float(order["executed_quote_amount"])
                 price = float(order["price"])
-                self.trade_history.append({"action": "BUY", "order_id": order["orderId"], "quote_amount": float(order["executed_quote_amount"]), "price": price, "amount": self.position, "status": "executed"})
+                self.trade_history.append({"timestamp": time.time(), "action": "BUY", "order_id": order["orderId"], "quote_amount": float(order["executed_quote_amount"]), "price": price, "amount": self.position, "status": "executed"})
                 print(f"Tactician :: BUY ORDER quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {price:.2f}")
-
+                self._save_trade_history() # save to json
                 return order
             else:
                 print(f"Tactician :: BUY ORDER - NOT ENOUGH CAPITAL {self.capital} or last order was BUY")
@@ -63,8 +106,9 @@ class Tactician:
                 price = float(order["price"])
                 self.capital += float(order["executed_quote_amount"])
                 self.position = self.position - float(order["executed_base_quantity"])
-                self.trade_history.append({"action": "SELL", "price": price, "amount": self.position, "status": "executed"})
+                self.trade_history.append({"timestamp": time.time(), "action": "SELL", "price": price, "amount": self.position, "status": "executed"})
                 print(f"Tactician :: SELL ORDER quote: {self.capital} {self.position} {self.symbol} at {price:.2f}")
+                self._save_trade_history() # save to json
                 return order
             else:
                 print(f"Tactician :: SELL ORDER - NOT ENOUGH POSITION {self.position}")
@@ -91,7 +135,33 @@ class Tactician:
         return "Running" if self.is_running else "Stopped"
 
 
-    def run_strategy(self, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 2) -> None:
+    def initiate_dataset(self, interval: str, limit: int) -> None:
+        """
+        Calls the Exchange API to get the latest price data. It fetches :limit: prices on call and initiates the dataset.
+        Typically called before starting the strategy loop.
+
+        Args:
+            limit (int): The number of prices to fetch.
+            interval (str): The klines interval.
+        """
+        # Convert to DataFrame
+        data = self.exchange.get_price_history(self.symbol, interval=interval, limit=limit)
+        df = pd.DataFrame(data)
+        df.rename(columns={"open_time": "timestamp", "close_price": "price"}, inplace=True)
+        self.dataset = df
+
+
+    def update_dataset(self) -> None:
+        latest_price = self.exchange.get_pair_market_price(self.symbol)
+        current_timestamp_ms = int(time.time() * 1000)
+        # drop first row
+        self.dataset = self.dataset.iloc[1:].reset_index(drop=True)
+
+        # add new
+        self.dataset = pd.concat([self.dataset, pd.DataFrame([{"timestamp": current_timestamp_ms, "price": latest_price}])], ignore_index=True)
+
+
+    def strategy_loop(self, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 1) -> None:
         """
         Runs the trading strategy in a loop, checking for signals and executing trades.
 
@@ -99,25 +169,45 @@ class Tactician:
             strategy (TradingStrategy): The strategy that generates trade signals.
             interval (int): Time interval (in seconds) between checking for new signals. Default is 5.
             min_capital (float): The minimum capital threshold for running the strategy. If capital goes below this, the strategy will stop. Default is 0.
-            trades_num (int): Number of trades to execute before stopping. Must be even to end with a SELL.
+            trades_limit (int): Number of trades (one trade is consisted of one BUY then one SELL order) to execute before stopping. Must be even to end with a SELL.
         """
-        self.is_running = True  # Set the status to running
+        self.is_running = True
+        self.thread_id = threading.get_ident()
+        self._save_pid()
         while self.is_running:
-            if len(self.get_trade_history()) >= trades_limit: # exit after N trades, must be even to end with a sell
-                print(f"Capital {self.capital} is below {min_capital}. Stopping strategy.")
-                self.stop_strategy()
+            if len(self.get_trade_history()) >= trades_limit*2: # exit after N trades, must be even to end with a sell
+                print(f"Maximum number of trades reached {trades_limit}.")
+                # self.stop_strategy()
                 break
 
-            data = strategy.generate_signals()
-            latest_signal = data.iloc[-1]["signal"]
-            latest_price = data.iloc[-1]["close"]
-            print(f"Tactician :: data | t: {data.iloc[-1]["timestamp"].strftime("%H:%M:%S")}, p: {latest_price:.2f}, action: {latest_signal}")
+            self.update_dataset()
+            signals = strategy.generate_signals(self.dataset.copy())
+            latest_signal = signals.iloc[-1]["signal"]
+            latest_price = signals.iloc[-1]["price"]
+            print(f"Tactician :: signals | t: {pd.to_datetime(signals.iloc[-1]["timestamp"], unit="ms").strftime('%H:%M:%S')}, p: {latest_price:.2f}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
             if latest_signal in ["BUY", "SELL"]:
                 self.execute_trade(latest_signal)
 
             time.sleep(interval)  # Wait before checking again
-        print("Tactician :: Strategy stopped.")
-        print(f"Tactician :: {self.get_trade_history()}")
+
+
+    def run_strategy(self, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 2) -> None:
+        """
+        Initiates the trading loop.
+
+        Args:
+            strategy (TradingStrategy): The strategy that generates trade signals.
+            interval (int): Time interval (in seconds) between checking for new signals. Default is 5.
+            min_capital (float): The minimum capital threshold for running the strategy. If capital goes below this, the strategy will stop. Default is 0.
+            trades_limit (int): Number of trades to execute before stopping. Must be even to end with a SELL.
+        """
+
+        print("Tactician :: Initiating Strategy loop.")
+        self.initiate_dataset("1s", 200)
+        self.thread = threading.Thread(target=self.strategy_loop, daemon=True, args=(strategy, interval, min_capital, trades_limit))
+        self.thread.start()
+        print("Tactician :: Strategy loop started.")
+        # print(f"Tactician :: {self.get_trade_history()}")
 
 
     def stop_strategy(self) -> None:
@@ -126,6 +216,9 @@ class Tactician:
 
         """
         self.is_running = False
+        self._clear_pid()
+        if self.thread and self.thread.is_alive():
+            self.thread.join()
         print("Tactician :: Strategy has been stopped.")
 
 
