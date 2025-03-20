@@ -4,6 +4,8 @@ from database.trade_history_db_client import TradeHistoryDBClient
 from datetime import datetime
 from pydantic import BaseModel
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
+from backend.src.broker.strategies.strategy_factory import StrategyFactory
+from backend.src.broker.tactician.tactician_base import Tactician
 
 
 router = APIRouter(
@@ -48,7 +50,7 @@ def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, Any]:
     return res
 
 
-@router.get("/trade/check/minimum_value")
+@router.get("/trade/spot/check/minimum_value")
 def get_min_trade_value(exchange: str , symbol: str):
 
     client = ExchangeClientFactory.get_client(exchange)
@@ -61,7 +63,7 @@ def get_min_trade_value(exchange: str , symbol: str):
         raise HTTPException(status_code=500, detail="Fetching minimum trade value failed.")
 
 
-@router.get("/trade/asset/market_price")
+@router.get("/trade/spot/asset/market_price")
 def get_current_asset_price(exchange: str , pair_symbol: str) -> dict[str, float]:
 
     client = ExchangeClientFactory.get_client(exchange)
@@ -97,3 +99,49 @@ def get_spot_trade_orderbook(exchange: str, quote_asset: str, base_asset: str, l
 # def get_spot_order_status():
 #
 #     return {"status": "..."}
+
+
+
+### STRATEGIES
+
+
+class StrategyParams(BaseModel):
+    exchange: str
+    quote_asset: str
+    quote_amount: float
+    base_asset: str
+    time_interval: str
+    strategy: str
+    num_trades: int
+    params: Dict[str, Any]  # Holds strategy-specific parameters
+
+
+@router.post("/strategy/backtesting/new")
+def run_strategy_backtesting(strategy_params: StrategyParams) -> Dict[str, Any]: # TODO Implement
+    return {}
+
+
+@router.post("/strategy/new")
+def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
+    client = ExchangeClientFactory.get_client(strategy_params.exchange)
+
+    strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
+
+    # Instantiate the Tactician
+    symbol = f"{strategy_params.quote_asset}{strategy_params.base_asset}"
+    tactician = Tactician(exchange=client, symbol=symbol, capital_allocation=strategy_params.quote_amount)
+
+    # Run the strategy with a n-second interval and stop if capital is less than min_capital
+    tactician.run_strategy(strategy, interval=1, min_capital=100.0, trades_limit=2)
+
+    return {}
+
+
+@router.get("/strategy/status/info")
+def get_strategy_status(strategy_id: int):
+    return {}
+
+
+@router.get("/strategy/status/stop")
+def stop_strategy(strategy_id: int):
+    return {}

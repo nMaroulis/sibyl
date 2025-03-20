@@ -92,7 +92,7 @@ class Tactician:
                 self.capital = self.capital - float(order["executed_quote_amount"])
                 price = float(order["price"])
                 self.trade_history.append({"timestamp": time.time(), "action": "BUY", "order_id": order["orderId"], "quote_amount": float(order["executed_quote_amount"]), "price": price, "amount": self.position, "status": "executed"})
-                print(f"Tactician :: BUY ORDER quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {price:.2f}")
+                print(f"Tactician :: \033[92m BUY ORDER \033[0m quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {price:.2f}")
                 self._save_trade_history() # save to json
                 return order
             else:
@@ -107,7 +107,7 @@ class Tactician:
                 self.capital += float(order["executed_quote_amount"])
                 self.position = self.position - float(order["executed_base_quantity"])
                 self.trade_history.append({"timestamp": time.time(), "action": "SELL", "price": price, "amount": self.position, "status": "executed"})
-                print(f"Tactician :: SELL ORDER quote: {self.capital} {self.position} {self.symbol} at {price:.2f}")
+                print(f"Tactician :: \033[93m SELL ORDER \033[0m quote: {self.capital} {self.position} {self.symbol} at {price:.2f}")
                 self._save_trade_history() # save to json
                 return order
             else:

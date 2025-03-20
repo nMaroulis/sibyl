@@ -8,7 +8,7 @@ import re
 @cache_data(show_spinner="Fetching asset minimum trade value...")
 def fetch_minimum_trade_value(exchange: str, trading_pair: str):
 
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/check/minimum_value?exchange={exchange.lower().replace(" ","_")}&symbol={trading_pair}'
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/spot/check/minimum_value?exchange={exchange.lower().replace(" ","_")}&symbol={trading_pair}'
     response = requests.get(url)
     if response.status_code == 200:
         try:
@@ -23,7 +23,7 @@ def fetch_minimum_trade_value(exchange: str, trading_pair: str):
 @cache_data(show_spinner="Fetching asset current Price...")
 def fetch_asset_market_price(exchange: str, trading_pair: str):
 
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/asset/market_price?exchange={exchange.lower().replace(" ","_")}&pair_symbol={trading_pair}'
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/spot/asset/market_price?exchange={exchange.lower().replace(" ","_")}&pair_symbol={trading_pair}'
     response = requests.get(url)
     if response.status_code == 200:
         try:
