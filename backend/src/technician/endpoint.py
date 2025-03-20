@@ -30,7 +30,7 @@ class APIParams(BaseModel):
     secret_key: Optional[str] = None
     api_metadata: Optional[str] = None
 
-@router.post("/credentials/apis/new")
+@router.post("/credentials/apis/add")
 def insert_update_api_keys(api_params: APIParams):
     try:
         # check if exists (insert or update)

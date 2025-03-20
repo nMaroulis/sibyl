@@ -1,7 +1,6 @@
 from extra_streamlit_components import stepper_bar
 from streamlit import write, container, expander, html, link_button, tabs, segmented_control, popover, dialog, pills
-
-
+import re
 
 
 @dialog('📖 Strategies Wiki', width="large")
@@ -90,3 +89,8 @@ def get_strategy_instructions(exp=False):
                 Useful in volatile markets where price can fluctuate within a certain range.
                 Best for swing trading and breakout strategies, especially when you're looking for price reversals or anticipating volatility.
                 """)
+
+
+def extract_coin_symbol(text):
+    match = re.search(r'\[([^\]]+)\]$', text)
+    return match.group(1) if match else text

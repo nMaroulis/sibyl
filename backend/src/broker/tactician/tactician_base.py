@@ -191,7 +191,7 @@ class Tactician:
             time.sleep(interval)  # Wait before checking again
 
 
-    def run_strategy(self, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 2) -> None:
+    def run_strategy(self, strategy: BaseStrategy, interval: str, min_capital: float, trades_limit: int) -> None:
         """
         Initiates the trading loop.
 
@@ -201,13 +201,14 @@ class Tactician:
             min_capital (float): The minimum capital threshold for running the strategy. If capital goes below this, the strategy will stop. Default is 0.
             trades_limit (int): Number of trades to execute before stopping. Must be even to end with a SELL.
         """
+        time_interval_dict = {'1s': 1, '1m': 60, '5m': 300, '15m': 900,
+                         '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
 
         print("Tactician :: Initiating Strategy loop.")
-        self.initiate_dataset("1s", 200)
-        self.thread = threading.Thread(target=self.strategy_loop, daemon=True, args=(strategy, interval, min_capital, trades_limit))
+        self.initiate_dataset(interval, 200)
+        self.thread = threading.Thread(target=self.strategy_loop, daemon=True, args=(strategy, time_interval_dict[interval], min_capital, trades_limit))
         self.thread.start()
         print("Tactician :: Strategy loop started.")
-        # print(f"Tactician :: {self.get_trade_history()}")
 
 
     def stop_strategy(self) -> None:

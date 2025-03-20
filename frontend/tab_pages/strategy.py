@@ -1,13 +1,11 @@
 import streamlit as st
-from streamlit import button
-
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.strategy_helper.funcs import get_strategy_instructions
 from frontend.src.library.ui_elements import col_style2
 from frontend.src.library.analytics_helper.client import fetch_available_assets
-from frontend.src.library.spot_trade_helper.funcs import get_account_balance
+from frontend.src.library.strategy_helper.client import post_strategy
 import pandas as pd
 
 
@@ -73,17 +71,42 @@ if st.session_state["available_exchange_apis"]:
         c4 = st.columns(1)
         with c4[0]:
             st.write("**5. Choose Strategy Algorithm**")
-            st.segmented_control("Algorithm Type", options=["All", "Trend Following", "Mean Reversion", "Breakout", "Momentum", "Swing Trading", "Scalping", "Volatility-Based", "ML Model"], default="All", disabled=True)
+            st.segmented_control("Strategy Algorithm Type", options=["All", "Trend Following", "Mean Reversion", "Breakout", "Momentum", "Swing Trading", "Scalping", "Volatility-Based", "ML Model"], default="All", disabled=True)
             algorithm = st.selectbox("Trading Strategies", options=["Bollinger Bands", "Exponential Moving Average (EMA) crossover", "RSI"])
+
+            st.write("**Strategy Params**")
+            strategy_params_dict = {}
+            if algorithm == "Bollinger Bands":
+                window = st.number_input("Window Size", value=20, min_value=1, max_value=1000)
+                st_dev = st.number_input("Standard Deviation", value=2.0, min_value=0.0, max_value=4.0)
+                strategy_params_dict["window"] = window
+                strategy_params_dict["std_dev"] = st_dev
+
+            elif algorithm == "Exponential Moving Average (EMA) crossover":
+                short_window = st.number_input("Short Window Size", value=10, min_value=1, max_value=1000)
+                long_window = st.number_input("Long Window Size", value=50, min_value=1, max_value=1000)
+                strategy_params_dict["short_window"] = short_window
+                strategy_params_dict["long_window"] = long_window
+            elif algorithm == "RSI":
+                rsi_period = st.number_input("RSI Period", value=14, min_value=1, max_value=100)
+                buy_threshold = st.number_input("Buy Threshold", value=30, min_value=1, max_value=1000)
+                sell_threshold = st.number_input("Sell Threshold", value=70, min_value=1, max_value=1000)
+                strategy_params_dict["rsi_period"] = rsi_period
+                strategy_params_dict["buy_threshold"] = buy_threshold
+                strategy_params_dict["sell_threshold"] = sell_threshold
+            else:
+                st.warning("Invalid algorithm selected.", icon=":material/warning:")
 
             st.caption("Number of trades (pair of BUY-SELL orders) before the algorithm stops. The larger this value, the more the algorithm will run for.")
             trades_num = st.number_input("Number of trades", min_value=1, max_value=10, default=2, step=1)
         st.divider()
         st.caption("A **Backtesting** will evaluate the effectiveness of a trading strategy by running it against historical data to see how it would perform. The **evaluation results** will be shown, along with the option to deploy it.")
-        backtesting_button = st.button("Run Backtesting", type="primary", icon=":material/query_stats:")
-        if backtesting_button:
-            if st.button("Initiate Strategy", type="primary", icon=":material/send:"):
-                pass
+        backtesting_button = st.button("Run Backtesting", type="primary", icon=":material/query_stats:", disabled=True)
+        # if backtesting_button:
+        # post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict, True)
+        if st.button("Initiate Strategy", type="primary", icon=":material/send:"):
+            post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict)
+
 
 else:
     html_content = """
