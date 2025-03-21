@@ -6,11 +6,11 @@ from frontend.src.library.strategy_helper.funcs import get_strategy_instructions
 from frontend.src.library.ui_elements import col_style2
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 from frontend.src.library.strategy_helper.client import post_strategy
-import pandas as pd
+import time
 
 
 fix_page_layout('strategy')
-set_page_title("Trading Strategy")
+set_page_title("Trading Strategy Launcher")
 st.html(col_style2)
 
 st.caption("Click the button below 👇👇 to get information on the available strategies.")
@@ -25,10 +25,6 @@ if st.session_state["available_exchange_apis"]:
     exchange = st.selectbox('Choose Exchange', options=st.session_state["available_exchange_apis"])
     st.divider()
     with st.container(border=False):
-
-        # with st.spinner(f"Fetching available {exchange} asset pairs..."):
-        #     asset_list = fetch_available_assets(st.session_state['trade_exchange_api'], quote_asset="all")
-
 
         # show available balance
         c0 = st.columns(1)
@@ -120,13 +116,24 @@ if st.session_state["available_exchange_apis"]:
             st.warning("No **strategy algorithm** provided.", icon=":material/warning:")
             valid_request_flag = False
 
-        backtesting_button = st.button("Run Backtesting", type="primary", icon=":material/query_stats:", disabled=True)
+        # placeholder = st.empty() # TODO - examine here to remove buttons.
+
+        backtesting_button = st.button("Run Backtesting", key="backtesting_button", type="primary", icon=":material/query_stats:", disabled=True)
         # if backtesting_button:
         # post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict, True)
 
         if valid_request_flag:
-            if st.button("Initiate Strategy", type="primary", icon=":material/send:"):
-                post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict)
+            if st.button("Initiate Strategy", key="deploy_strategy_button", type="primary", icon=":material/rocket_launch:"):
+                with st.spinner("Deploying Strategy"):
+                    res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict)
+                if res is not None:
+                    st.success("Strategy has been successfully deployed.", icon=":material/rocket_launch:")
+                    st.toast("Strategy has been successfully deployed.", icon="🚀")
+                    st.link_button("Navigate to the **Strategy Console** to view the progress", "http://localhost:8501/strategy_console", icon=":material/browse_activity:")
+                else:
+                    st.error("Failed to deploy strategy. See logs for error.", icon=":material/report:")
+
+
         else:
             st.button("Initiate Strategy", type="primary", icon=":material/send:", disabled=True)
 

@@ -145,15 +145,23 @@ class Tactician:
         Calls the Exchange API to get the latest price data. It fetches :limit: prices on call and initiates the dataset.
         Typically called before starting the strategy loop.
 
+        In case of 6s interval: Most exchanges do not support a 15s interval. Therefore in order to initiate the dataset, the 1s API is used and the data are sampled.
         Args:
             limit (int): The number of prices to fetch.
             interval (str): The klines interval.
         """
-        # Convert to DataFrame
-        data = self.exchange.get_price_history(self.symbol, interval=interval, limit=limit)
-        df = pd.DataFrame(data)
-        df.rename(columns={"open_time": "timestamp", "close_price": "price"}, inplace=True)
-        self.dataset = df
+        # There is no 15s interval in exchange APIs, there
+        if interval == "6s":
+            data = self.exchange.get_price_history(self.symbol, interval="1s", limit=1200)
+            df = pd.DataFrame(data)
+            df.rename(columns={"open_time": "timestamp", "close_price": "price"}, inplace=True)
+            df = df.iloc[::6].reset_index(drop=True)
+            self.dataset = df
+        else:
+            data = self.exchange.get_price_history(self.symbol, interval=interval, limit=limit)
+            df = pd.DataFrame(data)
+            df.rename(columns={"open_time": "timestamp", "close_price": "price"}, inplace=True)
+            self.dataset = df
 
 
     def update_dataset(self) -> None:
@@ -200,23 +208,24 @@ class Tactician:
             time.sleep(interval)  # Wait before checking again
 
 
-    def run_strategy(self, strategy: BaseStrategy, interval: str, min_capital: float, trades_limit: int) -> None:
+    def run_strategy(self, strategy_id: str, strategy: BaseStrategy, interval: str, min_capital: float, trades_limit: int) -> None:
         """
         Initiates the trading loop.
 
         Args:
+            strategy_id (str): The id of the strategy to run.
             strategy (TradingStrategy): The strategy that generates trade signals.
             interval (int): Time interval (in seconds) between checking for new signals. Default is 5.
             min_capital (float): The minimum capital threshold for running the strategy. If capital goes below this, the strategy will stop. Default is 0.
             trades_limit (int): Number of trades to execute before stopping. Must be even to end with a SELL.
         """
-        time_interval_dict = {'1s': 1, '1m': 60, '5m': 300, '15m': 900,
+        time_interval_dict = {'1s': 1, '6s': 6, '1m': 60, '5m': 300, '15m': 900,
                          '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
 
 
-        self.db_client.add_strategy("strategy", self.symbol, self.capital, interval, trades_limit, strategy.name, int(time.time()*1000))
+        self.db_client.add_strategy(strategy_id, self.symbol, self.capital, interval, trades_limit, strategy.name, int(time.time()*1000))
 
-        print("Tactician :: Initiating Strategy loop.")
+        print(f"Tactician :: Initiating Strategy loop with id {strategy_id}.")
         self.initiate_dataset(interval, 200)
         self.thread = threading.Thread(target=self.strategy_loop, daemon=True, args=(strategy, time_interval_dict[interval], min_capital, trades_limit))
         self.thread.start()

@@ -28,10 +28,18 @@ else:
         st.info("💡 The **DateTime** above refers to the **UTC** timestamp. So times may be different from your local time.")
         df_to_plot = edited_df.loc[edited_df["show_plot"] == True].copy().reset_index(drop=True)
         if df_to_plot.shape[0] > 0:
-            with st.spinner("Generating Trade History Plot..."):
-                fig = get_trading_history_line_plot(df_to_plot)
-                if fig is not None:
-                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            html_content = """
+            <div style="text-align: center; color: red; font-weight: bold; font-size: 18px;">
+                <br>
+                Currently Unavailable.
+                <br>
+            </div>
+            """
+            st.html(html_content)
+            # with st.spinner("Generating Trade History Plot..."):
+            #     fig = get_trading_history_line_plot(df_to_plot)
+            #     if fig is not None:
+            #         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     with vs_tab:
         st.html("<h5 style='text-align: left;margin-top:0; padding-top:0;'>Trading History Bar Plot</h5>")
         get_status_barplot(df['Status'])

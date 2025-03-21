@@ -8,7 +8,7 @@ from backend.src.broker.strategies.strategy_factory import StrategyFactory
 from backend.src.broker.tactician.tactician_base import Tactician
 from database.strategy.strategy_db_client import StrategyDBClient
 from backend.src.broker.tactician.strategy_runtime_manager import StrategyRuntimeHandler
-
+import time
 
 router = APIRouter(
     prefix="/broker",
@@ -132,13 +132,14 @@ def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
         strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
 
         # Instantiate the Tactician
+        strategy_id = f"strategy_{int(time.time())}"
         symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
         tactician = Tactician(exchange=client, symbol=symbol, capital_allocation=strategy_params.quote_amount)
         # Run the strategy with a n-second interval and stop if capital is less than min_capital
-        tactician.run_strategy(strategy, interval=strategy_params.time_interval, min_capital=0.0, trades_limit=strategy_params.num_trades)
+        tactician.run_strategy(strategy_id, strategy, interval=strategy_params.time_interval, min_capital=0.0, trades_limit=strategy_params.num_trades)
 
-        strategy_runtime_handler.add_strategy("strategy", tactician)
-        return {}
+        strategy_runtime_handler.add_strategy(strategy_id, tactician)
+        return {"status": "success", "strategy_id": strategy_id}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
