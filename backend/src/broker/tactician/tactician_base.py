@@ -184,7 +184,7 @@ class Tactician:
             signals = strategy.generate_signals(self.dataset.copy())
             latest_signal = signals.iloc[-1]["signal"]
             latest_price = signals.iloc[-1]["price"]
-            print(f"Tactician :: signals | t: {pd.to_datetime(signals.iloc[-1]["timestamp"], unit="ms").strftime('%H:%M:%S')}, p: {latest_price:.2f}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
+            print(f"Tactician :: signals | t: {pd.to_datetime(signals.iloc[-1]["timestamp"], unit="ms").strftime('%H:%M:%S')}, p: {latest_price}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
             if latest_signal in ["BUY", "SELL"]:
                 self.execute_trade(latest_signal)
 

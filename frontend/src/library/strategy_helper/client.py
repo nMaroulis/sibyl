@@ -7,7 +7,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_asset: str, time_interval: str, strategy: str, num_trades: int, params: Dict[str, Any], backtesting: bool = False) -> Dict[str, Any] | None:
 
     payload = {
-        "exchange": exchange,
+        "exchange": exchange.lower().replace(" ", "_"),
         "quote_asset": quote_asset,
         "quote_amount": quote_amount,
         "base_asset": base_asset,
@@ -16,7 +16,6 @@ def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_ass
         "num_trades": num_trades,
         "params": params
     }
-
     url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/backtesting/start" if backtesting else f"{BACKEND_SERVER_ADDRESS}/broker/strategy/start"
 
     response = requests.post(url=url, json=payload)

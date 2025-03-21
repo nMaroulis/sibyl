@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 
-class MockExchange:
+class MockExchangeClient:
 
 
     def get_symbol_price(self, symbol: str) -> float:

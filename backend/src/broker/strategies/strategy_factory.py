@@ -12,8 +12,9 @@ class StrategyFactory:
     }
 
     @classmethod
-    def get_strategy(cls, strategy_name: str, **params: Any) -> Any:
+    def get_strategy(cls, strategy_name: str, params: Dict[str, Any]) -> Any:
         strategy_class = cls._strategies.get(strategy_name)
+        print(params)
         if not strategy_class:
             raise ValueError(f"Unknown Strategy name: {strategy_name}")
         return strategy_class(**params)

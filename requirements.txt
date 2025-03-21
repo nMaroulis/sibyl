@@ -38,6 +38,7 @@ cleo==2.1.0
 click==8.1.8
 cloudpathlib==0.20.0
 coinbase==2.1.0
+coinbase-advanced-py==1.8.2
 coloredlogs==15.0.1
 comm==0.2.2
 confection==0.1.5
@@ -199,6 +200,7 @@ pydantic==2.10.6
 pydantic_core==2.27.2
 pydeck==0.9.1
 Pygments==2.19.1
+PyJWT==2.10.1
 pymongo==3.5.1
 PyMuPDF==1.25.3
 pyparsing==3.2.1
@@ -259,6 +261,8 @@ tf_keras==2.18.0
 thinc==8.3.4
 threadpoolctl==3.5.0
 tinycss2==1.4.0
+tinydb==4.8.2
+tinydb-serialization==2.2.0
 tokenizers==0.21.0
 toml==0.10.2
 tomlkit==0.13.2

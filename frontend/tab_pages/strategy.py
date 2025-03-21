@@ -75,6 +75,7 @@ if st.session_state["available_exchange_apis"]:
             algorithm = st.selectbox("Trading Strategies", options=["Bollinger Bands", "Exponential Moving Average (EMA) crossover", "RSI"])
 
             st.write("**Strategy Params**")
+            st.divider()
             strategy_params_dict = {}
             if algorithm == "Bollinger Bands":
                 window = st.number_input("Window Size", value=20, min_value=1, max_value=1000)
@@ -96,17 +97,38 @@ if st.session_state["available_exchange_apis"]:
                 strategy_params_dict["sell_threshold"] = sell_threshold
             else:
                 st.warning("Invalid algorithm selected.", icon=":material/warning:")
-
+            st.button("Strategy Parameters LLM Advisor", icon=":material/manufacturing:",disabled=True)
+            st.divider()
             st.caption("Number of trades (pair of BUY-SELL orders) before the algorithm stops. The larger this value, the more the algorithm will run for.")
-            trades_num = st.number_input("Number of trades", min_value=1, max_value=10, default=2, step=1)
+            trades_num = st.number_input("Number of trades", min_value=1, max_value=10, value=2, step=1)
         st.divider()
         st.caption("A **Backtesting** will evaluate the effectiveness of a trading strategy by running it against historical data to see how it would perform. The **evaluation results** will be shown, along with the option to deploy it.")
+        valid_request_flag = True
+        if quote_asset is None:
+            st.warning("No **quote asset** provided.", icon=":material/warning:")
+            valid_request_flag = False
+        if quote_amount is None or quote_amount <= 0:
+            st.warning("Please choose a valid **quote amount**.", icon=":material/warning:")
+            valid_request_flag = False
+        if base_asset is None:
+            st.warning("No **base asset** provided.", icon=":material/warning:")
+            valid_request_flag = False
+        if time_interval is None:
+            st.warning("No **time interval** provided.", icon=":material/warning:")
+            valid_request_flag = False
+        if algorithm is None:
+            st.warning("No **strategy algorithm** provided.", icon=":material/warning:")
+            valid_request_flag = False
+
         backtesting_button = st.button("Run Backtesting", type="primary", icon=":material/query_stats:", disabled=True)
         # if backtesting_button:
         # post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict, True)
-        if st.button("Initiate Strategy", type="primary", icon=":material/send:"):
-            post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict)
 
+        if valid_request_flag:
+            if st.button("Initiate Strategy", type="primary", icon=":material/send:"):
+                post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict)
+        else:
+            st.button("Initiate Strategy", type="primary", icon=":material/send:", disabled=True)
 
 else:
     html_content = """

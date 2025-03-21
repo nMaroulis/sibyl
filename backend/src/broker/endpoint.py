@@ -124,19 +124,19 @@ def run_strategy_backtesting(strategy_params: StrategyParams) -> Dict[str, Any]:
 @router.post("/strategy/start")
 def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
     try:
-        client = ExchangeClientFactory.get_client(strategy_params.exchange)
+        client = ExchangeClientFactory.get_client("binance_testnet")# strategy_params.exchange)
 
         strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
 
         # Instantiate the Tactician
-        symbol = f"{strategy_params.quote_asset}{strategy_params.base_asset}"
+        symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
         tactician = Tactician(exchange=client, symbol=symbol, capital_allocation=strategy_params.quote_amount)
 
         # Run the strategy with a n-second interval and stop if capital is less than min_capital
         tactician.run_strategy(strategy, interval=strategy_params.time_interval, min_capital=0.0, trades_limit=strategy_params.num_trades)
-
         return {}
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/strategy/status/info")

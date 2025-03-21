@@ -7335,6 +7335,33 @@ doc = ["sphinx", "sphinx_rtd_theme"]
 test = ["pytest", "ruff"]
 
 [[package]]
+name = "tinydb"
+version = "4.8.2"
+description = "TinyDB is a tiny, document oriented database optimized for your happiness :)"
+optional = false
+python-versions = "<4.0,>=3.8"
+groups = ["main"]
+files = [
+    {file = "tinydb-4.8.2-py3-none-any.whl", hash = "sha256:f97030ee5cbc91eeadd1d7af07ab0e48ceb04aa63d4a983adbaca4cba16e86c3"},
+    {file = "tinydb-4.8.2.tar.gz", hash = "sha256:f7dfc39b8d7fda7a1ca62a8dbb449ffd340a117c1206b68c50b1a481fb95181d"},
+]
+
+[[package]]
+name = "tinydb-serialization"
+version = "2.2.0"
+description = "Serialization for objects that TinyDB otherwise couldn't handle"
+optional = false
+python-versions = "<4.0,>=3.8"
+groups = ["main"]
+files = [
+    {file = "tinydb_serialization-2.2.0-py3-none-any.whl", hash = "sha256:02edeafd6560b811c8df3e39792a37dee68ac63978659c214eab593316c58253"},
+    {file = "tinydb_serialization-2.2.0.tar.gz", hash = "sha256:b7e7f2b0cc17350438ba070eeb2f5fcb3a9949c5ff38476379450422de3f935f"},
+]
+
+[package.dependencies]
+tinydb = ">=4.0,<5.0"
+
+[[package]]
 name = "tokenizers"
 version = "0.21.0"
 description = ""
@@ -8352,4 +8379,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "151ee2eb128a48fa10598efcb35961263d55417b2803d1c79d8ef2db8a3185d7"
+content-hash = "adbc377b481c4b02bc47a3cd83479bcc5bc80f7f8336fec67c0cb7e85f908a90"

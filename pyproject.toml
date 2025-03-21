@@ -231,7 +231,9 @@ dependencies = [
     "sentence-transformers (>=3.4.1,<4.0.0)",
     "rank-bm25 (>=0.2.2,<0.3.0)",
     "faiss-cpu (>=1.10.0,<2.0.0)",
-    "coinbase (>=2.1.0,<3.0.0)"
+    "coinbase (>=2.1.0,<3.0.0)",
+    "tinydb (>=4.8.2,<5.0.0)",
+    "tinydb-serialization (>=2.2.0,<3.0.0)"
 ]
 
 
