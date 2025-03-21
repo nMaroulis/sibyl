@@ -16,8 +16,10 @@ class BaseStrategy(ABC):
 
         Vars:
             data (pd.DataFrame): A DataFrame containing price data with a 'close' column.
+            name (str): The name of the strategy.
         """
         self.data = None
+        self.name = "base"
 
 
     @abstractmethod

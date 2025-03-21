@@ -21,7 +21,7 @@ class EMACrossoverStrategy(BaseStrategy):
         super().__init__()
         self.short_window = short_window
         self.long_window = long_window
-
+        self.name = "EMA Crossover"
 
     def calculate_ema(self, period: int) -> pd.Series:
         """

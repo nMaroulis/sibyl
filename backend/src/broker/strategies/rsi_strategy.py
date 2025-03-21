@@ -23,6 +23,7 @@ class RSIStrategy(BaseStrategy):
         self.rsi_period = rsi_period
         self.buy_threshold = buy_threshold
         self.sell_threshold = sell_threshold
+        self.name = "RSI"
 
     def calculate_rsi(self) -> pd.Series:
         """

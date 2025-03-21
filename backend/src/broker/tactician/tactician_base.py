@@ -214,7 +214,7 @@ class Tactician:
                          '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
 
 
-        self.db_client.add_strategy("strategy", self.symbol, self.capital, interval, int(time.time()*1000), trades_limit)
+        self.db_client.add_strategy("strategy", self.symbol, self.capital, interval, trades_limit, strategy.name, int(time.time()*1000))
 
         print("Tactician :: Initiating Strategy loop.")
         self.initiate_dataset(interval, 200)
