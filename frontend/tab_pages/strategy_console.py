@@ -41,8 +41,9 @@ if strategies:
 
     # st.dataframe(df, use_container_width=True, hide_index=True)
 
-
-    if df_to_show.shape[0] > 0:
+    if df_to_show.shape[0] == 0:
+        pass
+    elif df_to_show.shape[0] == 1:
         st.write(df_to_show["strategy_id"].iloc[0])
         logs = get_strategy_logs(df_to_show["strategy_id"].iloc[0])
         logs_df = pd.DataFrame(logs)
@@ -83,9 +84,11 @@ if strategies:
         st.pyplot(fig)
 
 
-    real_time_option = st.toggle("Real Time Monitor", value=False)
-    if real_time_option:
-        real_time_strategy_plot()
+        real_time_option = st.toggle("Real Time Monitor", value=False)
+        if real_time_option:
+            real_time_strategy_plot()
+    else:
+        st.warning("Only one strategy at a time can be monitored.", icon=":material/warning:")
 
 else:
     html_content = """

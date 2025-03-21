@@ -56,11 +56,11 @@ if st.session_state["available_exchange_apis"]:
         with c3[0]:
             st.write("**4. Choose Time interval**")
             st.caption("The strategy runs in a loop on a steady time interval. Based on the selected interval, the algorithm will focus on the short-term (**High-Frequency Trading**) or long-term (**Swing Trading**).")
-            time_interval = st.pills("Time Interval", options=["1s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="1s")
+            time_interval = st.pills("Time Interval", options=["1s", "6s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="1s")
             if time_interval is None:
                 st.warning("No time interval selected.", icon=":material/warning:")
             else:
-                time_int_dict = {'1s': '1 second', '1m': '1 minute', '5m': '5 minutes', '15m': '15 minutes',
+                time_int_dict = {'1s': '1 second', '6s': '6 seconds', '1m': '1 minute', '5m': '5 minutes', '15m': '15 minutes',
                                  '30m': '30 minutes', '1h': '1 hour', '4h': '4 hours', '12h': '12 hours', '1d': '1 day'}
                 st.info(f"The trading strategy algorithm will loop every **{time_int_dict[time_interval]}**.")
 
