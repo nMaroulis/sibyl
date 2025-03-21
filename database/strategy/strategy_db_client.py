@@ -4,8 +4,6 @@ from dotenv import load_dotenv
 import os
 from typing import Optional, List, Dict, Any
 
-from frontend.tab_pages.strategy import time_interval
-
 
 class StrategyDBClient:
     """
