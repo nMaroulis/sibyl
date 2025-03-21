@@ -6,8 +6,9 @@ pages = {
     ],
     "Trading": [
         st.Page("tab_pages/spot_trading.py", title="SPOT Trading", icon=":material/price_change:"),
-        st.Page("tab_pages/strategy.py", title="Strategy", icon=":material/strategy:"),
         st.Page("tab_pages/trading_report.py", title="Trading Report", icon=":material/youtube_searched_for:"),
+        st.Page("tab_pages/strategy.py", title="Strategy Launcher", icon=":material/strategy:"),
+        st.Page("tab_pages/strategy_console.py", title="Strategy Console", icon=":material/browse_activity:"),
     ],
     "Analytics": [
         st.Page("tab_pages/analytics.py", title="Analytics", icon=":material/query_stats:"),

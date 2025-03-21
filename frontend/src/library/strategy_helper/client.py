@@ -24,3 +24,39 @@ def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_ass
         return response.json()
     else:
         return None
+
+
+def stop_strategy(strategy_id: str):
+
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/status/stop?strategy_id={strategy_id}"
+
+    response = requests.get(url=url)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+
+def get_strategy_metadata(strategy_id: str):
+
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/metadata?strategy_id={strategy_id}"
+
+    response = requests.get(url=url)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+
+def get_strategy_logs(strategy_id: str):
+
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/logs?strategy_id={strategy_id}"
+
+    response = requests.get(url=url)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None

@@ -6,6 +6,9 @@ import threading
 import json
 import os
 import pandas as pd
+from database.strategy.strategy_db_client import StrategyDBClient
+
+
 
 class Tactician:
     """
@@ -14,7 +17,7 @@ class Tactician:
     and log trade activity.
     """
 
-    def __init__(self, exchange: Any, symbol: str, capital_allocation: float = 10.0) -> None:
+    def __init__(self, exchange: Any, symbol: str, capital_allocation: float) -> None:
         """
         Initializes the TradeExecutor.
 
@@ -39,8 +42,10 @@ class Tactician:
 
         # Data
         self.dataset = None
+
         # Setup logging
         # logging.basicConfig(filename="trade_log.log", level=logging.INFO)
+        self.db_client = StrategyDBClient()
 
 
     def _save_trade_history(self) -> None:
@@ -173,7 +178,7 @@ class Tactician:
         """
         self.is_running = True
         self.thread_id = threading.get_ident()
-        self._save_pid()
+        # self._save_pid()
         while self.is_running:
             if len(self.get_trade_history()) >= trades_limit*2: # exit after N trades, must be even to end with a sell
                 print(f"Maximum number of trades reached {trades_limit}.")
@@ -184,9 +189,13 @@ class Tactician:
             signals = strategy.generate_signals(self.dataset.copy())
             latest_signal = signals.iloc[-1]["signal"]
             latest_price = signals.iloc[-1]["price"]
-            print(f"Tactician :: signals | t: {pd.to_datetime(signals.iloc[-1]["timestamp"], unit="ms").strftime('%H:%M:%S')}, p: {latest_price}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
+            timestamp = signals.iloc[-1]["timestamp"]
+            print(f"Tactician :: signals | t: {pd.to_datetime(timestamp, unit="ms").strftime('%H:%M:%S')}, p: {latest_price}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
             if latest_signal in ["BUY", "SELL"]:
                 self.execute_trade(latest_signal)
+
+            # Add log to the DB
+            self.db_client.add_log("strategy",int(timestamp) ,latest_price, latest_signal)
 
             time.sleep(interval)  # Wait before checking again
 
@@ -203,6 +212,9 @@ class Tactician:
         """
         time_interval_dict = {'1s': 1, '1m': 60, '5m': 300, '15m': 900,
                          '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
+
+
+        self.db_client.add_strategy("strategy", self.symbol, self.capital, interval, int(time.time()*1000), trades_limit)
 
         print("Tactician :: Initiating Strategy loop.")
         self.initiate_dataset(interval, 200)

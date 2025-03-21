@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 from backend.src.broker.strategies.strategy_factory import StrategyFactory
 from backend.src.broker.tactician.tactician_base import Tactician
+from database.strategy.strategy_db_client import StrategyDBClient
+from backend.src.broker.tactician.strategy_runtime_manager import StrategyRuntimeHandler
 
 
 router = APIRouter(
@@ -103,6 +105,7 @@ def get_spot_trade_orderbook(exchange: str, quote_asset: str, base_asset: str, l
 
 
 ### STRATEGIES
+strategy_runtime_handler = StrategyRuntimeHandler() # handles Runtime strategies
 
 
 class StrategyParams(BaseModel):
@@ -124,26 +127,64 @@ def run_strategy_backtesting(strategy_params: StrategyParams) -> Dict[str, Any]:
 @router.post("/strategy/start")
 def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
     try:
-        client = ExchangeClientFactory.get_client("binance_testnet")# strategy_params.exchange)
+        client = ExchangeClientFactory.get_client(strategy_params.exchange)
 
         strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
 
         # Instantiate the Tactician
         symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
         tactician = Tactician(exchange=client, symbol=symbol, capital_allocation=strategy_params.quote_amount)
-
         # Run the strategy with a n-second interval and stop if capital is less than min_capital
         tactician.run_strategy(strategy, interval=strategy_params.time_interval, min_capital=0.0, trades_limit=strategy_params.num_trades)
+
+        strategy_runtime_handler.add_strategy("strategy", tactician)
         return {}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/strategy/metadata")
+def get_all_strategies(strategy_id: str):
+    try:
+        db_client = StrategyDBClient()
+        if strategy_id == "all":
+            res = db_client.get_all_strategies()
+        else:
+            res = db_client.get_strategy_metadata(strategy_id)
+
+        if res:
+            return res
+        else:
+            return {}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/strategy/logs")
+def get_strategy_logs(strategy_id: str):
+    try:
+        db_client = StrategyDBClient()
+        res = db_client.get_logs(strategy_id, None)
+        if res:
+            return res
+        else:
+            return {}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/strategy/status/info")
-def get_strategy_status(strategy_id: int):
+def get_strategy_status(strategy_id: str):
     return {}
 
 
 @router.get("/strategy/status/stop")
-def stop_strategy(strategy_id: int):
-    return {}
+def stop_strategy(strategy_id: str):
+    status = strategy_runtime_handler.stop_strategy(strategy_id)
+    if status:
+        return {"success": f"strategy {strategy_id} stopped"}
+    else:
+        raise HTTPException(status_code=500, detail=str(status))
