@@ -166,6 +166,9 @@ class Tactician:
 
     def update_dataset(self) -> None:
         latest_price = self.exchange.get_pair_market_price(self.symbol)
+        if latest_price is None:
+            latest_price = self.dataset.iloc[-1]["price"]
+
         current_timestamp_ms = int(time.time() * 1000)
         # drop first row
         self.dataset = self.dataset.iloc[1:].reset_index(drop=True)
@@ -174,12 +177,13 @@ class Tactician:
         self.dataset = pd.concat([self.dataset, pd.DataFrame([{"timestamp": current_timestamp_ms, "price": latest_price}])], ignore_index=True)
 
 
-    def strategy_loop(self, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 1) -> None:
+    def strategy_loop(self, strategy_id: str, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 1) -> None:
         """
         Runs the trading strategy in a loop, checking for signals and executing trades.
 
         Args:
             strategy (TradingStrategy): The strategy that generates trade signals.
+            strategy_id (str): The id of the strategy.
             interval (int): Time interval (in seconds) between checking for new signals. Default is 5.
             min_capital (float): The minimum capital threshold for running the strategy. If capital goes below this, the strategy will stop. Default is 0.
             trades_limit (int): Number of trades (one trade is consisted of one BUY then one SELL order) to execute before stopping. Must be even to end with a SELL.
@@ -188,9 +192,10 @@ class Tactician:
         self.thread_id = threading.get_ident()
         # self._save_pid()
         while self.is_running:
-            if len(self.get_trade_history()) >= trades_limit*2: # exit after N trades, must be even to end with a sell
+
+            # exit after N trades, must be even to end with a sell
+            if len(self.get_trade_history()) >= trades_limit*2:
                 print(f"Maximum number of trades reached {trades_limit}.")
-                # self.stop_strategy()
                 break
 
             self.update_dataset()
@@ -203,7 +208,7 @@ class Tactician:
                 self.execute_trade(latest_signal)
 
             # Add log to the DB
-            self.db_client.add_log("strategy",int(timestamp) ,latest_price, latest_signal)
+            self.db_client.add_log(strategy_id, int(timestamp), latest_price, latest_signal)
 
             time.sleep(interval)  # Wait before checking again
 
@@ -227,7 +232,7 @@ class Tactician:
 
         print(f"Tactician :: Initiating Strategy loop with id {strategy_id}.")
         self.initiate_dataset(interval, 200)
-        self.thread = threading.Thread(target=self.strategy_loop, daemon=True, args=(strategy, time_interval_dict[interval], min_capital, trades_limit))
+        self.thread = threading.Thread(target=self.strategy_loop, daemon=True, args=(strategy_id, strategy, time_interval_dict[interval], min_capital, trades_limit))
         self.thread.start()
         print("Tactician :: Strategy loop started.")
 

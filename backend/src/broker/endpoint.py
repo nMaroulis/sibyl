@@ -146,11 +146,15 @@ def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
 
 
 @router.get("/strategy/metadata")
-def get_all_strategies(strategy_id: str):
+def get_strategy_metadata(strategy_id: str):
     try:
         db_client = StrategyDBClient()
         if strategy_id == "all":
             res = db_client.get_all_strategies()
+
+            # Add strategy Status
+            for strategy in res:
+                strategy["status"] = "active" if strategy["strategy_id"] in strategy_runtime_handler.get_active_strategies() else "inactive"
         else:
             res = db_client.get_strategy_metadata(strategy_id)
 
