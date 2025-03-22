@@ -27,8 +27,8 @@ if st.session_state["available_exchange_apis"]:
     with st.container(border=False):
 
         # show available balance
-        c0 = st.columns(1)
-        with c0[0]:
+        c0, c1 = st.columns(2)
+        with c0:
             balance = fetch_account_spot(exchange.lower().replace(" ", "_"))
             balance = {asset: price["free"] for asset, price in balance["spot_balances"].items()}
             st.write("**1. Quote Asset**")
@@ -36,24 +36,23 @@ if st.session_state["available_exchange_apis"]:
             default_quote_index = list(balance.keys()).index("USDT") if "USDT" in balance.keys() else 0  # making USDT appear as preselected choice
             quote_asset = st.selectbox('Quote Asset', options=balance.keys(), index=default_quote_index)
             st.metric("Available Balance", f"{balance[quote_asset]} {quote_asset}")
-
-        c1 = st.columns(1)
-        with c1[0]:
+        with c1:
             st.write("**2. Quote Amount**")
             st.caption(f"Choose the Quote amount you want to trade on this strategy. Each order sent to the {exchange} API will define the quote_quantity and not the base.")
             st.warning("**Warning**: Choose only what you can afford to lose, as the whole Quote amount is at risk.", icon=":material/warning:")
             quote_amount = st.number_input("Quote Amount", min_value=0.0, max_value=balance[quote_asset])
 
-        c2 = st.columns(1)
-        with c2[0]:
+        c2, c3 = st.columns(2)
+        with c2:
             st.write("**3. Base Asset**")
             st.caption(f"Choose the Base Asset. The available base assets correspond to the selected quote asset and the available markets at {exchange}.")
             base_assets = fetch_available_assets(exchange, quote_asset)
             base_asset = st.selectbox('Base Asset', options=base_assets[quote_asset])
-            st.info(f"The selected market for this strategy is **{base_asset}{quote_asset}**.")
-
-        c3 = st.columns(1)
-        with c3[0]:
+            if base_asset:
+                st.info(f"The selected market for this strategy is **{base_asset}{quote_asset}**.")
+            else:
+                st.warning("No base asset selected.", icon=":material/warning:")
+        with c3:
             st.write("**4. Choose Time interval**")
             st.caption("The strategy runs in a loop on a steady time interval. Based on the selected interval, the algorithm will focus on the short-term (**High-Frequency Trading**) or long-term (**Swing Trading**).")
             time_interval = st.pills("Time Interval", options=["1s", "6s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="1s")

@@ -33,11 +33,11 @@ if strategies:
         pass
     elif df_to_show.shape[0] == 1:
         st.divider()
-
-        st.html(f"<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategy {df_to_show["strategy_id"].iloc[0]} Overview</h3>")
+        strategy_id = df_to_show["strategy_id"].iloc[0]
+        st.html(f"<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategy {strategy_id} Overview</h3>")
 
         # Get Logs Data
-        logs = get_strategy_logs("strategy") # df_to_show["strategy_id"].iloc[0])
+        logs = get_strategy_logs(strategy_id)
         logs_df = pd.DataFrame(logs)
 
         if logs_df is not None:
@@ -54,23 +54,23 @@ if strategies:
             if status_change_options:
                 st.sidebar.download_button(
                     "Download to CSV",
-                    df.to_csv(index=False).encode('utf-8'),
-                    f"{df_to_show["strategy_id"].iloc[0]}.csv",
+                    logs_df.to_csv(index=False).encode('utf-8'),
+                    f"{strategy_id}.csv",
                     "text/csv",
                     key='download-csv',
                     use_container_width=True,
                     icon=":material/download:"
                 )
 
-            # logs_df['timestamp'] = pd.to_datetime(logs_df['timestamp'], unit='ms')
+            logs_df['timestamp'] = pd.to_datetime(logs_df['timestamp'], unit='ms')
             show_table = st.toggle("Show Logs Table", value=False)
             if show_table:
                 st.dataframe(logs_df, use_container_width=True, hide_index=True)
 
 
-            real_time_option = st.toggle("Real Time Monitor Line Plot", value=False, disabled=status_change_options)
+            real_time_option = st.toggle("Real Time Monitor Line Plot", value=True, disabled=status_change_options)
             if real_time_option:
-                real_time_strategy_plot(logs_df[["timestamp", "price", "order"]])
+                real_time_strategy_plot(logs_df[["timestamp", "price", "order"]], strategy_id)
             else:
                 st.html(
                     "<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategy Logs Lineplot</h4>")

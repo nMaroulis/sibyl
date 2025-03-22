@@ -50,9 +50,11 @@ def get_strategy_metadata(strategy_id: str):
         return None
 
 
-def get_strategy_logs(strategy_id: str):
+def get_strategy_logs(strategy_id: str, from_timestamp: int = None):
 
     url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/logs?strategy_id={strategy_id}"
+    if from_timestamp:
+        url += f"&from_timestamp={from_timestamp}"
 
     response = requests.get(url=url)
 
