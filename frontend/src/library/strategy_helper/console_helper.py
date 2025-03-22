@@ -16,9 +16,13 @@ def generate_random_df(size=50):
 def update_logs(strategy_id: str, last_timestamp: int):
 
     logs = get_strategy_logs(strategy_id, last_timestamp)  # df_to_show["strategy_id"].iloc[0])
+    if logs is None or len(logs) == 0:
+        return None
+
     logs_df = pd.DataFrame(logs)
     logs_df['timestamp'] = pd.to_datetime(logs_df['timestamp'], unit='ms')
     return logs_df
+
 
 @st.fragment()
 def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str):
@@ -38,7 +42,7 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str):
     # Real-time update loop
     while True:
         upd_logs = update_logs(strategy_id, int(df['timestamp'].iloc[-1].timestamp() * 1000))
-        if upd_logs is not None and upd_logs.shape[0] > 0:
+        if upd_logs is not None:
             df = pd.concat([df, upd_logs])
             with fig.batch_update():
                 fig.data[0].x = df["timestamp"]  # Price line

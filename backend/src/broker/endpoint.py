@@ -168,7 +168,7 @@ def get_strategy_metadata(strategy_id: str):
 
 
 @router.get("/strategy/logs")
-def get_strategy_logs(strategy_id: str, from_timestamp: Optional[int] = None):
+def get_strategy_logs(strategy_id: str, from_timestamp: int = None):
     try:
         db_client = StrategyDBClient()
         res = db_client.get_logs(strategy_id, from_timestamp)

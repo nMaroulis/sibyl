@@ -28,7 +28,6 @@ if strategies:
 
 
     # st.dataframe(df, use_container_width=True, hide_index=True)
-
     if df_to_show.shape[0] == 0:
         pass
     elif df_to_show.shape[0] == 1:
@@ -38,10 +37,9 @@ if strategies:
 
         # Get Logs Data
         logs = get_strategy_logs(strategy_id)
-        logs_df = pd.DataFrame(logs)
+        if logs is not None and len(logs) > 0:
 
-        if logs_df is not None:
-
+            logs_df = pd.DataFrame(logs)
             # Stop, Pause Strategy
             status_change_options = True if df_to_show["status"].iloc[0] == "inactive" else False
             col0, col1 = st.columns(2)

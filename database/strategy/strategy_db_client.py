@@ -65,12 +65,32 @@ class StrategyDBClient:
         })
 
 
-    def get_logs(self, strategy_id: str, timestamp: Optional[str] = None) -> List[Dict[str, Any]]:
+    # def get_logs(self, strategy_id: str, timestamp: Optional[str] = None) -> List[Dict[str, Any]]:
+    #     """
+    #     Retrieves strategy results. If a timestamp is provided, it returns all results from that timestamp onward.
+    #
+    #     :param strategy_name: The name of the strategy to query.
+    #     :param timestamp: An optional timestamp string (ISO format). If provided, results are filtered accordingly.
+    #     :return: A list of strategy records.
+    #     """
+    #     logs = Query()
+    #     results = self.logs_table.search(logs.strategy_id == strategy_id)
+    #
+    #     if timestamp:
+    #         try:
+    #             timestamp_dt = datetime.fromisoformat(timestamp)
+    #             results = [r for r in results if datetime.fromisoformat(r["timestamp"]) > timestamp_dt]
+    #         except ValueError:
+    #             raise ValueError("Invalid timestamp format. Use ISO 8601 format.")
+    #
+    #     return results
+
+    def get_logs(self, strategy_id: str, timestamp: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Retrieves strategy results. If a timestamp is provided, it returns all results from that timestamp onward.
 
-        :param strategy_name: The name of the strategy to query.
-        :param timestamp: An optional timestamp string (ISO format). If provided, results are filtered accordingly.
+        :param strategy_id: The ID of the strategy to query.
+        :param timestamp: An optional Unix timestamp (float, int). If provided, results are filtered accordingly.
         :return: A list of strategy records.
         """
         logs = Query()
@@ -78,13 +98,15 @@ class StrategyDBClient:
 
         if timestamp:
             try:
-                timestamp_dt = datetime.fromisoformat(timestamp)
-                results = [r for r in results if datetime.fromisoformat(r["timestamp"]) > timestamp_dt]
-            except ValueError:
-                raise ValueError("Invalid timestamp format. Use ISO 8601 format.")
+                # Ensure timestamp is a number
+                if not isinstance(timestamp, (int, float)):
+                    raise ValueError("Timestamp must be a Unix timestamp (int or float).")
+
+                results = [r for r in results if r["timestamp"] > timestamp]
+            except (ValueError, TypeError):
+                raise ValueError("Invalid timestamp format. Use a Unix timestamp (int or float).")
 
         return results
-
 
     def get_latest_log_price(self, strategy_name: str) -> Optional[float]:
         """
