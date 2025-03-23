@@ -3,7 +3,7 @@ from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.strategy_helper.client import get_strategy_metadata, get_strategy_logs
 from frontend.src.library.ui_elements import col_style2
 import pandas as pd
-from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot
+from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics
 
 
 fix_page_layout('strategy monitor')
@@ -18,6 +18,9 @@ if strategies:
     st.html(
         "<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategies</h4>")
     df = pd.DataFrame(strategies)
+
+    st.write(f"There are **{df[df["status"]=="active"].shape[0]} active strategies** and a **total of {df.shape[0]}**.")
+
     df['created_at'] = pd.to_datetime(df['created_at'], unit='ms')
     df['monitor'] = False
     df.insert(0, 'monitor', df.pop('monitor'))
@@ -60,18 +63,26 @@ if strategies:
                     icon=":material/download:"
                 )
 
+            st.divider()
+            st.html(
+                "<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>1. Strategy Logs Table</h3>")
             logs_df['timestamp'] = pd.to_datetime(logs_df['timestamp'], unit='ms')
             show_table = st.toggle("Show Logs Table", value=False)
             if show_table:
                 st.dataframe(logs_df, use_container_width=True, hide_index=True)
 
+            st.divider()
 
-            real_time_option = st.toggle("Real Time Monitor Line Plot", value=True, disabled=status_change_options)
+            st.html("<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>2. Strategy Evaluation Metrics</h3>")
+            show_evaluation_metrics(strategy_id)
+
+            st.divider()
+            st.html(
+                "<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>3. Strategy Logs Plot</h3>")
+            real_time_option = st.toggle("Real Time Monitor Line Plot", value=False, disabled=status_change_options)
             if real_time_option:
                 real_time_strategy_plot(logs_df[["timestamp", "price", "order"]], strategy_id)
             else:
-                st.html(
-                    "<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategy Logs Lineplot</h4>")
                 static_strategy_plot(logs_df[["timestamp", "price", "order"]])
 
         else:

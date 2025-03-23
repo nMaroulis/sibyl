@@ -7,7 +7,7 @@ import json
 import os
 import pandas as pd
 from database.strategy.strategy_db_client import StrategyDBClient
-
+from backend.src.broker.tactician.exchange_interface import TacticianExchangeInterface
 
 
 class Tactician:
@@ -17,16 +17,16 @@ class Tactician:
     and log trade activity.
     """
 
-    def __init__(self, exchange: Any, symbol: str, capital_allocation: float) -> None:
+    def __init__(self, exchange_api: TacticianExchangeInterface, symbol: str, capital_allocation: float) -> None:
         """
         Initializes the TradeExecutor.
 
         Args:
-            exchange (Any): The exchange object to interact with the crypto exchange.
+            exchange_api (TacticianExchangeInterface): The exchange interface object which interacts with the crypto exchange.
             symbol (str): The trading symbol (e.g., 'BTC/USD').
             capital_allocation (float): The amount of capital available for trading. Default is 10.
         """
-        self.exchange = exchange
+        self.exchange_api = exchange_api
         self.symbol = symbol
         self.capital = capital_allocation
         self.position = 0  # Tracks how much of the asset you own
@@ -79,7 +79,7 @@ class Tactician:
             os.remove(self.pid_file)
 
 
-    def execute_trade(self, action: str) -> Dict[str, Any]:
+    def execute_trade(self, action: str) -> Dict[str, Any] | None:
         """
         Executes a trade based on the strategy's signal (BUY/SELL).
 
@@ -92,13 +92,11 @@ class Tactician:
         if action == "BUY":
             if self.last_order_type != "BUY" and self.capital > 0:
                 self.last_order_type = "BUY"
-                order = self.exchange.create_buy_order(symbol=self.symbol, quote_amount=self.capital)
-                self.position += float(order["executed_base_quantity"])
-                self.capital = self.capital - float(order["executed_quote_amount"])
-                price = float(order["price"])
-                self.trade_history.append({"timestamp": time.time(), "action": "BUY", "order_id": order["orderId"], "quote_amount": float(order["executed_quote_amount"]), "price": price, "amount": self.position, "status": "executed"})
-                print(f"Tactician :: \033[92m BUY ORDER \033[0m quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {price:.2f}")
-                self._save_trade_history() # save to json
+                order = self.exchange_api.place_buy_order(symbol=self.symbol, quote_amount=self.capital)
+                self.position += order["position"]
+                self.capital = self.capital - order["executed_quote_amount"]
+                self.trade_history.append({"timestamp": time.time(), "action": "BUY", "order_id": order["order_id"], "quote_amount": float(order["executed_quote_amount"]), "price": order["price"], "amount": self.position, "status": "executed"})
+                print(f"Tactician :: \033[92m BUY ORDER \033[0m quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {float(order["price"])}")
                 return order
             else:
                 print(f"Tactician :: BUY ORDER - NOT ENOUGH CAPITAL {self.capital} or last order was BUY")
@@ -106,14 +104,11 @@ class Tactician:
         elif action == "SELL":
             if self.last_order_type != "SELL" and self.position > 0:
                 self.last_order_type = "SELL"
-
-                order = self.exchange.create_sell_order(symbol=self.symbol, quantity=self.position)
-                price = float(order["price"])
+                order = self.exchange_api.place_sell_order(symbol=self.symbol, quantity=self.position)
                 self.capital += float(order["executed_quote_amount"])
-                self.position = self.position - float(order["executed_base_quantity"])
-                self.trade_history.append({"timestamp": time.time(), "action": "SELL", "price": price, "amount": self.position, "status": "executed"})
-                print(f"Tactician :: \033[93m SELL ORDER \033[0m quote: {self.capital} {self.position} {self.symbol} at {price:.2f}")
-                self._save_trade_history() # save to json
+                self.position = self.position - float(order["position"])
+                self.trade_history.append({"timestamp": time.time(), "action": "SELL", "order_id": order["order_id"], "price": float(order["price"]), "amount": self.position, "status": "executed"})
+                print(f"Tactician :: \033[93m SELL ORDER \033[0m quote: {self.capital} {self.position} {self.symbol} at {order["price"]}")
                 return order
             else:
                 print(f"Tactician :: SELL ORDER - NOT ENOUGH POSITION {self.position}")
@@ -150,31 +145,17 @@ class Tactician:
             limit (int): The number of prices to fetch.
             interval (str): The klines interval.
         """
-        # There is no 15s interval in exchange APIs, there
-        if interval == "6s":
-            data = self.exchange.get_price_history(self.symbol, interval="1s", limit=1200)
-            df = pd.DataFrame(data)
-            df.rename(columns={"open_time": "timestamp", "close_price": "price"}, inplace=True)
-            df = df.iloc[::6].reset_index(drop=True)
-            self.dataset = df
-        else:
-            data = self.exchange.get_price_history(self.symbol, interval=interval, limit=limit)
-            df = pd.DataFrame(data)
-            df.rename(columns={"open_time": "timestamp", "close_price": "price"}, inplace=True)
-            self.dataset = df
+        self.dataset = self.exchange_api.get_price_history(symbol=self.symbol, interval=interval, limit=limit)
 
 
     def update_dataset(self) -> None:
-        latest_price = self.exchange.get_pair_market_price(self.symbol)
-        if latest_price is None:
-            latest_price = self.dataset.iloc[-1]["price"]
 
-        current_timestamp_ms = int(time.time() * 1000)
+        # Get last ticker
+        last_ticker = self.exchange_api.get_last_market_price(self.symbol, self.dataset.iloc[-1]["price"])
         # drop first row
         self.dataset = self.dataset.iloc[1:].reset_index(drop=True)
-
         # add new
-        self.dataset = pd.concat([self.dataset, pd.DataFrame([{"timestamp": current_timestamp_ms, "price": latest_price}])], ignore_index=True)
+        self.dataset = pd.concat([self.dataset, pd.DataFrame([last_ticker])], ignore_index=True)
 
 
     def strategy_loop(self, strategy_id: str, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 1) -> None:
@@ -205,7 +186,7 @@ class Tactician:
             timestamp = signals.iloc[-1]["timestamp"]
             print(f"Tactician :: signals | t: {pd.to_datetime(timestamp, unit="ms").strftime('%H:%M:%S')}, p: {latest_price}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
             if latest_signal in ["BUY", "SELL"]:
-                self.execute_trade(latest_signal)
+               self.execute_trade(latest_signal)
 
             # Add log to the DB
             self.db_client.add_log(strategy_id, int(timestamp), latest_price, latest_signal)

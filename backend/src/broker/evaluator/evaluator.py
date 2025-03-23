@@ -20,12 +20,11 @@ class Evaluator:
         Initializes the Evaluator with trade history data.
 
         Args:
-            trade_history (List[Dict[str, Any]]): A list of executed trades with 'action', 'price', 'amount'.
+            trade_history (List[Dict[str, Any]]): A list of executed trades with 'order', 'price', 'amount'.
             risk_free_rate (float): The risk-free rate used in the Sharpe ratio calculation.
         """
         self.trade_history = trade_history
         self.risk_free_rate = risk_free_rate
-
 
     def calculate_profit(self) -> float:
         """
@@ -39,16 +38,15 @@ class Evaluator:
         buy_amount = 0.0
 
         for trade in self.trade_history:
-            if trade["action"] == "BUY":
+            if trade["order"] == "BUY":
                 buy_price = trade["price"]
                 buy_amount = trade["amount"]
-            elif trade["action"] == "SELL" and buy_price is not None:
+            elif trade["order"] == "SELL" and buy_price is not None:
                 sell_price = trade["price"]
                 total_profit += (sell_price - buy_price) * buy_amount
                 buy_price = None  # Reset buy price after the sale
 
         return total_profit
-
 
     @staticmethod
     def calculate_max_drawdown(prices: List[float]) -> float:
@@ -70,7 +68,6 @@ class Evaluator:
 
         return max(drawdowns) * 100
 
-
     def calculate_sharpe_ratio(self, returns: List[float]) -> float:
         """
         Calculates the Sharpe ratio for the strategy based on returns.
@@ -85,7 +82,6 @@ class Evaluator:
         std_dev_return = np.std(returns)
         return (mean_return - self.risk_free_rate) / std_dev_return if std_dev_return != 0 else 0
 
-
     def calculate_win_rate(self) -> float:
         """
         Calculates the win rate of the strategy, i.e., the percentage of profitable trades.
@@ -93,12 +89,11 @@ class Evaluator:
         Returns:
             float: The win rate as a percentage.
         """
-        profitable_trades = [trade for trade in self.trade_history if trade["action"] == "SELL" and (
+        profitable_trades = [trade for trade in self.trade_history if trade["order"] == "SELL" and (
                 trade["price"] > self.trade_history[self.trade_history.index(trade) - 1]["price"])]
         return len(profitable_trades) / len(
-            [trade for trade in self.trade_history if trade["action"] == "SELL"]) * 100 if len(
+            [trade for trade in self.trade_history if trade["order"] == "SELL"]) * 100 if len(
             self.trade_history) > 0 else 0
-
 
     def calculate_average_win_loss(self) -> Dict[str, float]:
         """
@@ -107,9 +102,9 @@ class Evaluator:
         Returns:
             Dict[str, float]: A dictionary containing the average win and average loss.
         """
-        wins = [trade for trade in self.trade_history if trade["action"] == "SELL" and (
+        wins = [trade for trade in self.trade_history if trade["order"] == "SELL" and (
                 trade["price"] > self.trade_history[self.trade_history.index(trade) - 1]["price"])]
-        losses = [trade for trade in self.trade_history if trade["action"] == "SELL" and (
+        losses = [trade for trade in self.trade_history if trade["order"] == "SELL" and (
                 trade["price"] < self.trade_history[self.trade_history.index(trade) - 1]["price"])]
 
         avg_win = np.mean(
@@ -120,7 +115,6 @@ class Evaluator:
              losses]) if losses else 0
 
         return {"average_win": avg_win, "average_loss": avg_loss}
-
 
     def calculate_sortino_ratio(self, returns: List[float]) -> float:
         """
@@ -136,7 +130,6 @@ class Evaluator:
         mean_return = np.mean(returns)
         downside_deviation = np.std(downside_returns) if downside_returns else 0
         return (mean_return - self.risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
-
 
     @staticmethod
     def calculate_calmar_ratio(annual_return: float, max_drawdown: float) -> float:
@@ -159,19 +152,27 @@ class Evaluator:
         Calculates the profit factor, which is the ratio of gross profit to gross loss.
 
         Returns:
-            float: The profit factor.
+            float: The profit factor. Returns None if there are no losses and no profits.
         """
         gross_profit = sum(
-            [trade["price"] - self.trade_history[self.trade_history.index(trade) - 1]["price"] for trade in
-             self.trade_history if
-             trade["action"] == "SELL" and trade["price"] > self.trade_history[self.trade_history.index(trade) - 1][
-                 "price"]])
+            trade["price"] - self.trade_history[i - 1]["price"]
+            for i, trade in enumerate(self.trade_history[1:], start=1)
+            if trade["order"] == "SELL" and trade["price"] > self.trade_history[i - 1]["price"]
+        )
+
         gross_loss = abs(
-            sum([trade["price"] - self.trade_history[self.trade_history.index(trade) - 1]["price"] for trade in
-                 self.trade_history if
-                 trade["action"] == "SELL" and trade["price"] < self.trade_history[self.trade_history.index(trade) - 1][
-                     "price"]]))
-        return gross_profit / gross_loss if gross_loss != 0 else float("inf")
+            sum(
+                trade["price"] - self.trade_history[i - 1]["price"]
+                for i, trade in enumerate(self.trade_history[1:], start=1)
+                if trade["order"] == "SELL" and trade["price"] < self.trade_history[i - 1]["price"]
+            )
+        )
+
+        if gross_loss == 0:
+            return gross_profit if gross_profit > 0 else 0.0  # Return gross profit or 0.0 instead of NaN/Inf
+
+        return round(gross_profit / gross_loss, 6)  # Avoid floating point precision issues
+
 
     def evaluate(self) -> Dict[str, Any]:
         """
@@ -191,10 +192,10 @@ class Evaluator:
 
         if self.trade_history:
             try:
-                profit = self.calculate_profit()
+                # profit = self.calculate_profit() # TODO
 
                 # Extract closing prices for metrics
-                closing_prices = [trade["price"] for trade in self.trade_history if trade["action"] == "SELL"]
+                closing_prices = [trade["price"] for trade in self.trade_history if trade["order"] == "SELL"]
 
                 # Calculate returns from the closing prices
                 returns = [100 * (closing_prices[i] - closing_prices[i - 1]) / closing_prices[i - 1]
@@ -209,7 +210,7 @@ class Evaluator:
                 profit_factor = self.calculate_profit_factor()
 
                 evaluation_results = {
-                    "total_profit": profit,
+                    "total_profit": 0.0,  # profit,
                     "sharpe_ratio": self.calculate_sharpe_ratio(returns),
                     "max_drawdown": max_drawdown,
                     "win_rate": win_rate,
@@ -220,7 +221,6 @@ class Evaluator:
                     "profit_factor": profit_factor,
                     "number_of_trades": len(closing_prices),
                 }
-
                 return evaluation_results
             except Exception as e:
                 print(e)

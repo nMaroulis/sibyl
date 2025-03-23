@@ -6,9 +6,12 @@ from pydantic import BaseModel
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 from backend.src.broker.strategies.strategy_factory import StrategyFactory
 from backend.src.broker.tactician.tactician_base import Tactician
+from backend.src.broker.tactician.exchange_interface import TacticianExchangeInterface
 from database.strategy.strategy_db_client import StrategyDBClient
+from backend.src.broker.evaluator.evaluator import Evaluator
 from backend.src.broker.tactician.strategy_runtime_manager import StrategyRuntimeHandler
 import time
+
 
 router = APIRouter(
     prefix="/broker",
@@ -130,11 +133,11 @@ def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
         client = ExchangeClientFactory.get_client(strategy_params.exchange)
 
         strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
-
+        tactician_exchange_api = TacticianExchangeInterface(client)
         # Instantiate the Tactician
         strategy_id = f"strategy_{int(time.time())}"
         symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
-        tactician = Tactician(exchange=client, symbol=symbol, capital_allocation=strategy_params.quote_amount)
+        tactician = Tactician(exchange_api=tactician_exchange_api, symbol=symbol, capital_allocation=strategy_params.quote_amount)
         # Run the strategy with a n-second interval and stop if capital is less than min_capital
         tactician.run_strategy(strategy_id, strategy, interval=strategy_params.time_interval, min_capital=0.0, trades_limit=strategy_params.num_trades)
 
@@ -193,3 +196,16 @@ def stop_strategy(strategy_id: str):
         return {"success": f"strategy {strategy_id} stopped"}
     else:
         raise HTTPException(status_code=500, detail=str(status))
+
+
+@router.get("/strategy/evaluation")
+def strategy_evaluation(strategy_id: str):
+    strategy_logs = get_strategy_logs(strategy_id, None)
+
+    if strategy_logs and len(strategy_logs) > 0:
+
+        evaluator = Evaluator(strategy_logs)
+        metrics = evaluator.evaluate()
+        return {"metrics": metrics}
+    else:
+        raise HTTPException(status_code=500, detail="Empty Logs")

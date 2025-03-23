@@ -62,3 +62,14 @@ def get_strategy_logs(strategy_id: str, from_timestamp: int = None):
         return response.json()
     else:
         return None
+
+
+def get_strategy_evaluation(strategy_id: str) -> Dict[str, Any] | None:
+
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/evaluation?strategy_id={strategy_id}"
+
+    response = requests.get(url=url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
