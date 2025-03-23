@@ -174,6 +174,14 @@ class Evaluator:
         return round(gross_profit / gross_loss, 6)  # Avoid floating point precision issues
 
 
+    @staticmethod
+    def clean_json(data: Dict[str, Any]) -> Dict[str, Any]:
+        for key, value in data.items():
+            if isinstance(value, np.float64) and (np.isnan(value) or np.isinf(value)):
+                data[key] = "N/A"
+        return data
+
+
     def evaluate(self) -> Dict[str, Any]:
         """
         Evaluates the strategy's performance by calculating key financial metrics:
@@ -205,12 +213,11 @@ class Evaluator:
                 win_rate = self.calculate_win_rate()
                 avg_win_loss = self.calculate_average_win_loss()
                 sortino_ratio = self.calculate_sortino_ratio(returns)
-                calmar_ratio = self.calculate_calmar_ratio(np.mean(returns) * 252,
-                                                           max_drawdown)  # Annualized return assumption
+                calmar_ratio = self.calculate_calmar_ratio(np.mean(returns) * 252, max_drawdown)  # Annualized return assumption
                 profit_factor = self.calculate_profit_factor()
 
                 evaluation_results = {
-                    "total_profit": 0.0,  # profit,
+                    "total_profit": 'N/A',  # profit,
                     "sharpe_ratio": self.calculate_sharpe_ratio(returns),
                     "max_drawdown": max_drawdown,
                     "win_rate": win_rate,
@@ -221,6 +228,7 @@ class Evaluator:
                     "profit_factor": profit_factor,
                     "number_of_trades": len(closing_prices),
                 }
+                evaluation_results = self.clean_json(evaluation_results)
                 return evaluation_results
             except Exception as e:
                 print("Strategy Evaluator :: evaluate :: ", e)

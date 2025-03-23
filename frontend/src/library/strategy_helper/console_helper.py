@@ -185,60 +185,60 @@ def show_evaluation_metrics(strategy_id: str) -> None:
         st.write("The total count of trades executed.")
         st.latex(r"\text{Number of Trades} = \text{Winning Trades} + \text{Losing Trades}")
 
-    html_txt = """
-        <style>
-        .evaluation-metrics-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 12px;
-            # box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px); /* Frosted glass effect */
-            max-width: 100%;
-        }
 
-        .evaluation-metric {
-            background: rgba(5, 122, 247, 1.0);
-            color: white;
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-            transition: transform 0.2s, background 0.2s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-        
-        .evaluation-metric:hover {
-            background: rgba(1, 57, 117, 0.9);
-            transform: scale(1.05);
-        }
-
-        .evaluation-metric-name {
-            opacity: 0.9;
-            font-size: 0.9em;
-        }
-
-        .evaluation-metric-value {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        </style>"""
 
     strategy_evaluation = get_strategy_evaluation(strategy_id)
     if strategy_evaluation is None or len(strategy_evaluation['metrics']) == 0:
         st.warning("No evaluation metrics to show. No orders have been executed yet.", icon=":material/smart_toy:")
     else:
+        html_txt = """
+            <style>
+            .evaluation-metrics-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                background: rgba(255, 255, 255, 0.1);
+                padding: 20px;
+                border-radius: 12px;
+                # box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+                backdrop-filter: blur(10px); /* Frosted glass effect */
+                max-width: 100%;
+            }
+
+            .evaluation-metric {
+                background: rgba(5, 122, 247, 1.0);
+                color: white;
+                padding: 12px 18px;
+                border-radius: 10px;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                white-space: nowrap;
+                transition: transform 0.2s, background 0.2s;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            }
+
+            .evaluation-metric:hover {
+                background: rgba(1, 57, 117, 0.9);
+                transform: scale(1.05);
+            }
+
+            .evaluation-metric-name {
+                opacity: 0.9;
+                font-size: 0.9em;
+            }
+
+            .evaluation-metric-value {
+                font-size: 1.2em;
+                font-weight: bold;
+            }
+            </style>"""
         html_txt += """<div class="evaluation-metrics-container">"""
         for key, value in strategy_evaluation["metrics"].items():
             html_txt += f"""<div class="evaluation-metric"><span class="evaluation-metric-name">{key}:</span> <span class="evaluation-metric-value">{value}</span></div>"""
         html_txt += """</div>"""
         st.html(html_txt)
-
 
         if st.button("Refresh Evaluation Metrics", icon=":material/update:", type="tertiary"):
             st.rerun()
