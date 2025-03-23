@@ -75,8 +75,8 @@ class TacticianExchangeInterface:
                  "selfTradePreventionMode":"EXPIRE_MAKER"
             """
             # exchange API expects quote and base assets as arguments, here the pair is given as quote argument and the base is empty
-            order = self.exchange_client.place_spot_order("market_quote", symbol, "", "BUY", quote_amount)
-
+            order_response = self.exchange_client.place_spot_order("market_quote", symbol, "", "BUY", quote_amount)
+            order = order_response["message"]
             fills = order["fills"]
             average_price = sum(float(fill["price"]) * float(fill["qty"]) for fill in fills) / sum(
                 float(fill["qty"]) for fill in fills)
@@ -92,7 +92,6 @@ class TacticianExchangeInterface:
 
 
     def place_sell_order(self, symbol: str, quantity: float) -> Dict[str, Any]:
-
         if self.exchange_client.name in ["binance", "binance_testnet"]:
             """
                 Example Response:
@@ -115,8 +114,8 @@ class TacticianExchangeInterface:
                     "selfTradePreventionMode":"EXPIRE_MAKER"
             """
             # exchange API expects quote and base assets as arguments, here the pair is given as quote argument and the base is empty
-            order = self.exchange_client.place_spot_order("market", symbol, "", "SELL", quantity)
-
+            order_response = self.exchange_client.place_spot_order("market", symbol, "", "SELL", quantity)
+            order = order_response["message"]
             fills = order["fills"]
             average_price = sum(float(fill["price"]) * float(fill["qty"]) for fill in fills) / sum(
                 float(fill["qty"]) for fill in fills)
@@ -130,4 +129,5 @@ class TacticianExchangeInterface:
             }
         else:
             response_dict = None
+
         return response_dict

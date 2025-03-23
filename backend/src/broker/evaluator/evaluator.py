@@ -223,7 +223,7 @@ class Evaluator:
                 }
                 return evaluation_results
             except Exception as e:
-                print(e)
+                print("Strategy Evaluator :: evaluate :: ", e)
                 return {}
         else:
             return {}

@@ -99,6 +99,15 @@ def static_strategy_plot(df: pd.DataFrame):
         name='BUY'
     ))
 
+    invalid_buy_df = df[df["order"] == "INVALID_BUY"]
+    fig.add_trace(go.Scatter(
+        x=invalid_buy_df["timestamp"],
+        y=invalid_buy_df["price"],
+        mode='markers',
+        marker=dict(color='green', size=10, symbol=104),
+        name='Invalid BUY'
+    ))
+
     # Plot SELL markers
     sell_df = df[df["order"] == "SELL"]
     fig.add_trace(go.Scatter(
@@ -108,6 +117,16 @@ def static_strategy_plot(df: pd.DataFrame):
         marker=dict(color='red', size=10, symbol=100),
         name='SELL'
     ))
+
+    invalid_sell_df = df[df["order"] == "INVALID_SELL"]
+    fig.add_trace(go.Scatter(
+        x=invalid_sell_df["timestamp"],
+        y=invalid_sell_df["price"],
+        mode='markers',
+        marker=dict(color='red', size=10, symbol=104),
+        name='Invalid SELL'
+    ))
+
 
     # Display chart
     st.plotly_chart(fig, use_container_width=True)
@@ -126,9 +145,9 @@ def show_evaluation_metrics(strategy_id: str) -> None:
         st.write(
             "A risk-adjusted return metric that compares the average returns to the standard deviation of returns.")
         st.latex(r"\text{Sharpe Ratio} = \frac{E[R] - R_f}{\sigma}")
-        st.write("- \(E[R]\) is the expected return")
-        st.write("- \(R_f\) is the risk-free rate")
-        st.write("- \(\sigma\) is the standard deviation of returns")
+        st.write("- (E[R]\) is the expected return")
+        st.write("- (R_f\) is the risk-free rate")
+        st.write("- (\sigma\) is the standard deviation of returns")
 
         st.subheader("Max Drawdown")
         st.write("The maximum observed loss from a peak to a trough before a new peak is attained.")
@@ -152,7 +171,7 @@ def show_evaluation_metrics(strategy_id: str) -> None:
         st.subheader("Sortino Ratio")
         st.write("A variation of the Sharpe Ratio that only considers downside risk.")
         st.latex(r"\text{Sortino Ratio} = \frac{E[R] - R_f}{\sigma_d}")
-        st.write("- \(\sigma_d\) is the standard deviation of negative returns.")
+        st.write("- (\sigma_d\) is the standard deviation of negative returns.")
 
         st.subheader("Calmar Ratio")
         st.write("A risk-adjusted return metric that compares the annualized return to the maximum drawdown.")
@@ -211,12 +230,15 @@ def show_evaluation_metrics(strategy_id: str) -> None:
         </style>"""
 
     strategy_evaluation = get_strategy_evaluation(strategy_id)
-    html_txt += """<div class="evaluation-metrics-container">"""
-    for key, value in strategy_evaluation["metrics"].items():
-        html_txt += f"""<div class="evaluation-metric"><span class="evaluation-metric-name">{key}:</span> <span class="evaluation-metric-value">{value}</span></div>"""
-    html_txt += """</div>"""
-    st.html(html_txt)
+    if strategy_evaluation is None or len(strategy_evaluation['metrics']) == 0:
+        st.warning("No evaluation metrics to show. No orders have been executed yet.", icon=":material/smart_toy:")
+    else:
+        html_txt += """<div class="evaluation-metrics-container">"""
+        for key, value in strategy_evaluation["metrics"].items():
+            html_txt += f"""<div class="evaluation-metric"><span class="evaluation-metric-name">{key}:</span> <span class="evaluation-metric-value">{value}</span></div>"""
+        html_txt += """</div>"""
+        st.html(html_txt)
 
 
-    if st.button("Refresh Evaluation Metrics", icon=":material/update:", type="tertiary"):
-        st.rerun()
+        if st.button("Refresh Evaluation Metrics", icon=":material/update:", type="tertiary"):
+            st.rerun()

@@ -100,6 +100,7 @@ class Tactician:
                 return order
             else:
                 print(f"Tactician :: BUY ORDER - NOT ENOUGH CAPITAL {self.capital} or last order was BUY")
+                return None
 
         elif action == "SELL":
             if self.last_order_type != "SELL" and self.position > 0:
@@ -112,8 +113,8 @@ class Tactician:
                 return order
             else:
                 print(f"Tactician :: SELL ORDER - NOT ENOUGH POSITION {self.position}")
-
-        return {"status": "No action taken"}
+                return None
+        return None
 
 
     def get_trade_history(self) -> List[Dict[str, Any]]:
@@ -186,8 +187,9 @@ class Tactician:
             timestamp = signals.iloc[-1]["timestamp"]
             print(f"Tactician :: signals | t: {pd.to_datetime(timestamp, unit="ms").strftime('%H:%M:%S')}, p: {latest_price}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
             if latest_signal in ["BUY", "SELL"]:
-               self.execute_trade(latest_signal)
-
+                res = self.execute_trade(latest_signal)
+                if res is None: # order failed
+                    latest_signal = f"INVALID_{latest_signal}"
             # Add log to the DB
             self.db_client.add_log(strategy_id, int(timestamp), latest_price, latest_signal)
 
@@ -238,3 +240,6 @@ class Tactician:
             Dict[str, float]: A dictionary containing the current position and available capital.
         """
         return {"position": self.position, "capital": self.capital}
+
+
+#TODO initialize min notionals for buy and sell
