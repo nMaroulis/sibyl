@@ -25,7 +25,7 @@ def update_logs(strategy_id: str, last_timestamp: int):
 
 
 @st.fragment()
-def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: str):
+def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: str, hide_invalid:bool):
 
     time_interval_dict = {'1s': 1, '6s': 6, '1m': 60, '5m': 300, '15m': 900,
                           '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
@@ -40,8 +40,9 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
     fig.add_trace(go.Scatter(x=df["timestamp"], y=df["price"], mode='lines', name='Price'))
     fig.add_trace(go.Scatter(x=df[df["order"] == "BUY"]["timestamp"], y=df[df["order"] == "BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol=100), name='BUY'))
     fig.add_trace(go.Scatter(x=df[df["order"] == "SELL"]["timestamp"], y=df[df["order"] == "SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol=100), name='SELL'))
-    fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_BUY"]["timestamp"], y=df[df["order"] == "INVALID_BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol=104), name='Invalid BUY'))
-    fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_SELL"]["timestamp"], y=df[df["order"] == "INVALID_SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol=104), name='Invalid SELL'))
+    if not hide_invalid:
+        fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_BUY"]["timestamp"], y=df[df["order"] == "INVALID_BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol=104), name='Invalid BUY'))
+        fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_SELL"]["timestamp"], y=df[df["order"] == "INVALID_SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol=104), name='Invalid SELL'))
 
     # Display the empty chart
     chart.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -63,13 +64,14 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
                 fig.data[2].x = df[df["order"] == "SELL"]["timestamp"]
                 fig.data[2].y = df[df["order"] == "SELL"]["price"]
 
-                # Update INVALID_BUY markers
-                fig.data[3].x = df[df["order"] == "INVALID_BUY"]["timestamp"]
-                fig.data[3].y = df[df["order"] == "INVALID_BUY"]["price"]
+                if not hide_invalid:
+                    # Update INVALID_BUY markers
+                    fig.data[3].x = df[df["order"] == "INVALID_BUY"]["timestamp"]
+                    fig.data[3].y = df[df["order"] == "INVALID_BUY"]["price"]
 
-                # Update INVALID_SELL markers
-                fig.data[4].x = df[df["order"] == "INVALID_SELL"]["timestamp"]
-                fig.data[4].y = df[df["order"] == "INVALID_SELL"]["price"]
+                    # Update INVALID_SELL markers
+                    fig.data[4].x = df[df["order"] == "INVALID_SELL"]["timestamp"]
+                    fig.data[4].y = df[df["order"] == "INVALID_SELL"]["price"]
 
             chart.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
@@ -78,7 +80,7 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
         my_bar = st.progress(0, text=progress_text)
         for percent_complete in range(50):
             time.sleep(time_interval/50)
-            my_bar.progress(percent_complete + 2, text=progress_text)
+            my_bar.progress(percent_complete/50, text=progress_text)
         # time.sleep(1)
         my_bar.empty()
 
@@ -86,7 +88,7 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
 
 
 # Static plotting function
-def static_strategy_plot(df: pd.DataFrame):
+def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
 
     fig = go.Figure()
     # Plot price line
@@ -102,14 +104,6 @@ def static_strategy_plot(df: pd.DataFrame):
         name='BUY'
     ))
 
-    invalid_buy_df = df[df["order"] == "INVALID_BUY"]
-    fig.add_trace(go.Scatter(
-        x=invalid_buy_df["timestamp"],
-        y=invalid_buy_df["price"],
-        mode='markers',
-        marker=dict(color='green', size=10, symbol=104),
-        name='Invalid BUY'
-    ))
 
     # Plot SELL markers
     sell_df = df[df["order"] == "SELL"]
@@ -121,15 +115,24 @@ def static_strategy_plot(df: pd.DataFrame):
         name='SELL'
     ))
 
-    invalid_sell_df = df[df["order"] == "INVALID_SELL"]
-    fig.add_trace(go.Scatter(
-        x=invalid_sell_df["timestamp"],
-        y=invalid_sell_df["price"],
-        mode='markers',
-        marker=dict(color='red', size=10, symbol=104),
-        name='Invalid SELL'
-    ))
+    if not hide_invalid:
+        invalid_buy_df = df[df["order"] == "INVALID_BUY"]
+        fig.add_trace(go.Scatter(
+            x=invalid_buy_df["timestamp"],
+            y=invalid_buy_df["price"],
+            mode='markers',
+            marker=dict(color='green', size=10, symbol=104),
+            name='Invalid BUY'
+        ))
 
+        invalid_sell_df = df[df["order"] == "INVALID_SELL"]
+        fig.add_trace(go.Scatter(
+            x=invalid_sell_df["timestamp"],
+            y=invalid_sell_df["price"],
+            mode='markers',
+            marker=dict(color='red', size=10, symbol=104),
+            name='Invalid SELL'
+        ))
 
     # Display chart
     st.plotly_chart(fig, use_container_width=True)

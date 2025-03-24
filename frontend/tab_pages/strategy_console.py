@@ -23,7 +23,7 @@ if strategies:
     df['monitor'] = False
     df.insert(0, 'monitor', df.pop('monitor'))
     st.caption("Use the ***search bar*** on the top right of the table to search for specific **keywords**")
-    edited_df = st.data_editor(df, use_container_width=True, hide_index=True, num_rows='fixed', disabled=["strategy_id", "symbol", "quote_amount", "time_interval", "trades_limit", "strategy_name", "created_at", "status"])
+    edited_df = st.data_editor(df.sort_values(by='created_at', ascending=False), use_container_width=True, hide_index=True, num_rows='fixed', disabled=["strategy_id", "symbol", "quote_amount", "time_interval", "trades_limit", "strategy_name", "created_at", "status"])
     st.info("💡 The **DateTime** above refers to the **UTC** timestamp. So times may be different from your local time.")
     df_to_show = edited_df.loc[edited_df["monitor"] == True].copy().reset_index(drop=True)
 
@@ -69,8 +69,8 @@ if strategies:
                        "These actions are **HOLD** if no action is taken, **BUY** and **SELL**. If the BUY or SELL orders fail"
                        " due to an error or other condition is is denoted as **INVALID_BUY** and **INVALID_SELL**.")
 
-            show_table = st.toggle("Show Logs Table", value=False)
-            if show_table:
+            hide_table = st.toggle("hide table", value=False)
+            if not hide_table:
                 st.dataframe(logs_df, use_container_width=True, hide_index=True)
 
             st.divider()
@@ -81,11 +81,63 @@ if strategies:
             st.divider()
             st.html(
                 "<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>3. Strategy Logs Plot</h3>")
+
+
+            st.html("""
+            <style>
+                .marker {
+                    display: inline-block;
+                    width: 18px;
+                    height: 18px;
+                    border: 2px solid;
+                    text-align: center;
+                    line-height: 16px;
+                    font-weight: bold;
+                    margin-right: 8px;
+                }
+                .circle {
+                    border-radius: 50%;
+                }
+                .buy { border-color: green; }
+                .sell { border-color: red; }
+                .x-marker {
+                    width: 20px;
+                    height: 20px;
+                    position: relative;
+                    display: inline-block;
+                    margin-right: 8px;
+                }
+                .x-marker::before,
+                .x-marker::after {
+                    content: "";
+                    position: absolute;
+                    width: 100%;
+                    height: 2px;
+                    background-color: currentColor;
+                    top: 50%;
+                    left: 0;
+                    transform: translateY(-50%) rotate(45deg);
+                }
+                .x-marker::after {
+                    transform: translateY(-50%) rotate(-45deg);
+                }
+                .invalid-buy { color: green; }
+                .invalid-sell { color: red; }
+            </style>
+                <p><span class="marker circle buy"></span> BUY (Green Hollow Circle)
+                <span class="marker circle sell"></span> SELL (Red Hollow Circle)
+                <span class="x-marker invalid-buy"></span> INVALID_BUY (Green Hollow X)
+                <span class="x-marker invalid-sell"></span> INVALID_SELL (Red Hollow X)</p>
+            """)
+
+
+
             real_time_option = st.toggle("Real Time Monitor Line Plot", value=False, disabled=status_change_options)
+            hide_invalid = st.toggle("hide invalid orders", value=False)
             if real_time_option:
                 real_time_strategy_plot(logs_df[["timestamp", "price", "order"]], strategy_id, df_to_show["time_interval"].iloc[0])
             else:
-                static_strategy_plot(logs_df[["timestamp", "price", "order"]])
+                static_strategy_plot(logs_df[["timestamp", "price", "order"]], hide_invalid)
 
         else:
             st.warning("Failed to load Strategy Logs", icon=":material/warning:")
