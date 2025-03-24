@@ -25,7 +25,12 @@ def update_logs(strategy_id: str, last_timestamp: int):
 
 
 @st.fragment()
-def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str):
+def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: str):
+
+    time_interval_dict = {'1s': 1, '6s': 6, '1m': 60, '5m': 300, '15m': 900,
+                          '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
+    time_interval = time_interval_dict[time_interval]
+
     # Create a placeholder for the Plotly chart
     chart = st.empty()
     # Initialize figure
@@ -33,8 +38,10 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str):
 
     # Add initial traces
     fig.add_trace(go.Scatter(x=df["timestamp"], y=df["price"], mode='lines', name='Price'))
-    fig.add_trace(go.Scatter(x=df[df["order"] == "BUY"]["timestamp"], y=df[df["order"] == "BUY"]["price"], mode='markers', marker=dict(color='green', size=10), name='BUY'))
-    fig.add_trace(go.Scatter(x=df[df["order"] == "SELL"]["timestamp"], y=df[df["order"] == "SELL"]["price"], mode='markers', marker=dict(color='red', size=10), name='SELL'))
+    fig.add_trace(go.Scatter(x=df[df["order"] == "BUY"]["timestamp"], y=df[df["order"] == "BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol=100), name='BUY'))
+    fig.add_trace(go.Scatter(x=df[df["order"] == "SELL"]["timestamp"], y=df[df["order"] == "SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol=100), name='SELL'))
+    fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_BUY"]["timestamp"], y=df[df["order"] == "INVALID_BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol=104), name='Invalid BUY'))
+    fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_SELL"]["timestamp"], y=df[df["order"] == "INVALID_SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol=104), name='Invalid SELL'))
 
     # Display the empty chart
     chart.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -55,31 +62,27 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str):
                 # Update SELL markers
                 fig.data[2].x = df[df["order"] == "SELL"]["timestamp"]
                 fig.data[2].y = df[df["order"] == "SELL"]["price"]
+
+                # Update INVALID_BUY markers
+                fig.data[3].x = df[df["order"] == "INVALID_BUY"]["timestamp"]
+                fig.data[3].y = df[df["order"] == "INVALID_BUY"]["price"]
+
+                # Update INVALID_SELL markers
+                fig.data[4].x = df[df["order"] == "INVALID_SELL"]["timestamp"]
+                fig.data[4].y = df[df["order"] == "INVALID_SELL"]["price"]
+
             chart.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 
-        time.sleep(5)
-    # for i in range(len(df)):  # Go through the DataFrame row by row
-    #     row = df.iloc[i]
-    #
-    #     # Append data
-    #     with fig.batch_update():
-    #         fig.data[0].x = df["timestamp"][:i+1]  # Price line
-    #         fig.data[0].y = df["price"][:i+1]
-    #
-    #         # Update BUY markers
-    #         fig.data[1].x = df[:i+1][df["order"] == "BUY"]["timestamp"]
-    #         fig.data[1].y = df[:i+1][df["order"] == "BUY"]["price"]
-    #
-    #         # Update SELL markers
-    #         fig.data[2].x = df[:i+1][df["order"] == "SELL"]["timestamp"]
-    #         fig.data[2].y = df[:i+1][df["order"] == "SELL"]["price"]
-    #
-    #     # Update chart
-    #     chart.plotly_chart(fig, use_container_width=True)
-    #
-    #     # Simulate real-time delay
-    #     time.sleep(2)
+        progress_text = "Updating logs..."
+        my_bar = st.progress(0, text=progress_text)
+        for percent_complete in range(50):
+            time.sleep(time_interval/50)
+            my_bar.progress(percent_complete + 2, text=progress_text)
+        # time.sleep(1)
+        my_bar.empty()
+
+        # time.sleep(time_interval)
 
 
 # Static plotting function
@@ -135,7 +138,7 @@ def static_strategy_plot(df: pd.DataFrame):
 @st.fragment()
 def show_evaluation_metrics(strategy_id: str) -> None:
     with st.popover("What are the metrics", icon=":material/contact_support:"):
-        st.title("Trading Performance Metrics Explained")
+        st.subheader("Trading Performance Metrics Explained")
 
         st.subheader("Total Profit")
         st.write("The overall profit or loss from all trades over the evaluation period.")
@@ -145,9 +148,9 @@ def show_evaluation_metrics(strategy_id: str) -> None:
         st.write(
             "A risk-adjusted return metric that compares the average returns to the standard deviation of returns.")
         st.latex(r"\text{Sharpe Ratio} = \frac{E[R] - R_f}{\sigma}")
-        st.write("- (E[R]\) is the expected return")
-        st.write("- (R_f\) is the risk-free rate")
-        st.write("- (\sigma\) is the standard deviation of returns")
+        st.write("- (E[R]) is the expected return")
+        st.write("- (R_f) is the risk-free rate")
+        st.write("- (σ) is the standard deviation of returns")
 
         st.subheader("Max Drawdown")
         st.write("The maximum observed loss from a peak to a trough before a new peak is attained.")
@@ -171,7 +174,7 @@ def show_evaluation_metrics(strategy_id: str) -> None:
         st.subheader("Sortino Ratio")
         st.write("A variation of the Sharpe Ratio that only considers downside risk.")
         st.latex(r"\text{Sortino Ratio} = \frac{E[R] - R_f}{\sigma_d}")
-        st.write("- (\sigma_d\) is the standard deviation of negative returns.")
+        st.write("- (σ) is the standard deviation of negative returns.")
 
         st.subheader("Calmar Ratio")
         st.write("A risk-adjusted return metric that compares the annualized return to the maximum drawdown.")
@@ -189,7 +192,7 @@ def show_evaluation_metrics(strategy_id: str) -> None:
 
     strategy_evaluation = get_strategy_evaluation(strategy_id)
     if strategy_evaluation is None or len(strategy_evaluation['metrics']) == 0:
-        st.warning("No evaluation metrics to show. No orders have been executed yet.", icon=":material/smart_toy:")
+        st.warning("No evaluation metrics to show. No orders have been executed.", icon=":material/smart_toy:")
     else:
         html_txt = """
             <style>
@@ -242,3 +245,74 @@ def show_evaluation_metrics(strategy_id: str) -> None:
 
         if st.button("Refresh Evaluation Metrics", icon=":material/update:", type="tertiary"):
             st.rerun()
+
+
+def show_active_strategy_count(active_strategies: int, total_strategies: int):
+    st.html(f"""
+    <style>
+        .strategy_count_container {{
+            font-size: 18px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .green-circle {{
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #3ee577 20%, #22c55e 80%);
+            border-radius: 50%;
+            box-shadow: 0px 0px 8px rgba(34, 197, 94, 0.7);
+            display: inline-block;
+            position: relative;
+        }}
+        .green-circle::before {{
+            content: "";
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(34, 197, 94, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 1.5s infinite;
+        }}
+        @keyframes pulse {{
+            0% {{
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }}
+            100% {{
+                transform: translate(-50%, -50%) scale(1.4);
+                opacity: 0;
+            }}
+        }}
+        .sc_number {{
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }}
+    </style>
+
+    <div class="strategy_count_container">
+        There are 
+        <span class="sc_number">
+            <span class="green-circle"></span> {active_strategies}
+        </span>
+        active strategies and a total of <span class="sc_number">{total_strategies}</span>
+    </div>
+    """)
+
+
+def color_rows(val):
+    """
+    Usage: logs_df.style.applymap(color_rows, subset=['order'])
+    """
+    if val == 'BUY':
+        return 'background-color: lightgreen'
+    elif val == 'SELL':
+        return 'background-color: lightcoral'
+    return ""

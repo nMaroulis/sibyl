@@ -3,8 +3,7 @@ if os.path.abspath(os.path.dirname(__file__)) not in sys.path:
     sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import subprocess, signal, time
 import argparse
-
-from frontend.db.db_connector import db_init, fetch_fields, update_fields
+from frontend.db.db_connector import db_init, fetch_fields
 from streamlit.runtime.scriptrunner import add_script_run_ctx,get_script_run_ctx
 
 backend_server = None
