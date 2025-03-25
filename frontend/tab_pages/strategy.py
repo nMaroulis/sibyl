@@ -70,7 +70,6 @@ if st.session_state["available_exchange_apis"]:
             algorithm = st.selectbox("Trading Strategies", options=["Bollinger Bands", "Exponential Moving Average (EMA) crossover", "RSI"])
 
             st.write("**Strategy Params**")
-            st.divider()
             strategy_params_dict = {}
             if algorithm == "Bollinger Bands":
                 window = st.number_input("Window Size", value=20, min_value=1, max_value=1000)

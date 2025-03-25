@@ -55,16 +55,22 @@ Stay informed with the Natural Language Processing (NLP) tools:
 - Sentiment analysis using advanced language models to gauge market mood
 
 
+### Strategy Planning - Broker Module 🎯
+Tune and deploy trading strategies and monitor their performance through a real-time UI:
+
+- Currently supported trading algorithm:
+  - Bollinger Bands, RSI and EMA crossover
+- Customize the parameters for each algorithm and choose the desired market you want to deploy it.
+- Monitor in real-time the performance of the algorithm
+  - Logs Table
+  - Evaluation metrics (profit ratio, sharpe ratio, drawdown, sortino and more..)
+  - Real-time Line plot where the actions of the algorithm are shown.
+
+TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
+
 ### SPOT Trading - Broker Module 💰
 Create and place a SPOT order through the sibyl UI. This order will be first sent as a test order, and if it is validated it will be placed on your Exchange API.
 The Spot order is then saved in the TradingHistory DB, to retrieve its status and get analytics.
-
-
-### [TBD] Customized Strategy Planning - Broker Module 🎯
-Develop and deploy your own trading strategies, including:
-
-- Parametrized trading based on AI-driven models
-- Scalping (Greedy), Dollar-Cost Averaging (DCA), Arbitrage and more...
 
 
 ### Connect with Popular Exchanges - Technician Module 🛠️
@@ -72,10 +78,11 @@ Sibyl supports API connections with major crypto exchanges. Currently supported:
 
 - Binance.com
 - Binance Testnet
+- Coinbase Sandbox
 
 Additional exchanges are planned for future releases.
 - Coinbase
-- Uniswap
+- Bybit
 - Kraken
 
 ### Evaluate Stock - Stock Analysis Module 📊

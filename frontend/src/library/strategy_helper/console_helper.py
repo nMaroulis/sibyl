@@ -319,3 +319,55 @@ def color_rows(val):
     elif val == 'SELL':
         return 'background-color: lightcoral'
     return ""
+
+
+def strategy_plot_info() -> None:
+    st.html("""
+    <style>
+        .marker {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid;
+            text-align: center;
+            line-height: 16px;
+            font-weight: bold;
+            margin-right: 3px;
+            margin-left: 3px;
+            margin-bottom: -3px;
+        }
+        .circle {
+            border-radius: 50%;
+        }
+        .buy { border-color: green; }
+        .sell { border-color: red; }
+        .x-marker {
+            width: 20px;
+            height: 20px;
+            position: relative;
+            display: inline-block;
+            margin-right: 3px;
+            margin-left: 3px;
+            margin-bottom: -4px;
+        }
+        .x-marker::before,
+        .x-marker::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background-color: currentColor;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%) rotate(45deg);
+        }
+        .x-marker::after {
+            transform: translateY(-50%) rotate(-45deg);
+        }
+        .invalid-buy { color: green; }
+        .invalid-sell { color: red; }
+    </style>
+        <p style="font-weight: 510;"> The lineplot shows the price overtime from the initiation time of the strategy along with markers indicating the <span class="marker circle buy"></span> <strong>BUY</strong>
+        and <span class="marker circle sell"></span> <strong>SELL</strong> orders that were place by the strategy. In case the signal is sent by the algorithm but the order fails it will be denoted with 
+        <span class="x-marker invalid-buy"></span> <strong>Invalid BUY</strong> and <span class="x-marker invalid-sell"></span> <strong>Invalid SELL</strong>.</p>
+    """)

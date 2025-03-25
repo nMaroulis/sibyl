@@ -1,14 +1,12 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.strategy_helper.client import get_strategy_metadata, get_strategy_logs
-from frontend.src.library.ui_elements import col_style2
 import pandas as pd
-from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count
+from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count, strategy_plot_info
 
 
 fix_page_layout('strategy monitor')
 set_page_title("Strategy Monitor")
-# st.html(col_style2)
 st.write("Monitor the progress of a running strategy or examine a finished one.")
 
 
@@ -81,56 +79,7 @@ if strategies:
             st.divider()
             st.html(
                 "<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>3. Strategy Logs Plot</h3>")
-
-
-            st.html("""
-            <style>
-                .marker {
-                    display: inline-block;
-                    width: 18px;
-                    height: 18px;
-                    border: 2px solid;
-                    text-align: center;
-                    line-height: 16px;
-                    font-weight: bold;
-                    margin-right: 8px;
-                }
-                .circle {
-                    border-radius: 50%;
-                }
-                .buy { border-color: green; }
-                .sell { border-color: red; }
-                .x-marker {
-                    width: 20px;
-                    height: 20px;
-                    position: relative;
-                    display: inline-block;
-                    margin-right: 8px;
-                }
-                .x-marker::before,
-                .x-marker::after {
-                    content: "";
-                    position: absolute;
-                    width: 100%;
-                    height: 2px;
-                    background-color: currentColor;
-                    top: 50%;
-                    left: 0;
-                    transform: translateY(-50%) rotate(45deg);
-                }
-                .x-marker::after {
-                    transform: translateY(-50%) rotate(-45deg);
-                }
-                .invalid-buy { color: green; }
-                .invalid-sell { color: red; }
-            </style>
-                <p><span class="marker circle buy"></span> BUY (Green Hollow Circle)
-                <span class="marker circle sell"></span> SELL (Red Hollow Circle)
-                <span class="x-marker invalid-buy"></span> INVALID_BUY (Green Hollow X)
-                <span class="x-marker invalid-sell"></span> INVALID_SELL (Red Hollow X)</p>
-            """)
-
-
+            strategy_plot_info()
 
             real_time_option = st.toggle("Real Time Monitor Line Plot", value=False, disabled=status_change_options)
             hide_invalid = st.toggle("hide invalid orders", value=False)
