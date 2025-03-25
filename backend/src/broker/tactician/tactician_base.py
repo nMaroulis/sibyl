@@ -25,6 +25,13 @@ class Tactician:
             exchange_api (TacticianExchangeInterface): The exchange interface object which interacts with the crypto exchange.
             symbol (str): The trading symbol (e.g., 'BTC/USD').
             capital_allocation (float): The amount of capital available for trading. Default is 10.
+
+        :params:
+            capital: The amount of quote asset available for trading.
+            position: The amount of base asset bought using the quote asset.
+            trade_history: After each iteration of the strategy loop, the logs are appended there.
+            is_running (bool): Whether the strategy is running.
+            last_order
         """
         self.exchange_api = exchange_api
         self.symbol = symbol
@@ -49,13 +56,19 @@ class Tactician:
 
 
     def _save_trade_history(self) -> None:
-        """Save trade history to a JSON file."""
+        """
+        --Deprecated--
+        Save trade history to a JSON file.
+        """
         with open(self.history_file, "w") as f:
             json.dump(self.trade_history, f, indent=4)
 
 
     def _load_trade_history(self):
-        """Load trade history from a JSON file if it exists."""
+        """
+        --Deprecated--
+        Load trade history from a JSON file if it exists.
+        """
         try:
             if os.path.exists(self.history_file):
                 with open(self.history_file, "r") as f:
@@ -68,13 +81,19 @@ class Tactician:
             return None
 
     def _save_pid(self):
-        """Save the thread ID (not an actual PID, but useful for tracking)."""
+        """
+        --Deprecated--
+        Save the thread ID (not an actual PID, but useful for tracking).
+        """
         with open(self.pid_file, "w") as f:
             f.write(str(self.thread_id))
 
 
     def _clear_pid(self):
-        """Remove the PID file when the strategy stops."""
+        """
+        --Deprecated--
+        Remove the PID file when the strategy stops.
+        """
         if os.path.exists(self.pid_file):
             os.remove(self.pid_file)
 
@@ -89,6 +108,7 @@ class Tactician:
         Returns:
             Dict[str, Any]: The response from the exchange API, indicating if the trade was successful.
         """
+
         if action == "BUY":
             if self.last_order_type != "BUY" and self.capital > 0:
                 self.last_order_type = "BUY"

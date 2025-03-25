@@ -66,6 +66,11 @@ Tune and deploy trading strategies and monitor their performance through a real-
   - Evaluation metrics (profit ratio, sharpe ratio, drawdown, sortino and more..)
   - Real-time Line plot where the actions of the algorithm are shown.
 
+Modules:
+- Strategies: All the classes that implement a strategy logic. Inherit the ```BaseStrategy``` class
+- ```Tactician```: Takes a Strategy as input and is responsible for running it. It is run in a loop, where the interval is based on the strategy interval. Uses the ```TacticianExchangeInterface``` to communicate with the Exchange API clients.
+- ```Evaluator```: Takes as inputs the strategy logs and calculates the Evaluation metrics.
+
 TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
 
 ### SPOT Trading - Broker Module 💰
