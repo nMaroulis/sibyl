@@ -38,11 +38,11 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
 
     # Add initial traces
     fig.add_trace(go.Scatter(x=df["timestamp"], y=df["price"], mode='lines', name='Price'))
-    fig.add_trace(go.Scatter(x=df[df["order"] == "BUY"]["timestamp"], y=df[df["order"] == "BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol=100), name='BUY'))
-    fig.add_trace(go.Scatter(x=df[df["order"] == "SELL"]["timestamp"], y=df[df["order"] == "SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol=100), name='SELL'))
+    fig.add_trace(go.Scatter(x=df[df["order"] == "BUY"]["timestamp"], y=df[df["order"] == "BUY"]["price"], mode='markers', marker=dict(color='green', size=12, symbol='triangle-up'), name='BUY'))
+    fig.add_trace(go.Scatter(x=df[df["order"] == "SELL"]["timestamp"], y=df[df["order"] == "SELL"]["price"], mode='markers', marker=dict(color='red', size=12, symbol='triangle-down'), name='SELL'))
     if not hide_invalid:
-        fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_BUY"]["timestamp"], y=df[df["order"] == "INVALID_BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol=104), name='Invalid BUY'))
-        fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_SELL"]["timestamp"], y=df[df["order"] == "INVALID_SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol=104), name='Invalid SELL'))
+        fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_BUY"]["timestamp"], y=df[df["order"] == "INVALID_BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol='triangle-up-open'), name='Invalid BUY'))
+        fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_SELL"]["timestamp"], y=df[df["order"] == "INVALID_SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol='triangle-down-open'), name='Invalid SELL'))
 
     # Display the empty chart
     chart.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -100,7 +100,7 @@ def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
         x=buy_df["timestamp"],
         y=buy_df["price"],
         mode='markers',
-        marker=dict(color='green', size=10, symbol=100),
+        marker=dict(color='green', size=12, symbol='triangle-up'),
         name='BUY'
     ))
 
@@ -111,7 +111,7 @@ def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
         x=sell_df["timestamp"],
         y=sell_df["price"],
         mode='markers',
-        marker=dict(color='red', size=10, symbol=100),
+        marker=dict(color='red', size=12, symbol="triangle-down"), #  marker=dict(color='#ff0000', opacity=0.6,symbol="diamond", size=10, line=dict(color='#ae0000', width=2)),
         name='SELL'
     ))
 
@@ -121,7 +121,7 @@ def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
             x=invalid_buy_df["timestamp"],
             y=invalid_buy_df["price"],
             mode='markers',
-            marker=dict(color='green', size=10, symbol=104),
+            marker=dict(color='green', size=10, symbol="triangle-up-open"),
             name='Invalid BUY'
         ))
 
@@ -130,7 +130,7 @@ def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
             x=invalid_sell_df["timestamp"],
             y=invalid_sell_df["price"],
             mode='markers',
-            marker=dict(color='red', size=10, symbol=104),
+            marker=dict(color='red', size=10, symbol="triangle-down-open"),
             name='Invalid SELL'
         ))
 
@@ -324,50 +324,40 @@ def color_rows(val):
 def strategy_plot_info() -> None:
     st.html("""
     <style>
-        .marker {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid;
-            text-align: center;
-            line-height: 16px;
-            font-weight: bold;
-            margin-right: 3px;
-            margin-left: 3px;
-            margin-bottom: -3px;
-        }
-        .circle {
-            border-radius: 50%;
-        }
-        .buy { border-color: green; }
-        .sell { border-color: red; }
-        .x-marker {
-            width: 20px;
-            height: 20px;
-            position: relative;
-            display: inline-block;
-            margin-right: 3px;
-            margin-left: 3px;
-            margin-bottom: -4px;
-        }
-        .x-marker::before,
-        .x-marker::after {
-            content: "";
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background-color: currentColor;
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%) rotate(45deg);
-        }
-        .x-marker::after {
-            transform: translateY(-50%) rotate(-45deg);
-        }
-        .invalid-buy { color: green; }
-        .invalid-sell { color: red; }
+      .triangle_buy {
+        -webkit-text-stroke: 2px green;
+        color: green;
+        font-size: 14px;
+        display: inline-block; /* Ensures it stays in the same line */
+      }
+    
+      .triangle_sell {
+        -webkit-text-stroke: 2px red;
+        color: red;
+        font-size: 14px;
+        display: inline-block; /* Ensures it stays in the same line */
+      }
+      
+      .triangle_buy_invalid {
+        -webkit-text-stroke: 2px green;
+        color: transparent;
+        font-size: 14px;
+        display: inline-block; /* Keeps it inline */
+      }
+      
+      .triangle_sell_invalid {
+        -webkit-text-stroke: 2px red;
+        color: transparent;
+        font-size: 14px;
+        display: inline-block; /* Ensures it stays in the same line */
+      }
     </style>
-        <p style="font-weight: 510;"> The lineplot shows the price overtime from the initiation time of the strategy along with markers indicating the <span class="marker circle buy"></span> <strong>BUY</strong>
-        and <span class="marker circle sell"></span> <strong>SELL</strong> orders that were place by the strategy. In case the signal is sent by the algorithm but the order fails it will be denoted with 
-        <span class="x-marker invalid-buy"></span> <strong>Invalid BUY</strong> and <span class="x-marker invalid-sell"></span> <strong>Invalid SELL</strong>.</p>
+    
+    <p style="font-weight: 510;"> The lineplot shows the price over time from the initiation time of the strategy along with markers indicating 
+        <span class="triangle_buy">&#9650;</span> <strong>BUY</strong> and 
+        <span class="triangle_sell">&#9660;</span> <strong>SELL</strong> orders that were placed by the strategy. 
+        In case the signal is sent by the algorithm but the order fails, it will be denoted with 
+        <span class="triangle_buy_invalid">&#9650;</span> <strong>Invalid BUY</strong> and 
+        <span class="triangle_sell_invalid">&#9660;</span> <strong>Invalid SELL</strong>.
+    </p>
     """)

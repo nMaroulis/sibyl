@@ -32,7 +32,7 @@ class RSIStrategy(BaseStrategy):
         Returns:
             pd.Series: The RSI values.
         """
-        delta = self.data["price"].diff()
+        delta = self.data["close_price"].diff()
         gain = np.where(delta > 0, delta, 0)
         loss = np.where(delta < 0, -delta, 0)
 
@@ -54,4 +54,4 @@ class RSIStrategy(BaseStrategy):
         self.data["rsi"] = self.calculate_rsi()
         self.data["signal"] = np.where(self.data["rsi"] < self.buy_threshold, "BUY",
                                        np.where(self.data["rsi"] > self.sell_threshold, "SELL", "HOLD"))
-        return self.data[["timestamp", "price", "rsi", "signal"]]
+        return self.data[["timestamp", "close_price", "rsi", "signal"]]

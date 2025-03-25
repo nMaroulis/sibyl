@@ -28,8 +28,8 @@ class BollingerBandsStrategy(BaseStrategy):
         """
         Computes the Bollinger Bands and stores them in the data DataFrame.
         """
-        self.data["SMA"] = self.data["price"].rolling(window=self.window).mean()
-        self.data["std_dev"] = self.data["price"].rolling(window=self.window).std()
+        self.data["SMA"] = self.data["close_price"].rolling(window=self.window).mean()
+        self.data["std_dev"] = self.data["close_price"].rolling(window=self.window).std()
 
         self.data["upper_band"] = self.data["SMA"] + (self.data["std_dev"] * self.std_dev)
         self.data["lower_band"] = self.data["SMA"] - (self.data["std_dev"] * self.std_dev)
@@ -42,9 +42,8 @@ class BollingerBandsStrategy(BaseStrategy):
         Returns:
             pd.DataFrame: Data with Bollinger Bands and trading signals.
         """
-        # self.data = self.price_fetcher.get_data()
         self.data = data
         self.calculate_bollinger_bands()
-        self.data["signal"] = np.where(self.data["price"] < self.data["lower_band"], "BUY",
-                                       np.where(self.data["price"] > self.data["upper_band"], "SELL", "HOLD"))
-        return self.data[["timestamp", "price", "upper_band", "lower_band", "signal"]]
+        self.data["signal"] = np.where(self.data["close_price"] < self.data["lower_band"], "BUY",
+                                       np.where(self.data["close_price"] > self.data["upper_band"], "SELL", "HOLD"))
+        return self.data[["timestamp", "close_price", "upper_band", "lower_band", "signal"]]

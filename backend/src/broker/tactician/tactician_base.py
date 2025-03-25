@@ -40,6 +40,9 @@ class Tactician:
         self.trade_history: List[Dict[str, Any]] = []  # Store all trade actions
         self.is_running = False  # Track if the strategy is running
         self.last_order_type = "None"
+        self.time_interval = None
+
+        self.quote_min_notional = self.exchange_api.get_minimum_trade_value(self.symbol)
 
         # Threading
         self.thread = None
@@ -110,7 +113,7 @@ class Tactician:
         """
 
         if action == "BUY":
-            if self.last_order_type != "BUY" and self.capital > 0:
+            if self.last_order_type != "BUY" and self.capital > self.quote_min_notional:
                 self.last_order_type = "BUY"
                 order = self.exchange_api.place_buy_order(symbol=self.symbol, quote_amount=self.capital)
                 self.position += order["position"]
@@ -146,6 +149,7 @@ class Tactician:
         """
         return self.trade_history
 
+
     def get_status(self) -> str:
         """
         Returns the current status of the strategy (active or inactive).
@@ -156,7 +160,7 @@ class Tactician:
         return "Running" if self.is_running else "Stopped"
 
 
-    def initiate_dataset(self, interval: str, limit: int) -> None:
+    def initiate_dataset(self, limit: int) -> None:
         """
         Calls the Exchange API to get the latest price data. It fetches :limit: prices on call and initiates the dataset.
         Typically called before starting the strategy loop.
@@ -164,22 +168,21 @@ class Tactician:
         In case of 6s interval: Most exchanges do not support a 15s interval. Therefore in order to initiate the dataset, the 1s API is used and the data are sampled.
         Args:
             limit (int): The number of prices to fetch.
-            interval (str): The klines interval.
         """
-        self.dataset = self.exchange_api.get_price_history(symbol=self.symbol, interval=interval, limit=limit)
+        self.dataset = self.exchange_api.get_kline_data(symbol=self.symbol, interval=self.time_interval, limit=limit)
 
 
     def update_dataset(self) -> None:
 
-        # Get last ticker
-        last_ticker = self.exchange_api.get_last_market_price(self.symbol, self.dataset.iloc[-1]["price"])
+        # Get last ticker, if it fails it fills with the last value
+        last_ticker = self.exchange_api.get_last_market_price(self.symbol, self.dataset.iloc[-1]["close_price"])
         # drop first row
         self.dataset = self.dataset.iloc[1:].reset_index(drop=True)
         # add new
         self.dataset = pd.concat([self.dataset, pd.DataFrame([last_ticker])], ignore_index=True)
 
 
-    def strategy_loop(self, strategy_id: str, strategy: BaseStrategy, interval: int = 5, min_capital: float = 0.0, trades_limit: int = 1) -> None:
+    def strategy_loop(self, strategy_id: str, strategy: BaseStrategy, interval: int, min_capital: float, trades_limit: int) -> None:
         """
         Runs the trading strategy in a loop, checking for signals and executing trades.
 
@@ -203,7 +206,7 @@ class Tactician:
             self.update_dataset()
             signals = strategy.generate_signals(self.dataset.copy())
             latest_signal = signals.iloc[-1]["signal"]
-            latest_price = signals.iloc[-1]["price"]
+            latest_price = signals.iloc[-1]["close_price"]
             timestamp = signals.iloc[-1]["timestamp"]
             print(f"Tactician :: signals | t: {pd.to_datetime(timestamp, unit="ms").strftime('%H:%M:%S')}, p: {latest_price}, action: {latest_signal}") # signals.iloc[-1]["timestamp"].strftime("%H:%M:%S")}
             if latest_signal in ["BUY", "SELL"]:
@@ -230,11 +233,11 @@ class Tactician:
         time_interval_dict = {'1s': 1, '6s': 6, '1m': 60, '5m': 300, '15m': 900,
                          '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
 
-
+        self.time_interval = interval
         self.db_client.add_strategy(strategy_id, self.symbol, self.capital, interval, trades_limit, strategy.name, int(time.time()*1000))
 
         print(f"Tactician :: Initiating Strategy loop with id {strategy_id}.")
-        self.initiate_dataset(interval, 200)
+        self.initiate_dataset(200)
         self.thread = threading.Thread(target=self.strategy_loop, daemon=True, args=(strategy_id, strategy, time_interval_dict[interval], min_capital, trades_limit))
         self.thread.start()
         print("Tactician :: Strategy loop started.")

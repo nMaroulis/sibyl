@@ -97,9 +97,9 @@ class KrakenClient(ExchangeAPIClient):
         pass
 
 
-    def get_price_history(self, symbol: str, interval: str = "1d", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100) -> Optional[List[Dict[str, float]]]:
         """
-        Fetches historical price data for a given symbol from the client.
+        Fetches historical OHLCV data for a given symbol from the client.
 
         Args:
             symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".

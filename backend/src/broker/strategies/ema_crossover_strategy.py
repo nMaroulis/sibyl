@@ -33,7 +33,7 @@ class EMACrossoverStrategy(BaseStrategy):
         Returns:
             pd.Series: The EMA values.
         """
-        return self.data["price"].ewm(span=period, adjust=False).mean()
+        return self.data["close_price"].ewm(span=period, adjust=False).mean()
 
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -49,4 +49,4 @@ class EMACrossoverStrategy(BaseStrategy):
 
         self.data["signal"] = np.where(self.data["ema_short"] > self.data["ema_long"], "BUY",
                                        np.where(self.data["ema_short"] < self.data["ema_long"], "SELL", "HOLD"))
-        return self.data[["timestamp", "price", "ema_short", "ema_long", "signal"]]
+        return self.data[["timestamp", "close_price", "ema_short", "ema_long", "signal"]]

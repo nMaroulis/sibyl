@@ -23,6 +23,15 @@ class StrategyRuntimeHandler:
         self.running_strategies[strategy_id] = strategy
 
 
+    def remove_strategy(self, strategy_id: str) -> None:
+        """Removes a strategy from the running strategies list.
+
+        Args:
+            strategy_id (str): Unique identifier of the strategy.
+        """
+        del self.running_strategies[strategy_id]
+
+
     def stop_strategy(self, strategy_id: str) -> int | None:
         """Stops a running strategy by invoking its stop method.
 

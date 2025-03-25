@@ -330,9 +330,9 @@ class BinanceClient(ExchangeAPIClient):
             return None
 
 
-    def get_price_history(self, symbol: str, interval: str = "1d", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100) -> Optional[List[Dict[str, float]]]:
         """
-        Fetches historical price data for a given symbol from the client.
+        Fetches historical OHLCV data for a given symbol from the client.
 
         Args:
             symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
@@ -374,7 +374,7 @@ class BinanceClient(ExchangeAPIClient):
                 for entry in klines
             ]
         except Exception as e:
-            print(f"get_price_history :: Error fetching price history: {e}")
+            print(f"get_klines :: Error fetching price history: {e}")
             return None
 
 

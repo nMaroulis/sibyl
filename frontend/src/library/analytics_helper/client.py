@@ -9,7 +9,7 @@ from pandas import DataFrame, to_datetime
 def fetch_price_history(exchange: str, pair_symbol: str, time_int: str, time_limit: int, full_name: bool = True) -> DataFrame | None:
     # if full_name:
     #     symbol = get_crypto_name_regex(pair_symbol)  # get_crypto_coin_dict().get(symbol)
-    url = f"{BACKEND_SERVER_ADDRESS}/analyst/asset/price_history?exchange={exchange.lower().replace(" ", "_")}&symbol={pair_symbol}&interval={time_int}&limit={str(time_limit)}"
+    url = f"{BACKEND_SERVER_ADDRESS}/analyst/asset/klines?exchange={exchange.lower().replace(" ", "_")}&symbol={pair_symbol}&interval={time_int}&limit={str(time_limit)}"
     response = requests.get(url)
     if response.status_code == 200:
 
