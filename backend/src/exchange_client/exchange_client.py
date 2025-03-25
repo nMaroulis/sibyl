@@ -96,7 +96,7 @@ class ExchangeAPIClient(ABC):
         pass
 
     @abstractmethod
-    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100) -> Optional[List[Dict[str, float]]]:
+    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100, start_time: int = None, end_time: int = None) -> Optional[List[Dict[str, float]]]:
         """
         Fetches historical OHLCV data for a given symbol from the client.
 
@@ -104,6 +104,8 @@ class ExchangeAPIClient(ABC):
             symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
             interval (str): Time interval for the price data (e.g., "1d", "1h"). Default is "1d".
             limit (int): Number of historical records to fetch. Default is 100.
+            start_time (Optional[int]): Start time of historical records. Default is None.
+            end_time (Optional[int]): End time of historical records. Default is None.
 
         Returns:
             Optional[List[Dict[str, float]]]: A list of dictionaries containing price history data,

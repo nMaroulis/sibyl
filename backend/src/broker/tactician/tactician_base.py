@@ -165,7 +165,6 @@ class Tactician:
         Calls the Exchange API to get the latest price data. It fetches :limit: prices on call and initiates the dataset.
         Typically called before starting the strategy loop.
 
-        In case of 6s interval: Most exchanges do not support a 15s interval. Therefore in order to initiate the dataset, the 1s API is used and the data are sampled.
         Args:
             limit (int): The number of prices to fetch.
         """
@@ -174,12 +173,24 @@ class Tactician:
 
     def update_dataset(self) -> None:
 
-        # Get last ticker, if it fails it fills with the last value
-        last_ticker = self.exchange_api.get_last_market_price(self.symbol, self.dataset.iloc[-1]["close_price"])
-        # drop first row
+        # Get last ticker
+        last_kline = self.exchange_api.get_last_kline(self.symbol, self.time_interval)
+        # if it fails it fills with the last value
+        if last_kline is None:
+            last_kline = self.dataset.iloc[-1]
+
         self.dataset = self.dataset.iloc[1:].reset_index(drop=True)
-        # add new
-        self.dataset = pd.concat([self.dataset, pd.DataFrame([last_ticker])], ignore_index=True)
+        self.dataset = pd.concat([self.dataset, last_kline], ignore_index=True)
+
+
+    # def update_dataset(self) -> None:
+    #
+    #     # Get last ticker, if it fails it fills with the last value
+    #     last_ticker = self.exchange_api.get_last_market_price(self.symbol, self.dataset.iloc[-1]["close_price"])
+    #     # drop first row
+    #     self.dataset = self.dataset.iloc[1:].reset_index(drop=True)
+    #     # add new
+    #     self.dataset = pd.concat([self.dataset, pd.DataFrame([last_ticker])], ignore_index=True)
 
 
     def strategy_loop(self, strategy_id: str, strategy: BaseStrategy, interval: int, min_capital: float, trades_limit: int) -> None:
@@ -230,7 +241,7 @@ class Tactician:
             min_capital (float): The minimum capital threshold for running the strategy. If capital goes below this, the strategy will stop. Default is 0.
             trades_limit (int): Number of trades to execute before stopping. Must be even to end with a SELL.
         """
-        time_interval_dict = {'1s': 1, '6s': 6, '1m': 60, '5m': 300, '15m': 900,
+        time_interval_dict = {'1s': 1, '15s': 15, '1m': 60, '5m': 300, '15m': 900,
                          '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
 
         self.time_interval = interval

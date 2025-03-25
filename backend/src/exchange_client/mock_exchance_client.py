@@ -11,7 +11,7 @@ class MockExchangeClient:
         return np.random.normal(1000, 50)  # Replace with actual dynamic pricing logic.
 
 
-    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100):
+    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100, start_time: int = None, end_time: int = None):
 
         # Generate 100 timestamps, starting from 100 seconds ago
         now = time.time()
