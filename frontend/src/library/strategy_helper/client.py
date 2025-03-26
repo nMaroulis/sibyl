@@ -3,7 +3,12 @@ import requests
 from frontend.config.config import BACKEND_SERVER_ADDRESS
 from streamlit import cache_data
 
+
 def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_asset: str, time_interval: str, strategy: str, num_trades: int, params: Dict[str, Any], backtesting: bool = False) -> Dict[str, Any] | None:
+
+    if strategy.startswith("[Sibyl] "):
+        strategy = strategy.replace("[Sibyl] ", "")
+    strategy = strategy.lower().replace(" ", "_")
 
     payload = {
         "exchange": exchange.lower().replace(" ", "_"),
@@ -11,7 +16,7 @@ def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_ass
         "quote_amount": quote_amount,
         "base_asset": base_asset,
         "time_interval": time_interval,
-        "strategy": strategy.lower().replace(" ", "_"),
+        "strategy": strategy,
         "num_trades": num_trades,
         "params": params
     }
