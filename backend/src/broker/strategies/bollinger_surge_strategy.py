@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 
 
-class BollingerRSIVolumeSurgeStrategy(BaseStrategy):
+class BollingerSurgeStrategy(BaseStrategy):
     """
+    Full Name: Bollinger RSI Volume Surge Strategy
     Advanced trading strategy using Bollinger Bands, RSI, EMA, and Volume analysis.
 
     Buys when price is near the lower Bollinger Band, RSI is oversold, and EMA shows upward trend.
@@ -32,7 +33,7 @@ class BollingerRSIVolumeSurgeStrategy(BaseStrategy):
         self.ema_short = ema_short
         self.ema_long = ema_long
         self.volume_factor = volume_factor
-        self.name = "Advanced Multi-Factor Strategy"
+        self.name = "Bollinger Surge Strategy"
 
     def calculate_indicators(self, data: pd.DataFrame) -> None:
         """

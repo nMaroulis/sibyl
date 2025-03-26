@@ -1,8 +1,7 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import requests
-from streamlit import cache_data
 from frontend.config.config import BACKEND_SERVER_ADDRESS
-
+from streamlit import cache_data
 
 def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_asset: str, time_interval: str, strategy: str, num_trades: int, params: Dict[str, Any], backtesting: bool = False) -> Dict[str, Any] | None:
 
@@ -73,3 +72,16 @@ def get_strategy_evaluation(strategy_id: str) -> Dict[str, Any] | None:
         return response.json()
     else:
         return None
+
+
+@cache_data(ttl=100000)
+def get_available_strategies() -> List[str]:
+
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/strategies"
+
+    response = requests.get(url=url)
+    if response.status_code == 200:
+        res = response.json()
+        return res["strategies"]
+    else:
+        return []

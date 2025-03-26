@@ -2,10 +2,10 @@ import streamlit as st
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.strategy_helper.funcs import get_strategy_instructions, strategy_params_form
+from frontend.src.library.strategy_helper.launcher_helper import get_strategy_instructions, strategy_params_form
 from frontend.src.library.ui_elements import col_style2
 from frontend.src.library.analytics_helper.client import fetch_available_assets
-from frontend.src.library.strategy_helper.client import post_strategy
+from frontend.src.library.strategy_helper.client import post_strategy, get_available_strategies
 import time
 
 
@@ -22,29 +22,32 @@ if "available_exchange_apis" not in st.session_state:
         api_status_check()
 
 if st.session_state["available_exchange_apis"]:
-    exchange = st.selectbox('Choose Exchange', options=st.session_state["available_exchange_apis"])
     st.divider()
     with st.container(border=False):
+        c00 = st.columns(1)
+        with c00[0]:
+            st.write("**1. Exchange**")
+            exchange = st.selectbox('Choose Exchange', options=st.session_state["available_exchange_apis"])
 
         # show available balance
         c0, c1 = st.columns(2)
         with c0:
             balance = fetch_account_spot(exchange.lower().replace(" ", "_"))
             balance = {asset: price["free"] for asset, price in balance["spot_balances"].items()}
-            st.write("**1. Quote Asset**")
+            st.write("**2. Quote Asset**")
             st.caption("Choose the **Quote Asset** which will be used in this strategy. Below you'll see all the assets you have available in your account and the corresponding markets you can deploy the strategy.")
             default_quote_index = list(balance.keys()).index("USDT") if "USDT" in balance.keys() else 0  # making USDT appear as preselected choice
             quote_asset = st.selectbox('Quote Asset', options=balance.keys(), index=default_quote_index)
             st.metric("Available Balance", f"{balance[quote_asset]} {quote_asset}")
         with c1:
-            st.write("**2. Quote Amount**")
+            st.write("**3. Quote Amount**")
             st.caption(f"Choose the Quote amount you want to trade on this strategy. Each order sent to the {exchange} API will define the quote_quantity and not the base.")
             st.warning("**Warning**: Choose only what you can afford to lose, as the whole Quote amount is at risk.", icon=":material/warning:")
             quote_amount = st.number_input("Quote Amount", min_value=0.0, max_value=balance[quote_asset])
 
         c2, c3 = st.columns(2)
         with c2:
-            st.write("**3. Base Asset**")
+            st.write("**4. Base Asset**")
             st.caption(f"Choose the Base Asset. The available base assets correspond to the selected quote asset and the available markets at {exchange}.")
             base_assets = fetch_available_assets(exchange, quote_asset)
             base_asset = st.selectbox('Base Asset', options=base_assets[quote_asset])
@@ -53,7 +56,7 @@ if st.session_state["available_exchange_apis"]:
             else:
                 st.warning("No base asset selected.", icon=":material/warning:")
         with c3:
-            st.write("**4. Choose Time interval**")
+            st.write("**5. Choose Time interval**")
             st.caption("The strategy runs in a loop on a steady time interval. Based on the selected interval, the algorithm will focus on the short-term (**High-Frequency Trading**) or long-term (**Swing Trading**).")
             time_interval = st.pills("Time Interval", options=["1s", "15s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="15s")
             if time_interval is None:
@@ -65,11 +68,10 @@ if st.session_state["available_exchange_apis"]:
 
         c4 = st.columns(1)
         with c4[0]:
-            st.write("**5. Choose Strategy Algorithm**")
+            st.write("**6. Choose Strategy Algorithm**")
             st.segmented_control("Strategy Algorithm Type", options=["All", "Trend Following", "Mean Reversion", "Breakout", "Momentum", "Swing Trading", "Scalping", "Volatility-Based", "ML Model"], default="All", disabled=True)
-            strategy = st.selectbox("Trading Strategies", options=["Bollinger Bands", "Bollinger RSI Volume Surge", "Exponential Moving Average (EMA) crossover", "RSI"])
+            strategy = st.selectbox("Trading Strategies", options=get_available_strategies())
 
-            st.write("**Strategy Params**")
             strategy_params_dict = strategy_params_form(strategy)
             st.divider()
             st.caption("Number of trades (pair of BUY-SELL orders) before the algorithm stops. The larger this value, the more the algorithm will run for.")

@@ -31,35 +31,12 @@ Welcome to **Sibyl**! This application is your centralized hub for all things cr
 The intuitive dashboard provides a comprehensive view of your crypto activities. Manage your trading strategies, analyze market trends, and keep an eye on the latest news—all in one place.
 
 
-### AI-Driven Smart Trading Strategies - Oracle Module 🔮
-Sibyl allows you to deploy intelligent trading strategies using advanced AI models. Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to make informed trading decisions. With these advanced models, you can optimize your trading for maximum returns.
-
-
-### Data Analysis & Visualization - Analyst Module 📈
-
-Track your profits and losses with detailed tables and plots, allowing you to measure the success of each trading order.
-
-Sibyl offers powerful data analysis and visualization tools to support your trading decisions:
-
-- Correlation Analysis
-- SHAP Feature Importance
-- Regression Analysis
-
-Visualize the data with custom plots and tables for clear insights.
-
-### NLP Models - Reporter Module 🕵🏻‍
-Stay informed with the Natural Language Processing (NLP) tools:
-
-- Web scraping for the latest crypto news
-- Text summarization for quick news highlights
-- Sentiment analysis using advanced language models to gauge market mood
-
-
 ### Strategy Planning - Broker Module 🎯
 Tune and deploy trading strategies and monitor their performance through a real-time UI:
 
 - Currently supported trading algorithm:
-  - Bollinger Bands, RSI and EMA crossover
+  - Generic strategy algorithms: Bollinger Bands, RSI and EMA crossover
+  - Sibyl advanced custom strategy algorithms: **Bollinger Surge*, **Impulse Breakout** and **Quantum Momentum**.
 - Customize the parameters for each algorithm and choose the desired market you want to deploy it.
 - Monitor in real-time the performance of the algorithm
   - Logs Table
@@ -73,9 +50,41 @@ Modules:
 
 TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
 
+
 ### SPOT Trading - Broker Module 💰
 Create and place a SPOT order through the sibyl UI. This order will be first sent as a test order, and if it is validated it will be placed on your Exchange API.
 The Spot order is then saved in the TradingHistory DB, to retrieve its status and get analytics.
+
+
+### Price Movement Prediction using ML - Oracle Module 🔮
+Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to forecast and asset's price and make informed trading decisions. 
+- Oracle tab in the UI: choose an asset and call the Oracle to get the price prediction.
+
+TBA: AI-powered strategies that utilize the Oracle models.
+
+
+### Data Analysis & Visualization - Analyst Module 📈
+
+
+Sibyl offers powerful data analysis and visualization tools to support your trading decisions:
+
+- Line and Candle Plots with statistics (Bollinger Bands, RSI, EMA and more..)
+- Correlation Analysis
+- SHAP Feature Importance
+- Regression Analysis
+
+Visualize the data with custom plots and tables for clear insights.
+
+Track your profits and losses with detailed tables and plots, allowing you to measure the success of each trading order.
+
+
+### NLP Models - Reporter Module 🕵🏻‍
+Stay informed with the Natural Language Processing (NLP) tools:
+
+- Web scraping for the latest crypto news
+- Text summarization for quick news highlights
+- Sentiment analysis using advanced language models to gauge market mood
+- LLM-powered chatbot, to ask questions about the latest crypto news.
 
 
 ### Connect with Popular Exchanges - Technician Module 🛠️
@@ -90,6 +99,17 @@ Additional exchanges are planned for future releases.
 - Bybit
 - Kraken
 
+
+### Crypto Wiki Chatbot - Wiki Module 💬
+An interactive **chatbot** which is based on a custom **RAG system**, which includes thousands of crypto-related publications, books and articles.
+After you ask a crypto-related question, the embeddings for your query are created and the most similar embeddings are found in the ***chromaDB*** Embeddings Database.
+The similarity method is a hybrid approach, using cosine similarity, BM25 keyword search matching and FAISS indexing similarity.
+
+In order to use this functionality, you have to:
+1. Provide a valid HuggingFace or OpenAI API key, to be stored in the local encrypted Database.
+2. Download the chromaDB Embeddings Database, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
+
+
 ### Evaluate Stock - Stock Analysis Module 📊
 Choose a Company from a list of available company stocks and:
 
@@ -98,15 +118,6 @@ Choose a Company from a list of available company stocks and:
 - Get insights about U.S. senators' stock portfolios
 - Future Release: Rating based on custom ML model
 
-
-### Crypto Wiki Chatbot - Wiki Module 💬
-An interactive chatbot which is based on a custom RAG system, which includes thousands of crypto-related publications, books and articles.
-After you ask a crypto-related question, the embeddings for your query are created and the most similar embeddings are found in the ***chromaDB*** Embeddings Database.
-The similarity method is a hybrid approach, using cosine similarity, BM25 keyword search matching and FAISS indexing similarity.
-
-In order to use this functionality, you have to:
-1. Provide a valid HuggingFace or OpenAI API key, to be stored in the local encrypted Database.
-2. Download the chromaDB Embeddings Database, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
 
 ## Security & Local Deployment
 Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.

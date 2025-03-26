@@ -1,7 +1,6 @@
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException
 from database.trade_history_db_client import TradeHistoryDBClient
-from datetime import datetime
 from pydantic import BaseModel
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 from backend.src.broker.strategies.strategy_factory import StrategyFactory
@@ -209,3 +208,15 @@ def strategy_evaluation(strategy_id: str):
         return {"metrics": metrics}
     else:
         raise HTTPException(status_code=500, detail="Empty Logs")
+
+
+@router.get("/strategies")
+def get_available_strategies():
+
+    STRATEGIES = ["Bollinger Bands", "[Sibyl] Bollinger Surge", "Exponential Moving Average (EMA) crossover", "[Sibyl] Impulse Breakout", "[Sibyl] Quantum Momentum", "RSI"]
+    try:
+        return {"strategies": STRATEGIES}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=e)
+
+
