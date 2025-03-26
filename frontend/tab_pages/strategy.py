@@ -56,7 +56,7 @@ if st.session_state["available_exchange_apis"]:
             else:
                 st.warning("No base asset selected.", icon=":material/warning:")
         with c3:
-            st.write("**5. Choose Time interval**")
+            st.write("**5. Time interval**")
             st.caption("The strategy runs in a loop on a steady time interval. Based on the selected interval, the algorithm will focus on the short-term (**High-Frequency Trading**) or long-term (**Swing Trading**).")
             time_interval = st.pills("Time Interval", options=["1s", "15s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="15s")
             if time_interval is None:
@@ -68,14 +68,22 @@ if st.session_state["available_exchange_apis"]:
 
         c4 = st.columns(1)
         with c4[0]:
-            st.write("**6. Choose Strategy Algorithm**")
+            st.write("**6. Strategy Algorithm**")
             st.segmented_control("Strategy Algorithm Type", options=["All", "Trend Following", "Mean Reversion", "Breakout", "Momentum", "Swing Trading", "Scalping", "Volatility-Based", "ML Model"], default="All", disabled=True)
             strategy = st.selectbox("Trading Strategies", options=get_available_strategies())
 
             strategy_params_dict = strategy_params_form(strategy)
             st.divider()
-            st.caption("Number of trades (pair of BUY-SELL orders) before the algorithm stops. The larger this value, the more the algorithm will run for.")
-            trades_num = st.number_input("Number of trades", min_value=1, max_value=10, value=2, step=1)
+
+        c5 = st.columns(1)
+        with c5[0]:
+            st.write("**7. Strategy Runtime Parameters**")
+            st.caption("**(7.1)** Number of trades (**pair of BUY-SELL orders**) before the algorithm stops. The larger this value, the more the algorithm will run for.")
+            trades_num = st.slider("Number of trades", min_value=1, max_value=10, value=2)
+            st.caption("**(7.2)** The **Kline dataset size** indicates the size of the dataset that the strategy algorithm uses as input. "
+                       "This must depend on the selected strategy. For example if 200 is chosen for '1m' interval, the strategy will consider the last 200 minute klines to make its action decision.")
+            dataset_size = st.number_input("Dataset Size", min_value=1, max_value=1000, value=400, step=1, disabled=True)
+
         st.divider()
         st.caption("A **Backtesting** will evaluate the effectiveness of a trading strategy by running it against historical data to see how it would perform. The **evaluation results** will be shown, along with the option to deploy it.")
         valid_request_flag = True
@@ -97,12 +105,12 @@ if st.session_state["available_exchange_apis"]:
 
         # placeholder = st.empty() # TODO - examine here to remove buttons.
 
-        backtesting_button = st.button("Run Backtesting", key="backtesting_button", type="primary", icon=":material/query_stats:", disabled=True)
+        backtesting_button = st.button("Run Backtesting", key="backtesting_button", type="primary", icon=":material/query_stats:", disabled=True, use_container_width=True)
         # if backtesting_button:
         # post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict, True)
 
         if valid_request_flag:
-            if st.button("Initiate Strategy", key="deploy_strategy_button", type="primary", icon=":material/rocket_launch:"):
+            if st.button("Initiate Strategy", key="deploy_strategy_button", type="primary", icon=":material/rocket_launch:", use_container_width=True):
                 with st.spinner("Deploying Strategy"):
                     res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy, trades_num, strategy_params_dict)
                 if res is not None:
@@ -111,10 +119,8 @@ if st.session_state["available_exchange_apis"]:
                     st.link_button("Navigate to the **Strategy Console** to view the progress", "http://localhost:8501/strategy_console", icon=":material/browse_activity:")
                 else:
                     st.error("Failed to deploy strategy. See logs for error.", icon=":material/report:")
-
-
         else:
-            st.button("Initiate Strategy", type="primary", icon=":material/send:", disabled=True)
+            st.button("Initiate Strategy", type="primary", icon=":material/send:", disabled=True, use_container_width=True)
 
 else:
     html_content = """

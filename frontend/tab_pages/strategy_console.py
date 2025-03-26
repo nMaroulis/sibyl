@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.strategy_helper.client import get_strategy_metadata, get_strategy_logs
+from frontend.src.library.strategy_helper.client import get_strategy_metadata, get_strategy_logs, stop_strategy
 import pandas as pd
 from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count, strategy_plot_info
 
@@ -41,11 +41,15 @@ if strategies:
             logs_df = pd.DataFrame(logs)
             # Stop, Pause Strategy
             status_change_options = True if df_to_show["status"].iloc[0] == "inactive" else False
-            col0, col1 = st.columns(2)
+            col0, col1 = st.columns(2, gap="small")
             with col0:
-                st.button("Pause Strategy", type="secondary", icon=":material/pause_circle:", disabled=status_change_options)
+                if st.button("Stop Strategy", type="primary", icon=":material/cancel:", disabled=status_change_options):
+                    with st.spinner("Stopping Strategy"):
+                        st.toast("Stopping Strategy...", icon=":material/cancel:")
+                        stop_strategy(strategy_id)
+                        st.rerun()
             with col1:
-                st.button("Stop Strategy", type="primary", icon=":material/cancel:", disabled=status_change_options)
+                st.button("Pause Strategy", type="secondary", icon=":material/pause_circle:", disabled=status_change_options)
 
 
             if status_change_options:
