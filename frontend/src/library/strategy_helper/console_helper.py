@@ -353,7 +353,7 @@ def strategy_plot_info() -> None:
       }
     </style>
     
-    <p style="font-weight: 510;"> The lineplot shows the price over time from the initiation time of the strategy along with markers indicating 
+    <p style="font-weight: 500;"> The lineplot shows the price over time from the initiation time of the strategy along with markers indicating 
         <span class="triangle_buy">&#9650;</span> <strong>BUY</strong> and 
         <span class="triangle_sell">&#9660;</span> <strong>SELL</strong> orders that were placed by the strategy. 
         In case the signal is sent by the algorithm but the order fails, it will be denoted with 

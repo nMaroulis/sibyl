@@ -1,7 +1,6 @@
-from extra_streamlit_components import stepper_bar
-from streamlit import write, container, expander, html, link_button, tabs, segmented_control, popover, dialog, pills
+from streamlit import write, expander, popover, dialog, pills, number_input, warning, button
 import re
-
+from typing import Dict, Any
 
 @dialog('📖 Strategies Wiki', width="large")
 def get_strategy_instructions(exp=False):
@@ -94,3 +93,42 @@ def get_strategy_instructions(exp=False):
 def extract_coin_symbol(text):
     match = re.search(r'\[([^\]]+)\]$', text)
     return match.group(1) if match else text
+
+
+def strategy_params_form(strategy: str) -> Dict[str, Any]:
+    strategy_params_dict = {}
+    if strategy == "Bollinger Bands":
+        window = number_input("Window Size", value=20, min_value=1, max_value=1000)
+        st_dev = number_input("Standard Deviation", value=2.0, min_value=0.0, max_value=4.0)
+        strategy_params_dict["window"] = window
+        strategy_params_dict["std_dev"] = st_dev
+    elif strategy == "Bollinger RSI Volume Surge":
+        bb_window = number_input("Bollinger Bands moving average window", min_value=1, value = 20, max_value=1000)
+        bb_std_dev = number_input("Standard deviation for Bollinger Bands", min_value=0.0, value=2.0, max_value=10.0)
+        rsi_window = number_input("RSI lookback window", min_value=1, value = 20, max_value=100)
+        ema_short = number_input("Short-term EMA window", min_value=1, value = 9, max_value=80)
+        ema_long = number_input("Long-term EMA window", min_value=1, value = 21, max_value=100)
+        volume_factor = number_input("Multiplier to detect volume spikes", min_value=1.0, value=1.5, max_value=50.0)
+        strategy_params_dict["bb_window"] = bb_window
+        strategy_params_dict["bb_std_dev"] = bb_std_dev
+        strategy_params_dict["rsi_window"] = rsi_window
+        strategy_params_dict["ema_short"] = ema_short
+        strategy_params_dict["ema_long"] = ema_long
+        strategy_params_dict["volume_factor"] = volume_factor
+
+    elif strategy == "Exponential Moving Average (EMA) crossover":
+        short_window = number_input("Short Window Size", value=10, min_value=1, max_value=1000)
+        long_window = number_input("Long Window Size", value=50, min_value=1, max_value=1000)
+        strategy_params_dict["short_window"] = short_window
+        strategy_params_dict["long_window"] = long_window
+    elif strategy == "RSI":
+        rsi_period = number_input("RSI Period", value=14, min_value=1, max_value=100)
+        buy_threshold = number_input("Buy Threshold", value=30, min_value=1, max_value=1000)
+        sell_threshold = number_input("Sell Threshold", value=70, min_value=1, max_value=1000)
+        strategy_params_dict["rsi_period"] = rsi_period
+        strategy_params_dict["buy_threshold"] = buy_threshold
+        strategy_params_dict["sell_threshold"] = sell_threshold
+    else:
+        warning("Invalid algorithm selected.", icon=":material/warning:")
+    button("Strategy Parameters LLM Advisor", icon=":material/manufacturing:",disabled=True)
+    return strategy_params_dict

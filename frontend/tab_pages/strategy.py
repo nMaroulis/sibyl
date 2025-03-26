@@ -2,7 +2,7 @@ import streamlit as st
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.strategy_helper.funcs import get_strategy_instructions
+from frontend.src.library.strategy_helper.funcs import get_strategy_instructions, strategy_params_form
 from frontend.src.library.ui_elements import col_style2
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 from frontend.src.library.strategy_helper.client import post_strategy
@@ -55,7 +55,7 @@ if st.session_state["available_exchange_apis"]:
         with c3:
             st.write("**4. Choose Time interval**")
             st.caption("The strategy runs in a loop on a steady time interval. Based on the selected interval, the algorithm will focus on the short-term (**High-Frequency Trading**) or long-term (**Swing Trading**).")
-            time_interval = st.pills("Time Interval", options=["1s", "15s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="1s")
+            time_interval = st.pills("Time Interval", options=["1s", "15s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="15s")
             if time_interval is None:
                 st.warning("No time interval selected.", icon=":material/warning:")
             else:
@@ -67,31 +67,10 @@ if st.session_state["available_exchange_apis"]:
         with c4[0]:
             st.write("**5. Choose Strategy Algorithm**")
             st.segmented_control("Strategy Algorithm Type", options=["All", "Trend Following", "Mean Reversion", "Breakout", "Momentum", "Swing Trading", "Scalping", "Volatility-Based", "ML Model"], default="All", disabled=True)
-            algorithm = st.selectbox("Trading Strategies", options=["Bollinger Bands", "Exponential Moving Average (EMA) crossover", "RSI"])
+            strategy = st.selectbox("Trading Strategies", options=["Bollinger Bands", "Bollinger RSI Volume Surge", "Exponential Moving Average (EMA) crossover", "RSI"])
 
             st.write("**Strategy Params**")
-            strategy_params_dict = {}
-            if algorithm == "Bollinger Bands":
-                window = st.number_input("Window Size", value=20, min_value=1, max_value=1000)
-                st_dev = st.number_input("Standard Deviation", value=2.0, min_value=0.0, max_value=4.0)
-                strategy_params_dict["window"] = window
-                strategy_params_dict["std_dev"] = st_dev
-
-            elif algorithm == "Exponential Moving Average (EMA) crossover":
-                short_window = st.number_input("Short Window Size", value=10, min_value=1, max_value=1000)
-                long_window = st.number_input("Long Window Size", value=50, min_value=1, max_value=1000)
-                strategy_params_dict["short_window"] = short_window
-                strategy_params_dict["long_window"] = long_window
-            elif algorithm == "RSI":
-                rsi_period = st.number_input("RSI Period", value=14, min_value=1, max_value=100)
-                buy_threshold = st.number_input("Buy Threshold", value=30, min_value=1, max_value=1000)
-                sell_threshold = st.number_input("Sell Threshold", value=70, min_value=1, max_value=1000)
-                strategy_params_dict["rsi_period"] = rsi_period
-                strategy_params_dict["buy_threshold"] = buy_threshold
-                strategy_params_dict["sell_threshold"] = sell_threshold
-            else:
-                st.warning("Invalid algorithm selected.", icon=":material/warning:")
-            st.button("Strategy Parameters LLM Advisor", icon=":material/manufacturing:",disabled=True)
+            strategy_params_dict = strategy_params_form(strategy)
             st.divider()
             st.caption("Number of trades (pair of BUY-SELL orders) before the algorithm stops. The larger this value, the more the algorithm will run for.")
             trades_num = st.number_input("Number of trades", min_value=1, max_value=10, value=2, step=1)
@@ -110,7 +89,7 @@ if st.session_state["available_exchange_apis"]:
         if time_interval is None:
             st.warning("No **time interval** provided.", icon=":material/warning:")
             valid_request_flag = False
-        if algorithm is None:
+        if strategy_params_dict is None:
             st.warning("No **strategy algorithm** provided.", icon=":material/warning:")
             valid_request_flag = False
 
@@ -123,7 +102,7 @@ if st.session_state["available_exchange_apis"]:
         if valid_request_flag:
             if st.button("Initiate Strategy", key="deploy_strategy_button", type="primary", icon=":material/rocket_launch:"):
                 with st.spinner("Deploying Strategy"):
-                    res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict)
+                    res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy, trades_num, strategy_params_dict)
                 if res is not None:
                     st.success("Strategy has been successfully deployed.", icon=":material/rocket_launch:")
                     st.toast("Strategy has been successfully deployed.", icon="🚀")
