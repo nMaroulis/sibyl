@@ -87,13 +87,14 @@ if st.session_state["available_exchange_apis"]:
             st.pills("Order Type", options=["Market", "Limit"], default="Market", disabled=True)
             c6, c7, c8 = st.columns(3)
             with c6:
-                st.number_input("Maximum **Slippage** Percentage (%)", min_value=0.0, max_value=100.0, value=1.0, disabled=True)
+                st.number_input("Maximum Execution Price **Slippage** Percentage (%)", min_value=0.0, max_value=100.0, value=1.0, disabled=True)
             with c7:
                 st.number_input("**Stop-Loss** Percentage (%)", min_value=0.0, max_value=100.0, value=0.0, disabled=True)
             with c8:
                 st.number_input("**Take-Profit** Percentage (%)", min_value=0.0, max_value=100.0, value=0.0, disabled=True)
         st.divider()
-        st.caption("The **Backtesting** will evaluate the effectiveness of the selected trading strategy by running it against historical data to see how it would perform. The **evaluation results** will be shown.")
+        st.caption("The **Backtesting** will evaluate the effectiveness of the selected trading strategy by running it against historical data to see how it would perform. "
+                   "The **evaluation results**  and a **plot** with the orders placed by the algorithm will be shown.")
         valid_request_flag = True
         if quote_asset is None:
             st.warning("No **quote asset** provided.", icon=":material/warning:")
@@ -123,14 +124,18 @@ if st.session_state["available_exchange_apis"]:
                                             trades_num,
                                             dataset_size, strategy_params_dict, True)
                     if res is not None:
-                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Backtesting Evaluation Metrics</h4>")
+                        st.divider()
+                        st.html("<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Backtesting Results</h3>")
+                        st.caption("Currently Backtesting doesn't support **Simulated Order Execution**, **Slippage simulation**, **Position & Risk management** and  **Trading Fees** (~0.1%)")
+                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>1. Backtesting Evaluation Metrics</h4>")
                         if len(res["metrics"]) > 0:
                             backtest_evaluation_results(res["metrics"])
                         else:
                             st.warning("No metrics available since no BUY or SELL orders were made by the strategy.", icon=":material/troubleshoot:")
-                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategy Action Plot</h4>")
+                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>2. Strategy Action Plot</h4>")
                         st.caption("The algorithm might have decided more BUY, SELL order in between that are invalid due to the fact that two or more consecutive BUY or SELL orders are not allowed.")
                         static_strategy_plot(pd.DataFrame(res["logs"]), True)
+                        st.write("Deploy Strategy below 👇👇")
                     else:
                         st.error("Failed to get Backtesting results. See logs for error.", icon=":material/report:")
 
