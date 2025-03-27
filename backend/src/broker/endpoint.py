@@ -143,22 +143,27 @@ def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
+from fastapi.encoders import jsonable_encoder
 
 @router.post("/strategy/backtest/start")
-def run_strategy_backtest(strategy_params: StrategyParams) -> Dict[str, Any]: # TODO Implement
+def run_strategy_backtest(strategy_params: StrategyParams) -> Dict[str, Any]:
 
-    client = ExchangeClientFactory.get_client(strategy_params.exchange)
-    strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
-    symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
-    backtester = Backtester(strategy, client, symbol, strategy_params.time_interval)
-    logs = backtester.run_backtest()
+    try:
+        client = ExchangeClientFactory.get_client(strategy_params.exchange)
+        strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
+        symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
+        backtester = Backtester(strategy, client, symbol, strategy_params.time_interval)
+        logs = backtester.run_backtest()
 
-    if logs and len(logs) > 0:
-        evaluator = Evaluator(logs)
-        metrics = evaluator.evaluate()
-        return {"metrics": metrics}
-    else:
-        raise HTTPException(status_code=500, detail="Empty Logs")
+        if logs and len(logs) > 0:
+            evaluator = Evaluator(logs)
+            metrics = evaluator.evaluate()
+            return {"metrics": metrics, "logs": jsonable_encoder(logs)}
+        else:
+            raise HTTPException(status_code=500, detail="Empty Logs")
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/strategy/metadata")

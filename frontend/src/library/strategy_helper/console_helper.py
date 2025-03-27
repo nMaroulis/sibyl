@@ -240,6 +240,9 @@ def show_evaluation_metrics(strategy_id: str) -> None:
             </style>"""
         html_txt += """<div class="evaluation-metrics-container">"""
         for key, value in strategy_evaluation["metrics"].items():
+            key = key.replace("_", " ")
+            if key == "win rate":
+                value = f"{round(value, 2)}%"
             html_txt += f"""<div class="evaluation-metric"><span class="evaluation-metric-name">{key}:</span> <span class="evaluation-metric-value">{value}</span></div>"""
         html_txt += """</div>"""
         st.html(html_txt)

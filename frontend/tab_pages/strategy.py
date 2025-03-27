@@ -1,11 +1,13 @@
+import pandas as pd
 import streamlit as st
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.src.library.overview_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.strategy_helper.launcher_helper import get_strategy_instructions, strategy_params_form
+from frontend.src.library.strategy_helper.launcher_helper import get_strategy_instructions, strategy_params_form, backtest_evaluation_results
 from frontend.src.library.ui_elements import col_style2
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 from frontend.src.library.strategy_helper.client import post_strategy, get_available_strategies
+from frontend.src.library.strategy_helper.console_helper import static_strategy_plot
 
 
 fix_page_layout('strategy')
@@ -110,6 +112,7 @@ if st.session_state["available_exchange_apis"]:
             valid_request_flag = False
 
         if valid_request_flag:
+            # BACKTESTING
             if time_interval == "15s":
                 st.warning("Backtesting is not currently available for the **15 second interval**", icon=":material/warning:")
             else:
@@ -119,8 +122,19 @@ if st.session_state["available_exchange_apis"]:
                         res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy,
                                             trades_num,
                                             dataset_size, strategy_params_dict, True)
-                    st.write(res)
+                    if res is not None:
+                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Backtesting Evaluation Metrics</h4>")
+                        if len(res["metrics"]) > 0:
+                            backtest_evaluation_results(res["metrics"])
+                        else:
+                            st.warning("No metrics available since no BUY or SELL orders were made by the strategy.", icon=":material/troubleshoot:")
+                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategy Action Plot</h4>")
+                        st.caption("The algorithm might have decided more BUY, SELL order in between that are invalid due to the fact that two or more consecutive BUY or SELL orders are not allowed.")
+                        static_strategy_plot(pd.DataFrame(res["logs"]), True)
+                    else:
+                        st.error("Failed to get Backtesting results. See logs for error.", icon=":material/report:")
 
+            # STRATEGY DEPLOYMENT
             if st.button("Initiate Strategy", key="deploy_strategy_button", type="primary", icon=":material/rocket_launch:", use_container_width=True):
                 with st.spinner("Deploying Strategy"):
                     res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy, trades_num, dataset_size, strategy_params_dict)

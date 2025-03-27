@@ -23,8 +23,24 @@ class Evaluator:
             trade_history (List[Dict[str, Any]]): A list of executed trades with 'order', 'price', 'amount'.
             risk_free_rate (float): The risk-free rate used in the Sharpe ratio calculation.
         """
-        self.trade_history = trade_history
+        self.trade_history = self.clean_trade_dataset(trade_history)
         self.risk_free_rate = risk_free_rate
+
+
+    @staticmethod
+    def clean_trade_dataset(trade_history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Removes all HOLD and INVALID orders and keeps only BUY and SELL orders.
+
+        Args:
+            trade_history (List[Dict[str, Any]]): A list of executed trades, including all actions.
+
+        Returns:
+            List[Dict[str, Any]]: A list of cleaned trades with only BUY and SELL orders.
+        """
+        filtered_trades = [trade for trade in trade_history if trade.get("order") in {"BUY", "SELL"}]
+        return filtered_trades
+
 
     def calculate_profit(self) -> float:
         """
