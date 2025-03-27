@@ -6,7 +6,6 @@ from frontend.src.library.strategy_helper.launcher_helper import get_strategy_in
 from frontend.src.library.ui_elements import col_style2
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 from frontend.src.library.strategy_helper.client import post_strategy, get_available_strategies
-import time
 
 
 fix_page_layout('strategy')
@@ -29,7 +28,6 @@ if st.session_state["available_exchange_apis"]:
             st.write("**1. Exchange**")
             exchange = st.selectbox('Choose Exchange', options=st.session_state["available_exchange_apis"])
 
-        # show available balance
         c0, c1 = st.columns(2)
         with c0:
             balance = fetch_account_spot(exchange.lower().replace(" ", "_"))
@@ -83,9 +81,17 @@ if st.session_state["available_exchange_apis"]:
             st.caption("**(7.2)** The **Kline dataset size** indicates the size of the dataset that the strategy algorithm uses as input. "
                        "This must depend on the selected strategy. For example if 200 is chosen for '1m' interval, the strategy will consider the last 200 minute klines to make its action decision.")
             dataset_size = st.number_input("Dataset Size", min_value=1, max_value=1000, value=400, step=1, disabled=True)
-
+            st.caption("**(7.3)** Trade order Parameters")
+            st.pills("Order Type", options=["Market", "Limit"], default="Market", disabled=True)
+            c6, c7, c8 = st.columns(3)
+            with c6:
+                st.number_input("Maximum **Slippage** Percentage (%)", min_value=0.0, max_value=100.0, value=1.0, disabled=True)
+            with c7:
+                st.number_input("**Stop-Loss** Percentage (%)", min_value=0.0, max_value=100.0, value=0.0, disabled=True)
+            with c8:
+                st.number_input("**Take-Profit** Percentage (%)", min_value=0.0, max_value=100.0, value=0.0, disabled=True)
         st.divider()
-        st.caption("A **Backtesting** will evaluate the effectiveness of a trading strategy by running it against historical data to see how it would perform. The **evaluation results** will be shown, along with the option to deploy it.")
+        st.caption("The **Backtesting** will evaluate the effectiveness of the selected trading strategy by running it against historical data to see how it would perform. The **evaluation results** will be shown.")
         valid_request_flag = True
         if quote_asset is None:
             st.warning("No **quote asset** provided.", icon=":material/warning:")
@@ -103,16 +109,14 @@ if st.session_state["available_exchange_apis"]:
             st.warning("No **strategy algorithm** provided.", icon=":material/warning:")
             valid_request_flag = False
 
-        # placeholder = st.empty() # TODO - examine here to remove buttons.
 
-        backtesting_button = st.button("Run Backtesting", key="backtesting_button", type="primary", icon=":material/query_stats:", disabled=True, use_container_width=True)
-        # if backtesting_button:
-        # post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, algorithm, trades_num, strategy_params_dict, True)
+        if st.button("Run Backtesting", key="backtesting_button", type="primary", icon=":material/query_stats:", use_container_width=True):
+            st.warning("Not yet implemented.", icon=":material/warning:")
 
         if valid_request_flag:
             if st.button("Initiate Strategy", key="deploy_strategy_button", type="primary", icon=":material/rocket_launch:", use_container_width=True):
                 with st.spinner("Deploying Strategy"):
-                    res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy, trades_num, strategy_params_dict)
+                    res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy, trades_num, dataset_size, strategy_params_dict)
                 if res is not None:
                     st.success("Strategy has been successfully deployed.", icon=":material/rocket_launch:")
                     st.toast("Strategy has been successfully deployed.", icon="🚀")

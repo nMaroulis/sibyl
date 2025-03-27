@@ -21,7 +21,9 @@ class BollingerBandsStrategy(BaseStrategy):
         super().__init__()
         self.window = window
         self.std_dev = std_dev
+
         self.name = "Bollinger Bands"
+        self.is_price_only = True
 
 
     def calculate_bollinger_bands(self) -> None:

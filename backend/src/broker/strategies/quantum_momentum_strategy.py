@@ -23,7 +23,9 @@ class QuantumMomentumStrategy(BaseStrategy):
         self.cmf_window = cmf_window
         self.tsi_long = tsi_long
         self.tsi_short = tsi_short
+
         self.name = "Quantum Momentum Strategy"
+        self.is_price_only = False
 
 
     def calculate_indicators(self, data: pd.DataFrame) -> None:
@@ -38,15 +40,15 @@ class QuantumMomentumStrategy(BaseStrategy):
         data["MACD_Signal"] = data["MACD"].ewm(span=self.macd_signal, adjust=False).mean()
 
         # ATR Calculation for Stop-Loss
-        high_low = data["high_price"] - data["low_price"]
-        high_close = np.abs(data["high_price"] - data["close_price"].shift())
-        low_close = np.abs(data["low_price"] - data["close_price"].shift())
+        high_low = data["high"] - data["low"]
+        high_close = np.abs(data["high"] - data["close_price"].shift())
+        low_close = np.abs(data["low"] - data["close_price"].shift())
         tr = np.maximum.reduce([high_low, high_close, low_close])
         data["ATR"] = pd.Series(tr).rolling(window=self.atr_window).mean()
 
         # CMF (Chaikin Money Flow) Calculation
-        money_flow_mult = ((data["close_price"] - data["low_price"]) - (data["high_price"] - data["close_price"])) / (
-                    data["high_price"] - data["low_price"] + 1e-9)
+        money_flow_mult = ((data["close_price"] - data["low"]) - (data["high"] - data["close_price"])) / (
+                    data["high"] - data["low"] + 1e-9)
         money_flow_vol = money_flow_mult * data["volume"]
         data["CMF"] = money_flow_vol.rolling(window=self.cmf_window).sum() / data["volume"].rolling(
             window=self.cmf_window).sum()

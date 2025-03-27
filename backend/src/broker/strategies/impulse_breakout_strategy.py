@@ -45,7 +45,9 @@ class ImpulseBreakoutStrategy(BaseStrategy):
         self.macd_signal = macd_signal
         self.adx_window = adx_window
         self.volume_factor = volume_factor
+
         self.name = "Impulse Breakout Strategy"
+        self.is_price_only = False
 
 
     def calculate_indicators(self, data: pd.DataFrame) -> None:
@@ -119,3 +121,6 @@ class ImpulseBreakoutStrategy(BaseStrategy):
         return self.data[["timestamp", "close_price", "upper_band", "lower_band", "RSI",
                           "EMA_Short", "EMA_Long", "MACD", "MACD_Signal", "ADX",
                           "Volume_Spike", "signal"]]
+
+
+# 96049.3711205 USDT

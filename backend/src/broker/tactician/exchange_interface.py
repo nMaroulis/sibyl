@@ -66,24 +66,20 @@ class TacticianExchangeInterface:
             return min_notional
 
 
-    def get_last_market_price(self, symbol: str, latest_dataset_price: float) -> Dict[str, Any]:
+    def get_last_market_price(self, symbol: str) -> pd.DataFrame | None:
         """
         Calls the Exchange API to get the latest price ticker.
 
         Args:
             symbol (str): The crypto pair symbol.
-            latest_dataset_price (float): Latest price in the dataset.
         """
         try:
             latest_price = self.exchange_client.get_pair_market_price(symbol)
+            current_timestamp_ms = int(time.time() * 1000)
+            return pd.DataFrame({"timestamp": current_timestamp_ms, "close_price": latest_price})
         except Exception as e:
             print("TacticianExchangeInterface :: get_last_market_price", e)
-            latest_price = None
-
-        if latest_price is None:
-            latest_price = latest_dataset_price
-        current_timestamp_ms = int(time.time() * 1000)
-        return {"timestamp": current_timestamp_ms, "close_price": latest_price}
+            return None
 
 
     def get_last_kline(self, symbol: str, interval: str) -> pd.DataFrame | None:

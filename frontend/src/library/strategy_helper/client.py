@@ -4,7 +4,7 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 from streamlit import cache_data
 
 
-def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_asset: str, time_interval: str, strategy: str, num_trades: int, params: Dict[str, Any], backtesting: bool = False) -> Dict[str, Any] | None:
+def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_asset: str, time_interval: str, strategy: str, num_trades: int, dataset_size: int, params: Dict[str, Any], backtesting: bool = False) -> Dict[str, Any] | None:
 
     if strategy.startswith("[Sibyl] "):
         strategy = strategy.replace("[Sibyl] ", "")
@@ -18,6 +18,7 @@ def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_ass
         "time_interval": time_interval,
         "strategy": strategy,
         "num_trades": num_trades,
+        "dataset_size": dataset_size,
         "params": params
     }
     url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/backtesting/start" if backtesting else f"{BACKEND_SERVER_ADDRESS}/broker/strategy/start"

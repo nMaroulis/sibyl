@@ -17,9 +17,11 @@ class BaseStrategy(ABC):
         Vars:
             data (pd.DataFrame): A DataFrame containing price data with a 'close' column.
             name (str): The name of the strategy.
+            is_price_only (bool): if the strategy requires price only or OHLCV data.
         """
         self.data = None
         self.name = "base"
+        self.is_price_only = False
 
 
     @abstractmethod

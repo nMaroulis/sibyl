@@ -24,6 +24,8 @@ class RSIStrategy(BaseStrategy):
         self.buy_threshold = buy_threshold
         self.sell_threshold = sell_threshold
         self.name = "RSI"
+        self.is_price_only = True
+
 
     def calculate_rsi(self) -> pd.Series:
         """

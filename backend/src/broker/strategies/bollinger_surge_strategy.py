@@ -33,7 +33,10 @@ class BollingerSurgeStrategy(BaseStrategy):
         self.ema_short = ema_short
         self.ema_long = ema_long
         self.volume_factor = volume_factor
+
         self.name = "Bollinger Surge Strategy"
+        self.is_price_only = False
+
 
     def calculate_indicators(self, data: pd.DataFrame) -> None:
         """
