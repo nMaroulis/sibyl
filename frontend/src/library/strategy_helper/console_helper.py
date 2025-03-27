@@ -191,8 +191,6 @@ def show_evaluation_metrics(strategy_id: str) -> None:
         st.write("The total count of trades executed.")
         st.latex(r"\text{Number of Trades} = \text{Winning Trades} + \text{Losing Trades}")
 
-
-
     strategy_evaluation = get_strategy_evaluation(strategy_id)
     if strategy_evaluation is None or len(strategy_evaluation['metrics']) == 0:
         st.warning("No evaluation metrics to show. No orders have been executed.", icon=":material/smart_toy:")

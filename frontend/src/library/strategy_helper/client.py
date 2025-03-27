@@ -21,7 +21,7 @@ def post_strategy(exchange: str, quote_asset: str, quote_amount: float, base_ass
         "dataset_size": dataset_size,
         "params": params
     }
-    url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/backtesting/start" if backtesting else f"{BACKEND_SERVER_ADDRESS}/broker/strategy/start"
+    url = f"{BACKEND_SERVER_ADDRESS}/broker/strategy/backtest/start" if backtesting else f"{BACKEND_SERVER_ADDRESS}/broker/strategy/start"
 
     response = requests.post(url=url, json=payload)
 

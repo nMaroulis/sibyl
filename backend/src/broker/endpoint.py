@@ -9,6 +9,7 @@ from backend.src.broker.tactician.exchange_interface import TacticianExchangeInt
 from database.strategy.strategy_db_client import StrategyDBClient
 from backend.src.broker.evaluator.evaluator import Evaluator
 from backend.src.broker.tactician.strategy_runtime_manager import StrategyRuntimeHandler
+from backend.src.broker.backtester.backtester import Backtester
 import time
 
 
@@ -122,11 +123,6 @@ class StrategyParams(BaseModel):
     params: Dict[str, Any]  # Holds strategy-specific parameters
 
 
-@router.post("/strategy/backtesting/start")
-def run_strategy_backtesting(strategy_params: StrategyParams) -> Dict[str, Any]: # TODO Implement
-    return {}
-
-
 @router.post("/strategy/start")
 def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
     try:
@@ -146,6 +142,23 @@ def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/strategy/backtest/start")
+def run_strategy_backtest(strategy_params: StrategyParams) -> Dict[str, Any]: # TODO Implement
+
+    client = ExchangeClientFactory.get_client(strategy_params.exchange)
+    strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
+    symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
+    backtester = Backtester(strategy, client, symbol, strategy_params.time_interval)
+    logs = backtester.run_backtest()
+
+    if logs and len(logs) > 0:
+        evaluator = Evaluator(logs)
+        metrics = evaluator.evaluate()
+        return {"metrics": metrics}
+    else:
+        raise HTTPException(status_code=500, detail="Empty Logs")
 
 
 @router.get("/strategy/metadata")

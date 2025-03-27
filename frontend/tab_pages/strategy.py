@@ -56,7 +56,7 @@ if st.session_state["available_exchange_apis"]:
         with c3:
             st.write("**5. Time interval**")
             st.caption("The strategy runs in a loop on a steady time interval. Based on the selected interval, the algorithm will focus on the short-term (**High-Frequency Trading**) or long-term (**Swing Trading**).")
-            time_interval = st.pills("Time Interval", options=["1s", "15s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="15s")
+            time_interval = st.pills("Time Interval", options=["1s", "15s", "1m", "5m", "15m", "30m", "1h", "4h", "12h", "1d"], default="1m")
             if time_interval is None:
                 st.warning("No time interval selected.", icon=":material/warning:")
             else:
@@ -109,11 +109,18 @@ if st.session_state["available_exchange_apis"]:
             st.warning("No **strategy algorithm** provided.", icon=":material/warning:")
             valid_request_flag = False
 
-
-        if st.button("Run Backtesting", key="backtesting_button", type="primary", icon=":material/query_stats:", use_container_width=True):
-            st.warning("Not yet implemented.", icon=":material/warning:")
-
         if valid_request_flag:
+            if time_interval == "15s":
+                st.warning("Backtesting is not currently available for the **15 second interval**", icon=":material/warning:")
+            else:
+                if st.button("Run Backtesting", key="backtesting_button", type="secondary", icon=":material/query_stats:",
+                             use_container_width=True):
+                    with st.spinner("Running Backtesting..."):
+                        res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy,
+                                            trades_num,
+                                            dataset_size, strategy_params_dict, True)
+                    st.write(res)
+
             if st.button("Initiate Strategy", key="deploy_strategy_button", type="primary", icon=":material/rocket_launch:", use_container_width=True):
                 with st.spinner("Deploying Strategy"):
                     res = post_strategy(exchange, quote_asset, quote_amount, base_asset, time_interval, strategy, trades_num, dataset_size, strategy_params_dict)
@@ -124,6 +131,8 @@ if st.session_state["available_exchange_apis"]:
                 else:
                     st.error("Failed to deploy strategy. See logs for error.", icon=":material/report:")
         else:
+            st.button("Run Backtesting", key="backtesting_button", type="primary", icon=":material/query_stats:",
+                      use_container_width=True, disabled=True)
             st.button("Initiate Strategy", type="primary", icon=":material/send:", disabled=True, use_container_width=True)
 
 else:
