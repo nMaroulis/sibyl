@@ -84,13 +84,8 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         with the relevant data or an error message in case of failure.
 
         **Response Dictionary:**
-        - "maker_commission" (int): The maker commission rate in basis points (BPS).
-        - "taker_commission" (int): The taker commission rate in basis points (BPS).
-        - "buyer_commission" (int): The commission rate applied when buying in basis points (BPS).
-        - "seller_commission" (int): The commission rate applied when selling in basis points (BPS).
-        - "can_trade" (bool): True if the account can trade.
-        - "can_deposit" (bool): True if the account can deposit funds.
-        - "can_withdraw" (bool): True if the account can withdraw funds.
+        - "maker_fee_rate" (float): The maker commission in decimal format
+        - "taker_commission" (float): The taker commission in decimal format
 
         **Exceptions:**
         - `ExchangeRequestException`: Raised if there is an issue with the API request.
@@ -99,7 +94,12 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
         **Returns:**
         - A dictionary with the account information or an error message.
         """
-        pass
+        endpoint = '/fees'
+        headers = self.generate_request_headers(endpoint)
+        response = requests.get(self.api_base_url + endpoint, headers=headers)
+        res_dict = response.json()
+        return {"maker_commission": float(res_dict["maker_fee_rate"])*100, "taker_commission": float(res_dict["taker_fee_rate"])*100, "buyer_commission": "N/A", "seller_commission": "N/A",
+                "can_trade": "N/A", "can_deposit": "N/A", "can_withdraw": "N/A"}
 
 
     def get_spot_balance(self, quote_asset_pair_price: str = None) -> Dict[str, Any]:
@@ -266,14 +266,14 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
             return None
 
 
-    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100, start_time: int = None, end_time: int = None) -> Optional[List[Dict[str, float]]]:
+    def get_klines(self, symbol: str, interval: str, limit: int, start_time: int = None, end_time: int = None) -> Optional[List[Dict[str, float]]]:
         """
         Fetches historical OHLCV data for a given symbol from the client.
 
         Args:
-            symbol (str): Trading pair symbol (e.g., "BTCUSDT"). Default is "BTCUSDT".
-            interval (str): Time interval for the price data (e.g., "1d", "1h"). Default is "1d".
-            limit (int): Number of historical records to fetch. Default is 100.
+            symbol (str): Trading pair symbol (e.g., "BTCUSDT").
+            interval (str): Time interval for the price data (e.g., "1d", "1h").
+            limit (int): Number of historical records to fetch.
             start_time (Optional[int]): Start time of historical records. Default is None.
             end_time (Optional[int]): End time of historical records. Default is None.
 

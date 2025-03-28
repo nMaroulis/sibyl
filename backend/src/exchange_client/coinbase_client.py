@@ -124,7 +124,7 @@ class CoinbaseClient(ExchangeAPIClient):
         """
         pass
 
-    def get_klines(self, symbol: str, interval: str = "1d", limit: int = 100, start_time: int = None, end_time: int = None) -> Optional[List[Dict[str, float]]]:
+    def get_klines(self, symbol: str, interval: str, limit: int, start_time: int = None, end_time: int = None) -> Optional[List[Dict[str, float]]]:
         """
         Fetches historical OHLCV data for a given symbol from the client.
 

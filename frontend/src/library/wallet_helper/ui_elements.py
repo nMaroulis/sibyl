@@ -242,19 +242,19 @@ def get_account_information(exchange: str) -> None:
         <div class="exchange-header">{exchange} Account Info</div>
         <div class="commission-item">
             <span class="label">Maker Commission:</span>
-            <span class="value">{data['maker_commission']} bps</span>
+            <span class="value">{data['maker_commission']} %</span>
         </div>
         <div class="commission-item">
             <span class="label">Taker Commission:</span>
-            <span class="value">{data['taker_commission']} bps</span>
+            <span class="value">{data['taker_commission']} %</span>
         </div>
         <div class="commission-item">
             <span class="label">Buyer Commission:</span>
-            <span class="value">{data['buyer_commission']} bps</span>
+            <span class="value">{data['buyer_commission']} %</span>
         </div>
         <div class="commission-item">
             <span class="label">Seller Commission:</span>
-            <span class="value">{data['seller_commission']} bps</span>
+            <span class="value">{data['seller_commission']} %</span>
         </div>
         <div class="trade-status">
             <span class="label">Can Trade:</span>
