@@ -43,15 +43,12 @@ if strategies:
             logs_df = pd.DataFrame(logs)
             # Stop, Pause Strategy
             status_change_options = True if df_to_show["status"].iloc[0] == "inactive" else False
-            col0, col1 = st.columns(2, gap="small")
-            with col0:
-                if st.button("Stop Strategy", type="primary", icon=":material/cancel:", disabled=status_change_options):
-                    with st.spinner("Stopping Strategy"):
-                        st.toast("Stopping Strategy...", icon=":material/cancel:")
-                        stop_strategy(strategy_id)
-                        st.rerun()
-            with col1:
-                st.button("Pause Strategy", type="secondary", icon=":material/pause_circle:", disabled=status_change_options)
+            if st.sidebar.button("Stop Strategy", type="primary", icon=":material/cancel:", disabled=status_change_options, use_container_width=True):
+                with st.spinner("Stopping Strategy"):
+                    st.toast("Stopping Strategy...", icon=":material/cancel:")
+                    stop_strategy(strategy_id)
+                    st.rerun()
+            st.sidebar.button("Pause Strategy", type="secondary", icon=":material/pause_circle:", disabled=status_change_options, use_container_width=True)
 
 
             if status_change_options:
@@ -73,8 +70,10 @@ if strategies:
                        "These actions are **HOLD** if no action is taken, **BUY** and **SELL**. If the BUY or SELL orders fail"
                        " due to an error or other condition is is denoted as **INVALID_BUY** and **INVALID_SELL**.")
 
-            hide_table = st.toggle("hide table", value=False)
-            if not hide_table:
+            hide_invalid = st.toggle("show only BUY/SELL orders", value=False)
+            if hide_invalid:
+                st.dataframe(logs_df[logs_df["order"].isin(["BUY", "SELL"])], use_container_width=True, hide_index=True)
+            else:
                 st.dataframe(logs_df, use_container_width=True, hide_index=True)
 
             st.divider()

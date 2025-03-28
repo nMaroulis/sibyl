@@ -374,7 +374,7 @@ def strategy_info_card(strategy_id: str, symbol:str, balance: float, time_interv
                 padding: 20px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 margin: 10px auto;
-                max-width: 800px;
+                max-width: 80%;
                 text-align: center;
                 font-family: 'Arial', sans-serif;
             }}
@@ -439,7 +439,7 @@ def strategy_info_card(strategy_id: str, symbol:str, balance: float, time_interv
                 <div class="metric-box">Trades Limit: {trades_limit}</div>
             </div>
             <div class="strategy-info">Strategy: <b>{strategy_name}</b></div>
-            <div class="strategy-info">Deployed at: {created_at}</div>
+            <div class="strategy-info">Deployed at: <b>{created_at}</b></div>
             <div class="strategy-info status-container">
                 <div class="status-indicator"></div>
                 Status: {status}
