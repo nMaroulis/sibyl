@@ -36,9 +36,10 @@ Tune and deploy trading strategies and monitor their performance through a real-
 
 - Currently supported trading algorithm:
   - Generic strategy algorithms: Bollinger Bands, RSI and EMA crossover
-  - Sibyl advanced custom strategy algorithms: **Bollinger Surge*, **Impulse Breakout** and **Quantum Momentum**.
+  - Sibyl advanced custom strategy algorithms: **Bollinger Surge**, **Impulse Breakout** and **Quantum Momentum**.
 - Customize the parameters for each algorithm and choose the desired market you want to deploy it.
-- Monitor in real-time the performance of the algorithm
+- **Backtesting** for each strategy before it is deployed. Get strategy performance metrics and plots on historic data.
+- ```Strategy Console```: Monitor in real-time the performance of the algorithm
   - Logs Table
   - Evaluation metrics (profit ratio, sharpe ratio, drawdown, sortino and more..)
   - Real-time Line plot where the actions of the algorithm are shown.
@@ -47,6 +48,7 @@ Modules:
 - Strategies: All the classes that implement a strategy logic. Inherit the ```BaseStrategy``` class
 - ```Tactician```: Takes a Strategy as input and is responsible for running it. It is run in a loop, where the interval is based on the strategy interval. Uses the ```TacticianExchangeInterface``` to communicate with the Exchange API clients.
 - ```Evaluator```: Takes as inputs the strategy logs and calculates the Evaluation metrics.
+- ```Backtester```: Aggregates historical data and evaluates the strategies on them.
 
 TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
 

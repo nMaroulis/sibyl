@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.overview_helper.navigation import api_status_check
+from frontend.src.library.settings_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook, time_in_force_instructions
 from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price, submit_order

@@ -1,5 +1,5 @@
-from frontend.src.library.settings_helper.html_elements import status_card, status_card_style, status_card_header
-from streamlit import columns, html, session_state
+from frontend.src.library.settings_helper.html_elements import status_card, status_card_style
+from streamlit import html, session_state
 from frontend.src.library.settings_helper.client import fetch_apis_status
 """
 Four states of Status
@@ -73,3 +73,26 @@ def show_homepage_status_cards():
     html_txt += """</div>"""
     html(html_txt)
     return
+
+
+def api_status_check() -> None:
+    if "api_status_check" not in session_state:
+        status_json = fetch_apis_status("exchanges")
+        status_list = list(status_json.values())
+        session_state["binance_api_status"] = status_list[0]
+        session_state["binance_testnet_api_status"] = status_list[1]
+        session_state["kraken_api_status"] = status_list[2]
+        session_state["coinbase_api_status"] = status_list[3]
+        session_state["coinbase_sandbox_api_status"] = status_list[4]
+
+        session_state["available_exchange_apis"] = []
+        if session_state["binance_api_status"] == "Active":
+            session_state["available_exchange_apis"].append("Binance")
+        if session_state["binance_testnet_api_status"] == "Active":
+            session_state["available_exchange_apis"].append("Binance Testnet")
+        if session_state["kraken_api_status"] == "Active":
+            session_state["available_exchange_apis"].append("Kraken")
+        if session_state["coinbase_api_status"] == "Active":
+            session_state["available_exchange_apis"].append("Coinbase")
+        if session_state["coinbase_sandbox_api_status"] == "Active":
+            session_state["available_exchange_apis"].append("Coinbase Sandbox")

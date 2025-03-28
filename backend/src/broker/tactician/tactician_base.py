@@ -8,6 +8,7 @@ import os
 import pandas as pd
 from database.strategy.strategy_db_client import StrategyDBClient
 from backend.src.broker.tactician.exchange_interface import TacticianExchangeInterface
+from numpy import isnan
 
 
 class Tactician:
@@ -237,7 +238,10 @@ class Tactician:
                 res = self.execute_trade(latest_signal)
                 if res is None: # order failed
                     latest_signal = f"INVALID_{latest_signal}"
+
             # Add log to the DB
+            if isnan(latest_price):  # NaN will make json logs fail
+                latest_signal = signals.iloc[-2]["close_price"]
             self.db_client.add_log(strategy_id, int(timestamp), latest_price, latest_signal)
             # Wait before checking again
             time.sleep(interval)

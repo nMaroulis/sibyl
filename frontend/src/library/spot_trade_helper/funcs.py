@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.overview_helper.client import fetch_account_spot
+from frontend.src.library.wallet_helper.client import fetch_account_spot
 from frontend.src.library.spot_trade_helper.client import post_spot_trade, fetch_minimum_trade_value, fetch_asset_market_price
 from typing import Dict, Any
 
@@ -20,7 +20,7 @@ def get_account_balance(quote_asset: str, quantity: float, market_price: float) 
     account_balance_key: str = f"{st.session_state['trade_exchange_api'].lower().replace(" ", "_")}_account_balance"
     if account_balance_key not in st.session_state:  # if account balance calculated
         with st.spinner("Fetching account balance..."):
-            account_balance: Dict[str, Any] = fetch_account_spot(st.session_state['trade_exchange_api'].lower().replace(" ", "_"), None)
+            account_balance: Dict[str, Any] = fetch_account_spot(st.session_state['trade_exchange_api'], None)
             st.session_state[account_balance_key] = {asset: price["free"] for asset, price in
                                                      account_balance["spot_balances"].items()}
 

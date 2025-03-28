@@ -1,16 +1,14 @@
 import streamlit as st
-from frontend.src.library.overview_helper.funcs import get_wallet_balances, get_logo_header, populate_session_state
 from frontend.src.library.client import check_backend_connection, check_exchange_api_connection
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.db.db_connector import fetch_fields
 from frontend.src.library.settings_helper.navigation import show_homepage_status_cards
-from frontend.src.library.overview_helper.navigation import api_status_check
-from frontend.src.library.wallet_helper.ui_elements import get_spot_balance_wallet_table
+from frontend.src.library.settings_helper.navigation import api_status_check
+from frontend.src.library.wallet_helper.ui_elements import get_spot_balance_wallet_table, get_logo_header, get_pie_chart
+
 
 fix_page_layout("Sibyl", '3.8rem')
 get_logo_header()
 st.write("Welcome to Sibyl, the current page shows the wallet balances from all connected exchange accounts.")
-populate_session_state()
 
 st.session_state['backend_status'] = check_backend_connection()
 
@@ -37,8 +35,10 @@ if st.session_state['backend_status'] == 'Active':  # if connection with backend
         st.link_button("Go to Settings", "http://localhost:8501/settings", use_container_width=True, type="tertiary",
                        icon=":material/settings:")
     else:
+        st.caption("You can choose a Quote asset below and get the value of each Base asset in your wallet in the Quote Asset.")
         quote_asset = st.pills("Choose quote asset:", options=["USDT", 'USD', "EUR", "USDC"], default=None)
-        # get_wallet_balances(exchange_api, quote_asset)
         get_spot_balance_wallet_table(exchange_api, quote_asset)
+        if quote_asset is not None:
+            get_pie_chart(exchange_api, quote_asset)
 else:
     st.error("Connection to Backend Server failed. Please visit the Settings Tab to set a **IP** and **PORT**, or check start application manually via the **main.py** script")
