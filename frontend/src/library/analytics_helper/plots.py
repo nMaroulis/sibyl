@@ -84,7 +84,7 @@ def price_history_plot(exchange_api: str, pair_symbol: str, time_int: str, time_
         "Volume": float(entry[5]),
         "Number of trades": float(entry[8]),
     """
-    if df:
+    if df is not None:
         fig = None
         if plot_type == 'Line Plot':
             fig = Figure(data=Scatter(x=df['DateTime'], y=df['Price']))

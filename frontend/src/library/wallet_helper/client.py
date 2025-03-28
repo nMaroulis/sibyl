@@ -16,3 +16,14 @@ def fetch_account_spot(exchange: str, quote_asset_pair: str = None) -> Dict | No
         return response.json()
     else:
         return None
+
+
+@cache_resource(ttl=7200, show_spinner=False)
+def fetch_account_information(exchange: str) -> Dict | None:
+
+    url = f"{BACKEND_SERVER_ADDRESS}/accountant/account/information?exchange={exchange.lower().replace(' ', '_')}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None

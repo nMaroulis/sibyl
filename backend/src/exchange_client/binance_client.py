@@ -1,7 +1,7 @@
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 from database.api_keys_db_client import APIEncryptedDatabase
 from binance.client import Client
-from binance.exceptions import BinanceAPIException
+from binance.exceptions import BinanceAPIException, BinanceRequestException
 from binance.enums import ORDER_TYPE_STOP_LOSS, ORDER_TYPE_LIMIT, ORDER_TYPE_MARKET, ORDER_TYPE_STOP_LOSS_LIMIT, \
     ORDER_TYPE_TAKE_PROFIT_LIMIT, ORDER_TYPE_TAKE_PROFIT
 from typing import Optional, Dict, Any, List, Union
@@ -236,6 +236,43 @@ class BinanceClient(ExchangeAPIClient):
                 return {"status": "error", "message": res}
         except Exception as e:
             return {"status": "error", "message": str(e)}
+
+
+    def get_account_information(self) -> Dict[str, Any]:
+        """
+        Fetches the account information from the exchange, including the commission rates
+        (maker, taker, buyer, and seller) and the account's ability to perform trading,
+        depositing, and withdrawing operations.
+
+        The function is designed to work with various exchanges, and it returns a dictionary
+        with the relevant data or an error message in case of failure.
+
+        **Response Dictionary:**
+        - "maker_commission" (int): The maker commission rate in basis points (BPS).
+        - "taker_commission" (int): The taker commission rate in basis points (BPS).
+        - "buyer_commission" (int): The commission rate applied when buying in basis points (BPS).
+        - "seller_commission" (int): The commission rate applied when selling in basis points (BPS).
+        - "can_trade" (bool): True if the account can trade.
+        - "can_deposit" (bool): True if the account can deposit funds.
+        - "can_withdraw" (bool): True if the account can withdraw funds.
+
+        **Exceptions:**
+        - `ExchangeRequestException`: Raised if there is an issue with the API request.
+        - `ExchangeAPIException`: Raised if the API returns an error or unexpected response.
+
+        **Returns:**
+        - A dictionary with the account information or an error message.
+        """
+
+        try:
+            account_info = self.client.get_account()
+
+            return {"maker_commission": account_info["makerCommission"], "taker_commission": account_info["takerCommission"],
+                    "buyer_commission": account_info["buyerCommission"], "seller_commission": account_info["sellerCommission"], "can_trade": account_info["canTrade"], "can_deposit": account_info["canDeposit"], "can_withdraw": account_info["canWithdraw"]}
+        except BinanceRequestException as e:
+            return {"error": str(e)}
+        except BinanceAPIException as e:
+            return {"error": str(e)}
 
 
     def get_spot_balance(self, quote_asset_pair_price: str = None) -> Dict[str, Any]:

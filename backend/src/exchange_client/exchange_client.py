@@ -62,6 +62,34 @@ class ExchangeAPIClient(ABC):
 
 
     @abstractmethod
+    def get_account_information(self) -> Dict[str, Any]:
+        """
+        Fetches the account information from the exchange, including the commission rates 
+        (maker, taker, buyer, and seller) and the account's ability to perform trading, 
+        depositing, and withdrawing operations. 
+
+        The function is designed to work with various exchanges, and it returns a dictionary 
+        with the relevant data or an error message in case of failure.
+
+        **Response Dictionary:**
+        - "maker_commission" (int): The maker commission rate in basis points (BPS).
+        - "taker_commission" (int): The taker commission rate in basis points (BPS).
+        - "buyer_commission" (int): The commission rate applied when buying in basis points (BPS).
+        - "seller_commission" (int): The commission rate applied when selling in basis points (BPS).
+        - "can_trade" (bool): True if the account can trade.
+        - "can_deposit" (bool): True if the account can deposit funds.
+        - "can_withdraw" (bool): True if the account can withdraw funds.
+
+        **Exceptions:**
+        - `ExchangeRequestException`: Raised if there is an issue with the API request.
+        - `ExchangeAPIException`: Raised if the API returns an error or unexpected response.
+
+        **Returns:**
+        - A dictionary with the account information or an error message.
+        """
+        pass
+
+    @abstractmethod
     def get_spot_balance(self, quote_asset_pair_price: str = None) -> Dict[str, Any]:
         """
         Retrieve the user's spot balance, including free and locked amounts, along with current prices.

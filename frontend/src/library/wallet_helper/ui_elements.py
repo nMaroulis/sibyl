@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-from frontend.src.library.wallet_helper.client import fetch_account_spot
+from frontend.src.library.wallet_helper.client import fetch_account_spot, fetch_account_information
 from plotly.graph_objects import Figure, Pie
 import plotly.graph_objects as go
 
@@ -49,7 +49,7 @@ def get_spot_balance_wallet_table(exchange: str, quote_pair_asset: str = None) -
     with st.spinner('Fetching Wallet Balance Information...'):
 
         df = fetch_and_parse_spot_balance(exchange, quote_pair_asset)
-        if df:
+        if df is not None:
             if quote_pair_asset is None:
                 quote_pair_asset = "N/A"
 
@@ -147,7 +147,7 @@ def get_spot_balance_wallet_table(exchange: str, quote_pair_asset: str = None) -
 def get_pie_chart(exchange: str, quote_pair_asset: str = None) -> None:
 
     df = fetch_and_parse_spot_balance(exchange, quote_pair_asset)
-    if df:
+    if df is not None:
         pie_chart_labels = []
         pie_chart_values = []
         for _, row in df.iterrows():
@@ -181,3 +181,123 @@ def get_pie_chart(exchange: str, quote_pair_asset: str = None) -> None:
 def get_logo_header() -> None:
     st.html("""<div align="center">
       <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501" style="width:20em;padding-top:0;"></div>""")
+
+
+def get_account_information(exchange: str) -> None:
+
+    # Sample Binance commission data
+    data = fetch_account_information(exchange)
+
+    # HTML & CSS for stylish UI
+    html_code = f"""
+    <style>
+        .exchange-card {{
+            max-width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e1e1e, #262626);
+            border-radius: 15px;
+            box-shadow: 0px 4px 15px rgba(255, 215, 0, 0.3);
+            font-family: 'Arial', sans-serif;
+            color: #f0f0f0;
+            text-align: left;
+            margin: auto;
+        }}
+        .exchange-header {{
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.6);
+        }}
+        .commission-item {{
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 16px;
+        }}
+        .label {{
+            font-weight: bold;
+            color: #FFD700;
+        }}
+        .value {{
+            color: #f0f0f0;
+        }}
+        .trade-status {{
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 16px;
+        }}
+        .status-true {{
+            color: #32CD32; /* Green */
+            font-weight: bold;
+        }}
+        .status-false {{
+            color: #FF4500; /* Red */
+            font-weight: bold;
+        }}
+    </style>
+
+    <div class="exchange-card">
+        <div class="exchange-header">{exchange} Account Info</div>
+        <div class="commission-item">
+            <span class="label">Maker Commission:</span>
+            <span class="value">{data['maker_commission']} bps</span>
+        </div>
+        <div class="commission-item">
+            <span class="label">Taker Commission:</span>
+            <span class="value">{data['taker_commission']} bps</span>
+        </div>
+        <div class="commission-item">
+            <span class="label">Buyer Commission:</span>
+            <span class="value">{data['buyer_commission']} bps</span>
+        </div>
+        <div class="commission-item">
+            <span class="label">Seller Commission:</span>
+            <span class="value">{data['seller_commission']} bps</span>
+        </div>
+        <div class="trade-status">
+            <span class="label">Can Trade:</span>
+            <span class="{'status-true' if data['can_trade'] else 'status-false'}">{'✔ Yes' if data['can_trade'] else '✖ No'}</span>
+        </div>
+        <div class="trade-status">
+            <span class="label">Can Deposit:</span>
+            <span class="{'status-true' if data['can_deposit'] else 'status-false'}">{'✔ Yes' if data['can_deposit'] else '✖ No'}</span>
+        </div>
+        <div class="trade-status">
+            <span class="label">Can Withdraw:</span>
+            <span class="{'status-true' if data['can_withdraw'] else 'status-false'}">{'✔ Yes' if data['can_withdraw'] else '✖ No'}</span>
+        </div>
+    </div>
+    """
+
+    st.html(html_code)
+    with st.popover("What are these information?", icon=":material/contact_support:"):
+        instructions_markdown = """
+            ## 📌 Understanding Maker-Taker Fees & BPS  
+            
+            ### 🎯 What Are Maker & Taker Fees?  
+            
+            In cryptocurrency exchanges like Binance, trading fees are typically categorized as **maker** or **taker** fees:  
+            
+            - **Maker Fee** 🏗️: Applies when you add liquidity to the order book (e.g., placing a limit order that isn’t immediately matched).  
+            - **Taker Fee** ⚡: Applies when you remove liquidity from the order book (e.g., placing a market order that gets executed instantly).  
+            
+            💡 **Key Difference:**  
+            - Makers help **stabilize** prices by adding orders, often receiving lower fees.  
+            - Takers provide **instant** transactions but pay higher fees.  
+            
+            ---
+            
+            ### 📉 What Does BPS (Basis Points) Mean?  
+            
+            BPS, or **basis points**, is a unit used to describe **percentage-based fees** in finance and trading.  
+            - **1 BPS = 0.01%**  
+            - **100 BPS = 1%**  
+            
+            #### 🔢 Example:  
+            If a trading fee is **10 BPS**, it means:  
+            ```math
+            10 BPS = 10 × 0.01% = 0.10% fee per trade
+        """
+        st.markdown(instructions_markdown)
