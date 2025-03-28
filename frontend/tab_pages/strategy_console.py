@@ -2,7 +2,7 @@ import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.strategy_helper.client import get_strategy_metadata, get_strategy_logs, stop_strategy
 import pandas as pd
-from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count, strategy_plot_info
+from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count, strategy_plot_info, strategy_info_card
 
 
 fix_page_layout('strategy monitor')
@@ -32,8 +32,10 @@ if strategies:
     elif df_to_show.shape[0] == 1:
         st.divider()
         strategy_id = df_to_show["strategy_id"].iloc[0]
-        st.html(f"<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategy {strategy_id} Overview</h3>")
 
+
+        strategy_info_card(strategy_id=strategy_id, symbol=df_to_show["symbol"].iloc[0], balance=df_to_show["quote_amount"].iloc[0], time_interval=df_to_show["time_interval"].iloc[0], trades_limit= df_to_show["trades_limit"].iloc[0],
+                               strategy_name=df_to_show["strategy_name"].iloc[0], created_at=df_to_show["created_at"].iloc[0].strftime("%Y-%m-%d %H:%M:%S"), status=df_to_show["status"].iloc[0])
         # Get Logs Data
         logs = get_strategy_logs(strategy_id)
         if logs is not None and len(logs) > 0:

@@ -362,3 +362,88 @@ def strategy_plot_info() -> None:
         <span class="triangle_sell_invalid">&#9660;</span> <strong>Invalid SELL</strong>.
     </p>
     """)
+
+
+def strategy_info_card(strategy_id: str, symbol:str, balance: float, time_interval: str, trades_limit: int, strategy_name: str, created_at: str, status: str) -> None:
+    st.html(
+        f"""
+        <style>
+            .strategy-card {{
+                background-color: #f9f9f9;
+                border-radius: 10px;
+                padding: 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                margin: 10px auto;
+                max-width: 800px;
+                text-align: center;
+                font-family: 'Arial', sans-serif;
+            }}
+            .strategy-title {{
+                font-size: 24px;
+                font-weight: bold;
+                color: #333;
+                margin-bottom: 10px;
+            }}
+            .metrics-container {{
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                margin-bottom: 15px;
+            }}
+            .metric-box {{
+                background: white;
+                border-radius: 8px;
+                padding: 10px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                font-size: 16px;
+                font-weight: bold;
+                color: #444;
+            }}
+            .strategy-info {{
+                font-size: 14px;
+                color: #666;
+                margin-top: 5px;
+            }}
+            .status-container {{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: bold;
+            }}
+            .status-indicator {{
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background-color: {"#008000" if status == "ACTIVE" else "#FF0000"};
+                animation: {"pulse_card 1.5s infinite" if status == "ACTIVE" else "fade 2s infinite"};
+            }}
+            @keyframes pulse_card {{
+                0% {{ transform: scale(1); opacity: 0.8; }}
+                50% {{ transform: scale(1.2); opacity: 1; }}
+                100% {{ transform: scale(1); opacity: 0.8; }}
+            }}
+            @keyframes fade {{
+                0% {{ opacity: 0.3; }}
+                50% {{ opacity: 1; }}
+                100% {{ opacity: 0.3; }}
+            }}
+        </style>
+
+        <div class="strategy-card">
+            <div class="strategy-title">Strategy {strategy_id} Overview</div>
+            <div class="metrics-container">
+                <div class="metric-box">Market: {symbol}</div>
+                <div class="metric-box">Time Interval: {time_interval}</div>
+                <div class="metric-box">Balance: {balance}</div>
+                <div class="metric-box">Trades Limit: {trades_limit}</div>
+            </div>
+            <div class="strategy-info">Strategy: <b>{strategy_name}</b></div>
+            <div class="strategy-info">Deployed at: {created_at}</div>
+            <div class="strategy-info status-container">
+                <div class="status-indicator"></div>
+                Status: {status}
+            </div>
+        </div>
+        """
+    )
