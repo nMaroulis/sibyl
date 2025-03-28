@@ -100,15 +100,13 @@ class CoinbaseSandboxClient(ExchangeAPIClient):
                         if quote_asset_pair_price:
                             pair_price = self.get_pair_market_price(f"{account["currency"]}-{quote_asset_pair_price}")
                             if pair_price is None:
-                                pair_price = 1.0
+                                pair_price = 0.0
                         else:
                             pair_price = 0.0
-                        balances[account["currency"]] = {'free': round(float(account["balance"]), 4), 'locked': 0.0 , 'price': pair_price}
+                        balances[account["currency"]] = {'free': float(account["balance"]), 'locked': 0.0 , 'price': float(pair_price)}
 
                 res_json = {
                     'spot_balances': balances,
-                    'locked_earn_balances': {},
-                    'staked_balances': {}
                 }
                 return res_json
             else:

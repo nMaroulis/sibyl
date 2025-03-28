@@ -1,5 +1,5 @@
 from streamlit import metric, columns, error, cache_data, spinner, info, cache_resource, sidebar,\
-    code, session_state, plotly_chart, data_editor, column_config, toggle, html
+    code, session_state, plotly_chart, data_editor, column_config, toggle, html, write
 from frontend.src.library.overview_helper.client import fetch_account_spot
 from frontend.db.db_connector import fetch_fields
 from plotly.graph_objects import Figure, Pie, Layout
@@ -11,6 +11,7 @@ def get_wallet_balances(exchange_api: str, quote_asset: str = None):
     exchange_api = exchange_api.replace(' ', '_').lower()
     with spinner('Fetching Wallet Information'):
         data = fetch_account_spot(exchange_api, quote_asset)
+        write(data)
         wallet_list = []
         if data:
             if "error" in data:
@@ -56,7 +57,9 @@ def get_wallet_balances(exchange_api: str, quote_asset: str = None):
                     "TRX": "https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/DTNQWV2C3ZDRVMK6UTPUT73N3I.png",
                     "LINK": "https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/M2MXO2LRPNHXRLRGGKQW77CU3A.png",
                     "DOT": "https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/FCVVAWNXP5AXLP4IEVIQHD6XIY.png",
-                    "USDT": "https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/KTF6M73FKBACNI5JQ4S3EW7MRI.png"
+                    "USDT": "https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/KTF6M73FKBACNI5JQ4S3EW7MRI.png",
+                    "DOGE": "https://resources.cryptocompare.com/asset-management/26/1662541306654.png",
+                    "USDC": "https://resources.cryptocompare.com/asset-management/14/1728310128919.png"
                     }
 
                     wallet_list_df['icon'] = wallet_list_df['Asset'].map(icon_dict).fillna('https://cloudfront-us-east-1.images.arcpublishing.com/coindesk/IKNBTK7JKVEWHGGBKEQMN2HZMM.png')
@@ -70,7 +73,6 @@ def get_wallet_balances(exchange_api: str, quote_asset: str = None):
                     toggle('Hide Small Balances')
                     metric("Total Balance", f"{round(wallet_list_df['Amount in USDT'].sum(),2)} USDT")
                     html(""" </div>""")
-
                 with cols[1]:
                     html("<h6 style='text-align: left;margin-top:1em;margin-bottom:0;'></h6>")
 

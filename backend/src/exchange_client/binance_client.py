@@ -252,35 +252,40 @@ class BinanceClient(ExchangeAPIClient):
         if self.client is None:
             return {"error": "Invalid API credentials"}
         try:
-            account_info = self.client.get_account()
+            account_info = self.client.get_asset_balance()
             spot_balances = {}
-            locked_earn_balances, staked_balances = {}, {}
 
-            for asset in account_info['balances']:
+            for asset in account_info:
                 if float(asset['free']) > 0.0 or float(asset['locked']) > 0.0:
 
-                    if quote_asset_pair_price:
-                        pair_price = self.get_pair_market_price(asset['asset'] + quote_asset_pair_price)
-                        if pair_price is None:
-                            pair_price = 1.0
+                    # IN CASE OF LOCKED ASSET, in Binance it is denoted as LD+Asset_name
+                    if asset['asset'].startswith('LD'):  # or asset['asset'].startswith('ST'): # TODO Examine staked balance
+
+                        price = self.get_pair_market_price(f"{asset['asset'][2:]}{quote_asset_pair_price}") if quote_asset_pair_price else 0.0
+                        if price is None: price = 0.0
+                        balance_data = {
+                            'free': 0.0,
+                            'locked': float(asset['free']),
+                            'price': price
+                        }
+                        if asset['asset'][2:] in spot_balances.keys():
+                            spot_balances[asset['asset'][2:]]['locked'] += balance_data['locked']
+                        else:
+                            spot_balances[asset['asset'][2:]] = balance_data
                     else:
-                        pair_price = 0.0
-                    balance_data = {
-                        'free': float(asset['free']),
-                        'locked': float(asset['locked']),
-                        'price': pair_price
-                    }
-
-                    spot_balances[asset['asset']] = balance_data
-                    if asset['asset'].startswith('LD'):
-                        locked_earn_balances[asset['asset']] = balance_data
-                    if asset['asset'].startswith('ST'):
-                        staked_balances[asset['asset']] = balance_data
-
+                        price = self.get_pair_market_price(f"{asset['asset']}{quote_asset_pair_price}") if quote_asset_pair_price else 0.0
+                        if price is None: price = 0.0
+                        balance_data = {
+                            'free': float(asset['free']),
+                            'locked': float(asset['locked']),
+                            'price': price
+                        }
+                        if asset['asset'] in spot_balances.keys():
+                            spot_balances[asset['asset']]['free'] += balance_data['free']
+                        else:
+                            spot_balances[asset['asset']] = balance_data
             return {
                 'spot_balances': spot_balances,
-                'locked_earn_balances': locked_earn_balances,
-                'staked_balances': staked_balances
             }
         except BinanceAPIException as e:
             return {"error": str(e)}
