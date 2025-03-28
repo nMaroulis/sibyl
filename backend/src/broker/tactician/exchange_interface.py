@@ -76,9 +76,9 @@ class TacticianExchangeInterface:
         try:
             latest_price = self.exchange_client.get_pair_market_price(symbol)
             current_timestamp_ms = int(time.time() * 1000)
-            return pd.DataFrame({"timestamp": current_timestamp_ms, "close_price": latest_price})
+            return pd.DataFrame([{"timestamp": current_timestamp_ms, "close_price": latest_price}])
         except Exception as e:
-            print("TacticianExchangeInterface :: get_last_market_price", e)
+            print("TacticianExchangeInterface :: get_last_market_price :: ", e)
             return None
 
 

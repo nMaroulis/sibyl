@@ -415,8 +415,8 @@ def strategy_info_card(strategy_id: str, symbol:str, balance: float, time_interv
                 width: 12px;
                 height: 12px;
                 border-radius: 50%;
-                background-color: {"#008000" if status == "ACTIVE" else "#FF0000"};
-                animation: {"pulse_card 1.5s infinite" if status == "ACTIVE" else "fade 2s infinite"};
+                background-color: {"#008000" if status == "active" else "#FF0000"};
+                animation: {"pulse_card 1.5s infinite" if status == "active" else "fade 2s infinite"};
             }}
             @keyframes pulse_card {{
                 0% {{ transform: scale(1); opacity: 0.8; }}
