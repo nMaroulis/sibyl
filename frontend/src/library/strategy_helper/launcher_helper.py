@@ -1,4 +1,4 @@
-from streamlit import write, expander, popover, dialog, pills, number_input, warning, button, caption, columns, html
+from streamlit import write, expander, popover, dialog, pills, number_input, warning, button, caption, columns, html, markdown, latex
 import re
 from typing import Dict, Any
 
@@ -369,3 +369,87 @@ def backtest_evaluation_results(metrics: dict) -> None:
         html_txt += f"""<div class="evaluation-metric"><span class="evaluation-metric-name">{key}:</span> <span class="evaluation-metric-value">{value}</span></div>"""
     html_txt += """</div>"""
     html(html_txt)
+
+
+
+def get_market_condition_message(score: float) -> None:
+    """
+    Returns a message and color based on the market condition score.
+
+    Args:
+        score (float): The market condition score.
+
+    Returns:
+        tuple[str, str]: A message and color hex code.
+    """
+    if score < 30:
+        message, color = ("❌ Unfavorable Market – High uncertainty, not ideal for trading.", "#ff4d4d")
+    elif score < 60:
+        message, color = ("⚠️ Neutral Market – Some opportunities, but risk is present.", "#ffcc00")
+    elif score < 80:
+        message, color = ("✅ Good Market – Favorable conditions, likely trends.", "#4CAF50")
+    else:
+        message, color = ("🚀 Strong Market – Ideal for trading, strong trend confirmation.", "#008CBA")
+
+
+    # HTML Card with Stylish Light Theme
+    html_code = f"""
+        <div style="
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 80%;
+            margin: auto;
+        ">
+            <h2 style="color: #333; margin-bottom: 5px;">🎯 Market Condition Score</h2>
+            <p style="font-size: 42px; font-weight: bold; color: {color}; margin: 10px 0;">{score:.1f} / 100</p>
+            <p style="font-size: 18px; color: #444; background-color: {color}22; padding: 10px; border-radius: 8px;">{message}</p>
+        </div>
+    """
+
+    # Display in Streamlit
+    html(html_code)
+
+
+def market_condition_explanation():
+    with popover("How is it calculated?", icon=":material/contact_support:"):
+        markdown("""
+        ##📌 Market Condition Score Explanation
+        
+        The Market Condition Score is a quantitative metric designed to assess the suitability of the current market for trading strategies. It evaluates four key aspects of market behavior:
+        
+        1. **Trend Strength** 📈 – Measured using the Average Directional Index (ADX).
+        2. **Volatility** 🌊 – Measured using Bollinger Bands Width (BB Width).
+        3. **Momentum** 🚀 – Measured using the MACD Histogram (MACD Hist).
+        4. **Overbought/Oversold Conditions** 🎭 – Measured using the Relative Strength Index (RSI).
+        
+        The score ranges from 0 to 100, where:
+        - **High values** (e.g., 70-100) indicate a favorable market for trading.
+        - **Low values** (e.g., 0-30) suggest uncertain or unfavorable conditions.
+        ----
+        🔹 How the Score is Calculated
+        The function retrieves historical candlestick data (K-lines) and computes the four indicators. The values are **normalized** and **weighted dynamically** based on trend strength.
+        
+        Formula for Market Condition Score:
+        """)
+
+        latex(r"""
+        S = w_1 \cdot \min(50, \text{ADX}) + 
+            w_2 \cdot \min(50, \text{BB Width} \times 100) + 
+            w_3 \cdot \min(50, \max(-50, \text{MACD Hist} \times 100)) + 
+            w_4 \cdot \min(50, 50 - |\text{RSI} - 50|)
+        """)
+
+        markdown("""
+        Where:
+        - **Trend Strength** = *min(50, ADX)*
+        - **Volatility** = *min(50, Bollinger Band Width × 100)*
+        - **Momentum** = *min(50, MACD Histogram × 100)*
+        - **RSI Score** = *min(50, 50 - |RSI - 50|)* (Centered at 50, penalizes extremes)
+        - **Dynamic Weights**:
+            - if **ADX > 25** (Strong Trend) -> More weight on Trend & Volatility.
+            - if **ADX <= 25** (Weak trend) -> More weight on RSI & Momentum.
+        """)

@@ -3,7 +3,7 @@ import streamlit as st
 from frontend.src.library.wallet_helper.client import fetch_account_spot
 from frontend.src.library.settings_helper.navigation import api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.strategy_helper.launcher_helper import get_strategy_instructions, strategy_params_form, backtest_evaluation_results
+from frontend.src.library.strategy_helper.launcher_helper import get_strategy_instructions, strategy_params_form, backtest_evaluation_results, get_market_condition_message, market_condition_explanation
 from frontend.src.library.ui_elements import col_style2
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 from frontend.src.library.strategy_helper.client import post_strategy, get_available_strategies
@@ -132,7 +132,11 @@ if st.session_state["available_exchange_apis"]:
                             backtest_evaluation_results(res["metrics"])
                         else:
                             st.warning("No metrics available since no BUY or SELL orders were made by the strategy.", icon=":material/troubleshoot:")
-                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>2. Strategy Action Plot</h4>")
+                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>2. Backtesting Market Condition Score</h4>")
+                        st.caption("The Backtester class calculates a **score (%)** based on the OHLCV data, mostly relying on the price movement, that indicates whether the market is good for trading or not. **Higher is better**.")
+                        market_condition_explanation()
+                        get_market_condition_message(res["score"])
+                        st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>3. Strategy Action Plot</h4>")
                         st.caption("The algorithm might have decided more BUY, SELL order in between that are invalid due to the fact that two or more consecutive BUY or SELL orders are not allowed.")
                         static_strategy_plot(pd.DataFrame(res["logs"]), True)
                         st.write("Deploy Strategy below 👇👇")

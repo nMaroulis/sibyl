@@ -153,12 +153,12 @@ def run_strategy_backtest(strategy_params: StrategyParams) -> Dict[str, Any]:
         strategy = StrategyFactory.get_strategy(strategy_params.strategy, strategy_params.params)
         symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
         backtester = Backtester(strategy, client, symbol, strategy_params.time_interval)
-        logs = backtester.run_backtest()
+        logs, score = backtester.run_backtest()
 
         if logs and len(logs) > 0:
             evaluator = Evaluator(logs)
             metrics = evaluator.evaluate()
-            return {"metrics": metrics, "logs": jsonable_encoder(logs)}
+            return {"metrics": metrics, "logs": jsonable_encoder(logs), "score": score}
         else:
             raise HTTPException(status_code=500, detail="Empty Logs")
     except Exception as e:
@@ -167,7 +167,7 @@ def run_strategy_backtest(strategy_params: StrategyParams) -> Dict[str, Any]:
 
 
 @router.get("/strategy/metadata")
-def get_strategy_metadata(strategy_id: str):
+def get_strategy_metadata(strategy_id: str) -> Optional[Dict[str, Any]]:
     try:
         db_client = StrategyDBClient()
         if strategy_id == "all":
