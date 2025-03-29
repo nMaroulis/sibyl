@@ -48,19 +48,21 @@ class StrategyDBClient:
         })
 
 
-    def add_log(self, strategy_id: str, timestamp: int, price: float, order: str) -> None:
+    def add_log(self, strategy_id: str, timestamp: int, price: float, slippage: float, order: str) -> None:
         """
         Adds a log entry to the database for a given strategy.
 
         :param strategy_id: Unique identifier for the trading strategy.
         :param timestamp: Unix timestamp of the log entry.
         :param price: Price at the time of logging.
+        :param slippage: Slippage of the Order (Order Price - Price which was used to make the decision.).
         :param order: Type of order executed (e.g., 'buy', 'sell').
         """
         self.logs_table.insert({
             "strategy_id": strategy_id,
             "timestamp": timestamp,
             "price": price,
+            "slippage": slippage,
             "order": order,
         })
 

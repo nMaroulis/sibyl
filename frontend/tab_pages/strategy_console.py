@@ -50,10 +50,10 @@ if strategies:
                     st.rerun()
             st.sidebar.button("Pause Strategy", type="secondary", icon=":material/pause_circle:", disabled=status_change_options, use_container_width=True)
 
-
+# TacticianExchangeInterface :: place_buy_order {'status': 'error', 'message': "APIError(code=-1111): Parameter 'quoteOrderQty' has too much precision."}
             if status_change_options:
                 st.sidebar.download_button(
-                    "Download to CSV",
+                    "Download Logs to CSV",
                     logs_df.to_csv(index=False).encode('utf-8'),
                     f"{strategy_id}.csv",
                     "text/csv",
@@ -61,6 +61,8 @@ if strategies:
                     use_container_width=True,
                     icon=":material/download:"
                 )
+            else:
+                st.button("Download Logs to CSV", use_container_width=True, disabled=True, icon=":material/download:")
 
             st.divider()
             st.html(
@@ -69,6 +71,8 @@ if strategies:
             st.caption("The strategy logs ***order*** field contains the action the algorithm too at a specific timestamp. "
                        "These actions are **HOLD** if no action is taken, **BUY** and **SELL**. If the BUY or SELL orders fail"
                        " due to an error or other condition is is denoted as **INVALID_BUY** and **INVALID_SELL**.")
+            st.caption("The **Slippage** is how far of the order price was from the Price that the algorithm had as the latest price when it made the decision. "
+                       "Ideally the slippage has to be as close to 0 as it gets. In case of a **BUY** order a positive value is good and for **SELL** a negative slippage value is better.")
 
             hide_invalid = st.toggle("show only BUY/SELL orders", value=False)
             if hide_invalid:

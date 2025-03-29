@@ -125,7 +125,7 @@ class Tactician:
                     print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {float(order["price"])}")
                 else:
                     print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m Failed.")
-                return order
+                return {"timestamp": time.time(), "action": "BUY", "order_id": order["order_id"], "quote_amount": float(order["executed_quote_amount"]), "price": order["price"], "amount": self.position, "status": "executed"}
             else:
                 print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m Invalid")
                 return None
@@ -141,7 +141,7 @@ class Tactician:
                     print(f"Tactician :: execute_trade :: \033[93m SELL ORDER \033[0m quote: {self.capital} {self.position} {self.symbol} at {order["price"]}")
                 else:
                     print(f"Tactician :: execute_trade :: \033[93m SELL ORDER \033[0m Failed.")
-                return order
+                return {"timestamp": time.time(), "action": "SELL", "order_id": order["order_id"], "price": float(order["price"]), "amount": self.position, "status": "executed"}
             else:
                 print(f"Tactician :: execute_trade :: \033[93m SELL ORDER \033[0m Invalid")
                 return None
@@ -228,6 +228,7 @@ class Tactician:
             # Fetch latest klines data
             self.update_dataset()
             # Call strategy to get the latest signal (e.g. BUY, SELL, HOLD)
+            slippage = 0.0
             signals = strategy.generate_signals(self.dataset.copy())
             latest_signal = signals.iloc[-1]["signal"]
             latest_price = signals.iloc[-1]["close_price"]
@@ -238,11 +239,15 @@ class Tactician:
                 res = self.execute_trade(latest_signal)
                 if res is None: # order failed
                     latest_signal = f"INVALID_{latest_signal}"
+                else:
+                    slippage = res["price"] - latest_price
+                    print(f"Tactician :: strategy_loop :: Slippage {slippage}")
+                    latest_price = res["price"]  # Replace with the actual sold value
 
             # Add log to the DB
             if isnan(latest_price):  # NaN will make json logs fail
                 latest_signal = signals.iloc[-2]["close_price"]
-            self.db_client.add_log(strategy_id, int(timestamp), latest_price, latest_signal)
+            self.db_client.add_log(strategy_id, int(timestamp), latest_price, slippage, latest_signal)
             # Wait before checking again
             time.sleep(interval)
 
