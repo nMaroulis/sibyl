@@ -27,7 +27,7 @@ def update_logs(strategy_id: str, last_timestamp: int):
 @st.fragment()
 def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: str, hide_invalid:bool):
 
-    time_interval_dict = {'1s': 1, '15s': 15, '1m': 60, '5m': 300, '15m': 900,
+    time_interval_dict = {'1s': 5, '15s': 15, '1m': 60, '5m': 300, '15m': 900,
                           '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
     time_interval = time_interval_dict[time_interval]
 

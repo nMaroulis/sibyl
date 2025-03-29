@@ -167,7 +167,7 @@ def run_strategy_backtest(strategy_params: StrategyParams) -> Dict[str, Any]:
 
 
 @router.get("/strategy/metadata")
-def get_strategy_metadata(strategy_id: str) -> Optional[Dict[str, Any]]:
+def get_strategy_metadata(strategy_id: str):
     try:
         db_client = StrategyDBClient()
         if strategy_id == "all":
@@ -182,7 +182,7 @@ def get_strategy_metadata(strategy_id: str) -> Optional[Dict[str, Any]]:
         if res:
             return res
         else:
-            return {}
+            return []
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
