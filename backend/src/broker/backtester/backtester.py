@@ -42,11 +42,13 @@ class Backtester:
         Returns:
             pd.DataFrame: A DataFrame containing historical Kline data.
         """
-        data0 = self.exchange_client.get_klines(self.symbol, interval=self.interval, limit=1000, start_time=int((time.time() - 3000) * 1000))
-        data1 = self.exchange_client.get_klines(self.symbol, interval=self.interval, limit=1000, start_time=int((time.time() - 2000) * 1000))
-        data2 = self.exchange_client.get_klines(self.symbol, self.interval, limit=1000)
+        data0 = self.exchange_client.get_klines(self.symbol, interval=self.interval, limit=1000, start_time=int((time.time() - 5000) * 1000))
+        data1 = self.exchange_client.get_klines(self.symbol, interval=self.interval, limit=1000, start_time=int((time.time() - 4000) * 1000))
+        data2 = self.exchange_client.get_klines(self.symbol, interval=self.interval, limit=1000, start_time=int((time.time() - 3000) * 1000))
+        data3 = self.exchange_client.get_klines(self.symbol, interval=self.interval, limit=1000, start_time=int((time.time() - 2000) * 1000))
+        data4 = self.exchange_client.get_klines(self.symbol, self.interval, limit=1000)
 
-        data = data0 + data1 + data2
+        data = data0 + data1 + data2 + data3 + data4
 
         df = pd.DataFrame(data)
         df.rename(columns={"open_time": "timestamp"}, inplace=True)
