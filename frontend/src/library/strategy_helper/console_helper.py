@@ -25,7 +25,7 @@ def update_logs(strategy_id: str, last_timestamp: int):
 
 
 @st.fragment()
-def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: str, hide_invalid:bool):
+def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: str, show_invalid:bool):
 
     time_interval_dict = {'1s': 5, '15s': 15, '1m': 60, '5m': 300, '15m': 900,
                           '30m': 1800, '1h': 3600, '4h': 14400, '12h': 43200, '1d': 86400}
@@ -40,7 +40,7 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
     fig.add_trace(go.Scatter(x=df["timestamp"], y=df["price"], mode='lines', name='Price'))
     fig.add_trace(go.Scatter(x=df[df["order"] == "BUY"]["timestamp"], y=df[df["order"] == "BUY"]["price"], mode='markers', marker=dict(color='green', size=12, symbol='triangle-up'), name='BUY'))
     fig.add_trace(go.Scatter(x=df[df["order"] == "SELL"]["timestamp"], y=df[df["order"] == "SELL"]["price"], mode='markers', marker=dict(color='red', size=12, symbol='triangle-down'), name='SELL'))
-    if not hide_invalid:
+    if show_invalid:
         fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_BUY"]["timestamp"], y=df[df["order"] == "INVALID_BUY"]["price"], mode='markers', marker=dict(color='green', size=10, symbol='triangle-up-open'), name='Invalid BUY'))
         fig.add_trace(go.Scatter(x=df[df["order"] == "INVALID_SELL"]["timestamp"], y=df[df["order"] == "INVALID_SELL"]["price"], mode='markers', marker=dict(color='red', size=10, symbol='triangle-down-open'), name='Invalid SELL'))
 
@@ -64,7 +64,7 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
                 fig.data[2].x = df[df["order"] == "SELL"]["timestamp"]
                 fig.data[2].y = df[df["order"] == "SELL"]["price"]
 
-                if not hide_invalid:
+                if show_invalid:
                     # Update INVALID_BUY markers
                     fig.data[3].x = df[df["order"] == "INVALID_BUY"]["timestamp"]
                     fig.data[3].y = df[df["order"] == "INVALID_BUY"]["price"]
@@ -88,7 +88,7 @@ def real_time_strategy_plot(df: pd.DataFrame, strategy_id: str, time_interval: s
 
 
 # Static plotting function
-def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
+def static_strategy_plot(df: pd.DataFrame, show_invalid: bool, show_slippage: bool):
 
     fig = go.Figure()
     # Plot price line
@@ -100,7 +100,7 @@ def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
         x=buy_df["timestamp"],
         y=buy_df["price"],
         mode='markers',
-        marker=dict(color='green', size=12, symbol='triangle-up'),
+        marker=dict(color='green', size=13, symbol='triangle-up'),
         name='BUY'
     ))
 
@@ -111,11 +111,55 @@ def static_strategy_plot(df: pd.DataFrame, hide_invalid: bool):
         x=sell_df["timestamp"],
         y=sell_df["price"],
         mode='markers',
-        marker=dict(color='red', size=12, symbol="triangle-down"), #  marker=dict(color='#ff0000', opacity=0.6,symbol="diamond", size=10, line=dict(color='#ae0000', width=2)),
+        marker=dict(color='red', size=13, symbol="triangle-down"), #  marker=dict(color='#ff0000', opacity=0.6,symbol="diamond", size=10, line=dict(color='#ae0000', width=2)),
         name='SELL'
     ))
 
-    if not hide_invalid:
+    if show_slippage:
+        executed_buy_df = buy_df.copy()
+        executed_buy_df["executed_price"] = executed_buy_df["price"] - executed_buy_df["slippage"]
+
+        executed_sell_df = sell_df.copy()
+        executed_sell_df["executed_price"] = executed_sell_df["price"] - executed_sell_df["slippage"]
+
+        # Show slippage as error bars
+        fig.add_trace(go.Scatter(
+            x=executed_buy_df["timestamp"],
+            y=executed_buy_df["executed_price"],
+            mode='markers',
+            marker=dict(color='orange', size=10, symbol="star-triangle-up-open"),  # df["slippage"].apply(lambda x: 'blue' if x > 0 else ('orange' if x < 0 else 'gray'))
+            name='Intended BUY Price'
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=executed_sell_df["timestamp"],
+            y=executed_sell_df["executed_price"],
+            mode='markers',
+            marker=dict(color='purple', size=10, symbol="star-triangle-down-open"),
+            name='Intended SELL Price'
+        ))
+
+        # Add lines to indicate slippage
+        for _, row in executed_buy_df.iterrows():
+            fig.add_trace(go.Scatter(
+                x=[row["timestamp"], row["timestamp"]],
+                y=[row["price"], row["executed_price"]],
+                mode="lines",
+                line=dict(color="orange", dash="dot"),
+                showlegend=False
+            ))
+
+        for _, row in executed_sell_df.iterrows():
+            fig.add_trace(go.Scatter(
+                x=[row["timestamp"], row["timestamp"]],
+                y=[row["price"], row["executed_price"]],
+                mode="lines",
+                line=dict(color="purple", dash="dot"),
+                showlegend=False
+            ))
+
+
+    if show_invalid:
         invalid_buy_df = df[df["order"] == "INVALID_BUY"]
         fig.add_trace(go.Scatter(
             x=invalid_buy_df["timestamp"],
@@ -352,14 +396,36 @@ def strategy_plot_info() -> None:
         font-size: 14px;
         display: inline-block; /* Ensures it stays in the same line */
       }
+      
+    .triangle_buy_slippage {
+        -webkit-text-stroke: 1px orange;
+        color: transparent;
+        font-size: 14px;
+        display: inline-block; /* Keeps it inline */
+      }
+
+    .triangle_sell_slippage {
+        -webkit-text-stroke: 1px purple;
+        color: transparent;
+        font-size: 14px;
+        display: inline-block; /* Keeps it inline */
+      }
+
     </style>
     
-    <p style="font-weight: 500;"> The lineplot shows the price over time from the initiation time of the strategy along with markers indicating 
+    <p style="font-size:15px; font-weight: 500; margin-bottom:0.2rem;">&#x2022; The lineplot shows the price over time from the initiation time of the strategy along with markers indicating 
         <span class="triangle_buy">&#9650;</span> <strong>BUY</strong> and 
-        <span class="triangle_sell">&#9660;</span> <strong>SELL</strong> orders that were placed by the strategy. 
+        <span class="triangle_sell">&#9660;</span> <strong>SELL</strong> orders that were placed by the strategy. </p>
+    <p style="font-size:15px; font-weight: 500; margin-bottom:0.2rem;">&#x2022;
         In case the signal is sent by the algorithm but the order fails, it will be denoted with 
         <span class="triangle_buy_invalid">&#9650;</span> <strong>Invalid BUY</strong> and 
-        <span class="triangle_sell_invalid">&#9660;</span> <strong>Invalid SELL</strong>.
+        <span class="triangle_sell_invalid">&#9660;</span> <strong>Invalid SELL</strong>. The order might fail because the algorithm tried to perform 2 consecutive BUY or SELL orders, 
+        because the balance was not enough or something went wrong with the Exchange API order command.
+    </p>
+    <p style="font-size:15px; font-weight: 500;">&#x2022;
+        The plot can also indicate the <strong>slippage</strong>. The slippage marker shows how far off was the desired 
+        price that the strategy used to make the order decision from the actual executed price. The desired price for the BUY order is denoted with 
+        <span class="triangle_buy_slippage">&#9650;</span> and for SELL order slippage <span class="triangle_sell_slippage">&#9660;</span>.
     </p>
     """)
 

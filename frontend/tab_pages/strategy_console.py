@@ -91,11 +91,13 @@ if strategies:
             strategy_plot_info()
 
             real_time_option = st.toggle("Real Time Monitor Line Plot", value=False, disabled=status_change_options)
-            hide_invalid = st.toggle("hide invalid orders", value=False)
+            plot_options = st.pills("Plot Options", ["Show Slippage", "Show Invalid Orders"], selection_mode="multi")
+            show_slippage = "Show Slippage" in plot_options
+            show_invalid = "Show Invalid Orders" in plot_options
             if real_time_option:
-                real_time_strategy_plot(logs_df[["timestamp", "price", "order"]], strategy_id, df_to_show["time_interval"].iloc[0], hide_invalid)
+                real_time_strategy_plot(logs_df[["timestamp", "price", "order"]], strategy_id, df_to_show["time_interval"].iloc[0], show_invalid)
             else:
-                static_strategy_plot(logs_df[["timestamp", "price", "order"]], hide_invalid)
+                static_strategy_plot(logs_df[["timestamp", "price", "slippage", "order"]], show_invalid, show_slippage)
 
         else:
             st.warning("Failed to load Strategy Logs", icon=":material/warning:")
