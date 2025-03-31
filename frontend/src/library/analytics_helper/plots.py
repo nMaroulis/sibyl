@@ -3,12 +3,10 @@ from plotly.graph_objects import Figure, Scatter, Candlestick
 from streamlit import plotly_chart, warning, spinner, html, metric, write
 from frontend.src.library.analytics_helper.client import fetch_price_history
 from plotly.express import imshow
-from frontend.src.library.forecasting_helper.funcs import calc_rsi, calc_ema, calc_bollinger_bands
+from frontend.src.library.strategy_helper.launcher_helper import get_market_condition_message
 
-
-def show_analytics(quote_asset: str, base_asset: str, df: DataFrame):
+def show_analytics(quote_asset: str, base_asset: str, df: DataFrame, score: float):
     with spinner('The Analyst is analyzing the data...'):
-        # dataframe(df)
         html("""
             <style>
                 .status_header {
@@ -35,12 +33,14 @@ def show_analytics(quote_asset: str, base_asset: str, df: DataFrame):
             </div>
 
         """)
-        metric(f'{base_asset} Price in {quote_asset}', float(df['Close Price'].iloc[-1]),
-               round(float(df['Close Price'].iloc[-1]) - float(df['Close Price'].iloc[-2]), 6))
+        get_market_condition_message(score)
+
+        metric(f'{base_asset} Price in {quote_asset}', float(df['close_price'].iloc[-1]),
+               round(float(df['close_price'].iloc[-1]) - float(df['close_price'].iloc[-2]), 6))
     return
 
 
-def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame):
+def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame) -> None:
     write(
         "**Exponential Moving Average (EMA)**: A Moving Average that places more weight on recent price data, reacting faster to price changes compared to the simple moving average (SMA). It's calculated using an exponential decay formula, giving higher importance to recent data points.")
     write(
@@ -49,13 +49,9 @@ def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame):
         "**Bollinger Bands** consist of three lines on a price chart: the middle band, the exponential moving average (EMA) over a specified period (e.g., 20 days); the upper band, calculated by adding two standard deviations to the middle band; and the lower band, calculated by subtracting two standard deviations from the middle band. Bollinger Bands help traders gauge market volatility, identify potential overbought or oversold conditions, and anticipate price reversals.")
     with spinner('Generating Line Plot...'):
 
-        price_hist_df['Moving Average'] = calc_ema("exponential", price_hist_df['Close Price'], 5)
-        price_hist_df['RSI'] = calc_rsi(price_hist_df['Close Price'].astype(float), 14)
-        price_hist_df['LowerBand'], price_hist_df['UpperBand'] = calc_bollinger_bands(price_hist_df['Moving Average'], price_hist_df['Close Price'], 3)
-
         fig = Figure()
         fig.add_trace(
-            Scatter(x=price_hist_df['DateTime'], y=price_hist_df['Close Price'], mode='lines', name='Close Price'))
+            Scatter(x=price_hist_df['DateTime'], y=price_hist_df['close_price'], mode='lines', name='Close Price'))
         fig.add_trace(Scatter(
             x=concat([price_hist_df['DateTime'], price_hist_df['DateTime'][::-1]]),
             y=concat([price_hist_df['UpperBand'], price_hist_df['LowerBand'][::-1]]),
@@ -69,7 +65,6 @@ def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame):
                           yaxis2=dict(title='RSI', overlaying='y', side='right'), showlegend=True)
         plotly_chart(fig, use_container_width=True)
 
-    return
 
 
 def price_history_plot(exchange_api: str, pair_symbol: str, time_int: str, time_limit: int, plot_type : str = 'Line Plot') -> None:

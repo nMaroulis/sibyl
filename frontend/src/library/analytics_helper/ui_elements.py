@@ -1,6 +1,6 @@
 from streamlit import write, form, selectbox, radio, form_submit_button, sidebar, columns, number_input, toggle, multiselect, info, html, select_slider, divider, caption, container, spinner, pills
 from frontend.src.library.analytics_helper.plots import price_history_plot, price_history_correlation_heatmap, show_line_plot_with_analytics, show_analytics
-from frontend.src.library.analytics_helper.client import fetch_available_assets, fetch_price_history
+from frontend.src.library.analytics_helper.client import fetch_available_assets, fetch_price_history, fetch_symbol_analytics
 from frontend.src.library.analytics_helper.funcs import invert_dict
 from pandas import DataFrame, to_datetime
 
@@ -45,10 +45,11 @@ def get_price_analytics_form():
                 if plot_type == 'Candle Plot':
                     price_history_plot("binance", f"{base_asset}{quote_asset}", time_int_dict[time_int], time_limit, "Candle Plot")
                 else:
+
                     # Fetch data
-                    df = fetch_price_history("binance", f"{base_asset}{quote_asset}", time_int_dict[time_int], time_limit)
+                    df, score = fetch_symbol_analytics("binance", f"{base_asset}{quote_asset}", time_int_dict[time_int], time_limit)
                     # SHOW ANALYTICS
-                    show_analytics(quote_asset, base_asset, df)
+                    show_analytics(quote_asset, base_asset, df, score)
                     # SHOW LINE PLOT
                     show_line_plot_with_analytics(f"{base_asset}{quote_asset}", df)
 

@@ -1,3 +1,4 @@
+from backend.src.analyst.analyst import Analyst
 from backend.src.broker.strategies.strategy_base import BaseStrategy
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 import pandas as pd
@@ -30,6 +31,7 @@ class Backtester:
         """
         self.strategy = strategy
         self.exchange_client = exchange_client
+        self.analyst = None  # Analyst object, in order to use the calc score function
         self.symbol = symbol
         self.interval = interval
         self.dataset_size = dataset_size
@@ -55,6 +57,7 @@ class Backtester:
 
         data = data0 + data1 + data2 + data3 + data4
 
+        self.analyst = Analyst(data)
         df = pd.DataFrame(data)
         df.rename(columns={"open_time": "timestamp"}, inplace=True)
         return df
@@ -83,44 +86,6 @@ class Backtester:
             self.backtesting_logs.append({"timestamp": int(signals.iloc[-1]["timestamp"]), "price": float(signals.iloc[-1]["close_price"]), "order": action})
 
 
-    @staticmethod
-    def get_market_condition_score(df: pd.DataFrame) -> float:
-        """
-        Calculates an advanced market condition score by incorporating trend strength (ADX),
-        volatility (Bollinger Bands width), momentum (MACD), and overbought/oversold conditions (RSI).
-
-        Args:
-            df (List[Dict[str, Any]]): A list of Kline (candlestick) data.
-
-        Returns:
-            float: Market condition score (0-100).
-        """
-
-        # Compute indicators
-        adx = ADXIndicator(high=df["high"], low=df["low"], close=df["close_price"]).adx()
-        bb_width = BollingerBands(close=df["close_price"]).bollinger_wband()
-        rsi = RSIIndicator(close=df["close_price"]).rsi()
-        macd_hist = MACD(close=df["close_price"]).macd_diff()
-
-        # Normalize indicators
-        trend_strength = np.clip(adx.iloc[-1], 0, 50)
-        volatility = np.clip(bb_width.iloc[-1] * 100, 0, 50)
-        momentum = np.clip(macd_hist.iloc[-1] * 100, -50, 50)  # Normalize MACD histogram
-        rsi_score = np.clip(50 - abs(rsi.iloc[-1] - 50), 0, 50)  # 50 means neutral, lower score if extreme
-
-        # Dynamic weighting
-        if adx.iloc[-1] > 25:  # Strong trend
-            weights = [0.4, 0.3, 0.2, 0.1]  # More weight on trend & volatility
-        else:
-            weights = [0.2, 0.3, 0.3, 0.2]  # More weight on RSI & momentum
-
-        # Compute final score
-        score = (weights[0] * trend_strength) + (weights[1] * volatility) + \
-                (weights[2] * momentum) + (weights[3] * rsi_score)
-
-        return np.clip(score, 0, 100)  # Ensure the score is between 0-100
-
-
     def run_backtest(self) -> Optional[Tuple[List[Dict[str, Any]], float]]:
         """
         Executes the full backtesting process.
@@ -136,5 +101,5 @@ class Backtester:
         """
         dataset = self.get_klines_data()
         self.strategy_loop(dataset)
-        score = self.get_market_condition_score(dataset)
+        score = self.analyst.get_market_condition_score()
         return self.backtesting_logs, score

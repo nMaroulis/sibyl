@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import List, Dict, Optional, Any
 from backend.src.analyst.analyst_functions import update_coin_symbol_name_map
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
+from backend.src.analyst.analyst import Analyst
 
 
 # APIRouter creates path operations for user module
@@ -10,6 +11,19 @@ router = APIRouter(
     tags=["Analyst"],
     responses={404: {"description": "Not found"}},
 )
+
+
+@router.get("/symbol/klines/analysis")
+def get_symbol_analysis(exchange: str, symbol: str, interval: str, limit: int) -> Optional[Dict[str, Any]]:
+    client = ExchangeClientFactory.get_client(exchange)
+    klines = client.get_klines(symbol, interval, limit)
+    analyst = Analyst(klines)
+    analytics = analyst.get_analytics()
+
+    if analytics:
+        return analytics
+    else:
+        raise HTTPException(status_code=500, detail="Failed to calculate analyst's klines")
 
 
 @router.get("/asset/klines")
