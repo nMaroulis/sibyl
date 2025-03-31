@@ -2,6 +2,8 @@ from typing import Dict, Any
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 import pandas as pd
 import time
+import math
+
 
 class TacticianExchangeInterface:
 
@@ -51,19 +53,19 @@ class TacticianExchangeInterface:
 
         return df
 
-    def get_minimum_trade_value(self, symbol: str) -> float:
+
+    def get_symbol_trade_info(self, symbol: str) -> Dict[str, Any] | None:
 
         try:
-            res = self.exchange_client.get_minimum_trade_value(symbol)
+            res = self.exchange_client.get_symbol_info(symbol)
+            # replace float values with int indicating the precision. e.g. 0.001 -> 3
+            res["quote_precision"] = int(-math.log10(float(res["quote_precision"])))
+            res["base_precision"] = int(-math.log10(float(res["base_precision"])))
         except Exception as e:
-            print("TacticianExchangeInterface :: get_minimum_trade_value", e)
+            print("TacticianExchangeInterface :: get_symbol_trade_info", e)
             res = None
 
-        if res is None:
-            return 0.0
-        else:
-            min_notional = res["min_trade_value"]
-            return min_notional
+        return res
 
 
     def get_last_market_price(self, symbol: str) -> pd.DataFrame | None:
@@ -154,21 +156,6 @@ class TacticianExchangeInterface:
         else:
             response_dict = None
         return response_dict
-
-
-    # 1499040000000,      // Open time
-    # "0.01634790",       // Open
-    # "0.80000000",       // High
-    # "0.01575800",       // Low
-    # "0.01577100",       // Close
-    # "148976.11427815",  // Volume
-    # 1499644799999,      // Close time
-    # "2434.19055334",    // Quote asset volume
-    # 308,                // Number of trades
-    # "1756.87402397",    // Taker buy base asset volume
-    # "28.46694368",      // Taker buy quote asset volume
-    # "17928899.62484339" // Ignore.
-
 
 
     def place_sell_order(self, symbol: str, quantity: float) -> Dict[str, Any]:

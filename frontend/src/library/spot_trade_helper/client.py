@@ -5,14 +5,21 @@ from frontend.config.config import BACKEND_SERVER_ADDRESS
 import re
 
 
-@cache_data(show_spinner="Fetching asset minimum trade value...")
-def fetch_minimum_trade_value(exchange: str, trading_pair: str):
 
-    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/spot/check/minimum_value?exchange={exchange.lower().replace(" ","_")}&symbol={trading_pair}'
+@cache_data(show_spinner="Fetching asset minimum trade value...")
+def fetch_symbol_info(exchange: str, quote_asset: str, base_asset: str) -> Dict[str, Any] | None:
+
+
+    if exchange == "Coinbase" or exchange == "Coinbase Sandbox":
+        trading_pair = f"{base_asset}-{quote_asset}"
+    else:
+        trading_pair = base_asset + quote_asset
+
+    url = f'{BACKEND_SERVER_ADDRESS}/broker/trade/spot/check/symbol_info?exchange={exchange.lower().replace(" ","_")}&symbol={trading_pair}'
     response = requests.get(url)
     if response.status_code == 200:
         try:
-            return response.json()['min_trade_value']
+            return response.json()
         except KeyError as e:
             print(e)
             return None

@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.wallet_helper.client import fetch_account_spot
-from frontend.src.library.spot_trade_helper.client import post_spot_trade, fetch_minimum_trade_value, fetch_asset_market_price
+from frontend.src.library.spot_trade_helper.client import post_spot_trade, fetch_asset_market_price
 from typing import Dict, Any
 
 
@@ -41,7 +41,7 @@ def get_account_balance(quote_asset: str, quantity: float, market_price: float) 
                    icon=":material/counter_5:")
 
 
-def get_pair_market_price(quote_asset: str, base_asset: str, quantity: float) -> int | None:
+def get_pair_market_price(quote_asset: str, base_asset: str, quantity: float, min_trade_value: float) -> int | None:
 
     if st.session_state['trade_exchange_api'] == "Coinbase" or st.session_state[
         'trade_exchange_api'] == "Coinbase Sandbox":
@@ -55,17 +55,17 @@ def get_pair_market_price(quote_asset: str, base_asset: str, quantity: float) ->
     if market_price:
         st.info(f"**{base_asset} Current price**: {market_price} {quote_asset}", icon=":material/counter_2:")
         st.info(f"You'll trade **{round(quantity * market_price, 4)} {quote_asset}** for **{quantity} {base_asset}**", icon=":material/counter_3:")
-        min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)
-        if quantity * market_price >= min_trade_limit:
+        # min_trade_limit = fetch_minimum_trade_value(st.session_state['trade_exchange_api'], trading_pair)
+        if quantity * market_price >= min_trade_value:
             st.success("The **minimum trade value limit** of **" + str(
-                min_trade_limit) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/counter_4:")
+                min_trade_value) + "** for the " + trading_pair + " pair is satisfied!", icon=":material/counter_4:")
         else:
             st.error("The **minimum trade value limit** of **" + str(
-                min_trade_limit) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/counter_4:")
+                min_trade_value) + "** for the " + trading_pair + " pair is NOT satisfied.", icon=":material/counter_4:")
     else:
         st.warning("**Failed** to fetch current trading pair **market price**.", icon=":material/counter_2:")
         st.warning("**Failed** to calculate the **quantity** of **Quote asset** necessary for this order..", icon=":material/counter_3:")
-        st.warning("**Failed** to fetch the **minimum trade value limit** for this order..", icon=":material/counter_4:")
+        st.warning(f"**Failed** the **minimum trade quote limit** for this order is {min_trade_value} cannot calculate feasibility based on market price..", icon=":material/counter_4:")
 
     return market_price
 

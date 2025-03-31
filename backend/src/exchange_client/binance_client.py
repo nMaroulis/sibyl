@@ -424,6 +424,71 @@ class BinanceClient(ExchangeAPIClient):
             return None
 
 
+    def get_symbol_info(self, symbol: str) -> Dict[str, Any] | None:
+        """
+        Retrieves information about a specific symbol pair.
+
+        Args:
+            symbol (str): The symbol pair to fetch.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing information about the symbol.
+
+        Binance API Response Example:
+                    {
+                "symbol": "ETHBTC",
+                "status": "TRADING",
+                "baseAsset": "ETH",
+                "baseAssetPrecision": 8,
+                "quoteAsset": "BTC",
+                "quotePrecision": 8,
+                "orderTypes": ["LIMIT", "MARKET"],
+                "icebergAllowed": false,
+                "filters": [
+                    {
+                        "filterType": "PRICE_FILTER",
+                        "minPrice": "0.00000100",
+                        "maxPrice": "100000.00000000",
+                        "tickSize": "0.00000100"
+                    }, {
+                        "filterType": "LOT_SIZE",
+                        "minQty": "0.00100000",
+                        "maxQty": "100000.00000000",
+                        "stepSize": "0.00100000"
+                    }, {
+                        "filterType": "NOTIONAL",
+                        "minNotional": "0.00100000"
+                    }, ....
+                ]
+            }
+        """
+        try:
+            exchange_info = self.client.get_symbol_info(symbol.upper())
+            if not exchange_info:
+                return None
+            # exchange_info["baseAssetPrecision"] and exchange_info["quoteAssetPrecision"] indicate the precision in the amount that can be held in the account, not for trade
+            response_dict = {
+                "status": exchange_info["status"],
+                "order_types": exchange_info["orderTypes"]
+            }
+
+            for filter_item in exchange_info.get("filters", []):
+                if filter_item["filterType"] == "PRICE_FILTER":
+                    response_dict["quote_precision"] = float(filter_item.get("tickSize", -1))
+                elif filter_item["filterType"] == "LOT_SIZE":
+                    response_dict["base_precision"] = float(filter_item.get("stepSize", -1))
+                elif filter_item.get("filterType") == "NOTIONAL":
+                    response_dict["min_trade_value"] = float(filter_item.get("minNotional", -1))
+
+            return response_dict
+        except BinanceAPIException as e:
+            print(f"Binance API error: {e}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return None
+
+
     def get_minimum_trade_value(self, symbol: str) -> Optional[Dict[str, Union[float, str]]]:
         """
         Retrieves the minimum trade value required for a given trading pair.

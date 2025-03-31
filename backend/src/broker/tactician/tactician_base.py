@@ -9,6 +9,7 @@ import pandas as pd
 from database.strategy.strategy_db_client import StrategyDBClient
 from backend.src.broker.tactician.exchange_interface import TacticianExchangeInterface
 from numpy import isnan
+from decimal import Decimal, ROUND_DOWN
 
 
 class Tactician:
@@ -42,8 +43,11 @@ class Tactician:
         self.is_running = False  # Track if the strategy is running
         self.last_order_type = "None"
         self.time_interval = None
-
-        self.quote_min_notional = self.exchange_api.get_minimum_trade_value(self.symbol)
+        # SYMBOL TRADING INFO
+        symbol_info = self.exchange_api.get_symbol_trade_info(self.symbol)
+        self.quote_min_notional = symbol_info["min_trade_value"]
+        self.quote_precision = symbol_info["quote_precision"]
+        self.base_precision = symbol_info["base_precision"]
 
         # Threading
         self.thread = None
@@ -103,6 +107,16 @@ class Tactician:
             os.remove(self.pid_file)
 
 
+    def fix_asset_precision(self, quote_asset_value: float = None, base_asset_value: float = None) -> float:
+
+        if quote_asset_value is not None:
+            decimal_value = Decimal(quote_asset_value).quantize(Decimal(f"1e-{self.quote_precision}"), rounding=ROUND_DOWN)
+        else:
+            decimal_value = Decimal(base_asset_value).quantize(Decimal(f"1e-{self.base_precision}"), rounding=ROUND_DOWN)
+
+        return float(decimal_value)
+
+
     def execute_trade(self, action: str) -> Dict[str, Any] | None:
         """
         Executes a trade based on the strategy's signal (BUY/SELL).
@@ -120,7 +134,7 @@ class Tactician:
                 order = self.exchange_api.place_buy_order(symbol=self.symbol, quote_amount=self.capital)
                 if order:
                     self.position += order["position"]
-                    self.capital = self.capital - order["executed_quote_amount"]
+                    self.capital = self.fix_asset_precision(self.capital - order["executed_quote_amount"], None)
                     self.trade_history.append({"timestamp": time.time(), "action": "BUY", "order_id": order["order_id"], "quote_amount": float(order["executed_quote_amount"]), "price": order["price"], "amount": self.position, "status": "executed"})
                     print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {float(order["price"])}")
                 else:
@@ -136,7 +150,7 @@ class Tactician:
                 order = self.exchange_api.place_sell_order(symbol=self.symbol, quantity=self.position)
                 if order:
                     self.capital += float(order["executed_quote_amount"])
-                    self.position = self.position - float(order["position"])
+                    self.position = self.fix_asset_precision(None, self.position - float(order["position"]))
                     self.trade_history.append({"timestamp": time.time(), "action": "SELL", "order_id": order["order_id"], "price": float(order["price"]), "amount": self.position, "status": "executed"})
                     print(f"Tactician :: execute_trade :: \033[93m SELL ORDER \033[0m quote: {self.capital} {self.position} {self.symbol} at {order["price"]}")
                 else:

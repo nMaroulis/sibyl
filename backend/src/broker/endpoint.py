@@ -55,17 +55,17 @@ def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, Any]:
     return res
 
 
-@router.get("/trade/spot/check/minimum_value")
+@router.get("/trade/spot/check/symbol_info")
 def get_min_trade_value(exchange: str , symbol: str):
 
     client = ExchangeClientFactory.get_client(exchange)
 
-    res = client.get_minimum_trade_value(symbol)
+    res = client.get_symbol_info(symbol)
 
     if res:
         return res
     else:
-        raise HTTPException(status_code=500, detail="Fetching minimum trade value failed.")
+        raise HTTPException(status_code=500, detail="Fetching symbol info failed.")
 
 
 @router.get("/trade/spot/asset/market_price")

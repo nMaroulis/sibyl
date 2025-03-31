@@ -62,7 +62,7 @@ if strategies:
                     icon=":material/download:"
                 )
             else:
-                st.button("Download Logs to CSV", use_container_width=True, disabled=True, icon=":material/download:")
+                st.sidebar.button("Download Logs to CSV", use_container_width=True, disabled=True, icon=":material/download:")
 
             st.divider()
             st.html(

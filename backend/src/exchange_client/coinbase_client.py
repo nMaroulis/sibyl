@@ -142,6 +142,37 @@ class CoinbaseClient(ExchangeAPIClient):
         pass
 
 
+    def get_symbol_info(self, symbol: str) -> Dict[str, Any] | None:
+        """
+        Retrieves information about a specific symbol pair.
+
+        Args:
+            symbol (str): The symbol pair to fetch.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing information about the symbol.
+
+        Coinbase API Response Example:
+        {
+            "id": "BTC-USD",
+            "base_currency": "BTC",
+            "quote_currency": "USD",
+            "quote_increment": "0.01000000",
+            "base_increment": "0.00000001",
+            "display_name": "BTC/USD",
+            "min_market_funds": "10",
+            "margin_enabled": false,
+            "post_only": false,
+            "limit_only": false,
+            "cancel_only": false,
+            "status": "online",
+            "status_message": "",
+            "auction_mode": true
+        }
+        """
+        pass
+
+
     def get_minimum_trade_value(self, symbol: str) -> Optional[Dict[str, Union[float, str]]]:
         """
         Retrieves the minimum trade value required for a given trading pair.

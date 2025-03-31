@@ -138,7 +138,7 @@ if st.session_state["available_exchange_apis"]:
                         get_market_condition_message(res["score"])
                         st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>3. Strategy Action Plot</h4>")
                         st.caption("The algorithm might have decided more BUY, SELL order in between that are invalid due to the fact that two or more consecutive BUY or SELL orders are not allowed.")
-                        static_strategy_plot(pd.DataFrame(res["logs"]), True)
+                        static_strategy_plot(pd.DataFrame(res["logs"]), False, False)
                         st.write("Deploy Strategy below 👇👇")
                     else:
                         st.error("Failed to get Backtesting results. See logs for error.", icon=":material/report:")

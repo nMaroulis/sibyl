@@ -5,6 +5,9 @@ from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_in
 from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price, submit_order
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 
+from frontend.src.library.spot_trade_helper.client import fetch_symbol_info
+import math
+
 
 fix_page_layout('spot trading')
 set_page_title("Spot Trading")
@@ -39,16 +42,16 @@ if len(st.session_state["available_exchange_apis"]) > 0:
             default_base_index = asset_list[quote_asset].index("BTC") if "BTC" in asset_list[quote_asset] else 0  # making BTC appear as preselected choice
             base_asset = st.selectbox('Base Asset:', options=asset_list[quote_asset], index=default_base_index)
         with col02:
-            quantity = st.number_input('Quantity (Base Asset):', min_value=0.000001, step=0.000001, format="%.6f", value=10.000000)
+            # GET INFORMATION about the symbol, base and quote asset precision and min_trade_value
+            symbol_info = fetch_symbol_info(exchange=st.session_state['trade_exchange_api'], quote_asset=quote_asset, base_asset=base_asset)
+            base_format = f"%.{int(-math.log10(symbol_info["base_precision"]))}f"
+            quantity = st.number_input('Quantity (Base Asset):', min_value=symbol_info["base_precision"], step=symbol_info["base_precision"], format=base_format)
+            st.caption(f"The precision is fetched by the {st.session_state['trade_exchange_api']} API to match the minimum accepted Base asset precision for Trading.")
             # st.segmented_control("Asset Quantity", options=["Base Asset", "Quote Asset (Cost-based)"], default="Base Asset")  # TODO
 
-        if st.session_state['trade_exchange_api'] == "Coinbase" or st.session_state['trade_exchange_api'] == "Coinbase Sandbox":
-            trading_pair = f"{base_asset}-{quote_asset}"
-        else:
-            trading_pair = base_asset+quote_asset
 
         # Get Base Asset price in Quote Asset and minimum order
-        market_price = get_pair_market_price(quote_asset, base_asset, quantity)
+        market_price = get_pair_market_price(quote_asset, base_asset, quantity, symbol_info["min_trade_value"])
 
         # show available balance
         get_account_balance(quote_asset, quantity, market_price)
@@ -78,19 +81,19 @@ if len(st.session_state["available_exchange_apis"]) > 0:
         with col20:
 
             if order_type in ["Limit", "Stop-Loss Limit", "Take-Profit Limit"]:
-                price = st.number_input("Limit Price:", min_value=0.000001, step=0.000001, format="%.6f")
+                price = st.number_input("Limit Price:", min_value=symbol_info["quote_precision"], step=symbol_info["quote_precision"], format=base_format)
             else:
-                st.number_input("Limit Price:", min_value=0.000001, step=0.000001, format="%.6f", disabled=True)
+                st.number_input("Limit Price:", min_value=symbol_info["quote_precision"], step=symbol_info["quote_precision"], format=base_format, disabled=True)
         with col21:
             if order_type in ["Stop-Loss", "Stop-Loss Limit", "Trailing Stop"]:
-                stop_price = st.number_input("Stop Price:", min_value=0.000001, step=0.000001, format="%.6f")
+                stop_price = st.number_input("Stop-Loss Price:", min_value=symbol_info["quote_precision"], step=symbol_info["quote_precision"], format=base_format)
             else:
-                st.number_input("Stop Price:", min_value=0.000001, step=0.000001, format="%.6f", disabled=True)
+                st.number_input("Stop-Loss Price:", min_value=symbol_info["quote_precision"], step=symbol_info["quote_precision"], format=base_format, disabled=True)
         with col22:
             if order_type in ["Take-Profit", "Take-Profit Limit"]:
-                take_profit_price = st.number_input("Take Profit Price:", min_value=0.000001, step=0.000001, format="%.6f")
+                take_profit_price = st.number_input("Take Profit Price:", min_value=symbol_info["quote_precision"], step=symbol_info["quote_precision"], format=base_format)
             else:
-                st.number_input("Take Profit Price:", min_value=0.000001, step=0.000001, format="%.6f", disabled=True)
+                st.number_input("Take Profit Price:", min_value=symbol_info["quote_precision"], step=symbol_info["quote_precision"], format=base_format, disabled=True)
 
         col30  = st.columns(1)
         with col30[0]:

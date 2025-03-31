@@ -143,6 +143,23 @@ class KrakenClient(ExchangeAPIClient):
         pass
 
 
+    def get_symbol_info(self, symbol: str) -> Dict[str, Any] | None:
+        """
+        Retrieves information about a specific symbol pair.
+
+        Args:
+            symbol (str): The symbol pair to fetch.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing information about the symbol.
+
+        Kraken API Response Example:
+        {
+        }
+        """
+        pass
+
+
     def get_minimum_trade_value(self, symbol: str) -> Optional[Dict[str, Union[float, str]]]:
         """
         Retrieves the minimum trade value required for a given trading pair.
