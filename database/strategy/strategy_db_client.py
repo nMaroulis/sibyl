@@ -25,12 +25,13 @@ class StrategyDBClient:
         self.metadata_table = self.db.table("strategies")
 
 
-    def add_strategy(self, strategy_id: str, symbol: str, quote_amount: float, time_interval: str, trades_limit: int, strategy_name: str, created_at: int ) -> None:
+    def add_strategy(self, strategy_id: str, quote_asset: str, base_asset: str, quote_amount: float, time_interval: str, trades_limit: int, strategy_name: str, created_at: int ) -> None:
         """
         Adds metadata for a strategy.
 
         :param strategy_id: Unique identifier for the trading strategy.
-        :param symbol: The trading pair symbol (e.g., BTC/USDT).
+        :param quote_asset: Quote asset.
+        :param base_asset: Base asset.
         :param quote_amount: The amount to trade.
         :param time_interval: The time interval to trade in.
         :param trades_limit: The number of trades before the loop stops.
@@ -39,7 +40,8 @@ class StrategyDBClient:
         """
         self.metadata_table.insert({
             "strategy_id": strategy_id,
-            "symbol": symbol,
+            "quote_asset": quote_asset,
+            "base_asset": base_asset,
             "quote_amount": quote_amount,
             "time_interval": time_interval,
             "trades_limit": trades_limit,

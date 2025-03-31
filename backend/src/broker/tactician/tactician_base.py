@@ -19,13 +19,14 @@ class Tactician:
     and log trade activity.
     """
 
-    def __init__(self, exchange_api: TacticianExchangeInterface, symbol: str, capital_allocation: float) -> None:
+    def __init__(self, exchange_api: TacticianExchangeInterface, quote_asset: str, base_asset:str, capital_allocation: float) -> None:
         """
         Initializes the TradeExecutor.
 
         Args:
             exchange_api (TacticianExchangeInterface): The exchange interface object which interacts with the crypto exchange.
-            symbol (str): The trading symbol (e.g., 'BTC/USD').
+            quote_asset (str): The name of the quote asset.
+            base_asset (str): The name of the base asset.
             capital_allocation (float): The amount of capital available for trading. Default is 10.
 
         :params:
@@ -36,7 +37,9 @@ class Tactician:
             last_order
         """
         self.exchange_api = exchange_api
-        self.symbol = symbol
+        self.quote_asset = quote_asset
+        self.base_asset = base_asset
+        self.symbol = self.exchange_api.get_market_symbol(self.quote_asset, self.base_asset)
         self.capital = capital_allocation
         self.position = 0  # Tracks how much of the asset you own
         self.trade_history: List[Dict[str, Any]] = []  # Store all trade actions
@@ -131,12 +134,13 @@ class Tactician:
         if action == "BUY":
             if self.last_order_type != "BUY" and self.capital > self.quote_min_notional:
                 self.last_order_type = "BUY"
-                order = self.exchange_api.place_buy_order(symbol=self.symbol, quote_amount=self.fix_asset_precision(self.capital, None))
+                order = self.exchange_api.place_buy_order(quote_asset=self.quote_asset, base_asset=self.base_asset, quote_amount=self.fix_asset_precision(self.capital, None))
                 if order:
                     self.position += order["position"]
                     self.capital = self.capital - order["executed_quote_amount"]
                     self.trade_history.append({"timestamp": time.time(), "action": "BUY", "order_id": order["order_id"], "quote_amount": float(order["executed_quote_amount"]), "price": order["price"], "amount": self.position, "status": "executed"})
-                    print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {float(order["price"])}")
+                    print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m :: Bought {order["position"]} {self.base_asset} with {order["executed_quote_amount"]} {self.quote_asset} at price {float(order["price"])}")
+                    print(f"Tactician :: execute_trade :: New {self.quote_asset} Balance: {self.capital} | {self.base_asset} Position: {self.position}")
                 else:
                     print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m Failed.")
                 return {"timestamp": time.time(), "action": "BUY", "order_id": order["order_id"], "quote_amount": float(order["executed_quote_amount"]), "price": order["price"], "amount": self.position, "status": "executed"}
@@ -147,12 +151,13 @@ class Tactician:
         elif action == "SELL":
             if self.last_order_type != "SELL" and self.position > 0:
                 self.last_order_type = "SELL"
-                order = self.exchange_api.place_sell_order(symbol=self.symbol, quantity=self.fix_asset_precision(None, self.position))
+                order = self.exchange_api.place_sell_order(quote_asset=self.quote_asset, base_asset=self.base_asset, quantity=self.fix_asset_precision(None, self.position))
                 if order:
                     self.capital += float(order["executed_quote_amount"])
                     self.position = self.fix_asset_precision(None, self.position - float(order["position"]))
                     self.trade_history.append({"timestamp": time.time(), "action": "SELL", "order_id": order["order_id"], "price": float(order["price"]), "amount": self.position, "status": "executed"})
-                    print(f"Tactician :: execute_trade :: \033[93m SELL ORDER \033[0m quote: {self.capital} {self.position} {self.symbol} at {order["price"]}")
+                    print(f"Tactician :: execute_trade :: \033[93m SELL ORDER \033[0m :: Sold {order["position"]} {self.base_asset} for {order["executed_quote_amount"]} {self.quote_asset} at price {order["price"]}")
+                    print(f"Tactician :: execute_trade :: New {self.quote_asset} Balance: {self.capital} | {self.base_asset} Position: {self.position}")
                 else:
                     print(f"Tactician :: execute_trade :: \033[93m SELL ORDER \033[0m Failed.")
                 return {"timestamp": time.time(), "action": "SELL", "order_id": order["order_id"], "price": float(order["price"]), "amount": self.position, "status": "executed"}
@@ -283,7 +288,7 @@ class Tactician:
 
         self.time_interval = interval
         self.is_price_only = strategy.is_price_only  # whether the strategy needs only the close price and not OHLCV data
-        self.db_client.add_strategy(strategy_id, self.symbol, self.capital, interval, trades_limit, strategy.name, int(time.time()*1000))
+        self.db_client.add_strategy(strategy_id, self.quote_asset, self.base_asset, self.capital, interval, trades_limit, strategy.name, int(time.time()*1000))
 
         print(f"Tactician :: Initiating Strategy loop with id {strategy_id}.")
         self.initiate_dataset(dataset_size)

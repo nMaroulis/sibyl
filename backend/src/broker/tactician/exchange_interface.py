@@ -11,6 +11,13 @@ class TacticianExchangeInterface:
         self.exchange_client = exchange_client
 
 
+    def get_market_symbol(self, quote_asset: str, base_asset: str) -> str:
+        if self.exchange_client.name in ["binance", "binance_testnet", "kraken"]:
+            return f"{base_asset}{quote_asset}"
+        else: # Coinbase
+            return f"{base_asset}-{quote_asset}"
+
+
     def get_kline_data(self, symbol: str, interval: str, limit: int) -> pd.DataFrame:
         """
         Calls the Exchange API to get the latest price data. It fetches :limit: prices on call and initiates the dataset.
@@ -117,7 +124,7 @@ class TacticianExchangeInterface:
         return df
 
 
-    def place_buy_order(self, symbol: str, quote_amount: float) -> Dict[str, Any]:
+    def place_buy_order(self, quote_asset: str, base_asset: str, quote_amount: float) -> Dict[str, Any]:
 
         if self.exchange_client.name in ["binance", "binance_testnet"]:
             """
@@ -140,8 +147,7 @@ class TacticianExchangeInterface:
                  "fills":[{"price":"81665.88000000","qty":"0.00012000","commission":"0.00000000","commissionAsset":"BTC","tradeId":1462374}],
                  "selfTradePreventionMode":"EXPIRE_MAKER"
             """
-            # exchange API expects quote and base assets as arguments, here the pair is given as quote argument and the base is empty
-            order_response = self.exchange_client.place_spot_order("market_quote", symbol, "", "BUY", quote_amount)
+            order_response = self.exchange_client.place_spot_order("market_quote", quote_asset, base_asset, "BUY", quote_amount)
             print("TacticianExchangeInterface :: place_buy_order", order_response)
             order = order_response["message"]
             fills = order["fills"]
@@ -158,7 +164,7 @@ class TacticianExchangeInterface:
         return response_dict
 
 
-    def place_sell_order(self, symbol: str, quantity: float) -> Dict[str, Any]:
+    def place_sell_order(self, quote_asset: str, base_asset: str, quantity: float) -> Dict[str, Any]:
         if self.exchange_client.name in ["binance", "binance_testnet"]:
             """
                 Example Response:
@@ -180,8 +186,7 @@ class TacticianExchangeInterface:
                     "fills":[{"price":"81687.09000000","qty":"0.00012000","commission":"0.00000000","commissionAsset":"USDT","tradeId":1463738}],
                     "selfTradePreventionMode":"EXPIRE_MAKER"
             """
-            # exchange API expects quote and base assets as arguments, here the pair is given as quote argument and the base is empty
-            order_response = self.exchange_client.place_spot_order("market", symbol, "", "SELL", quantity)
+            order_response = self.exchange_client.place_spot_order("market", quote_asset, base_asset, "SELL", quantity)
             print("TacticianExchangeInterface :: place_sell_order", order_response)
             order = order_response["message"]
             fills = order["fills"]

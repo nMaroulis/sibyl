@@ -133,7 +133,8 @@ def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
         # Instantiate the Tactician
         strategy_id = f"strategy_{int(time.time())}"
         symbol = f"{strategy_params.base_asset}{strategy_params.quote_asset}"
-        tactician = Tactician(exchange_api=tactician_exchange_api, symbol=symbol, capital_allocation=strategy_params.quote_amount)
+
+        tactician = Tactician(exchange_api=tactician_exchange_api, quote_asset=strategy_params.quote_asset, base_asset=strategy_params.base_asset, capital_allocation=strategy_params.quote_amount)
         # Run the strategy with a n-second interval and stop if capital is less than min_capital
         tactician.run_strategy(strategy_id, strategy, interval=strategy_params.time_interval, min_capital=0.0, trades_limit=strategy_params.num_trades, dataset_size=strategy_params.dataset_size)
 

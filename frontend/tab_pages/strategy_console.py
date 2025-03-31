@@ -21,7 +21,7 @@ if strategies:
     df['monitor'] = False
     df.insert(0, 'monitor', df.pop('monitor'))
     st.caption("Use the ***search bar*** on the top right of the table to search for specific **keywords**")
-    edited_df = st.data_editor(df.sort_values(by='created_at', ascending=False), use_container_width=True, hide_index=True, num_rows='fixed', disabled=["strategy_id", "symbol", "quote_amount", "time_interval", "trades_limit", "strategy_name", "created_at", "status"])
+    edited_df = st.data_editor(df.sort_values(by='created_at', ascending=False), use_container_width=True, hide_index=True, num_rows='fixed', disabled=["strategy_id", "quote_asset", "base_asset", "quote_amount", "time_interval", "trades_limit", "strategy_name", "created_at", "status"])
     st.info("💡 The **DateTime** above refers to the **UTC** timestamp. So times may be different from your local time.")
     df_to_show = edited_df.loc[edited_df["monitor"] == True].copy().reset_index(drop=True)
 
@@ -34,7 +34,7 @@ if strategies:
         strategy_id = df_to_show["strategy_id"].iloc[0]
 
 
-        strategy_info_card(strategy_id=strategy_id, symbol=df_to_show["symbol"].iloc[0], balance=df_to_show["quote_amount"].iloc[0], time_interval=df_to_show["time_interval"].iloc[0], trades_limit= df_to_show["trades_limit"].iloc[0],
+        strategy_info_card(strategy_id=strategy_id, quote_asset=df_to_show["quote_asset"].iloc[0], base_asset=df_to_show["base_asset"].iloc[0], balance=df_to_show["quote_amount"].iloc[0], time_interval=df_to_show["time_interval"].iloc[0], trades_limit= df_to_show["trades_limit"].iloc[0],
                                strategy_name=df_to_show["strategy_name"].iloc[0], created_at=df_to_show["created_at"].iloc[0].strftime("%Y-%m-%d %H:%M:%S"), status=df_to_show["status"].iloc[0])
 
         st.caption("You can **Stop** or **Pause** an active strategy and **download** the **logs in csv** for a strategy that has finished in the sidebar 👈.")
@@ -53,7 +53,6 @@ if strategies:
                     st.rerun()
             st.sidebar.button("Pause Strategy", type="secondary", icon=":material/pause_circle:", disabled=status_change_options, use_container_width=True)
 
-# TacticianExchangeInterface :: place_buy_order {'status': 'error', 'message': "APIError(code=-1111): Parameter 'quoteOrderQty' has too much precision."}
             if status_change_options:
                 st.sidebar.download_button(
                     "Download Logs to CSV",
@@ -74,8 +73,8 @@ if strategies:
             st.caption("The strategy logs ***order*** field contains the action the algorithm too at a specific timestamp. "
                        "These actions are **HOLD** if no action is taken, **BUY** and **SELL**. If the BUY or SELL orders fail"
                        " due to an error or other condition is is denoted as **INVALID_BUY** and **INVALID_SELL**.")
-            st.caption("The **Slippage** is how far of the order price was from the Price that the algorithm had as the latest price when it made the decision. "
-                       "Ideally the slippage has to be as close to 0 as it gets. In case of a **BUY** order a positive value is good and for **SELL** a negative slippage value is better.")
+            st.caption("The **Slippage** is how far of the **order price** was from the **desired price** that the algorithm had as the latest price when it made the decision. "
+                       "Ideally the slippage has to be as close to 0 as it gets. Sibyl defines slippage as ***actual_order_price - desired_price***. Therefore, in case of a **BUY** order a positive value is good and for **SELL** a negative slippage value is better.")
 
             hide_invalid = st.toggle("show only BUY/SELL orders", value=False)
             if hide_invalid:

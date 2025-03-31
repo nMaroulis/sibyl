@@ -430,7 +430,7 @@ def strategy_plot_info() -> None:
     """)
 
 
-def strategy_info_card(strategy_id: str, symbol:str, balance: float, time_interval: str, trades_limit: int, strategy_name: str, created_at: str, status: str) -> None:
+def strategy_info_card(strategy_id: str, quote_asset:str, base_asset: str, balance: float, time_interval: str, trades_limit: int, strategy_name: str, created_at: str, status: str) -> None:
     st.html(
         f"""
         <style>
@@ -452,7 +452,7 @@ def strategy_info_card(strategy_id: str, symbol:str, balance: float, time_interv
             }}
             .metrics-container {{
                 display: grid;
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
                 gap: 15px;
                 margin-bottom: 15px;
             }}
@@ -499,9 +499,11 @@ def strategy_info_card(strategy_id: str, symbol:str, balance: float, time_interv
         <div class="strategy-card">
             <div class="strategy-title">Strategy {strategy_id} Overview</div>
             <div class="metrics-container">
-                <div class="metric-box">Market: {symbol}</div>
+                <div class="metric-box">Quote Asset: {quote_asset}</div>
+                <div class="metric-box">Base Asset: {base_asset}</div>
+                <div class="metric-box">Market: {base_asset}/{quote_asset}</div>
                 <div class="metric-box">Time Interval: {time_interval}</div>
-                <div class="metric-box">Balance: {balance}</div>
+                <div class="metric-box">Initial Balance: {balance} {quote_asset}</div>
                 <div class="metric-box">Trades Limit: {trades_limit}</div>
             </div>
             <div class="strategy-info">Strategy: <b>{strategy_name}</b></div>
