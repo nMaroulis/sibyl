@@ -131,10 +131,10 @@ class Tactician:
         if action == "BUY":
             if self.last_order_type != "BUY" and self.capital > self.quote_min_notional:
                 self.last_order_type = "BUY"
-                order = self.exchange_api.place_buy_order(symbol=self.symbol, quote_amount=self.capital)
+                order = self.exchange_api.place_buy_order(symbol=self.symbol, quote_amount=self.fix_asset_precision(self.capital, None))
                 if order:
                     self.position += order["position"]
-                    self.capital = self.fix_asset_precision(self.capital - order["executed_quote_amount"], None)
+                    self.capital = self.capital - order["executed_quote_amount"]
                     self.trade_history.append({"timestamp": time.time(), "action": "BUY", "order_id": order["order_id"], "quote_amount": float(order["executed_quote_amount"]), "price": order["price"], "amount": self.position, "status": "executed"})
                     print(f"Tactician :: execute_trade :: \033[92m BUY ORDER \033[0m quote:{order["executed_quote_amount"]}, base:{self.position} {self.symbol} at {float(order["price"])}")
                 else:
@@ -147,7 +147,7 @@ class Tactician:
         elif action == "SELL":
             if self.last_order_type != "SELL" and self.position > 0:
                 self.last_order_type = "SELL"
-                order = self.exchange_api.place_sell_order(symbol=self.symbol, quantity=self.position)
+                order = self.exchange_api.place_sell_order(symbol=self.symbol, quantity=self.fix_asset_precision(None, self.position))
                 if order:
                     self.capital += float(order["executed_quote_amount"])
                     self.position = self.fix_asset_precision(None, self.position - float(order["position"]))

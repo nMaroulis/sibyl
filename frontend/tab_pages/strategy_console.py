@@ -36,6 +36,9 @@ if strategies:
 
         strategy_info_card(strategy_id=strategy_id, symbol=df_to_show["symbol"].iloc[0], balance=df_to_show["quote_amount"].iloc[0], time_interval=df_to_show["time_interval"].iloc[0], trades_limit= df_to_show["trades_limit"].iloc[0],
                                strategy_name=df_to_show["strategy_name"].iloc[0], created_at=df_to_show["created_at"].iloc[0].strftime("%Y-%m-%d %H:%M:%S"), status=df_to_show["status"].iloc[0])
+
+        st.caption("You can **Stop** or **Pause** an active strategy and **download** the **logs in csv** for a strategy that has finished in the sidebar 👈.")
+
         # Get Logs Data
         logs = get_strategy_logs(strategy_id)
         if logs is not None and len(logs) > 0:
