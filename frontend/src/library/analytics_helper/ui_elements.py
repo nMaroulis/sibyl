@@ -36,7 +36,6 @@ def get_price_analytics_form():
             divider()  # html("""<hr style="height:1px;width:12em;text-align:left; color:gray; background-color:gray; padding-top:0;">""")
             sumbit_button = form_submit_button('Call the Analyst 🕵️‍♂️')
             if sumbit_button:
-                exchange_api = "binance"  # exchange_api.replace(' ', '_').lower()
                 time_int_dict = {'1 minute': '1m', '5 minutes': '5m', '15 minutes': '15m', '30 minutes': '30m',
                                  '1 hour': '1h', '4 hours': '4h',
                                  '12 hours': '12h', '1 day': '1d', '2 days': '2d', '3 days': '3d', '5 days': '5d',
@@ -53,15 +52,15 @@ def get_price_analytics_form():
                     # SHOW LINE PLOT
                     show_line_plot_with_analytics(f"{base_asset}{quote_asset}", df)
 
-                sidebar.download_button(
-                    "Download to CSV",
-                    df.to_csv(index=False).encode('utf-8'),
-                    f"{base_asset}{quote_asset}_{time_int}_price_history.csv",
-                    "text/csv",
-                    key='download-csv',
-                    use_container_width=True,
-                    icon=":material/download:"
-                )
+                    sidebar.download_button(
+                        "Download to CSV",
+                        df.to_csv(index=False).encode('utf-8'),
+                        f"{base_asset}{quote_asset}_{time_int}_price_history.csv",
+                        "text/csv",
+                        key='download-csv',
+                        use_container_width=True,
+                        icon=":material/download:"
+                    )
     return
 
 

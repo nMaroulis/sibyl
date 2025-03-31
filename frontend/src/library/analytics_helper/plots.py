@@ -1,9 +1,9 @@
-from pandas import DataFrame, to_datetime, concat
+from pandas import DataFrame, concat
 from plotly.graph_objects import Figure, Scatter, Candlestick
-from streamlit import plotly_chart, warning, spinner, html, metric, write
+from streamlit import plotly_chart, warning, spinner, html, metric, write, caption
 from frontend.src.library.analytics_helper.client import fetch_price_history
 from plotly.express import imshow
-from frontend.src.library.strategy_helper.launcher_helper import get_market_condition_message
+from frontend.src.library.strategy_helper.launcher_helper import get_market_condition_message, market_condition_explanation
 
 def show_analytics(quote_asset: str, base_asset: str, df: DataFrame, score: float):
     with spinner('The Analyst is analyzing the data...'):
@@ -33,8 +33,9 @@ def show_analytics(quote_asset: str, base_asset: str, df: DataFrame, score: floa
             </div>
 
         """)
+        caption("The Analyst class calculates a **score (%)** based on the OHLCV data, mostly relying on the price movement, that indicates whether the market is good for trading or not. **Higher is better**.")
+        market_condition_explanation()
         get_market_condition_message(score)
-
         metric(f'{base_asset} Price in {quote_asset}', float(df['close_price'].iloc[-1]),
                round(float(df['close_price'].iloc[-1]) - float(df['close_price'].iloc[-2]), 6))
     return
