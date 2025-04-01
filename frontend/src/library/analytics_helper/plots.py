@@ -5,6 +5,7 @@ from frontend.src.library.analytics_helper.client import fetch_price_history
 from plotly.express import imshow
 from frontend.src.library.strategy_helper.launcher_helper import get_market_condition_message, market_condition_explanation
 
+
 def show_analytics(quote_asset: str, base_asset: str, df: DataFrame, score: float):
     with spinner('The Analyst is analyzing the data...'):
         html("""
@@ -65,7 +66,6 @@ def show_line_plot_with_analytics(pair_symbol: str, price_hist_df: DataFrame) ->
         fig.update_layout(title=f'{pair_symbol} Price Analysis', xaxis_title='Date', yaxis_title='Price',
                           yaxis2=dict(title='RSI', overlaying='y', side='right'), showlegend=True)
         plotly_chart(fig, use_container_width=True)
-
 
 
 def price_history_plot(exchange_api: str, pair_symbol: str, time_int: str, time_limit: int, plot_type : str = 'Line Plot') -> None:

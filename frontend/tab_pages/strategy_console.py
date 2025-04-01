@@ -92,7 +92,8 @@ if strategies:
                 "<h3 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>3. Strategy Logs Plot</h3>")
             strategy_plot_info()
 
-            real_time_option = st.toggle("Real Time Monitor Line Plot", value=False, disabled=status_change_options)
+            st.badge("Real Time Monitor Line Plot", icon=":material/live_tv:", color="blue")
+            real_time_option = st.toggle("Enable", value=False, disabled=status_change_options)
             plot_options = st.pills("Plot Options", ["Show Slippage", "Show Invalid Orders"], selection_mode="multi")
             show_slippage = "Show Slippage" in plot_options
             show_invalid = "Show Invalid Orders" in plot_options

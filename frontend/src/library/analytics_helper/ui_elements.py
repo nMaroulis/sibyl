@@ -21,7 +21,7 @@ def get_price_analytics_form():
                 default_index = all_assets[base_asset].index("USDT") if "USDT" in all_assets[base_asset] else 0
                 quote_asset = selectbox(label='Choose Quote Asset', options=all_assets[base_asset], index=default_index)
             with cols[1]:
-                time_limit = number_input('Choose Sample Time Limit', value=1000, min_value=100, max_value=1000000)
+                time_limit = number_input('Choose Sample Time Limit', value=1000, min_value=100, max_value=10000)
             with cols[2]:
                 selectbox(label='Choose Exchange', options=["Binance"], disabled=True, help="The default exchange is Binance, since it contains the most markets available. Does not require an API key.")
 
