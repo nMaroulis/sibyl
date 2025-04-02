@@ -3,15 +3,18 @@ from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.settings_helper.funcs import insert_update_api_keys
 from frontend.src.library.client import check_exchange_api_connection, check_backend_connection, check_api_status
 from frontend.db.db_connector import update_fields, fetch_fields
-from pandas import DataFrame
-from settings.settings import UI_VERSION
+from dotenv import load_dotenv
 from frontend.src.library.settings_helper.navigation import show_status_cards
+import os
+
 
 fix_page_layout('Settings')
 set_page_title("Settings")
 
+load_dotenv("settings/version.env")
+
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
-st.sidebar.info(f'⚙️Sibyl Version **{UI_VERSION}**')
+st.sidebar.info(f'⚙️Sibyl Version **{os.getenv("FRONTEND_VERSION")}**')
 st.write('The cards below indicate current connection status of each API. Go to the bottom ')
 
 show_status_cards()
@@ -30,7 +33,7 @@ api_tab, llm_tab, price_tab, back_tab, trd_tab = st.tabs(['Crypto Exchange API S
 
 with api_tab:
     with st.container(border=True):
-        exchange = st.selectbox('Choose Crypto Exchange', options=['Binance Testnet', 'Binance', 'Coinbase Sandbox'])
+        exchange = st.selectbox('Choose Crypto Exchange', options=['Binance Testnet', 'Binance', 'Coinbase Sandbox', 'Mock Exchange'])
         with st.form('Exchange API Credentials', border=False):
             # switch with global
             with st.spinner('Checking Crypto Exchange API status...'):
