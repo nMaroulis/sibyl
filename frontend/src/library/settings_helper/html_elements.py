@@ -181,7 +181,7 @@ def compact_card_style():
                 background-color: #F9F9F9;
                 border-radius: 15px;
                 text-align: center;
-                padding: 6px;
+                padding: 4px;
                 max-width: 140px;
                 min-width: 130px;
                 margin: 15px 10px;
@@ -212,16 +212,36 @@ def compact_card_style():
                 border-radius: 50%;
                 box-shadow: 0 5px 8px rgba(247, 228, 63, 0.4);
             }
+            
+            .mini-card-shadow-Kr img {
+                box-shadow: 0 10px 15px rgba(138,43,226, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .mini-card-shadow-Co img {
+                box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .mini-card-shadow-Ba img {
+                box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .mini-card-shadow-Op img {
+                box-shadow: 0 10px 15px rgba(95,158,160, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .mini-card-shadow-Ge img {
+                box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
+            }
 
+            
             .mini-card h4 {
-                font-size: 0.9rem;
+                font-size: 0.7rem;
                 color: #444;
-                font-weight: bold;
                 margin: 4px 0;
             }
 
             .mini-card button {
-                font-size: 0.7rem;
+                font-size: 0.6rem;
                 font-weight: bold;
                 padding: 4px 15px;
                 border-radius: 15px;
@@ -265,8 +285,8 @@ def compact_card_header(title: str):
 
 def compact_card(name: str, logo: str, status: str = 'Active') -> str | None:
     html_txt = f"""
-            <div class="mini-card mini-card-{status}">
-                <div class="mini-card-icon">
+            <div class="mini-card mini-card-{status}" style="display:inline-block;">
+                <div class="mini-card-icon mini-card-shadow-{name[0:2]}">
                     <img src="{logo}" alt=""/>
                 </div>
                 <h4>{name}</h4>
