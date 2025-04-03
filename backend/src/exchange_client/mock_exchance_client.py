@@ -14,6 +14,7 @@ class MockExchangeClient(ExchangeAPIClient):
         self.api_base_url = ""
         load_dotenv("mock_status.env")
 
+
     def check_status(self) -> str:
         status = os.getenv("MOCK_STATUS")
         if status =="true":
