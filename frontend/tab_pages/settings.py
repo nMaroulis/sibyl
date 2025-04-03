@@ -1,7 +1,7 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.settings_helper.funcs import insert_update_api_keys
-from frontend.src.library.client import check_exchange_api_connection, check_backend_connection, check_api_status
+from frontend.src.library.client import check_backend_connection, check_api_status
 from frontend.db.db_connector import update_fields, fetch_fields
 from dotenv import load_dotenv
 from frontend.src.library.settings_helper.navigation import show_status_cards
@@ -14,7 +14,10 @@ set_page_title("Settings")
 load_dotenv("settings/version.env")
 
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
-st.sidebar.info(f'⚙️Sibyl Version **{os.getenv("FRONTEND_VERSION")}**')
+st.sidebar.badge(f"Frontend Version {os.getenv("FRONTEND_VERSION")}", color="blue", icon=":material/tv:" )
+st.sidebar.badge(f"Backend Version {os.getenv("BACKEND_VERSION")}", color="green", icon=":material/host:")
+st.sidebar.badge(f"LLM Hub Version {os.getenv("LLM_HUB_VERSION")}", color="orange", icon=":material/network_node:")
+
 st.write('The cards below indicate current connection status of each API. Go to the bottom ')
 
 show_status_cards()
@@ -26,8 +29,6 @@ st.sidebar.button('Reset All Data', type='primary')
 with st.spinner('Checking Backend Server connection'):
     server_conn = check_backend_connection()
 
-# with st.spinner('Checking Crypto Exchange API connection'):
-#     api_conn = check_exchange_api_connection()
 
 api_tab, llm_tab, price_tab, back_tab, trd_tab = st.tabs(['Crypto Exchange API Settings', 'LLM API Settings', 'Price History API', 'Backend Server Settings', 'Trading Settings'])
 

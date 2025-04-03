@@ -2,6 +2,8 @@ import random
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 from typing import Optional, Dict, Any, List, Union
 import time
+from dotenv import load_dotenv
+import os
 
 
 class MockExchangeClient(ExchangeAPIClient):
@@ -10,9 +12,14 @@ class MockExchangeClient(ExchangeAPIClient):
         super().__init__()
         self.name = 'mock_exchange'
         self.api_base_url = ""
+        load_dotenv("mock_status.env")
 
     def check_status(self) -> str:
-        return 'Active'
+        status = os.getenv("MOCK_STATUS")
+        if status =="true":
+            return 'Active'
+        else:
+            return 'Inactive'
 
 
     def place_spot_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:

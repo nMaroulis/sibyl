@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.client import check_backend_connection, check_exchange_api_connection
+from frontend.src.library.client import check_backend_connection
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.settings_helper.navigation import show_homepage_status_cards
 from frontend.src.library.settings_helper.navigation import api_status_check
