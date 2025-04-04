@@ -125,7 +125,7 @@ class MockExchangeClient(ExchangeAPIClient):
             Dict[str, Any]: A dictionary containing spot balances, locked earn balances, staked balances, or an error message.
         """
         if quote_asset_pair_price is None:
-            prices = [0, 0, 0, 0]
+            prices = [0.0, 0.0, 0.0, 0.0]
         else:
             prices = [82000.0, 2400.0, 0.62, 1.0]
         res = {
@@ -145,8 +145,8 @@ class MockExchangeClient(ExchangeAPIClient):
                 "price": prices[2]
             },
             "USDT": {
-                "free": 9300,
-                "locked": 0.00,
+                "free": 9300.0,
+                "locked": 0.0,
                 "price": prices[3]
             }
         }
@@ -162,7 +162,6 @@ class MockExchangeClient(ExchangeAPIClient):
 
 
     def get_klines(self, symbol: str, interval: str, limit: int, start_time: int = None, end_time: int = None) -> Optional[List[Dict[str, float]]]:
-
         """
         Mock function to generate realistic kline (candlestick) data for testing.
 
@@ -185,33 +184,38 @@ class MockExchangeClient(ExchangeAPIClient):
                 - 'trades_num' (float): The number of trades.
         """
         current_time = int(time.time() * 1000)
-        time_step = 60000  # Assume 1-minute intervals as a default
+        time_step = 60000  # default: 1-minute candles
 
-        if start_time is None:
+        if start_time is not None:
             start_time = current_time - (limit * time_step)
 
         price_ranges = {
-            "BTCUSDT": (40000, 70000, 100, 5000),
-            "ETHUSDT": (2000, 5000, 50, 500),
-            "ADAUSDT": (0.3, 2, 0.05, 10),
+            "BTCUSDT": (50000, 0.01),  # (starting price, volatility)
+            "ETHUSDT": (3000, 0.015),
+            "ADAUSDT": (1.0, 0.02),
         }
 
-        base_price, max_price, min_step, max_step = price_ranges.get(symbol.upper(), (1000, 3000, 10, 100))
+        base_price, volatility = price_ranges.get(symbol.upper(), (1000, 0.01))
 
         klines = []
+        price = base_price
+
         for i in range(limit):
             open_time = start_time + (i * time_step)
-            open_price = round(random.uniform(base_price, max_price), 2)
-            price_step = round(random.uniform(min_step, max_step), 2)
-            high = round(open_price + price_step, 2)
-            low = round(open_price - price_step, 2)
-            close_price = round(random.uniform(low, high), 2)
+
+            # Simulate open -> close with some drift
+            drift = random.uniform(-1, 1) * volatility * price
+            close_price = round(price + drift, 2)
+
+            high = round(max(price, close_price) + abs(drift) * random.uniform(0.2, 0.5), 2)
+            low = round(min(price, close_price) - abs(drift) * random.uniform(0.2, 0.5), 2)
+
             volume = round(random.uniform(10, 10000), 2)
             trades_num = random.randint(50, 1000)
 
             klines.append({
                 "open_time": open_time,
-                "open_price": open_price,
+                "open_price": round(price, 2),
                 "high": high,
                 "low": low,
                 "close_price": close_price,
@@ -220,8 +224,9 @@ class MockExchangeClient(ExchangeAPIClient):
                 "trades_num": trades_num,
             })
 
-        return klines
+            price = close_price  # Set next candle's open to current close
 
+        return klines
 
     def get_symbol_info(self, symbol: str) -> Dict[str, Any] | None:
         res = {
