@@ -12,6 +12,7 @@ def fetch_apis_status(api_name: str = 'all') -> dict:
     else:
         return {}
 
+
 def post_new_api_keys(api_name:str, api_key: str, secret_key: str = None, api_metadata: str = None) -> bool:
 
     url = f"{BACKEND_SERVER_ADDRESS}/technician/credentials/apis/add"
@@ -30,3 +31,16 @@ def post_new_api_keys(api_name:str, api_key: str, secret_key: str = None, api_me
     else:
         return False
 
+
+def set_mock_exchange_status(status: bool) -> bool:
+    """
+    True: enable mock exchange
+    False: disable mock exchange
+    """
+    url = f"{BACKEND_SERVER_ADDRESS}/technician/exchanges/mock/status"
+    response = requests.put(url, json={"status": status})
+    print(response.json())
+    if response.status_code == 200:
+        return True
+    else:
+        return False

@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.settings_helper.navigation import api_status_check
+from frontend.src.library.settings_helper.navigation import exchange_api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook, time_in_force_instructions
 from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price, submit_order
@@ -18,7 +18,7 @@ get_spot_trade_instructions()
 
 if "available_exchange_apis" not in st.session_state:
     with st.spinner("Checking API Availability Status..."):
-        api_status_check()
+        exchange_api_status_check()
 
 if len(st.session_state["available_exchange_apis"]) > 0:
     if st.sidebar.button('Reset Trade', type='primary', use_container_width=True, icon=":material/reset_settings:"):

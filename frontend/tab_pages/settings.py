@@ -5,6 +5,7 @@ from frontend.src.library.client import check_backend_connection, check_api_stat
 from frontend.db.db_connector import update_fields, fetch_fields
 from dotenv import load_dotenv
 from frontend.src.library.settings_helper.navigation import show_status_cards
+from frontend.src.library.settings_helper.client import set_mock_exchange_status
 import os
 
 
@@ -35,45 +36,66 @@ api_tab, llm_tab, price_tab, back_tab, trd_tab = st.tabs(['Crypto Exchange API S
 with api_tab:
     with st.container(border=True):
         exchange = st.selectbox('Choose Crypto Exchange', options=['Binance Testnet', 'Binance', 'Coinbase Sandbox', 'Mock Exchange'])
-        with st.form('Exchange API Credentials', border=False):
-            # switch with global
-            with st.spinner('Checking Crypto Exchange API status...'):
-                api_conn = check_api_status(exchange)
+        # MOCK EXCHANGE
+        if exchange == 'Mock Exchange':
+            api_conn = check_api_status(exchange)
             if api_conn:
-                st.success('✅ A valid API key is already active.')
-                button_text, button_icon = 'Update API Credentials', ':material/cached:'
+                st.success('Mock Exchange is Enabled.', icon=':material/task_alt:')
+                if st.button('Disable Mock Exchange', icon=':material/power_settings_new:', type='primary'):
+                    res = set_mock_exchange_status(False)
+                    if res:
+                        st.success('Mock Exchange is status is now **Disabled**.', icon=':material/task_alt:')
+                    else:
+                        st.error("Disabling Mock Exchange **Failed**", icon=':material/warning:')
             else:
-                st.warning('⚠️ No active API Key found on the Database, please initialize.')
-                button_text, button_icon = 'Save API Credentials', ':material/save:'
-
-
-            if exchange == 'Binance':
-                st.info('In case you have not generated an API key for your Binance Account, see instructions below:', icon=':material/info:')
-                st.page_link("https://www.binance.com/en/support/faq/how-to-create-api-keys-on-binance-360002502072", label="Binance FAQ", icon="🌐")
-            elif exchange == 'Binance Testnet':
-                st.info('In case you have not generated an API key for your Binance Testnet Account, see instructions below:', icon=':material/info:')
-                st.page_link("https://www.binance.com/en/support/faq/detail/ab78f9a1b8824cf0a106b4229c76496d", label="Binance Testnet FAQ", icon="🌐")
-            elif exchange == 'Coinbase Sandbox':
-                st.page_link("https://public-sandbox.exchange.coinbase.com/", label="Coinbase Sandbox Website", icon="🌐")
-
-
-            with st.expander('API Credentials', expanded=True):
-                exchange_api_key = st.text_input('API Key', placeholder='Type or Copy/Paste API Key here...', type="password")
-                exchange_secret_key = st.text_input('Secret Key', placeholder='Type or Copy/Paste Secret Key here...', type="password")
-                if exchange == 'Coinbase Sandbox':
-                    passphrase = st.text_input('Passphrase', placeholder='Type or Copy/Paste Passphrase here...', type="password")
+                st.warning('Mock Exchange is **Disabled**.', icon=':material/warning:')
+                if st.button('Enable Mock Exchange', icon=':material/not_started:', type='primary'):
+                    res = set_mock_exchange_status(True)
+                    if res:
+                        st.success('Mock Exchange is status is now **Enabled**.', icon=':material/task_alt:')
+                        st.toast("Mock Exchange is now **Active**", icon=':material/task_alt:')
+                    else:
+                        st.error("Enabling Mock Exchange **Failed**", icon=':material/warning:')
+        else:
+            with st.form('Exchange API Credentials', border=False):
+                # switch with global
+                with st.spinner('Checking Crypto Exchange API status...'):
+                    api_conn = check_api_status(exchange)
+                if api_conn:
+                    st.success('A valid API key is already active.', icon=':material/task_alt:')
+                    button_text, button_icon = 'Update API Credentials', ':material/cached:'
                 else:
-                    st.text_input('Passphrase', placeholder='Type or Copy/Paste Passphrase here...', type="password", disabled=True)
-                    passphrase = None
-                st.radio(label="Account Type", options=['Personal', 'Testnet'], horizontal=True, disabled=True)
-            api_submit = st.form_submit_button(button_text, icon=button_icon, type="primary")
-            if api_submit:
-                with st.spinner("Encrypting and sending API Keys to Backend Server..."):
-                    res = insert_update_api_keys(exchange, exchange_api_key, exchange_secret_key, passphrase)
-                if res:
-                    st.success(f"✅ {exchange} **API Key** and **Secret Key** have been successfully added/updated to the Encrypted Database.")
-                else:
-                    st.error(f"⚠️ Inserting **{exchange} API Key** and **Secret Key** to the Encrypted Database failed.")
+                    st.warning('No active API Key found on the Database, please initialize.', icon=':material/warning:')
+                    button_text, button_icon = 'Save API Credentials', ':material/save:'
+
+
+                if exchange == 'Binance':
+                    st.info('In case you have not generated an API key for your Binance Account, see instructions below:', icon=':material/info:')
+                    st.page_link("https://www.binance.com/en/support/faq/how-to-create-api-keys-on-binance-360002502072", label="Binance FAQ", icon="🌐")
+                elif exchange == 'Binance Testnet':
+                    st.info('In case you have not generated an API key for your Binance Testnet Account, see instructions below:', icon=':material/info:')
+                    st.page_link("https://www.binance.com/en/support/faq/detail/ab78f9a1b8824cf0a106b4229c76496d", label="Binance Testnet FAQ", icon="🌐")
+                elif exchange == 'Coinbase Sandbox':
+                    st.page_link("https://public-sandbox.exchange.coinbase.com/", label="Coinbase Sandbox Website", icon="🌐")
+
+
+                with st.expander('API Credentials', expanded=True):
+                    exchange_api_key = st.text_input('API Key', placeholder='Type or Copy/Paste API Key here...', type="password")
+                    exchange_secret_key = st.text_input('Secret Key', placeholder='Type or Copy/Paste Secret Key here...', type="password")
+                    if exchange == 'Coinbase Sandbox':
+                        passphrase = st.text_input('Passphrase', placeholder='Type or Copy/Paste Passphrase here...', type="password")
+                    else:
+                        st.text_input('Passphrase', placeholder='Type or Copy/Paste Passphrase here...', type="password", disabled=True)
+                        passphrase = None
+                    st.radio(label="Account Type", options=['Personal', 'Testnet'], horizontal=True, disabled=True)
+                api_submit = st.form_submit_button(button_text, icon=button_icon, type="primary")
+                if api_submit:
+                    with st.spinner("Encrypting and sending API Keys to Backend Server..."):
+                        res = insert_update_api_keys(exchange, exchange_api_key, exchange_secret_key, passphrase)
+                    if res:
+                        st.success(f"✅ {exchange} **API Key** and **Secret Key** have been successfully added/updated to the Encrypted Database.")
+                    else:
+                        st.error(f"⚠️ Inserting **{exchange} API Key** and **Secret Key** to the Encrypted Database failed.")
 with llm_tab:
     with st.form('API Credentials'):
         llm_api = st.selectbox('Choose LLM Model API', options=['Hugging Face', 'OpenAI API', 'Google Gemini API'], help="Update LLM API")

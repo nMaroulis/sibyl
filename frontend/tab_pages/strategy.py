@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 from frontend.src.library.wallet_helper.client import fetch_account_spot
-from frontend.src.library.settings_helper.navigation import api_status_check
+from frontend.src.library.settings_helper.navigation import exchange_api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.strategy_helper.launcher_helper import get_strategy_instructions, strategy_params_form, backtest_evaluation_results, get_market_condition_message, market_condition_explanation
 from frontend.src.library.ui_elements import col_style2
@@ -20,7 +20,7 @@ if st.button("Strategies Wiki", icon=":material/menu_book:", type="primary"):
 
 if "available_exchange_apis" not in st.session_state:
     with st.spinner("Checking API Availability Status..."):
-        api_status_check()
+        exchange_api_status_check()
 
 if st.session_state["available_exchange_apis"]:
     st.divider()

@@ -2,7 +2,7 @@ import streamlit as st
 from frontend.src.library.client import check_backend_connection
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.settings_helper.navigation import show_homepage_status_cards
-from frontend.src.library.settings_helper.navigation import api_status_check
+from frontend.src.library.settings_helper.navigation import exchange_api_status_check
 from frontend.src.library.wallet_helper.ui_elements import get_spot_balance_wallet_table, get_logo_header, get_pie_chart, get_account_information
 
 
@@ -12,7 +12,7 @@ st.write("Welcome to Sibyl, the current page shows the wallet balances from all 
 
 st.session_state['backend_status'] = check_backend_connection()
 
-api_status_check()
+exchange_api_status_check()
 
 set_page_title("Exchange API status.")
 show_homepage_status_cards()

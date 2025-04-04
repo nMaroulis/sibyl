@@ -2,9 +2,11 @@ import random
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 from typing import Optional, Dict, Any, List, Union
 import time
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values, set_key
 import os
 
+
+ENV_PATH = "backend/src/exchange_client/mock_status.env"
 
 class MockExchangeClient(ExchangeAPIClient):
 
@@ -12,7 +14,7 @@ class MockExchangeClient(ExchangeAPIClient):
         super().__init__()
         self.name = 'mock_exchange'
         self.api_base_url = ""
-        load_dotenv("mock_status.env")
+        load_dotenv(ENV_PATH)
 
 
     def check_status(self) -> str:
@@ -22,6 +24,31 @@ class MockExchangeClient(ExchangeAPIClient):
         else:
             return 'Inactive'
 
+
+    @staticmethod
+    def enable() -> bool:
+        try:
+            # with open(ENV_PATH, "w") as f:
+            #     f.write('MOCK_STATUS="true"\n')
+            set_key(ENV_PATH, "MOCK_STATUS", "true")  # alternate way
+            os.environ["MOCK_STATUS"] = "true"
+            return True
+        except Exception as e:
+            print(e)
+            return False
+
+
+    @staticmethod
+    def disable() -> bool:
+        try:
+            # with open("mock_status.env", "w") as f:
+            #     f.write('MOCK_STATUS="false"\n')
+            set_key(ENV_PATH, "MOCK_STATUS", "false")  # alternate way
+            os.environ["MOCK_STATUS"] = "false"
+            return True
+        except Exception as e:
+            print(e)
+            return False
 
     def place_spot_order(self, order_type: str, quote_asset: str, base_asset: str, side: str, quantity: float, price: Optional[float] = None, stop_price: Optional[float] = None, take_profit_price: Optional[float] = None, time_in_force: Optional[str] = None) -> Dict[str, Any]:
 

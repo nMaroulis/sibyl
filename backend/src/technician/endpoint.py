@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from backend.src.technician.technician import Technician
 from typing import Optional
+from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 
 
 # APIRouter creates path operations for user module
@@ -15,7 +16,7 @@ technician_worker = Technician()
 
 
 @router.get("/status/api/{api_name}")
-def get_api_status(api_name: str = 'binance'):
+def get_api_status(api_name: str):
     try:
         res = technician_worker.api_status_check(api_name)
     except Exception as e:
@@ -40,5 +41,28 @@ def insert_update_api_keys(api_params: APIParams):
         else:
             raise HTTPException(status_code=400, detail="Failed to insert API key.")
     except Exception as e:
-        print(f"TECHNICIAN :: credentials/apis/exchange :: {e}")
+        print(f"TECHNICIAN :: {e}")
         raise HTTPException(status_code=400, detail="Failed to insert API key.")
+
+
+
+class StatusRequest(BaseModel):
+    status: bool
+
+@router.put("/exchanges/mock/status")
+def set_mock_exchange_status(req: StatusRequest):
+    """
+    Enable or disable the mock exchange based on `status`.
+    """
+    try:
+        client = ExchangeClientFactory().get_client("mock_exchange")
+        print(req.status)
+        if req.status:
+            client.enable()
+        else:
+            client.disable()
+
+        return {"status": "success", "enabled": req.status}
+    except Exception as e:
+        print(f"TECHNICIAN ERROR :: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update mock exchange status.")
