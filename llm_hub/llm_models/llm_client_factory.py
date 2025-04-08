@@ -1,6 +1,6 @@
-from llm_hub.llm_models.hf_api_llm import HuggingFaceAPILLM
-from llm_hub.llm_models.openai_api_llm import OpenAIAPILLM
-from llm_hub.llm_models.hf_api_llm_chatbot import HuggingFaceLLMChatbot
+from llm_hub.llm_models.api.hf_api_llm import HuggingFaceAPILLM
+from llm_hub.llm_models.api.openai_api_llm import OpenAIAPILLM
+from llm_hub.llm_models.api.hf_api_llm_chatbot import HuggingFaceLLMChatbot
 from llm_hub.rag.chromadb_client import ChromaDBClient
 
 

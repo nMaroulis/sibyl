@@ -8,7 +8,7 @@ import numpy as np
 import faiss
 import random
 from rank_bm25 import BM25Okapi
-from llm_hub.llm_models.hf_api_llm import HuggingFaceAPILLM
+from llm_hub.llm_models.api.hf_api_llm import HuggingFaceAPILLM
 import pickle
 
 

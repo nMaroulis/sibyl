@@ -228,6 +228,7 @@ class MockExchangeClient(ExchangeAPIClient):
 
         return klines
 
+
     def get_symbol_info(self, symbol: str) -> Dict[str, Any] | None:
         res = {
             "status": "TRADING",

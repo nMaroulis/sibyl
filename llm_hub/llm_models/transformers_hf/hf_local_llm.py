@@ -6,6 +6,7 @@ from database.api_keys_db_client import APIEncryptedDatabase
 import os
 import platform
 
+
 class HuggingFaceLocalLLM(LLMBase):
     """
     Implements the LLMBase for Hugging Face models.

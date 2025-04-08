@@ -20,6 +20,7 @@ class LLMBase(ABC):
         self.provider = provider.lower()
         self.api_key = None
 
+
     @abstractmethod
     def generate_response(self, prompt: str, **kwargs) -> str:
         """
