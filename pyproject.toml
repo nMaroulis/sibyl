@@ -234,7 +234,8 @@ dependencies = [
     "coinbase (>=2.1.0,<3.0.0)",
     "tinydb (>=4.8.2,<5.0.0)",
     "tinydb-serialization (>=2.2.0,<3.0.0)",
-    "ta (>=0.11.0,<0.12.0)"
+    "ta (>=0.11.0,<0.12.0)",
+    "llama-cpp-python (>=0.3.8,<0.4.0)"
 ]
 
 
