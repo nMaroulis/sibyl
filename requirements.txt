@@ -250,7 +250,7 @@ SQLAlchemy==2.0.38
 srsly==2.5.1
 stack-data==0.6.3
 starlette==0.45.3
-streamlit==1.42.0
+streamlit==1.44.1
 sumy==0.11.0
 sympy==1.13.1
 ta==0.11.0

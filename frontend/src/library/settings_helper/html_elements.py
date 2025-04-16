@@ -143,7 +143,15 @@ def status_card_style():
             .settings-card-illustration-Ge img {
                 box-shadow: 0 10px 15px rgba(30,144,255, 0.5); /* Added shadow for 3D effect */
             }
-
+            
+            .settings-card-illustration-Mo img {
+                box-shadow: 0 10px 15px rgba(0,0,0, 0.5); /* Added shadow for 3D effect */
+            }
+            
+            .settings-card-illustration-Lo img {
+                box-shadow: 0 10px 15px rgba(0,0,0, 0.5); /* Added shadow for 3D effect */
+            }
+            
         </style>
     """)
     return
