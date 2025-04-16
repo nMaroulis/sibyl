@@ -112,7 +112,7 @@ def llm_form() -> None:
             llm_model = st.pills('Choose LLM Model',
                                  options=['Mistral 7B', 'Llama 2 7B', 'TinyLlama 1.1B', 'MythoMax-L2 13B', 'OpenHermes 2.5 7B'],
                                  default="Mistral 7B", disabled=True)
-            quantization = st.pills("Quantization", options=["Q2_K", "Q3_K", "Q4_K", "Q5_K", "Q6_K", "Q2_K", "Q8_K"],
+            quantization = st.pills("Quantization", options=["Q2_K", "Q3_K", "Q4_K", "Q5_K", "Q6_K", "Q7_K", "Q8_K"],
                                     default="Q4_K")
             memory_efficient = st.toggle("Memory Efficient Variant (_M)", value=False)
             ram_requirements = {
@@ -149,10 +149,12 @@ def llm_form() -> None:
             }
             required_ram = ram_requirements.get((llm_model, quantization), "Unknown")
             st.write(f"Approximate **RAM** needed: **{required_ram} GBs**")
-
-            if st.button(f'Download and Setup **{llm_model} {quantization}** LLM Model', type="primary", use_container_width=True,
+            llm_model_name = f"{llm_model} {quantization}"
+            if memory_efficient:
+                llm_model_name += "_M"
+            if st.button(f'Download and Setup **{llm_model_name}** LLM Model', type="primary", use_container_width=True,
                          icon=':material/download:'):
-                with st.spinner(f'Setting up {llm_model} {quantization} LLM Model...'):
+                with st.spinner(f'Setting up {llm_model_name} LLM Model...'):
                     pass
         else:
             st.warning("No Option chosen", icon=':material/warning:')
