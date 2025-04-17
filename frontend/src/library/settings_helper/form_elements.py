@@ -98,7 +98,7 @@ def llm_form() -> None:
                     else:
                         st.error(f"⚠️ Inserting **{llm_api} API Key** to the Encrypted Database failed.")
         elif llm_type == 'Local Deployment':
-
+            st.caption("After choosing a Library, an LLM model and it's parameters, it will be automatically downloaded and configured on your local system. Make sure to choose a model that your system can handle based on the RAM and CPU.")
             local_llm = st.selectbox('Choose LLM Library', options=['Llama CPP'])
             with st.spinner('Checking if Model is present...'):
                 api_conn = check_api_status(local_llm)
