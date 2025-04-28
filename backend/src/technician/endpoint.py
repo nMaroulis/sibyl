@@ -19,7 +19,7 @@ technician_worker = Technician()
 def get_api_status(api_name: str):
     try:
         res = technician_worker.api_status_check(api_name)
-    except Exception as e:
+    except Exception as e: # TODO Handle exception at client level
         print(f"TECHNICIAN :: status/api/all :: {e}")
         res = {}
     return res

@@ -1,7 +1,7 @@
 import importlib
-from llm_hub.rag import chromadb_client
+from llm_gateway.rag import chromadb_client
 importlib.reload(chromadb_client)
-from llm_hub.rag.chromadb_client import ChromaDBClient
+from llm_gateway.rag.chromadb_client import ChromaDBClient
 import os
 import requests
 import pymupdf

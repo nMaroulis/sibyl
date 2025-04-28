@@ -12,4 +12,4 @@
 /notebooks/exchanges/*
 /database/strategy/strategy.db
 /assets/architecture.excalidraw
-/llm_hub/llm_models/llama_cpp/models/*
+/llm_gateway/llm_models/llama_cpp/models/*

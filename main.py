@@ -18,7 +18,7 @@ def init_backend_server() -> int:
     global backend_server, grpc_server
     print('main :: Initializing Backend & gRPC LLM Services...')
     backend_server = subprocess.Popen("python3.12 backend/rest_server.py", shell=True, env=env) # fastAPI backend server
-    grpc_server = subprocess.Popen("python3.12 llm_hub/grpc_server.py", shell=True, env=env) # gRPC inference server
+    grpc_server = subprocess.Popen("python3.12 llm_gateway/grpc_server.py", shell=True, env=env) # gRPC inference server
     return 0
 
 def init_frontend() -> int:
@@ -35,7 +35,7 @@ def init_frontend() -> int:
 
 def update_wiki_rag_embeddings_db() -> int:
     print('main :: Updating RAG Wiki documents with latest papers...')
-    wiki_rag = subprocess.Popen("python3.12 llm_hub/rag/download_documents.py", shell=True, env=env) # fastAPI backend server
+    wiki_rag = subprocess.Popen("python3.12 llm_gateway/rag/download_documents.py", shell=True, env=env) # fastAPI backend server
     return 0
 
 def ctrl_handler(signum, frm):

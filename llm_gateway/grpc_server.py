@@ -2,7 +2,7 @@ import grpc
 from concurrent import futures
 import inference_pb2
 import inference_pb2_grpc
-from llm_hub.llm_models.llm_client_factory import LLMClientFactory
+from llm_gateway.llm_models.llm_client_factory import LLMClientFactory
 from database.api_keys_db_client import APIEncryptedDatabase
 from dotenv import load_dotenv
 import os
@@ -23,7 +23,7 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     inference_pb2_grpc.add_InferenceServiceServicer_to_server(InferenceService(), server)
 
-    load_dotenv('llm_hub/server_config.env')
+    load_dotenv('llm_gateway/server_config.env')
     server.add_insecure_port(f"{os.getenv("GRPC_INFERENCE_SERVER_IP")}:{os.getenv("GRPC_INFERENCE_SERVER_PORT")}")
     server.start()
     server.wait_for_termination()

@@ -1,5 +1,5 @@
-from llm_hub.rag.document_parser import DocumentParser
-from llm_hub.rag.chromadb_client import ChromaDBClient
+from llm_gateway.rag.document_parser import DocumentParser
+from llm_gateway.rag.chromadb_client import ChromaDBClient
 
 
 

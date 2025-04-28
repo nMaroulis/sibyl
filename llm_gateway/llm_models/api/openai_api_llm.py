@@ -1,5 +1,5 @@
 import openai
-from llm_hub.llm_models.llm_base import LLMBase
+from llm_gateway.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
 
 
