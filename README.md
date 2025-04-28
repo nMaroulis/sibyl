@@ -103,12 +103,18 @@ Additional exchanges are planned for future releases.
 
 
 ### Crypto Wiki Chatbot - Wiki Module 💬
-An interactive **chatbot** which is based on a custom **RAG system**, which includes thousands of crypto-related publications, books and articles.
-After you ask a crypto-related question, the embeddings for your query are created and the most similar embeddings are found in the ***chromaDB*** Embeddings Database.
-The similarity method is a hybrid approach, using cosine similarity, BM25 keyword search matching and FAISS indexing similarity.
+An interactive **chatbot** which is based on custom **AI agents** using **MCP server**, a **RAG system**, which includes thousands of crypto-related publications, books and articles,
+and Agent tools like **Web Search**, **Chat History Memory** and **Conversation Pipeline**.
+After you ask a crypto-related question, the Pipeline begins. First the user query is **classified** as *conversational* or *technical*. In case of *conversational*, the chatbot just uses an LLM to generate a response.
+If the user query is *technical*, then, the embeddings for your query are created and the most similar embeddings are found in the ***chromaDB*** Embeddings Database.
+The similarity method is a hybrid approach, using cosine similarity, BM25 keyword search matching and FAISS indexing similarity. In case no valid material is found on the Embeddings DB, then a **web search** is performed
+in order to find relevant information online. All the available material is given to the LLM in order to generate the response.
 
 In order to use this functionality, you have to:
-1. Provide a valid HuggingFace or OpenAI API key, to be stored in the local encrypted Database.
+1. 
+   
+   i. Provide a valid HuggingFace or OpenAI API key, to be stored in the local encrypted Database *or*
+   ii. Choose an LLM to be deployed locally. This is done automatically by the backend.
 2. Download the chromaDB Embeddings Database, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
 
 
