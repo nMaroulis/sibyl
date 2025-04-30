@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
+from langchain.llms.base import LLM
 
 
 class LLMBase(ABC):
@@ -30,4 +31,18 @@ class LLMBase(ABC):
         :param prompt: The input text to the model.
         :return: Generated response as a string.
         """
+        pass
+
+
+    @abstractmethod
+    @property
+    def _llm_type(self) -> str:
+        """
+        local or API LLM
+        """
+        pass
+
+
+    @abstractmethod
+    def as_langchain_llm(self) -> LLM:
         pass

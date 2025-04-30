@@ -1,6 +1,7 @@
 from huggingface_hub import InferenceClient
 from llm_gateway.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
+from langchain.llms.base import LLM
 
 
 class HuggingFaceAPILLM(LLMBase):
@@ -17,7 +18,21 @@ class HuggingFaceAPILLM(LLMBase):
         else:
             self.model = InferenceClient(model_name, token=api_creds.api_key)
 
+
+    @property
+    def _llm_type(self) -> str:
+        return "huggingface-api"
+
+
     def generate_response(self, prompt: str, max_length: int = 800, temperature: float = 0.7) -> str:
 
         response = self.model.text_generation(prompt, max_new_tokens=max_length, temperature=0.7)
         return response
+
+
+    def as_langchain_llm(self) -> LLM:
+
+        return LLM.from_callable(
+            lambda prompt, stop=None, **kwargs: self.generate_response(prompt),
+            llm_type="huggingface-api"
+        )
