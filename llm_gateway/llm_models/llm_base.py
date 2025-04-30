@@ -34,8 +34,8 @@ class LLMBase(ABC):
         pass
 
 
-    @abstractmethod
     @property
+    @abstractmethod
     def _llm_type(self) -> str:
         """
         local or API LLM
