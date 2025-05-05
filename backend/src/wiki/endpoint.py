@@ -3,6 +3,9 @@ from grpc import insecure_channel
 from backend.config import inference_pb2
 from backend.config import inference_pb2_grpc
 from backend.src.wiki.funcs import check_exists_chroma_db, check_exists_llm_api
+from dotenv import load_dotenv
+import os
+
 
 # APIRouter creates path operations for user module
 router = APIRouter(
@@ -16,7 +19,8 @@ router = APIRouter(
 def get_llm_advice(query: str):
     try:
         # Call gRPC server
-        channel = insecure_channel("localhost:50051") # TODO not static str for ip:port
+        load_dotenv('llm_gateway/server_config.env')
+        channel = insecure_channel(f"{os.getenv("GRPC_INFERENCE_SERVER_IP")}:{os.getenv("GRPC_INFERENCE_SERVER_PORT")}") # TODO not static str for ip:port
         stub = inference_pb2_grpc.InferenceServiceStub(channel)
         request = inference_pb2.PredictRequest(model_name="wiki_rag", input_text=query)
         response = stub.Predict(request)

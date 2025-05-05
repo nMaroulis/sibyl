@@ -4,6 +4,8 @@ package inference;
 
 service InferenceService {
   rpc Predict (PredictRequest) returns (PredictResponse);
+  rpc AgentExecute (AgentRequest) returns (AgentResponse);
+
 }
 
 message PredictRequest {
@@ -13,4 +15,21 @@ message PredictRequest {
 
 message PredictResponse {
   string output_text = 1;
+}
+
+
+// AGENTIC MODULES
+// e.g. wiki rag and more
+
+message AgentRequest {
+  string application = 1;
+  string model_type = 2;
+  string model_provider = 3;
+  string model_name = 4;
+  string input_text = 5;
+}
+
+message AgentResponse {
+  string output_text = 1;
+  string output_metadata = 2;
 }

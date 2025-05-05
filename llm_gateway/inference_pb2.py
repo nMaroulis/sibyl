@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\tinference\"8\n\x0ePredictRequest\x12\x12\n\nmodel_name\x18\x01 \x01(\t\x12\x12\n\ninput_text\x18\x02 \x01(\t\"&\n\x0fPredictResponse\x12\x13\n\x0boutput_text\x18\x01 \x01(\t2T\n\x10InferenceService\x12@\n\x07Predict\x12\x19.inference.PredictRequest\x1a\x1a.inference.PredictResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\tinference\"8\n\x0ePredictRequest\x12\x12\n\nmodel_name\x18\x01 \x01(\t\x12\x12\n\ninput_text\x18\x02 \x01(\t\"&\n\x0fPredictResponse\x12\x13\n\x0boutput_text\x18\x01 \x01(\t\"w\n\x0c\x41gentRequest\x12\x13\n\x0b\x61pplication\x18\x01 \x01(\t\x12\x12\n\nmodel_type\x18\x02 \x01(\t\x12\x16\n\x0emodel_provider\x18\x03 \x01(\t\x12\x12\n\nmodel_name\x18\x04 \x01(\t\x12\x12\n\ninput_text\x18\x05 \x01(\t\"=\n\rAgentResponse\x12\x13\n\x0boutput_text\x18\x01 \x01(\t\x12\x17\n\x0foutput_metadata\x18\x02 \x01(\t2\x97\x01\n\x10InferenceService\x12@\n\x07Predict\x12\x19.inference.PredictRequest\x1a\x1a.inference.PredictResponse\x12\x41\n\x0c\x41gentExecute\x12\x17.inference.AgentRequest\x1a\x18.inference.AgentResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,6 +35,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_PREDICTREQUEST']._serialized_end=86
   _globals['_PREDICTRESPONSE']._serialized_start=88
   _globals['_PREDICTRESPONSE']._serialized_end=126
-  _globals['_INFERENCESERVICE']._serialized_start=128
-  _globals['_INFERENCESERVICE']._serialized_end=212
+  _globals['_AGENTREQUEST']._serialized_start=128
+  _globals['_AGENTREQUEST']._serialized_end=247
+  _globals['_AGENTRESPONSE']._serialized_start=249
+  _globals['_AGENTRESPONSE']._serialized_end=310
+  _globals['_INFERENCESERVICE']._serialized_start=313
+  _globals['_INFERENCESERVICE']._serialized_end=464
 # @@protoc_insertion_point(module_scope)

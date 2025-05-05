@@ -19,6 +19,10 @@ class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
         return inference_pb2.PredictResponse(output_text=response_text)
 
 
+    def AgentExecute(self, request, context):
+        pass
+
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     inference_pb2_grpc.add_InferenceServiceServicer_to_server(InferenceService(), server)
