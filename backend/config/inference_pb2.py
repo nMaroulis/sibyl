@@ -24,17 +24,21 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\tinference\"8\n\x0ePredictRequest\x12\x12\n\nmodel_name\x18\x01 \x01(\t\x12\x12\n\ninput_text\x18\x02 \x01(\t\"&\n\x0fPredictResponse\x12\x13\n\x0boutput_text\x18\x01 \x01(\t2T\n\x10InferenceService\x12@\n\x07Predict\x12\x19.inference.PredictRequest\x1a\x1a.inference.PredictResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\tinference\"\xbe\x01\n\x0ePredictRequest\x12\x14\n\x0cmodel_source\x18\x01 \x01(\t\x12\x12\n\nmodel_type\x18\x02 \x01(\t\x12\x17\n\nmodel_name\x18\x03 \x01(\tH\x00\x88\x01\x01\x12\x17\n\nsession_id\x18\x04 \x01(\tH\x01\x88\x01\x01\x12\x13\n\x06stream\x18\x05 \x01(\x08H\x02\x88\x01\x01\x12\x12\n\ninput_text\x18\x06 \x01(\tB\r\n\x0b_model_nameB\r\n\x0b_session_idB\t\n\x07_stream\"X\n\x0fPredictResponse\x12\x13\n\x0boutput_text\x18\x01 \x01(\t\x12\x1c\n\x0foutput_metadata\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x12\n\x10_output_metadata\"\xd1\x01\n\x0c\x41gentRequest\x12\x13\n\x0b\x61pplication\x18\x01 \x01(\t\x12\x14\n\x0cmodel_source\x18\x02 \x01(\t\x12\x12\n\nmodel_type\x18\x03 \x01(\t\x12\x17\n\nmodel_name\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\x17\n\nsession_id\x18\x05 \x01(\tH\x01\x88\x01\x01\x12\x13\n\x06stream\x18\x06 \x01(\x08H\x02\x88\x01\x01\x12\x12\n\ninput_text\x18\x07 \x01(\tB\r\n\x0b_model_nameB\r\n\x0b_session_idB\t\n\x07_stream\"V\n\rAgentResponse\x12\x13\n\x0boutput_text\x18\x01 \x01(\t\x12\x1c\n\x0foutput_metadata\x18\x02 \x01(\tH\x00\x88\x01\x01\x42\x12\n\x10_output_metadata2\x97\x01\n\x10InferenceService\x12@\n\x07Predict\x12\x19.inference.PredictRequest\x1a\x1a.inference.PredictResponse\x12\x41\n\x0c\x41gentExecute\x12\x17.inference.AgentRequest\x1a\x18.inference.AgentResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'inference_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_PREDICTREQUEST']._serialized_start=30
-  _globals['_PREDICTREQUEST']._serialized_end=86
-  _globals['_PREDICTRESPONSE']._serialized_start=88
-  _globals['_PREDICTRESPONSE']._serialized_end=126
-  _globals['_INFERENCESERVICE']._serialized_start=128
-  _globals['_INFERENCESERVICE']._serialized_end=212
+  _globals['_PREDICTREQUEST']._serialized_start=31
+  _globals['_PREDICTREQUEST']._serialized_end=221
+  _globals['_PREDICTRESPONSE']._serialized_start=223
+  _globals['_PREDICTRESPONSE']._serialized_end=311
+  _globals['_AGENTREQUEST']._serialized_start=314
+  _globals['_AGENTREQUEST']._serialized_end=523
+  _globals['_AGENTRESPONSE']._serialized_start=525
+  _globals['_AGENTRESPONSE']._serialized_end=611
+  _globals['_INFERENCESERVICE']._serialized_start=614
+  _globals['_INFERENCESERVICE']._serialized_end=765
 # @@protoc_insertion_point(module_scope)

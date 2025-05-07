@@ -1,5 +1,5 @@
-from langchain.vectorstores import Chroma
-from langchain.embeddings import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain.agents import Tool
 from typing import List
 from llm_gateway.tools.base_tool import BaseTool
@@ -14,7 +14,6 @@ class DocumentRetrieverTool(BaseTool):
     doc_retriever = DocumentRetrieverTool(threshold=0.5, k=5)
     doc_retriever_tool = doc_retriever.as_langchain_tool()
     """
-    # TODO Fix Paths
     def __init__(
             self,
             persist_directory: str,

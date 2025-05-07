@@ -244,6 +244,6 @@ def news_chatbot():
             markdown(user_input)
 
         with chat_message("assistant"):
-            bot_response = get_chatbot_response("hugging_face", user_input)
+            bot_response = get_chatbot_response(model_source="local", model_type="llama_cpp", model_name=None, question=user_input)  # TODO read LLM info from DB
             markdown(bot_response)
         session_state.news_chatbot_messages.append({"role": "assistant", "content": bot_response})

@@ -2,6 +2,7 @@ import requests
 import json
 from streamlit import cache_resource
 from frontend.config.config import BACKEND_SERVER_ADDRESS
+from typing import Optional
 
 
 @cache_resource(ttl=3600, show_spinner=None)  # cache result for 1 hour2
@@ -50,9 +51,13 @@ def fetch_news_sentiment(model: str= 'vader', website: str = 'cointelegraph'):
         return None
 
 
-def get_chatbot_response(llm_api: str, question: str):
+def get_chatbot_response(model_source: str, model_type: str, model_name: Optional[str], question: str) -> str:
 
-    url = f"{BACKEND_SERVER_ADDRESS}/reporter/news/chatbot?llm_api={llm_api}&question={question}"
+
+    url = f"{BACKEND_SERVER_ADDRESS}/reporter/news/chatbot?model_source={model_source}&model_type={model_type}&question={question}"
+    if model_name:
+        url += f"&model_name={model_name}"
+
     response = requests.get(url)
     if response.status_code == 200:
         try:

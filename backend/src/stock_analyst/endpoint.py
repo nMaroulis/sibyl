@@ -4,6 +4,9 @@ from backend.src.stock_analyst.portfolio_archive import fetch_senate_trades
 from grpc import insecure_channel
 from backend.config import inference_pb2
 from backend.config import inference_pb2_grpc
+from dotenv import load_dotenv
+import os
+from typing import Optional
 
 
 # APIRouter creates path operations for user module
@@ -20,11 +23,12 @@ def get_stock_info(stock_symbol: str):
         stock_details = get_stock_details(stock_symbol)
         return {"status": "success", "data": stock_details}
     except Exception as e:
+        print(f"StockAnalyst :: get_stock_info :: {str(e)}")
         raise HTTPException(status_code=404, detail="HF client failed")
 
 
 @router.get("/advisor/llm")
-def get_llm_advice(stock_symbol: str, llm_api: str):
+def get_llm_advice(model_source: str, model_type: str, stock_symbol: str, model_name: Optional[str] = None):
     try:
         # fetch stock data
         stock_json = get_stock_info(stock_symbol)
@@ -44,14 +48,24 @@ def get_llm_advice(stock_symbol: str, llm_api: str):
             """
 
         # Call gRPC server
-        channel = insecure_channel("localhost:50051") # TODO not static str for ip:port
+        load_dotenv('llm_gateway/server_config.env')
+        channel = insecure_channel(f"{os.getenv("GRPC_INFERENCE_SERVER_IP")}:{os.getenv("GRPC_INFERENCE_SERVER_PORT")}")
         stub = inference_pb2_grpc.InferenceServiceStub(channel)
-        request = inference_pb2.PredictRequest(model_name=llm_api, input_text=prompt)
+
+        kwargs = {
+            "model_source": model_source,
+            "model_type": model_type,
+            "input_text": prompt
+        }
+        if model_name:
+            kwargs["model_name"] = model_name
+
+        request = inference_pb2.PredictRequest(**kwargs)
         response = stub.Predict(request)
 
         return {"status": "success", "data": response.output_text}
     except Exception as e:
-        print(e)
+        print(f"StockAnalyst :: get_llm_advice :: {str(e)}")
         raise HTTPException(status_code=404, detail="LLM API failed")
 
 

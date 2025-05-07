@@ -157,7 +157,7 @@ def display_company_info(info: dict, stock_symbol: str):
 @st.dialog("Sibyl Stock Advisor", width="large")
 def get_advice(symbol: str):
     with st.spinner("Generating advice..."):
-        llm_advice = fetch_stock_advice(symbol, "hugging_face")
+        llm_advice = fetch_stock_advice(model_source="local", model_type="llama_cpp", model_name=None, stock_symbol=symbol)  # TODO read LLM info from DB
 
     response_placeholder = st.empty()
     displayed_text = ""
@@ -183,4 +183,4 @@ def get_stock_analysis(stock_symbol: str):
 
         display_company_info(stock_details["info"], symbol)
     else:
-        st.error("Failed to fetch Stock information. Please check logs to see if **YahooFinance API** reached the limit and try later.", icon=":material/error:")
+        st.error("Failed to fetch Stock information. Please check logs to see if **YahooFinance API** reached the limit or needs an **upgrade** and try later.", icon=":material/error:")

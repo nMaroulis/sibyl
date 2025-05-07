@@ -1,4 +1,5 @@
 import requests
+from typing import Optional
 from streamlit import cache_data
 from frontend.config.config import BACKEND_SERVER_ADDRESS
 
@@ -23,8 +24,12 @@ def fetch_portfolio_senates():
         return None
 
 
-def fetch_stock_advice(stock_symbol: str, llm_api_name: str):
-    url = f"{BACKEND_SERVER_ADDRESS}/stock_analyst/advisor/llm?stock_symbol={stock_symbol}&llm_api={llm_api_name}"
+def fetch_stock_advice(model_source: str, model_type: str, model_name: Optional[str], stock_symbol: str):
+
+    url = f"{BACKEND_SERVER_ADDRESS}/stock_analyst/advisor/llm?model_source={model_source}&model_type={model_type}&stock_symbol={stock_symbol}"
+    if model_name:
+        url += f"&model_name={model_name}"
+
     response = requests.get(url)
     if response.status_code == 200:
         res = response.json()

@@ -3,6 +3,9 @@ from database.api_keys_db_client import APIEncryptedDatabase
 
 
 class HuggingFaceLLMChatbot:
+    """
+    DEPRECATED
+    """
     def __init__(self, model_name: str = "mistralai/Mistral-7B-Instruct-v0.3"):
         api_creds = APIEncryptedDatabase.get_api_key_by_name("hugging_face")
         if api_creds is None:

@@ -2,25 +2,36 @@ from llama_cpp import Llama
 from llm_gateway.llm_models.llm_base import LLMBase
 from dotenv import load_dotenv
 import os
-from langchain.llms import LlamaCpp
+from langchain_community.llms import LlamaCpp
 
+
+CONTEXT_WINDOW_DICT = {
+    "openhermes-2.5-mistral-7b.Q4_K_M": 32768,
+}
 
 class LlamaCppLocalLLM(LLMBase):
     """
-    Local LLM using llama.cpp, wrapped for LangChain compatibility.
+    Implements the LLMBase for llama.cpp.
     """
 
-    def __init__(self):
-        super().__init__(model_name="llama-cpp", provider="local")
+    def __init__(self, model_name: str = "openhermes-2.5-mistral-7b.Q4_K_M", session_id: str = None, stream: bool = False):
+        super().__init__(model_name=model_name, session_id=session_id, stream=stream)
+        self.model_source = "local"
+        self.model_type = "llama_cpp"
         load_dotenv("llm_gateway/llm_models/config.env")
-        self.model_path = os.getenv("LLAMA_CPP_LLM_MODEL_PATH")
-        self.model = Llama(
-            model_path=self.model_path,
-            n_ctx=4096,
-            n_threads=4,
-            n_gpu_layers=20,
-            verbose=False
-        )
+        self.model_path = f"{os.getenv("LLAMA_CPP_LLM_MODEL_PATH")}{model_name}.gguf"
+
+        if os.path.exists(self.model_path):
+
+            self.model = Llama(
+                model_path=self.model_path,
+                n_ctx=CONTEXT_WINDOW_DICT.get(model_name, 4096),
+                n_threads=4,
+                n_gpu_layers=20,
+                verbose=False
+            )
+        else:
+            self.model = None
 
 
     @property

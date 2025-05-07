@@ -3,24 +3,71 @@ from concurrent import futures
 import inference_pb2
 import inference_pb2_grpc
 from llm_gateway.llm_models.llm_client_factory import LLMClientFactory
+from llm_gateway.agents.agent_factory import AgentFactory
 from database.api_keys_db_client import APIEncryptedDatabase
 from dotenv import load_dotenv
 import os
 
 
+
 class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
-    def __init__(self):
-        self.model = None # LLMClientFactory.get_client(model_name)
+    """
+    A gRPC service that provides inference and agent-based execution capabilities.
 
-    def Predict(self, request, context):
+    Methods:
+        Predict: Handles direct LLM inference requests.
+        AgentExecute: Handles requests that involve agentic workflows, such as RAG.
+    """
 
-        self.model = LLMClientFactory.get_client(request.model_name)
+    def __init__(self) -> None:
+        """Initializes the InferenceService with no model loaded."""
+        self.model = None
+        self.agent = None
+
+
+    def Predict(self, request, context: grpc.ServicerContext) -> inference_pb2.PredictResponse:
+        """
+        Performs inference using the specified model.
+
+        Args:
+            request (PredictRequest): Contains the model information and input query.
+            context (grpc.ServicerContext): gRPC context for the request.
+
+        Returns:
+            PredictResponse: Contains the generated output text.
+        """
+
+        kwargs = {"model_type": request.model_type}
+        if request.HasField("model_name"):
+            kwargs["model_name"] = request.model_name
+
+        self.model = LLMClientFactory.get_client(**kwargs)
         response_text = self.model.generate_response(request.input_text)
         return inference_pb2.PredictResponse(output_text=response_text)
 
 
-    def AgentExecute(self, request, context):
-        pass
+    def AgentExecute(self, request, context: grpc.ServicerContext) -> inference_pb2.AgentResponse:
+        """
+        Executes an agent-based workflow using the specified model and application.
+
+        Args:
+            request (AgentRequest): Contains the application, model, and input query.
+            context (grpc.ServicerContext): gRPC context for the request.
+
+        Returns:
+            AgentResponse: Contains the output from the agent execution.
+        """
+
+        kwargs = {"model_type": request.model_type}
+        if request.HasField("model_name"):
+            kwargs["model_name"] = request.model_name
+        model = LLMClientFactory.get_client(**kwargs)
+
+        self.agent = AgentFactory.get_agent(request.application, model)
+
+        response: str = self.agent.run(request.input_text)
+
+        return inference_pb2.AgentResponse(output_text=response)
 
 
 def serve():

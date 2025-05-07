@@ -8,8 +8,10 @@ import numpy as np
 import faiss
 import random
 from rank_bm25 import BM25Okapi
-from llm_gateway.llm_models.api.hf_api_llm import HuggingFaceAPILLM
+from llm_gateway.llm_models.llm_base import LLMBase
 import pickle
+import os
+from dotenv import load_dotenv
 
 
 class ChromaDBClient:
@@ -17,15 +19,19 @@ class ChromaDBClient:
     A wrapper for managing ChromaDB operations, including storing and retrieving vector embeddings.
     """
 
-    def __init__(self, db_path: str = "database/wiki_rag/chroma_db", collection_name: str = "crypto_knowledge", bm25_path: str = "database/wiki_rag/bm25.pkl"):
+    def __init__(self, llm: LLMBase, db_path: str, collection_name: str, bm25_path: str):
         """
         Initialize the ChromaDB client and get or create a collection.
 
         :param db_path: Path to the ChromaDB storage.
         :param collection_name: Name of the collection to use.
         """
-        self.chroma_client = chromadb.PersistentClient(path=db_path)
-        self.collection = self.chroma_client.get_or_create_collection(collection_name)
+
+        load_dotenv('database/db_paths.env')
+        self.vectorstore_path = os.getenv("WIKI_VECTORSTORE_PATH")
+
+        self.chroma_client = chromadb.PersistentClient(path=self.vectorstore_path)
+        self.collection = self.chroma_client.get_or_create_collection("crypto_knowledge")
         self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
         self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
@@ -52,7 +58,7 @@ class ChromaDBClient:
             "Nothing found. Let’s give it another shot!"]
 
         # LLM that provides the final response
-        self.llm = HuggingFaceAPILLM()
+        self.llm = llm
 
     @staticmethod
     def generate_doc_id(text: str) -> str:

@@ -9,12 +9,18 @@ service InferenceService {
 }
 
 message PredictRequest {
-  string model_name = 1;
-  string input_text = 2;
+  string model_source = 1; // "local" or "api"
+  string model_type = 2;   // e.g. "llama-cpp", "hugging-face", "tgi"
+  optional string model_name = 3;   // e.g. "llama-3-8b-instruct", "mistralai/Mistral-7B-Instruct-v0.2"
+  optional string session_id = 4;
+  optional bool stream = 5;
+  string input_text = 6;   // the user's query or input
 }
+
 
 message PredictResponse {
   string output_text = 1;
+  optional string output_metadata = 2;
 }
 
 
@@ -23,13 +29,15 @@ message PredictResponse {
 
 message AgentRequest {
   string application = 1;
-  string model_type = 2;
-  string model_provider = 3;
-  string model_name = 4;
-  string input_text = 5;
+  string model_source = 2; // "local" or "api"
+  string model_type = 3;   // e.g. "llama-cpp", "hugging-face", "tgi"
+  optional string model_name = 4;   // e.g. "llama-3-8b-instruct", "mistralai/Mistral-7B-Instruct-v0.2"
+  optional string session_id = 5;
+  optional bool stream = 6;
+  string input_text = 7;   // the user's query or input
 }
 
 message AgentResponse {
   string output_text = 1;
-  string output_metadata = 2;
+  optional string output_metadata = 2;
 }

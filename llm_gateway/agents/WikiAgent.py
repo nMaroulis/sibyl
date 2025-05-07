@@ -4,19 +4,23 @@ from llm_gateway.tools.conversation import ConversationalTool
 from langchain.agents import Tool, initialize_agent, AgentExecutor, AgentType, ZeroShotAgent
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
-from llm_gateway.llm_models.llama_cpp.llama_cpp_llm import LlamaCppLocalLLM
 from langchain.chains import LLMChain
 import os
 from dotenv import load_dotenv
+import random
+from llm_gateway.llm_models.llm_base import LLMBase
+from llm_gateway.agents.agent_base import AgentBase
 
 
-class WikiAgent:
+class WikiAgent(AgentBase):
     """
     The Wiki Chatbot pipeline class
     An agent based on the Langchain agentic framework
     """
 
-    def __init__(self, llm_model: str = "huggingface_api"):
+    def __init__(self, llm_model: LLMBase):
+
+        super().__init__(llm_model)
 
         # ========================
         # TOOLS
@@ -27,7 +31,7 @@ class WikiAgent:
         load_dotenv('database/db_paths.env')
         self.vectorstore_path = os.getenv("WIKI_VECTORSTORE_PATH")
         doc_retriever = DocumentRetrieverTool(
-            persist_directory="self.vectorstore_path",
+            persist_directory=self.vectorstore_path,
             collection_name="crypto_knowledge", threshold=0.5, k=5)
         doc_retriever_tool = doc_retriever.as_langchain_tool()
 
@@ -45,8 +49,7 @@ class WikiAgent:
         # ========================
         # LLM
         # ========================
-        self.llm = LlamaCppLocalLLM().as_langchain_llm()
-        # self.llm = HuggingFaceAPILLM().as_langchain_llm()
+        self.llm = llm_model.as_langchain_llm()
 
         # ========================
         # AGENT
@@ -152,19 +155,27 @@ class WikiAgent:
 
         # Classify the query as either 'Conversational' or 'Technical'
         classification = self.classify_query(query)
+        print("<<Wiki Agent>> - Classification", classification)
         if classification == "Conversational":
             # If conversational, just respond casually and keep memory updated
             self.memory.save_context({"input": query}, {"output": "Hi! How can I help you today?"})
-            return "Hi! How can I help you today?"
+            greetings = [
+                "Hi! How can I help you today?",
+                "Hi! How can I help you today?",
+                "Hey there! Ready to explore the crypto world?",
+                "Welcome! Curious about crypto? Ask me anything.",
+                "Hello! Let's decode the world of crypto together.",
+                "Hey! Looking for some insights into Web3 or crypto?"
+            ]
+            random_greeting = random.choice(greetings)
+            return random_greeting
 
         # If technical, search the database for relevant documents
-        doc_retriever = DocumentRetrieverTool(
-            persist_directory=self.vectorstore_path,
-            collection_name="crypto_knowledge", threshold=0.5, k=5)
+        doc_retriever = DocumentRetrieverTool(persist_directory=self.vectorstore_path, collection_name="crypto_knowledge", threshold=0.5, k=5)
         documents = doc_retriever.retrieve(query)
-
+        print("<<Wiki Agent>> - Documents Retrieved", len(documents))
         # IF RAG
-        if documents:
+        if len(documents) > 0:
             context = "\n".join(documents)
             prompt = f"""
                 You are a knowledgeable AI assistant specialized in cryptocurrency, blockchain, and crypto technology. 
@@ -192,9 +203,9 @@ class WikiAgent:
         # WEB SEARCH
         else:
             # If no documents are found in the DB, perform a web search using the WebSearch tool
-            web_search = WebSearchTool(max_results=5)
+            web_search = WebSearchTool(max_results=3)
             web_results = web_search.search(query)
-
+            print("WEB RESULTS -----", web_results)
             prompt = f"""
                 You are a knowledgeable AI assistant specialized in cryptocurrency, blockchain, and crypto technology. 
                 Your goal is to provide accurate, clear, and concise answers based on the provided context. 
@@ -225,8 +236,9 @@ class WikiAgent:
         # ========================
 
         # Option 1 - Manual Pipeline
-        # res = self.manual_wiki_pipeline(query)
+        res = self.manual_wiki_pipeline(query)
 
         # Option 2 - AI Agent
-        res = self.agent.run(query)
+        # res = self.agent.run(query)
+
         return res

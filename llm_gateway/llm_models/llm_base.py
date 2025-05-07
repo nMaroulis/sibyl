@@ -9,17 +9,29 @@ class LLMBase(ABC):
     Supports multiple providers (Hugging Face, OpenAI API, etc.).
     """
 
-    def __init__(self, model_name: str, provider: str):
+    def __init__(self, model_name: str, session_id: str = None, stream: bool = False):
         """
-        Initializes the LLM model.
+        LLM model params.
 
-        :param model_name: Name of the LLM model to use.
-        :param provider: The LLM provider (e.g., "openai", "huggingface").
-        :param api_key: Optional API key for providers that require authentication.
+        Args:
+            model_name (str): Name of the model to use (e.g., "mistralai/Mistral-7B-Instruct-v0.2").
+            session_id (Optional[str]): Session identifier for tracking.
+            stream (bool): Whether to enable streaming responses.
+
+        Params:
+            :param string model_source = 1; // "local" or "api"
+            :param string model_type = 2;   // e.g. "llama-cpp", "hugging-face", "tgi"
+            :param optional string model_name = 3;   // e.g. "llama-3-8b-instruct", "mistralai/Mistral-7B-Instruct-v0.2"
+            :param optional string session_id = 4;
+            :param optional bool stream = 5;
+            :param string input_text = 6;   // the user's query or input
         """
-        self.model_name = model_name
-        self.provider = provider.lower()
-        self.api_key = None
+        self.model_source: str = ""
+        self.model_type: str = ""
+        self.model_name: str = model_name
+        self.session_id: str = session_id
+        self.stream: bool = stream
+        self.api_key: str = ""
 
 
     @abstractmethod
