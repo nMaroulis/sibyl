@@ -61,7 +61,7 @@ if user_input := st.chat_input("What would you like to know?"):
     # RESPONSE ELEMENT
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            bot_response = fetch_wiki_rag_response(user_input)
+            bot_response = fetch_wiki_rag_response(model_source="local", model_type="llama_cpp", model_name=None, query=user_input)  # TODO read LLM info from DB
         response_placeholder = st.empty()
         displayed_text = ""
         for word in bot_response.split(" "):
