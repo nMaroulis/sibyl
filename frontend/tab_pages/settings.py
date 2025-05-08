@@ -16,8 +16,8 @@ load_dotenv("settings/version.env")
 st.write('In the Settings Tab ⚙️ you can define the credentials of your Crypto Exchange Account & your personal API keys in order for the Dashboard to operate')
 st.sidebar.badge(f"Frontend Version {os.getenv("FRONTEND_VERSION")}", color="blue", icon=":material/tv:" )
 st.sidebar.badge(f"Backend Version {os.getenv("BACKEND_VERSION")}", color="green", icon=":material/host:")
-st.sidebar.badge(f"LLM Gateway Version {os.getenv("LLM_GATEWAY_VERSION")}", color="orange", icon=":material/network_node:")
-st.sidebar.badge(f"MCP Server Version {os.getenv("MCP_VERSION")}", color="purple", icon=":material/network_node:")
+st.sidebar.badge(f"LLM Gateway Version {os.getenv("LLM_GATEWAY_VERSION")}", color="red", icon=":material/network_node:")
+st.sidebar.badge(f"MCP Server Version {os.getenv("MCP_VERSION")}", color="orange", icon=":material/api:")
 
 
 st.write('The cards below indicate current connection status of each API. Go to the bottom ')

@@ -19,7 +19,7 @@ class ChromaDBClient:
     A wrapper for managing ChromaDB operations, including storing and retrieving vector embeddings.
     """
 
-    def __init__(self, llm: LLMBase, db_path: str, collection_name: str, bm25_path: str):
+    def __init__(self, llm: LLMBase):
         """
         Initialize the ChromaDB client and get or create a collection.
 
@@ -42,7 +42,7 @@ class ChromaDBClient:
         # self.documents = []
 
         # BM25 Keyword-based Retrieval
-        self.bm25_path = bm25_path
+        self.bm25_path = ""
         self.tokenized_docs = []
         self.documents = []
         self.bm25 = None  # Will be initialized when documents are added
@@ -261,7 +261,7 @@ class ChromaDBClient:
         return hybrid_results
 
 
-    def generate_response(self, question: str) -> str:
+    def run(self, question: str) -> str:
         """
         Sends a user query and retrieved context to a Hugging Face-hosted LLM API.
 
@@ -305,7 +305,7 @@ class ChromaDBClient:
         # Context: {context}
         # Provide a concise and accurate response.
         # """
-        res: str = self.llm.generate_response(prompt, 4000, 0.8)
+        res: str = self.llm.generate_response(prompt, max_tokens=4000, temperature=0.8)
 
         res += f"\n\n{sources}"
         return res

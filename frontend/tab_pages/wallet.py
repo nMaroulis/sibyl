@@ -1,6 +1,6 @@
 import streamlit as st
 from frontend.src.library.client import check_backend_connection
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title, llm_advisor_button
 from frontend.src.library.settings_helper.navigation import show_homepage_status_cards
 from frontend.src.library.settings_helper.navigation import exchange_api_status_check
 from frontend.src.library.wallet_helper.ui_elements import get_spot_balance_wallet_table, get_logo_header, get_pie_chart, get_account_information
@@ -11,6 +11,7 @@ get_logo_header()
 st.caption("Welcome to Sibyl, the current page shows the wallet balances from all connected exchange accounts.")
 st.caption("Navigate to the **Settings Tab** ⚙️ to add your connect your Exchange API credentials. You can also provide your LLM API keys or choose an automated local LLM deployment, in order to activate the **LLM-powered functionalities**. All the API keys are stored in an **encrypted Database** on your local system, with an encryption key generated locally.")
 st.session_state['backend_status'] = check_backend_connection()
+llm_advisor_button()
 
 exchange_api_status_check()
 

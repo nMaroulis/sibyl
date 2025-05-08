@@ -1,4 +1,4 @@
-from streamlit import set_page_config, html, cache_resource, logo
+from streamlit import set_page_config, html, cache_resource, logo, markdown
 from PIL import Image
 
 
@@ -156,3 +156,53 @@ container_style1 = """
     }
     </style>
 """
+
+
+def llm_advisor_button():
+    markdown("""
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+        <style>
+        .floating-chat {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #8e44ad, #6c5ce7, #a29bfe);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 10px 25px rgba(142, 68, 173, 0.4);
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: floatUpDown 3s ease-in-out infinite;
+        }
+
+        .floating-chat:hover {
+            transform: scale(1.1) rotate(5deg);
+            background: linear-gradient(135deg, #a29bfe, #6c5ce7, #8e44ad);
+            box-shadow: 0 12px 28px rgba(108, 92, 231, 0.5);
+        }
+
+        @keyframes floatUpDown {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+            100% { transform: translateY(0); }
+        }
+        </style>
+
+        <button class="floating-chat" onclick="document.dispatchEvent(new CustomEvent('toggleAssistant'))">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+
+        <script>
+        document.addEventListener('toggleAssistant', function () {
+            window.parent.postMessage({ type: "streamlit:toggleAssistant" }, "*");
+        });
+        </script>
+    """, unsafe_allow_html=True)

@@ -6,7 +6,7 @@ from langchain_community.llms import LlamaCpp
 
 
 CONTEXT_WINDOW_DICT = {
-    "openhermes-2.5-mistral-7b.Q4_K_M": 32768,
+    "openhermes-2.5-mistral-7b.Q4_K_M": 4096, # 32768,
 }
 
 class LlamaCppLocalLLM(LLMBase):
@@ -50,5 +50,12 @@ class LlamaCppLocalLLM(LLMBase):
 
 
     def as_langchain_llm(self) -> LlamaCpp:
-        return LlamaCpp(model_path=self.model_path, temperature=0.9, max_tokens=4096, n_gpu_layers=20, f16_kv=True)
 
+        return LlamaCpp(
+            model_path=self.model_path,
+            temperature=0.9,
+            max_tokens=CONTEXT_WINDOW_DICT.get(self.model_name, 1024),
+            n_ctx=CONTEXT_WINDOW_DICT.get(self.model_name, 4096),  # <-- Add this
+            n_gpu_layers=20,
+            f16_kv=True
+        )

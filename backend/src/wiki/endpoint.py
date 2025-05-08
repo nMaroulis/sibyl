@@ -25,7 +25,7 @@ def get_wiki_agent_response(model_source: str, model_type: str, query: str, mode
         stub = inference_pb2_grpc.InferenceServiceStub(channel)
 
         kwargs = {
-            "application": "wiki_agent",
+            "application": "wiki_rag",
             "model_source": model_source,
             "model_type": model_type,
             "input_text": query

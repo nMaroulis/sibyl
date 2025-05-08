@@ -190,8 +190,6 @@ class WikiAgent(AgentBase):
 
                 ### Instructions:
                 - Answer the user’s query **only using the provided context**.  
-                - If the context does not contain enough information, state:  
-                  *"The provided information does not contain enough details to answer your question. Would you like me to suggest general insights based on my knowledge?"*  
                 - Keep your response factual, direct, and professional.  
                 - If necessary, reference key concepts from blockchain, DeFi, NFTs, or cryptocurrencies to clarify your answer.  
                 - Use bullet points for structured explanations when helpful.  
