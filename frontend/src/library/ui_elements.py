@@ -159,9 +159,10 @@ container_style1 = """
 
 
 def llm_advisor_button():
-    markdown("""
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-        <style>
+
+    button_code = """
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
         .floating-chat {
             position: fixed;
             bottom: 24px;
@@ -181,28 +182,33 @@ def llm_advisor_button():
             align-items: center;
             justify-content: center;
             animation: floatUpDown 3s ease-in-out infinite;
+            --hover-transform: scale(1) rotate(0deg);
+            transform: var(--hover-transform) translateY(0);
         }
 
         .floating-chat:hover {
-            transform: scale(1.1) rotate(5deg);
+            --hover-transform: scale(1.2) rotate(5deg);
             background: linear-gradient(135deg, #a29bfe, #6c5ce7, #8e44ad);
             box-shadow: 0 12px 28px rgba(108, 92, 231, 0.5);
         }
 
         @keyframes floatUpDown {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-            100% { transform: translateY(0); }
+            0% { transform: var(--hover-transform) translateY(0); }
+            50% { transform: var(--hover-transform) translateY(-4px); }
+            100% { transform: var(--hover-transform) translateY(0); }
         }
-        </style>
+    </style>
+    
+    <button class="floating-chat">
+        <i class="fas fa-comment-dots"></i>
+    </button>
 
-        <button class="floating-chat" onclick="document.dispatchEvent(new CustomEvent('toggleAssistant'))">
-            <i class="fas fa-comment-dots"></i>
-        </button>
-
-        <script>
-        document.addEventListener('toggleAssistant', function () {
-            window.parent.postMessage({ type: "streamlit:toggleAssistant" }, "*");
-        });
-        </script>
-    """, unsafe_allow_html=True)
+    """
+    #     <button class="floating-chat" onclick="document.dispatchEvent(new CustomEvent('toggleAssistant'))">
+    # ....
+    #     <script>
+    #     document.addEventListener('toggleAssistant', function () {
+    #         window.parent.postMessage({ type: "streamlit:toggleAssistant" }, "*");
+    #     });
+    #     </script>
+    markdown(button_code, unsafe_allow_html=True)
