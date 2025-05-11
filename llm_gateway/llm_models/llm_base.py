@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
+from typing import List
 from langchain.llms.base import LLM
 
 
@@ -51,6 +51,14 @@ class LLMBase(ABC):
     def _llm_type(self) -> str:
         """
         local or API LLM
+        """
+        pass
+
+
+    @abstractmethod
+    def get_available_models(self) -> List[str]:
+        """
+        get available models
         """
         pass
 

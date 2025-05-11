@@ -3,6 +3,7 @@ from llm_gateway.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
 from langchain.llms.base import LLM
 from langchain_community.llms import HuggingFaceHub
+from typing import List
 
 
 class HuggingFaceAPILLM(LLMBase):
@@ -33,6 +34,13 @@ class HuggingFaceAPILLM(LLMBase):
 
         response = self.model.text_generation(prompt, max_new_tokens=max_length, temperature=0.8)
         return response
+
+
+    def get_available_models(self) -> List[str]:
+        """
+        get available models
+        """
+        pass
 
 
     def as_langchain_llm(self) -> LLM:

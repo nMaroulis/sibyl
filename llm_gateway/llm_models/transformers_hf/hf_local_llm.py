@@ -5,7 +5,10 @@ from llm_gateway.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
 import os
 import platform
+from typing import List
 
+
+# TODO - FIX HERE
 
 class HuggingFaceLocalLLM(LLMBase):
     """
@@ -40,6 +43,13 @@ class HuggingFaceLocalLLM(LLMBase):
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name, torch_dtype=torch.float16, device_map="auto"
             )
+
+
+    def get_available_models(self) -> List[str]:
+        """
+        get available models
+        """
+        pass
 
     def generate_response(self, prompt: str, max_length: int = 500, temperature: float = 0.7) -> str:
         """

@@ -1,7 +1,7 @@
 import streamlit as st
 from frontend.src.library.client import check_api_status
 from frontend.src.library.settings_helper.funcs import insert_update_api_keys
-from frontend.src.library.settings_helper.client import set_mock_exchange_status
+from frontend.src.library.settings_helper.client import set_mock_exchange_status, get_available_local_models
 from frontend.db.db_connector import update_fields
 
 
@@ -73,7 +73,7 @@ def exchange_form() -> None:
 @st.fragment()
 def llm_form() -> None:
     with st.container(border=True):
-        llm_type = st.segmented_control("LLM Type", options=["API", "Local Deployment"])
+        llm_type = st.segmented_control("LLM Type", options=["API", "Local Deployment"], default="Local Deployment")
         if llm_type == 'API':
             llm_api = st.selectbox('Choose LLM Model API', options=['Hugging Face', 'OpenAI API', 'Google Gemini API'],
                                    help="Update LLM API")
@@ -99,63 +99,78 @@ def llm_form() -> None:
                         st.error(f"⚠️ Inserting **{llm_api} API Key** to the Encrypted Database failed.")
         elif llm_type == 'Local Deployment':
             st.caption("After choosing a Library, an LLM model and it's parameters, it will be automatically downloaded and configured on your local system. Make sure to choose a model that your system can handle based on the RAM and CPU.")
+            st.write("**1. Choose Library**")
+            st.info("💡 Currently only the **llama.cpp** library is available. Future releases will introduce")
             local_llm = st.selectbox('Choose LLM Library', options=['Llama CPP'])
-            with st.spinner('Checking if Model is present...'):
-                api_conn = check_api_status(local_llm)
-            if api_conn:
-                st.success('Model is downloaded and ready to be used.', icon=':material/task_alt:')
-            else:
+
+
+            st.write("**2. Available Models**")
+            with st.spinner('Checking if any Model is present...'):
+                available_models = get_available_local_models(local_llm)
+
+            if available_models is None or len(available_models) == 0:
                 st.warning('No Model has not been downloaded.', icon=':material/warning:')
+            else:
+                st.write("The following Models have already been downloaded and are **Available** to use.")
+                st.write(available_models)
+            st.write("**3. Choose LLM Model to Download and Setup**")
+            llm_model_choice = st.pills("**3.1 Choose Model**", options=["mistral-7b-instruct-v0.1.Q4_K_M", "openhermes-2.5-mistral-7b.Q4_K_M.gguf"])
+            st.caption("If you want to define your own model then expand the form below 👇")
+            ## CUSTOM MODEL SELECTION
+            with st.expander("**3.2 Advanced Options**"):
+                llm_model = st.pills('Choose LLM Model',
+                                     options=['Mistral 7B', 'Llama 2 7B', 'TinyLlama 1.1B', 'MythoMax-L2 13B', 'OpenHermes 2.5 7B'],
+                                     default="Mistral 7B", disabled=True)
+                quantization = st.pills("Quantization", options=["Q2_K", "Q3_K", "Q4_K", "Q5_K", "Q6_K", "Q7_K", "Q8_K"],
+                                        default="Q4_K", disabled=True)
+                memory_efficient = st.toggle("Memory Efficient Variant (_M)", value=False, disabled=True)
+                ram_requirements = {
+                    ('Mistral 7B', 'Q2_K'): 3.5,
+                    ('Mistral 7B', 'Q3_K'): 4.5,
+                    ('Mistral 7B', 'Q4_K'): 5.5,
+                    ('Mistral 7B', 'Q5_K'): 6.5,
+                    ('Mistral 7B', 'Q6_K'): 7.5,
+                    ('Mistral 7B', 'Q8_K'): 10.0,
+                    ('Llama 2 7B', 'Q2_K'): 3.2,
+                    ('Llama 2 7B', 'Q3_K'): 4.2,
+                    ('Llama 2 7B', 'Q4_K'): 5.0,
+                    ('Llama 2 7B', 'Q5_K'): 6.0,
+                    ('Llama 2 7B', 'Q6_K'): 7.0,
+                    ('Llama 2 7B', 'Q8_K'): 9.5,
+                    ('TinyLlama 1.1B', 'Q2_K'): 0.7,
+                    ('TinyLlama 1.1B', 'Q3_K'): 0.9,
+                    ('TinyLlama 1.1B', 'Q4_K'): 1.1,
+                    ('TinyLlama 1.1B', 'Q5_K'): 1.3,
+                    ('TinyLlama 1.1B', 'Q6_K'): 1.5,
+                    ('TinyLlama 1.1B', 'Q8_K'): 2.0,
+                    ('MythoMax-L2 13B', 'Q2_K'): 6.5,
+                    ('MythoMax-L2 13B', 'Q3_K'): 8.0,
+                    ('MythoMax-L2 13B', 'Q4_K'): 10.0,
+                    ('MythoMax-L2 13B', 'Q5_K'): 11.5,
+                    ('MythoMax-L2 13B', 'Q6_K'): 13.0,
+                    ('MythoMax-L2 13B', 'Q8_K'): 16.5,
+                    ('OpenHermes 2.5 7B', 'Q2_K'): 3.5,
+                    ('OpenHermes 2.5 7B', 'Q3_K'): 4.5,
+                    ('OpenHermes 2.5 7B', 'Q4_K'): 5.5,
+                    ('OpenHermes 2.5 7B', 'Q5_K'): 6.5,
+                    ('OpenHermes 2.5 7B', 'Q6_K'): 7.5,
+                    ('OpenHermes 2.5 7B', 'Q8_K'): 10.0,
+                }
+                required_ram = ram_requirements.get((llm_model, quantization), "Unknown")
+                st.write(f"Approximate **RAM** needed: **{required_ram} GBs**")
+                llm_model_name = f"{llm_model} {quantization}"
+                if memory_efficient:
+                    llm_model_name += "_M"
+                st.warning("Currently Unavailable.", icon=':material/warning:')
 
-            st.info("Currently only the **llama.cpp** library is available. Future releases will introduce")
+            if llm_model_choice:
+                if st.button(f'Download and Setup **{llm_model_choice}** LLM Model', type="primary", use_container_width=True,
+                             icon=':material/download:'):
+                    with st.spinner(f'Setting up {llm_model_choice} LLM Model...'):
+                        pass
+            else:
+                st.button(f'Download and Setup **{llm_model_choice}** LLM Model', type="primary", use_container_width=True, icon=':material/download:', disabled=True)
 
-            llm_model = st.pills('Choose LLM Model',
-                                 options=['Mistral 7B', 'Llama 2 7B', 'TinyLlama 1.1B', 'MythoMax-L2 13B', 'OpenHermes 2.5 7B'],
-                                 default="Mistral 7B", disabled=True)
-            quantization = st.pills("Quantization", options=["Q2_K", "Q3_K", "Q4_K", "Q5_K", "Q6_K", "Q7_K", "Q8_K"],
-                                    default="Q4_K")
-            memory_efficient = st.toggle("Memory Efficient Variant (_M)", value=False)
-            ram_requirements = {
-                ('Mistral 7B', 'Q2_K'): 3.5,
-                ('Mistral 7B', 'Q3_K'): 4.5,
-                ('Mistral 7B', 'Q4_K'): 5.5,
-                ('Mistral 7B', 'Q5_K'): 6.5,
-                ('Mistral 7B', 'Q6_K'): 7.5,
-                ('Mistral 7B', 'Q8_K'): 10.0,
-                ('Llama 2 7B', 'Q2_K'): 3.2,
-                ('Llama 2 7B', 'Q3_K'): 4.2,
-                ('Llama 2 7B', 'Q4_K'): 5.0,
-                ('Llama 2 7B', 'Q5_K'): 6.0,
-                ('Llama 2 7B', 'Q6_K'): 7.0,
-                ('Llama 2 7B', 'Q8_K'): 9.5,
-                ('TinyLlama 1.1B', 'Q2_K'): 0.7,
-                ('TinyLlama 1.1B', 'Q3_K'): 0.9,
-                ('TinyLlama 1.1B', 'Q4_K'): 1.1,
-                ('TinyLlama 1.1B', 'Q5_K'): 1.3,
-                ('TinyLlama 1.1B', 'Q6_K'): 1.5,
-                ('TinyLlama 1.1B', 'Q8_K'): 2.0,
-                ('MythoMax-L2 13B', 'Q2_K'): 6.5,
-                ('MythoMax-L2 13B', 'Q3_K'): 8.0,
-                ('MythoMax-L2 13B', 'Q4_K'): 10.0,
-                ('MythoMax-L2 13B', 'Q5_K'): 11.5,
-                ('MythoMax-L2 13B', 'Q6_K'): 13.0,
-                ('MythoMax-L2 13B', 'Q8_K'): 16.5,
-                ('OpenHermes 2.5 7B', 'Q2_K'): 3.5,
-                ('OpenHermes 2.5 7B', 'Q3_K'): 4.5,
-                ('OpenHermes 2.5 7B', 'Q4_K'): 5.5,
-                ('OpenHermes 2.5 7B', 'Q5_K'): 6.5,
-                ('OpenHermes 2.5 7B', 'Q6_K'): 7.5,
-                ('OpenHermes 2.5 7B', 'Q8_K'): 10.0,
-            }
-            required_ram = ram_requirements.get((llm_model, quantization), "Unknown")
-            st.write(f"Approximate **RAM** needed: **{required_ram} GBs**")
-            llm_model_name = f"{llm_model} {quantization}"
-            if memory_efficient:
-                llm_model_name += "_M"
-            if st.button(f'Download and Setup **{llm_model_name}** LLM Model', type="primary", use_container_width=True,
-                         icon=':material/download:'):
-                with st.spinner(f'Setting up {llm_model_name} LLM Model...'):
-                    pass
         else:
             st.warning("No Option chosen", icon=':material/warning:')
 

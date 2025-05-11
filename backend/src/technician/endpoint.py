@@ -66,3 +66,14 @@ def set_mock_exchange_status(req: StatusRequest):
     except Exception as e:
         print(f"TECHNICIAN ERROR :: {e}")
         raise HTTPException(status_code=500, detail="Failed to update mock exchange status.")
+
+
+
+@router.get("/status/local/models")
+def get_local_llm_models(library: str):
+    try:
+        res = technician_worker.get_local_models(library)
+        return {"models": res}
+    except Exception as e:
+        print(f"TECHNICIAN :: status/local/models :: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch available local models.")

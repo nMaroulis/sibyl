@@ -1,6 +1,7 @@
 from database.api_keys_db_client import APIEncryptedDatabase
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
-from typing import Dict
+from llm_gateway.llm_models.llm_client_factory import LLMClientFactory
+from typing import Dict, List
 
 
 class Technician:
@@ -52,3 +53,9 @@ class Technician:
         except Exception as e:
             print(e)
             return False
+
+
+    def get_local_models(self, library: str) -> List[str]:
+        llm = LLMClientFactory.get_client(model_type=library)
+        models = llm.get_available_models()
+        return models

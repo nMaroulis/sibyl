@@ -3,6 +3,7 @@ from llm_gateway.llm_models.llm_base import LLMBase
 from dotenv import load_dotenv
 import os
 from langchain_community.llms import LlamaCpp
+from typing import List
 
 
 CONTEXT_WINDOW_DICT = {
@@ -47,6 +48,10 @@ class LlamaCppLocalLLM(LLMBase):
             stop=["</s>", "USER:", "ASSISTANT:"],  # Customize for your prompt format
         )
         return response["choices"][0]["text"].strip()
+
+
+    def get_available_models(self) -> List[str]:
+        return [f for f in os.listdir(os.getenv("LLAMA_CPP_LLM_MODEL_PATH")) if f.lower().endswith(".gguf")]
 
 
     def as_langchain_llm(self) -> LlamaCpp:

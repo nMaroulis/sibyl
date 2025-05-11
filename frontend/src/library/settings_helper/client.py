@@ -44,3 +44,17 @@ def set_mock_exchange_status(status: bool) -> bool:
         return True
     else:
         return False
+
+
+def get_available_local_models(library: str) -> list[str] | None:
+    library = library.lower().replace(' ', '_')
+    url = f"{BACKEND_SERVER_ADDRESS}/technician/status/local/models?library={library}"
+    response = requests.get(url)
+    try:
+        if response.status_code == 200:
+            res = response.json()
+            return res["models"]
+    except Exception as e:
+        print(e)
+        return None
+    return None

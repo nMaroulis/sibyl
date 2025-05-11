@@ -3,7 +3,7 @@ from llm_gateway.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
 from langchain.llms.base import LLM
 from langchain_openai import ChatOpenAI
-
+from typing import List
 
 class OpenAIAPILLM(LLMBase):
     """
@@ -50,13 +50,16 @@ class OpenAIAPILLM(LLMBase):
             return "".join(chunk.choices[0].delta.get("content", "") for chunk in response)
         return response.choices[0].message.content
 
+
+    def get_available_models(self) -> List[str]:
+        """
+        get available models
+        """
+        pass
+
+
     def as_langchain_llm(self) -> LLM:
         """
         Returns a LangChain-compatible LLM.
         """
-        return ChatOpenAI(
-            model=self.model_name,
-            temperature=0.7,
-            api_key=self.api_key,
-            streaming=self.stream,
-        )
+        return ChatOpenAI(model=self.model_name, temperature=0.7, api_key=self.api_key, streaming=self.stream)
