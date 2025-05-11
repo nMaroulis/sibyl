@@ -9,7 +9,7 @@ from frontend.src.library.wallet_helper.ui_elements import get_spot_balance_wall
 fix_page_layout("Sibyl", '3.8rem')
 get_logo_header()
 st.caption("Welcome to Sibyl, the current page shows the wallet balances from all connected exchange accounts.")
-st.caption("Navigate to the **Settings Tab** ⚙️ to add your connect your **Exchange API credentials**. You can also provide your **LLM API keys** or choose an automated **local LLM** deployment, in order to activate the **LLM-powered functionalities** using the button on the . All the API keys are stored in an **encrypted Database** on your local system, with an encryption key generated locally.")
+st.caption("Navigate to the **Settings Tab** ⚙️ to add your connect your **Exchange API credentials**. You can also provide your **LLM API keys** or choose an automated **local LLM** deployment, in order to activate the **LLM-powered functionalities** using the button on the bottom right 🚀. All the API keys are stored in an **encrypted Database** on your local system, with an encryption key generated locally.")
 st.session_state['backend_status'] = check_backend_connection()
 llm_advisor_button(module="wallet", enabled=False)
 
