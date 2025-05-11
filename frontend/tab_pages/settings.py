@@ -4,7 +4,7 @@ from frontend.src.library.client import check_backend_connection
 from frontend.db.db_connector import fetch_fields
 from dotenv import load_dotenv
 from frontend.src.library.settings_helper.navigation import show_status_cards
-from frontend.src.library.settings_helper.form_elements import llm_form, exchange_form, price_api_form, backend_form, trading_form
+from frontend.src.library.settings_helper.form_elements import llm_form, exchange_form, price_api_form, backend_form
 import os
 
 
@@ -24,7 +24,7 @@ st.write('The cards below indicate current connection status of each API. Go to 
 
 show_status_cards()
 
-db_fields = fetch_fields()[0]  # frontend DB settings
+db_fields = fetch_fields() # frontend DB settings
 
 st.sidebar.button('Reset All Data', type='primary')
 
@@ -43,5 +43,3 @@ with price_tab:
     price_api_form()
 with back_tab:
     backend_form(db_fields)
-with trd_tab:
-    trading_form()

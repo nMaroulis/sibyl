@@ -114,7 +114,7 @@ def llm_form() -> None:
                 st.write("The following Models have already been downloaded and are **Available** to use.")
                 st.write(available_models)
             st.write("**3. Choose LLM Model to Download and Setup**")
-            llm_model_choice = st.pills("**3.1 Choose Model**", options=["mistral-7b-instruct-v0.1.Q4_K_M", "openhermes-2.5-mistral-7b.Q4_K_M.gguf"])
+            llm_model_choice = st.pills("**3.1 Choose Model**", options=["mistral-7b-instruct-v0.1.Q4_K_M", "openhermes-2.5-mistral-7b.Q4_K_M"])
             st.caption("If you want to define your own model then expand the form below 👇")
             ## CUSTOM MODEL SELECTION
             with st.expander("**3.2 Advanced Options**"):
@@ -170,7 +170,6 @@ def llm_form() -> None:
                         pass
             else:
                 st.button(f'Download and Setup **{llm_model_choice}** LLM Model', type="primary", use_container_width=True, icon=':material/download:', disabled=True)
-
         else:
             st.warning("No Option chosen", icon=':material/warning:')
 
@@ -189,27 +188,18 @@ def price_api_form() -> None:
 
 
 @st.fragment()
-def backend_form(db_fields: list) -> None:
+def backend_form(db_fields: dict) -> None:
     with st.form('Backend Server Settings'):
-        serv_ip = st.text_input('Server IP', value=db_fields[3], placeholder="Default: http://127.0.0.1")
-        serv_port = st.text_input('Server Port', value=db_fields[4], placeholder="Default: 8000")
+        serv_ip = st.text_input('Server IP', value=db_fields["backend_server_ip"], placeholder="Default: 127.0.0.1")
+        serv_port = st.text_input('Server Port', value=db_fields["backend_server_port"], placeholder="Default: 8000")
+        st.toggle("HTTPS", value=False, disabled=True)
 
-        back_submit = st.form_submit_button('Update Server Settings')
-        old_serv_adr = db_fields[5]
+        current_backend_address = f"http://{db_fields["backend_server_ip"]}:{db_fields["backend_server_port"]}"
+        st.write(f"Current Backend Address: **{current_backend_address}**")
+        new_backend_address = f"http://{serv_ip}:{serv_port}"
+
+        st.divider()
+        back_submit = st.form_submit_button('Update Server Settings', type="primary", icon=':material/cached:')
         if back_submit:
-            serv_adr = serv_ip+':'+serv_port
-            update_fields(backend_server_ip=serv_ip, backend_server_port=serv_port,backend_server_socket_address=serv_adr)  # Update NLP Model Choice in frontend SQlite3 DB
-            st.success(f'Server Parameters Update Successfuly, New Configurations: [{old_serv_adr}] -> [{serv_adr}]')
-
-
-@st.fragment()
-def trading_form() -> None:
-    with st.form('Trading Parameters'):
-        exchange = st.selectbox('Choose Crypto Exchange', options= ['Binance', 'Coinbase', 'Crypto.com', 'Gemini','Kraken',  'KuCoin'], disabled=True, help="Support for Coinbase, Crypto.com, Gemini, Kraken, KuCoin TBA")
-        st.info("💡 Currently only Binance is supported, the following will be added: Coinbase, Crypto.com, Gemini, Kraken, KuCoin")
-        with st.expander('Betting Options', expanded=True):
-            betting_coin = st.selectbox("Choose Betting Coin [recommended: USDT]", ['USDT', 'BNB', 'BTC'], disabled=True)
-        trd_submit = st.form_submit_button('Update Trading Parameters')
-        if trd_submit:
-            # update_betting_options(exchange)
-            st.write("ok")
+            update_fields(backend_server_ip=serv_ip, backend_server_port=serv_port, backend_server_secure=0)  # Update NLP Model Choice in frontend SQlite3 DB
+            st.success(f'Server Parameters Update Successfully, New Configurations: [{current_backend_address}] -> [{new_backend_address}]')
