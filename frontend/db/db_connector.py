@@ -5,16 +5,16 @@ from dotenv import load_dotenv
 
 
 """
-This script uses the sqlite3 module to connect to an SQLite database file called database.db. 
-It creates a table named "configuration" with the specified fields: 
-exchange_choice, nlp_model_choice, backend_server_ip, backend_server_port, and backend_server_socket_address. 
+This script uses the sqlite3 module to connect to an SQLite database file called frontend.db. 
+It creates a table named "user_configuration" with the specified fields: 
+exchange, llm_source, llm_type, llm_name, backend_server_ip, backend_server_port and backend_server_secure. 
 The table has an additional primary key field called id for unique identification of each record.
 """
 
 load_dotenv('frontend/config/config.env')
 DB_PATH = os.getenv("FRONTEND_DB_PATH")
 
-def db_init():
+def db_init() -> int:
     # Check if the database file already exists
     if os.path.exists(DB_PATH):
         print("db_connector :: Database already exists.")
@@ -24,7 +24,7 @@ def db_init():
 
     cursor = conn.cursor()  # Create a cursor object to execute SQL commands
     # Create Table that holds the User Preferences/Configurations
-    sql_create_conf_table_query = """CREATE TABLE IF NOT EXISTS user_conf (
+    sql_create_conf_table_query = """CREATE TABLE IF NOT EXISTS user_configuration (
                                     id integer PRIMARY KEY,
                                     exchange text NOT NULL,
                                     llm_source text,
@@ -37,7 +37,7 @@ def db_init():
     cursor.execute(sql_create_conf_table_query)  # execute query
 
     # INSERT DEFAULT PARAMS
-    insert_default_query = """INSERT INTO user_conf(exchange, backend_server_ip,backend_server_port,backend_server_secure)
+    insert_default_query = """INSERT INTO user_configuration(exchange, backend_server_ip,backend_server_port,backend_server_secure)
                   VALUES("Binance", "127.0.0.1", 8000, 0);"""
     cursor.execute(insert_default_query)
     conn.commit() # Save the changes
@@ -49,13 +49,12 @@ def db_init():
 
 
 @cache_resource
-def fetch_fields():
+def fetch_fields() -> dict:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     # Fetch all fields from the configuration table
-    cursor.execute("SELECT * FROM user_conf")
+    cursor.execute("SELECT * FROM user_configuration")
     rows = cursor.fetchall()
-    # print(rows)
     cursor.close()
     conn.close()
 
@@ -67,16 +66,15 @@ def fetch_fields():
            "backend_server_port": rows[0][6],
            "backend_server_secure": rows[0][7]
            }
-    print(res)
     return res
 
 
 @cache_resource
-def fetch_llm_info():
+def fetch_llm_info() -> dict:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     # Fetch all fields from the configuration table
-    cursor.execute("SELECT llm_source, llm_type, llm_name FROM user_conf")
+    cursor.execute("SELECT llm_source, llm_type, llm_name FROM user_configuration")
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -90,7 +88,7 @@ def update_fields(exchange: str = None, llm_source: str = None, llm_type: str = 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     # Update the fields if arguments are not None
-    cursor.execute("""UPDATE user_conf SET
+    cursor.execute("""UPDATE user_configuration SET
                       exchange = COALESCE(?, exchange),
                       llm_source = COALESCE(?, llm_source),
                       llm_type = COALESCE(?, llm_type),
