@@ -15,7 +15,6 @@ st.sidebar.selectbox(label="Sentiment NLP Model", options=['Vader'])
 llm_advisor_button(module="reporting", enabled=True)
 if check_api_status("hugging_face"):
     if st.button("", type="tertiary", icon=":material/rocket_launch:"):
-        st.snow()
         news_chatbot()
 else:
     st.sidebar.button("Sibyl LLM Chatbot", disabled=True)
