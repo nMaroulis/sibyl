@@ -163,6 +163,7 @@ def llm_form() -> None:
                     llm_model_name += "_M"
                 st.warning("Currently Unavailable.", icon=':material/warning:')
 
+            st.divider()
             if llm_model_choice:
                 if st.button(f'Download and Setup **{llm_model_choice}** LLM Model', type="primary", use_container_width=True,
                              icon=':material/download:'):
@@ -181,7 +182,8 @@ def price_api_form() -> None:
         st.write("The crypto prices are fetched through the Binance API and the CoinCap API (https://docs.coincap.io/). If the limit is reached, please use a custom API key.")
         st.info('💡 These APIs are also used to create the Coin Symbol-Name Map. (e.g. BTC → Bitcoin [BTC])')
         price_history_api_key = st.text_input('API Key', placeholder="Fill API Key here...")
-        ph_submit = st.form_submit_button('Update API Key')
+        st.divider()
+        ph_submit = st.form_submit_button('Update API Key', type="primary", icon=':material/cached:')
         if ph_submit:
             st.write("Not yet Supported.")
             insert_update_api_keys(price_history_api, price_history_api_key)

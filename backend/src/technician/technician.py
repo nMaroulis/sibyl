@@ -33,9 +33,9 @@ class Technician:
             res["hugging_face"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("hugging_face") is not None else 'Unavailable'
 
         if api_name in ["all", "llms", "llama_cpp"]:
-            res["llama_cpp"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("llama_cpp") is not None else 'Unavailable'
+            res["llama_cpp"] = 'Available'
         if api_name in ["all", "llms", "tgi"]:
-            res["tgi"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("tgi") is not None else 'Unavailable'
+            res["tgi"] = 'Unavailable'
 
         if api_name in ["all", "coinmarketcap"]:
             res["coinmarketcap"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("coinmarketcap") is not None else 'Unavailable'

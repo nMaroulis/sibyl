@@ -33,7 +33,7 @@ with st.spinner('Checking Backend Server connection'):
 
 llm_advisor_button(module="settings", enabled=False)
 
-api_tab, llm_tab, price_tab, back_tab, trd_tab = st.tabs(['Crypto Exchange API Settings', 'LLM Settings', 'Price History API', 'Backend Server Settings', 'Trading Settings'])
+api_tab, llm_tab, rocketquery_tab, price_tab, back_tab = st.tabs(['Crypto Exchange API Settings', 'LLM Settings', 'RocketQuery 🚀', 'Price History API', 'Backend Server Settings'])
 
 with api_tab:
     exchange_form()
