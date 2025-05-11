@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title, llm_advisor_button
 from frontend.src.library.strategy_helper.client import get_strategy_metadata, get_strategy_logs, stop_strategy
 import pandas as pd
 from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count, strategy_plot_info, strategy_info_card
@@ -12,7 +12,7 @@ st.write("Monitor the progress of a running strategy or examine a finished one."
 
 strategies = get_strategy_metadata("all")
 if strategies:
-
+    llm_advisor_button(module="strategy_console", enabled=False)
     st.html(
         "<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Strategies</h4>")
     df = pd.DataFrame(strategies)

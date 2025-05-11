@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title, llm_advisor_button
 from frontend.src.library.client import check_backend_connection
 from frontend.db.db_connector import fetch_fields
 from dotenv import load_dotenv
@@ -30,6 +30,8 @@ st.sidebar.button('Reset All Data', type='primary')
 
 with st.spinner('Checking Backend Server connection'):
     server_conn = check_backend_connection()
+
+llm_advisor_button(module="settings", enabled=False)
 
 api_tab, llm_tab, price_tab, back_tab, trd_tab = st.tabs(['Crypto Exchange API Settings', 'LLM Settings', 'Price History API', 'Backend Server Settings', 'Trading Settings'])
 

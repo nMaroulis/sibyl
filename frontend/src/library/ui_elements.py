@@ -1,4 +1,4 @@
-from streamlit import set_page_config, html, cache_resource, logo, markdown
+from streamlit import set_page_config, html, cache_resource, logo, markdown, button, fragment
 from PIL import Image
 
 
@@ -157,13 +157,12 @@ container_style1 = """
     </style>
 """
 
+@fragment()
+def llm_advisor_button(module: str, enabled: bool = True, content: dict = None):
 
-def llm_advisor_button():
-
-    button_code = """
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    button_style = """
     <style>
-        .floating-chat {
+        button[kind="tertiary"] {
             position: fixed;
             bottom: 24px;
             right: 24px;
@@ -186,29 +185,50 @@ def llm_advisor_button():
             transform: var(--hover-transform) translateY(0);
         }
 
-        .floating-chat:hover {
-            --hover-transform: scale(1.2) rotate(5deg);
-            background: linear-gradient(135deg, #a29bfe, #6c5ce7, #8e44ad);
-            box-shadow: 0 12px 28px rgba(108, 92, 231, 0.5);
-        }
-
         @keyframes floatUpDown {
             0% { transform: var(--hover-transform) translateY(0); }
             50% { transform: var(--hover-transform) translateY(-4px); }
             100% { transform: var(--hover-transform) translateY(0); }
         }
-    </style>
-    
-    <button class="floating-chat">
-        <i class="fas fa-comment-dots"></i>
-    </button>
-
     """
-    #     <button class="floating-chat" onclick="document.dispatchEvent(new CustomEvent('toggleAssistant'))">
+
+    if enabled:
+        button_style += """
+            button[kind="tertiary"]:hover {
+                --hover-transform: scale(1.2) rotate(5deg);
+                background: linear-gradient(135deg, #a29bfe, #6c5ce7, #8e44ad);
+                box-shadow: 0 12px 28px rgba(108, 92, 231, 0.5);
+            }
+        """
+    else:
+        button_style += """
+            button[kind="tertiary"]:hover {
+                background: #ccc;
+                color: #888;
+                cursor: not-allowed;
+                box-shadow: none;
+                animation: none;
+                transform: none;
+            }
+        """
+    button_style += """</style>"""
+    ##### DEPRECATED CODE - to be removed
+    # <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    # <button class="floating-chat" onclick="document.dispatchEvent(new CustomEvent('toggleAssistant'))">
+    #     <i class="fas fa-comment-dots"></i>
+    # </button>
     # ....
     #     <script>
     #     document.addEventListener('toggleAssistant', function () {
     #         window.parent.postMessage({ type: "streamlit:toggleAssistant" }, "*");
     #     });
     #     </script>
-    markdown(button_code, unsafe_allow_html=True)
+    markdown(button_style, unsafe_allow_html=True)
+
+    # button is now called from each module
+    # if button("", type="tertiary", icon=":material/rocket_launch:"):
+    #     dialog_map(module, content)
+
+    if not enabled:
+        button("", type="tertiary", icon=":material/rocket_launch:")
+

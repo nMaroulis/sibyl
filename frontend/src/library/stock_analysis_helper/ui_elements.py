@@ -4,6 +4,8 @@ import re
 from frontend.src.library.stock_analysis_helper.plots import risk_gauge, linear_gauge_chart
 from frontend.src.library.client import check_api_status
 import time
+from frontend.src.library.ui_elements import llm_advisor_button
+
 
 def extract_symbol(stock_string) -> str | None:
 
@@ -154,6 +156,7 @@ def display_company_info(info: dict, stock_symbol: str):
     with c0:
         st.pyplot(linear_gauge_chart(1.4))
 
+
 @st.dialog("Sibyl Stock Advisor", width="large")
 def get_advice(symbol: str):
     with st.spinner("Generating advice..."):
@@ -173,10 +176,15 @@ def get_stock_analysis(stock_symbol: str):
         st.error("Invalid stock symbol", icon=":material/error:")
     stock_details = fetch_stock_details(symbol)
     if stock_details:
+
         if check_api_status("hugging_face"):
-            if st.button("Get Advice", type="primary", icon=":material/search_check:"):
+
+            llm_advisor_button(module="stock_analysis", enabled=True, content={"stock_symbol": symbol})
+            if st.button("", type="tertiary", icon=":material/rocket_launch:"):
                 get_advice(symbol)
-            st.caption(f"👆👆 **Hugging Face API key** is *active*, you can get an advice from the Sibyl Stock Advisor.")
+            # if st.button("Get Advice", type="primary", icon=":material/search_check:"):
+            #     get_advice(symbol)
+            # st.caption(f"👆👆 **Hugging Face API key** is *active*, you can get an advice from the Sibyl Stock Advisor.")
         else:
             st.info(
                 "💡Add an API key for an LLM (e.g. Hugging Face, OpenAI API etc.) in the settings tab in order to get an advice from the Sibyl Stock Advisor LLM.")

@@ -4,7 +4,7 @@ from frontend.src.library.wallet_helper.client import fetch_account_spot
 from frontend.src.library.settings_helper.navigation import exchange_api_status_check
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.strategy_helper.launcher_helper import get_strategy_instructions, strategy_params_form, backtest_evaluation_results, get_market_condition_message, market_condition_explanation
-from frontend.src.library.ui_elements import col_style2
+from frontend.src.library.ui_elements import col_style2, llm_advisor_button
 from frontend.src.library.analytics_helper.client import fetch_available_assets
 from frontend.src.library.strategy_helper.client import post_strategy, get_available_strategies
 from frontend.src.library.strategy_helper.console_helper import static_strategy_plot
@@ -23,6 +23,7 @@ if "available_exchange_apis" not in st.session_state:
         exchange_api_status_check()
 
 if st.session_state["available_exchange_apis"]:
+    llm_advisor_button(module="strategy", enabled=False)
     st.divider()
     with st.container(border=False):
         c00 = st.columns(1)

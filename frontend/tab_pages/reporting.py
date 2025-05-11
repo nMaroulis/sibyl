@@ -1,5 +1,5 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title, llm_advisor_button
 from frontend.src.library.nlp.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment, news_chatbot
 from frontend.src.library.client import check_api_status
 
@@ -11,8 +11,11 @@ st.sidebar.selectbox(label="Source Website", options=['Cointelegraph', 'Coindesk
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)
 st.sidebar.selectbox(label="Sentiment NLP Model", options=['Vader'])
 
+### LLM ADVISOR
+llm_advisor_button(module="reporting", enabled=True)
 if check_api_status("hugging_face"):
-    if st.sidebar.button("News Chatbot", type="primary", icon=":material/forum:", use_container_width=True):
+    if st.button("", type="tertiary", icon=":material/rocket_launch:"):
+        st.snow()
         news_chatbot()
 else:
     st.sidebar.button("Sibyl LLM Chatbot", disabled=True)
