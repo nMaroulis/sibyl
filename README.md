@@ -30,6 +30,23 @@ Welcome to **Sibyl**! This application is your centralized hub for all things cr
 ### Interactive Dashboard UI
 The intuitive dashboard provides a comprehensive view of your crypto activities. Manage your trading strategies, analyze market trends, and keep an eye on the latest news—all in one place.
 
+### AI Agents & LLMs that power each Sibyl functionality - Oracle Module 🔥
+**Oracle** is the LLM-driven intelligence layer of *Sibyl*.
+Wherever you navigate in Sibyl, Oracle is there — ready to assist, explain, advise or spark new insights.
+With a single click, you activate a powerful AI agent that understands your context and delivers real-time intelligence, from market sentiment analysis to data explanations, crypto education, and strategy suggestions and more.
+
+- **Context-Aware Assistant**  
+  Oracle adapts to each section of Sibyl — whether you're analyzing a token, reading market news, launching a strategy or reviewing your trades.
+
+- **Natural Language Interaction**  
+  Ask questions, get summaries, or explore crypto concepts with simple text — no jargon required.
+
+- **Real-Time Reasoning**  
+  Powered by **locally deployed** or **API** LLMs, Oracle can synthesize multiple sources of information, extract insights, and provide actionable suggestions.
+
+- **Intelligent Agent Hooks**  
+  Oracle can trigger deeper tools like analytics, visualizations, or predictions via internal AI agents when appropriate.
+
 
 ### Strategy Planning - Broker Module 🎯
 Tune and deploy trading strategies and monitor their performance through a real-time UI:
@@ -58,11 +75,11 @@ Create and place a SPOT order through the sibyl UI. This order will be first sen
 The Spot order is then saved in the TradingHistory DB, to retrieve its status and get analytics.
 
 
-### Price Movement Prediction using ML - Oracle Module 🔮
-Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to forecast and asset's price and make informed trading decisions. 
-- Oracle tab in the UI: choose an asset and call the Oracle to get the price prediction.
+### Price Movement Prediction using ML - Chronos Module 🔮
+Chronos contains a suite of ML models for signal processing (non-LLM). Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to forecast and asset's price and make informed trading decisions. 
+- Chronos tab in the UI: choose an asset and call the Chronos to get the price prediction.
 
-TBA: AI-powered strategies that utilize the Oracle models.
+TBA: AI-powered strategies that utilize the Chronos models.
 
 
 ### Data Analysis & Visualization - Analyst Module 📈

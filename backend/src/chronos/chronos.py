@@ -6,11 +6,11 @@ from datetime import datetime, timedelta
 from numpy import zeros
 import os
 
-MODEL_PATH = f"backend/src/oracle/models/oracle_v0.1.keras"
-SCALER_PATH = f"backend/src/oracle/preprocessing/minmax_scaler-7f.pkl"
+MODEL_PATH = f"backend/src/chronos/models/chronos_v0.1.keras"
+SCALER_PATH = f"backend/src/chronos/preprocessing/minmax_scaler-7f.pkl"
 
 
-class Oracle:
+class Chronos:
     def __init__(self):
         self.lookback = 60  # days
         self.forecast_horizon = 7  # days

@@ -10,7 +10,7 @@ from settings import SERVER_IP, SERVER_PORT
 from database.api_keys_db_client import APIEncryptedDatabase
 from backend.src.accountant.endpoint import router as accountant_router
 from backend.src.analyst.endpoint import router as analyst_router
-from backend.src.oracle.endpoint import router as oracle_router
+from backend.src.chronos.endpoint import router as chronos_router
 from backend.src.broker.endpoint import router as broker_router
 from backend.src.reporter.endpoint import router as reporter_router
 from backend.src.technician.endpoint import router as technician_router
@@ -27,7 +27,7 @@ router.include_router(accountant_router)
 router.include_router(analyst_router)
 router.include_router(broker_router)
 router.include_router(explorer_router)
-router.include_router(oracle_router)
+router.include_router(chronos_router)
 router.include_router(reporter_router)
 router.include_router(technician_router)
 router.include_router(stock_analyst_router)

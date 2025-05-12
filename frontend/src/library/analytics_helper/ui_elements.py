@@ -32,7 +32,7 @@ def get_price_analytics_form():
 
             pills("Metrics", options=["RSI", "EMA", "Bollinger Bands"],disabled=True)
             plot_type = radio('Plot type', options=['Line Plot', 'Candle Plot'], index=0, horizontal=True)
-            caption("For Price Forecasting summon the Oracle 🔮 in the forecasting tab.")
+            caption("For Price Forecasting summon the Chronos 🔮 in the forecasting tab.")
             divider()  # html("""<hr style="height:1px;width:12em;text-align:left; color:gray; background-color:gray; padding-top:0;">""")
             sumbit_button = form_submit_button('Call the Analyst 🕵️‍♂️')
             if sumbit_button:

@@ -2,6 +2,8 @@ import streamlit as st
 from frontend.src.library.explorer_helper.client import fetch_blocks
 from frontend.src.library.explorer_helper.plots import plot_block_height_weight_tx_count
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
+from frontend.src.library.oracle.ui_elements import oracle_button
+
 
 fix_page_layout('🧭 explorer')
 set_page_title("Blockchain Explorer")
@@ -25,6 +27,7 @@ with st.form("explorer_form"):
 
     sub_button = st.form_submit_button("Explore 🧭")
     if sub_button:
+        oracle_button(module="explorer", enabled=False)
         data = fetch_blocks(selected_blockchain, block_count)
         if data is not None:
             st.caption("For **Bitcoin** the explorer checks the https://blockstream.info/ API. Block weight in KBs.")

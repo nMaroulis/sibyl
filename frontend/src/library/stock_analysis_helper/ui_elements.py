@@ -4,7 +4,7 @@ import re
 from frontend.src.library.stock_analysis_helper.plots import risk_gauge, linear_gauge_chart
 from frontend.src.library.client import check_api_status
 import time
-from frontend.src.library.ui_elements import llm_advisor_button
+from frontend.src.library.oracle.ui_elements import oracle_button
 
 
 def extract_symbol(stock_string) -> str | None:
@@ -179,8 +179,8 @@ def get_stock_analysis(stock_symbol: str):
 
         if check_api_status("hugging_face"):
 
-            llm_advisor_button(module="stock_analysis", enabled=True, content={"stock_symbol": symbol})
-            if st.button("", type="tertiary", icon=":material/rocket_launch:"):
+            oracle_button(module="stock_analysis", enabled=True, content={"stock_symbol": symbol})
+            if st.button("", type="tertiary"):
                 get_advice(symbol)
             # if st.button("Get Advice", type="primary", icon=":material/search_check:"):
             #     get_advice(symbol)

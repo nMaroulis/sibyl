@@ -1,7 +1,8 @@
 import pandas as pd
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title, llm_advisor_button
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot, get_trading_history_line_plot, trade_history_instructions
+from frontend.src.library.oracle.ui_elements import oracle_button
 
 
 fix_page_layout('Report')
@@ -15,7 +16,7 @@ df = trading_history_table()
 if df is None:
     st.error('📶 Something went wrong while fetching the Trading History. Check server Connection.')
 else:
-    llm_advisor_button(module="trading_report", enabled=False)
+    oracle_button(module="trading_report", enabled=False)
     th_tab, vs_tab = st.tabs(['Trading History', 'Visual Inspection'])
     with th_tab:
         st.html("<h4 style='text-align: left;margin-top:0.1em; margin-bottom:0.1em; padding:0;color:#5E5E5E'>Trading History Table</h4>")

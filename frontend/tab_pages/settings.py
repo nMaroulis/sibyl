@@ -1,11 +1,12 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title, llm_advisor_button
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title
 from frontend.src.library.client import check_backend_connection
 from frontend.db.db_connector import fetch_fields
 from dotenv import load_dotenv
 from frontend.src.library.settings_helper.navigation import show_status_cards
-from frontend.src.library.settings_helper.form_elements import llm_form, exchange_form, price_api_form, backend_form
+from frontend.src.library.settings_helper.form_elements import llm_form, exchange_form, price_api_form, backend_form, oracle_form
 import os
+from frontend.src.library.oracle.ui_elements import oracle_button
 
 
 fix_page_layout('Settings')
@@ -31,14 +32,16 @@ st.sidebar.button('Reset All Data', type='primary')
 with st.spinner('Checking Backend Server connection'):
     server_conn = check_backend_connection()
 
-llm_advisor_button(module="settings", enabled=False)
+oracle_button(module="settings", enabled=False)
 
-api_tab, llm_tab, rocketquery_tab, price_tab, back_tab = st.tabs(['Crypto Exchange API Settings', 'LLM Settings', 'RocketQuery 🚀', 'Price History API', 'Backend Server Settings'])
+api_tab, llm_tab, oracle_tab, price_tab, back_tab = st.tabs(['Crypto Exchange API Settings', 'LLM Settings', 'Oracle 🔥', 'Price History API', 'Backend Server Settings'])
 
 with api_tab:
     exchange_form()
 with llm_tab:
     llm_form()
+with oracle_tab:
+    oracle_form()
 with price_tab:
     price_api_form()
 with back_tab:

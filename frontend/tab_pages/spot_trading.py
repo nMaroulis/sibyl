@@ -1,9 +1,10 @@
 import streamlit as st
 from frontend.src.library.settings_helper.navigation import exchange_api_status_check
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2, llm_advisor_button
+from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
 from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook, time_in_force_instructions
 from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price, submit_order
 from frontend.src.library.analytics_helper.client import fetch_available_assets
+from frontend.src.library.oracle.ui_elements import oracle_button
 
 from frontend.src.library.spot_trade_helper.client import fetch_symbol_info
 import math
@@ -21,7 +22,7 @@ if "available_exchange_apis" not in st.session_state:
         exchange_api_status_check()
 
 if len(st.session_state["available_exchange_apis"]) > 0:
-    llm_advisor_button(module="spot_trading", enabled=False)
+    oracle_button(module="spot_trading", enabled=False)
 
     if st.sidebar.button('Reset Trade', type='primary', use_container_width=True, icon=":material/reset_settings:"):
         st.cache_data.clear()

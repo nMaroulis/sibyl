@@ -2,7 +2,7 @@ import streamlit as st
 from frontend.src.library.client import check_api_status
 from frontend.src.library.settings_helper.funcs import insert_update_api_keys
 from frontend.src.library.settings_helper.client import set_mock_exchange_status, get_available_local_models
-from frontend.db.db_connector import update_fields
+from frontend.db.db_connector import update_fields, fetch_llm_info
 
 
 @st.fragment()
@@ -205,3 +205,18 @@ def backend_form(db_fields: dict) -> None:
         if back_submit:
             update_fields(backend_server_ip=serv_ip, backend_server_port=serv_port, backend_server_secure=0)  # Update NLP Model Choice in frontend SQlite3 DB
             st.success(f'Server Parameters Update Successfully, New Configurations: [{current_backend_address}] -> [{new_backend_address}]')
+
+
+@st.fragment()
+def oracle_form() -> None:
+    with st.container(border=True):
+        st.write("You fist have to setup a **Local** or **API** LLM model from the *LLM Settings tab* 👈. After that you have to choose an **LLM model** for the **Oracle Engine**.")
+        st.write("**Current Oracle Engine LLM Model**")
+        llm_info = fetch_llm_info()
+        if llm_info:
+            st.write(llm_info)
+        else:
+            st.warning("**Oracle Engine** is **not configured**. Please select an LLM Model.", icon=":material/warning:")
+        st.divider()
+        if st.button("Set new default Oracle Model", type="primary", icon=':material/cached:'):
+            pass

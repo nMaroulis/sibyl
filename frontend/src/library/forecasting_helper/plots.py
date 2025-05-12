@@ -1,12 +1,12 @@
 import pandas as pd
 import plotly.graph_objects as go
 from streamlit import plotly_chart, metric, error
-from frontend.src.library.forecasting_helper.client import fetch_oracle_forecast
+from frontend.src.library.forecasting_helper.client import fetch_chronos_forecast
 
 
-def plot_forecast(coin: str, interval: str, forecast_samples: int):
+def plot_forecast(coin: str, interval: str, forecast_samples: int) -> None:
 
-    data = fetch_oracle_forecast(coin, interval, forecast_samples)
+    data = fetch_chronos_forecast(coin, interval, forecast_samples)
     if data:
         df = pd.DataFrame(data)
         limit = df.shape[0] - forecast_samples
