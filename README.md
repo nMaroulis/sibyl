@@ -6,8 +6,9 @@
 </div>
 
 [![Python](https://img.shields.io/badge/python-v3.12-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-v1.44-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-v0.115.8-blue)]()
+[![Streamlit](https://img.shields.io/badge/streamlit-v1.45-red)]()
+[![FastAPI](https://img.shields.io/badge/fastapi-v0.115.12-blue)]()
+[![Llama-CPP](https://img.shields.io/badge/llama_cpp-v0.3.8-black)]()
 [![Tensorflow](https://img.shields.io/badge/tensorflow-v2.18.0-orange)]()
 [![Statsmodels](https://img.shields.io/badge/statsmodels-v0.14-pink)]()
 [![Pandas](https://img.shields.io/badge/pandas-v2.2.3-lightgrey)]()
@@ -39,13 +40,13 @@ With a single click, you activate a powerful AI agent that understands your cont
   Oracle adapts to each section of Sibyl — whether you're analyzing a token, reading market news, launching a strategy or reviewing your trades.
 
 - **Natural Language Interaction**  
-  Ask questions, get summaries, or explore crypto concepts with simple text — no jargon required.
+  Ask questions, get summaries or explore crypto concepts with simple text — no jargon required.
 
 - **Real-Time Reasoning**  
   Powered by **locally deployed** or **API** LLMs, Oracle can synthesize multiple sources of information, extract insights, and provide actionable suggestions.
 
 - **Intelligent Agent Hooks**  
-  Oracle can trigger deeper tools like analytics, visualizations, or predictions via internal AI agents when appropriate.
+  Oracle can trigger deeper tools like analytics, visualizations or predictions via internal AI agents when appropriate.
 
 
 ### Strategy Planning - Broker Module 🎯
@@ -97,13 +98,13 @@ Visualize the data with custom plots and tables for clear insights.
 Track your profits and losses with detailed tables and plots, allowing you to measure the success of each trading order.
 
 
-### NLP Models - Reporter Module 🕵🏻‍
+### Crypto News & Market Sentiment - Reporter Module 🕵🏻‍
 Stay informed with the Natural Language Processing (NLP) tools:
 
 - Web scraping for the latest crypto news
 - Text summarization for quick news highlights
 - Sentiment analysis using advanced language models to gauge market mood
-- LLM-powered chatbot, to ask questions about the latest crypto news.
+- **Oracle**: LLM-powered chatbot, to ask questions about the latest crypto news.
 
 
 ### Connect with Popular Exchanges - Technician Module 🛠️
@@ -141,6 +142,7 @@ Choose a Company from a list of available company stocks and:
 - Get Company's Information
 - Analysis if a stock is worth buying or not based on various indicators
 - Get insights about U.S. senators' stock portfolios
+- **Oracle**: LLM-powered stock evaluation
 - Future Release: Rating based on custom ML model
 
 
