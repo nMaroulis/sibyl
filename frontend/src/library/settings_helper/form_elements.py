@@ -218,5 +218,21 @@ def oracle_form() -> None:
         else:
             st.warning("**Oracle Engine** is **not configured**. Please select an LLM Model.", icon=":material/warning:")
         st.divider()
+        st.caption("The models that have been downloaded and configured are listed below.")
+        st.write("**Choose Oracle Model Source**")
+        model_source = st.pills("Model Source", options=["Local", "API"], selection_mode="single")
+        if model_source:
+            model_type = st.pills("Model Type", options=[], selection_mode="single")
+            if model_type:
+                model_name = st.pills("Model Name", options=[], selection_mode="single")
+                if model_name:
+                    st.success("**Oracle Model Source and Type Selected**", icon=":material/check:")
+                else:
+                    st.warning("**No Model Selected**", icon=":material/warning:")
+            else:
+                st.warning("**No Model Type Selected**", icon=":material/warning:")
+        else:
+            st.warning("**No Model Source Selected**", icon=":material/warning:")
+
         if st.button("Set new default Oracle Model", type="primary", icon=':material/cached:'):
             pass

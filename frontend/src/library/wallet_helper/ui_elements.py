@@ -301,3 +301,128 @@ def get_account_information(exchange: str) -> None:
             10 BPS = 10 × 0.01% = 0.10% fee per trade
         """
         st.markdown(instructions_markdown)
+
+
+def show_connected_exchanges():
+    html_text = """    
+    <style>
+      .exchlist-wrapper {
+        padding: 1rem;
+        border-radius: 12px;
+        max-width: 100%;
+      }
+    
+      .exchlist-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: start;
+      }
+    
+      .exchlist-card {
+        display: flex;
+        align-items: center;
+        width: 250px;
+        padding: 1rem;
+        border-radius: 14px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.09);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+        color: white;
+        box-sizing: border-box;
+        cursor: pointer;
+      }
+    
+      .exchlist-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        filter: brightness(1.08);
+      }
+    
+      .exchlist-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        margin-right: 12px;
+        object-fit: cover;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+    
+      .exchlist-text {
+        display: flex;
+        flex-direction: column;
+      }
+    
+      .exchlist-name {
+        font-weight: 600;
+        font-size: 1rem;
+      }
+    
+      .exchlist-status {
+        font-size: 0.85rem;
+        opacity: 0.9;
+      }
+    
+      /* Status card backgrounds */
+      .exchlist-status-active {
+        background: linear-gradient(135deg, #10b981, #34d399);
+      }
+    
+      .exchlist-status-notconnected {
+        background: linear-gradient(135deg, #fbbf24, #fcd34d);
+        color: #1f2937;
+      }
+    
+      .exchlist-status-unavailable {
+        background: linear-gradient(135deg, #6b7280, #9ca3af);
+      }
+    
+      .exchlist-status-invalid {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+      }
+    </style>
+    
+    """
+
+
+    html_text +="""
+    <div class="exchlist-wrapper">
+      <div class="exchlist-grid">
+    """
+
+    exchange_status_dict = {
+        'Binance API': ("https://www.svgrepo.com/show/331309/binance.svg", st.session_state["binance_api_status"]),
+        'Binance Testnet API': ("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLam1p6JIV4q4T2uxKEInrw5_YCqmJ8Le5aQ&s", st.session_state["binance_testnet_api_status"]),
+        'Kraken API': ("https://media.licdn.com/dms/image/D4E0BAQFm8yg0gGJN1A/company-logo_200_200/0/1697458897774/krakenfx_logo?e=2147483647&v=beta&t=CTWrqJakEEIx4lAPmddjLjt7e4Xi0HQqDTi7k9p3RPM", st.session_state["kraken_api_status"]),
+        'Coinbase API': ("https://alternative.me/media/256/coinbase-icon-kdtz42w4efva6qiu-c.png", st.session_state["coinbase_api_status"]),
+        'Coinbase Sandbox API': ("https://back.gainium.io/uploads/Coinbase_Pro_d32bc1e094.jpeg", st.session_state["coinbase_sandbox_api_status"]),
+        'Mock Exchange API': ("https://cdn-icons-png.flaticon.com/512/994/994152.png", st.session_state["mock_exchange_api_status"]),
+        'Uniswap': ("https://www.freelogovectors.net/wp-content/uploads/2021/10/uniswap-logo-freelogovectors.net_.png", "Unavailable")
+        }
+
+    for k, v in exchange_status_dict.items():
+
+        if v[1] == "Active":
+            html_text += """<div class="exchlist-card exchlist-status-active">"""
+        elif v[1] == "Empty Credentials":
+            html_text += """<div class="exchlist-card exchlist-status-notconnected">"""
+        elif v[1] == "Invalid Credentials":
+            html_text += """<div class="exchlist-card exchlist-status-invalid">"""
+        else:
+            html_text += """<div class="exchlist-card exchlist-status-unavailable">"""
+
+        html_text +=f"""
+          <img src="{v[0]}" class="exchlist-avatar" />
+          <div class="exchlist-text">
+            <div class="exchlist-name">{k}</div>
+            <div class="exchlist-status">{v[1]}</div>
+          </div>
+        </div>
+        """
+
+    html_text += """
+        </div>
+    </div>
+    """
+    st.html(html_text)
+
