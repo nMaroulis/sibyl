@@ -26,7 +26,7 @@ def fetch_portfolio_senates():
 
 def fetch_stock_advice(model_source: str, model_type: str, model_name: Optional[str], stock_symbol: str):
 
-    url = f"{BACKEND_SERVER_ADDRESS}/stock_analyst/advisor/llm?model_source={model_source}&model_type={model_type}&stock_symbol={stock_symbol}"
+    url = f"{BACKEND_SERVER_ADDRESS}/stock_analyst/oracle?model_source={model_source}&model_type={model_type}&stock_symbol={stock_symbol}"
     if model_name:
         url += f"&model_name={model_name}"
 

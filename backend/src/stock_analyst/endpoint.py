@@ -27,7 +27,7 @@ def get_stock_info(stock_symbol: str):
         raise HTTPException(status_code=404, detail="HF client failed")
 
 
-@router.get("/advisor/llm")
+@router.get("/oracle")
 def get_llm_advice(model_source: str, model_type: str, stock_symbol: str, model_name: Optional[str] = None):
     try:
         # fetch stock data
@@ -60,6 +60,7 @@ def get_llm_advice(model_source: str, model_type: str, stock_symbol: str, model_
         if model_name:
             kwargs["model_name"] = model_name
 
+        print(kwargs)
         request = inference_pb2.PredictRequest(**kwargs)
         response = stub.Predict(request)
 

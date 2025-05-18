@@ -31,6 +31,11 @@ class OpenAIAPILLM(LLMBase):
     def _llm_type(self) -> str:
         return "openai-api"
 
+
+    def initialize_model(self):
+        pass
+
+
     def generate_response(self, prompt: str, max_tokens: int = 800, temperature: float = 0.7) -> str:
         """
         Generate a response using the OpenAI API.

@@ -16,18 +16,21 @@ class HuggingFaceAPILLM(LLMBase):
         super().__init__(model_name=model_name, session_id=session_id, stream=stream)
         self.model_source = "api"
         self.model_type = "hugging_face"
-
-        api_creds = APIEncryptedDatabase.get_api_key_by_name("hugging_face")
-        if api_creds is None:
-            self.model = None
-        else:
-            self.model = InferenceClient(model_name, token=api_creds.api_key)
-            self.api_key = api_creds.api_key
+        self.model = None
 
 
     @property
     def _llm_type(self) -> str:
         return "huggingface-api"
+
+
+    def initialize_model(self):
+        api_creds = APIEncryptedDatabase.get_api_key_by_name("hugging_face")
+        if api_creds is None:
+            self.model = None
+        else:
+            self.model = InferenceClient(self.model_name, token=api_creds.api_key)
+            self.api_key = api_creds.api_key
 
 
     def generate_response(self, prompt: str, max_length: int = 800, temperature: float = 0.8) -> str:

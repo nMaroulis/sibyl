@@ -2,9 +2,9 @@ import streamlit as st
 from frontend.src.library.stock_analysis_helper.client import fetch_stock_details, fetch_stock_advice
 import re
 from frontend.src.library.stock_analysis_helper.plots import risk_gauge, linear_gauge_chart
-from frontend.src.library.client import check_api_status
 import time
 from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.db.db_connector import fetch_llm_config
 
 
 def extract_symbol(stock_string) -> str | None:
@@ -157,18 +157,21 @@ def display_company_info(info: dict, stock_symbol: str):
         st.pyplot(linear_gauge_chart(1.4))
 
 
-@st.dialog("Sibyl Stock Advisor", width="large")
-def get_advice(symbol: str):
-    with st.spinner("Generating advice..."):
-        llm_advice = fetch_stock_advice(model_source="local", model_type="llama_cpp", model_name=None, stock_symbol=symbol)  # TODO read LLM info from DB
+@st.dialog("Oracle Advice", width="large")
+def get_oracle_advice(symbol: str, model_source: str, model_type: str, model_name: str = None):
+    with st.spinner("Oracle is generating advice..."):
+        llm_advice = fetch_stock_advice(model_source=model_source, model_type=model_type, model_name=model_name, stock_symbol=symbol)
 
-    response_placeholder = st.empty()
-    displayed_text = ""
-    for word in llm_advice.split():
-        displayed_text += word + " "
-        response_placeholder.write(displayed_text)  # Update the text
-        time.sleep(0.05)  # Add delay for effect
-
+    if llm_advice is None:
+        st.error("Failed to generate advice. Please check logs to see if what went wrong with the **Oracle**.", icon=":material/error:")
+    else:
+        response_placeholder = st.empty()
+        displayed_text = ""
+        for word in llm_advice.split():
+            displayed_text += word + " "
+            response_placeholder.write(displayed_text)  # Update the text
+            time.sleep(0.04)  # Add delay for effect
+        print(displayed_text)
 
 def get_stock_analysis(stock_symbol: str):
     symbol = extract_symbol(stock_symbol)
@@ -176,19 +179,15 @@ def get_stock_analysis(stock_symbol: str):
         st.error("Invalid stock symbol", icon=":material/error:")
     stock_details = fetch_stock_details(symbol)
     if stock_details:
-
-        if check_api_status("hugging_face"):
-
+        oracle_status = fetch_llm_config()
+        if oracle_status:
             oracle_button(module="stock_analysis", enabled=True, content={"stock_symbol": symbol})
             if st.button("", type="tertiary"):
-                get_advice(symbol)
-            # if st.button("Get Advice", type="primary", icon=":material/search_check:"):
-            #     get_advice(symbol)
-            # st.caption(f"👆👆 **Hugging Face API key** is *active*, you can get an advice from the Sibyl Stock Advisor.")
+                get_oracle_advice(symbol, oracle_status["llm_source"], oracle_status["llm_type"], oracle_status["llm_name"])
+            st.caption(f"**Oracle** is *active*, you can get an stock advice by pressing the Oracle button.")
         else:
             st.info(
-                "💡Add an API key for an LLM (e.g. Hugging Face, OpenAI API etc.) in the settings tab in order to get an advice from the Sibyl Stock Advisor LLM.")
-
+                "💡Configure an LLM API or Local LLM and configure the **Oracle** in the settings tab in order to get a stock advice.")
         display_company_info(stock_details["info"], symbol)
     else:
         st.error("Failed to fetch Stock information. Please check logs to see if **YahooFinance API** reached the limit or needs an **upgrade** and try later.", icon=":material/error:")

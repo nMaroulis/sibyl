@@ -20,11 +20,11 @@ class LLMBase(ABC):
 
         Params:
             :param string model_source = 1; // "local" or "api"
-            :param string model_type = 2;   // e.g. "llama-cpp", "hugging-face", "tgi"
-            :param optional string model_name = 3;   // e.g. "llama-3-8b-instruct", "mistralai/Mistral-7B-Instruct-v0.2"
+            :param string model_type = 2; // e.g. "llama-cpp", "hugging-face", "tgi"
+            :param optional string model_name = 3; // e.g. "llama-3-8b-instruct", "mistralai/Mistral-7B-Instruct-v0.2"
             :param optional string session_id = 4;
             :param optional bool stream = 5;
-            :param string input_text = 6;   // the user's query or input
+            :param string input_text = 6; // the user's query or input
         """
         self.model_source: str = ""
         self.model_type: str = ""
@@ -32,6 +32,11 @@ class LLMBase(ABC):
         self.session_id: str = session_id
         self.stream: bool = stream
         self.api_key: str = ""
+
+
+    @abstractmethod
+    def initialize_model(self):
+        pass
 
 
     @abstractmethod

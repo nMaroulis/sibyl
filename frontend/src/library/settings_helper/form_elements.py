@@ -2,7 +2,7 @@ import streamlit as st
 from frontend.src.library.client import check_api_status
 from frontend.src.library.settings_helper.funcs import insert_update_api_keys
 from frontend.src.library.settings_helper.client import set_mock_exchange_status, get_available_local_models
-from frontend.db.db_connector import update_fields, fetch_llm_info
+from frontend.db.db_connector import update_fields, fetch_llm_config
 
 
 @st.fragment()
@@ -91,7 +91,6 @@ def llm_form() -> None:
                     llm_api_key = st.text_input('Secret Key', placeholder="Secret Key Input", type="password")
                 llm_submit = st.form_submit_button(button_text, icon=button_icon, type="primary")
                 if llm_submit:
-                    # update_fields(nlp_model_choice=llm_api)  # Update NLP Model Choice in frontend SQlite3 DB # TODO examine here
                     res = insert_update_api_keys(llm_api, llm_api_key)
                     if res:
                         st.success(f"✅ {llm_api} **API Key** has been successfully added/updated to the Encrypted Database.")
@@ -114,12 +113,12 @@ def llm_form() -> None:
                 st.write("The following Models have already been downloaded and are **Available** to use.")
                 st.write(available_models)
             st.write("**3. Choose LLM Model to Download and Setup**")
-            llm_model_choice = st.pills("**3.1 Choose Model**", options=["mistral-7b-instruct-v0.1.Q4_K_M", "openhermes-2.5-mistral-7b.Q4_K_M"])
+            llm_model_choice = st.pills("**3.1 Choose Model**", options=["Meta-Llama-3.1-8B-Instruct-Q5_K_M", "mistral-7b-instruct-v0.1.Q4_K_M", "openhermes-2.5-mistral-7b.Q4_K_M"])
             st.caption("If you want to define your own model then expand the form below 👇")
             ## CUSTOM MODEL SELECTION
             with st.expander("**3.2 Advanced Options**"):
                 llm_model = st.pills('Choose LLM Model',
-                                     options=['Mistral 7B', 'Llama 2 7B', 'TinyLlama 1.1B', 'MythoMax-L2 13B', 'OpenHermes 2.5 7B'],
+                                     options=['Mistral 7B', 'Llama 2 7B', 'TinyLlama 1.1B', 'MythoMax-L2 13B', 'OpenHermes 2.5 7B', "Llama-3.1 8B"],
                                      default="Mistral 7B", disabled=True)
                 quantization = st.pills("Quantization", options=["Q2_K", "Q3_K", "Q4_K", "Q5_K", "Q6_K", "Q7_K", "Q8_K"],
                                         default="Q4_K", disabled=True)
@@ -212,27 +211,52 @@ def oracle_form() -> None:
     with st.container(border=True):
         st.write("You fist have to setup a **Local** or **API** LLM model from the *LLM Settings tab* 👈. After that you have to choose an **LLM model** for the **Oracle Engine**.")
         st.write("**Current Oracle Engine LLM Model**")
-        llm_info = fetch_llm_info()
+        llm_info = fetch_llm_config()
         if llm_info:
-            st.write(llm_info)
+            st.write(f"- :blue[**LLM Source**]: :orange[{llm_info['llm_source']}]")
+            st.write(f"- :blue[**LLM Type**]: :orange[{llm_info['llm_type']}]")
+            st.write(f"- :blue[**LLM Model Name**]: :orange[{llm_info['llm_name']}]")
         else:
             st.warning("**Oracle Engine** is **not configured**. Please select an LLM Model.", icon=":material/warning:")
         st.divider()
         st.caption("The models that have been downloaded and configured are listed below.")
-        st.write("**Choose Oracle Model Source**")
+
+
+        st.write("**1. Choose Oracle Model Source**")
         model_source = st.pills("Model Source", options=["Local", "API"], selection_mode="single")
+
+
         if model_source:
-            model_type = st.pills("Model Type", options=[], selection_mode="single")
+
+            if model_source == "Local":
+                model_types = ["Llama Cpp"]
+            else:
+                model_types = ["Hugging Face"]
+
+            model_type = st.pills("2. Model Type", options=model_types, selection_mode="single")
+
             if model_type:
-                model_name = st.pills("Model Name", options=[], selection_mode="single")
-                if model_name:
-                    st.success("**Oracle Model Source and Type Selected**", icon=":material/check:")
+
+                if model_source == "Local":
+                    with st.spinner('Searching present local LLMs...'):
+                        model_names = get_available_local_models(model_type)
                 else:
+                    model_names = ["mistralai/Mistral-7B-Instruct-v0.3"]
+
+                model_name = st.pills("Model Name", options=model_names, selection_mode="single")
+                if not model_name:
                     st.warning("**No Model Selected**", icon=":material/warning:")
             else:
                 st.warning("**No Model Type Selected**", icon=":material/warning:")
         else:
             st.warning("**No Model Source Selected**", icon=":material/warning:")
-
-        if st.button("Set new default Oracle Model", type="primary", icon=':material/cached:'):
-            pass
+        st.divider()
+        if "model_name" in locals() and model_name:
+            if st.button("Set new default Oracle Model", type="primary", icon=':material/cached:'):
+                try:
+                    update_fields(llm_source=model_source.lower(), llm_type=model_type.lower().replace(" ", "_"), llm_name=model_name)
+                    st.success("Oracle Model has been set successfully and is ready to go. Refresh page to see the changes.", icon=":material/check:")
+                except Exception as e:
+                    st.error(f"Error while setting new default Oracle Model: {e}")
+        else:
+            st.button("Set new default Oracle Model", type="primary", icon=':material/cached:', disabled=True)

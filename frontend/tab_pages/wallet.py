@@ -1,7 +1,6 @@
 import streamlit as st
 from frontend.src.library.client import check_backend_connection
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.settings_helper.navigation import show_homepage_status_cards
 from frontend.src.library.settings_helper.navigation import exchange_api_status_check
 from frontend.src.library.wallet_helper.ui_elements import get_spot_balance_wallet_table, get_logo_header, get_pie_chart, get_account_information, show_connected_exchanges
 from frontend.src.library.oracle.ui_elements import oracle_button
@@ -16,7 +15,6 @@ oracle_button(module="wallet", enabled=False)
 exchange_api_status_check()
 
 set_page_title("Exchange API status.")
-# show_homepage_status_cards()
 show_connected_exchanges()
 
 set_page_title("Overview of Account & Wallet Balance")

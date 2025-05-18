@@ -70,7 +70,7 @@ def fetch_fields() -> dict:
 
 
 @cache_resource
-def fetch_llm_info() -> dict | None:
+def fetch_llm_config() -> dict | None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     # Fetch all fields from the configuration table
@@ -78,7 +78,6 @@ def fetch_llm_info() -> dict | None:
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-
     if rows[0][0] and rows[0][1] and rows[0][2]:
         return {"llm_source": rows[0][0], "llm_type": rows[0][1], "llm_name": rows[0][2]}
     else:

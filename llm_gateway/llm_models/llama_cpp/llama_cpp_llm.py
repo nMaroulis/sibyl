@@ -20,13 +20,19 @@ class LlamaCppLocalLLM(LLMBase):
         self.model_source = "local"
         self.model_type = "llama_cpp"
         load_dotenv("llm_gateway/llm_models/config.env")
-        self.model_path = f"{os.getenv("LLAMA_CPP_LLM_MODEL_PATH")}{model_name}.gguf"
 
+        if model_name.endswith(".gguf"): # Remove extension if found in the name TODO - fix
+            self.model_name = model_name[:-5]
+        self.model_path = f"{os.getenv("LLAMA_CPP_LLM_MODEL_PATH")}{self.model_name}.gguf"
+        self.model = None
+
+
+    def initialize_model(self):
         if os.path.exists(self.model_path):
 
             self.model = Llama(
                 model_path=self.model_path,
-                n_ctx=CONTEXT_WINDOW_DICT.get(model_name, 4096),
+                n_ctx=CONTEXT_WINDOW_DICT.get(self.model_name, 4096),
                 n_threads=4,
                 n_gpu_layers=20,
                 verbose=False

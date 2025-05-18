@@ -21,7 +21,7 @@ class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
 
     def __init__(self) -> None:
         """Initializes the InferenceService with no model loaded."""
-        self.model = None
+        self.llm = None
         self.agent = None
 
 
@@ -41,8 +41,9 @@ class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
         if request.HasField("model_name"):
             kwargs["model_name"] = request.model_name
 
-        self.model = LLMClientFactory.get_client(**kwargs)
-        response_text = self.model.generate_response(request.input_text)
+        self.llm = LLMClientFactory.get_client(**kwargs)
+        self.llm.initialize_model()
+        response_text = self.llm.generate_response(request.input_text)
         return inference_pb2.PredictResponse(output_text=response_text)
 
 
@@ -61,9 +62,9 @@ class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
         kwargs = {"model_type": request.model_type}
         if request.HasField("model_name"):
             kwargs["model_name"] = request.model_name
-        model = LLMClientFactory.get_client(**kwargs)
-
-        self.agent = AgentFactory.get_agent(request.application, model)
+        llm = LLMClientFactory.get_client(**kwargs)
+        llm.initialize_model()
+        self.agent = AgentFactory.get_agent(request.application, llm)
 
         response: str = self.agent.run(request.input_text)
 
