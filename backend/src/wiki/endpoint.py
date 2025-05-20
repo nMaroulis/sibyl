@@ -59,10 +59,10 @@ def get_wiki_agent_response(model_source: str, model_type: str, query: str, mode
 #         raise HTTPException(status_code=404, detail="LLM API failed")
 
 
-@router.get("/rag/status")
-def get_rag_status():
+@router.get("/rag/vectorstore/status")
+def get_vectorstore_status():
     try:
-        return {"embeddings_db": check_exists_chroma_db(), "llm_api": check_exists_llm_api("hugging_face")}
+        return {"embeddings_db": check_exists_chroma_db()} # , "llm_api": check_exists_llm_api("hugging_face")
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=404, detail="Rag status failed!")
+        raise HTTPException(status_code=404, detail="Retrieving wiki vectorstore status failed!")

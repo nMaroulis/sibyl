@@ -1,7 +1,9 @@
 import streamlit as st
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.wiki_helper.client import fetch_wiki_rag_response, fetch_wiki_status
+from frontend.src.library.wiki_helper.client import fetch_wiki_rag_response, fetch_vectorstore_status
 import time
+from frontend.db.db_connector import fetch_llm_config
+
 
 fix_page_layout('💬 Chatbot')
 set_page_title("Crypto Wiki Chatbot 💬")
@@ -30,11 +32,21 @@ with st.expander("✏️ Instructions"):
     if st.button('ℹ️ Learn more'):
         show_info()
 
-db_status, llm_status = fetch_wiki_status()
-if not db_status:
+vectorstore_status = fetch_vectorstore_status()
+oracle_status = fetch_llm_config()
+
+if not vectorstore_status:
+    st.warning("**Embeddings Database** was not found on your filesystem.", icon=":material/warning_alt:")
     st.button("Download Wiki RAG Database", icon=":material/download:", type="primary")
-if not llm_status:
-    st.link_button("Go to Settings", "http://localhost:8501/settings", type="primary", icon=":material/settings:")
+else:
+    st.sidebar.badge("**Embeddings Database** is configured", icon=":material/database:", color="green")
+
+if not oracle_status:
+    st.warning("**Oracle** is not configured, so the LLM functionality of the Wiki Chatbot is not available.", icon=":material/warning_alt:")
+    st.link_button("Setup Oracle in Settings", "http://localhost:8501/settings", type="primary", icon=":material/settings:")
+else:
+    st.sidebar.badge("**Oracle** is configured", icon=":material/local_fire_department:", color="green")
+
 
 st.html("""<hr style="height:1px; color:#e3e3e3; background-color:#e3e3e3; padding:0; margin:0;">""")
 
@@ -61,7 +73,7 @@ if user_input := st.chat_input("What would you like to know?"):
     # RESPONSE ELEMENT
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            bot_response = fetch_wiki_rag_response(model_source="local", model_type="llama_cpp", model_name=None, query=user_input)  # TODO read LLM info from DB
+            bot_response = fetch_wiki_rag_response(model_source=oracle_status["llm_source"], model_type=oracle_status["llm_type"], model_name=oracle_status["llm_name"], query=user_input)
         response_placeholder = st.empty()
         displayed_text = ""
         for word in bot_response.split(" "):
