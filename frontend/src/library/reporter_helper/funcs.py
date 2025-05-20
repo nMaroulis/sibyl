@@ -227,8 +227,8 @@ def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
 
 from streamlit import session_state, chat_message, chat_input
 
-@dialog("💬 AI Chatbot", width="large")
-def news_chatbot():
+@dialog("💬 Oracle News Chatbot", width="large")
+def oracle_news_chatbot():
 
     if "news_chatbot_messages" not in session_state:
         session_state["news_chatbot_messages"] = []

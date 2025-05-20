@@ -1,9 +1,9 @@
 import streamlit as st
 from frontend.src.library.oracle.ui_elements import oracle_button
 from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.reporter_helper.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment, news_chatbot
-from frontend.src.library.client import check_api_status
+from frontend.src.library.reporter_helper.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment, oracle_news_chatbot
 from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.db.db_connector import fetch_llm_config
 
 
 fix_page_layout("Report")
@@ -12,12 +12,6 @@ set_page_title("Crypto Report")
 st.sidebar.selectbox(label="Source Website", options=['Cointelegraph', 'Coindesk', 'Decrypt'], disabled=True)
 nlp_model_summ = st.sidebar.selectbox(label="Summarization NLP Model", options=['sumy', 'spacy', 'nltk'], index=0)
 st.sidebar.selectbox(label="Sentiment NLP Model", options=['Vader'])
-
-### LLM ADVISOR
-oracle_button(module="reporting", enabled=True)
-if check_api_status("hugging_face"):
-    if st.button("", type="tertiary"):
-        news_chatbot()
 
 
 st.html("""
@@ -79,3 +73,17 @@ with tabs[1]:
     # st.subheader('Coinbase News')
     with st.spinner('Fetching Latest Crypto News from Cointelegraph'):
         get_latest_news()
+
+
+# ========================
+# ORACLE
+# ========================
+oracle_status = fetch_llm_config()
+if oracle_status:
+    oracle_button(module="reporting", enabled=True)
+    if st.button("", type="tertiary"):
+        oracle_news_chatbot()
+else:
+    st.info(
+        "💡Configure an LLM API or Local LLM and activate the **Oracle** in the settings tab in order to get the Oracle News Chatbot.")
+    oracle_button(module="reporting", enabled=False)

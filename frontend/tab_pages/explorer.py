@@ -27,7 +27,6 @@ with st.form("explorer_form"):
 
     sub_button = st.form_submit_button("Explore 🧭")
     if sub_button:
-        oracle_button(module="explorer", enabled=False)
         data = fetch_blocks(selected_blockchain, block_count)
         if data is not None:
             st.caption("For **Bitcoin** the explorer checks the https://blockstream.info/ API. Block weight in KBs.")
@@ -37,4 +36,4 @@ with st.form("explorer_form"):
         else:
             st.warning("Failed to fetch Blockchain data...", icon=":material/warning:")
 
-
+oracle_button(module="explorer", enabled=False)

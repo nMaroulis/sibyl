@@ -166,12 +166,12 @@ def get_oracle_advice(symbol: str, model_source: str, model_type: str, model_nam
         st.error("Failed to generate advice. Please check logs to see if what went wrong with the **Oracle**.", icon=":material/error:")
     else:
         response_placeholder = st.empty()
-        displayed_text = ""
+        displayed_text = """"""
         for word in llm_advice.split():
-            displayed_text += word + " "
+            displayed_text = f"""{displayed_text} {word}"""
             response_placeholder.write(displayed_text)  # Update the text
             time.sleep(0.04)  # Add delay for effect
-        print(displayed_text)
+
 
 def get_stock_analysis(stock_symbol: str):
     symbol = extract_symbol(stock_symbol)
@@ -187,7 +187,9 @@ def get_stock_analysis(stock_symbol: str):
             st.caption(f"**Oracle** is *active*, you can get an stock advice by pressing the Oracle button.")
         else:
             st.info(
-                "💡Configure an LLM API or Local LLM and configure the **Oracle** in the settings tab in order to get a stock advice.")
+                "💡Configure an LLM API or Local LLM and activate the **Oracle** in the settings tab in order to get a stock advice.")
+            oracle_button(module="stock_analysis", enabled=False)
+
         display_company_info(stock_details["info"], symbol)
     else:
         st.error("Failed to fetch Stock information. Please check logs to see if **YahooFinance API** reached the limit or needs an **upgrade** and try later.", icon=":material/error:")

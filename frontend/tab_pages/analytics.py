@@ -13,7 +13,6 @@ if "available_exchange_apis" not in st.session_state:
     with st.spinner("Checking API Availability Status..."):
         exchange_api_status_check()
 
-oracle_button(module="analytics", enabled=False)
 
 ph_tab, ch_tab, cs_tab = st.tabs(['Price History', 'Correlation Heatmap', 'Causality Test'])
 with ph_tab:  # Price History Analysis
@@ -24,3 +23,9 @@ with cs_tab:
     st.markdown("""<h5 style='text-align: left;margin-top:0; padding-top:0;'>Granger Causality Test</h5>""",
              unsafe_allow_html=True)
     st.warning('Not yet Supported ⚠️')
+
+
+# ========================
+# ORACLE
+# ========================
+oracle_button(module="analytics", enabled=False)
