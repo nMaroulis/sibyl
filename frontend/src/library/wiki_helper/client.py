@@ -23,13 +23,6 @@ def fetch_vectorstore_status() -> (bool, bool):
     response = requests.get(url)
     if response.status_code == 200:
         res = response.json()
-        valid_db = False
-        if res['embeddings_db'] == "yes":
-            sidebar.success("**Embeddings Database** was successfully retrieved.", icon=":material/task_alt:")
-            valid_db = True
-        else:
-            warning("**Embeddings Database** was not found on your filesystem.", icon=":material/warning_alt:")
-
-        return valid_db
+        return True if res['embeddings_db'] == "yes" else False
     else:
         return None
