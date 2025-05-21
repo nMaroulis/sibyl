@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 import random
 from llm_gateway.llm_models.llm_base import LLMBase
 from llm_gateway.agents.agent_base import AgentBase
+import re
+from langchain.agents.output_parsers import ReActSingleInputOutputParser
 
 
 class WikiAgent(AgentBase):
@@ -55,6 +57,87 @@ class WikiAgent(AgentBase):
         # AGENT
         # ========================
 
+        # OPTION 1 - MODELS NOT CAPABLE FOR REACT IN THE LANGCHAIN FORMAT
+        self.zeroshot_agent()
+
+        ## OPTION 2 - MODELS CAPABLE FOR REACT IN LANGCHAIN FORMAT
+        # self.react_agent()
+
+    def react_agent(self):
+        """
+        Initializes a ReAct-style agent using LangChain's ZERO_SHOT_REACT_DESCRIPTION agent type.
+
+        This agent will:
+        - Use the tools provided in `self.tools`
+        - Operate in a zero-shot setting, where tool descriptions are used to infer usage
+        - Include memory if set
+        - Provide verbose output for debugging
+        - Gracefully handle parsing errors during tool invocation
+        """
+        self.agent = initialize_agent(
+            tools=self.tools,
+            agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,  # STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION
+            llm=self.llm,
+            memory=self.memory,
+            verbose=False,
+            handle_parsing_errors=True
+        )
+
+
+    def zeroshot_agent(self):
+        """
+        Initializes a customized zero-shot agent with a custom output parser to fix formatting issues.
+
+        This agent:
+        - Uses a prompt tailored for crypto-related questions and casual conversation
+        - Relies on a manually constructed ZeroShotAgent with a fixed-format output parser
+        - Automatically corrects malformed action inputs (e.g., tool calls with improper formatting)
+        - Waits for observations before continuing the chain of thought
+        """
+
+        class FixedFormatOutputParser(ReActSingleInputOutputParser):
+            """
+            Custom output parser to handle and fix improperly formatted tool action outputs.
+            This ensures robust parsing even when the model outputs malformed tool invocations.
+            """
+
+            def parse(self, text: str):
+                """
+                Attempts to parse output; fixes the format if an error occurs.
+                """
+                try:
+                    return super().parse(text)
+                except Exception:
+                    fixed_text = self._fix_format(text)
+                    return super().parse(fixed_text)
+
+            def _fix_format(self, text: str) -> str:
+                """
+                Fixes common formatting issues in tool action outputs such as:
+                - Unquoted inputs
+                - Misused parentheses
+                - Incorrect input structure
+
+                Match Langchain Style:
+                 - Action: Tool("...")
+                 - Action: Tool(query="...")
+                 - Action: Tool(some unquoted input)
+                Returns:
+                    str: A reformatted string that aligns with the expected action format.
+                """
+
+                pattern = r'Action:\s*(\w+)\(\s*(?:query=)?(?:"([^"]+)"|([^\)]+))\s*\)'
+
+                def replacer(match):
+                    tool_name = match.group(1)
+                    quoted_input = match.group(2)
+                    raw_input = match.group(3)
+                    tool_input = quoted_input if quoted_input is not None else raw_input.strip()
+                    return f'Action: {tool_name}\nAction Input: "{tool_input}"'
+
+                fixed = re.sub(pattern, replacer, text)
+                return fixed
+
         prefix = """
         You are an AI assistant that uses tools to answer technical cryptocurrency questions
         and responds directly to casual or conversational input.
@@ -84,26 +167,27 @@ class WikiAgent(AgentBase):
         {agent_scratchpad}
         """
 
-        # prompt = ZeroShotAgent.create_prompt(
-        #     tools=self.tools,
-        #     prefix=prefix,
-        #     suffix=suffix,
-        #     input_variables=["input", "agent_scratchpad"]
-        # )
-        #
-        # llm_chain = LLMChain(llm=self.llm, prompt=prompt)
-        # agent = ZeroShotAgent(llm_chain=llm_chain)
-        # self.agent = AgentExecutor(agent=agent, tools=self.tools, verbose=True)
-        #
 
-        ## FOR SMALL MODELS
+        prompt = ZeroShotAgent.create_prompt(
+            self.tools,
+            prefix="You are a helpful agent.",
+            suffix="{input}\n\n{agent_scratchpad}",
+            input_variables=["input", "agent_scratchpad"]
+        )
 
-        ## OPTION 2 - MODELS CAPABLE FOR REACT
-        self.agent = initialize_agent(
+        # Construct the agent manually
+        llm_chain = LLMChain(llm=self.llm, prompt=prompt)
+        agent = ZeroShotAgent(
+            llm_chain=llm_chain,
             tools=self.tools,
-            agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,  # STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION
-            llm=self.llm,
-            memory=self.memory,
+            output_parser=FixedFormatOutputParser(),
+            stop=["\nObservation:"]
+        )
+
+        # Now this uses your custom output parser
+        self.agent = AgentExecutor.from_agent_and_tools(
+            agent=agent,
+            tools=self.tools,
             verbose=True,
             handle_parsing_errors=True
         )
@@ -168,7 +252,7 @@ class WikiAgent(AgentBase):
                 "Hey! Looking for some insights into Web3 or crypto?"
             ]
             random_greeting = random.choice(greetings)
-            return random_greeting
+            return f"Answer: {random_greeting}"
 
         # If technical, search the database for relevant documents
         doc_retriever = DocumentRetrieverTool(persist_directory=self.vectorstore_path, collection_name="crypto_knowledge", threshold=0.5, k=5)
@@ -234,9 +318,9 @@ class WikiAgent(AgentBase):
         # ========================
 
         # Option 1 - Manual Pipeline
-        res = self.manual_wiki_pipeline(query)
+        # res = self.manual_wiki_pipeline(query)
 
         # Option 2 - AI Agent
-        # res = self.agent.run(query)
+        res = self.agent.run(query)
 
         return res
