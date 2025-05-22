@@ -48,7 +48,7 @@ def db_init() -> int:
     return 0
 
 
-@cache_resource
+# @cache_resource
 def fetch_fields() -> dict:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -69,7 +69,6 @@ def fetch_fields() -> dict:
     return res
 
 
-@cache_resource
 def fetch_llm_config() -> dict | None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

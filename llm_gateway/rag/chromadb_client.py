@@ -59,6 +59,7 @@ class ChromaDBClient:
 
         # LLM that provides the final response
         self.llm = llm
+        self.llm.initialize_model()
 
     @staticmethod
     def generate_doc_id(text: str) -> str:
@@ -305,7 +306,7 @@ class ChromaDBClient:
         # Context: {context}
         # Provide a concise and accurate response.
         # """
-        res: str = self.llm.generate_response(prompt, max_tokens=4000, temperature=0.8)
+        res: str = self.llm.generate_response(prompt, max_tokens=4000, temperature=0.4)
 
         res += f"\n\n{sources}"
         return res

@@ -63,10 +63,11 @@ class InferenceService(inference_pb2_grpc.InferenceServiceServicer):
         if request.HasField("model_name"):
             kwargs["model_name"] = request.model_name
         llm = LLMClientFactory.get_client(**kwargs)
-        llm.initialize_model()
         self.agent = AgentFactory.get_agent(request.application, llm)
 
-        response: str = self.agent.run(request.input_text)
+        response: str | dict = self.agent.run(request.input_text)
+        if isinstance(response, dict):
+            response = response["output"]
 
         return inference_pb2.AgentResponse(output_text=response)
 

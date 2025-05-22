@@ -2,7 +2,7 @@ from llm_gateway.tools.rag_retriever import DocumentRetrieverTool
 from llm_gateway.tools.web_search import WebSearchTool
 from llm_gateway.tools.conversation import ConversationalTool
 from langchain.agents import Tool, initialize_agent, AgentExecutor, AgentType, ZeroShotAgent
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory, ConversationSummaryMemory
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 import os
@@ -46,7 +46,7 @@ class WikiAgent(AgentBase):
         # ========================
 
         # Initialize memory for conversation context
-        self.memory = ConversationBufferMemory(memory_key="chat_history")
+        # self.memory = ConversationSummaryMemory(memory_key="chat_history")
 
         # ========================
         # LLM
@@ -181,7 +181,7 @@ class WikiAgent(AgentBase):
             llm_chain=llm_chain,
             tools=self.tools,
             output_parser=FixedFormatOutputParser(),
-            stop=["\nObservation:"]
+            stop=["\nObservation:"],
         )
 
         # Now this uses your custom output parser
@@ -189,7 +189,8 @@ class WikiAgent(AgentBase):
             agent=agent,
             tools=self.tools,
             verbose=True,
-            handle_parsing_errors=True
+            handle_parsing_errors=True,
+            memory=None, # Stateless Run
         )
 
 
@@ -321,6 +322,21 @@ class WikiAgent(AgentBase):
         # res = self.manual_wiki_pipeline(query)
 
         # Option 2 - AI Agent
-        res = self.agent.run(query)
 
+        res = self.agent.invoke(input=query)
         return res
+
+        # CUSTOM THOUGH PROMPTING
+        # try:
+        #     response = self.agent.run(query)
+        #     # Ensure the response ends with a Final Answer
+        #     if "Final Answer:" not in response:
+        #         thought = "I should provide a clear final answer."
+        #         response = f"{response}\nThought: {thought}\nFinal Answer: {response}"
+        #     return response
+        # except Exception as e:
+        #     print(f"Agent execution failed: {e}")
+        #     return "Sorryyyyyyyyyyyyy" # self.manual_wiki_pipeline(query)
+
+
+

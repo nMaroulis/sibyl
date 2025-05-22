@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.get("/chatbot/query")
-def get_wiki_agent_response(model_source: str, model_type: str, query: str, model_name: Optional[str] = None):
+def get_wiki_agent_response(model_source: str, model_type: str, query: str, model_name: Optional[str] = None, agent_type: str = "wiki_agent"):
     try:
         # Call gRPC server
         load_dotenv('llm_gateway/server_config.env')
@@ -25,7 +25,7 @@ def get_wiki_agent_response(model_source: str, model_type: str, query: str, mode
         stub = inference_pb2_grpc.InferenceServiceStub(channel)
 
         kwargs = {
-            "application": "wiki_rag",
+            "application": agent_type,
             "model_source": model_source,
             "model_type": model_type,
             "input_text": query

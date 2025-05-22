@@ -65,8 +65,10 @@ class LlamaCppLocalLLM(LLMBase):
         return LlamaCpp(
             model_path=self.model_path,
             temperature=0.9,
-            max_tokens=CONTEXT_WINDOW_DICT.get(self.model_name, 1024),
+            max_tokens=CONTEXT_WINDOW_DICT.get(self.model_name, 4096),
             n_ctx=CONTEXT_WINDOW_DICT.get(self.model_name, 4096),  # <-- Add this
+            context_window=CONTEXT_WINDOW_DICT.get(self.model_name, 4096),
             n_gpu_layers=20,
-            f16_kv=True
+            f16_kv=True,
+            cache=False, # Stateless Run
         )

@@ -8,7 +8,7 @@ from frontend.db.db_connector import fetch_llm_config
 fix_page_layout('💬 Chatbot')
 set_page_title("Crypto Wiki Chatbot 💬")
 
-@st.dialog(title="Crypto Wiki RAG System", width="large")
+@st.dialog(title="Crypto Wiki AI Agent RAG System", width="large")
 def show_info():
     st.markdown("""
         **Step 1: Query Embedding**\n
@@ -47,6 +47,8 @@ if not oracle_status:
 else:
     st.sidebar.badge("**Oracle** is configured", icon=":material/local_fire_department:", color="green")
 
+if vectorstore_status and oracle_status:
+    agent_type = st.sidebar.toggle("Wiki AI Agent", value=True, help="If this option is enabled the Wiki AI Agent will be used, otherwise a straightforward RAG LLM-powered algorithm will be used.")
 
 st.html("""<hr style="height:1px; color:#e3e3e3; background-color:#e3e3e3; padding:0; margin:0;">""")
 
@@ -73,7 +75,7 @@ if user_input := st.chat_input("What would you like to know?"):
     # RESPONSE ELEMENT
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            bot_response = fetch_wiki_rag_response(model_source=oracle_status["llm_source"], model_type=oracle_status["llm_type"], model_name=oracle_status["llm_name"], query=user_input)
+            bot_response = fetch_wiki_rag_response(model_source=oracle_status["llm_source"], model_type=oracle_status["llm_type"], model_name=oracle_status["llm_name"], query=user_input, agent_type=agent_type)
         response_placeholder = st.empty()
         displayed_text = ""
         for word in bot_response.split(" "):
