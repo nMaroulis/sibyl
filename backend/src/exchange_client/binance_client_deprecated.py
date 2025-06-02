@@ -1,7 +1,7 @@
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 import requests
 import json
-from backend.src.analyst.analyst_functions import get_coin_symbol_name_map, update_coin_symbol_name_map
+from backend.src.analyst.utils import get_coin_symbol_name_map, update_coin_symbol_name_map
 from database.api_keys_db_client import APIEncryptedDatabase
 import time
 import hmac, hashlib

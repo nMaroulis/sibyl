@@ -9,7 +9,7 @@ import uvicorn, requests
 from settings import SERVER_IP, SERVER_PORT
 from database.api_keys_db_client import APIEncryptedDatabase
 from backend.src.accountant.router import router as accountant_router
-from backend.src.analyst.endpoint import router as analyst_router
+from backend.src.analyst.router import router as analyst_router
 from backend.src.chronos.endpoint import router as chronos_router
 from backend.src.broker.endpoint import router as broker_router
 from backend.src.reporter.endpoint import router as reporter_router

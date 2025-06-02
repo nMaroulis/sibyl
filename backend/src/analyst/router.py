@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Optional, Any
-from backend.src.analyst.analyst_functions import update_coin_symbol_name_map
+from backend.src.analyst.utils import update_coin_symbol_name_map
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 from backend.src.analyst.analyst import Analyst
 
