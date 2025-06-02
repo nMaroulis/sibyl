@@ -1,9 +1,9 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.strategy_helper.client import get_strategy_metadata, get_strategy_logs, stop_strategy
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.strategy_helper.client import get_strategy_metadata, get_strategy_logs, stop_strategy
 import pandas as pd
-from frontend.src.library.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count, strategy_plot_info, strategy_info_card
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.strategy_helper.console_helper import real_time_strategy_plot, static_strategy_plot, show_evaluation_metrics, show_active_strategy_count, strategy_plot_info, strategy_info_card
+from frontend.src.utils.oracle.ui_elements import oracle_button
 
 
 fix_page_layout('strategy monitor')

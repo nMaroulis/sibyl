@@ -1,4 +1,4 @@
-from frontend.src.library.reporter_helper.client import fetch_news, fetch_news_summary, fetch_news_sentiment,get_chatbot_response
+from frontend.src.utils.reporter_helper.client import fetch_news, fetch_news_summary, fetch_news_sentiment,get_chatbot_response
 from streamlit import write, warning, expander, markdown, image, plotly_chart, caption, code, html, error as st_error, dialog
 import json
 from requests import get as requests_get

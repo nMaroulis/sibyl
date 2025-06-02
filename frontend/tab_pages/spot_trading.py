@@ -1,12 +1,12 @@
 import streamlit as st
-from frontend.src.library.settings_helper.navigation import exchange_api_status_check
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title, col_style2
-from frontend.src.library.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook, time_in_force_instructions
-from frontend.src.library.spot_trade_helper.funcs import get_account_balance, get_pair_market_price, submit_order
-from frontend.src.library.analytics_helper.client import fetch_available_assets
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.settings_helper.navigation import exchange_api_status_check
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title, col_style2
+from frontend.src.utils.spot_trade_helper.ui_elements import get_spot_trade_instructions, plot_orderbook, time_in_force_instructions
+from frontend.src.utils.spot_trade_helper.funcs import get_account_balance, get_pair_market_price, submit_order
+from frontend.src.utils.analytics_helper.client import fetch_available_assets
+from frontend.src.utils.oracle.ui_elements import oracle_button
 
-from frontend.src.library.spot_trade_helper.client import fetch_symbol_info
+from frontend.src.utils.spot_trade_helper.client import fetch_symbol_info
 import math
 
 

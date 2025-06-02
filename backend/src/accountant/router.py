@@ -1,10 +1,9 @@
 from fastapi import APIRouter
-from fastapi import Query
-from typing import Any, Dict
-import requests
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
+from backend.src.accountant.schemas import SpotBalanceResponse, ErrorResponse, AccountInformation
+from typing import Union
 
-# APIRouter creates path operations for user module
+
 router = APIRouter(
     prefix="/accountant",
     tags=["Accountant"],
@@ -12,15 +11,15 @@ router = APIRouter(
 )
 
 
-@router.get("/account/spot/balance")
-def get_spot_balance(exchange: str, quote_asset_pair: str = None) -> Dict[str, Any]:
+@router.get("/account/spot/balance", response_model=Union[SpotBalanceResponse, ErrorResponse])
+def get_spot_balance(exchange: str, quote_asset_pair: str = None):
     client = ExchangeClientFactory.get_client(exchange)
     response = client.get_spot_balance(quote_asset_pair)
     return response
 
 
-@router.get("/account/information")
-def get_spot_balance(exchange: str) -> Dict[str, Any]:
+@router.get("/account/information", response_model=Union[AccountInformation, ErrorResponse])
+def get_spot_balance(exchange: str):
     client = ExchangeClientFactory.get_client(exchange)
     response = client.get_account_information()
     return response

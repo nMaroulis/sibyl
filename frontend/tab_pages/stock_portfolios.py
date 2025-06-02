@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 import pandas as pd
 import re
-from frontend.src.library.stock_analysis_helper.client import fetch_portfolio_senates
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.stock_analysis_helper.client import fetch_portfolio_senates
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
 
 def parse_amount(amount_str: str) -> float:
     match = re.findall(r"\d{1,3}(?:,\d{3})*", amount_str.replace("$", ""))

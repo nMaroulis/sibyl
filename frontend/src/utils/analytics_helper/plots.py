@@ -1,9 +1,9 @@
 from pandas import DataFrame, concat
 from plotly.graph_objects import Figure, Scatter, Candlestick
 from streamlit import plotly_chart, warning, spinner, html, metric, write, caption
-from frontend.src.library.analytics_helper.client import fetch_price_history
+from frontend.src.utils.analytics_helper.client import fetch_price_history
 from plotly.express import imshow
-from frontend.src.library.strategy_helper.launcher_helper import get_market_condition_message, market_condition_explanation
+from frontend.src.utils.strategy_helper.launcher_helper import get_market_condition_message, market_condition_explanation
 
 
 def show_analytics(quote_asset: str, base_asset: str, df: DataFrame, score: float):

@@ -1,6 +1,6 @@
 from typing import List
 import requests
-from frontend.src.library.crypto_dictionary_assistant import get_crypto_name_regex
+from frontend.src.utils.crypto_dictionary_assistant import get_crypto_name_regex
 from streamlit import cache_data
 from frontend.config.config import BACKEND_SERVER_ADDRESS
 from pandas import DataFrame, to_datetime

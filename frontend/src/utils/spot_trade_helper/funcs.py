@@ -1,6 +1,6 @@
 import streamlit as st
-from frontend.src.library.wallet_helper.client import fetch_account_spot
-from frontend.src.library.spot_trade_helper.client import post_spot_trade, fetch_asset_market_price
+from frontend.src.utils.wallet_helper.client import fetch_account_spot
+from frontend.src.utils.spot_trade_helper.client import post_spot_trade, fetch_asset_market_price
 from typing import Dict, Any
 
 

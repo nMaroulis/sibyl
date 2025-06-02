@@ -1,9 +1,9 @@
 import streamlit as st
-from frontend.src.library.stock_analysis_helper.client import fetch_stock_details, fetch_stock_advice
+from frontend.src.utils.stock_analysis_helper.client import fetch_stock_details, fetch_stock_advice
 import re
-from frontend.src.library.stock_analysis_helper.plots import risk_gauge, linear_gauge_chart
+from frontend.src.utils.stock_analysis_helper.plots import risk_gauge, linear_gauge_chart
 import time
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.oracle.ui_elements import oracle_button
 from frontend.db.db_connector import fetch_llm_config
 
 

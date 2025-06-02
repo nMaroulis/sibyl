@@ -1,8 +1,8 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.analytics_helper.ui_elements import get_correlation_heatmap_form, get_price_analytics_form
-from frontend.src.library.settings_helper.navigation import exchange_api_status_check
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.analytics_helper.ui_elements import get_correlation_heatmap_form, get_price_analytics_form
+from frontend.src.utils.settings_helper.navigation import exchange_api_status_check
+from frontend.src.utils.oracle.ui_elements import oracle_button
 
 
 fix_page_layout('Analytics')

@@ -1,8 +1,8 @@
 import pandas as pd
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot, get_trading_history_line_plot, trade_history_instructions
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.history_helper.funcs import sidebar_update_history, trading_history_table, get_status_barplot, get_trading_history_line_plot, trade_history_instructions
+from frontend.src.utils.oracle.ui_elements import oracle_button
 
 
 fix_page_layout('Report')

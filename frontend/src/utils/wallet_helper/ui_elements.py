@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-from frontend.src.library.wallet_helper.client import fetch_account_spot, fetch_account_information
+from frontend.src.utils.wallet_helper.client import fetch_account_spot, fetch_account_information
 from plotly.graph_objects import Figure, Pie
 import plotly.graph_objects as go
 

@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 from streamlit import plotly_chart, metric, error
-from frontend.src.library.forecasting_helper.client import fetch_chronos_forecast
+from frontend.src.utils.forecasting_helper.client import fetch_chronos_forecast
 
 
 def plot_forecast(coin: str, interval: str, forecast_samples: int) -> None:

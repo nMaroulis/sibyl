@@ -1,11 +1,11 @@
 from plotly.graph_objs import Figure
 from streamlit import sidebar, spinner, dataframe as st_dataframe, plotly_chart, warning, error, expander, write, tabs, info
-from frontend.src.library.analytics_helper.client import fetch_price_history
-from frontend.src.library.history_helper.client import update_trading_history, fetch_trading_history
+from frontend.src.utils.analytics_helper.client import fetch_price_history
+from frontend.src.utils.history_helper.client import update_trading_history, fetch_trading_history
 from pandas import DataFrame, to_datetime, isnull, to_numeric, Series
 from plotly.graph_objects import Figure, Scatter, Pie
-from frontend.src.library.analytics_helper.plots import price_history_plot
-from frontend.src.library.crypto_dictionary_assistant import get_crypto_coin_dict_inv
+from frontend.src.utils.analytics_helper.plots import price_history_plot
+from frontend.src.utils.crypto_dictionary_assistant import get_crypto_coin_dict_inv
 from plotly.subplots import make_subplots
 from collections import defaultdict
 from typing import Dict, List

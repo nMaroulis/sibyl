@@ -1,6 +1,6 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.wiki_helper.client import fetch_wiki_rag_response, fetch_vectorstore_status
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.wiki_helper.client import fetch_wiki_rag_response, fetch_vectorstore_status
 import time
 from frontend.db.db_connector import fetch_llm_config
 

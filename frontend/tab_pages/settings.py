@@ -1,12 +1,12 @@
 import streamlit as st
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.client import check_backend_connection
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.client import check_backend_connection
 from frontend.db.db_connector import fetch_fields
 from dotenv import load_dotenv
-from frontend.src.library.settings_helper.navigation import show_status_cards
-from frontend.src.library.settings_helper.form_elements import llm_form, exchange_form, price_api_form, backend_form, oracle_form
+from frontend.src.utils.settings_helper.navigation import show_status_cards
+from frontend.src.utils.settings_helper.form_elements import llm_form, exchange_form, price_api_form, backend_form, oracle_form
 import os
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.oracle.ui_elements import oracle_button
 
 
 fix_page_layout('Settings')

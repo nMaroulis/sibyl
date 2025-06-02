@@ -1,7 +1,7 @@
 import streamlit as st
-from frontend.src.library.client import check_api_status
-from frontend.src.library.settings_helper.funcs import insert_update_api_keys
-from frontend.src.library.settings_helper.client import set_mock_exchange_status, get_available_local_models
+from frontend.src.utils.client import check_api_status
+from frontend.src.utils.settings_helper.funcs import insert_update_api_keys
+from frontend.src.utils.settings_helper.client import set_mock_exchange_status, get_available_local_models
 from frontend.db.db_connector import update_fields, fetch_llm_config
 
 

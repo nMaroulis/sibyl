@@ -1,6 +1,6 @@
-from frontend.src.library.settings_helper.html_elements import status_card, status_card_style, compact_card_style, compact_card, compact_card_header
+from frontend.src.utils.settings_helper.html_elements import status_card, status_card_style, compact_card_style, compact_card, compact_card_header
 from streamlit import html, session_state
-from frontend.src.library.settings_helper.client import fetch_apis_status
+from frontend.src.utils.settings_helper.client import fetch_apis_status
 """
 Four states of Status
     Active: The API credentials are stored at the backend Server and connection works OK

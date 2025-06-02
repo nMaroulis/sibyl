@@ -1,8 +1,8 @@
 import streamlit as st
-from frontend.src.library.oracle.ui_elements import oracle_button
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.reporter_helper.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment, oracle_news_chatbot
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.oracle.ui_elements import oracle_button
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.reporter_helper.funcs import get_latest_news,get_fear_and_greed_index_gauge_plot, get_news_summary, get_news_sentiment, oracle_news_chatbot
+from frontend.src.utils.oracle.ui_elements import oracle_button
 from frontend.db.db_connector import fetch_llm_config
 
 

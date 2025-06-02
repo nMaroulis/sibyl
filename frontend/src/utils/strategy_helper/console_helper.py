@@ -3,7 +3,7 @@ import time
 import plotly.graph_objs as go
 import numpy as np
 import pandas as pd
-from frontend.src.library.strategy_helper.client import get_strategy_logs, get_strategy_evaluation
+from frontend.src.utils.strategy_helper.client import get_strategy_logs, get_strategy_evaluation
 
 
 # Function to generate a random initial DataFrame

@@ -1,7 +1,7 @@
 from extra_streamlit_components import stepper_bar
 from streamlit import write, container, expander, html, caption, link_button, tabs, error, info, divider, fragment, warning, popover
 from streamlit.components.v1 import html as components_html
-from frontend.src.library.spot_trade_helper.client import fetch_orderbook
+from frontend.src.utils.spot_trade_helper.client import fetch_orderbook
 
 
 def get_spot_trade_instructions(exp=False):

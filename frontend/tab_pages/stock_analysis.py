@@ -1,7 +1,7 @@
 import streamlit as st
 from frontend.db.stocks_db_client import get_stocks_list
-from frontend.src.library.stock_analysis_helper.ui_elements import get_stock_analysis
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.stock_analysis_helper.ui_elements import get_stock_analysis
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
 
 
 fix_page_layout('📈Stock Market')

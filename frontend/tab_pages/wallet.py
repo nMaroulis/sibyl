@@ -1,9 +1,9 @@
 import streamlit as st
-from frontend.src.library.client import check_backend_connection
-from frontend.src.library.ui_elements import fix_page_layout, set_page_title
-from frontend.src.library.settings_helper.navigation import exchange_api_status_check
-from frontend.src.library.wallet_helper.ui_elements import get_spot_balance_wallet_table, get_logo_header, get_pie_chart, get_account_information, show_connected_exchanges
-from frontend.src.library.oracle.ui_elements import oracle_button
+from frontend.src.utils.client import check_backend_connection
+from frontend.src.utils.ui_elements import fix_page_layout, set_page_title
+from frontend.src.utils.settings_helper.navigation import exchange_api_status_check
+from frontend.src.utils.wallet_helper.ui_elements import get_spot_balance_wallet_table, get_logo_header, get_pie_chart, get_account_information, show_connected_exchanges
+from frontend.src.utils.oracle.ui_elements import oracle_button
 
 fix_page_layout("Sibyl", '3.8rem')
 get_logo_header()
