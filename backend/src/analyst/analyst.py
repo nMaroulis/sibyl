@@ -45,7 +45,7 @@ class Analyst:
         self.data["Moving Average"] = self.calc_ema("exponential", 5)
         self.data['RSI'] = self.calc_rsi(14)
         self.data['LowerBand'], self.data['UpperBand'] = self.calc_bollinger_bands(3)
-        return self.data.to_dict()  # to_json(orient='records')
+        return self.data.to_dict(orient="records")  # to_dict(orient='records')
 
 
     def get_market_condition_score(self) -> float:

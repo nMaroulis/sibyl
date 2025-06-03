@@ -3,7 +3,7 @@ from typing import List, Dict, Optional, Any
 from backend.src.analyst.utils import update_coin_symbol_name_map
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 from backend.src.analyst.analyst import Analyst
-
+from backend.src.analyst.schemas import AnalyticsResponse, Kline, AssetPairsResponse
 
 # APIRouter creates path operations for user module
 router = APIRouter(
@@ -13,8 +13,8 @@ router = APIRouter(
 )
 
 
-@router.get("/symbol/klines/analysis")
-def get_symbol_analysis(exchange: str, symbol: str, interval: str, limit: int) -> Optional[Dict[str, Any]]:
+@router.get("/symbol/klines/analysis", response_model=AnalyticsResponse)
+def get_symbol_analysis(exchange: str, symbol: str, interval: str, limit: int):  # -> Optional[Dict[str, Any]]:
     client = ExchangeClientFactory.get_client(exchange)
     klines = client.get_klines(symbol, interval, limit)
     analyst = Analyst(klines)
@@ -26,8 +26,8 @@ def get_symbol_analysis(exchange: str, symbol: str, interval: str, limit: int) -
         raise HTTPException(status_code=500, detail="Failed to calculate analyst's klines")
 
 
-@router.get("/asset/klines")
-def get_price_history(exchange: str, symbol: str, interval: str = '1d', limit: int = 100) -> List[dict]:
+@router.get("/asset/klines", response_model=List[Kline])
+def get_price_history(exchange: str, symbol: str, interval: str = '1d', limit: int = 100):#  -> List[dict]:
     client = ExchangeClientFactory.get_client(exchange)
     res = client.get_klines(symbol, interval, limit)
     if res:
@@ -36,8 +36,8 @@ def get_price_history(exchange: str, symbol: str, interval: str = '1d', limit: i
         raise HTTPException(status_code=500, detail="Failed to get price history")
 
 
-@router.get("/exchange_info/available_assets")
-def get_available_assets(exchange: str = 'binance', quote_asset: str = "all"):
+@router.get("/exchange_info/available_assets", response_model=AssetPairsResponse)
+def get_available_assets(exchange: str, quote_asset: str = "all"):
     client = ExchangeClientFactory.get_client(exchange)
     res = client.get_available_assets(quote_asset)
     if res:
@@ -45,8 +45,9 @@ def get_available_assets(exchange: str = 'binance', quote_asset: str = "all"):
     else:
         raise HTTPException(status_code=500, detail="Failed to get available coins")
 
-@router.put("/available_coins/symbol_name_map/update")
-def update_coin_symbol_name_map():
+
+@router.put("/available_coins/symbol_name_map/update", response_model=Dict[str, str])
+def update_coin_symbol_name_map() -> Dict[str, str]:
     res = update_coin_symbol_name_map("coinmarketcap")
     if res:
         return {"Success": "Symbol - Name map updated Successfully"}
