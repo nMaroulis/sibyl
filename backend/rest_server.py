@@ -12,11 +12,11 @@ from backend.src.accountant.router import router as accountant_router
 from backend.src.analyst.router import router as analyst_router
 from backend.src.chronos.router import router as chronos_router
 from backend.src.broker.router import router as broker_router
-from backend.src.reporter.endpoint import router as reporter_router
-from backend.src.technician.endpoint import router as technician_router
+from backend.src.reporter.router import router as reporter_router
+from backend.src.technician.router import router as technician_router
 from backend.src.explorer.router import router as explorer_router
-from backend.src.stock_analyst.endpoint import router as stock_analyst_router
-from backend.src.wiki.endpoint import router as wiki_router
+from backend.src.stock_analyst.router import router as stock_analyst_router
+from backend.src.wiki.router import router as wiki_router
 
 from database.trade_history_db_client import TradeHistoryDBClient
 

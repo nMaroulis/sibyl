@@ -11,7 +11,7 @@ router = APIRouter(
 
 
 @router.get("/forecast/crypto/price", response_model=PricePredictionResponse)
-def get_btc_forecast(asset: str = Query(description="Asset symbol like BTC or ETH"), interval: str = Query(), forecast_window: int = None):
+def get_btc_forecast(asset: str = Query(description="Asset symbol like BTC or ETH"), interval: str = Query(), forecast_window: int = None) -> PricePredictionResponse:
     try:
         client = Chronos()
         pred = client.generate_btc_prediction()

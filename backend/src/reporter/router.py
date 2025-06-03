@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from backend.src.reporter.fetch_news import fetch_news
 from backend.src.reporter.text_summarization import get_text_summary
 from backend.src.reporter.text_sentiment import get_text_sentiment
@@ -9,6 +9,7 @@ from backend.config import inference_pb2
 from backend.config import inference_pb2_grpc
 from dotenv import load_dotenv
 import os
+from backend.src.reporter.schemas import NewsChatbotResponse
 
 
 # APIRouter creates path operations for user module
@@ -20,7 +21,7 @@ router = APIRouter(
 
 
 @router.get("/news/articles")
-def get_latest_articles(website: str = 'cointelegraph', limit: int = 10):
+def get_latest_articles(website: str = Query(default='cointelegraph'), limit: int = Query(default=10)):
 
     res = fetch_news(website, limit)
     json_data = json.dumps(res)
@@ -28,7 +29,7 @@ def get_latest_articles(website: str = 'cointelegraph', limit: int = 10):
 
 
 @router.get("/news/summary")
-def get_news_summary(model: str = 'sumy', website: str = 'cointelegraph'):
+def get_news_summary(model: str = Query(default='sumy'), website: str = Query(default='cointelegraph')):
 
     articles = fetch_news(website, 20)
     summary = get_text_summary(model, articles)
@@ -36,15 +37,15 @@ def get_news_summary(model: str = 'sumy', website: str = 'cointelegraph'):
 
 
 @router.get("/news/sentiment")
-def get_news_sentiment(model: str = 'vader', website: str = 'cointelegraph'):
+def get_news_sentiment(model: str = Query(default='vader'), website: str = Query(default='cointelegraph')):
 
     articles = fetch_news(website, 20)
     sentiment = get_text_sentiment(model, articles)
     return {'sentiment_compound': sentiment}
 
 
-@router.get("/news/chatbot")
-def get_news_chatbot_response(model_source: str, model_type: str, question: str, model_name: Optional[str] = None):
+@router.get("/news/chatbot", response_model=NewsChatbotResponse)
+def get_news_chatbot_response(model_source: str = Query(), model_type: str = Query(), question: str = Query(), model_name: Optional[str] = Query(default=None)) -> NewsChatbotResponse:
 
     try:
         news_summary = get_news_summary()['summary']

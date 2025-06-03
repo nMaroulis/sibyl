@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException
-from typing import List, Dict, Optional, Any
+from fastapi import APIRouter, HTTPException, Query
+from typing import List, Dict
 from backend.src.analyst.utils import update_coin_symbol_name_map
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
 from backend.src.analyst.analyst import Analyst
@@ -14,7 +14,7 @@ router = APIRouter(
 
 
 @router.get("/symbol/klines/analysis", response_model=AnalyticsResponse)
-def get_symbol_analysis(exchange: str, symbol: str, interval: str, limit: int):  # -> Optional[Dict[str, Any]]:
+def get_symbol_analysis(exchange: str = Query(), symbol: str = Query(), interval: str = Query(), limit: int = Query()) -> AnalyticsResponse:
     client = ExchangeClientFactory.get_client(exchange)
     klines = client.get_klines(symbol, interval, limit)
     analyst = Analyst(klines)
@@ -27,7 +27,7 @@ def get_symbol_analysis(exchange: str, symbol: str, interval: str, limit: int): 
 
 
 @router.get("/asset/klines", response_model=List[Kline])
-def get_price_history(exchange: str, symbol: str, interval: str = '1d', limit: int = 100):#  -> List[dict]:
+def get_price_history(exchange: str = Query(), symbol: str = Query(), interval: str = Query(default="1d"), limit: int = Query(default=200)) -> List[Kline]:
     client = ExchangeClientFactory.get_client(exchange)
     res = client.get_klines(symbol, interval, limit)
     if res:
@@ -37,7 +37,7 @@ def get_price_history(exchange: str, symbol: str, interval: str = '1d', limit: i
 
 
 @router.get("/exchange_info/available_assets", response_model=AssetPairsResponse)
-def get_available_assets(exchange: str, quote_asset: str = "all"):
+def get_available_assets(exchange: str = Query(), quote_asset: str = Query(default="all")) -> AssetPairsResponse:
     client = ExchangeClientFactory.get_client(exchange)
     res = client.get_available_assets(quote_asset)
     if res:
