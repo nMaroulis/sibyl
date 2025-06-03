@@ -11,7 +11,7 @@ from backend.src.broker.evaluator.evaluator import Evaluator
 from backend.src.broker.tactician.strategy_runtime_manager import StrategyRuntimeHandler
 from backend.src.broker.backtester.backtester import Backtester
 import time
-
+from backend.src.broker.schemas import SpotTradeRequest, SpotTradeResponse, StrategyRequest
 
 router = APIRouter(
     prefix="/broker",
@@ -19,21 +19,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-class SpotTradeParams(BaseModel):
-    exchange: str
-    order_type: str
-    quote_asset: str
-    base_asset: str
-    side: str
-    quantity: float
-    price: Optional[float] = None
-    stop_price: Optional[float] = None
-    take_profit_price: Optional[float] = None
-    time_in_force: Optional[str] = None
 
+################
+## SPOT TRADING
+################
 
-@router.post("/trade/spot/test")
-def post_spot_order_test(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
+@router.post("/trade/spot/test", response_model=SpotTradeResponse)
+def post_spot_order_test(spot_trade_params: SpotTradeRequest):
 
     client = ExchangeClientFactory.get_client(spot_trade_params.exchange)
     spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
@@ -42,8 +34,8 @@ def post_spot_order_test(spot_trade_params: SpotTradeParams) -> Dict[str, str]:
     return res
 
 
-@router.post("/trade/spot/execute")
-def post_spot_order(spot_trade_params: SpotTradeParams) -> Dict[str, Any]:
+@router.post("/trade/spot/execute", response_model=SpotTradeResponse)
+def post_spot_order(spot_trade_params: SpotTradeRequest):
 
     client = ExchangeClientFactory.get_client(spot_trade_params.exchange)
     spot_trade_params_dict = spot_trade_params.model_dump(exclude={'exchange'})
@@ -107,24 +99,15 @@ def get_spot_trade_orderbook(exchange: str, quote_asset: str, base_asset: str, l
 
 
 
-### STRATEGIES
+########################
+## SIBYL STRATEGY ENGINE
+########################
+
+
 strategy_runtime_handler = StrategyRuntimeHandler() # handles Runtime strategies
 
-
-class StrategyParams(BaseModel):
-    exchange: str
-    quote_asset: str
-    quote_amount: float
-    base_asset: str
-    time_interval: str
-    strategy: str
-    num_trades: int
-    dataset_size: int
-    params: Dict[str, Any]  # Holds strategy-specific parameters
-
-
 @router.post("/strategy/start")
-def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
+def run_strategy(strategy_params: StrategyRequest) -> Dict[str, Any]:
     try:
         client = ExchangeClientFactory.get_client(strategy_params.exchange)
 
@@ -146,8 +129,9 @@ def run_strategy(strategy_params: StrategyParams) -> Dict[str, Any]:
 
 from fastapi.encoders import jsonable_encoder
 
+
 @router.post("/strategy/backtest/start")
-def run_strategy_backtest(strategy_params: StrategyParams) -> Dict[str, Any]:
+def run_strategy_backtest(strategy_params: StrategyRequest) -> Dict[str, Any]:
 
     try:
         client = ExchangeClientFactory.get_client(strategy_params.exchange)
