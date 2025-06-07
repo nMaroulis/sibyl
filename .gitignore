@@ -6,6 +6,7 @@
 /TODO.md
 /notebooks/.ipynb_checkpoints/
 /.sibyl_venv/
+/.uv_venv/
 /tests/*
 /notebooks/llms/*
 /database/wiki_rag/chroma_db

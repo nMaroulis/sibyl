@@ -17,8 +17,8 @@ env['PYTHONPATH'] = ':'.join(sys.path)  # Add the modified sys.path to PYTHONPAT
 def init_backend_server() -> int:
     global backend_server, grpc_server
     print('main :: Initializing Backend & gRPC LLM Services...')
-    backend_server = subprocess.Popen("python3.12 backend/rest_server.py", shell=True, env=env) # fastAPI backend server
-    grpc_server = subprocess.Popen("python3.12 llm_gateway/grpc_server.py", shell=True, env=env) # gRPC inference server
+    backend_server = subprocess.Popen("python3 backend/rest_server.py", shell=True, env=env) # fastAPI backend server
+    grpc_server = subprocess.Popen("python llm_gateway/grpc_server.py", shell=True, env=env) # gRPC inference server
     return 0
 
 def init_frontend() -> int:
@@ -28,14 +28,14 @@ def init_frontend() -> int:
     fetch_fields()  # print fields and initiate cache
     os.environ["STREAMLIT_CONFIG"] = ".streamlit/config.toml"
     # ctx = get_script_run_ctx(suppress_warning=True)
-    frontend_ui = subprocess.Popen("python3.12 -m streamlit run frontend/index_router.py", shell=True, env=env)
+    frontend_ui = subprocess.Popen("python -m streamlit run frontend/index_router.py", shell=True, env=env)
     # add_script_run_ctx(frontend_ui, ctx)
     return 0
 
 
 def update_wiki_rag_embeddings_db() -> int:
     print('main :: Updating RAG Wiki documents with latest papers...')
-    wiki_rag = subprocess.Popen("python3.12 llm_gateway/rag/download_documents.py", shell=True, env=env) # fastAPI backend server
+    wiki_rag = subprocess.Popen("python llm_gateway/rag/download_documents.py", shell=True, env=env) # fastAPI backend server
     return 0
 
 def ctrl_handler(signum, frm):

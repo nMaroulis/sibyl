@@ -1,5 +1,5 @@
 import pandas as pd
-from tensorflow.keras.models import load_model
+# from tensorflow.keras.models import load_model
 import yfinance as yf
 from pickle import load
 from datetime import datetime, timedelta
@@ -14,7 +14,7 @@ class Chronos:
     def __init__(self):
         self.lookback = 60  # days
         self.forecast_horizon = 7  # days
-        self.model = load_model(MODEL_PATH)
+        self.model = None # load_model(MODEL_PATH)
         self.scaler = load(open(SCALER_PATH, 'rb'))
         self.dataset = pd.DataFrame()
         self.model_input = None
@@ -67,8 +67,8 @@ class Chronos:
         return result
 
     def generate_btc_prediction(self):
-        self.fetch_dataset()
-        self.dataset_preprocessing()
-        self.create_model_input()
-        y_pred = self.generate_model_prediction()
-        return self.generate_output(y_pred)
+        # self.fetch_dataset()
+        # self.dataset_preprocessing()
+        # self.create_model_input()
+        # y_pred = self.generate_model_prediction()
+        return [] # self.generate_output(y_pred)
