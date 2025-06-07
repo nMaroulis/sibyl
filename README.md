@@ -179,7 +179,14 @@ $ cd sibyl
 
 $ python3.12 -m venv sibyl
 $ source sibyl/bin/activate
+
+Option 1 - Pip and requirements.txt
 $ pip install -r requirements.txt # poetry config file is also available
+
+Option 2 - UV Package manager
+$ brew install astral-sh/tap/uv
+$ uv sync --active
+
 
 $ python3.12 main.py
 ```

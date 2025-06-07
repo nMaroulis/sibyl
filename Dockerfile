@@ -12,7 +12,8 @@ COPY . .
 # Set environment variables to avoid Python cache and force UTF-8
 ENV PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=UTF-8 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    UV_CACHE_DIR="/tmp/uv-cache"
 
 # Install system dependencies and build tools
 RUN apt-get update && apt-get install -y \
@@ -26,27 +27,23 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+# Install uv
+RUN curl -Ls https://astral.sh/uv/install.sh | sh
 
-# Set Poetry configuration to not create a virtualenv (optional)
-# RUN poetry config virtualenvs.create false
+# Add uv to PATH
+ENV PATH="/root/.cargo/bin:$PATH"
 
-# Add Poetry to PATH
-ENV PATH="/root/.local/bin:$PATH"
-
-# Ensure poetry is correctly installed
-RUN poetry --version
+# Optional: verify uv installation
+RUN uv --version
 
 # Upgrade pip, setuptools, and wheel
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Install dependencies via Poetry
-RUN poetry install --no-interaction
-# --without dev
+# Sync dependencies
+RUN uv sync
 
 # Expose the required ports
 EXPOSE 8501 8000 50051
 
 # Run main.py to start both services
-CMD ["poetry", "run", "python", "-u", "main.py"]
+CMD ["python", "-u", "main.py"]
