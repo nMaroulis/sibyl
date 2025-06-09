@@ -81,7 +81,6 @@ The Spot order is then saved in the TradingHistory DB, to retrieve its status an
 
 ---
 
-
 ### Price Movement Prediction using ML - Chronos Module 🔮
 Chronos contains a suite of ML models for signal processing (non-LLM). Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to forecast and asset's price and make informed trading decisions. 
 - Chronos (Forecasting) tab in the UI: choose an asset and call the Chronos to get the price prediction.
@@ -112,6 +111,7 @@ Visualize the data with custom plots and tables for clear insights.
 
 Track your profits and losses with detailed tables and plots, allowing you to measure the success of each trading order.
 
+---
 
 ### Crypto News & Market Sentiment - Reporter Module 🕵🏻‍
 Stay informed with the Natural Language Processing (NLP) tools:
@@ -121,6 +121,7 @@ Stay informed with the Natural Language Processing (NLP) tools:
 - Sentiment analysis using advanced language models to gauge market mood
 - **Oracle**: LLM-powered chatbot, to ask questions about the latest crypto news.
 
+---
 
 ### Connect with Popular Exchanges - Technician Module 🛠️
 Sibyl supports API connections with major crypto exchanges. Currently supported:
@@ -134,6 +135,7 @@ Additional exchanges are planned for future releases.
 - Bybit
 - Kraken
 
+---
 
 ### Crypto Wiki Chatbot - Wiki Module 💬
 An interactive **chatbot** which is based on custom **AI agents** using **MCP server**, a **RAG system**, which includes thousands of crypto-related publications, books and articles,
@@ -150,6 +152,7 @@ In order to use this functionality, you have to:
 >   ii. Choose an LLM to be deployed **locally**. This is done automatically by the backend.
 2. **Download the chromaDB Embeddings Database**, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
 
+---
 
 ### Evaluate Stock - Stock Analysis Module 📊
 Choose a Company from a list of available company stocks and:
@@ -160,6 +163,7 @@ Choose a Company from a list of available company stocks and:
 - **Oracle**: LLM-powered stock evaluation
 - Future Release: Rating based on custom ML model
 
+---
 
 ## Security & Local Deployment
 Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.
