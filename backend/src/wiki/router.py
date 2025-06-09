@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException
 from grpc import insecure_channel
 from backend.config import inference_pb2
 from backend.config import inference_pb2_grpc
-from backend.src.wiki.funcs import check_exists_chroma_db, check_exists_llm_api
+from backend.src.wiki.utils import check_exists_chroma_db, check_exists_llm_api
 from dotenv import load_dotenv
 import os
 from typing import Optional
-
+from backend.src.wiki.schemas import VectorStoreStatusResponse, WikiAgentResponse
 
 # APIRouter creates path operations for user module
 router = APIRouter(
@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.get("/chatbot/query")
+@router.get("/chatbot/query", response_model=WikiAgentResponse)
 def get_wiki_agent_response(model_source: str, model_type: str, query: str, model_name: Optional[str] = None, agent_type: str = "wiki_agent"):
     try:
         # Call gRPC server
@@ -59,10 +59,10 @@ def get_wiki_agent_response(model_source: str, model_type: str, query: str, mode
 #         raise HTTPException(status_code=404, detail="LLM API failed")
 
 
-@router.get("/rag/vectorstore/status")
+@router.get("/rag/vectorstore/status", response_model=VectorStoreStatusResponse)
 def get_vectorstore_status():
     try:
-        return {"embeddings_db": check_exists_chroma_db()} # , "llm_api": check_exists_llm_api("hugging_face")
+        return {"embeddings_db": check_exists_chroma_db()}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=404, detail="Retrieving wiki vectorstore status failed!")

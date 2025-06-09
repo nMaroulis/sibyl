@@ -31,6 +31,8 @@ Welcome to **Sibyl**! This application is your centralized hub for all things cr
 ### Interactive Dashboard UI
 The intuitive dashboard provides a comprehensive view of your crypto activities. Manage your trading strategies, analyze market trends, and keep an eye on the latest news—all in one place.
 
+---
+
 ### AI Agents & LLMs that power each Sibyl functionality - Oracle Module 🔥
 **Oracle** is the LLM-driven intelligence layer of *Sibyl*.
 Wherever you navigate in Sibyl, Oracle is there — ready to assist, explain, advise or spark new insights.
@@ -48,6 +50,7 @@ With a single click, you activate a powerful AI agent that understands your cont
 - **Intelligent Agent Hooks**  
   Oracle can trigger deeper tools like analytics, visualizations or predictions via internal AI agents when appropriate.
 
+---
 
 ### Strategy Planning - Broker Module 🎯
 Tune and deploy trading strategies and monitor their performance through a real-time UI:
@@ -70,21 +73,33 @@ Modules:
 
 TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
 
+---
 
 ### SPOT Trading - Broker Module 💰
 Create and place a SPOT order through the sibyl UI. This order will be first sent as a test order, and if it is validated it will be placed on your Exchange API.
 The Spot order is then saved in the TradingHistory DB, to retrieve its status and get analytics.
 
+---
+
 
 ### Price Movement Prediction using ML - Chronos Module 🔮
 Chronos contains a suite of ML models for signal processing (non-LLM). Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to forecast and asset's price and make informed trading decisions. 
-- Chronos tab in the UI: choose an asset and call the Chronos to get the price prediction.
+- Chronos (Forecasting) tab in the UI: choose an asset and call the Chronos to get the price prediction.
 
-TBA: AI-powered strategies that utilize the Chronos models.
+Currently Supported Models:
+- Custom Tensorflow LSTM model, features: [bitcoin_price, sp500_price, gold_price, usd_index, oil_price, volatility_index, interest_rate]
 
+
+TBD:
+- [Nixtla](https://github.com/Nixtla/nixtla) model
+- Custom model based on [CryptoMamba](https://github.com/MShahabSepehri/CryptoMamba/tree/main)
+
+TBA: 
+- Utilize Chronos models for AI-powered strategies.
+
+---
 
 ### Data Analysis & Visualization - Analyst Module 📈
-
 
 Sibyl offers powerful data analysis and visualization tools to support your trading decisions:
 
@@ -129,11 +144,11 @@ The similarity method is a hybrid approach, using cosine similarity, BM25 keywor
 in order to find relevant information online. All the available material is given to the LLM in order to generate the response.
 
 In order to use this functionality, you have to:
-1. 
-   
-   i. Provide a valid HuggingFace or OpenAI API key, to be stored in the local encrypted Database *or*
-   ii. Choose an LLM to be deployed locally. This is done automatically by the backend.
-2. Download the chromaDB Embeddings Database, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
+1. Setup an LLM through the UI Settings Tab.
+>   i. Provide a valid HuggingFace or OpenAI **API key**, to be stored in the local encrypted Database *or*
+>
+>   ii. Choose an LLM to be deployed **locally**. This is done automatically by the backend.
+2. **Download the chromaDB Embeddings Database**, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
 
 
 ### Evaluate Stock - Stock Analysis Module 📊
