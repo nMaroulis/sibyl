@@ -1,9 +1,9 @@
-from backend.src.broker.strategies.bollinger_bands_strategy import BollingerBandsStrategy
-from backend.src.broker.strategies.ema_crossover_strategy import EMACrossoverStrategy
-from backend.src.broker.strategies.rsi_strategy import RSIStrategy
-from backend.src.broker.strategies.bollinger_surge_strategy import BollingerSurgeStrategy
-from backend.src.broker.strategies.impulse_breakout_strategy import ImpulseBreakoutStrategy
-from backend.src.broker.strategies.quantum_momentum_strategy import QuantumMomentumStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.bollinger_bands_strategy import BollingerBandsStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.ema_crossover_strategy import EMACrossoverStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.rsi_strategy import RSIStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.bollinger_surge_strategy import BollingerSurgeStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.impulse_breakout_strategy import ImpulseBreakoutStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.quantum_momentum_strategy import QuantumMomentumStrategy
 from typing import Type, Dict, Any
 
 

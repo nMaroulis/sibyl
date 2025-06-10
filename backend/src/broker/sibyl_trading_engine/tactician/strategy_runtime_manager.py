@@ -1,5 +1,5 @@
 from typing import Dict, List
-from backend.src.broker.tactician.tactician_base import Tactician
+from backend.src.broker.sibyl_trading_engine.tactician.tactician_base import Tactician
 
 
 class StrategyRuntimeHandler:

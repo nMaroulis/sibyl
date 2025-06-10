@@ -1,5 +1,4 @@
-from backend.src.broker.strategies.strategy_base import BaseStrategy
-import logging
+from backend.src.broker.sibyl_trading_engine.strategies.strategy_base import BaseStrategy
 from typing import Any, Dict, List
 import time
 import threading
@@ -7,7 +6,7 @@ import json
 import os
 import pandas as pd
 from database.strategy.strategy_db_client import StrategyDBClient
-from backend.src.broker.tactician.exchange_interface import TacticianExchangeInterface
+from backend.src.broker.sibyl_trading_engine.tactician.exchange_interface import TacticianExchangeInterface
 from numpy import isnan
 from decimal import Decimal, ROUND_DOWN
 

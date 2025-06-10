@@ -1,15 +1,14 @@
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 from database.trade_history_db_client import TradeHistoryDBClient
-from pydantic import BaseModel
 from backend.src.exchange_client.exchange_client_factory import ExchangeClientFactory
-from backend.src.broker.strategies.strategy_factory import StrategyFactory
-from backend.src.broker.tactician.tactician_base import Tactician
-from backend.src.broker.tactician.exchange_interface import TacticianExchangeInterface
+from backend.src.broker.sibyl_trading_engine.strategies.strategy_factory import StrategyFactory
+from backend.src.broker.sibyl_trading_engine.tactician.tactician_base import Tactician
+from backend.src.broker.sibyl_trading_engine.tactician.exchange_interface import TacticianExchangeInterface
 from database.strategy.strategy_db_client import StrategyDBClient
-from backend.src.broker.evaluator.evaluator import Evaluator
-from backend.src.broker.tactician.strategy_runtime_manager import StrategyRuntimeHandler
-from backend.src.broker.backtester.backtester import Backtester
+from backend.src.broker.sibyl_trading_engine.evaluator.evaluator import Evaluator
+from backend.src.broker.sibyl_trading_engine.tactician.strategy_runtime_manager import StrategyRuntimeHandler
+from backend.src.broker.sibyl_trading_engine.backtester.backtester import Backtester
 import time
 from backend.src.broker.schemas import SpotTradeRequest, SpotTradeResponse, StrategyRequest
 

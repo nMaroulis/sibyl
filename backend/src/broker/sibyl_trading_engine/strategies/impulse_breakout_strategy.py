@@ -1,4 +1,4 @@
-from backend.src.broker.strategies.strategy_base import BaseStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.strategy_base import BaseStrategy
 import pandas as pd
 import numpy as np
 

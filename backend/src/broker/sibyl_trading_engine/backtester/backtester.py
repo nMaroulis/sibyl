@@ -1,13 +1,9 @@
 from backend.src.analyst.analyst import Analyst
-from backend.src.broker.strategies.strategy_base import BaseStrategy
+from backend.src.broker.sibyl_trading_engine.strategies.strategy_base import BaseStrategy
 from backend.src.exchange_client.exchange_client import ExchangeAPIClient
 import pandas as pd
 from typing import List, Dict, Any, Optional, Tuple
 import time
-from ta.momentum import RSIIndicator
-from ta.trend import MACD, ADXIndicator
-from ta.volatility import BollingerBands
-import numpy as np
 
 
 class Backtester:

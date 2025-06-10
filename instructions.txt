@@ -1,3 +1,1 @@
-Sibyl pre-alpha version
-
-1. Navigate to the backend/config/api_keys directory and create a file called api_credentials.json and fill with your api keys. Follow the api_credentials_template.json and copy-paste the structure. In future version it can be set through the UI settings.
+Sibyl - pre-alpha version
