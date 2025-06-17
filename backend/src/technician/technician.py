@@ -31,6 +31,8 @@ class Technician:
             res["gemini"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("gemini") is not None else 'Unavailable'
         if api_name in ["all", "llms", "hugging_face"]:
             res["hugging_face"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("hugging_face") is not None else 'Unavailable'
+        if api_name in ["all", "llms", "anthropic"]:
+            res["anthropic"] = 'Active' if APIEncryptedDatabase.get_api_key_by_name("anthropic") is not None else 'Unavailable'
 
         if api_name in ["all", "llms", "llama_cpp"]:
             res["llama_cpp"] = 'Available'

@@ -152,6 +152,10 @@ def status_card_style():
                 box-shadow: 0 10px 15px rgba(0,0,0, 0.5); /* Added shadow for 3D effect */
             }
             
+            .settings-card-illustration-An img {
+                box-shadow: 0 10px 15px rgba(227,199,161, 0.5);
+            }
+
         </style>
     """)
     return

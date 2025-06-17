@@ -10,7 +10,7 @@
 [![FastAPI](https://img.shields.io/badge/fastapi-v0.115.12-blue)]()
 [![Llama-CPP](https://img.shields.io/badge/llama_cpp-v0.3.8-black)]()
 [![Tensorflow](https://img.shields.io/badge/tensorflow-v2.18.0-orange)]()
-[![Statsmodels](https://img.shields.io/badge/statsmodels-v0.14-pink)]()
+[![PyTorch](https://img.shields.io/badge/pyTorch-v2.6.0-pink)]()
 [![Pandas](https://img.shields.io/badge/pandas-v2.2.3-lightgrey)]()
 [![Plotly](https://img.shields.io/badge/plotly-v6.0.1-green)]()
 [![Sklearn](https://img.shields.io/badge/Scikit_Learn-v1.6.1-purple)]()
@@ -55,7 +55,11 @@ With a single click, you activate a powerful AI agent that understands your cont
 ### Strategy Planning - Broker Module 🎯
 Tune and deploy trading strategies and monitor their performance through a real-time UI:
 
-- Currently supported trading algorithm:
+#### Option 1 - Sibyl Trading Engine
+
+A custom trading engine written in Python, supporting BUY, SELL orders and Backtesting.
+
+- Currently supported trading algorithms:
   - Generic strategy algorithms: Bollinger Bands, RSI and EMA crossover
   - Sibyl advanced custom strategy algorithms: **Bollinger Surge**, **Impulse Breakout** and **Quantum Momentum**.
 - Customize the parameters for each algorithm and choose the desired market you want to deploy it.
@@ -72,6 +76,10 @@ Modules:
 - ```Backtester```: Aggregates historical data and evaluates the strategies on them.
 
 TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
+
+#### Option 2 - Freqtrade Engine with custom API layer and UI
+
+TBD
 
 ---
 
@@ -184,30 +192,34 @@ Sibyl is designed for local deployment, ensuring your data stays secure. You hav
 
 ## Deployment
 
-**1. Virtual Environment - Recommended for Apple silicon and ARM systems, so Pypi takes care of arm64 libraries.**
+**1. Virtual Environment — Recommended for Apple silicon and ARM systems, so Pypi takes care of arm64 libraries.**
 
 Install Python 3.12 on your system:
 
 ```sh
-# macOS
-$ brew install python@3.12 
 # Linux (apt)
 $ sudo apt install python==3.12
+# macOS
+$ brew install python@3.12 
 
 $ cd sibyl
 
 $ python3.12 -m venv sibyl
 $ source sibyl/bin/activate
 
-Option 1 - Pip and requirements.txt
-$ pip install -r requirements.txt # poetry config file is also available
-
-Option 2 - UV Package manager
+Option 1 - uv Package manager (recommended)
+# Linux & macOS
+$ pip install uv
+# macOS
 $ brew install astral-sh/tap/uv
+
 $ uv sync --active
 
+Option 2 - Pip and requirements.txt
+$ pip install -r requirements.txt # poetry config file is also available
 
-$ python3.12 main.py
+# Run application (make sure the venv is activated)
+$ python main.py
 ```
 
 **2. Dockerfile - Recommended for x86 systems.**
