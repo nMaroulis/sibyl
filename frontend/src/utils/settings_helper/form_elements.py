@@ -75,7 +75,7 @@ def llm_form() -> None:
     with st.container(border=True):
         llm_type = st.segmented_control("LLM Type", options=["API", "Local Deployment"], default="Local Deployment")
         if llm_type == 'API':
-            llm_api = st.selectbox('Choose LLM Model API', options=['Hugging Face', 'OpenAI API', 'Google Gemini API'],
+            llm_api = st.selectbox('Choose LLM Model API', options=["Hugging Face", "OpenAI", "Anthropic", "Gemini"],
                                    help="Update LLM API")
             with st.spinner('Checking LLM API status...'):
                 api_conn = check_api_status(llm_api)
@@ -87,6 +87,19 @@ def llm_form() -> None:
                 button_text, button_icon = 'Save API Credentials', ':material/save:'
 
             with st.form('API Credentials'):
+
+                st.info(f"In case you have not generated an API key from {llm_api}, see instructions below:",
+                        icon=':material/info:')
+                page_link = {
+                    "Hugging Face": "https://huggingface.co/docs/huggingface_hub/v0.13.2/guides/inference",
+                    "OpenAI": "https://platform.openai.com/api-keys",
+                    "Anthropic": "https://console.anthropic.com/settings/keys",
+                    "Gemini": "https://aistudio.google.com"
+                }
+                if llm_api == 'Hugging Face':
+                    st.page_link(page_link[llm_api], label=f"{llm_api} FAQ", icon="🌐")
+
+
                 with st.expander('API Credentials', expanded=True):
                     llm_api_key = st.text_input('Secret Key', placeholder="Secret Key Input", type="password")
                 llm_submit = st.form_submit_button(button_text, icon=button_icon, type="primary")
@@ -231,7 +244,7 @@ def oracle_form() -> None:
             if model_source == "Local":
                 model_types = ["Llama Cpp"]
             else:
-                model_types = ["Hugging Face"]
+                model_types = ["Hugging Face", "Anthropic"]
 
             model_type = st.pills("2. Model Type", options=model_types, selection_mode="single")
 

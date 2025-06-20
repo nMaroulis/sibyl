@@ -14,10 +14,11 @@ import re
 from langchain.agents.output_parsers import ReActSingleInputOutputParser
 
 
-class WikiAgent(AgentBase):
+class WikiReactiveAgent(AgentBase):
     """
     The Wiki Chatbot pipeline class
-    An agent based on the Langchain agentic framework
+    An agent based on the Reactive Langchain agentic framework
+    The LLM (brain of the agent) decides which tool to use
     """
 
     def __init__(self, llm_model: LLMBase):

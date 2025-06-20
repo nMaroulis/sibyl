@@ -1,4 +1,3 @@
-from openai import OpenAI
 from llm_gateway.llm_models.llm_base import LLMBase
 from database.api_keys_db_client import APIEncryptedDatabase
 from langchain.llms.base import LLM
@@ -58,4 +57,6 @@ class AnthropicAPILLM(LLMBase):
         """
         Returns a LangChain-compatible LLM.
         """
+        # from langchain.chat_models import init_chat_model
+        # return init_chat_model("anthropic:claude-3-5-sonnet-latest", api_key=self.api_key)
         return Anthropic(model=self.model_name, temperature=0.7, api_key=self.api_key, streaming=self.stream)

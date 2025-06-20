@@ -58,3 +58,17 @@ def get_available_local_models(library: str) -> list[str] | None:
         print(e)
         return None
     return None
+
+
+def get_available_api_models(llm_api: str) -> list[str] | None:
+    llm_api = llm_api.lower().replace(' ', '_')
+    url = f"{BACKEND_SERVER_ADDRESS}/technician/status/api/models?llm_api={llm_api}"
+    response = requests.get(url)
+    try:
+        if response.status_code == 200:
+            res = response.json()
+            return res["models"]
+    except Exception as e:
+        print(e)
+        return None
+    return None

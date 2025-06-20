@@ -1,11 +1,14 @@
-from llm_gateway.agents.WikiAgent import WikiAgent
+from llm_gateway.agents.wiki_structured_agent import WikiStructuredAgent
+from llm_gateway.agents.wiki_reactive_agent import WikiReactiveAgent
 from llm_gateway.rag.chromadb_client import ChromaDBClient
 from llm_gateway.agents.agent_base import AgentBase
 from llm_gateway.llm_models.llm_base import LLMBase
 
+
 class AgentFactory:
     _agents = {
-        'wiki_agent': WikiAgent,
+        'wiki_agent': WikiStructuredAgent,
+        'wiki_reactive_agent': WikiReactiveAgent,
         'wiki_rag': ChromaDBClient,
     }
 
