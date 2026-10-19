@@ -1,22 +1,18 @@
-version: '3.8'
-
 services:
-  backend:
-    build: ./backend
+  sibyl:
+    build:
+      context: .
+      args:
+        SIBYL_EXTRAS: ${SIBYL_EXTRAS:-}
     ports:
-      - "8000:8000"
-    networks:
-      - app_network
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "8501:8501"
-    depends_on:
-      - backend
-    networks:
-      - app_network
-
-networks:
-  app_network:
-    driver: bridge
+      - "127.0.0.1:8000:8000"
+    env_file: .env
+    environment:
+      SIBYL_HOST: 0.0.0.0
+      SIBYL_DATA_DIR: /data
+    volumes:
+      - sibyl-data:/data
+    restart: unless-stopped
+    init: true
+volumes:
+  sibyl-data:

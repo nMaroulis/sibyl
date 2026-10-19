@@ -1,0 +1,8 @@
+node_modules
+frontend/dist
+docs/build
+docs/.docusaurus
+package-lock.json
+uv.lock
+notebooks
+assets
