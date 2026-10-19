@@ -18,9 +18,13 @@ FastAPI routes + validated request models
               Store: SQLite + Fernet vault
 ```
 
+## Legacy Streamlit version
+
+The original Sibyl dashboard, built entirely in Python with Streamlit, is available at [nMaroulis/sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit). This repository contains the React frontend, Python API and AI agents powered by ProtoLink.
+
 ## Workspace navigation
 
-Portfolio is the home screen. The floating dock opens Markets, Trade, Strategies, Agents, Forecasting, News, and Settings. Settings combines **Exchanges**, **AI models**, **Other APIs**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. Model and data configuration helpers download environment snippets; apply them on the server and restart the API. See the [Settings guide](docs/docs/guides/settings.md).
+Portfolio is the home screen. The floating dock opens Markets, Trade, Strategies, Agents, Forecasting, News, and Settings. Settings combines **Exchanges**, **AI models**, **Other APIs**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider keys and activates preset/custom models immediately through ProtoLink. Market data configuration remains a downloadable environment snippet that requires an API restart. See the [Settings guide](docs/docs/guides/settings.md).
 
 ## Python package
 

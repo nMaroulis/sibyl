@@ -51,7 +51,7 @@ def test_model_path_uses_protolink_with_mock_provider(client, monkeypatch):
     registry.settings.llm_provider = "ollama"
     native_compose = registry._compose
 
-    def compose(module, *, inference=False):
+    def compose(module, *, inference=False, configuration=None):
         if not inference:
             return native_compose(module)
         return Agent(

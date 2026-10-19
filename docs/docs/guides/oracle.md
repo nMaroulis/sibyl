@@ -29,13 +29,23 @@ This mode does not interpret an arbitrary question like a model. The question se
 
 ### Model mode: conversational reasoning
 
-Connect a model to let ProtoLink interpret the question, inspect module evidence, and call its read-only tool with supported arguments. Each request gets an isolated Agent instance. Up to six recent turns from the same session and module are supplied explicitly; model state is not shared across unrelated conversations.
+Select and save a model in **Settings → AI models** to let ProtoLink interpret the question, inspect module evidence, and call its read-only tool with supported arguments. Each request gets an isolated Agent instance. Up to six recent turns from the same session and module are supplied explicitly; model state is not shared across unrelated conversations.
 
 Each response shows the provider, the native tool, and its initial evidence. Expand **Inspect evidence** to see the server observations. This view does not claim to be a complete model reasoning trace or full record of every model-selected tool call.
 
-## Local Ollama
+## Connect a provider
 
-Run Ollama separately and install the model you want to use. Configure the API environment:
+Open **Settings → AI models**. Choose API or Local, select the provider, pick a preset or enter a custom model ID, add its key or server URL, then **Save & use**. No restart is needed. All providers in the installed ProtoLink factory are supported, including local servers, embedded GGUF inference, and a clearly labeled Mock runtime. See the [Settings guide](./settings.md).
+
+Install the optional SDK for hosted providers when needed:
+
+```bash
+uv sync --extra openai --extra anthropic --extra gemini --extra deepseek --extra huggingface
+```
+
+Ollama, LM Studio, vLLM, llama.cpp server, xAI, and OpenAI-compatible HTTP adapters use the core HTTP dependencies. Run local model servers separately and install/load your desired model there. Embedded llama.cpp additionally needs `uv sync --extra llama-cpp` and a GGUF file on the Python host. A localhost server URL refers to the API host; inside Docker, use a reachable host address such as `http://host.docker.internal:11434` on Docker Desktop.
+
+Environment configuration remains available for a workspace with no saved selection:
 
 ```dotenv
 SIBYL_LLM_PROVIDER=ollama
@@ -43,25 +53,7 @@ SIBYL_LLM_MODEL=your-installed-model
 SIBYL_LLM_BASE_URL=http://127.0.0.1:11434
 ```
 
-Restart Sibyl. A localhost Ollama URL refers to the API host; inside Docker, use a reachable host address such as `http://host.docker.internal:11434` on Docker Desktop.
-
-## Hosted providers
-
-For OpenAI:
-
-```bash
-uv sync --extra openai
-```
-
-```dotenv
-SIBYL_LLM_PROVIDER=openai
-SIBYL_LLM_MODEL=your-model
-OPENAI_API_KEY=your-provider-key
-```
-
-For Anthropic, install the `anthropic` extra and set `SIBYL_LLM_PROVIDER=anthropic`, `SIBYL_LLM_MODEL`, and `ANTHROPIC_API_KEY`.
-
-For a server exposing an OpenAI-compatible chat interface, use `SIBYL_LLM_PROVIDER=openai-compatible` and set its model and base URL, for example an LM Studio or vLLM endpoint. Provider capabilities and model tool-following quality vary; test the chosen configuration before relying on it.
+Restart after editing environment defaults. Saved profiles override them. Provider environment credential names are `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, `XAI_API_KEY` (or `GROK_API_KEY`), `HF_API_TOKEN`, `OPENAI_COMPATIBLE_API_KEY`, `OLLAMA_API_KEY`, `LMSTUDIO_API_KEY`, and `VLLM_API_KEY`. Keys entered in Settings remain encrypted in the vault and are passed only to the chosen adapter, never copied into model messages or agent tools. Provider capabilities and model tool-following quality vary.
 
 ## Data and execution boundaries
 

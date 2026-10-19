@@ -115,8 +115,15 @@ test('navigation works on a narrow app viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.getByRole('button', { name: 'More tools' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Markets', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Markets', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const more = page.getByRole('group', { name: 'More destinations' });
+  await expect(more.getByRole('link')).toHaveCount(3);
+  await more.getByRole('link', { name: 'Research', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Research', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'More tools' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
   ).toBeTruthy();
@@ -217,15 +224,17 @@ test('Settings groups connections and configuration with persistent drafts and k
   await expect(page.getByRole('button', { name: 'Connect Binance', exact: true })).toBeVisible();
   await tabs.getByRole('tab', { name: 'AI models', exact: true }).click();
   await expect(page).toHaveURL(/settings\?tab=models$/);
-  await page.getByLabel('Model provider', { exact: true }).selectOption('ollama');
-  await page.getByLabel('Model name', { exact: true }).fill('draft-model');
+  await page.getByRole('button', { name: 'Local', exact: true }).click();
+  await page.getByRole('button', { name: /^Ollama/ }).click();
+  await page.getByLabel('Model', { exact: true }).selectOption('__custom__');
+  await page.getByLabel('Custom model ID', { exact: true }).fill('draft-model');
   await tabs.getByRole('tab', { name: 'Other APIs', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Market data configuration', exact: true }),
   ).toBeVisible();
-  await expect(page.getByLabel('Model name', { exact: true })).not.toBeVisible();
+  await expect(page.getByLabel('Custom model ID', { exact: true })).not.toBeVisible();
   await page.goBack();
-  await expect(page.getByLabel('Model name', { exact: true })).toHaveValue('draft-model');
+  await expect(page.getByLabel('Custom model ID', { exact: true })).toHaveValue('draft-model');
   await tabs.getByRole('tab', { name: 'AI models', exact: true }).focus();
   await page.keyboard.press('End');
   await expect(tabs.getByRole('tab', { name: 'Workspace', exact: true })).toBeFocused();

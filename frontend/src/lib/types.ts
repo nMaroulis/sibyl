@@ -349,3 +349,30 @@ export type StrategyEventPage = {
   next_before: number | null;
   matching_count: number;
 };
+
+export type ModelProvider = {
+  id: string;
+  name: string;
+  kind: 'api' | 'local' | 'tools';
+  description: string;
+  models: string[];
+  base_url: string;
+  requires_key: boolean;
+  installed: boolean;
+  extra: string;
+  docs_url: string;
+};
+export type ModelProfile = {
+  model: string;
+  base_url: string;
+  has_api_key: boolean;
+  key_source: 'saved' | 'environment' | 'none';
+  saved: boolean;
+};
+export type ModelWorkspace = {
+  active_provider: string;
+  active_model: string;
+  source: 'workspace' | 'environment';
+  profiles: Record<string, ModelProfile>;
+  providers: ModelProvider[];
+};

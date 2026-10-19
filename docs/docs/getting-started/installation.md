@@ -44,11 +44,12 @@ Open `http://localhost:3000/sibyl/`. Documentation links in the dashboard use th
 
 ```bash
 uv sync --extra openai
-uv sync --extra anthropic
+uv sync --extra anthropic --extra gemini --extra deepseek --extra huggingface
+uv sync --extra llama-cpp
 uv sync --extra stocks
 ```
 
-Extras can be combined in one `uv sync` invocation. Ollama and OpenAI-compatible HTTP servers do not require a hosted-provider SDK. You must run the selected model server separately.
+Extras can be combined in one `uv sync` invocation. Ollama and OpenAI-compatible HTTP servers do not require a hosted-provider SDK. You must run the selected model server separately. The `llama-cpp` extra is only for embedded GGUF inference and may require a platform build toolchain. Model downloads are not bundled.
 
 ## Common startup problems
 

@@ -39,6 +39,8 @@ class Store:
                     id TEXT PRIMARY KEY, exchange TEXT NOT NULL, label TEXT NOT NULL,
                     sandbox INTEGER NOT NULL, created_at TEXT NOT NULL, credentials BLOB NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS model_profiles (provider TEXT PRIMARY KEY, config BLOB NOT NULL);
+                CREATE TABLE IF NOT EXISTS workspace_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS balances (asset TEXT PRIMARY KEY, quantity REAL NOT NULL);
                 CREATE TABLE IF NOT EXISTS orders (
                     id TEXT PRIMARY KEY, idempotency_key TEXT UNIQUE NOT NULL,
@@ -73,6 +75,36 @@ class Store:
                 yield connection
         finally:
             connection.close()
+
+    def model_profiles(self) -> tuple[str | None, dict[str, dict]]:
+        """Read active selection and decrypt profiles for the model settings service only."""
+        with self.db() as db:
+            db.execute("BEGIN")
+            active = db.execute("SELECT value FROM workspace_settings WHERE key = 'llm_provider'").fetchone()
+            rows = db.execute("SELECT provider, config FROM model_profiles").fetchall()
+        return (
+            active[0] if active else None,
+            {row["provider"]: json.loads(self.cipher.decrypt(row["config"])) for row in rows},
+        )
+
+    def save_model_profile(
+        self, provider: str, profile: dict, *, activate: bool = True, fallback_to_tools: bool = False
+    ) -> None:
+        """Commit an encrypted provider profile and its active selection atomically."""
+        encrypted = self.cipher.encrypt(json.dumps(profile).encode())
+        with self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute(
+                "INSERT INTO model_profiles VALUES (?, ?) ON CONFLICT(provider) "
+                "DO UPDATE SET config = excluded.config",
+                (provider, encrypted),
+            )
+            if activate or fallback_to_tools:
+                db.execute(
+                    "INSERT INTO workspace_settings VALUES ('llm_provider', ?) ON CONFLICT(key) "
+                    "DO UPDATE SET value = excluded.value",
+                    ("none" if fallback_to_tools else provider,),
+                )
 
     def connections(self) -> list[Connection]:
         """Return connection metadata without selecting encrypted credential columns."""

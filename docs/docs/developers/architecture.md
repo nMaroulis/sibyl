@@ -32,6 +32,8 @@ FastAPI routes + validated request models
 | `services/strategy_monitor.py` | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
 | `services/trading.py`          | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
 | `services/research.py`         | Bounded source-labeled research reads                                                             |
+| `agents/providers.py`          | ProtoLink provider capabilities, model presets, dependency metadata                               |
+| `services/llm_settings.py`     | Encrypted provider profiles, active selection, request-scoped adapter configuration               |
 | `agents/registry.py`           | Roles, native tools, optional model composition, request limits, factual snapshots                |
 | `api/app.py`                   | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
 | `api/routes.py`                | Thin versioned HTTP routes                                                                        |
@@ -55,3 +57,5 @@ This implementation assumes one API process and worker. It is not a distributed 
 Demo fixtures are an explicit Market/Research branch; live errors never trigger fixture substitution. A portfolio records incomplete accounts and unpriced assets. A model-backed answer and the initial native tool evidence have separate labels. Charts show observed or simulated values with the relevant assumptions.
 
 Strategy monitoring components are split into the run list, detail workspace, decision journal, and chart. The builder and monitor share the `/strategies` route with query selections. Run detail polling reads persisted observations; it never fetches provider quotes or executes paper fills. The worker saves each successful quote sample and commits new-candle decisions with the updated account/cursor in one SQLite transaction. Stop and pause use the same service lock as evaluation.
+
+Model profiles store encrypted JSON in `model_profiles`; the active ID is committed in the same transaction in `workspace_settings`. The model settings service owns key resolution and sanitized metadata. Provider keys are constructor arguments or authorization headers only, never process-wide environment mutations. Registry requests resolve a configuration once before fetching evidence and keep it throughout inference, including its response provider label.

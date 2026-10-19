@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from sibyl import __version__
+from sibyl.agents.providers import ProviderId
 from sibyl.api.app import Services
 from sibyl.models import (
     AgentRequest,
@@ -19,6 +20,7 @@ from sibyl.models import (
     Timeframe,
 )
 from sibyl.services.analytics import analyze, correlation, forecast
+from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
 from sibyl.services.reporting import trading_report
 from sibyl.services.strategies import CATALOG, backtest
@@ -38,17 +40,39 @@ Symbol = Annotated[str, Query(pattern=r"^[A-Z0-9]{1,12}/[A-Z0-9]{1,12}$")]
 @router.get("/system", tags=["System"])
 def system(s: S):
     """Expose safe configuration, including the distinction between data and execution modes."""
+    model = s.agents.models.resolve()
     return {
         "version": __version__,
         "mode": s.settings.mode,
         "market_exchange": s.settings.market_exchange,
         "execution": "paper",
-        "llm_provider": s.settings.llm_provider,
-        "llm_model": s.settings.llm_model,
+        "llm_provider": model["provider"],
+        "llm_model": model["model"],
         "agent_engine": "ProtoLink",
         "agents": len(s.agents.agents),
         "allow_live_trading": s.settings.allow_live_trading,
     }
+
+
+@router.get("/settings/llm", tags=["Settings"])
+def model_settings(s: S, response: Response):
+    """List supported providers and saved metadata without exposing API keys."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.agents.models.public()
+
+
+@router.post("/settings/llm", tags=["Settings"])
+def save_model_settings(body: ModelSettingsRequest, s: S, response: Response):
+    """Encrypt a provider key and activate its model for subsequent requests."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.agents.models.save(body)
+
+
+@router.delete("/settings/llm/{provider}/key", tags=["Settings"])
+def remove_model_key(provider: ProviderId, s: S, response: Response):
+    """Remove a saved provider key; environment credentials remain separately configured."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.agents.models.remove_key(provider)
 
 
 @router.get("/portfolio", tags=["Accountant"])

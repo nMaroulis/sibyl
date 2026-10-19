@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -9,15 +9,45 @@ type Destination = { path: string; name: string; icon: LucideIcon };
 /** A floating dock whose selection and page marker follow the actual button geometry. */
 export function NavigationDock({
   items,
-  expanded,
-  onMore,
+  moreItems,
 }: {
   items: Destination[];
-  expanded: boolean;
-  onMore: () => void;
+  moreItems: Destination[];
 }) {
   const location = useLocation();
   const dock = useRef<HTMLElement>(null);
+  const moreButton = useRef<HTMLButtonElement>(null);
+  const morePanel = useRef<HTMLDivElement>(null);
+  const panelId = useId();
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    setExpanded(false);
+  }, [location.pathname, location.search]);
+  useEffect(() => {
+    if (!expanded) return;
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !dock.current?.contains(event.target)) setExpanded(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setExpanded(false);
+        moreButton.current?.focus({ preventScroll: true });
+      }
+    };
+    const focusOutside = (event: FocusEvent) => {
+      if (event.target instanceof Node && !dock.current?.contains(event.target)) setExpanded(false);
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    document.addEventListener('focusin', focusOutside);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+      document.removeEventListener('focusin', focusOutside);
+    };
+  }, [expanded]);
   const moreActive = !items.some((item) => item.path === location.pathname);
 
   useLayoutEffect(() => {
@@ -27,6 +57,13 @@ export function NavigationDock({
     const measure = () => {
       const active = element.querySelector<HTMLElement>(
         '[aria-current="page"], [data-current="true"]',
+      );
+      const more = moreButton.current;
+      if (more)
+        element.style.setProperty('--more-center', `${more.offsetTop + more.offsetHeight / 2}px`);
+      element.style.setProperty(
+        '--more-space',
+        `${Math.max(0, window.innerWidth - element.getBoundingClientRect().right - 16)}px`,
       );
       if (!active) return;
       element.style.setProperty('--selection-y', `${active.offsetTop}px`);
@@ -70,17 +107,93 @@ export function NavigationDock({
         </NavLink>
       ))}
       <button
-        className={`dock-item ${moreActive ? 'active' : ''}`}
+        className={`dock-item dock-more-trigger ${moreActive ? 'active' : ''}`}
+        ref={moreButton}
         data-current={moreActive}
         aria-label="More tools"
         aria-expanded={expanded}
-        onClick={onMore}
+        aria-controls={panelId}
+        onClick={(event) => {
+          const opening = !expanded;
+          setExpanded(opening);
+          if (opening && event.detail === 0) {
+            requestAnimationFrame(() =>
+              morePanel.current
+                ?.querySelector<HTMLAnchorElement>('a')
+                ?.focus({ preventScroll: true }),
+            );
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            setExpanded(true);
+            requestAnimationFrame(() =>
+              morePanel.current
+                ?.querySelector<HTMLAnchorElement>('a')
+                ?.focus({ preventScroll: true }),
+            );
+          }
+        }}
       >
         <span className="dock-icon">
           <LayoutGrid size={21} />
         </span>
         <span>More</span>
       </button>
+      <div
+        ref={morePanel}
+        id={panelId}
+        className="dock-more-panel"
+        data-open={expanded}
+        role="group"
+        aria-label="More destinations"
+        aria-hidden={!expanded}
+        inert={!expanded}
+        onKeyDown={(event) => {
+          const links = Array.from(
+            morePanel.current?.querySelectorAll<HTMLAnchorElement>('a') ?? [],
+          );
+          const index = links.indexOf(document.activeElement as HTMLAnchorElement);
+          if (event.key === 'ArrowLeft' && index === 0) {
+            event.preventDefault();
+            moreButton.current?.focus({ preventScroll: true });
+            return;
+          }
+          const next =
+            event.key === 'ArrowRight'
+              ? (index + 1) % links.length
+              : event.key === 'ArrowLeft'
+                ? (index - 1 + links.length) % links.length
+                : event.key === 'Home'
+                  ? 0
+                  : event.key === 'End'
+                    ? links.length - 1
+                    : null;
+          if (next !== null) {
+            event.preventDefault();
+            links[next]?.focus({ preventScroll: true });
+          }
+        }}
+      >
+        {moreItems.map((item, index) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            style={{ '--more-index': index } as CSSProperties}
+            onClick={() => {
+              setExpanded(false);
+              moreButton.current?.focus({ preventScroll: true });
+            }}
+            className={({ isActive }) => `dock-more-link ${isActive ? 'active' : ''}`}
+          >
+            <span>
+              <item.icon size={21} />
+            </span>
+            <span>{item.name}</span>
+          </NavLink>
+        ))}
+      </div>
     </nav>
   );
 }

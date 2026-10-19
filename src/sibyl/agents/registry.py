@@ -10,6 +10,7 @@ from protolink import Agent, RunBudget, create_llm
 from sibyl.config import Settings
 from sibyl.models import AgentRequest, BacktestRequest
 from sibyl.services.analytics import analyze, forecast
+from sibyl.services.llm_settings import ModelSettings
 from sibyl.services.market import TIMEFRAMES, Market
 from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
@@ -89,6 +90,7 @@ class AgentRegistry:
         research: Research,
     ):
         self.settings, self.store = settings, store
+        self.models = ModelSettings(settings, store)
         self._semaphore = asyncio.Semaphore(2)
         self._tools: dict[str, Callable] = {}
 
@@ -213,15 +215,14 @@ class AgentRegistry:
         }
         self.agents = {module: self._compose(module) for module in ROLES}
 
-    def _compose(self, module: str, *, inference: bool = False) -> Agent:
+    def _compose(self, module: str, *, inference: bool = False, configuration: dict | None = None) -> Agent:
+        """Compose an isolated agent from one immutable provider/key snapshot."""
         name, _, description = ROLES[module]
-        kwargs = {}
         if inference:
-            if self.settings.llm_model:
-                kwargs["model"] = self.settings.llm_model
-            if self.settings.llm_provider in {"ollama", "openai-compatible"}:
-                kwargs["base_url"] = self.settings.llm_base_url
-        llm = create_llm(self.settings.llm_provider, **kwargs) if inference else None
+            provider, kwargs = self.models.constructor(configuration or self.models.resolve())
+            llm = create_llm(provider, **kwargs)
+        else:
+            llm = None
         return Agent(
             name=f"sibyl-{module}",
             description=description,
@@ -240,6 +241,7 @@ class AgentRegistry:
 
     def catalog(self) -> list[dict]:
         """Describe module roles, engine, model configuration, and available native tools."""
+        configuration = self.models.resolve()
         return [
             {
                 "id": module,
@@ -248,8 +250,8 @@ class AgentRegistry:
                 "description": role[2],
                 "engine": "ProtoLink",
                 "tool": self._tools[module].__name__,
-                "mode": "tools" if self.settings.llm_provider == "none" else "llm",
-                "provider": self.settings.llm_provider,
+                "mode": "tools" if configuration["provider"] == "none" else "llm",
+                "provider": configuration["provider"],
             }
             for module, role in ROLES.items()
         ]
@@ -257,6 +259,7 @@ class AgentRegistry:
     async def ask(self, request: AgentRequest) -> dict:
         """Execute a module tool via ProtoLink and optionally run bounded model inference."""
         async with self._semaphore:
+            configuration = self.models.resolve()
             session_id = request.session_id or uuid4().hex
             tool = self._tools[request.module]
             context = request.context.model_dump(exclude_none=True, exclude_unset=True)
@@ -265,7 +268,7 @@ class AgentRegistry:
             evidence = await asyncio.to_thread(
                 self.agents[request.module].sync.call_tool, tool.__name__, **args
             )
-            if self.settings.llm_provider == "none":
+            if configuration["provider"] == "none":
                 answer = self._snapshot_answer(request.module, evidence)
                 mode = "tools"
             else:
@@ -284,7 +287,7 @@ class AgentRegistry:
                 )
 
                 def invoke():
-                    agent = self._compose(request.module, inference=True)
+                    agent = self._compose(request.module, inference=True, configuration=configuration)
                     return agent.sync.invoke(
                         prompt,
                         budget=RunBudget(
@@ -302,7 +305,7 @@ class AgentRegistry:
                 "answer": answer,
                 "engine": "ProtoLink",
                 "mode": mode,
-                "provider": self.settings.llm_provider,
+                "provider": configuration["provider"],
                 "tool": tool.__name__,
                 "evidence": evidence,
             }

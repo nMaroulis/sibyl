@@ -63,11 +63,12 @@ const destinations = [
   { path: '/reports', name: 'Trading report', icon: ArrowDownUp },
   { path: '/roadmap', name: 'Coming soon', icon: Compass },
 ];
-const primary = destinations.filter(
-  (item) => !['/research', '/reports', '/roadmap'].includes(item.path),
+const secondary = destinations.filter((item) =>
+  ['/research', '/reports', '/roadmap'].includes(item.path),
 );
+const primary = destinations.filter((item) => !secondary.includes(item));
 
-function ToolsMenu({ close }: { close: () => void }) {
+function WorkspaceSearch({ close }: { close: () => void }) {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const pages = destinations.filter((item) =>
@@ -121,7 +122,7 @@ export function App() {
   const location = useLocation();
   const { data: system, error: systemError } = useResource<System>('/system');
   const { data: runs } = useResource<Run[]>('/runs', 30000);
-  const [tools, setTools] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [privateMode, setPrivateMode] = useState(false);
   const [notifications, setNotifications] = useState(false);
   useEffect(() => {
@@ -131,7 +132,7 @@ export function App() {
     const key = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
-        setTools((value) => !value);
+        setSearchOpen((value) => !value);
       }
     };
     window.addEventListener('keydown', key);
@@ -160,7 +161,7 @@ export function App() {
           <button
             className="global-search"
             aria-label="Search workspace"
-            onClick={() => setTools(true)}
+            onClick={() => setSearchOpen(true)}
           >
             <Search size={16} />
             <span>Search workspace</span>
@@ -211,11 +212,7 @@ export function App() {
         </div>
       </header>
       <div className="workspace-layout">
-        <NavigationDock
-          items={primary}
-          expanded={tools}
-          onMore={() => setTools((value) => !value)}
-        />
+        <NavigationDock items={primary} moreItems={secondary} />
         <div className="workspace-surface">
           <main id="main-content" className="main-content" tabIndex={-1}>
             {systemError && location.pathname !== '/settings' && (
@@ -271,7 +268,7 @@ export function App() {
           </footer>
         </div>
       </div>
-      {tools && <ToolsMenu close={() => setTools(false)} />}
+      {searchOpen && <WorkspaceSearch close={() => setSearchOpen(false)} />}
     </div>
   );
 }

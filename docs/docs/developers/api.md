@@ -4,41 +4,44 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 
 ## Endpoints
 
-| Method     | Path                            | Purpose                                                    |
-| ---------- | ------------------------------- | ---------------------------------------------------------- |
-| GET        | `/health` (unversioned)         | Process readiness and package version                      |
-| GET        | `/system`                       | Safe workspace configuration                               |
-| GET        | `/portfolio/accounts`           | Per-account free/reserved/total and conversion rates       |
-| GET        | `/markets/symbols`              | Active spot catalog and available timeframes               |
-| GET        | `/markets/orderbook`            | Public snapshot: symbol, depth 5–50                        |
-| GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                |
-| POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit         |
-| GET        | `/portfolio`                    | Priced balances, allocation, history, warnings             |
-| GET        | `/markets`                      | Watchlist and source labels                                |
-| GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                      |
-| GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform           |
-| GET / POST | `/connections`                  | List metadata / save encrypted credentials                 |
-| DELETE     | `/connections/{id}`             | Remove a connection                                        |
-| POST       | `/connections/{id}/check`       | Read-only credential verification                          |
-| GET        | `/paper/balances`               | Separate manual paper ledger                               |
-| GET / POST | `/orders`                       | Paper fill history / execute paper order                   |
-| POST       | `/orders/preview`               | Paper reference quote, fee, estimated debit/credit         |
-| GET        | `/exchange-orders`              | Exchange intents and submission snapshots                  |
-| POST       | `/exchange-orders/preview`      | Validate and create a 60-second exchange intent            |
-| POST       | `/exchange-orders/{id}/confirm` | Submit once with typed confirmation                        |
-| GET        | `/strategies`                   | Algorithm catalog                                          |
-| POST       | `/strategies/backtest`          | Historical simulation and persisted result                 |
-| GET / POST | `/strategies/jobs`              | List / start isolated paper jobs                           |
-| POST       | `/strategies/jobs/{id}/pause`   | Stop evaluating a paper job                                |
-| POST       | `/strategies/jobs/{id}/resume`  | Resume evaluation                                          |
-| GET        | `/forecast`                     | `symbol`, `horizon` 1–30                                   |
-| GET        | `/news`                         | RSS/samples, summary=excerpt or extractive, VADER          |
-| GET        | `/knowledge`                    | Glossary; optional `q` keyword query                       |
-| GET        | `/blocks`                       | Recent Bitcoin blocks, count 1–100                         |
-| GET        | `/stocks/{symbol}`              | Quote, adjusted history, statistics, profile               |
-| GET        | `/agents`                       | Agent catalog and tool/provider metadata                   |
-| POST       | `/agents/ask`                   | Run module tool and optional inference                     |
-| GET        | `/runs`                         | Latest persisted runs; optional `kind=agent` or `backtest` |
+| Method     | Path                            | Purpose                                                                         |
+| ---------- | ------------------------------- | ------------------------------------------------------------------------------- |
+| GET        | `/health` (unversioned)         | Process readiness and package version                                           |
+| GET        | `/system`                       | Safe workspace configuration                                                    |
+| GET        | `/settings/llm`                 | Provider catalog, active model, saved metadata; keys are write-only             |
+| POST       | `/settings/llm`                 | Save encrypted profile and activate for new requests                            |
+| DELETE     | `/settings/llm/{provider}/key`  | Remove stored key; fall back to tool mode if active required key is unavailable |
+| GET        | `/portfolio/accounts`           | Per-account free/reserved/total and conversion rates                            |
+| GET        | `/markets/symbols`              | Active spot catalog and available timeframes                                    |
+| GET        | `/markets/orderbook`            | Public snapshot: symbol, depth 5–50                                             |
+| GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                                     |
+| POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit                              |
+| GET        | `/portfolio`                    | Priced balances, allocation, history, warnings                                  |
+| GET        | `/markets`                      | Watchlist and source labels                                                     |
+| GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                                           |
+| GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform                                |
+| GET / POST | `/connections`                  | List metadata / save encrypted credentials                                      |
+| DELETE     | `/connections/{id}`             | Remove a connection                                                             |
+| POST       | `/connections/{id}/check`       | Read-only credential verification                                               |
+| GET        | `/paper/balances`               | Separate manual paper ledger                                                    |
+| GET / POST | `/orders`                       | Paper fill history / execute paper order                                        |
+| POST       | `/orders/preview`               | Paper reference quote, fee, estimated debit/credit                              |
+| GET        | `/exchange-orders`              | Exchange intents and submission snapshots                                       |
+| POST       | `/exchange-orders/preview`      | Validate and create a 60-second exchange intent                                 |
+| POST       | `/exchange-orders/{id}/confirm` | Submit once with typed confirmation                                             |
+| GET        | `/strategies`                   | Algorithm catalog                                                               |
+| POST       | `/strategies/backtest`          | Historical simulation and persisted result                                      |
+| GET / POST | `/strategies/jobs`              | List / start isolated paper jobs                                                |
+| POST       | `/strategies/jobs/{id}/pause`   | Stop evaluating a paper job                                                     |
+| POST       | `/strategies/jobs/{id}/resume`  | Resume evaluation                                                               |
+| GET        | `/forecast`                     | `symbol`, `horizon` 1–30                                                        |
+| GET        | `/news`                         | RSS/samples, summary=excerpt or extractive, VADER                               |
+| GET        | `/knowledge`                    | Glossary; optional `q` keyword query                                            |
+| GET        | `/blocks`                       | Recent Bitcoin blocks, count 1–100                                              |
+| GET        | `/stocks/{symbol}`              | Quote, adjusted history, statistics, profile                                    |
+| GET        | `/agents`                       | Agent catalog and tool/provider metadata                                        |
+| POST       | `/agents/ask`                   | Run module tool and optional inference                                          |
+| GET        | `/runs`                         | Latest persisted runs; optional `kind=agent` or `backtest`                      |
 
 ## Strategy monitor routes
 
@@ -116,3 +119,7 @@ Read routes do not expose credentials. Exchange errors are sanitized rather than
 `method` accepts `pearson` or `spearman`; `transform` accepts `log_returns`, `prices`, or `changes`. Limit is 30–720, and 2–8 distinct canonical markets are required. The response reports aligned observations and the method/transformation used.
 
 All backtest parameters, bounds, risk timing, and metric definitions are described in [Strategy studio](../guides/strategies.md). The OpenAPI schema rejects unknown parameters and non-finite values.
+
+## Model configuration
+
+`POST /settings/llm` accepts `provider`, `model`, `base_url`, and an optional `api_key`. Omit the key or send null to preserve its saved value. Credentials are never echoed. Only local/server adapters expose an endpoint field. URLs must use HTTP(S) and cannot embed credentials, a query, or a fragment. Embedded llama.cpp requires an existing GGUF path as its model. All model routes use the workspace token/origin controls. Metadata includes `has_api_key`, `key_source` (`saved`, `environment`, or `none`), installed dependency status, preset IDs, and provider guide URLs. Saves do not perform model inference or verify credentials.

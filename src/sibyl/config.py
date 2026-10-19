@@ -6,6 +6,8 @@ from typing import Literal
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from sibyl.agents.providers import ProviderId
+
 
 class Settings(BaseSettings):
     """Configure a local workspace with ``SIBYL_`` environment variables."""
@@ -20,6 +22,6 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     api_token: SecretStr = SecretStr("")
     allow_live_trading: bool = False
-    llm_provider: Literal["none", "ollama", "openai", "anthropic", "openai-compatible"] = "none"
+    llm_provider: ProviderId = "none"
     llm_model: str = ""
     llm_base_url: str = "http://127.0.0.1:11434"

@@ -10,11 +10,27 @@ Open `/settings?tab=exchanges` to add Binance, Coinbase, or Kraken accounts, ver
 
 ## AI models
 
-Open `/settings?tab=models` to inspect the current agent provider and model. **Tool mode** works without an LLM. To configure model reasoning, choose Ollama, OpenAI, Anthropic, or an OpenAI-compatible endpoint, then enter its model name and server URL where applicable.
+Open `/settings?tab=models` to select **API** or **Local**, then choose a provider by its icon. One saved provider/model is shared by all ten module agents. **Tool mode** works without an LLM.
 
-**Download model configuration** produces a non-secret `sibyl-models.env` snippet. Preview the environment lines before downloading. Merge them into your server's `.env`, install the relevant optional Python dependencies, add provider keys on the server, and restart the API. Downloading alone does not change the running configuration. The current runtime card continues to show the actual server settings.
+| API                                                                              | Local                                                                       |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| OpenAI, Anthropic, Google Gemini, DeepSeek, xAI, Hugging Face, OpenAI compatible | Ollama, LM Studio, vLLM, llama.cpp server, llama.cpp embedded, Mock runtime |
 
-Provider keys use `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_COMPATIBLE_API_KEY`, as applicable. See [Module agents](./oracle.md). Downloading, quantizing, and deploying local models from the app is **Coming soon**.
+Choose a model from the provider's presets or select **Custom model…** and enter an exact model ID. Presets are suggestions, not a fetched list of models available to your account. Local server presets must match a model already installed or loaded. The embedded llama.cpp adapter requires an existing `.gguf` file on the Python server; enter its file path. The Mock runtime is for testing and returns a labeled simulated answer.
+
+For an API provider, enter its API key. Local servers and custom endpoints can also save a key if authentication is required. Enter the server URL where shown. **Save & use** encrypts the provider profile in the local vault and makes it effective for new agent requests immediately, without restarting the API. Saving does not send a test request or verify provider access. Install any optional dependency shown by the editor before asking the agents to use that adapter.
+
+Keys stay with their provider when you switch. Leaving the key field blank preserves its saved value; entering a new key replaces it. Saved keys are never returned by the API or placed in browser storage, prompts, or agent run records. The editor shows only whether a key is saved or supplied by the server environment. **Remove saved key** deletes the stored key; an independently configured environment key remains available. If the active provider requires a key and none remains, agents return to tool mode.
+
+**Use tool mode** disables model inference while keeping provider profiles. Requests already in progress keep their original provider/model/key snapshot. Saved workspace selections take precedence over the environment after a restart. See [Module agents](./oracle.md) for setup and data boundaries. Downloading, quantizing, and deploying local models from the app is **Coming soon**.
+
+### Model catalogs
+
+Preset families were reviewed against provider documentation on October 19, 2026. Local server IDs are examples and may need to be replaced by the alias exposed by your runtime. Account access, retirement dates, and server model aliases can differ. The custom option remains available for new IDs.
+
+- [OpenAI](https://developers.openai.com/api/docs/models), [Anthropic](https://platform.claude.com/docs/en/models/overview), [Gemini](https://ai.google.dev/gemini-api/docs/models)
+- [DeepSeek](https://api-docs.deepseek.com), [xAI](https://docs.x.ai/developers/models), [Hugging Face](https://huggingface.co/inference/models)
+- [Ollama](https://ollama.com/library), [LM Studio](https://lmstudio.ai/docs), [vLLM](https://docs.vllm.ai), [llama.cpp](https://github.com/ggml-org/llama.cpp)
 
 ## Other APIs
 

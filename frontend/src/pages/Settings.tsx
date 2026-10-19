@@ -16,6 +16,7 @@ import {
 import { AgentButton } from '../components/agents';
 import { ComingSoon } from '../components/coming-soon';
 import { ConfigHelper } from '../components/config-helper';
+import { ModelSettings } from '../components/model-settings';
 import { ExchangeConnections } from '../components/exchange-connections';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
 import { Badge, PageTitle, Panel, PanelTitle, useToast } from '../components/ui';
@@ -58,42 +59,7 @@ export function SettingsPage({ system }: { system?: System }) {
             title="A model for your agents"
             description="Choose how your ProtoLink specialists reason with their module tools."
           />
-          <div className="settings-status-row">
-            <Panel className="settings-runtime">
-              <span className="settings-runtime-icon">
-                <Sparkles size={22} />
-              </span>
-              <div>
-                <small>Current agent runtime</small>
-                <strong>
-                  {system
-                    ? system.llm_provider === 'none'
-                      ? 'Tool mode'
-                      : system.llm_provider
-                    : 'Unavailable'}
-                </strong>
-                <p>
-                  {system?.llm_model ||
-                    (system
-                      ? 'Module tools are ready. A language model is optional.'
-                      : 'Unlock workspace access to read the server configuration.')}
-                </p>
-              </div>
-              <Badge>{system ? `${system.agents} specialists` : 'Requires access'}</Badge>
-            </Panel>
-          </div>
-          {system ? <ConfigHelper section="models" system={system} /> : <AccessNote />}
-          <p className="settings-guide-link">
-            Models run through ProtoLink. Provider keys stay on your server.{' '}
-            <a
-              className="text-link"
-              href="http://localhost:3000/sibyl/guides/oracle"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Model setup guide <ArrowUpRight size={13} />
-            </a>
-          </p>
+          <ModelSettings />
           <ComingSoon module="settings" />
         </div>
         <div hidden={tab !== 'apis'}>
@@ -101,7 +67,7 @@ export function SettingsPage({ system }: { system?: System }) {
             title="Data from the outside world"
             description="Market data, news, block activity, and equity research."
           />
-          {system ? <ConfigHelper section="data" system={system} /> : <AccessNote />}
+          {system ? <ConfigHelper system={system} /> : <AccessNote />}
           <div className="settings-provider-grid">
             {[
               {

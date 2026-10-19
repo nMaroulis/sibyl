@@ -34,7 +34,7 @@ Paper cash belongs to the virtual ledger. Connected exchange funds are never add
 
 ## Navigation
 
-Use the floating dock on the left to switch between Portfolio, Markets, Trade, Strategies, Agents, Forecasting, News, and Settings. The dock stays vertically centered and sits apart from the window edge. A fine line and a matching page-edge marker follow the selected button, and pages unfold from that point. **More** opens all tools, including Research, Trading report, and Coming soon. Press **⌘K** (or **Ctrl+K**) to search pages and supported assets.
+Use the floating dock on the left to switch between Portfolio, Markets, Trade, Strategies, Agents, Forecasting, News, and Settings. The dock stays vertically centered and sits apart from the window edge. A fine line and a matching page-edge marker follow the selected button, and pages unfold from that point. **More** unfolds a small horizontal dock to the right with Research, Trading report, and Coming soon. Its links slide into view without a modal or backdrop. Click More again, click elsewhere, or press Escape to close it. Keyboard users can press Right from More to enter the links, then use Left/Right, Home, or End to move between them. Press **⌘K** (or **Ctrl+K**) to search pages and supported assets.
 
 Multi-section pages use a matching floating tab bar at the top. Its selected pill slides between sections and the content gently reveals. Arrow keys, Home, and End switch tabs; reduced-motion preferences disable the animations. [Settings](./settings.md) brings exchange accounts, AI models, other APIs, and workspace access into one destination.
 

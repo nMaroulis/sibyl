@@ -31,3 +31,7 @@ Hide balances is a visual blur, not data protection. The browser still contains 
 Back up the database and vault key together, with the API stopped. Disconnecting an account removes its local record; revoke the provider key separately when necessary. Do not commit `.env`, workspace state, credentials, or vault keys to source control. The repository ignores these paths.
 
 Use one API worker for paper scheduling. Exchange order outcomes can remain uncertain after a timeout or process crash. Reconcile using the exchange account and client order ID before preparing another order.
+
+## Model provider keys
+
+LLM profiles and API keys are encrypted using the same local vault as exchange credentials. The model settings API returns only metadata and key-presence flags with `Cache-Control: no-store`. Keys are not placed in browser storage, agent prompts, or saved conversations. Omitting a key during an edit preserves it; removal is explicit. A saved model selection overrides the environment, and each in-flight request keeps a consistent provider/model/key snapshot. Saving a profile does not contact a provider. Model inference sends module evidence to the selected provider as described in the [agent guide](./oracle.md).
