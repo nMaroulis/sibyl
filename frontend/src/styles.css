@@ -3747,29 +3747,26 @@ details[open] > summary {
   border: 0;
 }
 
-/* Section navigation mirrors the detached app dock at a quieter, horizontal scale. */
+/* Quiet, centered section controls with a sliding white selection. */
 .section-tabs-wrap {
   display: flex;
+  justify-content: center;
   min-width: 0;
   max-width: 100%;
-  margin: 0 0 26px;
+  margin: 0 0 30px;
 }
 .section-tabs {
   position: relative;
   isolation: isolate;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   max-width: 100%;
-  padding: 6px;
+  padding: 4px;
   overflow-x: auto;
   scrollbar-width: none;
-  border: 1px solid #e0e6ee;
-  border-radius: 20px;
-  background: #ffffffb8;
-  box-shadow:
-    0 3px 10px #24355104,
-    inset 0 1px 0 #fff;
+  border-radius: 999px;
+  background: #edf0f5;
 }
 .section-tabs::-webkit-scrollbar {
   display: none;
@@ -3780,60 +3777,46 @@ details[open] > summary {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  min-height: 44px;
-  padding: 11px 18px;
-  border-radius: 14px;
-  color: var(--muted);
-  font-size: 13px;
+  gap: 7px;
+  min-height: 36px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  color: #747e8d;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  transition:
-    color 180ms ease,
-    background 180ms ease;
+  transition: color 180ms ease;
 }
 .section-tabs [role='tab']:hover {
   color: var(--text);
-  background: #eff3f880;
 }
 .section-tabs [role='tab'][aria-selected='true'] {
-  color: #305eaf;
+  color: #293343;
 }
 .section-tabs [role='tab']:focus-visible {
   outline-offset: -3px;
 }
-.section-tabs [role='tab'] svg {
-  opacity: 0.75;
-  transition: opacity 180ms ease;
-}
-.section-tabs [role='tab'][aria-selected='true'] svg {
-  opacity: 1;
+.section-tabs [role='tab'] > svg {
+  display: none;
 }
 .section-tabs [role='tab'] small {
-  padding: 3px 7px;
-  border-radius: 7px;
-  background: #e9eef5;
-  color: #63718a;
-  font-size: 10px;
-}
-.section-tabs [role='tab'][aria-selected='true'] small {
-  background: #dbe6fa;
-  color: #3862a5;
+  padding: 2px 5px;
+  border-radius: 5px;
+  color: #788496;
+  font-size: 9px;
+  font-weight: 400;
 }
 .section-selection {
   position: absolute;
   z-index: -1;
   left: 0;
-  top: 6px;
-  bottom: 6px;
+  top: 4px;
+  bottom: 4px;
   width: var(--section-width, 0px);
-  transform: translateX(var(--section-x, 6px));
-  border: 1px solid #d9e4f8;
-  border-radius: 14px;
-  background: linear-gradient(160deg, #edf3ff, #e5edfc);
-  box-shadow:
-    0 1px 3px #264c8b0a,
-    inset 0 1px 0 #ffffffd6;
+  transform: translateX(var(--section-x, 4px));
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 4px #22304912;
   opacity: 0;
 }
 .section-tabs[data-ready='true'] .section-selection {
@@ -3851,25 +3834,13 @@ details[open] > summary {
 .section-tabs-compact {
   margin: 0 22px 20px;
 }
-.section-tabs-compact .section-tabs {
-  padding: 4px;
-  border-radius: 16px;
-  background: #f8fafc;
-  box-shadow: none;
-}
 .section-tabs-compact .section-tabs [role='tab'] {
-  min-height: 38px;
-  padding: 9px 13px;
-  gap: 7px;
-  font-size: 12px;
-  border-radius: 12px;
-}
-.section-tabs-compact .section-selection {
-  top: 4px;
-  bottom: 4px;
-  border-radius: 12px;
+  min-height: 34px;
+  padding: 8px 16px;
+  font-size: 11px;
 }
 .monitor-section-tabs .section-tabs-wrap {
+  flex: 1 1 380px;
   margin: 0;
 }
 .settings-section-intro {
@@ -3981,14 +3952,10 @@ details[open] > summary {
   .section-tabs-wrap {
     margin-bottom: 22px;
   }
-  .section-tabs {
-    border-radius: 17px;
-  }
   .section-tabs [role='tab'] {
-    min-height: 42px;
-    padding: 10px 12px;
-    gap: 7px;
-    font-size: 12px;
+    min-height: 36px;
+    padding: 9px 13px;
+    font-size: 11px;
   }
   .section-tabs-compact {
     margin: 0 16px 18px;
