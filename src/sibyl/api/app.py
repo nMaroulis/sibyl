@@ -24,6 +24,7 @@ from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
 from sibyl.services.strategies import Strategies
 from sibyl.services.trading import ExchangeTrading
+from sibyl.services.watchlists import Watchlists
 from sibyl.storage import Store
 
 
@@ -41,6 +42,7 @@ class Services:
     trading: ExchangeTrading
     data_settings: DataSettings
     account_sync: AccountSync
+    watchlists: Watchlists
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -71,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             trading,
             data_settings,
             account_sync,
+            Watchlists(market, store),
         )
 
         async def worker():

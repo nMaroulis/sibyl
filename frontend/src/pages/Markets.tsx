@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowUpRight, Download, CandlestickChart, Network, SlidersHorizontal } from 'lucide-react';
+import { Download, CandlestickChart, Network, ArrowUpRight, Star } from 'lucide-react';
 import {
   AssetIcon,
   Badge,
@@ -11,13 +11,16 @@ import {
   PageTitle,
   Panel,
   PanelTitle,
+  useToast,
 } from '../components/ui';
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { AgentButton } from '../components/agents';
 import { IndicatorChart, Sparkline } from '../components/charts';
 import { Candlesticks } from '../components/candlesticks';
 import { MarketSelector, TimeframeSelect, type SpotCatalog } from '../components/market-controls';
-import { MarketSourceMark } from '../components/config-helper';
+import { MarketWatchlist } from '../components/market-watchlist';
+import { useWatchlist } from '../lib/watchlist';
+import { MarketSourcePicker } from '../components/market-source-picker';
 import { ComingSoon } from '../components/coming-soon';
 import { exportCSV, number } from '../lib/api';
 import { useResource } from '../lib/hooks';
@@ -39,64 +42,15 @@ export function Markets() {
   const sourceId = params.get('source') || settings.data.active.id;
   const selected = settings.data.catalog.find((s) => s.id === sourceId) ?? settings.data.active;
   const feedControl = (
-    <div className="market-feed-bar">
-      <MarketSourceMark source={selected} />
-      <label>
-        Market feed
-        <select
-          aria-label="Market feed"
-          value={params.get('source') || ''}
-          onChange={(e) => {
-            const next = new URLSearchParams(params);
-            e.target.value ? next.set('source', e.target.value) : next.delete('source');
-            next.delete('symbol');
-            next.delete('asset');
-            setParams(next);
-          }}
-        >
-          <option value="">Workspace default · {settings.data.active.name}</option>
-          {(['demo', 'connection', 'exchange', 'api'] as const).map((kind) => (
-            <optgroup
-              key={kind}
-              label={
-                {
-                  demo: 'Offline',
-                  connection: 'Connected accounts',
-                  exchange: 'Public exchanges · no key',
-                  api: 'Market APIs',
-                }[kind]
-              }
-            >
-              {settings
-                .data!.catalog.filter((s) => s.kind === kind)
-                .map((s) => (
-                  <option key={s.id} value={s.id} disabled={!s.available}>
-                    {s.name}
-                    {s.environment === 'test' ? ' · Test environment' : ''}
-                    {!s.available ? ' · Set up API key' : ''}
-                  </option>
-                ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
-      <Badge
-        tone={
-          selected.kind === 'demo' ? 'purple' : selected.environment === 'test' ? 'sand' : 'blue'
-        }
-      >
-        {selected.kind === 'demo'
-          ? 'Offline demo'
-          : selected.environment === 'test'
-            ? 'Test feed'
-            : selected.candles
-              ? 'Quotes & candles'
-              : 'Quotes only'}
-      </Badge>
-      <Link className="text-link" to="/settings?tab=market">
-        <SlidersHorizontal size={14} /> Source settings
-      </Link>
-    </div>
+    <MarketSourcePicker
+      settings={settings.data}
+      value={sourceId}
+      onChange={(value) => {
+        const next = new URLSearchParams(params);
+        value === settings.data!.active.id ? next.delete('source') : next.set('source', value);
+        setParams(next);
+      }}
+    />
   );
   return (
     <MarketsView key={sourceId} sourceId={sourceId} source={selected} feedControl={feedControl} />
@@ -120,7 +74,11 @@ function MarketsView({
   const pairs = catalog.data?.items ?? [];
   const symbol = pairs.some((p) => p.symbol === wanted)
     ? wanted
-    : pairs.find((p) => p.symbol === 'BTC/USDT')?.symbol ||
+    : pairs.find(
+        (p) => p.base === wanted.split('/')[0] && ['USDT', 'USD', 'USDC'].includes(p.quote),
+      )?.symbol ||
+      pairs.find((p) => p.base === wanted.split('/')[0])?.symbol ||
+      pairs.find((p) => p.symbol === 'BTC/USDT')?.symbol ||
       pairs.find((p) => p.symbol === 'BTC/USD')?.symbol ||
       pairs[0]?.symbol ||
       wanted;
@@ -147,9 +105,12 @@ function MarketsView({
     .filter(Boolean)
     .join(',');
   const comparisons = symbols || defaults;
-  const market = useResource<Source & { items: MarketAsset[]; warnings: string[] }>(
-    `/markets?${suffix}`,
-    60000,
+  const watchlist = useWatchlist(sourceId, catalog.data?.items);
+  const market = watchlist.quotes;
+  const toast = useToast();
+  const watching = watchlist.symbols.includes(symbol);
+  const priced = watchlist.items.filter(
+    (item): item is MarketAsset & { price: number } => item.price !== null,
   );
   const analysis = useResource<Analysis>(
     `/markets/analysis?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&limit=${limit}&${suffix}`,
@@ -175,11 +136,61 @@ function MarketsView({
         description="Explore price, momentum, and the relationships between your markets."
         action={<AgentButton module="analyst" context={context} />}
       />
-      {feedControl}
+      <div className="market-explore-bar">
+        {feedControl}
+        <div className="market-explore-coin">
+          <MarketSelector
+            value={symbol}
+            onChange={select}
+            catalog={catalog.data}
+            label="Explore a coin or pair"
+          />
+        </div>
+        <p className="market-explore-caption">
+          <span>
+            {catalog.data
+              ? `${new Set(pairs.map((p) => p.base)).size.toLocaleString()} coins · ${pairs.length.toLocaleString()} pairs on ${source.name}`
+              : 'Loading the full spot-market catalog…'}
+          </span>
+          <Link to="/settings?tab=market">
+            Market data settings <ArrowUpRight size={12} aria-hidden="true" />
+          </Link>
+        </p>
+      </div>
+      {catalog.data && (
+        <div className="market-quick-heading">
+          <span>Quick look · your watchlist</span>
+          <div className="watchlist-quick-actions">
+            <a className="text-link" href="#market-watchlist">
+              Manage watchlist
+            </a>
+            <button
+              type="button"
+              className="watchlist-star"
+              aria-pressed={watching}
+              aria-label={
+                watching ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`
+              }
+              disabled={
+                watchlist.busy ||
+                !watchlist.config ||
+                (!watching && watchlist.symbols.length >= watchlist.config.limit)
+              }
+              onClick={async () => {
+                if (await (watching ? watchlist.remove(symbol) : watchlist.add(symbol)))
+                  toast(`${symbol} ${watching ? 'removed from' : 'added to'} your watchlist.`);
+              }}
+            >
+              <Star size={14} fill={watching ? 'currentColor' : 'none'} />
+              {watching ? 'Watching' : `Watch ${symbol}`}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="market-ticker-grid">
-        {market.data?.items.slice(0, 4).map((item) => (
+        {priced.slice(0, 4).map((item) => (
           <button
-            key={item.asset}
+            key={item.symbol}
             className={`panel market-ticker ${symbol === item.symbol ? 'ticker-selected' : ''}`}
             onClick={() => select(item.symbol)}
           >
@@ -189,7 +200,7 @@ function MarketsView({
               <span>{item.asset}</span>
             </div>
             <div className="ticker-value">
-              {number(item.price)} <small>{item.quote}</small>
+              {number(item.price, item.price < 1 ? 8 : 2)} <small>{item.quote}</small>
               <Change value={item.change} />
             </div>
             {item.sparkline.length > 1 && (
@@ -199,6 +210,17 @@ function MarketsView({
           </button>
         ))}
       </div>
+      {watchlist.config && !watchlist.symbols.length && (
+        <div className="watchlist-empty-hint">
+          Your watchlist is empty. Use the star to watch {symbol}, or{' '}
+          <a href="#market-watchlist">add a market below</a>.
+        </div>
+      )}
+      {watchlist.error && (
+        <p className="error-message" role="alert">
+          {watchlist.error}
+        </p>
+      )}
       {market.data?.warnings.map((warning) => (
         <p key={warning} className="footnote">
           {warning}
@@ -221,10 +243,9 @@ function MarketsView({
           <Panel>
             <PanelTitle
               title={symbol.replace('/', ' / ')}
-              subtitle="Closed candles · spot market"
+              subtitle={`Closed candles · ${source.name}`}
             />
             <div className="workspace-controls">
-              <MarketSelector value={symbol} onChange={select} catalog={catalog.data} />
               <TimeframeSelect value={timeframe} onChange={setTimeframe} catalog={catalog.data} />
               <label>
                 Observations
@@ -472,87 +493,13 @@ function MarketsView({
           </div>
         </div>
       )}
-      <Panel className="full-panel">
-        <PanelTitle title="Market watchlist" subtitle={`Reference quotes · ${source.name}`} />
-        {market.loading && !market.data ? (
-          <Loading />
-        ) : market.error ? (
-          <ErrorState message={market.error} retry={market.retry} />
-        ) : (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Asset</th>
-                  <th>Price / quote</th>
-                  <th>24h move</th>
-                  <th>Quote volume</th>
-                  <th>Updated</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {market.data?.items.map((item) => (
-                  <tr key={item.asset}>
-                    <td>
-                      <button className="asset-name" onClick={() => select(item.symbol)}>
-                        <AssetIcon asset={item.asset} color={item.color} />
-                        <strong>{item.name}</strong>
-                      </button>
-                    </td>
-                    <td>
-                      {number(item.price)} <small className="muted">{item.quote}</small>
-                    </td>
-                    <td>
-                      <Change value={item.change} />
-                    </td>
-                    <td>
-                      {item.volume == null ? '—' : `${number(item.volume / 1e6)}M ${item.quote}`}
-                    </td>
-                    <td>
-                      <span
-                        className={item.status === 'stale' ? 'negative' : 'muted'}
-                        title={
-                          item.observed_at
-                            ? new Date(item.observed_at).toLocaleString()
-                            : 'Provider did not supply a timestamp'
-                        }
-                      >
-                        {sourceId === 'demo'
-                          ? 'Illustrative'
-                          : item.observed_at
-                            ? new Date(item.observed_at).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
-                            : 'Undated'}
-                        {item.status === 'stale' ? ' · Stale' : ''}
-                      </span>
-                    </td>
-                    <td>
-                      <Link className="text-link" to={`/trade?asset=${item.asset}`}>
-                        Trade <ArrowUpRight size={13} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="table-footer">
-          <DataNote
-            source={market.data?.source || sourceId}
-            label={market.data?.source_label || source.name}
-          />
-          <span className="muted">
-            {source.environment === 'test' ? 'Test environment · ' : ''}
-            {source.kind === 'demo'
-              ? 'Backend sample data'
-              : 'Cached quotes · refresh every minute · missing values shown as —'}
-          </span>
-        </div>
-      </Panel>
+      <MarketWatchlist
+        watchlist={watchlist}
+        catalog={catalog.data}
+        selected={symbol}
+        source={source}
+        onSelect={select}
+      />
       <ComingSoon module="markets" />
     </>
   );

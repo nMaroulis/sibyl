@@ -73,6 +73,12 @@ class CCXTClient(ExchangeClient):
                         "symbol": symbol,
                         "base": row["base"],
                         "quote": row["quote"],
+                        "name": str(
+                            ((getattr(self._exchange, "currencies", None) or {}).get(row["base"]) or {}).get(
+                                "name"
+                            )
+                            or row["base"]
+                        )[:120],
                         "spot": True,
                         "active": row.get("active"),
                         "precision": deepcopy(row.get("precision") or {}),

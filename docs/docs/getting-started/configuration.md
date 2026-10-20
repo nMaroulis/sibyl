@@ -7,11 +7,11 @@ Settings are validated by `pydantic-settings`. Environment variables override `.
 | `SIBYL_HOST`               | `127.0.0.1`                       | API bind address                                                                              |
 | `SIBYL_PORT`               | `8000`                            | API port                                                                                      |
 | `SIBYL_DATA_DIR`           | `.sibyl`                          | SQLite and local vault directory                                                              |
-| `SIBYL_MODE`               | `demo`                            | `demo` fixtures or `live` provider data                                                       |
+| `SIBYL_MODE`               | `demo`                            | `demo` paper balances or `live` connected account balances                                                       |
 | `SIBYL_NEWS_MODE`          | `auto`                            | Follow account mode, or independently choose `demo` / `live` news |
 | `SIBYL_NEWS_REFRESH_SECONDS` | `600`                          | Publisher collection interval, 60–86,400 seconds |
 | `SIBYL_NEWS_RETENTION_DAYS` | `30`                            | News archive retention, 1–365 days, capped at 5,000 stories |
-| `SIBYL_MARKET_EXCHANGE`    | `binance`                         | Public quotes: any of the 20 exchange IDs in the [catalog](../developers/exchange-clients.md) |
+| `SIBYL_MARKET_EXCHANGE`    | `binance`                         | Default market feed, independent of account mode: any of the 20 exchange IDs in the [catalog](../developers/exchange-clients.md) |
 | `SIBYL_CORS_ORIGINS`       | localhost and 127.0.0.1 port 5173 | JSON array of permitted browser origins                                                       |
 | `SIBYL_API_TOKEN`          | empty                             | Bearer token for all versioned API routes                                                     |
 | `SIBYL_ALLOW_LIVE_TRADING` | `false`                           | Enable reviewed manual exchange market orders                                                 |

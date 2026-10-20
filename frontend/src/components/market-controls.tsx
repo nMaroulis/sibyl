@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import { useResource } from '../lib/hooks';
+import { AssetIcon } from './ui';
+import { SearchPicker } from './search-picker';
 import type { Source, Timeframe } from '../lib/types';
 
 export type SpotCatalog = Source & {
-  items: { symbol: string; base: string; quote: string }[];
+  items: { symbol: string; base: string; quote: string; name?: string; color?: string }[];
   timeframes: Timeframe[];
   candle_limits?: Partial<Record<Timeframe, number>>;
 };
@@ -31,46 +32,61 @@ export function TimeframeSelect({
   );
 }
 
-/** Bound the visible market list while retaining access to the provider's spot catalog. */
+/** Search the full backend spot catalog in a single picker; shortcuts never limit discovery. */
 export function MarketSelector({
   value,
   onChange,
   disabled = false,
   catalog: supplied,
+  label = 'Coin & pair',
+  exclude = [],
 }: {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   catalog?: SpotCatalog;
+  label?: string;
+  exclude?: string[];
 }) {
   const resource = useResource<SpotCatalog>('/markets/symbols', 0, !supplied);
   const catalog = supplied ?? resource.data;
-  const [query, setQuery] = useState('');
-  const items =
-    catalog?.items
-      .filter((item) => item.symbol.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 100) ?? [];
+  const popular = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE'];
+  const quotes = ['USDT', 'USD', 'USDC', 'BTC', 'ETH'];
+  const rank = (base: string, quote: string) => {
+    const baseIndex = popular.indexOf(base),
+      quoteIndex = quotes.indexOf(quote);
+    return (quoteIndex < 0 ? 8 : quoteIndex) * 1000 + (baseIndex < 0 ? 100 : baseIndex);
+  };
+  const excluded = new Set(exclude);
+  const items = [...(catalog?.items ?? [])]
+    .filter((item) => !excluded.has(item.symbol))
+    .sort(
+      (a, b) => rank(a.base, a.quote) - rank(b.base, b.quote) || a.symbol.localeCompare(b.symbol),
+    );
   return (
     <div className="market-picker">
-      <label>
-        Find a spot market
-        <input
-          aria-label="Find a spot market"
-          placeholder="BTC, ETH/BTC, /USD…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          disabled={disabled}
-        />
-      </label>
-      <label>
-        Market
-        <select value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}>
-          {!items.some((item) => item.symbol === value) && <option>{value}</option>}
-          {items.map((item) => (
-            <option key={item.symbol}>{item.symbol}</option>
-          ))}
-        </select>
-      </label>
+      <SearchPicker
+        label={label}
+        value={value}
+        disabled={disabled || !!resource.error}
+        loading={!catalog && resource.loading}
+        onChange={onChange}
+        placeholder="Search BTC, Cardano, ADA/USDT…"
+        hint="Search any supported spot market"
+        groups={[
+          {
+            label: 'Spot markets',
+            detail: catalog?.source_label || catalog?.source,
+            options: items.map((item) => ({
+              value: item.symbol,
+              label: item.symbol,
+              description: `${item.name || item.base} · quoted in ${item.quote}`,
+              keywords: `${item.base} ${item.quote} ${item.name || ''}`,
+              icon: <AssetIcon asset={item.base} color={item.color ?? undefined} />,
+            })),
+          },
+        ]}
+      />
       {resource.error && <small className="negative">{resource.error}</small>}
     </div>
   );

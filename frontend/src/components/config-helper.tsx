@@ -57,7 +57,10 @@ function MarketSourceForm({ initial }: { initial: MarketSettings }) {
     >
       <MarketSourceMark source={source} />
       <span className="news-choice-copy">
-        <strong>{source.name}</strong>
+        <strong>
+          {source.name}{' '}
+          {source.id === saved.active.id && <span className="picker-default-badge">Default</span>}
+        </strong>
         <small>
           {source.kind === 'connection'
             ? `${source.provider} · ${source.environment === 'test' ? 'Test environment' : 'Connected account'}`
@@ -120,24 +123,6 @@ function MarketSourceForm({ initial }: { initial: MarketSettings }) {
           }
         />
         <div className="news-picker-body">
-          <button
-            type="button"
-            className="news-demo-choice"
-            aria-label="Demo prices"
-            aria-pressed={identity === 'demo'}
-            disabled={busy}
-            onClick={() => choose('demo')}
-          >
-            <MarketSourceMark source={saved.catalog[0]} />
-            <span className="news-choice-copy">
-              <strong>Demo prices</strong>
-              <small>Offline prices, candles and order books. Used on its own.</small>
-            </span>
-            <span className="news-demo-exclusive">Offline</span>
-            <span className="news-choice-check" aria-hidden="true">
-              {identity === 'demo' && <Check size={14} />}
-            </span>
-          </button>
           <div className="news-public-heading">
             <h3>Connected exchanges</h3>
             <span>Your saved accounts</span>
@@ -183,6 +168,28 @@ function MarketSourceForm({ initial }: { initial: MarketSettings }) {
           <div className="news-provider-grid">
             {saved.catalog.filter((s) => s.kind === 'api').map(card)}
           </div>
+          <div className="news-public-heading">
+            <h3>Demo</h3>
+            <span>Offline sample data</span>
+          </div>
+          <button
+            type="button"
+            className="news-demo-choice"
+            aria-label="Demo prices"
+            aria-pressed={identity === 'demo'}
+            disabled={busy}
+            onClick={() => choose('demo')}
+          >
+            <MarketSourceMark source={saved.catalog.find((source) => source.id === 'demo')!} />
+            <span className="news-choice-copy">
+              <strong>Demo prices</strong>
+              <small>Offline prices, candles and order books. Used on its own.</small>
+            </span>
+            <span className="news-demo-exclusive">Offline</span>
+            <span className="news-choice-check" aria-hidden="true">
+              {identity === 'demo' && <Check size={14} />}
+            </span>
+          </button>
           <p className="news-picker-note">
             Active default: {saved.active.name}. Markets can use a temporary page selection. Private
             balances keep using each account’s own exchange.

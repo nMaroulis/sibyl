@@ -55,6 +55,10 @@ class Store:
                     scope TEXT NOT NULL, timestamp TEXT NOT NULL, value REAL NOT NULL,
                     PRIMARY KEY(scope, timestamp)
                 );
+                CREATE TABLE IF NOT EXISTS market_watchlists (
+                    source TEXT PRIMARY KEY, symbols TEXT NOT NULL,
+                    revision INTEGER NOT NULL, updated_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS snapshots (
                     timestamp TEXT PRIMARY KEY, value REAL NOT NULL
                 );
@@ -92,6 +96,55 @@ class Store:
                 yield connection
         finally:
             connection.close()
+
+    def market_watchlist(self, source: str) -> dict | None:
+        """Read an ordered feed-specific preference, distinguishing missing from empty."""
+        with self.db() as db:
+            row = db.execute(
+                "SELECT symbols, revision, updated_at FROM market_watchlists WHERE source=?", (source,)
+            ).fetchone()
+        return {**dict(row), "symbols": json.loads(row["symbols"])} if row else None
+
+    def seed_market_watchlist(self, source: str, symbols: list[str]) -> dict:
+        """Provision defaults once; simultaneous first reads cannot overwrite saved choices."""
+        with self.db() as db:
+            db.execute(
+                "INSERT OR IGNORE INTO market_watchlists VALUES (?, ?, 0, ?)",
+                (source, json.dumps(symbols), datetime.now(UTC).isoformat()),
+            )
+        return self.market_watchlist(source)
+
+    def change_market_watchlist(self, source: str, action: str, value, limit: int = 30) -> dict:
+        """Serialize list edits so concurrent adds/removes cannot lose each other's work."""
+        with self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT symbols, revision, updated_at FROM market_watchlists WHERE source=?", (source,)
+            ).fetchone()
+            if row is None:
+                raise LookupError("Watchlist not initialized.")
+            current = json.loads(row["symbols"])
+            changed = current.copy()
+            if action == "add":
+                if value not in changed:
+                    if len(changed) >= limit:
+                        raise ValueError(f"A watchlist can contain at most {limit} markets.")
+                    changed.append(value)
+            elif action == "remove":
+                changed = [symbol for symbol in changed if symbol != value]
+            elif action == "order":
+                if len(value) != len(set(value)) or set(value) != set(current):
+                    raise ValueError("The watchlist changed. Refresh it before reordering.")
+                changed = value
+            else:
+                raise ValueError("Unknown watchlist edit.")
+            revision = row["revision"] + (changed != current)
+            updated = datetime.now(UTC).isoformat() if changed != current else row["updated_at"]
+            db.execute(
+                "UPDATE market_watchlists SET symbols=?, revision=?, updated_at=? WHERE source=?",
+                (json.dumps(changed), revision, updated, source),
+            )
+            return {"symbols": changed, "revision": revision, "updated_at": updated}
 
     def model_profiles(self) -> tuple[str | None, dict[str, dict]]:
         """Read active selection and decrypt profiles for the model settings service only."""

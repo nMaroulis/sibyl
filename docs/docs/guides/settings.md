@@ -46,7 +46,7 @@ The Demo card has an **Exclusive** badge and a distinct selection color. Choosin
 
 Open `/settings?tab=market` and click a source card, then **Save market source**. The selection applies immediately to new reads. Each complete read keeps one source, even if settings change while it runs. Account mode and trading permissions are independent.
 
-Use **Demo prices** on its own for offline fixtures, choose one of 20 public exchange feeds without an API key, or select an existing account under **Connected exchanges**. Account cards retain the saved production/test environment. Public exchange cards do not need an account or saved trading credentials.
+Binance is the initial market feed, even when account mode is Demo. Saved source choices override it. The offline **Demo prices** card appears last; select it on its own for offline fixtures, choose one of 20 public exchange feeds without an API key, or select an existing account under **Connected exchanges**. Account cards retain the saved production/test environment. Public exchange cards do not need an account or saved trading credentials.
 
 **Market APIs** offers CryptoCompare (provider key), CoinGecko Demo API (free-plan key), and CoinGecko Pro API (separate paid-plan key). Enter the provider key and save. Leaving it blank preserves the saved credential; switching providers retains their separate keys. Keys are encrypted on the backend and never returned to the browser. Select another default before removing an active provider's required key. Saving does not test connectivity, plan access or quota.
 

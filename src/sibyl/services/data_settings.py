@@ -145,7 +145,7 @@ class DataSettings:
         """Resolve private feed configuration; only adapters may read key values."""
         with self._lock:
             saved = self.store.data_profile("market")
-            fallback = "demo" if self.settings.mode == "demo" else self.settings.market_exchange
+            fallback = self.settings.market_exchange
             # Honor an earlier saved public reference without changing account mode.
             source = saved.get("source") or (
                 saved.get("exchange", fallback) if saved.get("mode") == "live" else fallback

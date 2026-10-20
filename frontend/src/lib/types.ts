@@ -31,11 +31,13 @@ export type Holding = Asset & {
   value: number;
   allocation: number;
 };
-export type MarketAsset = Asset & {
+export type MarketAsset = Omit<Asset, 'price'> & {
+  price: number | null;
   symbol: string;
   quote: string;
   volume: number | null;
-  status: 'fresh' | 'stale' | 'undated';
+  status: 'fresh' | 'stale' | 'undated' | 'unavailable' | 'loading';
+  error?: string;
   observed_at: string | null;
 };
 export type Portfolio = Source & {

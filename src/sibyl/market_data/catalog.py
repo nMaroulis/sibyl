@@ -102,4 +102,5 @@ def source_catalog(connections, profiles: dict) -> list[dict]:
                 "order_book": False,
             }
         )
-    return items
+    order = {"exchange": 0, "connection": 1, "api": 2, "demo": 3}
+    return sorted(items, key=lambda item: order[item["kind"]])

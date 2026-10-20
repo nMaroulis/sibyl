@@ -10,7 +10,9 @@ from sibyl.storage import Store
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings(data_dir=tmp_path, _env_file=None)
+    config = Settings(data_dir=tmp_path, _env_file=None)
+    Store(config.data_dir).save_data_profile("market", {"source": "demo", "profiles": {}})
+    return config
 
 
 @pytest.fixture

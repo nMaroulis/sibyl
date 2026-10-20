@@ -15,6 +15,7 @@ from sibyl.config import Settings
 from sibyl.exchanges import ExchangeClient, create_client
 from sibyl.exchanges.data import ASSETS, STABLES, TIMEFRAMES
 from sibyl.models import Candle, Connection
+from sibyl.services.crypto_library import ASSETS as RESEARCH_ASSETS
 from sibyl.services.data_settings import DataSettings
 from sibyl.storage import Store
 
@@ -318,6 +319,86 @@ class Market:
 
         return self._cached("overview", load)
 
+    @reference_read
+    def quotes(self, symbols: list[str]) -> dict:
+        """Price exact watchlist pairs without changing the portfolio's reference universe.
+
+        Each quote has its own source/credential-scoped cache. Unavailable pairs
+        remain explicit rows, so a temporary error cannot erase a user's choice.
+        """
+        metadata = self.metadata()
+        items, warnings = [], []
+        catalog = {row["symbol"]: row for row in self.symbols()["items"]} if symbols else {}
+        for symbol in symbols:
+            asset, quote = symbol.split("/")
+            entry = catalog.get(symbol, {})
+            known = next((row for row in RESEARCH_ASSETS.values() if row.symbol == asset), None)
+            identity = {
+                "symbol": symbol,
+                "asset": asset,
+                "quote": quote,
+                "name": entry.get("name") or (known.name if known else asset),
+                "color": entry.get("color") or (known.color if known else "#7994b3"),
+            }
+            try:
+                if symbol not in catalog:
+                    raise ccxt.BadSymbol("This exact market is no longer available.")
+
+                def load(symbol=symbol):
+                    ticker = self.client().fetch_ticker(symbol)
+                    last = ticker.get("last") or ticker.get("close")
+                    if not last or not np.isfinite(last) or last <= 0:
+                        raise ValueError("No valid quote is available.")
+                    history, notes = [], []
+                    if metadata["capabilities"]["candles"]:
+                        try:
+                            history = self.candles(symbol, 30)
+                        except (ccxt.BaseError, ValueError):
+                            notes.append(
+                                f"{symbol} mini-chart history is unavailable; its quote is still shown."
+                            )
+                    change = ticker.get("percentage")
+                    if change is None and self.source == "demo" and len(history) >= 2:
+                        change = (history[-1]["close"] / history[-2]["close"] - 1) * 100
+                    stamp = ticker.get("timestamp")
+                    stale = (
+                        self.source != "demo"
+                        and stamp is not None
+                        and datetime.now(UTC).timestamp() * 1000 - stamp > 300_000
+                    )
+                    volume = ticker.get("quoteVolume")
+                    return {
+                        "price": float(last),
+                        "change": float(change) if change is not None and np.isfinite(change) else None,
+                        "volume": float(volume)
+                        if volume is not None and np.isfinite(volume) and volume >= 0
+                        else None,
+                        "status": "stale" if stale else "fresh" if stamp is not None else "undated",
+                        "observed_at": datetime.fromtimestamp(stamp / 1000, UTC).isoformat()
+                        if stamp
+                        else None,
+                        "sparkline": [row["close"] for row in history],
+                        "notes": notes,
+                    }
+
+                result = self._cached(f"watch-quote:{symbol}", load)
+                warnings.extend(result["notes"])
+                items.append({**identity, **{key: value for key, value in result.items() if key != "notes"}})
+            except (ccxt.BaseError, ValueError):
+                items.append(
+                    {
+                        **identity,
+                        "price": None,
+                        "change": None,
+                        "volume": None,
+                        "observed_at": None,
+                        "sparkline": [],
+                        "status": "unavailable",
+                        "error": "Market or quote unavailable from this feed.",
+                    }
+                )
+        return {**metadata, "items": items, "warnings": warnings, "as_of": datetime.now(UTC).isoformat()}
+
     def balance(self, connection: Connection) -> dict[str, float]:
         """Read an account's total spot balances. This method never sends orders."""
         with self._lock:
@@ -350,10 +431,23 @@ class Market:
             with self._lock:
                 client = self.client()
                 markets = client.load_markets()
+                known = {asset.symbol: asset for asset in RESEARCH_ASSETS.values()}
                 return {
                     "items": sorted(
                         [
-                            {"symbol": symbol, "base": market["base"], "quote": market["quote"]}
+                            {
+                                "symbol": symbol,
+                                "base": market["base"],
+                                "quote": market["quote"],
+                                "name": (
+                                    market.get("name")
+                                    if market.get("name") and market["name"] != market["base"]
+                                    else known[market["base"]].name
+                                    if market["base"] in known
+                                    else market["base"]
+                                ),
+                                "color": known[market["base"]].color if market["base"] in known else None,
+                            }
                             for symbol, market in markets.items()
                         ],
                         key=lambda item: item["symbol"],

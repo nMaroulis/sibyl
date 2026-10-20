@@ -27,6 +27,7 @@ from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
 from sibyl.services.reporting import trading_report
 from sibyl.services.strategies import CATALOG, backtest
+from sibyl.services.watchlists import WatchlistItem, WatchlistOrder
 
 router = APIRouter()
 
@@ -129,8 +130,32 @@ def remove_market_key(provider: str, s: S, response: Response):
 @router.get("/markets", tags=["Analyst"])
 def markets(s: S, source: MarketSource | None = None):
     """Read a sourced watchlist; a page override never changes workspace preferences."""
-    with s.market.snapshot(source):
-        return s.market.overview()
+    return s.watchlists.overview(source)
+
+
+@router.get("/markets/watchlist", tags=["Analyst"])
+def market_watchlist(s: S, response: Response, source: MarketSource | None = None):
+    """Read the selected feed's persisted symbols and order, without fetching quotes."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.watchlists.config(source)
+
+
+@router.post("/markets/watchlist/items", tags=["Analyst"])
+def add_watchlist_item(body: WatchlistItem, s: S, source: MarketSource | None = None):
+    """Append an exact provider pair idempotently; credentials never enter the list."""
+    return s.watchlists.add(body.symbol, source)
+
+
+@router.delete("/markets/watchlist/items", tags=["Analyst"])
+def remove_watchlist_item(s: S, symbol: Symbol, source: MarketSource | None = None):
+    """Remove a saved pair without requiring a successful provider quote."""
+    return s.watchlists.remove(symbol, source)
+
+
+@router.post("/markets/watchlist/order", tags=["Analyst"])
+def reorder_watchlist(body: WatchlistOrder, s: S, source: MarketSource | None = None):
+    """Save a permutation of the latest list, rejecting edits that would discard members."""
+    return s.watchlists.reorder(body.symbols, source)
 
 
 @router.get("/markets/analysis", tags=["Analyst"])

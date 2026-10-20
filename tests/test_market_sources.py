@@ -369,3 +369,53 @@ def test_stale_quotes_are_not_used_to_value_connected_account_holdings(client, m
     assert account["holdings"][0]["price"] is None
     assert account["holdings"][0]["value"] is None
     assert account["unpriced"] == 1
+
+
+def test_binance_is_initial_default_even_with_demo_accounts_and_saved_demo_is_respected(tmp_path):
+    settings = Settings(data_dir=tmp_path, mode="demo", _env_file=None)
+    store = Store(tmp_path)
+    preferences = DataSettings(settings, store)
+    assert preferences.public_market()["active"]["id"] == "binance"
+    assert Market(settings, store, preferences).metadata()["source"] == "binance"
+    assert preferences.public_market()["account_mode"] == "demo"
+    preferences.save_market(MarketSettingsRequest(source="demo"))
+    assert preferences.public_market()["active"]["id"] == "demo"
+    assert preferences.public_market()["account_mode"] == "demo"
+
+
+def test_market_source_catalog_orders_exchanges_first_and_demo_last(client):
+    catalog = client.get("/api/v1/settings/market").json()["catalog"]
+    assert catalog[0]["id"] == "binance"
+    assert catalog[-1]["id"] == "demo"
+    assert [row["kind"] for row in catalog[:20]] == ["exchange"] * 20
+    assert all(row["kind"] == "api" for row in catalog[20:-1])
+
+
+def test_full_spot_catalog_and_arbitrary_pair_analysis_are_not_limited_to_watchlist(client, monkeypatch):
+    market = client.app.state.services.market
+    demo = DemoClient(market.store)
+    received = []
+
+    class ExtraMarkets(DemoClient):
+        def load_markets(self):
+            return {
+                f"{base}/USDT": {"symbol": f"{base}/USDT", "base": base, "quote": "USDT", "name": name}
+                for base, name in [("ADA", "ADA"), ("LTC", "Litecoin"), ("ARB", "Arbitrum")]
+            }
+
+        def fetch_ohlcv(self, symbol, timeframe="1d", limit=180):
+            self.market(symbol)
+            received.append(symbol)
+            return demo.fetch_ohlcv("BTC/USDT", timeframe, limit)
+
+    adapter = ExtraMarkets(market.store)
+    monkeypatch.setattr(market, "client", lambda connection=None: adapter)
+    catalog = client.get("/api/v1/markets/symbols?source=binance").json()
+    assert {row["symbol"] for row in catalog["items"]} == {"ADA/USDT", "LTC/USDT", "ARB/USDT"}
+    assert next(row for row in catalog["items"] if row["base"] == "ADA")["name"] == "Cardano"
+    assert next(row for row in catalog["items"] if row["base"] == "ARB")["name"] == "Arbitrum"
+    result = client.get("/api/v1/markets/analysis?source=binance&symbol=ADA/USDT")
+    assert result.status_code == 200
+    assert result.json()["symbol"] == "ADA/USDT"
+    assert result.json()["source"] == "binance"
+    assert result.json()["candles"] and received == ["ADA/USDT"]

@@ -17,7 +17,7 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                                              |
 | POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit                                       |
 | GET        | `/portfolio`                    | Priced balances, allocation, history, warnings                                           |
-| GET        | `/markets`                      | Watchlist and source labels                                                              |
+| GET        | `/markets`                      | Saved watchlist quotes, order and source labels                                                              |
 | GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                                                    |
 | GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform                                         |
 | GET        | `/exchanges`                    | Provider catalog, credential fields, capabilities, execution policy and unconfigured IDs |
@@ -151,3 +151,5 @@ See [News ingestion and sentiment](news.md#query-contracts) for `mode`, publishe
 ## Data source settings and market mood
 
 `GET` / `POST /settings/news` manages enabled news collectors and a write-only encrypted NewsAPI credential. `GET` / `POST /settings/market` discovers and activates reference feeds immediately; `DELETE /settings/market/{provider}/key` removes a stored API credential. Markets endpoints accept an optional `source` override. See [Market data contracts](market-data.md). `GET /news/fear-greed?mode=live` returns attributed cached Alternative.me index observations; `mode=demo` returns explicitly illustrative values. See [News ingestion](news.md#saved-collectors-api-access-and-web-collection).
+
+Personal watchlist membership and order use `GET /markets/watchlist`, `POST` / `DELETE /markets/watchlist/items`, and `POST /markets/watchlist/order`, all with an optional `source` query. See [watchlist contracts](market-data.md#persisted-watchlists).
