@@ -36,8 +36,8 @@ export const futureFeatures = [
   },
   {
     module: 'news',
-    title: 'A broader news lens',
-    text: 'More publishers and full-article NLP summaries. Current summaries and VADER scores use feed headlines and excerpts.',
+    title: 'Deeper language analysis',
+    text: 'Finance-trained sentiment models, entity-targeted analysis, and licensed full-article summaries. Today: publisher feeds, a website collector, optional NewsAPI access, and VADER headline/excerpt polarity.',
   },
   {
     module: 'stocks',

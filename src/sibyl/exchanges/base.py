@@ -1,0 +1,93 @@
+"""Small synchronous interface shared by real providers and the offline simulator."""
+
+import math
+import re
+from abc import ABC, abstractmethod
+from threading import RLock
+
+import ccxt
+
+
+class ExchangeClient(ABC):
+    """Expose spot data using CCXT's unified field names, without raw provider payloads.
+
+    Amounts and OHLCV volume are base-asset units. OHLCV timestamps and ``since``
+    are UTC Unix milliseconds. Clients serialize their transport with an RLock;
+    callers can hold ``lock`` across a multi-step preview. Errors retain CCXT
+    types for the API's sanitized error handler. No method retries a write.
+    """
+
+    id: str
+    timeframes: dict
+
+    def __init__(self):
+        self.lock = RLock()
+
+    @abstractmethod
+    def load_markets(self) -> dict:
+        """Return active spot markets with base, quote, precision and limits."""
+
+    def market(self, symbol: str) -> dict:
+        """Resolve an exact spot symbol; execution never substitutes quote assets."""
+        if not re.fullmatch(r"[A-Z0-9]{1,12}/[A-Z0-9]{1,12}", symbol):
+            raise ccxt.BadSymbol("Use a canonical spot symbol such as BTC/USDT.")
+        market = self.load_markets().get(symbol)
+        if market is None:
+            raise ccxt.BadSymbol("This active spot market is unavailable on the selected exchange.")
+        return market
+
+    @property
+    def markets(self) -> dict:
+        """Expose the same filtered markets to preview validation and chart selectors."""
+        return self.load_markets()
+
+    @abstractmethod
+    def fetch_ticker(self, symbol: str) -> dict:
+        """Read a ticker with nullable numeric fields; no provider ``info`` escapes."""
+
+    @abstractmethod
+    def fetch_ohlcv(self, symbol: str, timeframe: str = "1d", limit: int = 180) -> list[list]:
+        """Read ascending OHLCV rows, possibly including the still-open interval."""
+
+    @abstractmethod
+    def fetch_order_book(self, symbol: str, limit: int = 10) -> dict:
+        """Read up to ``limit`` sorted bid/ask levels; this is a snapshot, not a stream."""
+
+    @abstractmethod
+    def fetch_balance(self) -> dict:
+        """Read finite total/free/used maps in native asset quantities."""
+
+    @abstractmethod
+    def amount_to_precision(self, symbol: str, amount: float) -> str:
+        """Format a base quantity with the provider's market-specific precision."""
+
+    def fetch_open_orders(self, symbol: str) -> list[dict]:
+        """Read one market's open orders, when implemented by the provider."""
+        raise ccxt.NotSupported("Open order reads are unavailable for this client.")
+
+    def fetch_my_trades(self, symbol: str, since: int | None = None, limit: int = 100) -> list[dict]:
+        """Read a bounded page of fills; this is not a complete historical import."""
+        raise ccxt.NotSupported("Trade history is unavailable for this client.")
+
+    def fetch_order(self, order_id: str, symbol: str) -> dict:
+        """Read a known order, without submitting or retrying it."""
+        raise ccxt.NotSupported("Order status reads are unavailable for this client.")
+
+    def create_order(
+        self, symbol: str, type: str, side: str, amount: float, params: dict | None = None
+    ) -> dict:
+        """Submit one market order only for clients whose execution is reviewed."""
+        raise ccxt.NotSupported("Market orders are not enabled for this provider.")
+
+    def close(self) -> None:
+        """Release transport resources when disconnecting or shutting down."""
+        return None
+
+
+def number(value) -> float | None:
+    """Normalize numeric provider values, treating missing/non-finite fields as unknown."""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return parsed if math.isfinite(parsed) else None

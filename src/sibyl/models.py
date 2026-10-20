@@ -5,7 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
-ExchangeId = Literal["binance", "coinbase", "kraken"]
+from sibyl.exchanges.catalog import ConnectionExchangeId, exchange_spec
+
 StrategyId = Literal["rsi", "ema", "bollinger", "bollinger-surge", "impulse-breakout", "quantum-momentum"]
 ModuleId = Literal[
     "oracle",
@@ -30,21 +31,43 @@ class Request(BaseModel):
 
 
 class ConnectionCreate(Request):
-    """Credentials for a read-only exchange connection; secrets are write-only."""
+    """Credentials for an exchange connection; secrets are write-only."""
 
-    exchange: ExchangeId
+    exchange: ConnectionExchangeId
     label: str = Field(min_length=1, max_length=60)
-    api_key: SecretStr = Field(min_length=1)
-    secret: SecretStr = Field(min_length=1)
+    api_key: SecretStr = SecretStr("")
+    secret: SecretStr = SecretStr("")
     passphrase: SecretStr = SecretStr("")
+    uid: SecretStr = SecretStr("")
     sandbox: bool = False
+
+    @model_validator(mode="after")
+    def provider_credentials(self):
+        """Validate provider-specific fields before encrypting a saved account."""
+        spec = exchange_spec(self.exchange)
+        if spec.test_environment:
+            self.sandbox = True
+        secrets = (self.api_key, self.secret, self.passphrase, self.uid)
+        if spec.simulated:
+            if self.sandbox or any(secret.get_secret_value() for secret in secrets):
+                raise ValueError("Demo accounts do not accept credentials or sandbox configuration.")
+            return self
+        if not self.api_key.get_secret_value().strip() or not self.secret.get_secret_value().strip():
+            raise ValueError("This exchange requires an API key and secret.")
+        if spec.passphrase and not self.passphrase.get_secret_value().strip():
+            raise ValueError("This exchange requires an API passphrase.")
+        if spec.uid and not self.uid.get_secret_value().strip():
+            raise ValueError("This exchange requires its API memo.")
+        if self.sandbox and not spec.sandbox:
+            raise ValueError("Sandbox is not configured for this exchange.")
+        return self
 
 
 class Connection(BaseModel):
     """Public connection metadata. Credential material is intentionally absent."""
 
     id: str
-    exchange: ExchangeId
+    exchange: ConnectionExchangeId
     label: str
     sandbox: bool
     created_at: datetime
@@ -160,11 +183,19 @@ class AgentContext(Request):
     symbol: str | None = None
     timeframe: Timeframe | None = None
     limit: int | None = Field(default=None, ge=60, le=720)
+    crypto_id: str | None = Field(
+        default=None, min_length=1, max_length=80, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    )
     equity_symbol: str | None = Field(default=None, pattern=r"^[A-Z0-9^][A-Z0-9.^-]{0,9}$")
     horizon: int | None = Field(default=None, ge=1, le=30)
     parameters: BacktestRequest | None = None
     job_id: str | None = Field(default=None, min_length=1, max_length=100)
     article_id: str | None = Field(default=None, max_length=100)
+    news_mode: Literal["demo", "live"] | None = None
+    news_publisher: str | None = Field(default=None, max_length=40)
+    news_asset: str | None = Field(default=None, max_length=10)
+    news_sentiment: Literal["", "positive", "neutral", "negative"] | None = None
+    news_days: int | None = Field(default=None, ge=0, le=365)
     query: str | None = Field(default=None, max_length=200)
 
     @field_validator("symbol")

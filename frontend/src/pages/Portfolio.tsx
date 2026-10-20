@@ -109,7 +109,7 @@ export function PortfolioPage() {
           </div>
           <strong className="summary-value">{data.holdings.length}</strong>
           <div className="summary-detail">
-            <span>{connections?.length ?? 0} exchange accounts saved</span>
+            <span>{connections?.length ?? 0} accounts connected</span>
           </div>
         </Panel>
         <Panel className="summary-card">
@@ -255,7 +255,7 @@ export function PortfolioPage() {
             </div>
           ) : (
             <Empty title="No priced assets">
-              Connect an account in live mode to view its holdings.
+              Connect an account in Settings to view its holdings.
             </Empty>
           )}
           <div className="table-footer">

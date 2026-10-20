@@ -1,3 +1,4 @@
+import { ExchangeMark } from './exchange-mark';
 import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { Badge, DataNote, Empty, ErrorState, Loading, Panel, PanelTitle } from './ui';
@@ -100,13 +101,26 @@ export function AccountBalances() {
           <div className="account-summary">
             {accounts.map((a) => (
               <div key={a.id}>
-                <strong>{a.name}</strong>
+                <strong className="account-brand">
+                  <ExchangeMark exchange={a.exchange} size={20} />
+                  {a.name}
+                </strong>
                 <span>
                   {value(a.total)} {quote}
                 </span>
-                <Badge tone={a.status === 'error' ? 'rose' : 'neutral'}>
-                  {a.status}
-                  {a.sandbox ? ' · sandbox' : ''}
+                <Badge
+                  tone={
+                    a.exchange === 'demo'
+                      ? 'demo'
+                      : a.status === 'error'
+                        ? 'rose'
+                        : a.sandbox
+                          ? 'purple'
+                          : 'neutral'
+                  }
+                >
+                  {a.exchange === 'demo' ? 'Demo' : a.status}
+                  {a.sandbox ? ' · Sandbox · test funds' : ''}
                 </Badge>
                 {a.unpriced > 0 && <small>{a.unpriced} unpriced assets</small>}
               </div>

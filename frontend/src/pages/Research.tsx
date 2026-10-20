@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Area,
   CartesianGrid,
@@ -21,12 +22,14 @@ import {
   PanelTitle,
 } from '../components/ui';
 import { AgentButton } from '../components/agents';
+import { NewsWorkspace } from '../components/news-workspace';
+import { CryptoLibraryView } from '../components/crypto-library';
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { ComingSoon } from '../components/coming-soon';
 import { ValueChart } from '../components/charts';
 import { exportCSV, money, number, shortDate } from '../lib/api';
 import { useResource } from '../lib/hooks';
-import type { Analysis, Article, Block, Forecast, Knowledge, Source, Stock } from '../lib/types';
+import type { Analysis, Block, Forecast, Knowledge, Source, Stock } from '../lib/types';
 
 export function ForecastPage() {
   const [asset, setAsset] = useState('BTC');
@@ -201,138 +204,7 @@ export function ForecastPage() {
 }
 
 export function News() {
-  const [summary, setSummary] = useState('excerpt');
-  const news = useResource<
-    Source & {
-      items: Article[];
-      sentiment: {
-        compound: number;
-        positive: number;
-        neutral: number;
-        negative: number;
-        note: string;
-      };
-    }
-  >(`/news?summary=${summary}`);
-  const [category, setCategory] = useState('All stories');
-  const categories = [
-    'All stories',
-    ...new Set(news.data?.items.map((item) => item.category) ?? []),
-  ];
-  const items =
-    news.data?.items.filter((item) => category === 'All stories' || item.category === category) ??
-    [];
-  return (
-    <>
-      <PageTitle
-        eyebrow="LOOK BEYOND THE TICKER"
-        title="News & insights"
-        description="Ideas, context, and a little distance from the noise."
-        action={<AgentButton module="reporter" />}
-      />
-      <Panel className="full-panel">
-        <PanelTitle
-          title="The tone of the feed"
-          subtitle="VADER · headline and excerpt text polarity"
-          action={
-            <label>
-              Summary method
-              <select value={summary} onChange={(e) => setSummary(e.target.value)}>
-                <option value="excerpt">Publisher excerpt</option>
-                <option value="extractive">Extractive · up to 2 sentences</option>
-              </select>
-            </label>
-          }
-        />
-        <div className="extended-metrics">
-          {(['positive', 'neutral', 'negative'] as const).map((label) => (
-            <div key={label}>
-              <small>{label} stories</small>
-              <strong>{news.data?.sentiment[label] ?? '—'}</strong>
-            </div>
-          ))}
-          <div>
-            <small>Mean text polarity · −1 to +1</small>
-            <strong>{news.data?.sentiment.compound.toFixed(3) ?? '—'}</strong>
-          </div>
-        </div>
-        <p className="footnote padded">
-          {news.data?.sentiment.note ??
-            'Text polarity is not a market sentiment index or a trading signal.'}
-        </p>
-      </Panel>
-      <div className="news-topline">
-        <div className="filter-pills">
-          {categories.map((item) => (
-            <button
-              key={item}
-              onClick={() => setCategory(item)}
-              className={category === item ? 'selected' : ''}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-        <DataNote source={news.data?.source} />
-      </div>
-      {news.loading ? (
-        <Loading />
-      ) : news.error ? (
-        <ErrorState message={news.error} retry={news.retry} />
-      ) : items.length ? (
-        <div className="news-grid">
-          {items.map((item, i) => (
-            <article className={`news-card panel ${i === 0 ? 'featured-story' : ''}`} key={item.id}>
-              <div className={`news-art news-art-${i % 4}`} aria-hidden="true">
-                <span>{['◉', '✳', '⌁', '⋈'][i % 4]}</span>
-                <i />
-                <b />
-                <small>SIBYL / PERSPECTIVES</small>
-              </div>
-              <div className="news-content">
-                <div className="news-meta">
-                  <Badge>{item.category}</Badge>
-                  <Badge
-                    tone={
-                      item.sentiment.label === 'positive'
-                        ? 'lime'
-                        : item.sentiment.label === 'negative'
-                          ? 'rose'
-                          : 'neutral'
-                    }
-                  >
-                    {item.sentiment.label} · {item.sentiment.compound.toFixed(2)}
-                  </Badge>
-                  <span>
-                    {item.published_at ? shortDate(item.published_at) : 'Sample editorial'}
-                  </span>
-                </div>
-                <h2>{item.title}</h2>
-                <p>{item.summary}</p>
-                <div className="news-card-bottom">
-                  <span>{item.publisher}</span>
-                  {item.url ? (
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      Read source <ArrowUpRight size={15} />
-                    </a>
-                  ) : null}
-                  <AgentButton module="reporter" context={{ article_id: item.id }} compact />
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <Empty title="A quiet moment">No stories are available for this filter.</Empty>
-      )}
-      <p className="footnote">
-        {news.data?.source === 'demo'
-          ? 'These are illustrative sample briefings, not current news. Live mode reads the CoinDesk RSS feed.'
-          : 'Headlines and excerpts come from the linked publisher. Review the original reporting for full context.'}
-      </p>
-      <ComingSoon module="news" />
-    </>
-  );
+  return <NewsWorkspace />;
 }
 
 function KnowledgeView() {
@@ -661,19 +533,30 @@ function StocksView() {
 }
 
 export function ResearchPage() {
-  const [tab, setTab] = useState('knowledge');
+  const [params, setParams] = useSearchParams();
+  const selected = params.get('tab') ?? 'knowledge';
+  const tab = ['knowledge', 'crypto', 'explorer', 'stocks'].includes(selected)
+    ? selected
+    : 'knowledge';
+  const setTab = (value: string) =>
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set('tab', value);
+      return next;
+    });
   return (
     <>
       <PageTitle
         eyebrow="FOLLOW YOUR CURIOSITY"
         title="Research"
-        description="Crypto concepts, Bitcoin blocks, and equity research."
+        description="Crypto concepts, project profiles, Bitcoin blocks, and equity research."
       />
       <SectionTabs
         id="research"
         label="Research sections"
         items={[
           { id: 'knowledge', label: 'Crypto knowledge', icon: BookOpen },
+          { id: 'crypto', label: 'Crypto profiles', icon: BookOpen },
           { id: 'explorer', label: 'Block explorer', icon: Box },
           { id: 'stocks', label: 'Equities', icon: TrendingUp },
         ]}
@@ -683,6 +566,8 @@ export function ResearchPage() {
       <SectionPanel id="research" value={tab}>
         {tab === 'knowledge' ? (
           <KnowledgeView />
+        ) : tab === 'crypto' ? (
+          <CryptoLibraryView />
         ) : tab === 'explorer' ? (
           <ExplorerView />
         ) : (

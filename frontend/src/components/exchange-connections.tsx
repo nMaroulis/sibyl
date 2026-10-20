@@ -12,44 +12,18 @@ import {
 } from 'lucide-react';
 import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
-import type { Connection } from '../lib/types';
+import type { Connection, ExchangeCatalog, ExchangeProvider } from '../lib/types';
+import { ExchangeMark } from './exchange-mark';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
 
-const exchanges = [
-  {
-    id: 'binance',
-    name: 'Binance',
-    mark: '◇',
-    color: '#e9c855',
-    description: 'Bring your spot balances into one view.',
-    note: 'API key + secret · optional testnet',
-  },
-  {
-    id: 'coinbase',
-    name: 'Coinbase',
-    mark: 'C',
-    color: '#7e9cf5',
-    description: 'Connect your Advanced Trade account.',
-    note: 'CDP API key name + private key',
-  },
-  {
-    id: 'kraken',
-    name: 'Kraken',
-    mark: '∩',
-    color: '#bba4ed',
-    description: 'A considered view of your Kraken assets.',
-    note: 'API key + secret · read-only access',
-  },
-];
-
-function ConnectionForm({ exchange, close }: { exchange: string; close: () => void }) {
-  const [label, setLabel] = useState(
-    `${exchanges.find((item) => item.id === exchange)?.name} account`,
-  );
+function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close: () => void }) {
+  const exchange = provider.id;
+  const [label, setLabel] = useState(`${provider.name} account`);
   const [apiKey, setApiKey] = useState('');
   const [secret, setSecret] = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const [sandbox, setSandbox] = useState(false);
+  const [uid, setUid] = useState('');
+  const [sandbox, setSandbox] = useState(provider.test_environment);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
@@ -64,12 +38,18 @@ function ConnectionForm({ exchange, close }: { exchange: string; close: () => vo
         secret: secret.trim(),
         passphrase,
         sandbox,
+        uid,
       });
       setApiKey('');
       setSecret('');
       setPassphrase('');
+      setUid('');
       refresh();
-      toast('Connection saved. Use Check access to verify credentials.');
+      toast(
+        provider.simulated
+          ? 'Demo account connected.'
+          : 'Connection saved. Use Check access to verify credentials.',
+      );
       close();
     } catch (reason) {
       setError((reason as Error).message);
@@ -88,8 +68,11 @@ function ConnectionForm({ exchange, close }: { exchange: string; close: () => vo
       <div className="form-callout">
         <ShieldCheck size={18} />
         <p>
-          Create a dedicated read-only key. Enable balance access and disable trading and
-          withdrawals.
+          {provider.test_environment
+            ? 'Use API credentials created in this test environment. This account holds test funds only.'
+            : provider.simulated
+              ? 'Explore with simulated funds and sample prices. No API keys are needed.'
+              : 'Create a dedicated read-only key. Enable balance access and disable trading and withdrawals.'}
         </p>
       </div>
       <label>
@@ -102,54 +85,76 @@ function ConnectionForm({ exchange, close }: { exchange: string; close: () => vo
           autoComplete="off"
         />
       </label>
-      <label>
-        {exchange === 'coinbase' ? 'CDP API key name' : 'API key'}
-        <input
-          required
-          type="password"
-          value={apiKey}
-          onChange={(event) => setApiKey(event.target.value)}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </label>
-      <label>
-        {exchange === 'coinbase' ? 'Private key (PEM)' : 'API secret'}
-        <textarea
-          required
-          rows={exchange === 'coinbase' ? 4 : 2}
-          value={secret}
-          onChange={(event) => setSecret(event.target.value)}
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </label>
-      <details className="advanced-options">
-        <summary>Advanced options</summary>
+      {provider.credentials_required && (
+        <>
+          <label>
+            {exchange === 'coinbase' ? 'CDP API key name' : 'API key'}
+            <input
+              required
+              type="password"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          <label>
+            {exchange === 'coinbase' ? 'Private key (PEM)' : 'API secret'}
+            <textarea
+              required
+              rows={exchange === 'coinbase' ? 4 : 2}
+              value={secret}
+              onChange={(event) => setSecret(event.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+        </>
+      )}
+      {provider.passphrase && (
         <label>
-          Passphrase, if required
+          API passphrase
           <input
+            required
             type="password"
             value={passphrase}
             onChange={(event) => setPassphrase(event.target.value)}
             autoComplete="off"
           />
         </label>
-        {exchange === 'binance' && (
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={sandbox}
-              onChange={(event) => setSandbox(event.target.checked)}
-            />
-            Use Binance testnet credentials
-          </label>
-        )}
-        <p className="footnote">
-          Coinbase and Kraken sandbox behavior varies. This form enables sandbox mode only for
-          Binance.
-        </p>
-      </details>
+      )}
+      {provider.uid && (
+        <label>
+          API memo
+          <input
+            required
+            type="password"
+            value={uid}
+            onChange={(event) => setUid(event.target.value)}
+            autoComplete="off"
+          />
+        </label>
+      )}
+      {provider.sandbox && !provider.test_environment && (
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={sandbox}
+            onChange={(event) => setSandbox(event.target.checked)}
+          />
+          Use sandbox / testnet credentials
+        </label>
+      )}
+      <p className="footnote">
+        {provider.account}. {provider.note}.
+        {provider.id === 'coinbase-sandbox' &&
+          ' Use Coinbase Exchange sandbox credentials, rather than Advanced Trade CDP keys.'}
+      </p>
+      {provider.setup_url && (
+        <a className="text-link" href={provider.setup_url} target="_blank" rel="noreferrer">
+          Open {provider.name} to create API keys <ArrowUpRight size={13} />
+        </a>
+      )}
       {error && (
         <p role="alert" className="form-error">
           {error}
@@ -157,11 +162,16 @@ function ConnectionForm({ exchange, close }: { exchange: string; close: () => vo
       )}
       <button type="submit" className="button primary full-width" disabled={busy}>
         <KeyRound size={15} />
-        {busy ? 'Encrypting and saving…' : 'Save encrypted connection'}
+        {busy
+          ? 'Saving…'
+          : provider.simulated
+            ? 'Connect demo account'
+            : 'Save encrypted connection'}
       </button>
       <p className="footnote">
-        Credentials are encrypted on your server and cannot be retrieved through the API. Saved
-        connections are verified separately.
+        {provider.simulated
+          ? 'Your demo wallet is saved locally. Reconnecting keeps its existing balances and paper trades.'
+          : 'Credentials are encrypted on your server and cannot be retrieved through the API. Saved connections are verified separately.'}
       </p>
     </form>
   );
@@ -169,6 +179,9 @@ function ConnectionForm({ exchange, close }: { exchange: string; close: () => vo
 
 export function ExchangeConnections() {
   const connections = useResource<Connection[]>('/connections');
+  const catalog = useResource<ExchangeCatalog>('/exchanges');
+  const exchanges = catalog.data?.items ?? [];
+  const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<string>();
   const [removing, setRemoving] = useState<Connection>();
   const [busy, setBusy] = useState('');
@@ -222,34 +235,85 @@ export function ExchangeConnections() {
           <ShieldCheck size={12} /> Locally encrypted
         </Badge>
       </div>
-      <div className="connection-provider-grid">
-        {exchanges.map((exchange) => (
-          <Panel key={exchange.id} className="provider-card">
-            <div className="provider-top">
-              <span
-                className="provider-logo"
-                style={{
-                  background: `${exchange.color}18`,
-                  color: exchange.color,
-                }}
-              >
-                {exchange.mark}
-              </span>
-              <Badge>Read-only</Badge>
-            </div>
-            <h2>{exchange.name}</h2>
-            <p>{exchange.description}</p>
-            <small>{exchange.note}</small>
-            <button
-              className="button secondary full-width"
-              onClick={() => setSelected(exchange.id)}
-            >
-              <Plus size={15} />
-              Connect {exchange.name}
-            </button>
-          </Panel>
-        ))}
+      <div className="exchange-catalog-heading">
+        <label className="exchange-search">
+          Find an exchange
+          <input
+            type="search"
+            placeholder="Search exchanges…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <span className="muted">
+          {exchanges.filter((provider) => !provider.simulated && !provider.test_environment).length}{' '}
+          exchanges · {exchanges.filter((provider) => provider.test_environment).length} test
+          environments · {exchanges.filter((provider) => provider.simulated).length} demo
+        </span>
       </div>
+      {catalog.loading ? (
+        <Loading />
+      ) : catalog.error ? (
+        <ErrorState message={catalog.error} retry={catalog.retry} />
+      ) : (
+        <div className="exchange-client-grid">
+          {exchanges
+            .filter((provider) =>
+              `${provider.name} ${provider.id}`.toLowerCase().includes(query.trim().toLowerCase()),
+            )
+            .map((provider) => (
+              <button
+                key={provider.id}
+                className="exchange-client-option"
+                aria-label={`Connect ${provider.name}`}
+                disabled={
+                  provider.simulated &&
+                  connections.data?.some((connection) => connection.exchange === 'demo')
+                }
+                onClick={() => setSelected(provider.id)}
+              >
+                <span
+                  className={`provider-logo small-logo ${provider.simulated ? 'demo-exchange-mark' : ''}`}
+                >
+                  <ExchangeMark exchange={provider.id} />
+                </span>
+                <span>
+                  <strong>{provider.name}</strong>
+                  <small>
+                    {provider.simulated
+                      ? connections.data?.some((connection) => connection.exchange === 'demo')
+                        ? 'Account connected'
+                        : 'Simulated funds · no keys'
+                      : provider.test_environment
+                        ? provider.id === 'binance-testnet'
+                          ? 'Spot test network · test keys'
+                          : 'Exchange API · key, secret & passphrase'
+                        : provider.id === 'coinbase'
+                          ? 'CDP key & PEM'
+                          : provider.passphrase
+                            ? 'Key, secret & passphrase'
+                            : provider.uid
+                              ? 'Key, secret & memo'
+                              : 'API key & secret'}
+                  </small>
+                </span>
+                {provider.simulated ? (
+                  <Badge tone="demo">Demo</Badge>
+                ) : provider.test_environment ? (
+                  <Badge tone="purple">
+                    {provider.id === 'binance-testnet' ? 'Testnet' : 'Sandbox'}
+                  </Badge>
+                ) : (
+                  <Plus size={15} />
+                )}
+              </button>
+            ))}
+          {exchanges.length > 0 &&
+            !exchanges.some((provider) =>
+              `${provider.name} ${provider.id}`.toLowerCase().includes(query.trim().toLowerCase()),
+            ) && <p className="muted">No matching exchange.</p>}
+        </div>
+      )}
       <Panel className="full-panel">
         <PanelTitle
           title="Connected accounts"
@@ -263,32 +327,44 @@ export function ExchangeConnections() {
         ) : connections.data?.length ? (
           connections.data.map((connection) => (
             <div className="connection-account" key={connection.id}>
-              <span className="provider-logo small-logo">
-                {exchanges.find((exchange) => exchange.id === connection.exchange)?.mark}
+              <span
+                className={`provider-logo small-logo ${connection.exchange === 'demo' ? 'demo-exchange-mark' : ''}`}
+              >
+                <ExchangeMark exchange={connection.exchange} />
               </span>
               <div className="account-description">
                 <strong>{connection.label}</strong>
                 <small>
-                  {connection.exchange} · {connection.sandbox ? 'sandbox' : 'production'} · saved{' '}
-                  {new Date(connection.created_at).toLocaleDateString()}
+                  {connection.exchange === 'demo'
+                    ? 'Simulated funds'
+                    : `${exchanges.find((provider) => provider.id === connection.exchange)?.name ?? connection.exchange} · ${connection.sandbox ? 'test funds' : 'production'}`}{' '}
+                  · saved {new Date(connection.created_at).toLocaleDateString()}
                 </small>
                 {checks[connection.id]?.message && (
                   <small className="negative">{checks[connection.id].message}</small>
                 )}
               </div>
+              {connection.exchange === 'demo' && <Badge tone="demo">Demo</Badge>}
+              {connection.sandbox && (
+                <Badge tone="purple">
+                  {connection.exchange === 'binance-testnet' || connection.exchange === 'binance'
+                    ? 'Testnet'
+                    : 'Sandbox'}
+                </Badge>
+              )}
               <Badge
                 tone={
-                  checks[connection.id]?.status === 'connected'
+                  connection.exchange === 'demo' || checks[connection.id]?.status === 'connected'
                     ? 'lime'
                     : checks[connection.id]?.status === 'error'
                       ? 'rose'
                       : 'neutral'
                 }
               >
-                {checks[connection.id]?.status === 'connected' ? (
+                {connection.exchange === 'demo' || checks[connection.id]?.status === 'connected' ? (
                   <>
                     <Check size={11} />
-                    Verified
+                    {connection.exchange === 'demo' ? 'Connected' : 'Verified'}
                   </>
                 ) : checks[connection.id]?.status === 'error' ? (
                   'Check failed'
@@ -302,7 +378,7 @@ export function ExchangeConnections() {
                 onClick={() => check(connection.id)}
               >
                 <RefreshCw size={13} className={busy === connection.id ? 'spin' : ''} />
-                Check access
+                {connection.exchange === 'demo' ? 'Check account' : 'Check access'}
               </button>
               <button
                 className="icon-button danger"
@@ -345,24 +421,28 @@ export function ExchangeConnections() {
             Demo mode uses your paper wallet. Live data mode reads saved exchange accounts and
             public market prices.
           </p>
-          <Link to="/settings?tab=apis" className="text-link">
+          <Link to="/settings?tab=market" className="text-link">
             View workspace configuration <ArrowUpRight size={13} />
           </Link>
         </Panel>
       </div>
-      {selected && (
+      {selected && exchanges.find((provider) => provider.id === selected) && (
         <Modal
           title={`Connect ${exchanges.find((exchange) => exchange.id === selected)?.name}`}
           onClose={() => setSelected(undefined)}
         >
-          <ConnectionForm exchange={selected} close={() => setSelected(undefined)} />
+          <ConnectionForm
+            provider={exchanges.find((provider) => provider.id === selected)!}
+            close={() => setSelected(undefined)}
+          />
         </Modal>
       )}
       {removing && (
         <Modal title="Disconnect this account?" onClose={() => setRemoving(undefined)}>
           <p className="muted">
-            Remove {removing.label} and its encrypted credentials from this workspace. Your exchange
-            account is unaffected.
+            {removing.exchange === 'demo'
+              ? `Disconnect ${removing.label} from this workspace. Its paper balances and trades are retained for reconnection.`
+              : `Remove ${removing.label} and its encrypted credentials from this workspace. Your exchange account is unaffected.`}
           </p>
           <div className="modal-actions">
             <button className="button secondary" onClick={() => setRemoving(undefined)}>

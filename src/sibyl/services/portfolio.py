@@ -14,6 +14,15 @@ class Portfolio:
     def __init__(self, market: Market, store: Store):
         self.market, self.store = market, store
 
+    def connections(self):
+        """Select accounts for overview totals; test and production funds never aggregate."""
+        demo_mode = self.market.settings.mode == "demo"
+        return [
+            connection
+            for connection in self.store.connections()
+            if (connection.exchange == "demo") == demo_mode and not connection.sandbox
+        ]
+
     def overview(self) -> dict:
         """Return paper fixtures in demo mode or actual balances in live mode.
 
@@ -21,26 +30,31 @@ class Portfolio:
         account failures are visible; they never inflate the total with fixtures.
         """
         warnings, balances, venues = [], {}, []
-        if self.market.settings.mode == "demo":
-            balances = self.store.balances()
-            venues = [{"name": "Paper wallet", "status": "simulated", "assets": len(balances)}]
-        else:
-            for connection in self.store.connections():
-                try:
-                    account = self.market.balance(connection)
-                    venues.append(
-                        {
-                            "name": connection.label,
-                            "exchange": connection.exchange,
-                            "status": "connected",
-                            "assets": len(account),
-                        }
-                    )
-                    for asset, quantity in account.items():
-                        balances[asset] = balances.get(asset, 0) + quantity
-                except (ccxt.BaseError, ValueError):
-                    warnings.append(f"Could not read {connection.label}. Its balance is excluded.")
-                    venues.append({"name": connection.label, "status": "error", "assets": 0})
+        for connection in self.connections():
+            try:
+                account = self.market.balance(connection)
+                venues.append(
+                    {
+                        "id": connection.id,
+                        "name": connection.label,
+                        "exchange": connection.exchange,
+                        "status": "simulated" if connection.exchange == "demo" else "connected",
+                        "assets": len(account),
+                    }
+                )
+                for asset, quantity in account.items():
+                    balances[asset] = balances.get(asset, 0) + quantity
+            except (ccxt.BaseError, ValueError):
+                warnings.append(f"Could not read {connection.label}. Its balance is excluded.")
+                venues.append(
+                    {
+                        "id": connection.id,
+                        "name": connection.label,
+                        "exchange": connection.exchange,
+                        "status": "error",
+                        "assets": 0,
+                    }
+                )
         prices = {item["asset"]: item for item in self.market.overview()["items"]}
         holdings, unpriced = [], []
         for asset, quantity in balances.items():
@@ -116,43 +130,30 @@ class Portfolio:
             **{asset: quotes[asset]["price"] for asset in ("BTC", "ETH") if asset in quotes},
         }
         accounts = []
-        if self.market.settings.mode == "demo":
-            sources = [
-                (
-                    "paper",
-                    "Paper wallet",
-                    None,
-                    [
-                        {"asset": asset, "total": quantity, "free": quantity, "used": 0}
-                        for asset, quantity in self.store.balances().items()
-                    ],
+        sources = []
+        # Show test accounts individually, while overview totals contain no sandbox funds.
+        active = {connection.id: connection for connection in self.connections()}
+        active.update(
+            {connection.id: connection for connection in self.store.connections() if connection.sandbox}
+        )
+        for connection in active.values():
+            try:
+                sources.append(
+                    (connection.id, connection.label, connection, self.market.account_balances(connection))
                 )
-            ]
-        else:
-            sources = []
-            for connection in self.store.connections():
-                try:
-                    sources.append(
-                        (
-                            connection.id,
-                            connection.label,
-                            connection,
-                            self.market.account_balances(connection),
-                        )
-                    )
-                except (ccxt.BaseError, ValueError):
-                    accounts.append(
-                        {
-                            "id": connection.id,
-                            "name": connection.label,
-                            "exchange": connection.exchange,
-                            "sandbox": connection.sandbox,
-                            "status": "error",
-                            "holdings": [],
-                            "total": 0,
-                            "unpriced": 0,
-                        }
-                    )
+            except (ccxt.BaseError, ValueError):
+                accounts.append(
+                    {
+                        "id": connection.id,
+                        "name": connection.label,
+                        "exchange": connection.exchange,
+                        "sandbox": connection.sandbox,
+                        "status": "error",
+                        "holdings": [],
+                        "total": 0,
+                        "unpriced": 0,
+                    }
+                )
         for identity, name, connection, balances in sources:
             holdings = []
             for balance in balances:
@@ -169,9 +170,9 @@ class Portfolio:
                 {
                     "id": identity,
                     "name": name,
-                    "exchange": connection.exchange if connection else "paper",
-                    "sandbox": connection.sandbox if connection else False,
-                    "status": "connected" if connection else "simulated",
+                    "exchange": connection.exchange,
+                    "sandbox": connection.sandbox,
+                    "status": "simulated" if connection.exchange == "demo" else "connected",
                     "holdings": sorted(holdings, key=lambda item: item["value"] or 0, reverse=True),
                     "total": sum(item["value"] or 0 for item in holdings),
                     "unpriced": sum(item["value"] is None for item in holdings),
@@ -182,5 +183,5 @@ class Portfolio:
             "accounts": accounts,
             "quote_rates": rates,
             "as_of": datetime.now(UTC).isoformat(),
-            "note": "USD stablecoins are approximated at parity with USDT. Unpriced assets are excluded. Free/reserved balances may be unavailable for a provider.",
+            "note": "USD stablecoins are approximated at parity with USDT. Unpriced assets are excluded. Sandbox accounts contain test funds and are excluded from live portfolio totals. Free/reserved balances may be unavailable for a provider.",
         }

@@ -8,6 +8,8 @@ import {
   Code2,
   KeyRound,
   Network,
+  Newspaper,
+  ChartNoAxesCombined,
   PlugZap,
   Settings2,
   ShieldCheck,
@@ -16,6 +18,7 @@ import {
 import { AgentButton } from '../components/agents';
 import { ComingSoon } from '../components/coming-soon';
 import { ConfigHelper } from '../components/config-helper';
+import { NewsSettings } from '../components/news-settings';
 import { ModelSettings } from '../components/model-settings';
 import { ExchangeConnections } from '../components/exchange-connections';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
@@ -26,14 +29,16 @@ import type { System } from '../lib/types';
 const sections = [
   { id: 'exchanges', label: 'Exchanges', icon: PlugZap },
   { id: 'models', label: 'AI models', icon: Bot },
-  { id: 'apis', label: 'Other APIs', icon: Network },
+  { id: 'news', label: 'News', icon: Newspaper },
+  { id: 'market', label: 'Market data', icon: ChartNoAxesCombined },
   { id: 'workspace', label: 'Workspace', icon: Settings2 },
 ];
 
 /** One home for accounts, model providers, data sources, and workspace access. */
 export function SettingsPage({ system }: { system?: System }) {
   const [search, setSearch] = useSearchParams();
-  const selected = search.get('tab') ?? 'exchanges';
+  const requested = search.get('tab') ?? 'exchanges';
+  const selected = requested === 'apis' ? 'market' : requested;
   const tab = sections.some((section) => section.id === selected) ? selected : 'exchanges';
   return (
     <>
@@ -62,23 +67,35 @@ export function SettingsPage({ system }: { system?: System }) {
           <ModelSettings />
           <ComingSoon module="settings" />
         </div>
-        <div hidden={tab !== 'apis'}>
+        <div hidden={tab !== 'news'}>
           <SectionIntro
-            title="Data from the outside world"
-            description="Market data, news, block activity, and equity research."
+            title="Reporting, from your sources"
+            description="Choose publishers, web collectors, API connections, or the offline demo."
           />
-          {system ? <ConfigHelper system={system} /> : <AccessNote />}
+          <NewsSettings />
+        </div>
+        <div hidden={tab !== 'market'}>
+          <SectionIntro
+            title="Market & research data"
+            description="Choose a public price source. Explore the services behind project research and chain activity."
+          />
+          {system ? <ConfigHelper /> : <AccessNote />}
           <div className="settings-provider-grid">
             {[
-              {
-                title: 'CoinDesk',
-                type: 'Public RSS',
-                copy: 'Headlines and source links for News. No API key required.',
-              },
               {
                 title: 'mempool.space',
                 type: 'Public API',
                 copy: 'Bitcoin blocks and network activity in Research. No API key required.',
+              },
+              {
+                title: 'CoinPaprika',
+                type: 'Public API',
+                copy: 'Project profiles, fundamentals, and market snapshots in Research. No API key required.',
+              },
+              {
+                title: 'Wikipedia',
+                type: 'Public API',
+                copy: 'Attributed background and history excerpts for Crypto profiles. No API key required.',
               },
               {
                 title: 'Yahoo Finance',
@@ -97,8 +114,9 @@ export function SettingsPage({ system }: { system?: System }) {
             ))}
           </div>
           <p className="footnote">
-            These integrations use their built-in endpoints. In demo mode, the app shows labeled
-            fixtures. Custom provider endpoints and API key management are coming soon.
+            Project profiles use CoinPaprika and Wikipedia public endpoints. Blocks and equities use
+            their own labeled demo/live sources. Configure publishers and news API credentials in
+            the News tab.
           </p>
         </div>
         <div hidden={tab !== 'workspace'}>

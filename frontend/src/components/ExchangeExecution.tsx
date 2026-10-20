@@ -27,6 +27,8 @@ type ExchangeIntent = {
 export function ExchangeExecution() {
   const system = useResource<System>('/system');
   const connections = useResource<Connection[]>('/connections');
+  const realConnections =
+    connections.data?.filter((connection) => connection.exchange !== 'demo') ?? [];
   const orders = useResource<ExchangeIntent[]>('/exchange-orders');
   const [connectionId, setConnectionId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USDT');
@@ -93,7 +95,7 @@ export function ExchangeExecution() {
         }
       />
       {system.data?.allow_live_trading ? (
-        connections.data?.length ? (
+        realConnections.length ? (
           <div className="exchange-execution-grid">
             <form
               className="form"
@@ -115,7 +117,7 @@ export function ExchangeExecution() {
                   }}
                 >
                   <option value="">Choose a connected account</option>
-                  {connections.data.map((connection) => (
+                  {realConnections.map((connection) => (
                     <option value={connection.id} key={connection.id}>
                       {connection.label} · {connection.sandbox ? 'sandbox' : 'production'}
                     </option>

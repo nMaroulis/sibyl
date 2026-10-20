@@ -1,5 +1,6 @@
 """Check indicators, realistic execution timing, and absence of future-data signals."""
 
+import ccxt
 import numpy as np
 import pandas as pd
 import pytest
@@ -71,7 +72,7 @@ def test_demo_history_is_consistent_across_request_lengths(settings, store):
     market = Market(settings, store)
     assert market.candles(limit=60) == market.candles(limit=180)[-60:]
     assert market.price("BTC/USDT") == market.candles(limit=1)[0]["close"]
-    with pytest.raises(ValueError, match="Demo markets"):
+    with pytest.raises(ccxt.BadSymbol, match="spot reference"):
         market.candles("INVALID/USDT")
 
 

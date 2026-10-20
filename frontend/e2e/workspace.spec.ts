@@ -155,11 +155,11 @@ test('account balances and future features have explicit boundaries', async ({ p
 
 test('news summaries and trading reports expose real data scope', async ({ page }) => {
   await page.goto('/news');
-  await page.getByLabel('Summary method', { exact: true }).selectOption('extractive');
+  await page.getByLabel('Summary', { exact: true }).selectOption('extractive');
   await expect(
-    page.getByRole('heading', { name: 'The tone of the feed', exact: true }),
+    page.getByRole('heading', { name: 'The tone of this selection', exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/Lexicon polarity of the displayed headlines/)).toBeVisible();
+  await expect(page.getByText(/VADER scores headline and publisher-excerpt wording/)).toBeVisible();
   await page.goto('/reports');
   await expect(page.getByRole('heading', { name: 'Trading report', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Matched paper P&L', exact: true })).toBeVisible();
@@ -228,9 +228,9 @@ test('Settings groups connections and configuration with persistent drafts and k
   await page.getByRole('button', { name: /^Ollama/ }).click();
   await page.getByLabel('Model', { exact: true }).selectOption('__custom__');
   await page.getByLabel('Custom model ID', { exact: true }).fill('draft-model');
-  await tabs.getByRole('tab', { name: 'Other APIs', exact: true }).click();
+  await tabs.getByRole('tab', { name: 'Market data', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Market data configuration', exact: true }),
+    page.getByRole('heading', { name: 'Prices & market history', exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel('Custom model ID', { exact: true })).not.toBeVisible();
   await page.goBack();
@@ -242,4 +242,27 @@ test('Settings groups connections and configuration with persistent drafts and k
   await page.keyboard.press('Home');
   await expect(tabs.getByRole('tab', { name: 'Exchanges', exact: true })).toBeFocused();
   await expect(page.getByRole('button', { name: 'Connect Binance', exact: true })).toBeVisible();
+});
+
+test('crypto profiles uses the backend catalog and keeps asset selection in the URL', async ({
+  page,
+}) => {
+  await page.goto('/research?tab=crypto&asset=btc-bitcoin');
+  await expect(page.getByRole('tab', { name: 'Crypto profiles', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(
+    page.getByRole('group', { name: 'Cryptocurrency profiles' }).getByRole('button'),
+  ).toHaveCount(20);
+  await page.getByLabel('Search cryptocurrencies', { exact: true }).fill('Ethereum');
+  await page.getByRole('button', { name: 'Read about Ethereum', exact: true }).click();
+  await expect(page).toHaveURL(/asset=eth-ethereum/);
+  await expect(
+    page.locator('.crypto-name-row').getByRole('heading', { name: 'Ethereum', exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(
+    page.locator('.crypto-name-row').getByRole('heading', { name: 'Bitcoin', exact: true }),
+  ).toBeVisible();
 });

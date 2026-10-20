@@ -228,6 +228,7 @@ export type Forecast = Source & {
   note: string;
 };
 export type Article = {
+  body?: string;
   sentiment: { label: string; compound: number; pos: number; neg: number; neu: number };
   id: string;
   title: string;
@@ -236,6 +237,92 @@ export type Article = {
   publisher: string;
   published_at: string | null;
   url: string | null;
+  source_id: string;
+  assets: string[];
+  collected_at: string;
+  first_seen_at: string;
+};
+export type NewsDistribution = {
+  count: number;
+  compound: number | null;
+  positive: number;
+  neutral: number;
+  negative: number;
+};
+export type NewsFeed = {
+  source: string;
+  mode: 'demo' | 'live';
+  default_mode: 'demo' | 'live';
+  items: Article[];
+  total: number;
+  archive_count: number;
+  has_more: boolean;
+  limit: number;
+  offset: number;
+  note: string;
+  sentiment: NewsDistribution & {
+    model: string;
+    note: string;
+    undated: number;
+    timeline: (NewsDistribution & { date: string })[];
+    assets: (NewsDistribution & { asset: string })[];
+  };
+  facets: { assets: string[]; publishers: { id: string; name: string }[] };
+  sources: {
+    method: 'rss' | 'web' | 'api';
+    id: string;
+    name: string;
+    website: string;
+    status: string;
+    last_attempt: string | null;
+    last_success: string | null;
+    error: string | null;
+    articles: number;
+  }[];
+  collection: {
+    refresh_seconds: number;
+    retention_days: number;
+    max_articles: number;
+    in_progress: boolean;
+  };
+};
+export type FearGreedPoint = { value: number; classification: string; timestamp: string };
+export type FearGreedIndex = {
+  source: string;
+  source_url: string;
+  mode: 'demo' | 'live';
+  status: string;
+  current: FearGreedPoint | null;
+  history: FearGreedPoint[];
+  comparisons: {
+    yesterday?: FearGreedPoint | null;
+    last_week?: FearGreedPoint | null;
+    last_month?: FearGreedPoint | null;
+  };
+  fetched_at: string | null;
+  error: string | null;
+  note: string;
+};
+export type NewsSettings = {
+  mode: 'auto' | 'demo' | 'live';
+  resolved_mode: 'demo' | 'live';
+  sources: string[];
+  cryptoslate_method: 'rss' | 'web';
+  has_api_key: boolean;
+  query: string;
+  catalog: {
+    id: string;
+    name: string;
+    kind: string;
+    website: string | null;
+    description: string;
+    methods?: string[];
+  }[];
+};
+export type MarketSettings = {
+  active: { mode: 'demo' | 'live'; exchange: string };
+  saved: { mode: 'demo' | 'live'; exchange: string };
+  restart_required: boolean;
 };
 export type Knowledge = {
   term: string;
@@ -285,6 +372,7 @@ export type Run = {
 
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
+  crypto_id?: string;
   job_id?: string;
   timeframe?: Timeframe;
   limit?: number;
@@ -293,6 +381,11 @@ export type AgentContext = {
   horizon?: number;
   parameters?: StrategyParams;
   article_id?: string;
+  news_mode?: 'demo' | 'live';
+  news_publisher?: string;
+  news_asset?: string;
+  news_sentiment?: '' | 'positive' | 'neutral' | 'negative';
+  news_days?: number;
   query?: string;
 };
 export type ModuleId =
@@ -375,4 +468,96 @@ export type ModelWorkspace = {
   source: 'workspace' | 'environment';
   profiles: Record<string, ModelProfile>;
   providers: ModelProvider[];
+};
+
+export type CryptoAsset = {
+  id: string;
+  symbol: string;
+  name: string;
+  category: string;
+  wikipedia: string;
+  color: string;
+};
+export type CryptoCatalog = {
+  items: CryptoAsset[];
+  selection_note: string;
+  data_note: string;
+};
+export type CryptoProfile = Source & {
+  asset: CryptoAsset;
+  status: 'ready' | 'partial' | 'unavailable';
+  profile: {
+    description: string;
+    launch_date: string | null;
+    proof_type: string;
+    organization: string;
+    development_status: string;
+    open_source: boolean | null;
+    tags: string[];
+    team: { name: string; position: string }[];
+    links: { label: string; url: string }[];
+  } | null;
+  history: {
+    title: string;
+    introduction: string;
+    sections: { title: string; text: string }[];
+    url: string;
+    revision: number | null;
+    license_url: string;
+    article_note: string | null;
+  } | null;
+  market: {
+    price: number | null;
+    market_cap: number | null;
+    volume_24h: number | null;
+    rank: number | null;
+    circulating_supply: number | null;
+    total_supply: number | null;
+    max_supply: number | null;
+    percent_change_24h: number | null;
+    percent_change_7d: number | null;
+    percent_change_30d: number | null;
+    percent_change_1y: number | null;
+    ath_price: number | null;
+    ath_date: string | null;
+    percent_from_price_ath: number | null;
+    updated_at: string | null;
+    first_data_at: string | null;
+    currency: string;
+  } | null;
+  sources: {
+    part: 'profile' | 'history' | 'market';
+    source: string;
+    url: string;
+    cached: boolean;
+    stale: boolean;
+    error: string | null;
+    as_of: string | null;
+  }[];
+};
+
+/** Backend-owned exchange configuration; capabilities describe the installed SDK. */
+export type ExchangeProvider = {
+  id: string;
+  name: string;
+  note: string;
+  account: string;
+  credentials_required: boolean;
+  simulated: boolean;
+  test_environment: boolean;
+  ccxt_id: string;
+  setup_url: string;
+  passphrase: boolean;
+  uid: boolean;
+  sandbox: boolean;
+  market_orders: boolean;
+  verification: string;
+  capabilities: Record<string, 'native' | 'emulated' | 'unavailable' | 'simulated'>;
+  timeframes: string[];
+};
+export type ExchangeCatalog = {
+  items: ExchangeProvider[];
+  ccxt_version: string;
+  not_configured: string[];
+  demo: ExchangeProvider;
 };

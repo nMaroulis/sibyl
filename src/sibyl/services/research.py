@@ -1,17 +1,16 @@
 """News, education, blockchain, and optional equities behind explicit data sources."""
 
-import hashlib
 import re
-from collections import Counter
 from datetime import UTC, datetime
-from functools import lru_cache
-from xml.etree import ElementTree
 
 import httpx
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 from sibyl.config import Settings
+from sibyl.news import NewsService
+from sibyl.news.fear_greed import FearGreed
 from sibyl.services.analytics import performance_metrics
+from sibyl.services.crypto_library import CryptoLibrary
+from sibyl.services.data_settings import DataSettings
 
 KNOWLEDGE = [
     {
@@ -92,8 +91,11 @@ KNOWLEDGE = [
 class Research:
     """Provide bounded, source-labeled research reads without hidden model downloads."""
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, data_settings: DataSettings | None = None):
         self.settings = settings
+        self.crypto = CryptoLibrary(settings.data_dir)
+        self.news_service = NewsService(settings, data_settings=data_settings)
+        self.fear_greed = FearGreed(self.news_service.repository)
 
     def knowledge(self, query: str = "") -> list[dict]:
         """Rank a small curated glossary by matching query terms; no embedding claim."""
@@ -111,125 +113,9 @@ class Research:
             if not words or score > 0
         ]
 
-    def _news_feed(self) -> dict:
-        """Read CoinDesk RSS in live mode or return clearly identified sample stories."""
-        if self.settings.mode == "demo":
-            titles = [
-                (
-                    "The bigger picture: reading a changing market",
-                    "Market structure",
-                    "A sample briefing on how volume, liquidity, and volatility can help frame market moves.",
-                ),
-                (
-                    "Beyond the price: a closer look at Ethereum",
-                    "Ecosystem",
-                    "A sample research note exploring network activity and the difference between usage and token value.",
-                ),
-                (
-                    "A thoughtful approach to portfolio concentration",
-                    "Portfolio",
-                    "A sample risk note on position sizing and how correlations can change during periods of stress.",
-                ),
-                (
-                    "What a backtest can — and cannot — tell you",
-                    "Strategies",
-                    "A sample guide to fees, realistic execution, and evaluating a strategy outside its training period.",
-                ),
-                (
-                    "Your API keys deserve a smaller permission set",
-                    "Security",
-                    "A sample operational note on read-only access, IP restrictions, and key rotation.",
-                ),
-            ]
-            return {
-                "source": "demo",
-                "items": [
-                    {
-                        "id": hashlib.sha256(title.encode()).hexdigest()[:16],
-                        "title": title,
-                        "category": category,
-                        "summary": summary,
-                        "publisher": "Sibyl sample briefing",
-                        "published_at": None,
-                        "url": None,
-                    }
-                    for title, category, summary in titles
-                ],
-            }
-        response = httpx.get(
-            "https://www.coindesk.com/arc/outboundfeeds/rss/",
-            timeout=12,
-            headers={"User-Agent": "Sibyl/0.2 (local research dashboard)"},
-        )
-        response.raise_for_status()
-        if len(response.content) > 2_000_000:
-            raise ValueError("News feed exceeds the supported size.")
-        root = ElementTree.fromstring(response.content)
-        items = []
-        for item in root.findall(".//item")[:15]:
-            link = item.findtext("link", "")
-            items.append(
-                {
-                    "id": hashlib.sha256((link or item.findtext("title", "")).encode()).hexdigest()[:16],
-                    "title": item.findtext("title", "Untitled"),
-                    "summary": re.sub(r"<[^>]+>", "", item.findtext("description", ""))[:450],
-                    "publisher": "CoinDesk",
-                    "category": item.findtext("category", "Markets"),
-                    "published_at": item.findtext("pubDate"),
-                    "url": link if link.startswith("https://") else None,
-                }
-            )
-        return {"source": "CoinDesk RSS", "items": items}
-
-    @staticmethod
-    @lru_cache(maxsize=1)
-    def _sentiment():
-        """Load VADER's bundled lexicon once without downloading a language model."""
-        return SentimentIntensityAnalyzer()
-
-    def news(self, summary: str = "excerpt") -> dict:
-        """Score headline/excerpt text with VADER and optionally extract two salient sentences."""
-        feed = self._news_feed()
-        items = []
-        for item in feed["items"]:
-            text = item["summary"]
-            if summary == "extractive":
-                sentences = re.split(r"(?<=[.!?])\s+", text)
-                terms = Counter(re.findall(r"[a-z]{4,}", text.lower()))
-                scores = [
-                    (
-                        sum(terms[word] for word in re.findall(r"[a-z]{4,}", sentence.lower()))
-                        / max(1, len(sentence.split())),
-                        i,
-                    )
-                    for i, sentence in enumerate(sentences)
-                ]
-                chosen = sorted(i for _, i in sorted(scores, reverse=True)[:2])
-                text = " ".join(sentences[i] for i in chosen)
-            sentiment = self._sentiment().polarity_scores(item["title"] + ". " + item["summary"])
-            label = (
-                "positive"
-                if sentiment["compound"] >= 0.05
-                else "negative"
-                if sentiment["compound"] <= -0.05
-                else "neutral"
-            )
-            items.append({**item, "summary": text, "sentiment": {**sentiment, "label": label}})
-        compounds = [item["sentiment"]["compound"] for item in items]
-        return {
-            **feed,
-            "items": items,
-            "summary_method": summary,
-            "sentiment": {
-                "model": "VADER",
-                "compound": sum(compounds) / len(compounds) if compounds else 0,
-                **{
-                    label: sum(item["sentiment"]["label"] == label for item in items)
-                    for label in ("positive", "neutral", "negative")
-                },
-                "note": "Lexicon polarity of the displayed headlines and excerpts; not a market sentiment index or trading signal.",
-            },
-        }
+    def news(self, summary: str = "excerpt", **filters) -> dict:
+        """Read cached publisher excerpts or isolated samples with filtered sentiment evidence."""
+        return self.news_service.query(summary, **filters)
 
     def blocks(self, count: int = 10) -> dict:
         """Read Bitcoin's recent blocks from mempool.space or return sample blocks."""

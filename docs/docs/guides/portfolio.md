@@ -4,7 +4,7 @@ Portfolio is the home screen. It combines portfolio value, allocation, holdings,
 
 ## Read the source first
 
-In **demo mode**, the portfolio is the persistent paper wallet. The initial virtual balances are 24,850 USDT, 0.84 BTC, 8.2 ETH, 74 SOL, and 210 LINK. Paper trades change these quantities.
+In **demo mode**, the portfolio reads the connected Demo account through the same backend account interface as real providers. It uses the persistent paper wallet. The initial virtual balances are 24,850 USDT, 0.84 BTC, 8.2 ETH, 74 SOL, and 210 LINK. Paper trades change these quantities. The seed balances and price fixtures are defined in the Python backend, and React displays the API results. Disconnecting Demo hides it from the portfolio without deleting its wallet; reconnect it in Settings to restore the view.
 
 In **live mode**, the portfolio aggregates total spot balances from your saved exchange connections. Multiple accounts per exchange are supported. A failed account read is identified and excluded; the dashboard never substitutes virtual balances.
 

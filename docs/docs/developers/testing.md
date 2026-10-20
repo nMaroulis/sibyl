@@ -7,7 +7,7 @@ React pages + shared UI
           │ same-origin /api/v1
 FastAPI routes + validated request models
           │
-          ├── Market ── CCXT ── public prices / private balances
+          ├── Market ── ExchangeClient ── public prices / private balances
           ├── Portfolio ── Market + Store
           ├── Analytics ── pure Pandas/NumPy functions
           ├── Strategies ── backtests + persistent paper worker
@@ -25,7 +25,7 @@ FastAPI routes + validated request models
 | `config.py`                    | Validated environment configuration, with no import-time network work                             |
 | `models.py`                    | Strict request models, enum-like IDs, canonical symbol validation                                 |
 | `storage.py`                   | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                     |
-| `services/market.py`           | Deterministic fixtures, CCXT configuration, source labels, bounded cache                          |
+| `services/market.py`           | Client ownership, closed candles, source labels and bounded cache                                 |
 | `services/portfolio.py`        | Aggregate account balances, valuation, history, incomplete-account reporting                      |
 | `services/analytics.py`        | Pure indicator, correlation, and baseline forecasting functions                                   |
 | `services/strategies.py`       | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
@@ -52,10 +52,14 @@ This implementation assumes one API process and worker. It is not a distributed 
 
 ## Source boundaries
 
-Demo fixtures are an explicit Market/Research branch; live errors never trigger fixture substitution. A portfolio records incomplete accounts and unpriced assets. A model-backed answer and the initial native tool evidence have separate labels. Charts show observed or simulated values with the relevant assumptions.
+Demo prices come from an explicit DemoClient and research fixtures have their own demo boundary; live errors never trigger fixture substitution. A portfolio records incomplete accounts and unpriced assets. A model-backed answer and the initial native tool evidence have separate labels. Charts show observed or simulated values with the relevant assumptions.
 
 Strategy monitoring components are split into the run list, detail workspace, decision journal, and chart. The builder and monitor share the `/strategies` route with query selections. Run detail polling reads persisted observations; it never fetches provider quotes or executes paper fills. The worker saves each successful quote sample and commits new-candle decisions with the updated account/cursor in one SQLite transaction. Stop and pause use the same service lock as evaluation.
 
 Monitor regression tests cover read-only polling, quote updates without duplicate decisions, restart persistence, skip/hold reasons, slippage signs and fee accounting, terminal/idempotent Stop, pause/source-change handling, rollback after an uncommitted fill, paged cursors, full CSV and its export boundary, retention, earlier-run honesty, concurrent worker calls, custom indicator periods, rolling metric baselines, and run-specific Broker context.
 
 Pause/Stop concurrency checks also hold a provider request open and confirm that accepted controls prevent any pending fill, without waiting for the request to finish.
+
+## News backend checks
+
+`uv run pytest tests/test_news.py` exercises RSS/Atom sanitization, publisher URL rules, input size limits, conditional requests, restart persistence, source failures without demo fallback, title/URL deduplication, retention, cooldown, overlapping collection, query validation, aggregate scope and Reporter selection. All HTTP is mocked; tests never contact publishers. See [News ingestion and sentiment](news.md).

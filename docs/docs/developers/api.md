@@ -4,44 +4,53 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 
 ## Endpoints
 
-| Method     | Path                            | Purpose                                                                         |
-| ---------- | ------------------------------- | ------------------------------------------------------------------------------- |
-| GET        | `/health` (unversioned)         | Process readiness and package version                                           |
-| GET        | `/system`                       | Safe workspace configuration                                                    |
-| GET        | `/settings/llm`                 | Provider catalog, active model, saved metadata; keys are write-only             |
-| POST       | `/settings/llm`                 | Save encrypted profile and activate for new requests                            |
-| DELETE     | `/settings/llm/{provider}/key`  | Remove stored key; fall back to tool mode if active required key is unavailable |
-| GET        | `/portfolio/accounts`           | Per-account free/reserved/total and conversion rates                            |
-| GET        | `/markets/symbols`              | Active spot catalog and available timeframes                                    |
-| GET        | `/markets/orderbook`            | Public snapshot: symbol, depth 5–50                                             |
-| GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                                     |
-| POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit                              |
-| GET        | `/portfolio`                    | Priced balances, allocation, history, warnings                                  |
-| GET        | `/markets`                      | Watchlist and source labels                                                     |
-| GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                                           |
-| GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform                                |
-| GET / POST | `/connections`                  | List metadata / save encrypted credentials                                      |
-| DELETE     | `/connections/{id}`             | Remove a connection                                                             |
-| POST       | `/connections/{id}/check`       | Read-only credential verification                                               |
-| GET        | `/paper/balances`               | Separate manual paper ledger                                                    |
-| GET / POST | `/orders`                       | Paper fill history / execute paper order                                        |
-| POST       | `/orders/preview`               | Paper reference quote, fee, estimated debit/credit                              |
-| GET        | `/exchange-orders`              | Exchange intents and submission snapshots                                       |
-| POST       | `/exchange-orders/preview`      | Validate and create a 60-second exchange intent                                 |
-| POST       | `/exchange-orders/{id}/confirm` | Submit once with typed confirmation                                             |
-| GET        | `/strategies`                   | Algorithm catalog                                                               |
-| POST       | `/strategies/backtest`          | Historical simulation and persisted result                                      |
-| GET / POST | `/strategies/jobs`              | List / start isolated paper jobs                                                |
-| POST       | `/strategies/jobs/{id}/pause`   | Stop evaluating a paper job                                                     |
-| POST       | `/strategies/jobs/{id}/resume`  | Resume evaluation                                                               |
-| GET        | `/forecast`                     | `symbol`, `horizon` 1–30                                                        |
-| GET        | `/news`                         | RSS/samples, summary=excerpt or extractive, VADER                               |
-| GET        | `/knowledge`                    | Glossary; optional `q` keyword query                                            |
-| GET        | `/blocks`                       | Recent Bitcoin blocks, count 1–100                                              |
-| GET        | `/stocks/{symbol}`              | Quote, adjusted history, statistics, profile                                    |
-| GET        | `/agents`                       | Agent catalog and tool/provider metadata                                        |
-| POST       | `/agents/ask`                   | Run module tool and optional inference                                          |
-| GET        | `/runs`                         | Latest persisted runs; optional `kind=agent` or `backtest`                      |
+| Method     | Path                            | Purpose                                                                                  |
+| ---------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
+| GET        | `/health` (unversioned)         | Process readiness and package version                                                    |
+| GET        | `/system`                       | Safe workspace configuration                                                             |
+| GET        | `/settings/llm`                 | Provider catalog, active model, saved metadata; keys are write-only                      |
+| POST       | `/settings/llm`                 | Save encrypted profile and activate for new requests                                     |
+| DELETE     | `/settings/llm/{provider}/key`  | Remove stored key; fall back to tool mode if active required key is unavailable          |
+| GET        | `/portfolio/accounts`           | Per-account free/reserved/total and conversion rates                                     |
+| GET        | `/markets/symbols`              | Active spot catalog and available timeframes                                             |
+| GET        | `/markets/orderbook`            | Public snapshot: symbol, depth 5–50                                                      |
+| GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                                              |
+| POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit                                       |
+| GET        | `/portfolio`                    | Priced balances, allocation, history, warnings                                           |
+| GET        | `/markets`                      | Watchlist and source labels                                                              |
+| GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                                                    |
+| GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform                                         |
+| GET        | `/exchanges`                    | Provider catalog, credential fields, capabilities, execution policy and unconfigured IDs |
+| GET        | `/connections/{id}/balances`    | One account's normalized balances                                                        |
+| GET        | `/connections/{id}/open-orders` | One exact market's open orders (`symbol`)                                                |
+| GET        | `/connections/{id}/trades`      | Bounded fill page (`symbol`, `since` milliseconds, `limit` 1–500)                        |
+| GET / POST | `/connections`                  | List metadata / save encrypted credentials                                               |
+| DELETE     | `/connections/{id}`             | Remove a connection                                                                      |
+| POST       | `/connections/{id}/check`       | Read-only credential verification                                                        |
+| GET        | `/paper/balances`               | Separate manual paper ledger                                                             |
+| GET / POST | `/orders`                       | Paper fill history / execute paper order                                                 |
+| POST       | `/orders/preview`               | Paper reference quote, fee, estimated debit/credit                                       |
+| GET        | `/exchange-orders`              | Exchange intents and submission snapshots                                                |
+| POST       | `/exchange-orders/preview`      | Validate and create a 60-second exchange intent                                          |
+| POST       | `/exchange-orders/{id}/confirm` | Submit once with typed confirmation                                                      |
+| GET        | `/strategies`                   | Algorithm catalog                                                                        |
+| POST       | `/strategies/backtest`          | Historical simulation and persisted result                                               |
+| GET / POST | `/strategies/jobs`              | List / start isolated paper jobs                                                         |
+| POST       | `/strategies/jobs/{id}/pause`   | Stop evaluating a paper job                                                              |
+| POST       | `/strategies/jobs/{id}/resume`  | Resume evaluation                                                                        |
+| GET        | `/forecast`                     | `symbol`, `horizon` 1–30                                                                 |
+| GET        | `/news`                         | Filtered retained publisher excerpts / samples, pagination, VADER aggregates                                        |
+| GET        | `/news/sources`                 | Publisher collection health, no network refresh                                          |
+| POST       | `/news/refresh`                 | Public feed collection with a 60-second per-source cooldown                              |
+| GET        | `/news/{article_id}`            | Retained story lookup independent of paging; optional mode                               |
+| GET        | `/knowledge`                    | Glossary; optional `q` keyword query                                                     |
+| GET        | `/research/crypto`              | Curated 20-asset catalog                                                                 |
+| GET        | `/research/crypto/{asset_id}`   | Fetched metadata, history, market snapshot, and source status                            |
+| GET        | `/blocks`                       | Recent Bitcoin blocks, count 1–100                                                       |
+| GET        | `/stocks/{symbol}`              | Quote, adjusted history, statistics, profile                                             |
+| GET        | `/agents`                       | Agent catalog and tool/provider metadata                                                 |
+| POST       | `/agents/ask`                   | Run module tool and optional inference                                                   |
+| GET        | `/runs`                         | Latest persisted runs; optional `kind=agent` or `backtest`                               |
 
 ## Strategy monitor routes
 
@@ -120,6 +129,20 @@ Read routes do not expose credentials. Exchange errors are sanitized rather than
 
 All backtest parameters, bounds, risk timing, and metric definitions are described in [Strategy studio](../guides/strategies.md). The OpenAPI schema rejects unknown parameters and non-finite values.
 
+## Crypto research
+
+`GET /research/crypto` returns the fixed 20-asset catalog without making 20 provider requests. `GET /research/crypto/{asset_id}` accepts only catalog IDs and returns normalized `profile`, `history`, and `market` sections, each independently nullable, together with source URLs, timestamps, cached/stale flags, and safe errors. Status is `ready`, `partial`, or `unavailable`. Unknown IDs return 404. No arbitrary provider URLs are accepted.
+
+The profile service fetches CoinPaprika metadata/tickers and MediaWiki extracts with bounded time, response size, and concurrency. Read-through caches persist only normalized public data. Source errors are negatively cached for one minute; expired successful observations can be served with an explicit stale flag. These routes use the normal workspace access controls and fetch public data independently of the demo trading setting. Agent context accepts `crypto_id` for the Wiki module.
+
 ## Model configuration
 
 `POST /settings/llm` accepts `provider`, `model`, `base_url`, and an optional `api_key`. Omit the key or send null to preserve its saved value. Credentials are never echoed. Only local/server adapters expose an endpoint field. URLs must use HTTP(S) and cannot embed credentials, a query, or a fragment. Embedded llama.cpp requires an existing GGUF path as its model. All model routes use the workspace token/origin controls. Metadata includes `has_api_key`, `key_source` (`saved`, `environment`, or `none`), installed dependency status, preset IDs, and provider guide URLs. Saves do not perform model inference or verify credentials.
+
+## News queries
+
+See [News ingestion and sentiment](news.md#query-contracts) for `mode`, publisher/asset/polarity/keyword/date filters, summaries, pagination and aggregate scope. Public news mode is independent of exchange mode.
+
+## Data source settings and market mood
+
+`GET` / `POST /settings/news` manages enabled news collectors and a write-only encrypted NewsAPI credential. `GET` / `POST /settings/market` saves public market choices for restart. `GET /news/fear-greed?mode=live` returns attributed cached Alternative.me index observations; `mode=demo` returns explicitly illustrative values. See [News ingestion](news.md#saved-collectors-api-access-and-web-collection).

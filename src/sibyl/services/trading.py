@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import ccxt
 
+from sibyl.exchanges.catalog import exchange_spec
 from sibyl.models import ExchangeOrderRequest
 from sibyl.services.market import Market
 from sibyl.storage import Store
@@ -40,6 +41,10 @@ class ExchangeTrading:
         connection = next((item for item in self.store.connections() if item.id == connection_id), None)
         if connection is None:
             raise LookupError("Connection not found.")
+        if connection.exchange == "demo":
+            raise ValueError(
+                "Demo accounts use paper orders. They cannot enter the live exchange order flow."
+            )
         return connection
 
     def list_orders(self) -> list[dict]:
@@ -85,6 +90,10 @@ class ExchangeTrading:
         """
         self._enabled()
         connection = self._connection(request.connection_id)
+        if not exchange_spec(connection.exchange).market_orders:
+            raise ValueError(
+                "Manual exchange orders are not enabled for this provider. Read access is available."
+            )
         with self.store.db() as db:
             previous = db.execute(
                 "SELECT payload FROM exchange_orders WHERE request_key = ?", (request.idempotency_key,)
@@ -136,7 +145,7 @@ class ExchangeTrading:
             "confirmation": f"{request.side.upper()} {base}",
             "created_at": now.isoformat(),
             "expires_at": (now + timedelta(seconds=60)).isoformat(),
-            "client_order_id": f"sibyl-{uuid4().hex[:20]}",
+            "client_order_id": str(uuid4()),
         }
         try:
             with self.store.db() as db:

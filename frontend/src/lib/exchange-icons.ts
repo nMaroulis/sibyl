@@ -1,0 +1,23 @@
+/** Self-hosted provider symbols; provenance is recorded in public/exchanges/sources.json. */
+export const exchangeIcons: Record<string, string> = {
+  binance: '/exchanges/binance.jpg',
+  binanceus: '/exchanges/binanceus.png',
+  coinbase: '/exchanges/coinbase.png',
+  kraken: '/exchanges/kraken.jpg',
+  okx: '/exchanges/okx.png',
+  bybit: '/exchanges/bybit.png',
+  kucoin: '/exchanges/kucoin.png',
+  gate: '/exchanges/gate.png',
+  bitget: '/exchanges/bitget.jpg',
+  mexc: '/exchanges/mexc.jpg',
+  htx: '/exchanges/htx.png',
+  cryptocom: '/exchanges/cryptocom.jpg',
+  bitstamp: '/exchanges/bitstamp.jpg',
+  gemini: '/exchanges/gemini.png',
+  bitfinex: '/exchanges/bitfinex.png',
+  phemex: '/exchanges/phemex.png',
+  poloniex: '/exchanges/poloniex.png',
+  upbit: '/exchanges/upbit.png',
+  coinex: '/exchanges/coinex.svg',
+  bitmart: '/exchanges/bitmart.ico',
+};

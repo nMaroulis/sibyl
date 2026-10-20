@@ -264,6 +264,12 @@ function AgentDialog({
           {context.parameters?.symbol ??
             context.symbol ??
             context.equity_symbol ??
+            context.crypto_id?.split('-')[0].toUpperCase() ??
+            (context.news_mode
+              ? context.news_mode === 'live'
+                ? 'Public news'
+                : 'Demo briefings'
+              : undefined) ??
             'Module workspace'}
         </span>
         {context.parameters && (
@@ -281,6 +287,12 @@ function AgentDialog({
         {context.job_id && <span>Run {context.job_id.slice(0, 8)}</span>}
         {context.horizon && <span>{context.horizon}-day baseline</span>}
         {context.article_id && <span>Selected story</span>}
+        {context.news_asset && <span>Mentions {context.news_asset}</span>}
+        {context.news_publisher && <span>{context.news_publisher}</span>}
+        {context.news_sentiment && <span>{context.news_sentiment} wording</span>}
+        {context.news_days !== undefined && (
+          <span>{context.news_days ? `${context.news_days}-day window` : 'All retained'}</span>
+        )}
         {context.query && <span>Search: {context.query}</span>}
       </div>
       <div className="agent-dialog-body" ref={body}>
@@ -302,7 +314,13 @@ function AgentDialog({
                 : 'Ask this module’s specialist without leaving your workspace.'}
             </p>
             <div className="agent-suggestions">
-              {prompts[selection.module].map((prompt) => (
+              {(context.crypto_id
+                ? [
+                    'Summarize this project and its history.',
+                    'Explain its network and token supply.',
+                  ]
+                : prompts[selection.module]
+              ).map((prompt) => (
                 <button key={prompt} onClick={() => onSend(prompt)} disabled={!agent}>
                   <span>{prompt}</span>
                   <ArrowUpRight size={14} />

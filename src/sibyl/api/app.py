@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from sibyl import __version__
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
+from sibyl.services.data_settings import DataSettings
 from sibyl.services.market import Market
 from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
@@ -37,6 +38,7 @@ class Services:
     strategies: Strategies
     agents: AgentRegistry
     trading: ExchangeTrading
+    data_settings: DataSettings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -48,23 +50,39 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         store = Store(config.data_dir)
+        data_settings = DataSettings(config, store)
+        data_settings.apply_startup()
         market = Market(config, store)
-        portfolio, research = Portfolio(market, store), Research(config)
+        portfolio, research = Portfolio(market, store), Research(config, data_settings)
         strategies = Strategies(market, store)
         agents = AgentRegistry(config, store, market, portfolio, strategies, research)
         trading = ExchangeTrading(market, store)
-        app.state.services = Services(config, store, market, portfolio, research, strategies, agents, trading)
+        app.state.services = Services(
+            config, store, market, portfolio, research, strategies, agents, trading, data_settings
+        )
 
         async def worker():
             while True:
                 await asyncio.to_thread(strategies.tick)
                 await asyncio.sleep(30)
 
+        async def news_worker():
+            # This worker never shares the strategy loop or reads account credentials.
+            while True:
+                if research.news_service.default_mode == "live":
+                    await asyncio.to_thread(research.news_service.refresh)
+                await asyncio.sleep(30)
+
         task = asyncio.create_task(worker())
+        news_task = asyncio.create_task(news_worker())
         yield
         task.cancel()
+        news_task.cancel()
         with suppress(asyncio.CancelledError):
             await task
+        with suppress(asyncio.CancelledError):
+            await news_task
+        market.close()
 
     app = FastAPI(
         title="Sibyl API",

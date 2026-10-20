@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from sibyl import __version__
 from sibyl.agents.providers import ProviderId
 from sibyl.api.app import Services
+from sibyl.exchanges.registry import provider_catalog
 from sibyl.models import (
     AgentRequest,
     BacktestRequest,
@@ -20,6 +21,7 @@ from sibyl.models import (
     Timeframe,
 )
 from sibyl.services.analytics import analyze, correlation, forecast
+from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequest
 from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
 from sibyl.services.reporting import trading_report
@@ -79,6 +81,32 @@ def remove_model_key(provider: ProviderId, s: S, response: Response):
 def portfolio(s: S):
     """Aggregate priced spot balances and disclose incomplete valuation."""
     return s.portfolio.overview()
+
+
+@router.get("/settings/news", tags=["Settings"])
+def news_settings(s: S, response: Response):
+    """List available news collectors and saved selections without returning provider keys."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.data_settings.public_news()
+
+
+@router.post("/settings/news", tags=["Settings"])
+def save_news_settings(body: NewsSettingsRequest, s: S, response: Response):
+    """Save publisher choices, a collector method and an encrypted optional NewsAPI key."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.data_settings.save_news(body)
+
+
+@router.get("/settings/market", tags=["Settings"])
+def market_settings(s: S):
+    """Read active and saved public market data choices."""
+    return s.data_settings.public_market()
+
+
+@router.post("/settings/market", tags=["Settings"])
+def save_market_settings(body: MarketSettingsRequest, s: S):
+    """Save a source selection for the next restart, without changing execution permissions."""
+    return s.data_settings.save_market(body)
 
 
 @router.get("/markets", tags=["Analyst"])
@@ -145,6 +173,63 @@ def trade_report(s: S):
     return trading_report(s.store, s.trading)
 
 
+@router.get("/exchanges", tags=["Technician"])
+def exchange_providers():
+    """Discover configured exchanges, credential fields and installed SDK capabilities."""
+    return provider_catalog()
+
+
+def account_connection(s: Services, connection_id: str) -> Connection:
+    """Resolve public account metadata without exposing vault contents."""
+    connection = next((item for item in s.store.connections() if item.id == connection_id), None)
+    if connection is None:
+        raise HTTPException(404, "Connection not found.")
+    return connection
+
+
+@router.get("/connections/{connection_id}/balances", tags=["Technician"])
+def connection_balances(connection_id: str, s: S):
+    """Read one saved real or demo account, explicitly identifying its source."""
+    connection = account_connection(s, connection_id)
+    return {
+        "source": connection.exchange,
+        "sandbox": connection.sandbox,
+        "items": s.market.account_balances(connection),
+    }
+
+
+@router.get("/connections/{connection_id}/open-orders", tags=["Broker"])
+def connection_open_orders(connection_id: str, s: S, symbol: Symbol = "BTC/USDT"):
+    """Read one market's open orders; this route never submits or cancels orders."""
+    connection = account_connection(s, connection_id)
+    with s.market.adapter(connection) as client:
+        items = client.fetch_open_orders(symbol)
+    return {"source": connection.exchange, "sandbox": connection.sandbox, "symbol": symbol, "items": items}
+
+
+@router.get("/connections/{connection_id}/trades", tags=["Broker"])
+def connection_trades(
+    connection_id: str,
+    s: S,
+    symbol: Symbol = "BTC/USDT",
+    since: int | None = Query(None, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+):
+    """Read a bounded page of exchange fills; since is UTC Unix milliseconds."""
+    connection = account_connection(s, connection_id)
+    with s.market.adapter(connection) as client:
+        items = client.fetch_my_trades(symbol, since=since, limit=limit)
+    return {
+        "source": connection.exchange,
+        "sandbox": connection.sandbox,
+        "symbol": symbol,
+        "items": items,
+        "limit": limit,
+        "since": since,
+        "complete_history": False,
+    }
+
+
 @router.get("/connections", response_model=list[Connection], tags=["Technician"])
 def connections(s: S):
     """Read saved connection metadata; API credentials cannot be retrieved."""
@@ -168,10 +253,7 @@ def delete_connection(connection_id: str, s: S):
 @router.post("/connections/{connection_id}/check", tags=["Technician"])
 def check_connection(connection_id: str, s: S):
     """Verify credentials against the exchange using read-only balance access."""
-    connection = next((item for item in s.store.connections() if item.id == connection_id), None)
-    if connection is None:
-        raise HTTPException(404, "Connection not found.")
-    return s.market.check_connection(connection)
+    return s.market.check_connection(account_connection(s, connection_id))
 
 
 @router.get("/paper/balances", tags=["Broker"])
@@ -337,15 +419,72 @@ def price_forecast(s: S, symbol: Symbol = "BTC/USDT", horizon: int = Query(14, g
 
 
 @router.get("/news", tags=["Reporter"])
-def news(s: S, summary: Literal["excerpt", "extractive"] = "excerpt"):
-    """Read source-linked news or marked sample briefings."""
-    return s.research.news(summary)
+def news(
+    s: S,
+    summary: Literal["excerpt", "extractive"] = "excerpt",
+    mode: Literal["demo", "live"] | None = None,
+    publisher: str = Query("", max_length=40),
+    asset: str = Query("", max_length=10),
+    sentiment: Literal["", "positive", "neutral", "negative"] = "",
+    q: str = Query("", max_length=200),
+    days: int = Query(7, ge=0, le=365),
+    limit: int = Query(24, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=5000),
+):
+    """Search retained excerpts and analyze the filtered set before pagination."""
+    return s.research.news(
+        summary,
+        mode=mode,
+        publisher=publisher,
+        asset=asset,
+        sentiment=sentiment,
+        q=q,
+        days=days,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/news/sources", tags=["Reporter"])
+def news_sources(s: S):
+    """Inspect publisher health without initiating network requests."""
+    return {"items": s.research.news_service.sources()}
+
+
+@router.post("/news/refresh", tags=["Reporter"])
+def refresh_news(s: S):
+    """Refresh public publisher feeds with a per-source 60-second minimum interval."""
+    return s.research.news_service.refresh(force=True)
+
+
+@router.get("/news/fear-greed", tags=["Reporter"])
+def fear_greed(s: S, mode: Literal["demo", "live"] | None = None):
+    """Read attributed Alternative.me observations or explicitly illustrative demo values."""
+    return s.research.fear_greed.read(mode or s.research.news_service.default_mode)
+
+
+@router.get("/news/{article_id}", tags=["Reporter"])
+def news_article(article_id: str, s: S, mode: Literal["demo", "live"] | None = None):
+    """Read an archived story by its stable ID, independently of paging and filters."""
+    return {"item": s.research.news_service.article(article_id, mode)}
 
 
 @router.get("/knowledge", tags=["Wiki"])
 def knowledge(s: S, q: str = Query("", max_length=200)):
     """Search the built-in glossary without a model or embedding database."""
     return s.research.knowledge(q)
+
+
+@router.get("/research/crypto", tags=["Research"])
+def crypto_catalog(s: S):
+    """List the 20 curated crypto profiles; this is not a live ranking."""
+    return s.research.crypto.catalog()
+
+
+@router.get("/research/crypto/{asset_id}", tags=["Research"])
+def crypto_profile(asset_id: str, s: S):
+    """Fetch public fundamentals, background/history, and an independently sourced market snapshot."""
+    return s.research.crypto.profile(asset_id)
 
 
 @router.get("/blocks", tags=["Explorer"])
@@ -376,6 +515,8 @@ async def ask_agent(body: AgentRequest, s: S):
             504, "The model request timed out. Try a shorter question or check your provider."
         ) from exc
     except asyncio.CancelledError:
+        raise
+    except LookupError:
         raise
     except Exception as exc:
         raise HTTPException(

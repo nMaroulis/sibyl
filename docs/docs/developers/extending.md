@@ -4,9 +4,7 @@ Keep additions small: a domain function or service, a validated API contract, a 
 
 ## Exchange adapter
 
-Add a supported ID to the configuration and model literals, add the provider to the Settings → Exchanges section, and verify its CCXT credential format, sandbox semantics, market-order behavior, symbol normalization, and rate limits. Do not assume every exchange has a sandbox or honors `clientOrderId`.
-
-Public market quotes and private balances have separate adapter ownership. Preserve source labels and show provider failures explicitly. Expand supported quote valuation deliberately; do not silently mark unsupported assets as worthless.
+Implement or extend `ExchangeClient`, then register the provider metadata and class. The backend catalog drives credential fields and reference-exchange choices in Settings. Keep provider payloads out of domain services and preserve exact order symbols. See [Exchange clients](./exchange-clients.md) for the contract, examples, provider matrix and remaining work.
 
 ## Strategy
 

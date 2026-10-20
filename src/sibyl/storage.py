@@ -12,6 +12,8 @@ from uuid import uuid4
 
 from cryptography.fernet import Fernet
 
+from sibyl.exchanges.catalog import exchange_spec
+from sibyl.exchanges.data import DEMO_BALANCES
 from sibyl.models import Connection, ConnectionCreate, OrderRequest
 
 
@@ -55,14 +57,25 @@ class Store:
             """)
             db.executemany(
                 "INSERT OR IGNORE INTO balances VALUES (?, ?)",
-                [
-                    ("USDT", 24_850.0),
-                    ("BTC", 0.84),
-                    ("ETH", 8.2),
-                    ("SOL", 74.0),
-                    ("LINK", 210.0),
-                ],
+                DEMO_BALANCES.items(),
             )
+        # Provision a normal saved demo account once, without resurrecting it after disconnect.
+        with self.db() as db:
+            first = db.execute(
+                "INSERT OR IGNORE INTO workspace_settings VALUES ('demo_account_initialized', 'true')"
+            ).rowcount
+            if first:
+                db.execute(
+                    "INSERT OR IGNORE INTO connections VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        "demo",
+                        "demo",
+                        "Demo account",
+                        False,
+                        datetime.now(UTC).isoformat(),
+                        self.cipher.encrypt(b"{}"),
+                    ),
+                )
         os.chmod(self.path, 0o600)
 
     @contextmanager
@@ -86,6 +99,21 @@ class Store:
             active[0] if active else None,
             {row["provider"]: json.loads(self.cipher.decrypt(row["config"])) for row in rows},
         )
+
+    def data_profile(self, name: str) -> dict:
+        """Decrypt one server-owned data-source profile, never exposed directly by routes."""
+        with self.db() as db:
+            row = db.execute("SELECT value FROM workspace_settings WHERE key=?", (f"data:{name}",)).fetchone()
+        return json.loads(self.cipher.decrypt(row[0])) if row else {}
+
+    def save_data_profile(self, name: str, profile: dict) -> None:
+        """Persist data-source choices and optional provider keys as one encrypted snapshot."""
+        value = self.cipher.encrypt(json.dumps(profile).encode())
+        with self.db() as db:
+            db.execute(
+                "INSERT INTO workspace_settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (f"data:{name}", value),
+            )
 
     def save_model_profile(
         self, provider: str, profile: dict, *, activate: bool = True, fallback_to_tools: bool = False
@@ -115,20 +143,23 @@ class Store:
     def add_connection(self, request: ConnectionCreate) -> Connection:
         """Encrypt all secret fields before persisting an exchange connection."""
         item = Connection(
-            id=uuid4().hex,
+            id="demo" if request.exchange == "demo" else uuid4().hex,
             exchange=request.exchange,
             label=request.label,
-            sandbox=request.sandbox,
+            sandbox=request.sandbox or exchange_spec(request.exchange).test_environment,
             created_at=datetime.now(UTC),
         )
         credentials = {
             "apiKey": request.api_key.get_secret_value(),
             "secret": request.secret.get_secret_value(),
             "password": request.passphrase.get_secret_value(),
+            "uid": request.uid.get_secret_value(),
         }
+        if request.exchange == "demo":
+            credentials = {}
         with self.db() as db:
             db.execute(
-                "INSERT INTO connections VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT OR IGNORE INTO connections VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     item.id,
                     item.exchange,
@@ -138,7 +169,10 @@ class Store:
                     self.cipher.encrypt(json.dumps(credentials).encode()),
                 ),
             )
-        return item
+            saved = db.execute(
+                "SELECT id, exchange, label, sandbox, created_at FROM connections WHERE id = ?", (item.id,)
+            ).fetchone()
+        return Connection.model_validate(dict(saved))
 
     def credentials(self, connection_id: str) -> dict:
         """Decrypt credentials only for the exchange adapter, never for API responses."""

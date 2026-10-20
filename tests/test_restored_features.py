@@ -164,27 +164,14 @@ def test_account_balances_are_separate_normalized_and_secret_free(settings, stor
 
 
 def test_research_sentiment_extraction_and_stock_statistics(settings, monkeypatch):
+    from sibyl.news.sentiment import analyze_article, extract_summary
+
     research = Research(settings)
-    monkeypatch.setattr(
-        research,
-        "_news_feed",
-        lambda: {
-            "source": "test",
-            "items": [
-                {
-                    "id": "1",
-                    "title": "Excellent growth and strong success!",
-                    "summary": "A great improvement. Strong growth continues. A loss was avoided.",
-                }
-            ],
-        },
-    )
-    news = research.news("extractive")
-    assert news["items"][0]["sentiment"]["label"] == "positive"
-    assert news["sentiment"]["positive"] == 1
-    assert len(news["items"][0]["summary"]) < len(
-        "A great improvement. Strong growth continues. A loss was avoided."
-    )
+    text = "A great improvement. Strong growth continues. A loss was avoided."
+    article = analyze_article({"title": "Excellent growth and strong success!", "summary": text})
+    assert article["sentiment"]["label"] == "positive"
+    assert len(extract_summary(text)) < len(text)
+    assert research.news("extractive")["summary_method"] == "extractive"
     stock = research.stock("AAPL")
     assert stock["statistics"]["observations"] == len(stock["history"])
     assert stock["statistics"]["high"] >= stock["price"]

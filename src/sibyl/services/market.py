@@ -1,41 +1,19 @@
-"""Deterministic demo data and a single read-only CCXT exchange boundary."""
+"""Cached market and account reads through the shared exchange-client interface."""
 
-import hashlib
 import threading
 import time
 from contextlib import contextmanager
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 import ccxt
 import numpy as np
 
 from sibyl.config import Settings
+from sibyl.exchanges import ExchangeClient, create_client
+from sibyl.exchanges.data import ASSETS, STABLES, TIMEFRAMES
 from sibyl.models import Candle, Connection
 from sibyl.storage import Store
-
-ASSETS = {
-    "BTC": ("Bitcoin", 67_432.80, "#f6a94d"),
-    "ETH": ("Ethereum", 3_521.64, "#99a7ff"),
-    "SOL": ("Solana", 172.38, "#ad8cf9"),
-    "LINK": ("Chainlink", 17.42, "#7eabfa"),
-    "AVAX": ("Avalanche", 36.84, "#ee8e8e"),
-    "DOT": ("Polkadot", 7.18, "#e68ab9"),
-    "USDT": ("Tether", 1.0, "#71bea5"),
-}
-STABLES = {"USDT", "USDC", "USD", "DAI"}
-
-TIMEFRAMES = {
-    "1m": 60,
-    "5m": 300,
-    "15m": 900,
-    "30m": 1800,
-    "1h": 3600,
-    "4h": 14400,
-    "12h": 43200,
-    "1d": 86400,
-    "1w": 604800,
-}
 
 
 class Market:
@@ -50,32 +28,43 @@ class Market:
         self.settings, self.store = settings, store
         self._cache: dict[str, tuple[float, Any]] = {}
         self._lock = threading.RLock()
-        self._clients: dict[str, Any] = {}
+        self._clients: dict[str, ExchangeClient] = {}
 
     @property
     def source(self) -> str:
         """Identify whether prices are fixture data or provider quotes."""
         return "demo" if self.settings.mode == "demo" else self.settings.market_exchange
 
-    def client(self, connection: Connection | None = None):
-        """Reuse a rate-limited adapter and set sandbox mode before its first request."""
-        exchange = connection.exchange if connection else self.settings.market_exchange
+    def client(self, connection: Connection | None = None) -> ExchangeClient:
+        """Reuse a typed client; public demo data never replaces a private account."""
+        exchange = connection.exchange if connection else self.source
         key = connection.id if connection else exchange
         with self._lock:
             if key not in self._clients:
-                options = {"enableRateLimit": True, "timeout": 12_000}
-                if connection:
-                    options.update(self.store.credentials(connection.id))
-                client = getattr(ccxt, exchange)(options)
-                if connection and connection.sandbox:
-                    client.set_sandbox_mode(True)
-                self._clients[key] = client
+                self._clients[key] = create_client(
+                    exchange,
+                    credentials=self.store.credentials(connection.id)
+                    if connection and exchange != "demo"
+                    else None,
+                    sandbox=connection.sandbox if connection else False,
+                    store=self.store,
+                )
             return self._clients[key]
+
+    def close(self) -> None:
+        """Release all reusable provider sessions during application shutdown."""
+        with self._lock:
+            for client in self._clients.values():
+                client.close()
+            self._clients.clear()
+            self._cache.clear()
 
     def forget(self, connection_id: str) -> None:
         """Drop any decrypted adapter credentials after disconnecting an account."""
         with self._lock:
-            self._clients.pop(connection_id, None)
+            client = self._clients.pop(connection_id, None)
+            if client is not None:
+                client.close()
             self._cache.pop(f"account:{connection_id}", None)
 
     @contextmanager
@@ -117,49 +106,6 @@ class Market:
         if timeframe not in TIMEFRAMES:
             raise ValueError("Unsupported candle timeframe.")
         seconds = TIMEFRAMES[timeframe]
-        if self.settings.mode == "demo":
-            base, quote = symbol.split("/")
-            if quote in ASSETS and quote not in STABLES and base != quote and base in ASSETS:
-                bases = self.candles(f"{base}/USDT", limit, timeframe)
-                quotes = self.candles(f"{quote}/USDT", limit, timeframe)
-                return [
-                    {
-                        **bar,
-                        "open": bar["open"] / other["open"],
-                        "high": bar["high"] / other["low"],
-                        "low": bar["low"] / other["high"],
-                        "close": bar["close"] / other["close"],
-                    }
-                    for bar, other in zip(bases, quotes, strict=True)
-                ]
-            if base not in ASSETS or quote not in STABLES or base in STABLES:
-                raise ValueError(
-                    "Demo markets support BTC, ETH, SOL, LINK, AVAX, or DOT against USD stablecoins, BTC, or ETH."
-                )
-            seed = int(
-                hashlib.sha256((base if timeframe == "1d" else base + timeframe).encode()).hexdigest()[:8], 16
-            )
-            rng = np.random.default_rng(seed)
-            returns = rng.normal(0.0013 * seconds / 86400, 0.022 * np.sqrt(seconds / 86400), 730)
-            prices = np.exp(np.cumsum(returns))
-            prices *= ASSETS[base][1] / prices[-1]
-            closed_at = int(datetime.now(UTC).timestamp()) // seconds * seconds
-            start = datetime.fromtimestamp(closed_at, UTC) - timedelta(seconds=730 * seconds)
-            result = []
-            for i, close in enumerate(prices):
-                opening = float(prices[i - 1]) if i else float(close * 0.996)
-                spread = float(rng.uniform(0.003, 0.025))
-                result.append(
-                    Candle(
-                        timestamp=(start + timedelta(seconds=i * seconds)).isoformat(),
-                        open=opening,
-                        high=max(opening, close) * (1 + spread),
-                        low=min(opening, close) * (1 - spread),
-                        close=float(close),
-                        volume=float(rng.uniform(1000, 12000)),
-                    ).model_dump()
-                )
-            return result[-limit:]
 
         def load():
             with self._lock:
@@ -177,7 +123,7 @@ class Market:
                 for row in rows
                 if row[0] + seconds * 1000 <= now
             ]
-            if len(candles) < 30:
+            if self.settings.mode == "live" and len(candles) < min(30, limit):
                 raise ValueError("The exchange returned fewer than 30 closed candles.")
             return candles[-limit:]
 
@@ -185,8 +131,6 @@ class Market:
 
     def price(self, symbol: str) -> float:
         """Fetch a current reference price, rejecting missing or nonpositive quotes."""
-        if self.settings.mode == "demo":
-            return self.candles(symbol, 1)[0]["close"]
         with self._lock:
             ticker = self.client().fetch_ticker(self.provider_symbol(symbol))
         price = ticker.get("last") or ticker.get("close")
@@ -248,7 +192,7 @@ class Market:
         return {
             asset: float(quantity)
             for asset, quantity in result.get("total", {}).items()
-            if quantity and float(quantity) > 0
+            if quantity and np.isfinite(float(quantity)) and float(quantity) > 0
         }
 
     def check_connection(self, connection: Connection) -> dict:
@@ -267,54 +211,32 @@ class Market:
 
     def symbols(self) -> dict:
         """List active spot markets and provider-supported timeframes without private access."""
-        if self.settings.mode == "demo":
-            items = [
-                {"symbol": f"{base}/{quote}", "base": base, "quote": quote}
-                for base in ASSETS
-                if base not in STABLES
-                for quote in ("USDT", "USDC", "USD", "BTC", "ETH")
-                if base != quote
-            ]
-            frames = list(TIMEFRAMES)
-        else:
 
-            def load():
-                with self._lock:
-                    client = self.client()
-                    markets = client.load_markets()
-                    return {
-                        "items": sorted(
-                            [
-                                {"symbol": symbol, "base": market["base"], "quote": market["quote"]}
-                                for symbol, market in markets.items()
-                                if market.get("spot")
-                                and market.get("active") is not False
-                                and market.get("base", "").isalnum()
-                                and market.get("quote", "").isalnum()
-                            ],
-                            key=lambda item: item["symbol"],
-                        ),
-                        "timeframes": [frame for frame in TIMEFRAMES if frame in (client.timeframes or {})],
-                    }
+        def load():
+            with self._lock:
+                client = self.client()
+                markets = client.load_markets()
+                return {
+                    "items": sorted(
+                        [
+                            {"symbol": symbol, "base": market["base"], "quote": market["quote"]}
+                            for symbol, market in markets.items()
+                        ],
+                        key=lambda item: item["symbol"],
+                    ),
+                    "timeframes": [frame for frame in TIMEFRAMES if frame in client.timeframes],
+                }
 
-            return {"source": self.source, **self._cached("symbols", load, 600)}
-        return {"source": self.source, "items": items, "timeframes": frames}
+        return {"source": self.source, **self._cached("symbols", load, 600)}
 
     def orderbook(self, symbol: str, depth: int = 10) -> dict:
         """Read a bounded public order book; demo levels are explicitly synthetic."""
-        if self.settings.mode == "demo":
-            price = self.price(symbol)
-            book = {
-                "bids": [[price * (1 - 0.0005 * (i + 1)), 0.2 + i * 0.13] for i in range(depth)],
-                "asks": [[price * (1 + 0.0005 * (i + 1)), 0.3 + i * 0.11] for i in range(depth)],
-            }
-        else:
 
-            def load():
-                with self._lock:
-                    return self.client().fetch_order_book(self.provider_symbol(symbol), limit=depth)
+        def load():
+            with self._lock:
+                return self.client().fetch_order_book(self.provider_symbol(symbol), limit=depth)
 
-            book = self._cached(f"book:{symbol}:{depth}", load, 5)
+        book = self._cached(f"book:{symbol}:{depth}", load, 5)
         bids, asks = book["bids"][:depth], book["asks"][:depth]
         spread = float(asks[0][0] - bids[0][0]) if bids and asks else None
         return {
@@ -349,4 +271,4 @@ class Market:
                     )
             return rows
 
-        return self._cached(f"account:{connection.id}", load, 30)
+        return load() if connection.exchange == "demo" else self._cached(f"account:{connection.id}", load, 30)

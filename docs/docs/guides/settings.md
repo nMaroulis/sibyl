@@ -1,12 +1,12 @@
 # Settings
 
-Settings is the single home for exchange connections and workspace configuration. Open it from the floating dock. Its four top tabs share the dock's rounded style, sliding selection, and subtle content reveal. On smaller screens, the rail scrolls horizontally.
+Settings is the single home for exchange connections and workspace configuration. Open it from the floating dock. Its five top tabs share the dock's rounded style, sliding selection, and subtle content reveal. On smaller screens, the rail scrolls horizontally.
 
 The selected tab is part of the URL, so you can bookmark a section and use browser Back/Forward. Arrow keys move between tabs; Home and End select the first and last. Animations respect reduced-motion preferences. Switching Settings tabs preserves unsaved drafts in memory. Leaving or reloading the page clears those drafts.
 
 ## Exchanges
 
-Open `/settings?tab=exchanges` to add Binance, Coinbase, or Kraken accounts, verify read access, or disconnect a saved account. Multiple accounts per provider are supported. Credentials are encrypted in the local Python workspace, never included in agent context. See [Exchange connections](./exchanges.md) for permissions and credential formats.
+Open `/settings?tab=exchanges` to search and add accounts from the 20-provider exchange catalog, verify read access, or disconnect a saved account. Multiple accounts per provider are supported. Credentials are encrypted in the local Python workspace, never included in agent context. See [Exchange connections](./exchanges.md) for permissions and credential formats.
 
 ## AI models
 
@@ -32,11 +32,21 @@ Preset families were reviewed against provider documentation on October 19, 2026
 - [DeepSeek](https://api-docs.deepseek.com), [xAI](https://docs.x.ai/developers/models), [Hugging Face](https://huggingface.co/inference/models)
 - [Ollama](https://ollama.com/library), [LM Studio](https://lmstudio.ai/docs), [vLLM](https://docs.vllm.ai), [llama.cpp](https://github.com/ggml-org/llama.cpp)
 
-## Other APIs
+## News
 
-Open `/settings?tab=apis` to prepare a `sibyl-data.env` snippet for demo/live market data and the reference exchange. Apply it to the server's existing `.env` and restart the API. This does not enable exchange order execution.
+Open `/settings?tab=news` to save the sources behind News, Reporter, and text sentiment. Click a source card to select it. Combine public publishers, or choose **Demo briefings** on its own. News can use real reporting while exchange accounts use demo data.
 
-The section also explains the built-in CoinDesk RSS, mempool.space, and optional Yahoo Finance integrations. CoinDesk and mempool.space need no API key. Live equity research requires the Python `stocks` extra. Cards describe supported sources; they are not connectivity checks. Demo fixtures remain explicitly labeled. Custom endpoint and API key management is **Coming soon**.
+Select CoinDesk, Cointelegraph, Decrypt, The Block, CryptoSlate, and optionally NewsAPI. The five publisher feeds need no key. CryptoSlate also offers a **Website collector** that checks robots.txt and extracts public homepage article cards. Switching collectors keeps article identities and the retained archive. Disabled providers stop collection and their stories leave the active feed; stored data remains available if re-enabled.
+
+**NewsAPI** has an encrypted, write-only key and a configurable crypto search query. A blank key preserves the saved credential. Removing it also requires disabling that provider. Access, delays, quotas and production use depend on your NewsAPI plan. The API supplies snippets and source links, not complete article bodies. Saved choices apply to new news reads immediately; background collection checks enabled sources while the API runs in public news mode. Saving a configuration does not test a paid API key.
+
+The Demo card has an **Exclusive** badge and a distinct selection color. Choosing it clears every public-source selection; choosing a public card exits Demo and selects that source. Selected cards have a check mark and a highlighted border, with local publisher logos. Source-specific options appear below when relevant. **Save news sources** applies the selection. Demo is a separate backend provider with sample briefings, full demo reading dialogs, and illustrative Fear & Greed values. Saved API credentials remain available for later use but their collectors are disabled in Demo. Public news uses the attributed Alternative.me index. See [Research](research.md) and the [News backend](../developers/news.md).
+
+## Market data
+
+Open `/settings?tab=market` to select the Demo client or a supported exchange for public prices and candle history. **Save market source** persists the choice in the workspace. It applies at the next API restart, before clients and workers start, so in-flight observations cannot be relabeled. The form distinguishes the active selection from a saved selection waiting for restart. This selection does not enable exchange trading; private balances use their own account connections.
+
+Saved market choices override environment defaults after restart. The optional environment download remains available for configuring another workspace. This tab also explains CoinPaprika, Wikipedia, mempool.space and optional yfinance research. These integration cards describe their fixed endpoints; they are not credential or connectivity checks. The old `/settings?tab=apis` bookmark opens Market data.
 
 ## Workspace
 

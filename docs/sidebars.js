@@ -28,6 +28,9 @@ module.exports = {
       label: 'Developers',
       items: [
         'developers/architecture',
+        'developers/backend-roadmap',
+        'developers/exchange-clients',
+        'developers/news',
         'developers/agents',
         'developers/api',
         'developers/extending',
