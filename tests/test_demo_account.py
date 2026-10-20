@@ -93,12 +93,17 @@ def test_live_portfolio_does_not_include_demo_and_demo_does_not_contact_real_acc
 
     monkeypatch.setattr(market, "balance", balance)
     monkeypatch.setattr(
-        market, "overview", lambda: {"items": [{"asset": "BTC", "price": 100, "change": 0, "sparkline": []}]}
+        market, "symbols", lambda: {"items": [{"symbol": "BTC/USDT", "base": "BTC", "quote": "USDT"}]}
     )
+    monkeypatch.setattr(market, "valuation_ticker", lambda symbol: {"price": 100, "change": 0})
+    monkeypatch.setattr(market, "candles", lambda *args: [])
+    store.activate_account(real.id, False)
+    store.activate_account("demo", True)
     assert [item.exchange for item in portfolio.connections()] == ["demo"]
     portfolio.overview()
     assert observed == ["demo"]
     settings.mode = "live"
+    store.activate_account(real.id, True)
     assert [item.id for item in portfolio.connections()] == [real.id]
     live = portfolio.overview()
     assert live["total"] == 200

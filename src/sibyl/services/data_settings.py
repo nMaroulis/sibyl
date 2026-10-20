@@ -195,6 +195,10 @@ class DataSettings:
                     "This market source is unavailable. Choose a source in Settings → Market data."
                 )
             if not selected["available"]:
+                if selected["kind"] == "connection":
+                    raise ValueError(
+                        "This account is inactive. Activate it in Exchanges or choose a public market feed."
+                    )
                 raise ValueError("Save an API key for this market source in Settings → Market data.")
             return {**selected, "api_key": config["profiles"].get(identity, {}).get("api_key", "")}
 

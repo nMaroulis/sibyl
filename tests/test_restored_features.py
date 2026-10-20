@@ -146,7 +146,10 @@ def test_account_balances_are_separate_normalized_and_secret_free(settings, stor
         )
     )
     market = Market(settings, store)
-    monkeypatch.setattr(market, "overview", lambda: {"items": [{"asset": "BTC", "price": 100}]})
+    monkeypatch.setattr(
+        market, "symbols", lambda: {"items": [{"symbol": "BTC/USDT", "base": "BTC", "quote": "USDT"}]}
+    )
+    monkeypatch.setattr(market, "valuation_ticker", lambda symbol: {"price": 100})
     monkeypatch.setattr(
         market,
         "account_balances",

@@ -90,6 +90,8 @@ class ExchangeTrading:
         """
         self._enabled()
         connection = self._connection(request.connection_id)
+        if not connection.active:
+            raise ValueError("Activate this exchange account in Settings before reviewing an order.")
         if not exchange_spec(connection.exchange).market_orders:
             raise ValueError(
                 "Manual exchange orders are not enabled for this provider. Read access is available."
@@ -171,6 +173,12 @@ class ExchangeTrading:
                 raise ValueError(f"Type {intent['confirmation']} to confirm this exchange order.")
             if intent["status"] != "preview":
                 return intent
+            if not db.execute(
+                "SELECT 1 FROM active_accounts WHERE account_id=?", (intent["request"]["connection_id"],)
+            ).fetchone():
+                raise ValueError(
+                    "This account is inactive. Activate it and review the order before confirming."
+                )
             if datetime.now(UTC) > datetime.fromisoformat(intent["expires_at"]):
                 raise ValueError("Order preview expired. Review a fresh quote before confirming.")
             intent["status"] = "submitting"

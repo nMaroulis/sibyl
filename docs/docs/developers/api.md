@@ -17,7 +17,7 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                                              |
 | POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit                                       |
 | GET        | `/portfolio`                    | Priced balances, allocation, history, warnings                                           |
-| GET        | `/markets`                      | Saved watchlist quotes, order and source labels                                                              |
+| GET        | `/markets`                      | Saved watchlist quotes, order and source labels                                          |
 | GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                                                    |
 | GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform                                         |
 | GET        | `/exchanges`                    | Provider catalog, credential fields, capabilities, execution policy and unconfigured IDs |
@@ -153,3 +153,19 @@ See [News ingestion and sentiment](news.md#query-contracts) for `mode`, publishe
 `GET` / `POST /settings/news` manages enabled news collectors and a write-only encrypted NewsAPI credential. `GET` / `POST /settings/market` discovers and activates reference feeds immediately; `DELETE /settings/market/{provider}/key` removes a stored API credential. Markets endpoints accept an optional `source` override. See [Market data contracts](market-data.md). `GET /news/fear-greed?mode=live` returns attributed cached Alternative.me index observations; `mode=demo` returns explicitly illustrative values. See [News ingestion](news.md#saved-collectors-api-access-and-web-collection).
 
 Personal watchlist membership and order use `GET /markets/watchlist`, `POST` / `DELETE /markets/watchlist/items`, and `POST /markets/watchlist/order`, all with an optional `source` query. See [watchlist contracts](market-data.md#persisted-watchlists).
+
+## Portfolio pricing evidence
+
+`GET /portfolio` and `GET /portfolio/accounts` use the same held-asset conversion engine. They expose pricing coverage, direct/inverse/bridge paths, quote timestamps and explicit exclusions, independently of watchlists. Account failures use a null account total. See [portfolio valuation](portfolio-valuation.md) for the contracts, source boundaries and budgets.
+
+## Account activation and views
+
+`GET /accounts` describes saved/active accounts and view scopes without provider reads. `POST /accounts/demo` explicitly enables the virtual preview. `POST /connections/{id}/activation` accepts `{"active":true}` or `false`. Saving a new connection activates it. Portfolio endpoints accept `scope=all`, `exchange:<provider>`, or `account:<id>`. See [account selection](accounts.md) for invariants and execution gates.
+
+## Retained account performance
+
+`GET /account-ledger/performance` computes exact-market FIFO across the selected retained history. Optional `account_id`, `symbol`, and `environment` filters keep account/market scope explicit; `mark=true` requests current balance-checked reference marks. Ordinary reads and the Accountant's performance tool do not make those private reads.
+
+`POST /connections/{id}/opening-inventory` takes `symbol`, positive `quantity`, nullable nonnegative `total_cost` in the pair's quote, and a past timezone-aware `as_of` preceding the first retained fill. `DELETE` on that route with `?symbol=...` removes the assertion; `GET /connections/{id}/opening-inventory/audit?symbol=...` returns the latest 50 changes. `GET /account-ledger/performance/example` computes an isolated example without persistent side effects.
+
+These responses use `Cache-Control: no-store`. Reports expose native fee totals, unknown quantities, nullable final net/unrealized values and explicit coverage issues. See [performance contracts](account-performance.md).

@@ -1,6 +1,6 @@
 # Markets and analytics
 
-Your watchlist starts with supported pairs for BTC, ETH, SOL, LINK, AVAX, and DOT, and can contain up to 30 markets. Each row shows its actual quote currency, observation time and missing/stale values. The chart's searchable spot catalog is broader: exchange feeds list active provider spot markets; demo supports those six bases against USDT, USDC, USD, BTC, and ETH, excluding identical pairs.
+Your watchlist starts with supported pairs for BTC, ETH, SOL, LINK, AVAX, and DOT, and can contain up to 30 markets. Each row shows its actual quote currency, observation time and missing/stale values. The chart's searchable spot catalog is broader: exchange feeds list active provider spot markets; demo supports those six bases against USDT, USDC, USD, BTC, and ETH, excluding identical pairs, plus ADA/BTC, USDC/USDT, DAI/USDT, USDT/USD and EUR/USD valuation fixtures.
 
 ## Choose a feed
 
@@ -60,4 +60,4 @@ Spearman ranks each aligned series and computes Pearson on those ranks. No causa
 
 **Ask Analyst** opens the same-page overlay and passes the selected source, symbol, timeframe, and sample limit to its ProtoLink tool. Observations come from the server. Separate selections have separate conversations.
 
-Watchlist quotes can choose USD or USDC when USDT is unavailable, with the actual pair labeled. Analysis and correlations require exact provider pairs. Portfolio and paper reference valuation still approximate USD stablecoins at parity. Actual exchange orders require the exact supported market. See [Market data sources](../developers/market-data.md) for caching, provider limits and backend contracts.
+Watchlist quotes can choose USD or USDC when USDT is unavailable, with the actual pair labeled. Analysis and correlations require exact provider pairs. Portfolio uses observed conversion routes without stablecoin parity; the separate paper reference-price helper still permits USD/USDC substitution. Actual exchange orders require the exact supported market. See [Market data sources](../developers/market-data.md) for caching, provider limits and backend contracts.

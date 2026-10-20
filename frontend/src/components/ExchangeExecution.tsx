@@ -28,7 +28,8 @@ export function ExchangeExecution() {
   const system = useResource<System>('/system');
   const connections = useResource<Connection[]>('/connections');
   const realConnections =
-    connections.data?.filter((connection) => connection.exchange !== 'demo') ?? [];
+    connections.data?.filter((connection) => connection.exchange !== 'demo' && connection.active) ??
+    [];
   const orders = useResource<ExchangeIntent[]>('/exchange-orders');
   const [connectionId, setConnectionId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USDT');

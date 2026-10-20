@@ -7,8 +7,8 @@ Settings are validated by `pydantic-settings`. Environment variables override `.
 | `SIBYL_HOST`               | `127.0.0.1`                       | API bind address                                                                              |
 | `SIBYL_PORT`               | `8000`                            | API port                                                                                      |
 | `SIBYL_DATA_DIR`           | `.sibyl`                          | SQLite and local vault directory                                                              |
-| `SIBYL_MODE`               | `demo`                            | `demo` paper balances or `live` connected account balances                                                       |
-| `SIBYL_NEWS_MODE`          | `auto`                            | Follow account mode, or independently choose `demo` / `live` news |
+| `SIBYL_MODE`               | `demo`                            | Legacy standalone research default; account activation is explicit in Exchanges                                                       |
+| `SIBYL_NEWS_MODE`          | `auto`                            | Follow SIBYL_MODE for research, or independently choose `demo` / `live` news |
 | `SIBYL_NEWS_REFRESH_SECONDS` | `600`                          | Publisher collection interval, 60–86,400 seconds |
 | `SIBYL_NEWS_RETENTION_DAYS` | `30`                            | News archive retention, 1–365 days, capped at 5,000 stories |
 | `SIBYL_MARKET_EXCHANGE`    | `binance`                         | Default market feed, independent of account mode: any of the 20 exchange IDs in the [catalog](../developers/exchange-clients.md) |
@@ -56,3 +56,5 @@ The Crypto profiles tab fetches CoinPaprika and Wikipedia public data in either 
 ## Public news
 
 Choose public publisher feeds on News without changing exchange/account mode. `SIBYL_NEWS_MODE=live` also enables continuous feed collection while the API runs. Public excerpts and source health persist in `SIBYL_DATA_DIR/news.sqlite3`; no news API key is needed. Demo stories stay separate. See the [News backend](../developers/news.md).
+
+Account activation is saved separately in SQLite. A new workspace starts with none, regardless of `SIBYL_MODE`. Connecting an exchange activates it and turns Demo off. See [account selection](../developers/accounts.md).

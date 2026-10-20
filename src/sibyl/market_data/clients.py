@@ -16,6 +16,9 @@ COIN_IDS = {
     "LINK": "chainlink",
     "AVAX": "avalanche-2",
     "DOT": "polkadot",
+    "USDT": "tether",
+    "USDC": "usd-coin",
+    "DAI": "dai",
 }
 
 
@@ -123,7 +126,7 @@ class CryptoCompareClient(PublicAPIClient):
         )
 
     def load_markets(self) -> dict:
-        """Expose six curated reference assets; exchange feeds offer broader discovery."""
+        """Expose curated assets and observed stablecoin conversion quotes."""
         return {
             f"{base}/{quote}": {
                 "symbol": f"{base}/{quote}",

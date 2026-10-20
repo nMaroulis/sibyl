@@ -11,6 +11,7 @@ from sibyl.agents.providers import ProviderId
 from sibyl.api.app import Services
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.models import (
+    AccountActivation,
     AgentRequest,
     BacktestRequest,
     Connection,
@@ -25,6 +26,7 @@ from sibyl.services.analytics import analyze, correlation, forecast
 from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequest
 from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
+from sibyl.services.performance import OpeningInventory
 from sibyl.services.reporting import trading_report
 from sibyl.services.strategies import CATALOG, backtest
 from sibyl.services.watchlists import WatchlistItem, WatchlistOrder
@@ -57,6 +59,7 @@ def system(s: S):
         "agent_engine": "ProtoLink",
         "agents": len(s.agents.agents),
         "allow_live_trading": s.settings.allow_live_trading,
+        "accounts": s.accounts.public(),
     }
 
 
@@ -81,10 +84,35 @@ def remove_model_key(provider: ProviderId, s: S, response: Response):
     return s.agents.models.remove_key(provider)
 
 
+@router.get("/accounts", tags=["Accountant"])
+def active_accounts(s: S, response: Response):
+    """Read active selection and combined/exchange/account viewing options without provider calls."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.accounts.public()
+
+
+@router.post("/accounts/demo", tags=["Accountant"])
+def enable_demo(s: S):
+    """Explicitly connect and activate the isolated virtual preview, without resetting its ledger."""
+    s.store.add_connection(ConnectionCreate(exchange="demo", label="Demo preview"))
+    return s.accounts.public()
+
+
+@router.post("/connections/{connection_id}/activation", tags=["Accountant"])
+def activate_account(connection_id: str, body: AccountActivation, s: S):
+    """Change inclusion in account views; activating an exchange automatically disables Demo."""
+    before = set(s.accounts.public()["active_ids"])
+    s.store.activate_account(connection_id, body.active)
+    result = s.accounts.public()
+    for identity in before - set(result["active_ids"]):
+        s.account_sync.pause(identity)
+    return result
+
+
 @router.get("/portfolio", tags=["Accountant"])
-def portfolio(s: S):
+def portfolio(s: S, scope: str = Query("all", max_length=120, pattern=r"^[a-z0-9:-]+$")):
     """Aggregate priced spot balances and disclose incomplete valuation."""
-    return s.portfolio.overview()
+    return s.portfolio.overview(scope)
 
 
 @router.get("/settings/news", tags=["Settings"])
@@ -220,9 +248,9 @@ def orderbook(
 
 
 @router.get("/portfolio/accounts", tags=["Accountant"])
-def account_details(s: S):
+def account_details(s: S, scope: str = Query("all", max_length=120, pattern=r"^[a-z0-9:-]+$")):
     """Read separate account balances and available quote-conversion rates."""
-    return s.portfolio.accounts()
+    return s.portfolio.accounts(scope)
 
 
 @router.get("/reports/trading", tags=["Broker"])
@@ -297,7 +325,10 @@ def account_sync_status(s: S):
 @router.post("/connections/{connection_id}/sync", status_code=202, tags=["Accountant"])
 def sync_account(connection_id: str, body: AccountSyncRequest, s: S):
     """Queue selected-market fill imports; this never submits an exchange order."""
-    return s.account_sync.enqueue(account_connection(s, connection_id), body.symbols)
+    connection = account_connection(s, connection_id)
+    if not connection.active:
+        raise ValueError("Activate this account in Settings before importing history.")
+    return s.account_sync.enqueue(connection, body.symbols)
 
 
 @router.post("/connections/{connection_id}/sync/pause", tags=["Accountant"])
@@ -330,6 +361,55 @@ def account_fills(
     return s.account_sync.ledger.fills(account_id, symbol or "", side, environment, limit, offset)
 
 
+@router.get("/account-ledger/performance", tags=["Accountant"])
+def account_performance(
+    s: S,
+    response: Response,
+    account_id: str = Query("", max_length=100),
+    symbol: Symbol | None = None,
+    environment: Literal["", "demo", "test", "production"] = "",
+    mark: bool = False,
+):
+    """Compute market FIFO over all selected retained fills; current marks are opt-in."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.performance.report(account_id, symbol or "", environment, mark)
+
+
+@router.post("/connections/{connection_id}/opening-inventory", tags=["Accountant"])
+def save_opening_inventory(connection_id: str, body: OpeningInventory, s: S, response: Response):
+    """Record user-entered opening quantity and optional quote cost, separate from fills."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.performance.save_opening(connection_id, body)
+
+
+@router.get("/account-ledger/performance/example", tags=["Accountant"])
+def performance_example(s: S, response: Response):
+    """Read an isolated computed example; never create paper orders or ledger entries."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.performance.example()
+
+
+@router.get("/account-ledger/performance/markets", tags=["Accountant"])
+def performance_markets(s: S, response: Response):
+    """List market filters from retained fills and opening-only assertions, without provider reads."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.performance.markets()
+
+
+@router.get("/connections/{connection_id}/opening-inventory/audit", tags=["Accountant"])
+def opening_inventory_audit(connection_id: str, symbol: Symbol, s: S, response: Response):
+    """Read the latest fifty local changes to a market's opening inventory assertion."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.performance.audit(connection_id, symbol)
+
+
+@router.delete("/connections/{connection_id}/opening-inventory", status_code=204, tags=["Accountant"])
+def remove_opening_inventory(connection_id: str, symbol: Symbol, s: S):
+    """Remove a basis assertion, retaining its local audit trail and imported fills."""
+    s.performance.remove_opening(connection_id, symbol)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
 @router.get("/connections", response_model=list[Connection], tags=["Technician"])
 def connections(s: S):
     """Read saved connection metadata; API credentials cannot be retrieved."""
@@ -339,7 +419,11 @@ def connections(s: S):
 @router.post("/connections", response_model=Connection, status_code=201, tags=["Technician"])
 def add_connection(body: ConnectionCreate, s: S):
     """Save encrypted credentials. A separate check makes a provider request."""
-    return s.store.add_connection(body)
+    before = set(s.accounts.public()["active_ids"])
+    result = s.store.add_connection(body)
+    for identity in before - set(s.accounts.public()["active_ids"]):
+        s.account_sync.pause(identity)
+    return result
 
 
 @router.delete("/connections/{connection_id}", status_code=204, tags=["Technician"])
@@ -360,6 +444,7 @@ def check_connection(connection_id: str, s: S):
 @router.get("/paper/balances", tags=["Broker"])
 def paper_balances(s: S):
     """Read the separate manual paper ledger, including in live-data mode."""
+    s.accounts.require_demo()
     return {"mode": "paper", "balances": s.store.balances()}
 
 
@@ -372,6 +457,7 @@ def orders(s: S):
 @router.post("/orders/preview", tags=["Broker"])
 def preview_order(body: OrderRequest, s: S):
     """Estimate notional and a 0.1% paper fee without mutating funds."""
+    s.accounts.require_demo()
     with s.market.snapshot():
         price = s.market.price(body.symbol)
         notional = price * body.quantity
@@ -391,7 +477,8 @@ def preview_order(body: OrderRequest, s: S):
 @router.post("/orders", status_code=201, tags=["Broker"])
 def place_order(body: OrderRequest, s: S):
     """Fill a paper market order atomically. Real exchange execution is unavailable."""
-    return s.store.execute_paper(body, s.market.price(body.symbol))
+    s.accounts.require_demo()
+    return s.store.execute_paper(body, s.market.price(body.symbol), require_demo=True)
 
 
 @router.get("/exchange-orders", tags=["Broker"])

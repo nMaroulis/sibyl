@@ -52,10 +52,26 @@ Imports support Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Tr
 
 Filter retained fills by account, market, direction and environment. Original fill/order IDs and fees appear beside execution values. Fees keep their currencies; negative fees are rebates and unknown data stays explicit. Fee totals cover the complete filtered selection. **Export this page** exports the displayed page. Disconnecting stops imports/removes saved credentials while retained history stays readable.
 
-**Caught up** describes the selected provider range, not complete account history. Deposits, withdrawals, opening inventory and exchange P&L remain unimplemented. Imports never change balances or infer settlements from previews. See [account synchronization](../developers/account-sync.md) for coverage and recovery details.
+**Caught up** describes the selected provider range, not complete account history. Deposits, withdrawals and complete account returns remain unimplemented. Retained market FIFO and editable opening inventory are available in **Account history → Performance**. Imports never change balances or infer settlements from previews. See [account synchronization](../developers/account-sync.md) for coverage and recovery details.
 
 The report combines the latest 200 manual paper fills and 100 exchange intents. Manual paper realized P&L matches recorded buys and sells FIFO, allocating buy and sell fees per unit. Opening seed balances have no recorded cost basis. Sales without matching recorded buys are excluded, and truncation of retained history can omit earlier lots. The P&L curve and currency selector use the full retained paper ledger, independently of table filters. Different quote currencies are never added together. Strategy-job fills remain in their isolated console.
 
 Exchange rows include unsubmitted previews as well as submissions; their notional is labeled **Preview reference**, even when an observed average fill price exists. P&L is not inferred from exchange previews. **Refresh records** reloads local history. **Check exchange** uses read-only `fetch_order` for a known exchange order ID, persisting the observed status, filled quantity, average price, and refresh timestamp. This remains available if new execution is disabled. If an uncertain submission has no exchange order ID, reconcile directly at the exchange using the client order ID; it is never resubmitted by refresh.
 
 Advanced order types from the earlier UI are clearly marked **Coming soon**: limit, stop, take-profit, trailing, OCO, TIF, post-only, and iceberg. Current execution is market-only.
+
+## Active accounts and first use
+
+With no active accounts, Trade shows Connect exchange accounts and the smaller Preview with Demo action. Demo activates the virtual order form with a persistent preview banner. Real/test selections show exchange order entry for active accounts; the virtual form is absent. Execution still requires its separate server enablement, review and confirmation. Deactivated accounts cannot review new orders or confirm an earlier preview. Retained execution records remain stored. Independent strategy simulations use isolated capital and do not activate a Demo wallet.
+
+## Retained account performance
+
+In **Account history**, choose **Performance**. Account, exact-market and environment filters apply to all retained buys and sells; fill-table direction and pagination do not affect matching. Totals stay separate by environment and quote currency. Expand **Calculation details** to inspect the matched-result curve, native-currency fees, excluded unknown-cost units and the latest 100 disposal calculations. **Export summary** downloads per-market results with coverage notes.
+
+Use **Opening inventory** for holdings acquired before the retained history. Enter quantity, optional total cost in that pair’s quote currency and a date before the first retained fill. Blank cost means unknown; zero means known zero cost. Existing market cards have **Opening basis** for editing/removing the assertion and reviewing recent changes. These edits never rewrite imported fills.
+
+Net matched P&L remains unavailable when fees, ordering or cross-market coverage are unresolved. Unknown-cost sales are always excluded from the matched result. It is not your complete account return. A newly imported earlier fill can invalidate an opening date; the card will explain that it was ignored.
+
+**Refresh current marks** reads active account balances and current reference prices. Unrealized figures require known basis, usable conversion rates and a matching base balance. The source, conversion evidence and unavailable reasons remain visible; marks exclude future disposal fees. **Recalculate** uses only local retained history and clears an earlier mark.
+
+**View example** demonstrates four sample fills without creating trades, imports or account data. Close it to return to your report. **Ask about this report** opens Accountant in place, using this report’s selection through ProtoLink, with or without an LLM. The assistant never edits cost basis or fetches private balances for this view. See [calculation rules and limits](../developers/account-performance.md).

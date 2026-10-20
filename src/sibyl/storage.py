@@ -41,6 +41,7 @@ class Store:
                     id TEXT PRIMARY KEY, exchange TEXT NOT NULL, label TEXT NOT NULL,
                     sandbox INTEGER NOT NULL, created_at TEXT NOT NULL, credentials BLOB NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS active_accounts (account_id TEXT PRIMARY KEY);
                 CREATE TABLE IF NOT EXISTS model_profiles (provider TEXT PRIMARY KEY, config BLOB NOT NULL);
                 CREATE TABLE IF NOT EXISTS workspace_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS balances (asset TEXT PRIMARY KEY, quantity REAL NOT NULL);
@@ -67,23 +68,6 @@ class Store:
                 "INSERT OR IGNORE INTO balances VALUES (?, ?)",
                 DEMO_BALANCES.items(),
             )
-        # Provision a normal saved demo account once, without resurrecting it after disconnect.
-        with self.db() as db:
-            first = db.execute(
-                "INSERT OR IGNORE INTO workspace_settings VALUES ('demo_account_initialized', 'true')"
-            ).rowcount
-            if first:
-                db.execute(
-                    "INSERT OR IGNORE INTO connections VALUES (?, ?, ?, ?, ?, ?)",
-                    (
-                        "demo",
-                        "demo",
-                        "Demo account",
-                        False,
-                        datetime.now(UTC).isoformat(),
-                        self.cipher.encrypt(b"{}"),
-                    ),
-                )
         os.chmod(self.path, 0o600)
 
     @contextmanager
@@ -194,11 +178,18 @@ class Store:
     def connections(self) -> list[Connection]:
         """Return connection metadata without selecting encrypted credential columns."""
         with self.db() as db:
-            rows = db.execute("SELECT id, exchange, label, sandbox, created_at FROM connections").fetchall()
+            rows = db.execute(
+                "SELECT id, exchange, label, sandbox, created_at, "
+                "EXISTS(SELECT 1 FROM active_accounts WHERE account_id=connections.id) AS active FROM connections"
+            ).fetchall()
         return [Connection.model_validate(dict(row)) for row in rows]
 
-    def add_connection(self, request: ConnectionCreate) -> Connection:
-        """Encrypt all secret fields before persisting an exchange connection."""
+    def add_connection(self, request: ConnectionCreate, *, activate: bool = True) -> Connection:
+        """Save an explicitly requested account and normally activate it atomically.
+
+        Real/test connections replace Demo activation and join other exchange
+        accounts. Creating a Store alone never connects or activates anything.
+        """
         item = Connection(
             id="demo" if request.exchange == "demo" else uuid4().hex,
             exchange=request.exchange,
@@ -215,6 +206,7 @@ class Store:
         if request.exchange == "demo":
             credentials = {}
         with self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
             db.execute(
                 "INSERT OR IGNORE INTO connections VALUES (?, ?, ?, ?, ?, ?)",
                 (
@@ -226,10 +218,33 @@ class Store:
                     self.cipher.encrypt(json.dumps(credentials).encode()),
                 ),
             )
-            saved = db.execute(
-                "SELECT id, exchange, label, sandbox, created_at FROM connections WHERE id = ?", (item.id,)
-            ).fetchone()
-        return Connection.model_validate(dict(saved))
+            if activate:
+                self._activate(db, item.id, True)
+        return next(connection for connection in self.connections() if connection.id == item.id)
+
+    @staticmethod
+    def _activate(db, account_id: str, active: bool) -> None:
+        """Change selection inside the caller's immediate transaction; Demo is exclusive."""
+        account = db.execute("SELECT exchange FROM connections WHERE id=?", (account_id,)).fetchone()
+        if account is None:
+            raise LookupError("Connection not found.")
+        if not active:
+            db.execute("DELETE FROM active_accounts WHERE account_id=?", (account_id,))
+            return
+        if account["exchange"] == "demo":
+            if db.execute(
+                "SELECT 1 FROM active_accounts JOIN connections ON id=account_id WHERE exchange!='demo'"
+            ).fetchone():
+                raise ValueError("Deactivate exchange accounts before enabling Demo preview.")
+        else:
+            db.execute("DELETE FROM active_accounts WHERE account_id='demo'")
+        db.execute("INSERT OR IGNORE INTO active_accounts VALUES (?)", (account_id,))
+
+    def activate_account(self, account_id: str, active: bool) -> None:
+        """Toggle one account while preserving concurrent changes to other accounts."""
+        with self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self._activate(db, account_id, active)
 
     def credentials(self, connection_id: str) -> dict:
         """Decrypt credentials only for the exchange adapter, never for API responses."""
@@ -243,13 +258,16 @@ class Store:
         """Remove a connection; deleting an unknown ID is an idempotent operation."""
         with self.db() as db:
             db.execute("DELETE FROM connections WHERE id = ?", (connection_id,))
+            db.execute("DELETE FROM active_accounts WHERE account_id = ?", (connection_id,))
 
     def balances(self) -> dict[str, float]:
         """Read the independent paper ledger, denominated in native asset quantities."""
         with self.db() as db:
             return dict(db.execute("SELECT asset, quantity FROM balances").fetchall())
 
-    def execute_paper(self, request: OrderRequest, price: float, fee_rate: float = 0.001) -> dict:
+    def execute_paper(
+        self, request: OrderRequest, price: float, fee_rate: float = 0.001, *, require_demo: bool = False
+    ) -> dict:
         """Fill a paper order exactly once, rejecting overspending and overselling.
 
         Fees are charged in the quote asset. An idempotency key cannot be reused
@@ -268,6 +286,11 @@ class Store:
                 if any(order[key] != getattr(request, key) for key in ("symbol", "side", "quantity")):
                     raise ValueError("This idempotency key belongs to a different order.")
                 return order
+            if (
+                require_demo
+                and not db.execute("SELECT 1 FROM active_accounts WHERE account_id='demo'").fetchone()
+            ):
+                raise ValueError("Demo preview is no longer active. Review your account selection.")
             balances = dict(db.execute("SELECT asset, quantity FROM balances").fetchall())
             notional = price * request.quantity
             fee = notional * fee_rate
@@ -331,15 +354,16 @@ class Store:
             ).fetchall()
         return [{**dict(row), "payload": json.loads(row["payload"])} for row in rows]
 
-    def snapshot(self, value: float, scope: str = "") -> list[dict]:
-        """Save one actual portfolio observation per UTC hour and return its history."""
+    def snapshot(self, value: float | None, scope: str = "") -> list[dict]:
+        """Save an hourly observation, or read without writing for incomplete reads."""
         timestamp = datetime.now(UTC).replace(minute=0, second=0, microsecond=0).isoformat()
         if scope:
             with self.db() as db:
-                db.execute(
-                    "INSERT INTO source_snapshots VALUES (?, ?, ?) ON CONFLICT(scope, timestamp) DO UPDATE SET value=excluded.value",
-                    (scope, timestamp, value),
-                )
+                if value is not None:
+                    db.execute(
+                        "INSERT INTO source_snapshots VALUES (?, ?, ?) ON CONFLICT(scope, timestamp) DO UPDATE SET value=excluded.value",
+                        (scope, timestamp, value),
+                    )
                 return [
                     dict(row)
                     for row in db.execute(
@@ -348,9 +372,10 @@ class Store:
                     )
                 ]
         with self.db() as db:
-            db.execute(
-                "INSERT INTO snapshots VALUES (?, ?) ON CONFLICT(timestamp) "
-                "DO UPDATE SET value = excluded.value",
-                (timestamp, value),
-            )
+            if value is not None:
+                db.execute(
+                    "INSERT INTO snapshots VALUES (?, ?) ON CONFLICT(timestamp) "
+                    "DO UPDATE SET value = excluded.value",
+                    (timestamp, value),
+                )
             return [dict(row) for row in db.execute("SELECT * FROM snapshots ORDER BY timestamp")]

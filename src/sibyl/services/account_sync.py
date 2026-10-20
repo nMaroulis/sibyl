@@ -148,6 +148,9 @@ class AccountSync:
                 if connection is None:
                     self.pause(job["account_id"], disconnected=True)
                     return
+                if not connection.active:
+                    self.pause(job["account_id"])
+                    return
                 client = self.market.client(connection)
                 with client.lock:
                     page = client.fetch_trade_page(job["symbol"], job["cursor"], 100)

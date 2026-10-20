@@ -129,7 +129,7 @@ function WorkspaceSearch({ close }: { close: () => void }) {
 
 export function App() {
   const location = useLocation();
-  const { data: system, error: systemError } = useResource<System>('/system');
+  const { data: system, error: systemError } = useResource<System>('/system', 30000);
   const { data: runs } = useResource<Run[]>('/runs', 30000);
   const [searchOpen, setSearchOpen] = useState(false);
   const [privateMode, setPrivateMode] = useState(false);
@@ -162,9 +162,27 @@ export function App() {
         </Link>
         <div className="topbar-context">
           <span>Personal workspace</span>
-          <Badge tone={system?.mode === 'live' ? 'lime' : 'neutral'}>
-            {system?.mode === 'live' ? 'Live data' : 'Demo'}
-          </Badge>
+          <Link to="/settings?tab=exchanges" className="workspace-account-status">
+            <Badge
+              tone={
+                system?.accounts?.mode === 'demo'
+                  ? 'demo'
+                  : system?.accounts?.mode === 'test'
+                    ? 'purple'
+                    : system?.accounts?.active_ids.length
+                      ? 'lime'
+                      : 'neutral'
+              }
+            >
+              {system?.accounts?.mode === 'demo'
+                ? 'Demo preview'
+                : system?.accounts?.mode === 'test'
+                  ? 'Test accounts'
+                  : system?.accounts?.active_ids.length
+                    ? `${system.accounts.active_ids.length} active ${system.accounts.active_ids.length === 1 ? 'account' : 'accounts'}`
+                    : 'No active accounts'}
+            </Badge>
+          </Link>
         </div>
         <div className="topbar-actions">
           <button

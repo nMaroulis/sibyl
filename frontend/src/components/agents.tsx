@@ -265,6 +265,7 @@ function AgentDialog({
             context.symbol ??
             context.equity_symbol ??
             context.crypto_id?.split('-')[0].toUpperCase() ??
+            (context.performance_view ? 'Retained market FIFO' : undefined) ??
             (context.news_mode
               ? context.news_mode === 'live'
                 ? 'Public news'
@@ -294,6 +295,13 @@ function AgentDialog({
           <span>{context.news_days ? `${context.news_days}-day window` : 'All retained'}</span>
         )}
         {context.query && <span>Search: {context.query}</span>}
+        {context.performance_view && (
+          <span>
+            {context.performance_example
+              ? 'Example calculation'
+              : context.performance_environment || 'All environments'}
+          </span>
+        )}
       </div>
       <div className="agent-dialog-body" ref={body}>
         {catalogError && <ErrorState message={catalogError} retry={retry} />}
@@ -304,7 +312,8 @@ function AgentDialog({
             </span>
             <h3>Stay here. Ask away.</h3>
             <p>
-              {context.parameters ||
+              {context.performance_view ||
+              context.parameters ||
               context.job_id ||
               context.symbol ||
               context.equity_symbol ||
@@ -314,12 +323,17 @@ function AgentDialog({
                 : 'Ask this module’s specialist without leaving your workspace.'}
             </p>
             <div className="agent-suggestions">
-              {(context.crypto_id
+              {(context.performance_view
                 ? [
-                    'Summarize this project and its history.',
-                    'Explain its network and token supply.',
+                    'Explain the matched results and missing coverage.',
+                    'How do fees and opening inventory affect this calculation?',
                   ]
-                : prompts[selection.module]
+                : context.crypto_id
+                  ? [
+                      'Summarize this project and its history.',
+                      'Explain its network and token supply.',
+                    ]
+                  : prompts[selection.module]
               ).map((prompt) => (
                 <button key={prompt} onClick={() => onSend(prompt)} disabled={!agent}>
                   <span>{prompt}</span>

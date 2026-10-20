@@ -71,6 +71,13 @@ class Connection(BaseModel):
     label: str
     sandbox: bool
     created_at: datetime
+    active: bool = False
+
+
+class AccountActivation(Request):
+    """Activate or deactivate one saved account without touching credentials."""
+
+    active: bool
 
 
 class Candle(BaseModel):
@@ -182,6 +189,11 @@ class AgentContext(Request):
 
     symbol: str | None = None
     market_source: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
+    portfolio_scope: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
+    performance_view: bool | None = None
+    performance_account_id: str | None = Field(default=None, max_length=100)
+    performance_environment: Literal["", "demo", "test", "production"] | None = None
+    performance_example: bool | None = None
     timeframe: Timeframe | None = None
     limit: int | None = Field(default=None, ge=60, le=720)
     crypto_id: str | None = Field(

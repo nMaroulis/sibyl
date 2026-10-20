@@ -24,7 +24,11 @@ The original Sibyl dashboard, built entirely in Python with Streamlit, is availa
 
 ## Workspace navigation
 
-Portfolio is the home screen. The floating dock opens Markets, Trade, Strategies, Agents, Forecasting, News, and Settings. Settings combines **Exchanges**, **AI models**, **News**, **Market data**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider keys and activates preset/custom models immediately through ProtoLink. News saves collector choices and encrypted optional NewsAPI keys. Market data selects public exchange feeds, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys, applied immediately. Markets can override the feed for its own charts and Analyst without changing the default. Its editable watchlists persist per feed, with add/remove/reorder controls and Quick look cards following the saved order. See [market sources](docs/docs/developers/market-data.md). See the [Settings guide](docs/docs/guides/settings.md).
+Portfolio is the home screen. New workspaces start with no active accounts. Connect multiple exchange accounts to combine their holdings, then filter by exchange or individual account. Activation controls keep saved credentials separate from active accounts. Demo is a clearly labeled optional preview and switches off when an exchange activates. The floating dock opens Markets, Trade, Strategies, Forecasting, News, Agents, and Settings. Settings combines **Exchanges**, **AI models**, **News**, **Market data**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider keys and activates preset/custom models immediately through ProtoLink. News saves collector choices and encrypted optional NewsAPI keys. Market data selects public exchange feeds, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys, applied immediately. Markets can override the feed for its own charts and Analyst without changing the default. Its editable watchlists persist per feed, with add/remove/reorder controls and Quick look cards following the saved order. See [market sources](docs/docs/developers/market-data.md). See the [Settings guide](docs/docs/guides/settings.md).
+
+## Portfolio valuation
+
+Portfolio prices actual held assets through exact direct, inverse or short conversion routes from the selected market feed. Stablecoins and fiat use observed rates; no parity is assumed. Holdings expose conversion evidence and coverage, and unavailable quantities stay visible. Complete account observations form the history. The Demo wallet exercises an extra coin, stablecoin and fiat through the same engine. See [portfolio valuation](docs/docs/developers/portfolio-valuation.md).
 
 ## News and sentiment
 
@@ -58,6 +62,7 @@ Dedicated **Binance Testnet** and **Coinbase Sandbox** options are also availabl
 | `services/strategy_monitor.py` | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
 | `services/trading.py`          | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
 | `services/account_sync.py`     | Durable selected-market imports, retries, pause/resume and progress                               |
+| `services/performance.py`      | Decimal market FIFO, audited opening inventory and opt-in reconciled reference marks              |
 | `services/ledger.py`           | Normalized fills, native-currency fees and atomic import checkpoints                              |
 | `services/research.py`         | Bounded source-labeled research reads                                                             |
 | `news/`                        | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
@@ -67,7 +72,7 @@ Dedicated **Binance Testnet** and **Coinbase Sandbox** options are also availabl
 
 `create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, and owns separate paper-strategy, news and account-import workers. Shutdown waits for an in-flight account read before closing its transport. Importing the package does not connect to an exchange or initialize a model.
 
-Account history now has a persistent fill ledger and resumable selected-market imports for Demo, Binance/Binance.US/Testnet, Coinbase Advanced Trade/Sandbox and Kraken. Open **Trade → Account history** or its connected-account shortcut in Settings. Imports retain native IDs, fee currencies and rebates, with pause/resume, restart recovery and explicit coverage limits. They never place orders or calculate exchange P&L. See [account synchronization](docs/docs/developers/account-sync.md).
+Account history now has a persistent fill ledger and resumable selected-market imports for Demo, Binance/Binance.US/Testnet, Coinbase Advanced Trade/Sandbox and Kraken. Open **Trade → Account history** or its connected-account shortcut in Settings. Imports retain native IDs, fee currencies and rebates, with pause/resume, restart recovery and explicit coverage limits. Imports never place orders. The Performance view computes retained exact-market FIFO, with editable opening inventory, fee coverage, optional balance-checked current marks, CSV summaries and contextual Accountant assistance. Full cash-flow-adjusted account returns remain future work. See [account synchronization](docs/docs/developers/account-sync.md) and [account performance](docs/docs/developers/account-performance.md).
 
 ## Frontend
 

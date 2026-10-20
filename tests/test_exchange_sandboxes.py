@@ -121,11 +121,11 @@ def test_test_accounts_have_normal_apis_but_are_separate_from_real_totals(client
     test = next(row for row in rows if row["id"] == account["id"])
     assert test["sandbox"] is True
     assert test["exchange"] == "coinbase-sandbox"
-    assert all(connection.id != account["id"] for connection in portfolio.connections())
+    assert [connection.id for connection in portfolio.connections()] == [account["id"]]
     market.settings.mode = "live"
-    monkeypatch.setattr(market, "overview", lambda: {"items": []})
-    assert portfolio.overview()["total"] == 0
-    assert portfolio.overview()["venues"] == []
+    monkeypatch.setattr(market, "balance", lambda connection: {"BTC": 1})
+    assert portfolio.overview()["mode"] == "test"
+    assert all(row["sandbox"] for row in portfolio.overview()["venues"])
     assert any(row["sandbox"] for row in portfolio.accounts()["accounts"])
 
 

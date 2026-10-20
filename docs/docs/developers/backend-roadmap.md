@@ -34,12 +34,13 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 
 ### 2. Portfolio valuation and performance — partial
 
-Current valuation uses the six-asset reference watchlist plus approximate USD-stablecoin parity. Other quantities are reported as unpriced. The live history chart records observed account values and includes cash-flow effects.
+Valuation now discovers direct, inverse and short bridge routes for held assets from the selected feed, independently of watchlists. It uses observed stablecoin/fiat conversions, exposes paths and quote quality, and reports unavailable coverage explicitly. Historical observations require complete reads. See [portfolio valuation](portfolio-valuation.md).
 
-- [ ] Price arbitrary held assets through explicit quote/conversion routes.
-- [ ] Fetch actual stablecoin and fiat conversion rates instead of assuming parity.
-- [ ] Calculate realized/unrealized exchange P&L from imported fills and fees.
-- [ ] Handle opening inventory/cost basis and incomplete history explicitly.
+- [x] Price arbitrary held assets through explicit quote/conversion routes, within the selected feed catalog and bounded read budgets.
+- [x] Use observed native stablecoin and fiat conversion rates instead of assuming parity; unavailable routes remain unpriced.
+- [x] Compute retained exact-market FIFO with base/quote fees and explicit gaps; offer balance-checked current reference marks. See [account performance](account-performance.md).
+- [ ] Reconstruct cross-market cost basis and historical third-currency fee conversions for complete exchange P&L.
+- [x] Persist audited opening quantity/cost assertions and disclose unknown basis, ambiguous ordering and incomplete coverage.
 - [ ] Separate deposits/withdrawals from investment performance; implement cash-flow-aware returns.
 - [ ] Extend wallet coverage to funding, earn/staking, subaccounts and supported unified-account variants.
 
@@ -72,7 +73,7 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 - [ ] Add WebSocket market and account/order subscriptions with reconnection handling.
 - [ ] Centralize provider rate budgets, bounded concurrency and read-side backoff.
 - [ ] Expose stale/unavailable market-data state and provider health consistently.
-- [ ] Support reference data beyond the fixed watchlist without unbounded provider requests.
+- [x] Support held-asset valuation and editable watchlists beyond the six defaults with bounded provider reads; broader aggregator discovery remains future work.
 
 ### 6. Strategy research — partial
 

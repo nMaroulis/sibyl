@@ -9,7 +9,7 @@ import ccxt
 import numpy as np
 
 from sibyl.exchanges.base import ExchangeClient, number
-from sibyl.exchanges.data import ASSETS, STABLES, TIMEFRAMES
+from sibyl.exchanges.data import ASSETS, DEMO_ASSETS, STABLES, TIMEFRAMES
 from sibyl.exchanges.history import TradePage
 from sibyl.models import Candle, OrderRequest
 
@@ -34,12 +34,20 @@ class DemoClient(ExchangeClient):
         self.store = store
 
     def load_markets(self) -> dict:
-        """Expose six fixture assets against stable quotes, BTC and ETH."""
+        """Expose familiar pairs plus explicit bridge, fiat and stablecoin fixtures."""
+        symbols = [
+            f"{base}/{quote}"
+            for base in ASSETS
+            if base not in STABLES
+            for quote in ("USDT", "USDC", "USD", "BTC", "ETH")
+            if base != quote
+        ] + ["ADA/BTC", "USDC/USDT", "DAI/USDT", "USDT/USD", "EUR/USD"]
         return {
-            f"{base}/{quote}": {
-                "symbol": f"{base}/{quote}",
+            symbol: {
+                "symbol": symbol,
                 "base": base,
                 "quote": quote,
+                "name": DEMO_ASSETS[base][0],
                 "spot": True,
                 "active": True,
                 "precision": {"amount": 0.00000001},
@@ -48,45 +56,52 @@ class DemoClient(ExchangeClient):
                     "cost": {"min": None, "max": None},
                 },
             }
-            for base in ASSETS
-            if base not in STABLES
-            for quote in ("USDT", "USDC", "USD", "BTC", "ETH")
-            if base != quote
+            for symbol in symbols
+            for base, quote in [symbol.split("/")]
         }
 
     def _candles(self, symbol: str, limit: int, timeframe: str) -> list[dict]:
-        seconds = TIMEFRAMES[timeframe]
+        """Divide aligned native fixture series; quote currencies never imply parity."""
         base, quote = symbol.split("/")
-        if quote in ASSETS and quote not in STABLES and base != quote and base in ASSETS:
-            bases = self._candles(f"{base}/USDT", limit, timeframe)
-            quotes = self._candles(f"{quote}/USDT", limit, timeframe)
-            return [
-                {
-                    **bar,
-                    "open": bar["open"] / other["open"],
-                    "high": bar["high"] / other["low"],
-                    "low": bar["low"] / other["high"],
-                    "close": bar["close"] / other["close"],
-                }
-                for bar, other in zip(bases, quotes, strict=True)
-            ]
-        if base not in ASSETS or quote not in STABLES or base in STABLES:
-            raise ValueError(
-                "Demo markets support BTC, ETH, SOL, LINK, AVAX, or DOT against USD stablecoins, BTC, or ETH."
-            )
+        bases = self._usdt_candles(base, limit, timeframe)
+        if quote == "USDT":
+            return bases
+        quotes = self._usdt_candles(quote, limit, timeframe)
+        return [
+            {
+                **bar,
+                "open": bar["open"] / other["open"],
+                "high": bar["high"] / other["low"],
+                "low": bar["low"] / other["high"],
+                "close": bar["close"] / other["close"],
+            }
+            for bar, other in zip(bases, quotes, strict=True)
+        ]
+
+    def _usdt_candles(self, base: str, limit: int, timeframe: str) -> list[dict]:
+        """Generate one aligned, deterministic synthetic asset series in USDT."""
+        seconds = TIMEFRAMES[timeframe]
         seed = int(
             hashlib.sha256((base if timeframe == "1d" else base + timeframe).encode()).hexdigest()[:8], 16
         )
         rng = np.random.default_rng(seed)
-        returns = rng.normal(0.0013 * seconds / 86400, 0.022 * np.sqrt(seconds / 86400), 730)
+        volatility = 0.001 if base in STABLES or base == "EUR" else 0.022
+        drift = 0 if base in STABLES or base == "EUR" else 0.0013
+        returns = rng.normal(drift * seconds / 86400, volatility * np.sqrt(seconds / 86400), 730)
         prices = np.exp(np.cumsum(returns))
-        prices *= ASSETS[base][1] / prices[-1]
+        prices *= DEMO_ASSETS[base][1] / prices[-1]
+        if base == "USDT":
+            prices[:] = 1.0
         closed_at = int(datetime.now(UTC).timestamp()) // seconds * seconds
         start = datetime.fromtimestamp(closed_at, UTC) - timedelta(seconds=730 * seconds)
         result = []
         for i, close in enumerate(prices):
             opening = float(prices[i - 1]) if i else float(close * 0.996)
+            if base == "USDT":
+                opening = 1.0
             spread = float(rng.uniform(0.003, 0.025))
+            if base in STABLES or base == "EUR":
+                spread = 0 if base == "USDT" else float(rng.uniform(0.0003, 0.002))
             result.append(
                 Candle(
                     timestamp=(start + timedelta(seconds=i * seconds)).isoformat(),

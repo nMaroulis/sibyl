@@ -6,6 +6,7 @@ import {
   Change,
   DataNote,
   ErrorState,
+  Loading,
   PageTitle,
   Panel,
   PanelTitle,
@@ -14,7 +15,8 @@ import {
 import { ValueChart } from '../components/charts';
 import { money, number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
-import type { Analysis, Order, OrderInput, Preview } from '../lib/types';
+import type { AccountSelection, Analysis, Order, OrderInput, Preview } from '../lib/types';
+import { AccountContext, AccountSetup, useAccounts } from '../components/account-selection';
 import { AgentButton } from '../components/agents';
 import { OrderBook } from '../components/orderbook';
 import { ComingSoon } from '../components/coming-soon';
@@ -31,6 +33,26 @@ const sections = [
 
 /** One trading workspace; tabs retain forms and filters while hidden polling pauses. */
 export function Trading() {
+  const accounts = useAccounts();
+  if (accounts.loading) return <Loading />;
+  if (accounts.error || !accounts.data)
+    return (
+      <ErrorState
+        message={accounts.error || 'Account selection unavailable.'}
+        retry={accounts.retry}
+      />
+    );
+  if (!accounts.data.active_ids.length)
+    return (
+      <>
+        <PageTitle title="Trade" description="Choose your exchange accounts to get started." />
+        <AccountSetup selection={accounts.data} page="trading workspace" />
+      </>
+    );
+  return <TradingActive key={accounts.data.signature} selection={accounts.data} />;
+}
+
+function TradingActive({ selection }: { selection: AccountSelection }) {
   const [params, setParams] = useSearchParams();
   const requested = params.get('tab') ?? 'trade';
   const tab = sections.some((item) => item.id === requested) ? requested : 'trade';
@@ -60,6 +82,7 @@ export function Trading() {
           )
         }
       />
+      <AccountContext selection={selection} />
       <SectionTabs
         id="trade"
         label="Trade sections"
@@ -69,12 +92,20 @@ export function Trading() {
       />
       <SectionPanel id="trade" value={tab}>
         <div hidden={tab !== 'trade'}>
-          {(tab === 'trade' || opened.includes('trade')) && (
-            <TradeWorkspace
-              asset={asset}
-              setAsset={(value) => select('asset', value)}
-              active={tab === 'trade'}
-            />
+          {selection.mode !== 'demo' ? (
+            <>
+              <ExchangeExecution />
+              <OrderBook symbol={`${asset}/USDT`} active={tab === 'trade'} />
+              <ComingSoon module="trade" />
+            </>
+          ) : (
+            (tab === 'trade' || opened.includes('trade')) && (
+              <TradeWorkspace
+                asset={asset}
+                setAsset={(value) => select('asset', value)}
+                active={tab === 'trade'}
+              />
+            )
           )}
         </div>
         <div hidden={tab !== 'executions'}>
@@ -324,7 +355,6 @@ function TradeWorkspace({
         </Panel>
       </div>
       <OrderBook symbol={`${asset}/USDT`} active={active} />
-      <ExchangeExecution />
       <ComingSoon module="trade" />
     </>
   );

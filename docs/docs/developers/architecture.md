@@ -26,6 +26,8 @@ FastAPI routes + validated request models
 | `models.py`                    | Strict request models, enum-like IDs, canonical symbol validation                                 |
 | `storage.py`                   | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                     |
 | `services/market.py`           | Client ownership, closed candles, source labels and bounded cache                                 |
+| `services/accounts.py` | Saved versus active accounts, exclusive Demo preview and combined/exchange/account scopes |
+| `services/valuation.py` | Exact direct/inverse/bridge routes, quote freshness, bounded reads and aligned conversion histories |
 | `services/portfolio.py`        | Aggregate account balances, valuation, history, incomplete-account reporting                      |
 | `services/analytics.py`        | Pure indicator, correlation, and baseline forecasting functions                                   |
 | `services/strategies.py`       | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |

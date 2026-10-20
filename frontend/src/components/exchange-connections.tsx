@@ -6,6 +6,8 @@ import {
   KeyRound,
   Network,
   Plus,
+  Power,
+  FlaskConical,
   RefreshCw,
   ShieldCheck,
   Trash2,
@@ -14,6 +16,7 @@ import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { Connection, ExchangeCatalog, ExchangeProvider } from '../lib/types';
 import { ExchangeMark } from './exchange-mark';
+import { AccountContext, useAccounts } from './account-selection';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
 
 function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close: () => void }) {
@@ -178,6 +181,7 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
 }
 
 export function ExchangeConnections() {
+  const selection = useAccounts();
   const connections = useResource<Connection[]>('/connections');
   const catalog = useResource<ExchangeCatalog>('/exchanges');
   const exchanges = catalog.data?.items ?? [];
@@ -189,6 +193,24 @@ export function ExchangeConnections() {
     Record<string, { status: string; message?: string; assets?: number }>
   >({});
   const toast = useToast();
+  const activate = async (connection: Connection) => {
+    setBusy(`activate:${connection.id}`);
+    try {
+      await post(`/connections/${connection.id}/activation`, { active: !connection.active });
+      refresh();
+      toast(
+        connection.active
+          ? 'Account deactivated. Saved credentials and records are retained.'
+          : connection.exchange === 'demo'
+            ? 'Demo preview is active.'
+            : 'Account activated. Demo preview is off.',
+      );
+    } catch (reason) {
+      toast((reason as Error).message, true);
+    } finally {
+      setBusy('');
+    }
+  };
   const check = async (id: string) => {
     setBusy(id);
     try {
@@ -229,12 +251,13 @@ export function ExchangeConnections() {
       <div className="settings-section-intro">
         <div>
           <h2>Exchange accounts</h2>
-          <p>Connect your accounts and verify access, all in one place.</p>
+          <p>Connect multiple accounts, combine exchanges, and choose which accounts are active.</p>
         </div>
         <Badge tone="lime">
           <ShieldCheck size={12} /> Locally encrypted
         </Badge>
       </div>
+      {selection.data && <AccountContext selection={selection.data} />}
       <div className="exchange-catalog-heading">
         <label className="exchange-search">
           Find an exchange
@@ -258,6 +281,7 @@ export function ExchangeConnections() {
       ) : (
         <div className="exchange-client-grid">
           {exchanges
+            .filter((provider) => !provider.simulated)
             .filter((provider) =>
               `${provider.name} ${provider.id}`.toLowerCase().includes(query.trim().toLowerCase()),
             )
@@ -316,9 +340,14 @@ export function ExchangeConnections() {
       )}
       <Panel className="full-panel">
         <PanelTitle
-          title="Connected accounts"
-          subtitle="Save credentials, then verify access with your exchange"
-          action={<Badge>{connections.data?.length ?? 0} saved</Badge>}
+          title="Saved accounts"
+          subtitle="Active accounts appear in Portfolio and Trade. Deactivating keeps credentials and history."
+          action={
+            <Badge>
+              {selection.data?.active_ids.length ?? 0} active · {connections.data?.length ?? 0}{' '}
+              saved
+            </Badge>
+          }
         />
         {connections.loading ? (
           <Loading />
@@ -352,6 +381,20 @@ export function ExchangeConnections() {
                     : 'Sandbox'}
                 </Badge>
               )}
+              <button
+                className={`account-activation ${connection.active ? 'is-active' : ''}`}
+                aria-pressed={connection.active}
+                aria-label={`${connection.active ? 'Deactivate' : 'Activate'} ${connection.label}`}
+                disabled={
+                  !!busy ||
+                  (connection.exchange === 'demo' &&
+                    !connection.active &&
+                    !selection.data?.demo_available)
+                }
+                onClick={() => activate(connection)}
+              >
+                <Power size={13} /> {connection.active ? 'Active' : 'Inactive'}
+              </button>
               <Badge
                 tone={
                   connection.exchange === 'demo' || checks[connection.id]?.status === 'connected'
@@ -403,6 +446,37 @@ export function ExchangeConnections() {
           </Empty>
         )}
       </Panel>
+      {selection.data?.mode !== 'demo' && (
+        <Panel className="demo-settings-invitation">
+          <FlaskConical size={21} />
+          <div>
+            <h3>Explore with Demo</h3>
+            <p>
+              {selection.data?.demo_available
+                ? 'An optional virtual wallet to preview Sibyl. Your saved balances are retained when you leave.'
+                : 'Demo stays off while exchange accounts are active. Deactivate them first to preview virtual funds.'}
+            </p>
+          </div>
+          <button
+            className="button secondary tiny"
+            disabled={!!busy || !selection.data?.demo_available}
+            onClick={async () => {
+              setBusy('demo');
+              try {
+                await post('/accounts/demo');
+                refresh();
+                toast('Demo preview is active.');
+              } catch (reason) {
+                toast((reason as Error).message, true);
+              } finally {
+                setBusy('');
+              }
+            }}
+          >
+            Preview with Demo <ArrowUpRight size={12} />
+          </button>
+        </Panel>
+      )}
       <div className="connection-notes">
         <Panel>
           <ShieldCheck size={22} />
@@ -423,13 +497,13 @@ export function ExchangeConnections() {
         </Panel>
         <Panel>
           <ArrowUpRight size={22} />
-          <h3>Ready for connected data?</h3>
+          <h3>A view across all exchanges.</h3>
           <p>
-            Demo mode uses your paper wallet. Live data mode reads saved exchange accounts and
-            public market prices.
+            Activate several exchange accounts to see combined holdings. Portfolio can focus on one
+            exchange or account. Demo turns off automatically when an exchange account is activated.
           </p>
-          <Link to="/settings?tab=market" className="text-link">
-            View workspace configuration <ArrowUpRight size={13} />
+          <Link to="/portfolio" className="text-link">
+            Open Portfolio <ArrowUpRight size={13} />
           </Link>
         </Panel>
       </div>

@@ -4,9 +4,10 @@ import { Download } from 'lucide-react';
 import { Badge, DataNote, Empty, ErrorState, Loading, Panel, PanelTitle } from './ui';
 import { useResource } from '../lib/hooks';
 import { exportCSV, number } from '../lib/api';
-import type { Source } from '../lib/types';
+import type { Source, ValuationQuote } from '../lib/types';
+import { ValuationDetails } from './valuation-details';
 
-type Balance = {
+type Balance = ValuationQuote & {
   asset: string;
   total: number;
   free: number | null;
@@ -20,26 +21,39 @@ type Account = {
   exchange: string;
   sandbox: boolean;
   status: string;
-  total: number;
+  total: number | null;
   unpriced: number;
+  complete: boolean;
   holdings: Balance[];
 };
-type Accounts = Source & { accounts: Account[]; quote_rates: Record<string, number>; note: string };
-export function AccountBalances() {
-  const result = useResource<Accounts>('/portfolio/accounts', 60000);
+type Accounts = Source & {
+  accounts: Account[];
+  quote_rates: Record<string, number>;
+  quote_details: Record<string, ValuationQuote>;
+  note: string;
+};
+export function AccountBalances({ scope = 'all' }: { scope?: string }) {
+  const result = useResource<Accounts>(
+    `/portfolio/accounts?scope=${encodeURIComponent(scope)}`,
+    60000,
+  );
   const [account, setAccount] = useState('all');
   const [quote, setQuote] = useState('USDT');
   const [query, setQuery] = useState('');
   const accounts =
     result.data?.accounts.filter((item) => account === 'all' || item.id === account) ?? [];
   const rate = result.data?.quote_rates[quote];
+  const effectiveQuote = rate ? quote : 'USDT';
+  const effectiveRate = rate || result.data?.quote_rates.USDT;
   const rows = accounts.flatMap((a) =>
     a.holdings
       .filter((h) => h.asset.includes(query.toUpperCase()))
       .map((h) => ({ ...h, account: a.name, accountId: a.id })),
   );
   const value = (v: number | null) =>
-    v === null || !rate ? '—' : number(v / rate, quote === 'BTC' || quote === 'ETH' ? 6 : 2);
+    v === null || !effectiveRate
+      ? '—'
+      : number(v / effectiveRate, effectiveQuote === 'BTC' || effectiveQuote === 'ETH' ? 6 : 2);
   return (
     <Panel className="full-panel">
       <PanelTitle
@@ -51,14 +65,27 @@ export function AccountBalances() {
             disabled={!rows.length}
             onClick={() =>
               exportCSV('sibyl-account-balances.csv', [
-                ['Account', 'Asset', 'Free', 'Reserved', 'Total', `Value (${quote})`],
+                [
+                  'Account',
+                  'Asset',
+                  'Free',
+                  'Reserved',
+                  'Total',
+                  `Value (${effectiveQuote})`,
+                  'Pricing status',
+                  'Conversion path',
+                  'Reason',
+                ],
                 ...rows.map((r) => [
                   r.account,
                   r.asset,
                   r.free ?? '',
                   r.used ?? '',
                   r.total,
-                  r.value !== null && rate ? r.value / rate : '',
+                  r.value !== null && effectiveRate ? r.value / effectiveRate : '',
+                  r.status,
+                  r.path.join(' → '),
+                  r.reason ?? '',
                 ]),
               ])
             }
@@ -81,7 +108,7 @@ export function AccountBalances() {
         </label>
         <label>
           Value in
-          <select value={quote} onChange={(e) => setQuote(e.target.value)}>
+          <select value={effectiveQuote} onChange={(e) => setQuote(e.target.value)}>
             {Object.keys(result.data?.quote_rates ?? { USDT: 1 }).map((q) => (
               <option key={q}>{q}</option>
             ))}
@@ -98,6 +125,16 @@ export function AccountBalances() {
         <ErrorState message={result.error} retry={result.retry} />
       ) : (
         <>
+          {effectiveQuote !== 'USDT' && result.data?.quote_details[effectiveQuote] && (
+            <div className="account-conversion-caption">
+              Values divide the USDT reference value by {number(effectiveRate || 1, 8)} USDT per{' '}
+              {effectiveQuote}.
+              <ValuationDetails
+                quote={result.data.quote_details[effectiveQuote]}
+                source={result.data.source_label || result.data.source}
+              />
+            </div>
+          )}
           <div className="account-summary">
             {accounts.map((a) => (
               <div key={a.id}>
@@ -106,7 +143,7 @@ export function AccountBalances() {
                   {a.name}
                 </strong>
                 <span>
-                  {value(a.total)} {quote}
+                  {value(a.total)} {effectiveQuote}
                 </span>
                 <Badge
                   tone={
@@ -136,7 +173,7 @@ export function AccountBalances() {
                     <th>Available</th>
                     <th>Reserved</th>
                     <th>Total</th>
-                    <th>Value · {quote}</th>
+                    <th>Value · {effectiveQuote}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,7 +186,13 @@ export function AccountBalances() {
                       <td>{r.free === null ? '—' : number(r.free, 8)}</td>
                       <td>{r.used === null ? '—' : number(r.used, 8)}</td>
                       <td>{number(r.total, 8)}</td>
-                      <td>{value(r.value)}</td>
+                      <td>
+                        {value(r.value)}
+                        <ValuationDetails
+                          quote={r}
+                          source={result.data?.source_label || result.data?.source || ''}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -162,7 +205,7 @@ export function AccountBalances() {
           )}
           <p className="footnote padded">{result.data?.note}</p>
           <div className="chart-footnote">
-            <DataNote source={result.data?.source} />
+            <DataNote source={result.data?.source} label={result.data?.source_label} />
             <span>{result.data?.as_of && new Date(result.data.as_of).toLocaleString()}</span>
           </div>
         </>

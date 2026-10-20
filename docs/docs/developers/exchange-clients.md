@@ -111,7 +111,7 @@ fill = demo.create_order(
 assert demo.fetch_order(fill["id"], "BTC/USDT")["status"] == "closed"
 ```
 
-Demo fills use the existing paper ledger's transactional idempotency and 0.1% quote-asset fee. Reusing the same ID and order details returns the original fill, including after restart. Insufficient paper funds reject the fill. This simulator has no resting limit orders, partial fills, latency or realistic liquidity. Price fixtures preserve the original deterministic sequence; they are not a realistic evolving exchange feed. Saved real connections are still real when explicitly checked in demo mode. Demo is never a fallback for failed live requests and is saved as a credential-free connection (`id=demo`). The backend provisions it once, and a persistent initialization marker respects later disconnects. Reconnecting restores the same wallet without resetting funds or duplicating balances.
+Demo fills use the existing paper ledger's transactional idempotency and 0.1% quote-asset fee. Reusing the same ID and order details returns the original fill, including after restart. Insufficient paper funds reject the fill. This simulator has no resting limit orders, partial fills, latency or realistic liquidity. Price fixtures preserve the original deterministic sequence; they are not a realistic evolving exchange feed. Saved real connections are still real when explicitly checked in demo mode. Demo is never a fallback for failed live requests and is saved as a credential-free connection (`id=demo`). The backend connects and activates it only after an explicit Preview with Demo action. Fresh workspaces have no accounts active. Reconnecting restores the same wallet without resetting funds or duplicating balances.
 
 ## HTTP integration
 
@@ -136,7 +136,7 @@ These routes have the same workspace access controls as other APIs. Account read
 - [ ] Cancel/replace, resting limit orders, stop/OCO orders and their dedicated user review flows.
 - [ ] WebSocket subscriptions, reconnect/backoff handling and streaming order updates. Current reads are REST snapshots.
 - [ ] Funding/earn/staking/subaccount wallets, transfers, derivatives and unified-account variants beyond the scopes above. Withdrawal APIs are not implemented.
-- [ ] Broader asset valuation and real quote/FX conversion; the portfolio still prices the six-asset watchlist and approximates USD stablecoins at parity.
+- [x] Held-asset spot valuation through exact direct/inverse/bridge routes and observed stablecoin/fiat rates; see [portfolio valuation](portfolio-valuation.md). Broader aggregator catalogs and external FX sources remain future work.
 - [ ] Historical candle pagination beyond a provider's single-page limit; explicit retention and import cursors.
 - [ ] Region-specific deployments and endpoints (for example OKX US/EEA and Upbit regional variants).
 - [ ] Additional venues. Useful next candidates include Bitvavo, WhiteBIT, Bitbank, bitFlyer, Bithumb, Coincheck, Luno, BTC Markets, Indodax, Bitrue, AscendEX and BingX. The catalog's `not_configured` array gives the complete installed-SDK remainder rather than presenting them as supported clients.

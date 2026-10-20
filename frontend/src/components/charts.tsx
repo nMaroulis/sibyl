@@ -25,11 +25,13 @@ export function ValueChart({
   color = '#4675d2',
   height = 250,
   currency = true,
+  unit,
 }: {
   data: { timestamp: string; value: number }[];
   color?: string;
   height?: number;
   currency?: boolean;
+  unit?: string;
 }) {
   const id = useId().replaceAll(':', '');
   const intraday =
@@ -70,11 +72,15 @@ export function ValueChart({
             orientation="right"
             domain={['auto', 'auto']}
             tickFormatter={(value) =>
-              currency
+              unit
                 ? Number(value) >= 1000
-                  ? `$${(Number(value) / 1000).toFixed(1)}k`
-                  : money(Number(value), 2)
-                : Number(value).toFixed(0)
+                  ? `${(Number(value) / 1000).toFixed(1)}k`
+                  : number(Number(value))
+                : currency
+                  ? Number(value) >= 1000
+                    ? `$${(Number(value) / 1000).toFixed(1)}k`
+                    : money(Number(value), 2)
+                  : Number(value).toFixed(0)
             }
             axisLine={false}
             tickLine={false}
@@ -85,7 +91,11 @@ export function ValueChart({
             contentStyle={tooltip}
             labelFormatter={(value) => labelDate(String(value))}
             formatter={(value) => [
-              currency ? money(Number(value)) : Number(value).toFixed(2),
+              unit
+                ? `${number(Number(value))} ${unit}`
+                : currency
+                  ? money(Number(value))
+                  : Number(value).toFixed(2),
               'Value',
             ]}
           />

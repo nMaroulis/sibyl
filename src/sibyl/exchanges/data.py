@@ -24,4 +24,23 @@ TIMEFRAMES = {
 }
 
 # Seeded once per asset in the persistent paper ledger; never sent from frontend code.
-DEMO_BALANCES = {"USDT": 24_850.0, "BTC": 0.84, "ETH": 8.2, "SOL": 74.0, "LINK": 210.0}
+DEMO_BALANCES = {
+    "USDT": 24_850.0,
+    "BTC": 0.84,
+    "ETH": 8.2,
+    "SOL": 74.0,
+    "LINK": 210.0,
+    "ADA": 1200.0,
+    "USDC": 1500.0,
+    "EUR": 250.0,
+}
+
+# Separate from the familiar default watchlist. These routes exercise broader
+# holdings, a stablecoin away from parity, fiat conversion and an inverse quote.
+DEMO_ASSETS = ASSETS | {
+    "ADA": ("Cardano", 0.42, "#6b92d5"),
+    "USDC": ("USDC", 0.997, "#6b9bd5"),
+    "DAI": ("Dai", 0.998, "#d7ad61"),
+    "USD": ("US Dollar", 1 / 1.002, "#83aa96"),
+    "EUR": ("Euro", 1.08 / 1.002, "#8b9bc5"),
+}

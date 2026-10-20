@@ -9,11 +9,11 @@ Market data is independent from account mode and execution permissions. A worksp
 | Sibyl Demo | None | Offline deterministic quotes, OHLCV and synthetic order books |
 | 20 public exchanges | None for public endpoints | Active spot catalog, quotes, provider-supported OHLCV and order-book snapshots |
 | Saved exchange account | Existing encrypted exchange credentials | Its exchange and production/test environment; capabilities depend on that client |
-| CryptoCompare / CoinDesk CCCAGG | Provider API key | Six reference assets, direct-pair quotes and OHLCV |
-| CoinGecko Demo API | Free Demo-plan API key | Six reference assets quoted in USD; quotes only |
+| CryptoCompare / CoinDesk CCCAGG | Provider API key | Six reference assets plus USDT/USDC/DAI conversion quotes; direct-pair quotes and OHLCV |
+| CoinGecko Demo API | Free Demo-plan API key | Six reference assets plus USDT/USDC/DAI quoted in USD; quotes only |
 | CoinGecko Pro API | Paid Pro API key | The same quote contract on the separate Pro endpoint |
 
-The reference assets are BTC, ETH, SOL, LINK, AVAX and DOT. Exchange spot catalogs are broader. Aggregators do not expose an exchange order book. CoinGecko's **Demo API plan supplies live data**; it is separate from Sibyl's offline Demo fixtures. Its adapter intentionally has no candles: simple-price observations do not contain OHLCV, and snapshot volume is not candle volume.
+The reference crypto assets are BTC, ETH, SOL, LINK, AVAX and DOT; the API catalogs also include USDT, USDC and DAI for observed conversion rates. Exchange spot catalogs are broader. Aggregators do not expose an exchange order book. CoinGecko's **Demo API plan supplies live data**; it is separate from Sibyl's offline Demo fixtures. Its adapter intentionally has no candles: simple-price observations do not contain OHLCV, and snapshot volume is not candle volume.
 
 Public availability, geography, rate limits, history depth and key requirements depend on the provider. Anonymous CryptoCompare price/history checks returned HTTP 401 on October 20, 2026, so its source requires a key; it is not presented as a keyless service. Discovery inspects the installed exchange adapter capabilities without making network calls. A selectable card is not proof of successful connectivity or account authorization.
 
@@ -27,7 +27,7 @@ New workspaces resolve `SIBYL_MARKET_EXCHANGE` (Binance by default) independentl
 - `POST /api/v1/settings/market` accepts `{"source":"kraken"}` or `{"source":"coingecko","api_key":"YOUR_KEY"}`. A blank field should be omitted. Omission preserves a previously saved key. The change applies to subsequent reads immediately.
 - `DELETE /api/v1/settings/market/{provider}/key` removes an encrypted API credential. Select another default before removing a key required by the active provider.
 
-Source IDs are `demo`, public exchange IDs, `connection:<saved-account-id>`, `cryptocompare`, `coingecko` and `coingecko-pro`. Connected-account identities are stable account IDs, not labels. Disconnecting the selected account makes the source unavailable until the user chooses another. No fallback to fixtures occurs.
+Source IDs are `demo`, public exchange IDs, `connection:<saved-account-id>`, `cryptocompare`, `coingecko` and `coingecko-pro`. Connected-account identities are stable account IDs, not labels. Inactive accounts are unavailable as connected-account feeds; independent public exchange feeds remain usable. Disconnecting the selected account makes the source unavailable until the user chooses another. No fallback to fixtures occurs.
 
 Profiles are encrypted by `Store` using the existing local vault key. API keys are write-only, sent only in headers to fixed provider hosts, and never included in response metadata, prompts or URL query parameters. CryptoCompare uses `Authorization: Apikey …`; CoinGecko uses its separate Demo/Pro headers. API adapters reject redirects, bound response size, impose finite timeouts and sanitize provider errors.
 
@@ -37,7 +37,7 @@ Profiles are encrypted by `Store` using the existing local vault key. API keys a
 
 All Markets endpoints accept an optional `source` query parameter: watchlist, symbols, analysis, correlation and order book. This overrides only that request. The dashboard puts the override in the page URL and supplies the same ID in Analyst's validated `context.market_source`. Analyst's native ProtoLink tool reads that source and returns either real indicators or an explicit quotes-only snapshot. No provider key enters agent context.
 
-Analysis, correlations and order-book endpoints validate **exact provider pairs**. They do not substitute USD for USDT. New watchlists choose supported default pairs, preferring USDT and then USD/USDC, and persist the resulting exact symbols. User-added pairs never substitute a quote asset. Existing portfolio/paper reference valuation still approximates USD stablecoins at parity; actual exchange execution uses exact markets and account clients.
+Analysis, correlations and order-book endpoints validate **exact provider pairs**. They do not substitute USD for USDT. New watchlists choose supported default pairs, preferring USDT and then USD/USDC, and persist the resulting exact symbols. User-added pairs never substitute a quote asset. Portfolio valuation uses exact observed conversion routes and never assumes stablecoin parity. The existing manual-paper/strategy reference-price helper still permits USD/USDC substitution; actual exchange execution uses exact markets and account clients.
 
 A running paper strategy pauses when its workspace reference source changes. A temporary Markets override does not change strategy sources. Observed portfolio snapshots are partitioned by account mode and source; historical Demo reconstruction is only used with Demo accounts and Demo prices.
 
@@ -51,7 +51,7 @@ Live errors stay errors; there is no automatic Demo fallback. Durable historical
 
 ## Persisted watchlists
 
-`Watchlists` owns source-specific membership/order; `Market.quotes(symbols)` reads exact spot quotes. Portfolio keeps using `Market.overview()` for its independent reference universe. Watchlist edits cannot change account selection, holdings, portfolio pricing or order permissions.
+`Watchlists` owns source-specific membership/order; `Market.quotes(symbols)` reads exact spot quotes. Portfolio uses the independent `Valuation` service and `Market.valuation_ticker()` for actual held assets; see [portfolio valuation](portfolio-valuation.md). `Market.overview()` remains a legacy six-asset reference helper, not the portfolio pricing universe. Watchlist edits cannot change account selection, holdings, portfolio pricing or order permissions.
 
 | Method | Endpoint | Body / result |
 | --- | --- | --- |

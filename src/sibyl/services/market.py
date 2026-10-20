@@ -13,6 +13,7 @@ import numpy as np
 
 from sibyl.config import Settings
 from sibyl.exchanges import ExchangeClient, create_client
+from sibyl.exchanges.base import number
 from sibyl.exchanges.data import ASSETS, STABLES, TIMEFRAMES
 from sibyl.models import Candle, Connection
 from sibyl.services.crypto_library import ASSETS as RESEARCH_ASSETS
@@ -253,6 +254,36 @@ class Market:
         if self.source != "demo" and stamp and datetime.now(UTC).timestamp() * 1000 - stamp > 300_000:
             raise ValueError("This reference price is stale. Wait for fresh provider data.")
         return float(price)
+
+    @reference_read
+    def valuation_ticker(self, symbol: str) -> dict:
+        """Cache an exact quote for valuation, without parity substitutions or chart reads.
+
+        Provider failures are briefly cached too. Quote freshness is evaluated by
+        the valuation service on every read, including cache hits. Raw transport
+        errors and private provider payloads never enter the result.
+        """
+
+        def load():
+            try:
+                ticker = self.client().fetch_ticker(symbol)
+
+                def numeric(value):
+                    return None if isinstance(value, bool) else number(value)
+
+                price = numeric(ticker.get("last"))
+                if price is None:
+                    price = numeric(ticker.get("close"))
+                return {
+                    "price": price,
+                    "change": numeric(ticker.get("percentage")),
+                    "timestamp": numeric(ticker.get("timestamp")),
+                    "received_at": datetime.now(UTC).isoformat(),
+                }
+            except (ccxt.BaseError, ValueError):
+                return {"error": "Quote unavailable from this feed."}
+
+        return self._cached(f"valuation:{symbol}", load, 30)
 
     @reference_read
     def overview(self) -> dict:

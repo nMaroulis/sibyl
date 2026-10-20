@@ -18,8 +18,10 @@ from sibyl import __version__
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
 from sibyl.services.account_sync import AccountSync
+from sibyl.services.accounts import Accounts
 from sibyl.services.data_settings import DataSettings
 from sibyl.services.market import Market
+from sibyl.services.performance import AccountPerformance
 from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
 from sibyl.services.strategies import Strategies
@@ -43,6 +45,8 @@ class Services:
     data_settings: DataSettings
     account_sync: AccountSync
     watchlists: Watchlists
+    accounts: Accounts
+    performance: AccountPerformance
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -60,7 +64,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
         strategies = Strategies(market, store)
         account_sync = AccountSync(market, store)
-        agents = AgentRegistry(config, store, market, portfolio, strategies, research, account_sync)
+        performance = AccountPerformance(market, store)
+        agents = AgentRegistry(
+            config, store, market, portfolio, strategies, research, account_sync, performance
+        )
         trading = ExchangeTrading(market, store)
         app.state.services = Services(
             config,
@@ -74,6 +81,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             data_settings,
             account_sync,
             Watchlists(market, store),
+            Accounts(store),
+            performance,
         )
 
         async def worker():

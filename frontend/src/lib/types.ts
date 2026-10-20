@@ -16,6 +16,7 @@ export type System = {
   agents: number;
   market_exchange: string;
   market_source?: MarketSource;
+  accounts: AccountSelection;
 };
 export type Point = { timestamp: string; value: number };
 export type Asset = {
@@ -26,11 +27,32 @@ export type Asset = {
   color: string;
   sparkline: number[];
 };
-export type Holding = Asset & {
-  quantity: number;
-  value: number;
-  allocation: number;
+export type ValuationQuote = {
+  asset: string;
+  currency: string;
+  price: number | null;
+  change: number | null;
+  status: 'identity' | 'fresh' | 'undated' | 'stale' | 'unavailable' | 'limited';
+  reason: string | null;
+  path: string[];
+  observed_at: string | null;
+  route: {
+    symbol: string;
+    from_asset: string;
+    to_asset: string;
+    inverse: boolean;
+    rate: number;
+    observed_at: string | null;
+    received_at: string | null;
+  }[];
 };
+export type Holding = Asset &
+  ValuationQuote & {
+    quantity: number;
+    value: number;
+    allocation: number;
+    accounts: { account_id: string; account: string; exchange: string; quantity: number }[];
+  };
 export type MarketAsset = Omit<Asset, 'price'> & {
   price: number | null;
   symbol: string;
@@ -41,8 +63,12 @@ export type MarketAsset = Omit<Asset, 'price'> & {
   observed_at: string | null;
 };
 export type Portfolio = Source & {
-  mode: string;
+  mode: AccountSelection['mode'];
   total: number;
+  active: boolean;
+  scope: string;
+  complete: boolean;
+  coverage: { priced: number; total: number };
   cash: number;
   currency: string;
   change: number | null;
@@ -50,9 +76,20 @@ export type Portfolio = Source & {
   holdings: Holding[];
   history: Point[];
   history_note: string;
+  history_kind: 'illustrative' | 'observed';
+  valuation_note: string;
   warnings: string[];
-  unpriced: { asset: string; quantity: number }[];
-  venues: { name: string; status: string; assets: number; exchange?: string }[];
+  unpriced: (ValuationQuote & { name: string; quantity: number })[];
+  venues: {
+    id: string;
+    name: string;
+    status: string;
+    assets: number;
+    exchange: string;
+    total: number | null;
+    unpriced: number;
+    sandbox: boolean;
+  }[];
 };
 export type Candle = {
   timestamp: string;
@@ -87,6 +124,22 @@ export type Connection = {
   label: string;
   sandbox: boolean;
   created_at: string;
+  active: boolean;
+};
+export type AccountSelection = {
+  mode: 'none' | 'demo' | 'live' | 'test';
+  active_ids: string[];
+  accounts: Connection[];
+  signature: string;
+  demo_available: boolean;
+  scopes: {
+    id: string;
+    label: string;
+    kind: 'combined' | 'exchange' | 'account';
+    count: number;
+    exchange?: string;
+    sandbox?: boolean;
+  }[];
 };
 export type Strategy = {
   id: string;
@@ -403,6 +456,11 @@ export type Run = {
 
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
+  portfolio_scope?: string;
+  performance_view?: boolean;
+  performance_account_id?: string;
+  performance_environment?: '' | 'demo' | 'test' | 'production';
+  performance_example?: boolean;
   market_source?: string;
   crypto_id?: string;
   job_id?: string;

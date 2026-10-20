@@ -207,3 +207,15 @@ def test_status_refresh_never_resubmits_unknown_outcome(trading):
     with pytest.raises(ValueError, match="No exchange order ID"):
         service.refresh(intent["id"])
     assert adapter.calls == 1
+
+
+def test_deactivated_account_cannot_confirm_an_existing_preview(trading):
+    service, adapter, connection = trading
+    intent = service.preview(request(connection))
+    service.store.activate_account(connection.id, False)
+    with pytest.raises(ValueError, match="inactive"):
+        service.execute(intent["id"], "BUY BTC")
+    with pytest.raises(ValueError, match="Activate"):
+        service.preview(request(connection, idempotency_key="inactive-preview"))
+    assert adapter.calls == 0
+    assert service.list_orders()[0]["status"] == "preview"

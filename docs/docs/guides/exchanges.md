@@ -16,25 +16,23 @@ Saving is not verification. Accounts display **Saved · unverified** until check
 
 ## Develop with demo data
 
-Set `SIBYL_MODE=demo` and restart the API. The `DemoClient` supplies offline fixture prices and the existing persistent paper wallet through the same client interface as the real exchanges. Paper orders have simulated immediate fills and a 0.1% fee. No exchange credentials are needed. Demo market data is deterministic, not a realistic evolving price feed.
+Choose **Preview with Demo** from Portfolio, Trade, or the smaller Demo section in Exchanges. No account is activated automatically at startup. The `DemoClient` supplies its persistent virtual wallet through the same client interface as exchanges. For fully offline reference prices, also select **Demo prices** in Market data. These choices are separate from the legacy `SIBYL_MODE` research default.
 
-Explicitly checking a saved real connection still contacts that exchange, even in demo mode. Demo is not a fallback for real account failures. It is a normal saved account marked **Demo**, with no credentials and no access to real funds.
+The preview is explicitly labeled in the header and account-dependent pages. Only one virtual wallet exists per workspace. Reconnecting or previewing again keeps quantities and paper trades. **Exit preview** deactivates it without deleting records. Demo stays unavailable while exchange accounts are active; activating an exchange automatically turns it off. Actual-funds order entry never lists Demo.
 
-The provider picker includes **Demo** alongside the other exchanges, with a distinct badge and flask icon. A default **Demo account** is connected when a workspace is first initialized. It appears in **Connected accounts**, supports **Check account**, and is returned by the same connection/balance/trade APIs as other accounts. Only one demo wallet is attached per workspace, so reconnecting it cannot duplicate its funds.
-
-Disconnect hides the demo account from the demo portfolio and account list; its paper funds and trades remain saved. To reconnect, choose **Demo** and give it a label. A restart respects a deliberate disconnect. Demo accounts never contribute to live portfolio totals or appear in the actual-funds order selector. Market mode still chooses demo or real public prices.
+Checking saved exchange credentials is an explicit provider read, separate from activation. No provider failure falls back to Demo.
 
 All exchange logos are bundled locally. Demo prices, seed quantities and wallet mutations belong to the Python backend; React displays API responses and has no hardcoded demo balances or prices.
 
 ## Live data and account scope
 
-Set `SIBYL_MODE=live` and choose any catalog exchange in `SIBYL_MARKET_EXCHANGE`, then restart. Public prices use that reference exchange; private balances use each saved account independently. Settings → Market data can save these choices for restart, or generate an environment snippet for another workspace. Saved workspace choices override environment defaults.
+Connect and activate your exchange accounts in Settings. Choose any public feed in Market data or set `SIBYL_MARKET_EXCHANGE` for the initial feed. `SIBYL_MODE` does not activate accounts. Public prices use that reference exchange; private balances use each saved account independently. Settings → Market data can save these choices for restart, or generate an environment snippet for another workspace. Saved workspace choices override environment defaults.
 
 Most clients read the spot trading wallet, excluding funding/earn/margin wallets. Bitfinex reads the exchange wallet, OKX the trading wallet, and KuCoin the classic trading account. Bybit reads its unified account, whose quantities can include shared collateral. Crypto.com Exchange is separate from the retail mobile app. See the [provider matrix](../developers/exchange-clients.md#implemented-providers) for exact scope and remaining account variants.
 
 ## Test environments and orders
 
-**Binance Testnet** and **Coinbase Sandbox** have dedicated cards beside Demo in Settings, with their own badges and setup links. They use external test services with account-specific virtual funds. They are distinct from the offline Demo wallet. Saving either dedicated provider always enables test routing on the server, even if a request supplies `sandbox: false`.
+**Binance Testnet** and **Coinbase Sandbox** have dedicated provider cards in Settings, with their own badges and setup links. They use external test services with account-specific virtual funds. They are distinct from the offline Demo wallet. Saving either dedicated provider always enables test routing on the server, even if a request supplies `sandbox: false`.
 
 | Option           | API credentials                                     | Create keys / fund the test account                                        |
 | ---------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
@@ -53,8 +51,12 @@ Manual market orders for the two dedicated test providers use the existing 60-se
 
 Disconnect removes the encrypted record, clears account caches and closes the provider session. It does not close the exchange account or revoke its key. Revoke or rotate keys at the exchange when needed.
 
+## Activation and combined views
+
+Saving a connection activates it. Use its Active/Inactive control to include or exclude it without deleting credentials. Multiple active exchange accounts feed **Portfolio → All exchanges**; the picker also offers exchange and individual-account scopes. No accounts are active on a fresh workspace. Demo is an explicit optional preview and is automatically deactivated when an exchange account activates. It cannot activate while exchange accounts remain active. Inactive accounts stop new imports and cannot submit orders; retained history stays accessible.
+
 ## Verification and missing work
 
 Contract tests exercise every client using controlled transports, and installed CCXT configuration is checked without account access. Authenticated exchange accounts and real orders have not been acceptance-tested. The [exchange client reference and checklist](../developers/exchange-clients.md#remaining-implementation-checklist) distinguish implemented adapters from missing execution, imports, streaming, account variants and additional venues.
 
-Public reference prices can resolve a missing USDT pair through USD or USDC at approximate parity. Actual order symbols always remain exact. Valuation still covers the six-asset watchlist and stablecoin approximation; other holdings are reported as unpriced.
+Public reference prices can resolve a missing USDT pair through USD or USDC at approximate parity. Actual order symbols always remain exact. Portfolio uses a separate exact-pair conversion engine for actual holdings, with observed stablecoin/fiat rates and explicit unpriced coverage.

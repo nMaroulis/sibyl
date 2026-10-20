@@ -354,13 +354,16 @@ def test_aggregator_open_bar_excluded_before_indicators(settings, store, monkeyp
 
 def test_stale_quotes_are_not_used_to_value_connected_account_holdings(client, monkeypatch):
     market = client.app.state.services.market
+    client.app.state.services.data_settings.save_market(MarketSettingsRequest(source="binance"))
     monkeypatch.setattr(
         market,
-        "overview",
-        lambda: {
-            "items": [{"asset": "BTC", "price": 100, "status": "stale", "change": None, "sparkline": []}],
-            "warnings": [],
-        },
+        "symbols",
+        lambda: {"items": [{"symbol": "BTC/USDT", "base": "BTC", "quote": "USDT"}]},
+    )
+    monkeypatch.setattr(
+        market,
+        "valuation_ticker",
+        lambda symbol: {"price": 100, "timestamp": datetime.now(UTC).timestamp() * 1000 - 3600_000},
     )
     monkeypatch.setattr(
         market, "account_balances", lambda connection: [{"asset": "BTC", "total": 2, "free": 2, "used": 0}]

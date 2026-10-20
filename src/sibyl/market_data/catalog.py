@@ -63,10 +63,12 @@ def source_catalog(connections, profiles: dict) -> list[dict]:
                 "environment": "test" if connection.sandbox else "production",
                 "requires_key": False,
                 "has_api_key": False,
-                "available": True,
+                "available": connection.active,
                 "candles": caps["candles"] != "unavailable",
                 "order_book": caps["order_book"] != "unavailable",
-                "description": "Use this saved account's exchange and environment for market reads.",
+                "description": "Use this active account's exchange and environment for market reads."
+                if connection.active
+                else "Inactive account. Activate it in Exchanges, or choose the public exchange feed.",
                 "website": None,
             }
         )

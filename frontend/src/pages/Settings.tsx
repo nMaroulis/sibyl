@@ -171,8 +171,14 @@ function WorkspaceSettings({ system }: { system?: System }) {
               <strong>Sibyl {system?.version ?? '—'}</strong>
             </div>
             <div>
-              <span>Account mode</span>
-              <Badge tone="lime">{system?.mode ?? 'Requires access'}</Badge>
+              <span>Active accounts</span>
+              <Badge tone={system?.accounts?.mode === 'demo' ? 'demo' : 'neutral'}>
+                {system?.accounts?.mode === 'demo'
+                  ? 'Demo preview'
+                  : system?.accounts?.mode === 'test'
+                    ? 'Test accounts'
+                    : `${system?.accounts?.active_ids.length ?? 0} exchange accounts`}
+              </Badge>
             </div>
             <div>
               <span>Market source</span>
