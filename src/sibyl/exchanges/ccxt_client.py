@@ -6,6 +6,7 @@ import ccxt
 
 from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.catalog import exchange_spec
+from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
 
 
 class CCXTClient(ExchangeClient):
@@ -221,20 +222,18 @@ class CCXTClient(ExchangeClient):
             self._require("fetchMyTrades", private=True)
             self.market(symbol)
             rows = self._exchange.fetch_my_trades(symbol, since=since, limit=limit)
-            return [
-                {
-                    "id": row.get("id"),
-                    "order": row.get("order"),
-                    "symbol": row.get("symbol"),
-                    "side": row.get("side"),
-                    **{key: number(row.get(key)) for key in ("timestamp", "amount", "price", "cost")},
-                    "fee": {
-                        "currency": (row.get("fee") or {}).get("currency"),
-                        "cost": number((row.get("fee") or {}).get("cost")),
-                    },
-                }
-                for row in rows[:limit]
-            ]
+            return [normalize_trade(row) for row in rows[:limit]]
+
+    def fetch_trade_page(self, symbol: str, cursor: dict, limit: int = 100) -> TradePage:
+        """Read a reviewed native history page, without raw account metadata."""
+        if not 1 <= limit <= 100:
+            raise ValueError("History page size must be between 1 and 100.")
+        if not self.history_kind:
+            return super().fetch_trade_page(symbol, cursor, limit)
+        with self.lock:
+            self._require("fetchMyTrades", private=True)
+            self.market(symbol)
+            return fetch_trade_page(self._exchange, self.history_kind, symbol, cursor, limit)
 
     def create_order(
         self, symbol: str, type: str, side: str, amount: float, params: dict | None = None

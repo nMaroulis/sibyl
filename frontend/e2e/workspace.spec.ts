@@ -161,8 +161,49 @@ test('news summaries and trading reports expose real data scope', async ({ page 
   ).toBeVisible();
   await expect(page.getByText(/VADER scores headline and publisher-excerpt wording/)).toBeVisible();
   await page.goto('/reports');
-  await expect(page.getByRole('heading', { name: 'Trading report', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/trade\?tab=executions$/);
+  await expect(page.getByRole('heading', { name: 'Trade', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Matched paper P&L', exact: true })).toBeVisible();
+});
+
+test('Trade consolidates order entry and both histories without discarding drafts', async ({
+  page,
+}) => {
+  await page.goto('/trade?asset=ETH');
+  const tabs = page.getByRole('tablist', { name: 'Trade sections' });
+  await expect(tabs.getByRole('tab')).toHaveCount(3);
+  await page.getByLabel('Quantity · ETH', { exact: true }).fill('0.123');
+  await page.getByRole('button', { name: 'Review paper order', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Confirm paper buy', exact: true })).toBeVisible();
+  await tabs.getByRole('tab', { name: 'Executions', exact: true }).click();
+  await page.getByLabel('Search', { exact: true }).fill('ETH');
+  await tabs.getByRole('tab', { name: 'Account history', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Account fill ledger', exact: true }),
+  ).toBeVisible();
+  await tabs.getByRole('tab', { name: 'Executions', exact: true }).click();
+  await expect(page.getByLabel('Search', { exact: true })).toHaveValue('ETH');
+  await tabs.getByRole('tab', { name: 'Trade', exact: true }).click();
+  await expect(page.getByLabel('Quantity · ETH', { exact: true })).toHaveValue('0.123');
+  await expect(page.getByRole('button', { name: 'Confirm paper buy', exact: true })).toBeVisible();
+});
+
+test('previous account-history links retain filters and select the Trade dock item', async ({
+  page,
+}) => {
+  await page.goto('/reports?tab=history&account=demo&side=sell&environment=demo');
+  await expect(page).toHaveURL('/trade?tab=history&account=demo&side=sell&environment=demo');
+  await expect(page.getByRole('tab', { name: 'Account history', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.getByRole('link', { name: 'Trade', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(page.getByLabel('Account', { exact: true })).toHaveValue('demo');
+  await expect(page.getByLabel('Side', { exact: true })).toHaveValue('sell');
+  await expect(page.getByLabel('Environment', { exact: true })).toHaveValue('demo');
 });
 
 test('a strategy opens in its monitor with controls, journal, and fixed parameters', async ({

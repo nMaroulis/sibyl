@@ -2,6 +2,8 @@
 
 Sibyl separates a virtual paper wallet from manual exchange execution. These are independent ledgers and workflows, even when paper fills use live market quotes.
 
+**Trade** has three centered tabs: **Trade** for order entry and the order book, **Executions** for recorded paper fills, exchange intents and matched paper results, and **Account history** for imported exchange fills. Order drafts and record filters stay in memory when switching tabs; inactive history/order-book polling pauses.
+
 ## Paper orders
 
 Choose an asset, buy or sell, and enter a base-asset quantity. **Review paper order** shows a reference price, notional, 0.1% fee, and estimated debit or credit. **Confirm paper buy/sell** executes against a fresh quote and atomically updates the virtual balances.
@@ -10,7 +12,7 @@ Fees are charged in the quote asset. Buys require sufficient quote balance inclu
 
 The client creates an idempotency key for the reviewed order. Retrying the same request returns the original fill and does not spend twice. Reusing the key with different order details is rejected. Paper fills do not reproduce real liquidity or queue priority.
 
-Order history persists locally and can be exported as CSV. Manual paper orders do not spend paper-strategy job capital.
+Order history persists locally in **Executions** and can be exported as CSV. Manual paper orders do not spend paper-strategy job capital.
 
 ## Exchange orders
 
@@ -40,9 +42,17 @@ Only this reviewed manual endpoint can submit exchange orders. Oracle agents and
 
 The Trade screen shows bids, asks, spread, provider, and observation time for the chart's selected market. Choose 5, 10, 25, or 50 levels. Refresh manually or opt into ten-second polling. Live snapshots cache for five seconds. Demo levels are explicitly synthetic. A snapshot is not an executable quote or a slippage guarantee.
 
-## Trading report
+## Execution records and account history
 
-Open **More → Trading report**, or the link below the trading workspace. Search by account, symbol, or record ID, and filter mode, side, status, or start date. Status bars follow table filters; CSV exports the filtered records.
+Open **Trade → Executions**. Search by account, symbol, or record ID, and filter mode, side, status, or start date. Status bars follow table filters; CSV exports the filtered records. Previous `/reports` links redirect here, preserving account/history selections. The dock has one Trade destination.
+
+**Executions** contains local paper fills and exchange intents. **Account history** is a separate retained fill ledger. Choose a connected account and one of its exact spot markets to start a background import. Progress saves per page and survives restarts. Pause/resume retains imported fills; **Sync again** collects new fills after a pass completes. Connected-account cards in Settings link directly to this view.
+
+Imports support Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Exchange Sandbox and Kraken. Other venues show **Coming soon** for durable imports while existing account reads remain available. Demo reads your manual paper fills without generating trades. Test, demo and production records are labeled separately.
+
+Filter retained fills by account, market, direction and environment. Original fill/order IDs and fees appear beside execution values. Fees keep their currencies; negative fees are rebates and unknown data stays explicit. Fee totals cover the complete filtered selection. **Export this page** exports the displayed page. Disconnecting stops imports/removes saved credentials while retained history stays readable.
+
+**Caught up** describes the selected provider range, not complete account history. Deposits, withdrawals, opening inventory and exchange P&L remain unimplemented. Imports never change balances or infer settlements from previews. See [account synchronization](../developers/account-sync.md) for coverage and recovery details.
 
 The report combines the latest 200 manual paper fills and 100 exchange intents. Manual paper realized P&L matches recorded buys and sells FIFO, allocating buy and sell fees per unit. Opening seed balances have no recorded cost basis. Sales without matching recorded buys are excluded, and truncation of retained history can omit earlier lots. The P&L curve and currency selector use the full retained paper ledger, independently of table filters. Different quote currencies are never added together. Strategy-job fills remain in their isolated console.
 

@@ -9,6 +9,7 @@ from protolink import Agent, RunBudget, create_llm
 
 from sibyl.config import Settings
 from sibyl.models import AgentRequest, BacktestRequest
+from sibyl.services.account_sync import AccountSync
 from sibyl.services.analytics import analyze, forecast
 from sibyl.services.llm_settings import ModelSettings
 from sibyl.services.market import TIMEFRAMES, Market
@@ -98,6 +99,7 @@ class AgentRegistry:
         portfolio: Portfolio,
         strategies: Strategies,
         research: Research,
+        account_sync: AccountSync | None = None,
     ):
         self.settings, self.store = settings, store
         self.models = ModelSettings(settings, store)
@@ -211,6 +213,8 @@ class AgentRegistry:
                 "mode": settings.mode,
                 "market_exchange": settings.market_exchange,
                 "permissions": "Read-only balance access; agents cannot execute exchange orders.",
+                "history_imports": account_sync.snapshot()["jobs"] if account_sync else [],
+                "history_scope": "Imports cover selected spot markets and provider retention, not reconciled account history or exchange P&L.",
             }
 
         def search_knowledge(query: str = "", crypto_id: str = "") -> list[dict] | dict:

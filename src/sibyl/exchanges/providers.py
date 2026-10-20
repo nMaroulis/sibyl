@@ -7,6 +7,7 @@ class BinanceClient(CCXTClient):
     """Binance spot, including the separate testnet when explicitly selected."""
 
     id = "binance"
+    history_kind = "binance-id"
     options = {"fetchMarkets": {"types": ["spot"]}}
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50, 100)
@@ -28,6 +29,7 @@ class CoinbaseClient(CCXTClient):
     """Coinbase Advanced Trade with CDP key name and PEM signing key."""
 
     id = "coinbase"
+    history_kind = "coinbase-cursor"
     balance_params = {"type": "spot"}
 
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
@@ -56,12 +58,14 @@ class CoinbaseSandboxClient(CCXTClient):
     """Coinbase Exchange sandbox with key, secret and passphrase; not Advanced Trade."""
 
     id = "coinbase-sandbox"
+    history_kind = "coinbase-exchange-cursor"
 
 
 class KrakenClient(CCXTClient):
     """Kraken spot account; Kraken Futures is a separate, unsupported product."""
 
     id = "kraken"
+    history_kind = "kraken-cursor"
 
 
 class OKXClient(CCXTClient):

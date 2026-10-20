@@ -6,6 +6,7 @@ import ccxt
 
 from sibyl.exchanges.catalog import DEMO, EXCHANGES, TEST_ENVIRONMENTS
 from sibyl.exchanges.data import TIMEFRAMES
+from sibyl.exchanges.providers import CLIENTS
 
 
 @lru_cache(maxsize=1)
@@ -23,6 +24,7 @@ def provider_catalog() -> dict:
             "simulated",
         ),
         "timeframes": list(TIMEFRAMES),
+        "history_import": "demo-keyset",
     }
     items = [demo]
     for spec in (*TEST_ENVIRONMENTS, *EXCHANGES):
@@ -40,7 +42,12 @@ def provider_catalog() -> dict:
             value = adapter.has.get(method)
             capabilities[name] = "emulated" if value == "emulated" else "native" if value else "unavailable"
         items.append(
-            {**spec.public(), "capabilities": capabilities, "timeframes": list(adapter.timeframes or {})}
+            {
+                **spec.public(),
+                "capabilities": capabilities,
+                "timeframes": list(adapter.timeframes or {}),
+                "history_import": CLIENTS[spec.id].history_kind or None,
+            }
         )
         session = getattr(adapter, "session", None)
         if session is not None:

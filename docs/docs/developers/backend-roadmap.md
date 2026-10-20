@@ -20,12 +20,15 @@ A paper strategy can consume live prices while still using virtual funds. Its ru
 
 ### 1. Account synchronization — partial
 
-There are on-demand balances, bounded private fill pages and order reads. These are not a complete imported account history.
+There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports for seven clients/environments. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
 
-- [ ] Persist exchange fills/orders in a shared normalized ledger.
-- [ ] Paginate historical imports with durable cursors and incremental synchronization.
+- [x] Persist normalized fills, native order references, fee currencies and rebates in a shared ledger.
+- [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Sandbox and Kraken.
+- [ ] Review durable import pagination for the remaining exchange providers.
+- [ ] Persist and synchronize complete exchange order lifecycles alongside fills.
 - [ ] Import deposits, withdrawals, transfers, fees and rebates.
-- [ ] Track per-account sync progress, last successful sync, failures and reconciliation status.
+- [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
+- [ ] Add full rescans, cash-event coverage and reconciliation status.
 - [ ] Reconcile remote records with locally submitted intents after disconnects or restarts.
 - [ ] Exercise authenticated reads and sandbox order lifecycles against actual test accounts.
 

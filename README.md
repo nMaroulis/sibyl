@@ -57,13 +57,17 @@ Dedicated **Binance Testnet** and **Coinbase Sandbox** options are also availabl
 | `services/strategies.py`       | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
 | `services/strategy_monitor.py` | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
 | `services/trading.py`          | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
+| `services/account_sync.py`     | Durable selected-market imports, retries, pause/resume and progress                               |
+| `services/ledger.py`           | Normalized fills, native-currency fees and atomic import checkpoints                              |
 | `services/research.py`         | Bounded source-labeled research reads                                                             |
-| `news/`                       | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment |
+| `news/`                        | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
 | `agents/registry.py`           | Roles, native tools, optional model composition, request limits, factual snapshots                |
 | `api/app.py`                   | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
 | `api/routes.py`                | Thin versioned HTTP routes                                                                        |
 
-`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts a paper worker and a separate news collector, and cancels both during shutdown. Importing the package does not connect to an exchange or initialize a model.
+`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, and owns separate paper-strategy, news and account-import workers. Shutdown waits for an in-flight account read before closing its transport. Importing the package does not connect to an exchange or initialize a model.
+
+Account history now has a persistent fill ledger and resumable selected-market imports for Demo, Binance/Binance.US/Testnet, Coinbase Advanced Trade/Sandbox and Kraken. Open **Trade → Account history** or its connected-account shortcut in Settings. Imports retain native IDs, fee currencies and rebates, with pause/resume, restart recovery and explicit coverage limits. They never place orders or calculate exchange P&L. See [account synchronization](docs/docs/developers/account-sync.md).
 
 ## Frontend
 

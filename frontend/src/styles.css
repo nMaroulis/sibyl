@@ -4733,6 +4733,67 @@ details[open] > summary {
   background: #edf0f5;
   border-radius: 13px;
 }
+.account-import-form {
+  padding-top: 0;
+}
+.account-import-form > .footnote {
+  max-width: 290px;
+  margin-bottom: 4px;
+}
+.account-import-jobs {
+  padding: 0 22px 8px;
+}
+.account-import-job {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.account-import-description {
+  flex: 1;
+  min-width: 200px;
+}
+.account-import-description strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.account-import-description small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+.account-import-description p {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 4px;
+}
+.account-import-description .negative {
+  color: var(--rose);
+}
+.account-ledger-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  padding: 0 22px 18px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.account-ledger-summary strong {
+  color: var(--text);
+  font-weight: 500;
+}
+.account-ledger-ids {
+  max-width: 220px;
+  min-width: 160px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .llm-kind-switch button {
   display: flex;
   align-items: center;

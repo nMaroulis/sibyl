@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowDownUp, Download, ShieldCheck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ArrowDownUp, History, ListOrdered, RefreshCw, ShieldCheck } from 'lucide-react';
 import {
   Badge,
   Change,
   DataNote,
-  Empty,
   ErrorState,
   PageTitle,
   Panel,
@@ -13,24 +12,100 @@ import {
   useToast,
 } from '../components/ui';
 import { ValueChart } from '../components/charts';
-import { exportCSV, money, number, post, refresh } from '../lib/api';
+import { money, number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { Analysis, Order, OrderInput, Preview } from '../lib/types';
 import { AgentButton } from '../components/agents';
 import { OrderBook } from '../components/orderbook';
 import { ComingSoon } from '../components/coming-soon';
 import { ExchangeExecution } from '../components/ExchangeExecution';
+import { AccountHistory } from '../components/account-history';
+import { ExecutionHistory } from '../components/execution-history';
+import { SectionPanel, SectionTabs } from '../components/section-tabs';
 
+const sections = [
+  { id: 'trade', label: 'Trade', icon: ArrowDownUp },
+  { id: 'executions', label: 'Executions', icon: ListOrdered },
+  { id: 'history', label: 'Account history', icon: History },
+];
+
+/** One trading workspace; tabs retain forms and filters while hidden polling pauses. */
 export function Trading() {
-  const [params] = useSearchParams();
-  const [asset, setAsset] = useState(params.get('asset') || 'BTC');
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('tab') ?? 'trade';
+  const tab = sections.some((item) => item.id === requested) ? requested : 'trade';
+  const asset = params.get('asset') || 'BTC';
+  const [opened, setOpened] = useState([tab]);
+  useEffect(() => {
+    setOpened((old) => (old.includes(tab) ? old : [...old, tab]));
+  }, [tab]);
+  const select = (key: string, value: string) =>
+    setParams((old) => {
+      const next = new URLSearchParams(old);
+      next.set(key, value);
+      return next;
+    });
+  return (
+    <>
+      <PageTitle
+        title="Trade"
+        description="Place spot orders, review executions, and explore account history."
+        action={
+          tab === 'trade' ? (
+            <AgentButton module="broker" context={{ symbol: `${asset}/USDT` }} />
+          ) : (
+            <button className="button secondary" onClick={refresh}>
+              <RefreshCw size={14} /> Refresh records
+            </button>
+          )
+        }
+      />
+      <SectionTabs
+        id="trade"
+        label="Trade sections"
+        items={sections}
+        value={tab}
+        onChange={(value) => select('tab', value)}
+      />
+      <SectionPanel id="trade" value={tab}>
+        <div hidden={tab !== 'trade'}>
+          {(tab === 'trade' || opened.includes('trade')) && (
+            <TradeWorkspace
+              asset={asset}
+              setAsset={(value) => select('asset', value)}
+              active={tab === 'trade'}
+            />
+          )}
+        </div>
+        <div hidden={tab !== 'executions'}>
+          {(tab === 'executions' || opened.includes('executions')) && <ExecutionHistory />}
+        </div>
+        <div hidden={tab !== 'history'}>
+          {(tab === 'history' || opened.includes('history')) && (
+            <AccountHistory active={tab === 'history'} />
+          )}
+        </div>
+      </SectionPanel>
+    </>
+  );
+}
+
+/** Order entry stays mounted after its first visit so tab changes preserve drafts. */
+function TradeWorkspace({
+  asset,
+  setAsset,
+  active,
+}: {
+  asset: string;
+  setAsset: (asset: string) => void;
+  active: boolean;
+}) {
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('0.01');
   const [preview, setPreview] = useState<Preview>();
   const [input, setInput] = useState<OrderInput>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const orders = useResource<Order[]>('/orders');
   const ledger = useResource<{ balances: Record<string, number> }>('/paper/balances');
   const analysis = useResource<Analysis>(
     `/markets/analysis?symbol=${encodeURIComponent(`${asset}/USDT`)}&limit=90`,
@@ -41,6 +116,11 @@ export function Trading() {
     setInput(undefined);
     setError('');
   };
+  useEffect(() => {
+    setPreview(undefined);
+    setInput(undefined);
+    setError('');
+  }, [asset]);
   const review = async () => {
     setBusy(true);
     setError('');
@@ -77,20 +157,6 @@ export function Trading() {
   };
   return (
     <>
-      <PageTitle
-        eyebrow="ROOM TO EXPERIMENT"
-        title="Spot trading"
-        description="Practice your next move with a separate paper wallet."
-        action={
-          <>
-            <Badge tone="lime">
-              <ShieldCheck size={12} />
-              Paper execution only
-            </Badge>
-            <AgentButton module="broker" context={{ symbol: `${asset}/USDT` }} />
-          </>
-        }
-      />
       <div className="trading-grid">
         <Panel>
           <PanelTitle
@@ -257,87 +323,8 @@ export function Trading() {
           </form>
         </Panel>
       </div>
-      <Panel className="full-panel">
-        <PanelTitle
-          title="Order history"
-          subtitle="Every paper fill, saved locally"
-          action={
-            <button
-              className="button secondary tiny"
-              disabled={!orders.data?.length}
-              onClick={() =>
-                exportCSV('sibyl-paper-orders.csv', [
-                  ['Time', 'Symbol', 'Side', 'Quantity', 'Price', 'Fee'],
-                  ...(orders.data ?? []).map((order) => [
-                    order.created_at,
-                    order.symbol,
-                    order.side,
-                    order.quantity,
-                    order.price,
-                    order.fee,
-                  ]),
-                ])
-              }
-            >
-              <Download size={13} />
-              Export
-            </button>
-          }
-        />
-        {orders.error ? (
-          <ErrorState message={orders.error} retry={orders.retry} />
-        ) : orders.data?.length ? (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Market</th>
-                  <th>Side</th>
-                  <th>Quantity</th>
-                  <th>Fill price</th>
-                  <th>Fee</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.data.map((order) => (
-                  <tr key={order.id}>
-                    <td>{new Date(order.created_at).toLocaleString()}</td>
-                    <td>{order.symbol}</td>
-                    <td>
-                      <Badge tone={order.side === 'buy' ? 'lime' : 'rose'}>{order.side}</Badge>
-                    </td>
-                    <td>{number(order.quantity, 6)}</td>
-                    <td>{money(order.price)}</td>
-                    <td>{money(order.fee)}</td>
-                    <td>
-                      <Badge>Filled · paper</Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <Empty title="Your first move is still ahead">
-            Review a paper order to begin. Fills and fees will be recorded here.
-          </Empty>
-        )}
-      </Panel>
-      <OrderBook symbol={`${asset}/USDT`} />
+      <OrderBook symbol={`${asset}/USDT`} active={active} />
       <ExchangeExecution />
-      <div className="quiet-callout horizontal-callout">
-        <div>
-          <h3>Your activity, in one place.</h3>
-          <p>
-            Filter paper fills and exchange intents, export records, and inspect matched paper P&L.
-          </p>
-        </div>
-        <Link className="button secondary" to="/reports">
-          Open trading report →
-        </Link>
-      </div>
       <ComingSoon module="trade" />
     </>
   );

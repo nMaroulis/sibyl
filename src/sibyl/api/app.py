@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from sibyl import __version__
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
+from sibyl.services.account_sync import AccountSync
 from sibyl.services.data_settings import DataSettings
 from sibyl.services.market import Market
 from sibyl.services.portfolio import Portfolio
@@ -39,6 +40,7 @@ class Services:
     agents: AgentRegistry
     trading: ExchangeTrading
     data_settings: DataSettings
+    account_sync: AccountSync
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -55,10 +57,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         market = Market(config, store)
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
         strategies = Strategies(market, store)
-        agents = AgentRegistry(config, store, market, portfolio, strategies, research)
+        account_sync = AccountSync(market, store)
+        agents = AgentRegistry(config, store, market, portfolio, strategies, research, account_sync)
         trading = ExchangeTrading(market, store)
         app.state.services = Services(
-            config, store, market, portfolio, research, strategies, agents, trading, data_settings
+            config,
+            store,
+            market,
+            portfolio,
+            research,
+            strategies,
+            agents,
+            trading,
+            data_settings,
+            account_sync,
         )
 
         async def worker():
@@ -73,16 +85,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     await asyncio.to_thread(research.news_service.refresh)
                 await asyncio.sleep(30)
 
+        async def account_worker():
+            while True:
+                await asyncio.to_thread(account_sync.tick)
+                await asyncio.sleep(1)
+
         task = asyncio.create_task(worker())
         news_task = asyncio.create_task(news_worker())
-        yield
-        task.cancel()
-        news_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
-        with suppress(asyncio.CancelledError):
-            await news_task
-        market.close()
+        account_task = asyncio.create_task(account_worker())
+        try:
+            yield
+        finally:
+            for background in (task, news_task, account_task):
+                background.cancel()
+            for background in (task, news_task, account_task):
+                with suppress(asyncio.CancelledError):
+                    await background
+            await asyncio.to_thread(account_sync.close)
+            market.close()
 
     app = FastAPI(
         title="Sibyl API",

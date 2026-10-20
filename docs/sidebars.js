@@ -30,6 +30,7 @@ module.exports = {
         'developers/architecture',
         'developers/backend-roadmap',
         'developers/exchange-clients',
+        'developers/account-sync',
         'developers/news',
         'developers/agents',
         'developers/api',

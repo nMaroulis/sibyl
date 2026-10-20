@@ -10,6 +10,7 @@ import numpy as np
 
 from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.data import ASSETS, STABLES, TIMEFRAMES
+from sibyl.exchanges.history import TradePage
 from sibyl.models import Candle, OrderRequest
 
 if TYPE_CHECKING:
@@ -25,6 +26,7 @@ class DemoClient(ExchangeClient):
     """
 
     id = "demo"
+    history_kind = "demo-keyset"
     timeframes = TIMEFRAMES
 
     def __init__(self, store: "Store | None" = None):
@@ -237,3 +239,38 @@ class DemoClient(ExchangeClient):
                 if len(result) == limit:
                     break
         return result
+
+    def fetch_trade_page(self, symbol: str, cursor: dict, limit: int = 100) -> TradePage:
+        """Page the real paper ledger by (time, ID), including timestamp ties."""
+        import json
+
+        self.market(symbol)
+        if not 1 <= limit <= 100:
+            raise ValueError("History page size must be between 1 and 100.")
+        with self._workspace().db() as db:
+            rows = db.execute(
+                "SELECT id, created_at, payload FROM orders "
+                "WHERE json_extract(payload, '$.symbol') = ? AND (created_at, id) > (?, ?) "
+                "ORDER BY created_at, id LIMIT ?",
+                (symbol, cursor.get("time", ""), cursor.get("id", ""), limit),
+            ).fetchall()
+        items = []
+        for row in rows:
+            fill = json.loads(row["payload"])
+            fee = {"currency": symbol.split("/")[1], "cost": fill["fee"]}
+            items.append(
+                {
+                    "id": fill["id"],
+                    "order": fill["id"],
+                    "symbol": symbol,
+                    "side": fill["side"],
+                    "timestamp": datetime.fromisoformat(fill["created_at"]).timestamp() * 1000,
+                    "amount": fill["quantity"],
+                    "price": fill["price"],
+                    "cost": fill["notional"],
+                    "fee": fee,
+                    "fees": [fee],
+                }
+            )
+        following = {"time": rows[-1]["created_at"], "id": rows[-1]["id"]} if rows else cursor
+        return TradePage(items, following, not rows)

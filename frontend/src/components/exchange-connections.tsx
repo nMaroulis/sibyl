@@ -380,6 +380,12 @@ export function ExchangeConnections() {
                 <RefreshCw size={13} className={busy === connection.id ? 'spin' : ''} />
                 {connection.exchange === 'demo' ? 'Check account' : 'Check access'}
               </button>
+              <Link
+                className="button secondary tiny"
+                to={`/trade?tab=history&account=${encodeURIComponent(connection.id)}`}
+              >
+                Account history <ArrowUpRight size={13} />
+              </Link>
               <button
                 className="icon-button danger"
                 disabled={!!busy}
@@ -410,8 +416,9 @@ export function ExchangeConnections() {
           <Network size={22} />
           <h3>Start with a smaller permission set.</h3>
           <p>
-            Balance access is enough. Restrict keys by IP when available. Disconnecting removes the
-            saved credentials; revoke the key at your exchange to invalidate it.
+            Use read permissions for balances and trade history. Restrict keys by IP when available.
+            Disconnecting removes saved credentials and stops imports; retained fills remain in your
+            workspace. Revoke the key at your exchange to invalidate it.
           </p>
         </Panel>
         <Panel>

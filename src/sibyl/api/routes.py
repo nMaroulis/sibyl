@@ -20,6 +20,7 @@ from sibyl.models import (
     OrderRequest,
     Timeframe,
 )
+from sibyl.services.account_sync import AccountSyncRequest
 from sibyl.services.analytics import analyze, correlation, forecast
 from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequest
 from sibyl.services.llm_settings import ModelSettingsRequest
@@ -230,6 +231,48 @@ def connection_trades(
     }
 
 
+@router.get("/account-sync", tags=["Accountant"])
+def account_sync_status(s: S):
+    """Read import support, saved progress and failures without contacting exchanges."""
+    return s.account_sync.snapshot()
+
+
+@router.post("/connections/{connection_id}/sync", status_code=202, tags=["Accountant"])
+def sync_account(connection_id: str, body: AccountSyncRequest, s: S):
+    """Queue selected-market fill imports; this never submits an exchange order."""
+    return s.account_sync.enqueue(account_connection(s, connection_id), body.symbols)
+
+
+@router.post("/connections/{connection_id}/sync/pause", tags=["Accountant"])
+def pause_account_sync(connection_id: str, s: S, symbol: Symbol | None = None):
+    """Pause selected or all account imports, keeping retained fills and checkpoints."""
+    account_connection(s, connection_id)
+    return s.account_sync.pause(connection_id, symbol)
+
+
+@router.get("/connections/{connection_id}/markets", tags=["Accountant"])
+def connection_markets(connection_id: str, s: S):
+    """List exact spot markets for a saved account's venue and test environment."""
+    connection = account_connection(s, connection_id)
+    with s.market.adapter(connection) as client:
+        symbols = sorted(client.load_markets())
+    return {"source": connection.exchange, "sandbox": connection.sandbox, "symbols": symbols}
+
+
+@router.get("/account-ledger/fills", tags=["Accountant"])
+def account_fills(
+    s: S,
+    account_id: str = Query("", max_length=100),
+    symbol: Symbol | None = None,
+    side: Literal["", "buy", "sell"] = "",
+    environment: Literal["", "demo", "test", "production"] = "",
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=1_000_000),
+):
+    """Read retained normalized fills; native fee currencies are never summed together."""
+    return s.account_sync.ledger.fills(account_id, symbol or "", side, environment, limit, offset)
+
+
 @router.get("/connections", response_model=list[Connection], tags=["Technician"])
 def connections(s: S):
     """Read saved connection metadata; API credentials cannot be retrieved."""
@@ -246,6 +289,7 @@ def add_connection(body: ConnectionCreate, s: S):
 def delete_connection(connection_id: str, s: S):
     """Disconnect a saved account and clear its cached decrypted client."""
     s.store.delete_connection(connection_id)
+    s.account_sync.pause(connection_id, disconnected=True)
     s.market.forget(connection_id)
     return Response(status_code=204)
 

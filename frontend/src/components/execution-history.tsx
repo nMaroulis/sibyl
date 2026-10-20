@@ -1,17 +1,7 @@
 import { useState } from 'react';
-import { Download, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import {
-  Badge,
-  Empty,
-  ErrorState,
-  Loading,
-  PageTitle,
-  Panel,
-  PanelTitle,
-  useToast,
-} from '../components/ui';
-import { ValueChart } from '../components/charts';
+import { Download } from 'lucide-react';
+import { Badge, Empty, ErrorState, Loading, Panel, PanelTitle, useToast } from './ui';
+import { ValueChart } from './charts';
 import { useResource } from '../lib/hooks';
 import { exportCSV, number, post, refresh } from '../lib/api';
 import type { Point } from '../lib/types';
@@ -41,7 +31,7 @@ type Report = {
 };
 
 /** Searchable execution records with explicitly scoped, matched-lot paper results. */
-export function Reports() {
+export function ExecutionHistory() {
   const report = useResource<Report>('/reports/trading');
   const [busy, setBusy] = useState('');
   const toast = useToast();
@@ -80,15 +70,6 @@ export function Reports() {
   const curve = report.data?.paper_pnl_curve.filter((p) => p.quote === quote) ?? [];
   return (
     <>
-      <PageTitle
-        title="Trading report"
-        description="Search your execution records and inspect matched paper results."
-        action={
-          <button className="button secondary" onClick={report.retry}>
-            <RefreshCw size={14} /> Refresh records
-          </button>
-        }
-      />
       <div className="report-summary-grid">
         <Panel>
           <PanelTitle
@@ -143,9 +124,6 @@ export function Reports() {
             list. Use Check exchange on submitted orders with an exchange ID to read their latest
             status.
           </p>
-          <Link className="text-link padded" to="/trade">
-            Open trading workspace →
-          </Link>
         </Panel>
       </div>
       <Panel className="full-panel">

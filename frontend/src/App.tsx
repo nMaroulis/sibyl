@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   Globe2,
+  History,
   PieChart,
   Search,
   Settings2,
@@ -44,9 +45,6 @@ const ResearchPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('./pages/Settings').then((module) => ({ default: module.SettingsPage })),
 );
-const Reports = lazy(() =>
-  import('./pages/Reports').then((module) => ({ default: module.Reports })),
-);
 const Roadmap = lazy(() =>
   import('./components/coming-soon').then((module) => ({ default: module.Roadmap })),
 );
@@ -60,19 +58,30 @@ const destinations = [
   { path: '/news', name: 'News', icon: Globe2 },
   { path: '/research', name: 'Research', icon: BookOpen },
   { path: '/settings', name: 'Settings', icon: Settings2 },
-  { path: '/reports', name: 'Trading report', icon: ArrowDownUp },
   { path: '/roadmap', name: 'Coming soon', icon: Compass },
 ];
-const secondary = destinations.filter((item) =>
-  ['/research', '/reports', '/roadmap'].includes(item.path),
-);
+const secondary = destinations.filter((item) => ['/research', '/roadmap'].includes(item.path));
 const primary = destinations.filter((item) => !secondary.includes(item));
+
+/** Keep bookmarked report/account filters while their home moves into Trade. */
+function LegacyReportsRedirect() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  params.set('tab', params.get('tab') === 'history' ? 'history' : 'executions');
+  return (
+    <Navigate to={{ pathname: '/trade', search: `?${params}`, hash: location.hash }} replace />
+  );
+}
 
 function WorkspaceSearch({ close }: { close: () => void }) {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
-  const pages = destinations.filter((item) =>
-    `${item.name} ${item.path === '/settings' ? 'exchanges connections llm models apis workspace' : ''}`
+  const pages = [
+    ...destinations,
+    { path: '/trade?tab=executions', name: 'Trade · Executions', icon: ArrowDownUp },
+    { path: '/trade?tab=history', name: 'Trade · Account history', icon: History },
+  ].filter((item) =>
+    `${item.name} ${item.path === '/settings' ? 'exchanges connections llm models apis workspace' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
@@ -240,7 +249,7 @@ export function App() {
                   <Route path="/news" element={<News />} />
                   <Route path="/research" element={<ResearchPage />} />
                   <Route path="/settings" element={<SettingsPage system={system} />} />
-                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/reports" element={<LegacyReportsRedirect />} />
                   <Route path="/roadmap" element={<Roadmap />} />
                   <Route
                     path="*"

@@ -22,6 +22,7 @@ Market / Portfolio / ExchangeTrading
 | `amount_to_precision(symbol, amount)`                  | Provider precision mode, including tick-size markets                        |
 | `fetch_open_orders(symbol)`                            | One exact market's open orders, if supported by the installed SDK           |
 | `fetch_my_trades(symbol, since, limit)`                | One bounded fill page; no complete-history guarantee                        |
+| `fetch_trade_page(symbol, cursor, limit)`              | Reviewed resumable import page; unsupported providers fail explicitly       |
 | `fetch_order(order_id, symbol)`                        | Read a known order, without submission or retry                             |
 | `create_order(symbol, "market", side, amount, params)` | Reviewed providers only; base quantity, mandatory `clientOrderId`           |
 | `close()`                                              | Close the HTTP session and drop transport credential references             |
@@ -130,7 +131,8 @@ These routes have the same workspace access controls as other APIs. Account read
 - [x] Backend-driven searchable connection UI and reference-exchange selection.
 - [ ] Authenticated read acceptance tests for **every provider**, including sandbox accounts. No private accounts were used to develop this layer.
 - [ ] Review and test actual order quantity, client-ID, fee and reconciliation behavior for the 17 newly added providers before enabling their writes. Gemini needs an explicit alternative to native market orders.
-- [ ] Full account-history pagination, durable exchange fill imports, fee/rebate normalization and reconciliation into reports. The current report is not an imported exchange P&L report.
+- [x] Durable selected-market fill imports, native-currency fees/rebates, pause/resume and an Account history report for Demo, Binance/Binance.US/Testnet, Coinbase/Sandbox and Kraken. See [account synchronization](account-sync.md).
+- [ ] Durable pagination for remaining providers, complete account-history coverage, order/cash-event reconciliation and exchange P&L. Caught up is not complete account history.
 - [ ] Cancel/replace, resting limit orders, stop/OCO orders and their dedicated user review flows.
 - [ ] WebSocket subscriptions, reconnect/backoff handling and streaming order updates. Current reads are REST snapshots.
 - [ ] Funding/earn/staking/subaccount wallets, transfers, derivatives and unified-account variants beyond the scopes above. Withdrawal APIs are not implemented.

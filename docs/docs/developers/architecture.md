@@ -31,10 +31,12 @@ FastAPI routes + validated request models
 | `services/strategies.py`       | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
 | `services/strategy_monitor.py` | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
 | `services/trading.py`          | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
+| `services/account_sync.py`     | Durable selected-market fill imports, native cursors, bounded retries, pause/resume and progress  |
+| `services/ledger.py`           | Normalized fill storage, native-currency fees, atomic page/checkpoint commits and ledger queries  |
 | `services/research.py`         | Bounded source-labeled research reads                                                             |
 | `agents/providers.py`          | ProtoLink provider capabilities, model presets, dependency metadata                               |
 | `services/llm_settings.py`     | Encrypted provider profiles, active selection, request-scoped adapter configuration               |
-| `news/`                       | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment |
+| `news/`                        | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
 | `agents/registry.py`           | Roles, native tools, optional model composition, request limits, factual snapshots                |
 | `api/app.py`                   | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
 | `api/routes.py`                | Thin versioned HTTP routes                                                                        |

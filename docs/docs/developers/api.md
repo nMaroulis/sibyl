@@ -24,6 +24,11 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/connections/{id}/balances`    | One account's normalized balances                                                        |
 | GET        | `/connections/{id}/open-orders` | One exact market's open orders (`symbol`)                                                |
 | GET        | `/connections/{id}/trades`      | Bounded fill page (`symbol`, `since` milliseconds, `limit` 1–500)                        |
+| GET        | `/connections/{id}/markets`     | Saved account's exact spot symbols and environment                                       |
+| GET        | `/account-sync`                 | Import support/progress without provider calls                                           |
+| POST       | `/connections/{id}/sync`        | Queue/resume fill imports (`symbols`, 1–12); returns 202                                 |
+| POST       | `/connections/{id}/sync/pause`  | Pause one `symbol`, or all account imports                                               |
+| GET        | `/account-ledger/fills`         | Retained normalized fills, native-currency fees, filters and bounded pagination          |
 | GET / POST | `/connections`                  | List metadata / save encrypted credentials                                               |
 | DELETE     | `/connections/{id}`             | Remove a connection                                                                      |
 | POST       | `/connections/{id}/check`       | Read-only credential verification                                                        |
@@ -39,7 +44,7 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | POST       | `/strategies/jobs/{id}/pause`   | Stop evaluating a paper job                                                              |
 | POST       | `/strategies/jobs/{id}/resume`  | Resume evaluation                                                                        |
 | GET        | `/forecast`                     | `symbol`, `horizon` 1–30                                                                 |
-| GET        | `/news`                         | Filtered retained publisher excerpts / samples, pagination, VADER aggregates                                        |
+| GET        | `/news`                         | Filtered retained publisher excerpts / samples, pagination, VADER aggregates             |
 | GET        | `/news/sources`                 | Publisher collection health, no network refresh                                          |
 | POST       | `/news/refresh`                 | Public feed collection with a 60-second per-source cooldown                              |
 | GET        | `/news/{article_id}`            | Retained story lookup independent of paging; optional mode                               |

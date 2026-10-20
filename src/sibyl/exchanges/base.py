@@ -4,8 +4,12 @@ import math
 import re
 from abc import ABC, abstractmethod
 from threading import RLock
+from typing import TYPE_CHECKING
 
 import ccxt
+
+if TYPE_CHECKING:
+    from sibyl.exchanges.history import TradePage
 
 
 class ExchangeClient(ABC):
@@ -19,6 +23,7 @@ class ExchangeClient(ABC):
 
     id: str
     timeframes: dict
+    history_kind: str = ""
 
     def __init__(self):
         self.lock = RLock()
@@ -68,6 +73,10 @@ class ExchangeClient(ABC):
     def fetch_my_trades(self, symbol: str, since: int | None = None, limit: int = 100) -> list[dict]:
         """Read a bounded page of fills; this is not a complete historical import."""
         raise ccxt.NotSupported("Trade history is unavailable for this client.")
+
+    def fetch_trade_page(self, symbol: str, cursor: dict, limit: int = 100) -> "TradePage":
+        """Read one resumable history page; unsupported pagination fails explicitly."""
+        raise ccxt.NotSupported("Durable history import is not enabled for this provider.")
 
     def fetch_order(self, order_id: str, symbol: str) -> dict:
         """Read a known order, without submitting or retrying it."""

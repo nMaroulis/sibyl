@@ -6,12 +6,12 @@ import { useResource } from '../lib/hooks';
 import type { Source } from '../lib/types';
 
 type Book = Source & { symbol: string; bids: number[][]; asks: number[][]; spread: number | null };
-export function OrderBook({ symbol }: { symbol: string }) {
+export function OrderBook({ symbol, active = true }: { symbol: string; active?: boolean }) {
   const [depth, setDepth] = useState(10);
   const [poll, setPoll] = useState(false);
   const book = useResource<Book>(
     `/markets/orderbook?symbol=${encodeURIComponent(symbol)}&depth=${depth}`,
-    poll ? 10000 : 0,
+    poll && active ? 10000 : 0,
   );
   const rows = Array.from(
     { length: Math.max(book.data?.bids.length ?? 0, book.data?.asks.length ?? 0) },
