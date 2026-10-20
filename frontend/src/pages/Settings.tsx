@@ -77,7 +77,7 @@ export function SettingsPage({ system }: { system?: System }) {
         <div hidden={tab !== 'market'}>
           <SectionIntro
             title="Market & research data"
-            description="Choose a public price source. Explore the services behind project research and chain activity."
+            description="Choose a market feed, connect provider keys, and explore the services behind Research."
           />
           {system ? <ConfigHelper /> : <AccessNote />}
           <div className="settings-provider-grid">
@@ -171,12 +171,12 @@ function WorkspaceSettings({ system }: { system?: System }) {
               <strong>Sibyl {system?.version ?? '—'}</strong>
             </div>
             <div>
-              <span>Market data</span>
+              <span>Account mode</span>
               <Badge tone="lime">{system?.mode ?? 'Requires access'}</Badge>
             </div>
             <div>
-              <span>Market exchange</span>
-              <strong>{system?.market_exchange ?? '—'}</strong>
+              <span>Market source</span>
+              <strong>{system?.market_source?.name ?? system?.market_exchange ?? '—'}</strong>
             </div>
             <div>
               <span>Order execution</span>

@@ -51,6 +51,10 @@ class Store:
                 CREATE TABLE IF NOT EXISTS runs (
                     id TEXT PRIMARY KEY, kind TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS source_snapshots (
+                    scope TEXT NOT NULL, timestamp TEXT NOT NULL, value REAL NOT NULL,
+                    PRIMARY KEY(scope, timestamp)
+                );
                 CREATE TABLE IF NOT EXISTS snapshots (
                     timestamp TEXT PRIMARY KEY, value REAL NOT NULL
                 );
@@ -274,9 +278,22 @@ class Store:
             ).fetchall()
         return [{**dict(row), "payload": json.loads(row["payload"])} for row in rows]
 
-    def snapshot(self, value: float) -> list[dict]:
+    def snapshot(self, value: float, scope: str = "") -> list[dict]:
         """Save one actual portfolio observation per UTC hour and return its history."""
         timestamp = datetime.now(UTC).replace(minute=0, second=0, microsecond=0).isoformat()
+        if scope:
+            with self.db() as db:
+                db.execute(
+                    "INSERT INTO source_snapshots VALUES (?, ?, ?) ON CONFLICT(scope, timestamp) DO UPDATE SET value=excluded.value",
+                    (scope, timestamp, value),
+                )
+                return [
+                    dict(row)
+                    for row in db.execute(
+                        "SELECT timestamp, value FROM source_snapshots WHERE scope=? ORDER BY timestamp",
+                        (scope,),
+                    )
+                ]
         with self.db() as db:
             db.execute(
                 "INSERT INTO snapshots VALUES (?, ?) ON CONFLICT(timestamp) "

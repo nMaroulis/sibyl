@@ -72,25 +72,20 @@ def test_source_selection_applies_immediately_and_archive_is_retained(settings, 
     assert [p.source.id for p in service.configured_providers()] == ["coindesk"]
 
 
-def test_market_save_is_restart_bound_and_never_enables_execution(client, settings):
-    active = client.get("/api/v1/settings/market").json()["active"]
-    saved = client.post("/api/v1/settings/market", json={"mode": "live", "exchange": "kraken"})
+def test_market_save_applies_immediately_without_changing_account_or_execution_mode(client, settings):
+    saved = client.post("/api/v1/settings/market", json={"source": "kraken"})
     assert saved.status_code == 200
-    assert saved.json()["restart_required"] is True
-    assert saved.json()["active"] == active
+    assert saved.json()["restart_required"] is False
+    assert saved.json()["active"]["id"] == "kraken"
     assert client.get("/api/v1/system").json()["mode"] == "demo"
     assert client.get("/api/v1/system").json()["allow_live_trading"] is False
     restarted_config = Settings(data_dir=settings.data_dir, news_mode="demo", _env_file=None)
-    DataSettings(restarted_config, Store(settings.data_dir)).apply_startup()
-    assert restarted_config.mode == "live"
-    assert restarted_config.market_exchange == "kraken"
+    reopened = DataSettings(restarted_config, Store(settings.data_dir))
+    reopened.apply_startup()
+    assert restarted_config.mode == "demo"
+    assert reopened.resolve_market()["id"] == "kraken"
     assert restarted_config.allow_live_trading is False
-    assert (
-        client.post(
-            "/api/v1/settings/market", json={"mode": "live", "exchange": "binance-testnet"}
-        ).status_code
-        == 422
-    )
+    assert client.post("/api/v1/settings/market", json={"source": "binance-testnet"}).status_code == 400
 
 
 def test_demo_is_exclusive_and_keeps_unused_provider_credentials(settings, store):

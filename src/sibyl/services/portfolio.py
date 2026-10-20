@@ -24,6 +24,11 @@ class Portfolio:
         ]
 
     def overview(self) -> dict:
+        """Read account valuation with one frozen reference feed."""
+        with self.market.snapshot():
+            return self._overview()
+
+    def _overview(self) -> dict:
         """Return paper fixtures in demo mode or actual balances in live mode.
 
         Assets without a supported quote are reported as unpriced. Connected
@@ -55,7 +60,9 @@ class Portfolio:
                         "assets": 0,
                     }
                 )
-        prices = {item["asset"]: item for item in self.market.overview()["items"]}
+        overview = self.market.overview()
+        warnings.extend(overview.get("warnings", []))
+        prices = {item["asset"]: item for item in overview["items"] if item.get("status") != "stale"}
         holdings, unpriced = [], []
         for asset, quantity in balances.items():
             if quantity <= 1e-10:
@@ -82,7 +89,7 @@ class Portfolio:
         total = sum(h["value"] for h in holdings)
         for holding in holdings:
             holding["allocation"] = holding["value"] / total * 100 if total else 0
-        if self.market.settings.mode == "demo":
+        if self.market.source == "demo" and self.market.settings.mode == "demo":
             histories = {
                 h["asset"]: self.market.candles(f"{h['asset']}/USDT", 90)
                 for h in holdings
@@ -101,13 +108,16 @@ class Portfolio:
             ]
             history_kind = "Current paper holdings valued at historical demo prices; not actual performance."
         else:
-            history = self.store.snapshot(total)
+            history = self.store.snapshot(total, scope=f"{self.market.settings.mode}:{self.market.source}")
             history_kind = "Observed account value snapshots; deposits and withdrawals affect the chart."
-        previous = sum(h["value"] / (1 + h["change"] / 100) for h in holdings)
+        complete_change = all(h["change"] is not None and h["change"] > -100 for h in holdings)
+        previous = sum(h["value"] / (1 + h["change"] / 100) for h in holdings) if complete_change else None
+        if not complete_change:
+            warnings.append("A daily move is unavailable; total daily change is not calculated.")
         return {
             "total": total,
-            "change": (total / previous - 1) * 100 if previous else 0,
-            "change_value": total - previous,
+            "change": (total / previous - 1) * 100 if previous else None,
+            "change_value": total - previous if previous is not None else None,
             "holdings": holdings,
             "unpriced": unpriced,
             "history": history,
@@ -115,15 +125,22 @@ class Portfolio:
             "venues": venues,
             "warnings": warnings,
             "cash": sum(h["value"] for h in holdings if h["asset"] in STABLES),
-            "source": self.market.source,
+            **self.market.metadata(),
             "currency": "USDT",
             "mode": self.market.settings.mode,
             "as_of": datetime.now(UTC).isoformat(),
         }
 
     def accounts(self) -> dict:
+        """Read account valuation with one frozen reference feed."""
+        with self.market.snapshot():
+            return self._accounts()
+
+    def _accounts(self) -> dict:
         """Read each account's spot quantities and approximate USDT valuation separately."""
-        quotes = {item["asset"]: item for item in self.market.overview()["items"]}
+        quotes = {
+            item["asset"]: item for item in self.market.overview()["items"] if item.get("status") != "stale"
+        }
         rates = {
             "USDT": 1.0,
             "USD": 1.0,
@@ -179,7 +196,7 @@ class Portfolio:
                 }
             )
         return {
-            "source": self.market.source,
+            **self.market.metadata(),
             "accounts": accounts,
             "quote_rates": rates,
             "as_of": datetime.now(UTC).isoformat(),

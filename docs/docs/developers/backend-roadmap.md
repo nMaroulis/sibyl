@@ -66,7 +66,7 @@ The existing persistent strategy worker is paper-only.
 
 ### 5. Market-data infrastructure — partial
 
-The backend currently uses cached REST snapshots and provider-sized candle pages.
+The backend uses cached REST snapshots, source-specific catalogs/capabilities and provider-sized candle pages. Settings selects public exchanges, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys. Markets supports temporary overrides, exact pair analysis, timestamp/stale labels and quotes-only feeds. See [Market data](market-data.md).
 
 - [ ] Persist historical OHLCV with paginated backfill, retention and gap detection.
 - [ ] Add WebSocket market and account/order subscriptions with reconnection handling.

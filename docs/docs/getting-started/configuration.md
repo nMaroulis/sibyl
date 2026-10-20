@@ -8,7 +8,7 @@ Settings are validated by `pydantic-settings`. Environment variables override `.
 | `SIBYL_PORT`               | `8000`                            | API port                                                                                      |
 | `SIBYL_DATA_DIR`           | `.sibyl`                          | SQLite and local vault directory                                                              |
 | `SIBYL_MODE`               | `demo`                            | `demo` fixtures or `live` provider data                                                       |
-| `SIBYL_NEWS_MODE`          | `auto`                            | Follow market mode, or independently choose `demo` / `live` news |
+| `SIBYL_NEWS_MODE`          | `auto`                            | Follow account mode, or independently choose `demo` / `live` news |
 | `SIBYL_NEWS_REFRESH_SECONDS` | `600`                          | Publisher collection interval, 60–86,400 seconds |
 | `SIBYL_NEWS_RETENTION_DAYS` | `30`                            | News archive retention, 1–365 days, capped at 5,000 stories |
 | `SIBYL_MARKET_EXCHANGE`    | `binance`                         | Public quotes: any of the 20 exchange IDs in the [catalog](../developers/exchange-clients.md) |
@@ -47,7 +47,7 @@ Back up the directory as a unit with the API stopped. The vault key is necessary
 
 [Settings](../guides/settings.md) groups accounts and configuration into five tabs: Exchanges, AI models, News, Market data, and Workspace. AI models saves an encrypted provider-specific profile, including an optional API key, and activates it immediately for new agent requests. Preset model choices and custom IDs are supported for every adapter. Stored profiles override environment LLM defaults after restart; provider environment keys remain a fallback when no saved key exists.
 
-News saves enabled collectors and encrypted optional NewsAPI credentials immediately. Market data saves public mode/exchange choices for the next API restart; saved workspace choices override environment defaults. An environment download is also available for setting up another workspace. Workspace shows current runtime settings and manages browser-session access. Local model downloads, quantization, and deployment management are marked **Coming soon**.
+News saves enabled collectors and encrypted optional NewsAPI credentials immediately. Market data saves one default feed and encrypted provider-specific keys immediately, independently of account mode. Saved workspace choices override environment defaults. Public exchanges need no key; saved accounts retain their own environment. See [Market data sources](../developers/market-data.md). Workspace shows current runtime settings and manages browser-session access. Local model downloads, quantization, and deployment management are marked **Coming soon**.
 
 ## Public crypto research
 

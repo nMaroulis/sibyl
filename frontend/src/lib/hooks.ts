@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 
 /** Fetch on navigation, manual refresh, and optional polling; ignore stale responses. */
-export function useResource<T>(path: string, interval = 0) {
+export function useResource<T>(path: string, interval = 0, enabled = true) {
   const [data, setData] = useState<T>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,11 @@ export function useResource<T>(path: string, interval = 0) {
       setLoading(true);
     }
     setError('');
+    if (!enabled) {
+      setData(undefined);
+      setLoading(false);
+      return;
+    }
     let latestRequest = 0;
     let controller: AbortController | undefined;
     const fetchData = () => {
@@ -55,6 +60,6 @@ export function useResource<T>(path: string, interval = 0) {
       clearInterval(timer);
       window.removeEventListener('sibyl-refresh', fetchData);
     };
-  }, [path, interval, revision]);
+  }, [path, interval, revision, enabled]);
   return { data, error, loading, retry };
 }

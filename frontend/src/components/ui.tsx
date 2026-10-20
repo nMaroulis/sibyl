@@ -14,7 +14,8 @@ import { percent } from '../lib/api';
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: string }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }
-export function Change({ value }: { value: number }) {
+export function Change({ value }: { value: number | null | undefined }) {
+  if (value == null || !Number.isFinite(value)) return <span className="muted">—</span>;
   const Icon = value >= 0 ? ArrowUpRight : ArrowDownRight;
   return (
     <span className={`change ${value >= 0 ? 'positive' : 'negative'}`}>
@@ -121,14 +122,14 @@ export function Empty({ title, children }: { title: string; children: ReactNode 
     </div>
   );
 }
-export function DataNote({ source }: { source?: string }) {
+export function DataNote({ source, label }: { source?: string; label?: string }) {
   return (
     <span className="data-note">
       <span className="status-dot" />
       {source === 'demo'
         ? 'Illustrative demo data'
         : source
-          ? `Source: ${source}`
+          ? `Source: ${label || (source.startsWith('connection:') ? 'Connected exchange account' : source)}`
           : 'Local workspace'}
     </span>
   );

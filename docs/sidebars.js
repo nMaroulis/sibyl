@@ -32,6 +32,7 @@ module.exports = {
         'developers/exchange-clients',
         'developers/account-sync',
         'developers/news',
+        'developers/market-data',
         'developers/agents',
         'developers/api',
         'developers/extending',

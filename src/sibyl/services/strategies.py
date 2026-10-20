@@ -352,8 +352,9 @@ class Strategies:
                         continue
                 params = BacktestRequest(**snapshot["parameters"])
                 # Network I/O intentionally stays outside the lifecycle lock.
-                candles = self.market.candles(params.symbol, params.candles, params.timeframe)
-                price = self.market.price(params.symbol)
+                with self.market.snapshot():
+                    candles = self.market.candles(params.symbol, params.candles, params.timeframe)
+                    price = self.market.price(params.symbol)
                 self._observe(snapshot["id"], params, candles, price)
             except Exception:
                 with self._lock:

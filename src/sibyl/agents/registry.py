@@ -111,15 +111,29 @@ class AgentRegistry:
             result = portfolio.overview()
             return {key: value for key, value in result.items() if key != "history"}
 
-        def market_analysis(symbol: str = "BTC/USDT", timeframe: str = "1d", limit: int = 180) -> dict:
-            """Calculate indicators for the selected market, timeframe, and observation window."""
-            result = analyze(market.candles(symbol, limit, timeframe), 365 * 86400 / TIMEFRAMES[timeframe])
-            return {
-                "symbol": symbol,
-                "timeframe": timeframe,
-                "source": market.source,
-                **{key: value for key, value in result.items() if key != "candles"},
-            }
+        def market_analysis(
+            symbol: str = "BTC/USDT", timeframe: str = "1d", limit: int = 180, source: str = ""
+        ) -> dict:
+            """Read exact page-selected quotes or indicators from one frozen source."""
+            with market.snapshot(source or None):
+                market.client().market(symbol)
+                metadata = market.metadata()
+                if not metadata["capabilities"]["candles"]:
+                    return {
+                        "symbol": symbol,
+                        **metadata,
+                        "price": market.price(symbol),
+                        "note": "Quotes only. This adapter cannot provide candle indicators or history.",
+                    }
+                result = analyze(
+                    market.candles(symbol, limit, timeframe), 365 * 86400 / TIMEFRAMES[timeframe]
+                )
+                return {
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    **metadata,
+                    **{key: value for key, value in result.items() if key != "candles"},
+                }
 
         def strategy_context(
             symbol: str = "BTC/USDT", parameters: dict | None = None, job_id: str = ""
@@ -173,11 +187,12 @@ class AgentRegistry:
             """Read a statistical baseline for the selected market and 1–30 day horizon."""
             if not 1 <= horizon <= 30:
                 raise ValueError("Forecast horizon must be between 1 and 30 days.")
-            return {
-                "symbol": symbol,
-                "source": market.source,
-                **forecast(market.candles(symbol, 180), horizon),
-            }
+            with market.snapshot():
+                return {
+                    "symbol": symbol,
+                    "source": market.source,
+                    **forecast(market.candles(symbol, 180), horizon),
+                }
 
         def news_briefing(
             article_id: str = "",
@@ -354,6 +369,8 @@ class AgentRegistry:
             args = {"symbol": context.symbol or "BTC/USDT"}
             if request.module == "analyst":
                 args.update(timeframe=context.timeframe or "1d", limit=context.limit or 180)
+                if context.market_source:
+                    args["source"] = context.market_source
             if request.module == "chronos":
                 args["horizon"] = context.horizon or 14
             return args
@@ -387,6 +404,8 @@ class AgentRegistry:
                 text += f"{top['name']} is the largest position at {top['allocation']:.1f}%. "
             return text + f"Data source: {evidence['source']}. " + " ".join(evidence["warnings"])
         if module == "analyst":
+            if "rsi" not in evidence:
+                return f"{evidence['symbol']}: {evidence['price']:,.4f}. Source: {evidence['source_label']}. {evidence['note']}"
             return (
                 f"{evidence['symbol']}: RSI {evidence['rsi']:.1f}, {evidence['trend'].lower()} EMA alignment, "
                 f"annualized return volatility {evidence['volatility']:.1f}%. Source: {evidence['source']}. "

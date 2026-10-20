@@ -38,6 +38,7 @@ def services(request: Request) -> Services:
 
 S = Annotated[Services, Depends(services)]
 Symbol = Annotated[str, Query(pattern=r"^[A-Z0-9]{1,12}/[A-Z0-9]{1,12}$")]
+MarketSource = Annotated[str, Query(max_length=120, pattern=r"^[a-z0-9:-]+$")]
 
 
 @router.get("/system", tags=["System"])
@@ -48,6 +49,7 @@ def system(s: S):
         "version": __version__,
         "mode": s.settings.mode,
         "market_exchange": s.settings.market_exchange,
+        "market_source": s.data_settings.public_market()["active"],
         "execution": "paper",
         "llm_provider": model["provider"],
         "llm_model": model["model"],
@@ -99,34 +101,55 @@ def save_news_settings(body: NewsSettingsRequest, s: S, response: Response):
 
 
 @router.get("/settings/market", tags=["Settings"])
-def market_settings(s: S):
-    """Read active and saved public market data choices."""
+def market_settings(s: S, response: Response):
+    """Discover feeds and key presence without exposing encrypted credentials."""
+    response.headers["Cache-Control"] = "no-store"
     return s.data_settings.public_market()
 
 
 @router.post("/settings/market", tags=["Settings"])
-def save_market_settings(body: MarketSettingsRequest, s: S):
-    """Save a source selection for the next restart, without changing execution permissions."""
-    return s.data_settings.save_market(body)
+def save_market_settings(body: MarketSettingsRequest, s: S, response: Response):
+    """Activate a reference feed for subsequent reads, independently of account mode."""
+    response.headers["Cache-Control"] = "no-store"
+    result = s.data_settings.save_market(body)
+    if body.api_key is not None:
+        s.market.forget_source(body.source)
+    return result
+
+
+@router.delete("/settings/market/{provider}/key", tags=["Settings"])
+def remove_market_key(provider: str, s: S, response: Response):
+    """Delete a provider credential; select another default before removing a required key."""
+    response.headers["Cache-Control"] = "no-store"
+    result = s.data_settings.remove_market_key(provider)
+    s.market.forget_source(provider)
+    return result
 
 
 @router.get("/markets", tags=["Analyst"])
-def markets(s: S):
-    """Read the six-asset watchlist and its data source."""
-    return s.market.overview()
+def markets(s: S, source: MarketSource | None = None):
+    """Read a sourced watchlist; a page override never changes workspace preferences."""
+    with s.market.snapshot(source):
+        return s.market.overview()
 
 
 @router.get("/markets/analysis", tags=["Analyst"])
 def analysis(
-    s: S, symbol: Symbol = "BTC/USDT", limit: int = Query(180, ge=60, le=720), timeframe: Timeframe = "1d"
+    s: S,
+    symbol: Symbol = "BTC/USDT",
+    limit: int = Query(180, ge=60, le=720),
+    timeframe: Timeframe = "1d",
+    source: MarketSource | None = None,
 ):
-    """Calculate indicators from the selected closed candle intervals."""
-    return {
-        "symbol": symbol,
-        "timeframe": timeframe,
-        "source": s.market.source,
-        **analyze(s.market.candles(symbol, limit, timeframe), 365 * 86400 / TIMEFRAMES[timeframe]),
-    }
+    """Calculate indicators for an exact provider pair using closed candle intervals."""
+    with s.market.snapshot(source):
+        s.market.client().market(symbol)
+        return {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            **s.market.metadata(),
+            **analyze(s.market.candles(symbol, limit, timeframe), 365 * 86400 / TIMEFRAMES[timeframe]),
+        }
 
 
 @router.get("/markets/correlation", tags=["Analyst"])
@@ -137,8 +160,9 @@ def correlations(
     limit: int = Query(90, ge=30, le=720),
     method: Literal["pearson", "spearman"] = "pearson",
     transform: Literal["log_returns", "prices", "changes"] = "log_returns",
+    source: MarketSource | None = None,
 ):
-    """Compare up to eight selected markets on aligned closed candles."""
+    """Compare up to eight exact provider pairs on aligned closed candles from one feed."""
     selected = list(dict.fromkeys(symbols.split(",")))
     if not 2 <= len(selected) <= 8:
         raise ValueError("Choose between two and eight markets.")
@@ -146,20 +170,28 @@ def correlations(
 
     if any(not re.fullmatch(r"[A-Z0-9]{1,12}/[A-Z0-9]{1,12}", symbol) for symbol in selected):
         raise ValueError("Use canonical symbols such as BTC/USDT.")
-    histories = {symbol: s.market.candles(symbol, limit, timeframe) for symbol in selected}
-    return {"source": s.market.source, "timeframe": timeframe, **correlation(histories, method, transform)}
+    with s.market.snapshot(source):
+        for symbol in selected:
+            s.market.client().market(symbol)
+        histories = {symbol: s.market.candles(symbol, limit, timeframe) for symbol in selected}
+        return {**s.market.metadata(), "timeframe": timeframe, **correlation(histories, method, transform)}
 
 
 @router.get("/markets/symbols", tags=["Analyst"])
-def market_symbols(s: S):
-    """List the provider's active spot symbols and supported chart timeframes."""
-    return s.market.symbols()
+def market_symbols(s: S, source: MarketSource | None = None):
+    """Discover exact spot pairs, supported timeframes and provider candle limits."""
+    with s.market.snapshot(source):
+        return s.market.symbols()
 
 
 @router.get("/markets/orderbook", tags=["Broker"])
-def orderbook(s: S, symbol: Symbol = "BTC/USDT", depth: int = Query(10, ge=5, le=50)):
-    """Read a public order-book snapshot without submitting any orders."""
-    return s.market.orderbook(symbol, depth)
+def orderbook(
+    s: S, symbol: Symbol = "BTC/USDT", depth: int = Query(10, ge=5, le=50), source: MarketSource | None = None
+):
+    """Read an exact public order-book snapshot without submitting orders."""
+    with s.market.snapshot(source):
+        s.market.client().market(symbol)
+        return s.market.orderbook(symbol, depth)
 
 
 @router.get("/portfolio/accounts", tags=["Accountant"])
@@ -315,19 +347,20 @@ def orders(s: S):
 @router.post("/orders/preview", tags=["Broker"])
 def preview_order(body: OrderRequest, s: S):
     """Estimate notional and a 0.1% paper fee without mutating funds."""
-    price = s.market.price(body.symbol)
-    notional = price * body.quantity
-    return {
-        "symbol": body.symbol,
-        "side": body.side,
-        "quantity": body.quantity,
-        "price": price,
-        "notional": notional,
-        "fee": notional * 0.001,
-        "total": notional * (1.001 if body.side == "buy" else 0.999),
-        "mode": "paper",
-        "source": s.market.source,
-    }
+    with s.market.snapshot():
+        price = s.market.price(body.symbol)
+        notional = price * body.quantity
+        return {
+            "symbol": body.symbol,
+            "side": body.side,
+            "quantity": body.quantity,
+            "price": price,
+            "notional": notional,
+            "fee": notional * 0.001,
+            "total": notional * (1.001 if body.side == "buy" else 0.999),
+            "mode": "paper",
+            "source": s.market.source,
+        }
 
 
 @router.post("/orders", status_code=201, tags=["Broker"])
@@ -369,12 +402,13 @@ def strategies():
 @router.post("/strategies/backtest", tags=["Broker"])
 def run_backtest(body: BacktestRequest, s: S):
     """Simulate a strategy with next-open fills, fees, and slippage; persist its result."""
-    result = {
-        **backtest(s.market.candles(body.symbol, body.candles, body.timeframe), body),
-        "source": s.market.source,
-    }
-    record = s.store.record("backtest", result)
-    return {**result, "id": record["id"]}
+    with s.market.snapshot():
+        result = {
+            **backtest(s.market.candles(body.symbol, body.candles, body.timeframe), body),
+            "source": s.market.source,
+        }
+        record = s.store.record("backtest", result)
+        return {**result, "id": record["id"]}
 
 
 @router.get("/strategies/jobs", tags=["Broker"])
@@ -459,7 +493,12 @@ def strategy_action(job_id: str, action: Literal["pause", "resume", "stop"], s: 
 @router.get("/forecast", tags=["Chronos"])
 def price_forecast(s: S, symbol: Symbol = "BTC/USDT", horizon: int = Query(14, ge=1, le=30)):
     """Return an explicitly untrained log-return baseline and uncertainty band."""
-    return {"symbol": symbol, "source": s.market.source, **forecast(s.market.candles(symbol, 180), horizon)}
+    with s.market.snapshot():
+        return {
+            "symbol": symbol,
+            "source": s.market.source,
+            **forecast(s.market.candles(symbol, 180), horizon),
+        }
 
 
 @router.get("/news", tags=["Reporter"])

@@ -44,7 +44,9 @@ export function PortfolioPage() {
     -({ '1W': 7, '1M': 30, '3M': 90, ALL: data.history.length }[range] ?? 30),
   );
   const activeJobs = jobs?.filter((job) => job.status === 'running').length ?? 0;
-  const holdings = [...data.holdings].sort((a, b) => b[sort] - a[sort]);
+  const holdings = [...data.holdings].sort(
+    (a, b) => (b[sort] ?? -Infinity) - (a[sort] ?? -Infinity),
+  );
   const exportHoldings = () =>
     exportCSV('sibyl-holdings.csv', [
       ['Asset', 'Quantity', 'Price (USDT)', 'Value (USDT)', 'Allocation (%)', 'Source'],
@@ -238,7 +240,7 @@ export function PortfolioPage() {
                       <td className="spark-column">
                         <Sparkline
                           data={holding.sparkline}
-                          color={holding.change >= 0 ? '#6c9f90' : '#c4878a'}
+                          color={(holding.change ?? 0) >= 0 ? '#6c9f90' : '#c4878a'}
                           width={85}
                         />
                       </td>

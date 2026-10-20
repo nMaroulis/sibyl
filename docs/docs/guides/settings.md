@@ -44,9 +44,15 @@ The Demo card has an **Exclusive** badge and a distinct selection color. Choosin
 
 ## Market data
 
-Open `/settings?tab=market` to select the Demo client or a supported exchange for public prices and candle history. **Save market source** persists the choice in the workspace. It applies at the next API restart, before clients and workers start, so in-flight observations cannot be relabeled. The form distinguishes the active selection from a saved selection waiting for restart. This selection does not enable exchange trading; private balances use their own account connections.
+Open `/settings?tab=market` and click a source card, then **Save market source**. The selection applies immediately to new reads. Each complete read keeps one source, even if settings change while it runs. Account mode and trading permissions are independent.
 
-Saved market choices override environment defaults after restart. The optional environment download remains available for configuring another workspace. This tab also explains CoinPaprika, Wikipedia, mempool.space and optional yfinance research. These integration cards describe their fixed endpoints; they are not credential or connectivity checks. The old `/settings?tab=apis` bookmark opens Market data.
+Use **Demo prices** on its own for offline fixtures, choose one of 20 public exchange feeds without an API key, or select an existing account under **Connected exchanges**. Account cards retain the saved production/test environment. Public exchange cards do not need an account or saved trading credentials.
+
+**Market APIs** offers CryptoCompare (provider key), CoinGecko Demo API (free-plan key), and CoinGecko Pro API (separate paid-plan key). Enter the provider key and save. Leaving it blank preserves the saved credential; switching providers retains their separate keys. Keys are encrypted on the backend and never returned to the browser. Select another default before removing an active provider's required key. Saving does not test connectivity, plan access or quota.
+
+CoinGecko supplies quotes only in this adapter. CryptoCompare and exchange feeds provide supported candle intervals; exchange feeds also provide order-book snapshots. CoinGecko's Demo plan is live data, distinct from Sibyl's offline Demo card. The Markets page offers a temporary source switcher and links back here for setup.
+
+Saved choices take precedence over environment defaults. This tab also describes fixed research integrations for CoinPaprika, Wikipedia, mempool.space and optional yfinance. The old `/settings?tab=apis` bookmark opens Market data. See the [backend source contract](../developers/market-data.md).
 
 ## Workspace
 

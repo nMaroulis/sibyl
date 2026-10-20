@@ -181,6 +181,7 @@ class AgentContext(Request):
     """Validated page selections; observations and credentials always come from server tools."""
 
     symbol: str | None = None
+    market_source: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
     timeframe: Timeframe | None = None
     limit: int | None = Field(default=None, ge=60, le=720)
     crypto_id: str | None = Field(

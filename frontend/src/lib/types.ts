@@ -1,5 +1,11 @@
 /** JSON contracts shared by the typed API client and dashboard screens. */
-export type Source = { source: string; as_of?: string };
+export type Source = {
+  source: string;
+  source_label?: string;
+  as_of?: string;
+  environment?: string;
+  capabilities?: { candles: boolean; order_book: boolean };
+};
 export type System = {
   version: string;
   mode: 'demo' | 'live';
@@ -9,13 +15,14 @@ export type System = {
   llm_model: string;
   agents: number;
   market_exchange: string;
+  market_source?: MarketSource;
 };
 export type Point = { timestamp: string; value: number };
 export type Asset = {
   asset: string;
   name: string;
   price: number;
-  change: number;
+  change: number | null;
   color: string;
   sparkline: number[];
 };
@@ -24,14 +31,20 @@ export type Holding = Asset & {
   value: number;
   allocation: number;
 };
-export type MarketAsset = Asset & { symbol: string; volume: number };
+export type MarketAsset = Asset & {
+  symbol: string;
+  quote: string;
+  volume: number | null;
+  status: 'fresh' | 'stale' | 'undated';
+  observed_at: string | null;
+};
 export type Portfolio = Source & {
   mode: string;
   total: number;
   cash: number;
   currency: string;
-  change: number;
-  change_value: number;
+  change: number | null;
+  change_value: number | null;
   holdings: Holding[];
   history: Point[];
   history_note: string;
@@ -319,9 +332,25 @@ export type NewsSettings = {
     methods?: string[];
   }[];
 };
+export type MarketSource = {
+  id: string;
+  name: string;
+  kind: 'demo' | 'exchange' | 'connection' | 'api';
+  provider: string;
+  environment: string;
+  requires_key: boolean;
+  has_api_key: boolean;
+  available: boolean;
+  candles: boolean;
+  order_book: boolean;
+  description?: string;
+  website?: string | null;
+  note?: string;
+};
 export type MarketSettings = {
-  active: { mode: 'demo' | 'live'; exchange: string };
-  saved: { mode: 'demo' | 'live'; exchange: string };
+  active: MarketSource;
+  catalog: MarketSource[];
+  account_mode: 'demo' | 'live';
   restart_required: boolean;
 };
 export type Knowledge = {
@@ -372,6 +401,7 @@ export type Run = {
 
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
+  market_source?: string;
   crypto_id?: string;
   job_id?: string;
   timeframe?: Timeframe;

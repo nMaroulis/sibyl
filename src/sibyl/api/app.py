@@ -54,7 +54,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         store = Store(config.data_dir)
         data_settings = DataSettings(config, store)
         data_settings.apply_startup()
-        market = Market(config, store)
+        market = Market(config, store, data_settings)
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
         strategies = Strategies(market, store)
         account_sync = AccountSync(market, store)

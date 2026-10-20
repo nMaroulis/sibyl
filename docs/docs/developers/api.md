@@ -150,4 +150,4 @@ See [News ingestion and sentiment](news.md#query-contracts) for `mode`, publishe
 
 ## Data source settings and market mood
 
-`GET` / `POST /settings/news` manages enabled news collectors and a write-only encrypted NewsAPI credential. `GET` / `POST /settings/market` saves public market choices for restart. `GET /news/fear-greed?mode=live` returns attributed cached Alternative.me index observations; `mode=demo` returns explicitly illustrative values. See [News ingestion](news.md#saved-collectors-api-access-and-web-collection).
+`GET` / `POST /settings/news` manages enabled news collectors and a write-only encrypted NewsAPI credential. `GET` / `POST /settings/market` discovers and activates reference feeds immediately; `DELETE /settings/market/{provider}/key` removes a stored API credential. Markets endpoints accept an optional `source` override. See [Market data contracts](market-data.md). `GET /news/fear-greed?mode=live` returns attributed cached Alternative.me index observations; `mode=demo` returns explicitly illustrative values. See [News ingestion](news.md#saved-collectors-api-access-and-web-collection).
