@@ -24,6 +24,7 @@ from sibyl.models import (
 from sibyl.services.account_sync import AccountSyncRequest
 from sibyl.services.analytics import analyze, correlation, forecast
 from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequest
+from sibyl.services.funding_sync import FundingSyncRequest
 from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
 from sibyl.services.performance import OpeningInventory
@@ -106,6 +107,7 @@ def activate_account(connection_id: str, body: AccountActivation, s: S):
     result = s.accounts.public()
     for identity in before - set(result["active_ids"]):
         s.account_sync.pause(identity)
+        s.funding_sync.pause(identity)
     return result
 
 
@@ -375,6 +377,53 @@ def account_performance(
     return s.performance.report(account_id, symbol or "", environment, mark)
 
 
+@router.get("/funding-sync", tags=["Accountant"])
+def funding_sync_status(s: S, response: Response):
+    """Read funding support and range progress without private exchange reads."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.funding_sync.snapshot()
+
+
+@router.post("/connections/{connection_id}/funding-sync", status_code=202, tags=["Accountant"])
+def sync_funding(connection_id: str, body: FundingSyncRequest, s: S, response: Response):
+    """Queue read-only funding history in an explicit date range; no transfers are initiated."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.funding_sync.enqueue(account_connection(s, connection_id), body)
+
+
+@router.post("/connections/{connection_id}/funding-sync/pause", tags=["Accountant"])
+def pause_funding(
+    connection_id: str, s: S, stream: Literal["deposit", "withdrawal", "transfer"] | None = None
+):
+    """Pause future funding pages, retaining observations and the last successful checkpoint."""
+    account_connection(s, connection_id)
+    return s.funding_sync.pause(connection_id, stream)
+
+
+@router.get("/account-ledger/funding", tags=["Accountant"])
+def funding_events(
+    s: S,
+    response: Response,
+    account_id: str = Query("", max_length=100),
+    asset: str = Query("", max_length=20, pattern=r"^$|^[A-Z0-9][A-Z0-9.]{0,19}$"),
+    kind: Literal["", "deposit", "withdrawal", "transfer"] = "",
+    status: Literal["", "pending", "completed", "failed", "cancelled", "restricted", "unknown"] = "",
+    environment: Literal["", "demo", "test", "production"] = "",
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=1_000_000),
+):
+    """Read retained funding observations and completed native-asset totals."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.funding_sync.ledger.events(account_id, asset, kind, status, environment, limit, offset)
+
+
+@router.get("/account-ledger/funding/example", tags=["Accountant"])
+def funding_example(s: S, response: Response):
+    """Read an isolated funding example without changing wallet or ledger state."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.funding_sync.example()
+
+
 @router.post("/connections/{connection_id}/opening-inventory", tags=["Accountant"])
 def save_opening_inventory(connection_id: str, body: OpeningInventory, s: S, response: Response):
     """Record user-entered opening quantity and optional quote cost, separate from fills."""
@@ -423,6 +472,7 @@ def add_connection(body: ConnectionCreate, s: S):
     result = s.store.add_connection(body)
     for identity in before - set(s.accounts.public()["active_ids"]):
         s.account_sync.pause(identity)
+        s.funding_sync.pause(identity)
     return result
 
 
@@ -431,6 +481,7 @@ def delete_connection(connection_id: str, s: S):
     """Disconnect a saved account and clear its cached decrypted client."""
     s.store.delete_connection(connection_id)
     s.account_sync.pause(connection_id, disconnected=True)
+    s.funding_sync.pause(connection_id, disconnected=True)
     s.market.forget(connection_id)
     return Response(status_code=204)
 

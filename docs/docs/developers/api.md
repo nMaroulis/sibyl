@@ -169,3 +169,9 @@ Personal watchlist membership and order use `GET /markets/watchlist`, `POST` / `
 `POST /connections/{id}/opening-inventory` takes `symbol`, positive `quantity`, nullable nonnegative `total_cost` in the pair's quote, and a past timezone-aware `as_of` preceding the first retained fill. `DELETE` on that route with `?symbol=...` removes the assertion; `GET /connections/{id}/opening-inventory/audit?symbol=...` returns the latest 50 changes. `GET /account-ledger/performance/example` computes an isolated example without persistent side effects.
 
 These responses use `Cache-Control: no-store`. Reports expose native fee totals, unknown quantities, nullable final net/unrealized values and explicit coverage issues. See [performance contracts](account-performance.md).
+
+## Funding history
+
+`GET /funding-sync` reads supported streams and saved progress. `POST /connections/{id}/funding-sync` queues explicit `streams`, `start` and `end` for an active account; aware past ranges must be shorter than 90 days. `POST /connections/{id}/funding-sync/pause?stream=deposit` pauses one stream; omit the query to pause all.
+
+`GET /account-ledger/funding` filters retained observations by `account_id`, `asset`, `kind`, `status`, `environment`, `limit` and `offset`. Completed summaries cover the full selection while records are paged. `GET /account-ledger/funding/example` returns an isolated fixture. No endpoint initiates a money movement. See [funding contracts](funding-history.md).

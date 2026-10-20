@@ -52,7 +52,7 @@ Imports support Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Tr
 
 Filter retained fills by account, market, direction and environment. Original fill/order IDs and fees appear beside execution values. Fees keep their currencies; negative fees are rebates and unknown data stays explicit. Fee totals cover the complete filtered selection. **Export this page** exports the displayed page. Disconnecting stops imports/removes saved credentials while retained history stays readable.
 
-**Caught up** describes the selected provider range, not complete account history. Deposits, withdrawals and complete account returns remain unimplemented. Retained market FIFO and editable opening inventory are available in **Account history → Performance**. Imports never change balances or infer settlements from previews. See [account synchronization](../developers/account-sync.md) for coverage and recovery details.
+**Caught up** describes the selected provider range, not complete account history. Separate funding range imports are available below; complete account returns remain unimplemented. Retained market FIFO and editable opening inventory are available in **Account history → Performance**. Imports never change balances or infer settlements from previews. See [account synchronization](../developers/account-sync.md) for coverage and recovery details.
 
 The report combines the latest 200 manual paper fills and 100 exchange intents. Manual paper realized P&L matches recorded buys and sells FIFO, allocating buy and sell fees per unit. Opening seed balances have no recorded cost basis. Sales without matching recorded buys are excluded, and truncation of retained history can omit earlier lots. The P&L curve and currency selector use the full retained paper ledger, independently of table filters. Different quote currencies are never added together. Strategy-job fills remain in their isolated console.
 
@@ -75,3 +75,13 @@ Net matched P&L remains unavailable when fees, ordering or cross-market coverage
 **Refresh current marks** reads active account balances and current reference prices. Unrealized figures require known basis, usable conversion rates and a matching base balance. The source, conversion evidence and unavailable reasons remain visible; marks exclude future disposal fees. **Recalculate** uses only local retained history and clears an earlier mark.
 
 **View example** demonstrates four sample fills without creating trades, imports or account data. Close it to return to your report. **Ask about this report** opens Accountant in place, using this report’s selection through ProtoLink, with or without an LLM. The assistant never edits cost basis or fetches private balances for this view. See [calculation rules and limits](../developers/account-performance.md).
+
+## Funding movements
+
+Open **Trade → Account history → Funding**. Select an active supported account, choose the offered streams and a historical range shorter than 90 days, then **Import range**. Binance imports crypto deposits/withdrawals; Kraken imports posted deposit/withdrawal/transfer ledger entries. Other providers show their current limits. Demo imports an actual empty history; **View example** demonstrates sample records without creating account transactions.
+
+**Pause/Resume** keeps progress. Pause an active stream before changing its date range. **Rescan range** revisits a completed range to update statuses, fees or late records. Older ranges stay retained even when you select a new range. **Range fetched** refers only to that provider range, not complete account history.
+
+Filter by account, asset, movement, status or environment. Completed summaries include all matching pages and keep currencies and directions separate. Pending, restricted and failed observations are absent from completed totals. Amounts and fees stay separate because fee inclusion is not inferred. An internal-at-venue marker does not prove an own-account transfer. **Export this page** downloads displayed records; **Ask about funding** uses the same selection through ProtoLink.
+
+Funding observations flag affected FIFO coverage; they do not supply cost basis or investment returns. No funding control deposits, withdraws or transfers money. See [funding support, permissions and limits](../developers/funding-history.md).

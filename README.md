@@ -30,6 +30,10 @@ Portfolio is the home screen. New workspaces start with no active accounts. Conn
 
 Portfolio prices actual held assets through exact direct, inverse or short conversion routes from the selected market feed. Stablecoins and fiat use observed rates; no parity is assumed. Holdings expose conversion evidence and coverage, and unavailable quantities stay visible. Complete account observations form the history. The Demo wallet exercises an extra coin, stablecoin and fiat through the same engine. See [portfolio valuation](docs/docs/developers/portfolio-valuation.md).
 
+## Funding history
+
+**Trade → Account history → Funding** adds read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer ledger entries. Checkpoints, pause/resume, rescans and sanitized retries retain native IDs, statuses, amounts and fees. Summaries keep accounts, environments and assets separate. Demo has an actual empty funding history plus a standalone example. Ask Accountant reads the selected local observations through ProtoLink. Funding gaps flag affected market FIFO as provisional; full transfer reconciliation and cash-flow-adjusted returns remain future work. See [funding contracts, provider limits and remaining work](docs/docs/developers/funding-history.md).
+
 ## News and sentiment
 
 **News** collects five public publisher feeds through the Python backend, with a persistent deduplicated archive, source health, search/asset/publisher/date filters, and VADER text polarity distributions and trends. Public news works while exchange accounts stay in demo mode. Ask Reporter reads the selected story or filters through ProtoLink. Publisher RSS needs no key; CryptoSlate web collection and encrypted optional NewsAPI access are also supported. Full articles open at the publisher. Alternative.me supplies the attributed Fear & Greed index. See the [News backend guide](docs/docs/developers/news.md).
@@ -61,6 +65,9 @@ Dedicated **Binance Testnet** and **Coinbase Sandbox** options are also availabl
 | `services/strategies.py`       | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
 | `services/strategy_monitor.py` | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
 | `services/trading.py`          | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
+| `services/import_worker.py`    | Shared one-page scheduling, transport failure handling and safe shutdown                          |
+| `services/funding_sync.py`     | Explicit-range funding jobs, rescans, active-account gating and isolated examples                 |
+| `services/funding_ledger.py`   | Validated funding facts, atomic checkpoints and native completed-quantity summaries               |
 | `services/account_sync.py`     | Durable selected-market imports, retries, pause/resume and progress                               |
 | `services/performance.py`      | Decimal market FIFO, audited opening inventory and opt-in reconciled reference marks              |
 | `services/ledger.py`           | Normalized fills, native-currency fees and atomic import checkpoints                              |

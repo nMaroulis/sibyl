@@ -1,14 +1,10 @@
 """Resumable, read-only account imports with durable progress and bounded retries."""
 
-import threading
-import time
-from datetime import UTC, datetime
-
-import ccxt
 from pydantic import Field, field_validator
 
 from sibyl.exchanges.providers import CLIENTS
 from sibyl.models import Connection, OrderRequest, Request
+from sibyl.services.import_worker import ImportWorker
 from sibyl.services.ledger import AccountLedger, now_iso
 from sibyl.services.market import Market
 from sibyl.storage import Store
@@ -36,7 +32,7 @@ class AccountSyncRequest(Request):
         return list(dict.fromkeys(OrderRequest.valid_symbol(value) for value in values))
 
 
-class AccountSync:
+class AccountSync(ImportWorker):
     """Consume one persisted page per tick; HTTP requests only enqueue work.
 
     A single application worker owns reads. Successful checkpoints survive process
@@ -46,10 +42,7 @@ class AccountSync:
     """
 
     def __init__(self, market: Market, store: Store):
-        self.market, self.store = market, store
-        self.ledger = AccountLedger(store)
-        self._work_lock = threading.Lock()
-        self._closed = False
+        super().__init__(market, store, AccountLedger(store))
 
     def snapshot(self) -> dict:
         """Read public sync status without provider calls or decrypted credentials."""
@@ -120,74 +113,6 @@ class AccountSync:
                 self.ledger.write_job(db, job)
         return self.snapshot()
 
-    def tick(self) -> None:
-        """Read one due page fairly across jobs and keep provider failures contained."""
-        if not self._work_lock.acquire(blocking=False):
-            return
-        try:
-            if self._closed:
-                return
-            import json
-
-            with self.store.db() as db:
-                db.execute("BEGIN IMMEDIATE")
-                row = db.execute(
-                    "SELECT payload FROM account_sync WHERE status IN ('queued','retrying') "
-                    "AND next_attempt<=? ORDER BY last_attempt,account_id,symbol LIMIT 1",
-                    (time.time(),),
-                ).fetchone()
-                if row is None:
-                    return
-                job = json.loads(row[0])
-                job.update(status="running", last_attempt=time.time(), last_attempt_at=now_iso())
-                self.ledger.write_job(db, job)
-            try:
-                connection = next(
-                    (item for item in self.store.connections() if item.id == job["account_id"]), None
-                )
-                if connection is None:
-                    self.pause(job["account_id"], disconnected=True)
-                    return
-                if not connection.active:
-                    self.pause(job["account_id"])
-                    return
-                client = self.market.client(connection)
-                with client.lock:
-                    page = client.fetch_trade_page(job["symbol"], job["cursor"], 100)
-                self.ledger.commit_page(job, page)
-            except Exception as error:
-                self._failure(job, error)
-        finally:
-            self._work_lock.release()
-
-    def _failure(self, job: dict, error: Exception) -> None:
-        """Persist safe messages only; retain the last successfully committed cursor."""
-        transient = isinstance(error, (ccxt.NetworkError, ccxt.RateLimitExceeded))
-        if isinstance(error, (ccxt.AuthenticationError, ccxt.PermissionDenied)):
-            message = "History access denied. Check this account's read permissions and credentials."
-        elif isinstance(error, ccxt.NotSupported):
-            message = "This provider does not support the reviewed history operation."
-        elif isinstance(error, ccxt.BadSymbol):
-            message = "This exact spot market is unavailable. Check the selected pair."
-        elif transient:
-            message = (
-                "The provider is temporarily unavailable or rate limited. The saved checkpoint is retained."
-            )
-        else:
-            message = "The history page could not be validated. The saved checkpoint is retained."
-        with self.store.db() as db:
-            db.execute("BEGIN IMMEDIATE")
-            current = self.ledger.read_job(db, job["account_id"], job["symbol"])
-            retries = current["retries"] + 1
-            retry = transient and retries <= 5
-            next_attempt = time.time() + min(300, 15 * 2 ** min(retries - 1, 5)) if retry else 0
-            current.update(error=message, retries=retries, next_attempt=next_attempt)
-            if current["status"] not in {"paused", "disconnected"}:
-                current["status"] = "retrying" if retry else "error"
-            current["retry_at"] = datetime.fromtimestamp(next_attempt, UTC).isoformat() if retry else None
-            self.ledger.write_job(db, current)
-
-    def close(self) -> None:
-        """Wait for a finite in-flight read before the application closes transports."""
-        with self._work_lock:
-            self._closed = True
+    def read_page(self, client, job):
+        """Read one exact market with the provider's reviewed fill cursor."""
+        return client.fetch_trade_page(job["symbol"], job["cursor"], 100)

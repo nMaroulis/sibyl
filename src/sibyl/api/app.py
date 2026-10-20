@@ -20,6 +20,7 @@ from sibyl.config import Settings
 from sibyl.services.account_sync import AccountSync
 from sibyl.services.accounts import Accounts
 from sibyl.services.data_settings import DataSettings
+from sibyl.services.funding_sync import FundingSync
 from sibyl.services.market import Market
 from sibyl.services.performance import AccountPerformance
 from sibyl.services.portfolio import Portfolio
@@ -47,6 +48,7 @@ class Services:
     watchlists: Watchlists
     accounts: Accounts
     performance: AccountPerformance
+    funding_sync: FundingSync
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -64,9 +66,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
         strategies = Strategies(market, store)
         account_sync = AccountSync(market, store)
+        funding_sync = FundingSync(market, store)
         performance = AccountPerformance(market, store)
         agents = AgentRegistry(
-            config, store, market, portfolio, strategies, research, account_sync, performance
+            config, store, market, portfolio, strategies, research, account_sync, performance, funding_sync
         )
         trading = ExchangeTrading(market, store)
         app.state.services = Services(
@@ -83,6 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             Watchlists(market, store),
             Accounts(store),
             performance,
+            funding_sync,
         )
 
         async def worker():
@@ -100,6 +104,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async def account_worker():
             while True:
                 await asyncio.to_thread(account_sync.tick)
+                await asyncio.to_thread(funding_sync.tick)
                 await asyncio.sleep(1)
 
         task = asyncio.create_task(worker())
@@ -114,6 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 with suppress(asyncio.CancelledError):
                     await background
             await asyncio.to_thread(account_sync.close)
+            await asyncio.to_thread(funding_sync.close)
             market.close()
 
     app = FastAPI(

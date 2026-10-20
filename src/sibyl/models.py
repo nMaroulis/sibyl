@@ -194,6 +194,15 @@ class AgentContext(Request):
     performance_account_id: str | None = Field(default=None, max_length=100)
     performance_environment: Literal["", "demo", "test", "production"] | None = None
     performance_example: bool | None = None
+    funding_view: bool | None = None
+    funding_account_id: str | None = Field(default=None, max_length=100)
+    funding_asset: str | None = Field(default=None, max_length=20, pattern=r"^$|^[A-Z0-9][A-Z0-9.]{0,19}$")
+    funding_kind: Literal["", "deposit", "withdrawal", "transfer"] | None = None
+    funding_status: (
+        Literal["", "pending", "completed", "failed", "cancelled", "restricted", "unknown"] | None
+    ) = None
+    funding_environment: Literal["", "demo", "test", "production"] | None = None
+    funding_example: bool | None = None
     timeframe: Timeframe | None = None
     limit: int | None = Field(default=None, ge=60, le=720)
     crypto_id: str | None = Field(

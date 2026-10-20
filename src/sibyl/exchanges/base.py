@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import ccxt
 
 if TYPE_CHECKING:
+    from sibyl.exchanges.funding import FundingPage
     from sibyl.exchanges.history import TradePage
 
 
@@ -69,6 +70,10 @@ class ExchangeClient(ABC):
     def fetch_open_orders(self, symbol: str) -> list[dict]:
         """Read one market's open orders, when implemented by the provider."""
         raise ccxt.NotSupported("Open order reads are unavailable for this client.")
+
+    def fetch_funding_page(self, stream: str, cursor: dict, limit: int = 50) -> "FundingPage":
+        """Read reviewed deposit/withdrawal/transfer history; never initiate a movement."""
+        raise ccxt.NotSupported("Funding history is coming soon for this client.")
 
     def fetch_my_trades(self, symbol: str, since: int | None = None, limit: int = 100) -> list[dict]:
         """Read a bounded page of fills; this is not a complete historical import."""

@@ -461,6 +461,13 @@ export type AgentContext = {
   performance_account_id?: string;
   performance_environment?: '' | 'demo' | 'test' | 'production';
   performance_example?: boolean;
+  funding_view?: boolean;
+  funding_account_id?: string;
+  funding_asset?: string;
+  funding_kind?: '' | 'deposit' | 'withdrawal' | 'transfer';
+  funding_status?: '' | 'pending' | 'completed' | 'failed' | 'cancelled' | 'restricted' | 'unknown';
+  funding_environment?: '' | 'demo' | 'test' | 'production';
+  funding_example?: boolean;
   market_source?: string;
   crypto_id?: string;
   job_id?: string;

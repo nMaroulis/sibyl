@@ -11,6 +11,7 @@ from sibyl.config import Settings
 from sibyl.models import AgentRequest, BacktestRequest
 from sibyl.services.account_sync import AccountSync
 from sibyl.services.analytics import analyze, forecast
+from sibyl.services.funding_sync import FundingSync
 from sibyl.services.llm_settings import ModelSettings
 from sibyl.services.market import TIMEFRAMES, Market
 from sibyl.services.performance import AccountPerformance
@@ -79,7 +80,9 @@ MODULE_INSTRUCTIONS = {
         "Never assume stablecoins or fiat equal USDT, infer missing cost basis, or call daily price moves investment returns. "
         "For performance evidence, distinguish matched market FIFO from account returns. Disclose excluded unknown-cost sales, "
         "unconverted fees, timestamp ambiguity and cross-market gaps. Never describe provisional figures as final net P&L. "
-        "Opening inventory is a user assertion. Keep accounts, environments and quote currencies distinct."
+        "Opening inventory is a user assertion. Keep accounts, environments and quote currencies distinct. "
+        "Funding observations are reported native quantities, not returns. Never infer fee inclusion, own-account transfers, "
+        "complete history or cost basis from a deposit. Pending/restricted/unknown movements are not completed totals."
     ),
     "reporter": (
         "Summarize supplied publisher headlines and excerpts, cite publisher links and dates, "
@@ -110,6 +113,7 @@ class AgentRegistry:
         research: Research,
         account_sync: AccountSync | None = None,
         performance: AccountPerformance | None = None,
+        funding: FundingSync | None = None,
     ):
         self.settings, self.store = settings, store
         self.models = ModelSettings(settings, store)
@@ -128,8 +132,38 @@ class AgentRegistry:
             symbol: str = "",
             environment: str = "",
             example: bool = False,
+            funding_view: bool = False,
+            asset: str = "",
+            kind: str = "",
+            status: str = "",
         ) -> dict:
             """Read portfolio evidence or local market FIFO; never fetch private balances for FIFO."""
+            if funding_view:
+                result = (
+                    funding.example()
+                    if funding and example
+                    else funding.ledger.events(account_id, asset, kind, status, environment, limit=10)
+                    if funding
+                    else {
+                        "items": [],
+                        "total": 0,
+                        "summaries": [],
+                        "fees": [],
+                        "note": "Funding service unavailable.",
+                    }
+                )
+                return {
+                    **result,
+                    "view": "funding",
+                    "evidence_record_limit": 10,
+                    "imports": [
+                        row
+                        for row in funding.snapshot()["jobs"]
+                        if not account_id or row["account_id"] == account_id
+                    ]
+                    if funding and not example
+                    else [],
+                }
             if not performance_view:
                 return portfolio_snapshot(scope)
             if performance is None:
@@ -302,7 +336,14 @@ class AgentRegistry:
         }
         self.agents = {module: self._compose(module) for module in ROLES}
 
-    def _compose(self, module: str, *, inference: bool = False, configuration: dict | None = None) -> Agent:
+    def _compose(
+        self,
+        module: str,
+        *,
+        inference: bool = False,
+        configuration: dict | None = None,
+        tool_override: Callable | None = None,
+    ) -> Agent:
         """Compose an isolated agent from one immutable provider/key snapshot."""
         name, _, description = ROLES[module]
         if inference:
@@ -313,7 +354,7 @@ class AgentRegistry:
         return Agent(
             name=f"sibyl-{module}",
             description=description,
-            tools=[self._tools[module]],
+            tools=[tool_override or self._tools[module]],
             llm=llm,
             verbosity=0,
             system_prompt=(
@@ -375,7 +416,22 @@ class AgentRegistry:
                 )
 
                 def invoke():
-                    agent = self._compose(request.module, inference=True, configuration=configuration)
+                    def selected_accounting_evidence() -> dict:
+                        """Read the selected report snapshot; no account reads or selection changes are available."""
+                        return evidence
+
+                    tool_override = (
+                        selected_accounting_evidence
+                        if request.module == "accountant"
+                        and (request.context.funding_view or request.context.performance_view)
+                        else None
+                    )
+                    agent = self._compose(
+                        request.module,
+                        inference=True,
+                        configuration=configuration,
+                        **({"tool_override": tool_override} if tool_override else {}),
+                    )
                     return agent.sync.invoke(
                         prompt,
                         budget=RunBudget(
@@ -404,6 +460,16 @@ class AgentRegistry:
     def _tool_arguments(request: AgentRequest) -> dict:
         """Map the page's validated selection to the module's explicit native tool arguments."""
         context = request.context
+        if request.module == "accountant" and context.funding_view:
+            return {
+                "funding_view": True,
+                "account_id": context.funding_account_id or "",
+                "asset": context.funding_asset or "",
+                "kind": context.funding_kind or "",
+                "status": context.funding_status or "",
+                "environment": context.funding_environment or "",
+                "example": bool(context.funding_example),
+            }
         if request.module == "accountant" and context.performance_view:
             return {
                 "performance_view": True,
@@ -451,6 +517,17 @@ class AgentRegistry:
     def _snapshot_answer(module: str, evidence) -> str:
         """Format actual tool output when language-model inference has not been configured."""
         if module in {"oracle", "accountant"}:
+            if evidence.get("view") == "funding":
+                return (
+                    ("Example movements. " if evidence.get("example") else "")
+                    + f"{evidence['total']} matching funding records. "
+                    + "; ".join(
+                        f"{row['account']} / {row['environment']}: {row['quantity']:,.8f} {row['asset']} {row['kind']} ({row['direction']})"
+                        for row in evidence["summaries"][:12]
+                    )
+                    + ". "
+                    + evidence["note"]
+                )
             if evidence.get("view") == "performance":
                 totals = "; ".join(
                     f"{row['environment']} / {row['quote']}: "

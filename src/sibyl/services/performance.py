@@ -442,6 +442,27 @@ class AccountPerformance:
             ):
                 for asset in pair.split("/"):
                     inventory_markets[(identity, asset)].add(pair)
+            # Funding is evidence of coverage gaps, never an invented acquisition
+            # cost or an automatic cross-account lot transfer.
+            funding_counts = {}
+            if db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='funding_events'"
+            ).fetchone():
+                thresholds = {}
+                for fill in fills:
+                    thresholds.setdefault((fill["account_id"], fill["symbol"]), fill["timestamp_ms"])
+                for entry in basis:
+                    key = (entry["account_id"], entry["symbol"])
+                    stamp = datetime.fromisoformat(entry["as_of"]).timestamp() * 1000
+                    thresholds[key] = min(thresholds.get(key, stamp), stamp)
+                for (identity, pair), threshold in thresholds.items():
+                    asset = pair.split("/")[0]
+                    funding_counts[(identity, pair)] = db.execute(
+                        "SELECT COUNT(*) FROM funding_events WHERE account_id=? AND timestamp_ms>=? "
+                        "AND status NOT IN ('failed','cancelled') AND (asset=? OR "
+                        "(json_extract(payload,'$.fee.currency')=? AND json_extract(payload,'$.fee.cost')!=0))",
+                        (identity, threshold, asset, asset),
+                    ).fetchone()[0]
         accounts = {row.id: row for row in self.store.connections()}
         grouped = defaultdict(list)
         for row in fills:
@@ -471,6 +492,15 @@ class AccountPerformance:
                 >= min(row["timestamp_ms"] for row in executions)
             )
             summary = fifo(executions, None if overlap else opening)
+            funding_count = funding_counts.get((identity, pair), 0)
+            summary["funding_event_count"] = funding_count
+            if funding_count:
+                summary["issues"].append(
+                    f"{funding_count} retained funding observations affect this base asset after the opening/history boundary. "
+                    "Transfers, funding basis and pending/restricted movements are not reconciled into these FIFO lots; net results are provisional."
+                )
+                summary["net_known"] = False
+                summary["net_matched_realized"] = None
             if overlap:
                 summary["issues"].append(
                     "Opening inventory now overlaps an earlier imported fill and is ignored. Review its date and quantity."

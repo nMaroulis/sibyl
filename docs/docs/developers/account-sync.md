@@ -49,7 +49,7 @@ Fees keep reported currencies and signs. Negative values are rebates. Missing am
 
 The UI filters by account, market, side and environment. It reads 50 fills per page; **Export this page** exports that page with IDs, fee currencies and completeness flags. Previews remain in **Executions**. Demo imports copy existing manual paper fills into this read-only ledger; they create no new trades/balances. Strategy fills stay in their isolated monitor.
 
-Retained fills now feed [market FIFO performance](account-performance.md), including audited opening inventory and optional balance-checked current marks. Deposits, withdrawals, transfers, order/intent reconciliation and complete cross-market account performance remain unimplemented. See the [backend checklist](backend-roadmap.md).
+Retained fills now feed [market FIFO performance](account-performance.md), including audited opening inventory and optional balance-checked current marks. Separate [funding range imports](funding-history.md) now cover Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer entries. Order/intent reconciliation, full funding coverage and complete cross-market account performance remain unimplemented. See the [backend checklist](backend-roadmap.md).
 
 ## HTTP contracts
 

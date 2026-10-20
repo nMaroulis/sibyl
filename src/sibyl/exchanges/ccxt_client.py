@@ -6,6 +6,7 @@ import ccxt
 
 from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.catalog import exchange_spec
+from sibyl.exchanges.funding import FundingPage, fetch_funding_page, funding_streams
 from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
 
 
@@ -28,6 +29,7 @@ class CCXTClient(ExchangeClient):
         super().__init__()
         self.spec = exchange_spec(self.id)
         sandbox = sandbox or self.spec.test_environment
+        self._sandbox = sandbox
         if sandbox and not self.spec.sandbox:
             raise ValueError("Sandbox is not configured for this exchange.")
         credentials = credentials or {}
@@ -240,6 +242,21 @@ class CCXTClient(ExchangeClient):
             self._require("fetchMyTrades", private=True)
             self.market(symbol)
             return fetch_trade_page(self._exchange, self.history_kind, symbol, cursor, limit)
+
+    def fetch_funding_page(self, stream: str, cursor: dict, limit: int = 50) -> FundingPage:
+        """Read only explicitly reviewed production funding endpoints with native pagination."""
+        if self._sandbox or stream not in funding_streams(self.id):
+            return super().fetch_funding_page(stream, cursor, limit)
+        with self.lock:
+            self._require(
+                "fetchLedger"
+                if self.id == "kraken"
+                else "fetchDeposits"
+                if stream == "deposit"
+                else "fetchWithdrawals",
+                private=True,
+            )
+            return fetch_funding_page(self._exchange, self.id, stream, cursor, limit)
 
     def create_order(
         self, symbol: str, type: str, side: str, amount: float, params: dict | None = None

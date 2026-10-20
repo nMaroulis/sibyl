@@ -86,3 +86,7 @@ Reports include group summaries, per-currency fee totals, known/unknown sold and
 The Accountant's `accountant_snapshot` native tool reads the same backend calculation with `performance_view=true` and validated account/market/environment context. `performance_example` selects the isolated fixture. It includes at most 20 market groups and ten recent disposals per group, with explicit evidence limits. It never requests marks or changes basis. Without an LLM, the agent formats the supplied totals and coverage note; with an LLM, its prompt requires the same boundaries.
 
 `tests/test_account_performance.py` covers fee currencies/signs, partial lots, unknown basis, timestamp ambiguity, invalid/overlapping assertions, audit persistence, cross-market detection through filters, account/environment separation, safe numeric overflow, opt-in marks, source/balance failures, inactive accounts, report budgets, fixture isolation and the native ProtoLink tool. Authenticated exchange acceptance testing remains separate.
+
+## Retained funding coverage
+
+[Funding observations](funding-history.md) now flag base-asset movements or base-denominated fees after the opening/history boundary. Non-failed/non-cancelled observations, including pending/restricted statuses, suppress final net matched/unrealized figures until reconciled. The provisional calculation remains inspectable. Funding records do not invent purchase cost, apply transferred lots or produce account returns; records before the opening assertion are not reapplied.

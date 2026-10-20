@@ -31,6 +31,7 @@ module.exports = {
         'developers/backend-roadmap',
         'developers/exchange-clients',
         'developers/account-sync',
+        'developers/funding-history',
         'developers/account-performance',
         'developers/accounts',
         'developers/portfolio-valuation',

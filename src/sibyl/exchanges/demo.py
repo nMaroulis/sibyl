@@ -10,6 +10,7 @@ import numpy as np
 
 from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.data import ASSETS, DEMO_ASSETS, STABLES, TIMEFRAMES
+from sibyl.exchanges.funding import FundingPage, funding_streams
 from sibyl.exchanges.history import TradePage
 from sibyl.models import Candle, OrderRequest
 
@@ -32,6 +33,12 @@ class DemoClient(ExchangeClient):
     def __init__(self, store: "Store | None" = None):
         super().__init__()
         self.store = store
+
+    def fetch_funding_page(self, stream: str, cursor: dict, limit: int = 50) -> FundingPage:
+        """Return actual empty funding history; virtual seeds are never fabricated deposits."""
+        if stream not in funding_streams("demo") or not 1 <= limit <= 50:
+            raise ValueError("Choose a supported funding stream and page size.")
+        return FundingPage([], cursor, True)
 
     def load_markets(self) -> dict:
         """Expose familiar pairs plus explicit bridge, fiat and stablecoin fixtures."""

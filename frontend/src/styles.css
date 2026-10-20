@@ -6808,3 +6808,106 @@ details[open] > summary {
     grid-template-columns: 1fr;
   }
 }
+
+.funding-streams {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 2px 24px 12px;
+}
+.funding-streams button {
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 11px;
+  background: var(--surface-raised);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  transition:
+    background 160ms,
+    border-color 160ms,
+    color 160ms;
+}
+.funding-streams button.selected {
+  color: #4361b5;
+  background: #edf1fd;
+  border-color: #d2dcf8;
+}
+.funding-streams button:focus-visible {
+  outline: 2px solid #8a9ee2;
+  outline-offset: 3px;
+}
+.funding-import-form .workspace-controls {
+  padding-top: 4px;
+}
+.funding-summary {
+  margin: 0 24px 20px;
+  padding: 18px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.funding-summary h3 {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+.funding-summary p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 8px 0;
+}
+.funding-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 20px 0 8px;
+}
+.funding-summary-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.funding-summary-grid small,
+.funding-summary-grid span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.funding-summary-grid strong {
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.funding-records td small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.funding-records td details {
+  max-width: 240px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.funding-records td summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text);
+}
+.funding-records td details p {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: normal;
+  line-height: 1.7;
+}
+@media (max-width: 600px) {
+  .funding-streams {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .funding-summary {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+}

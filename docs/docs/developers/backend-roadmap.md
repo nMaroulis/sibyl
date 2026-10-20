@@ -26,7 +26,8 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Sandbox and Kraken.
 - [ ] Review durable import pagination for the remaining exchange providers.
 - [ ] Persist and synchronize complete exchange order lifecycles alongside fills.
-- [ ] Import deposits, withdrawals, transfers, fees and rebates.
+- [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer entries, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
+- [ ] Extend funding adapters to remaining exchanges, fiat, earn/staking and subaccounts; reconcile late/pending events and transfers.
 - [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
 - [ ] Add full rescans, cash-event coverage and reconciliation status.
 - [ ] Reconcile remote records with locally submitted intents after disconnects or restarts.
