@@ -328,21 +328,15 @@ kbd {
   place-items: center;
   height: 30px;
   width: 34px;
-  border-radius: 10px;
+  filter: drop-shadow(0 0 0 transparent);
   transition:
-    background 260ms,
-    color 260ms,
-    transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    color 220ms,
+    filter 260ms,
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .dock-item:hover {
   color: var(--accent);
   background: #f2f6fc;
-}
-.dock-item:hover .dock-icon {
-  transform: translateY(-2px);
-}
-.dock-item:active .dock-icon {
-  transform: translateY(0) scale(0.92);
 }
 /* A shared selection and fine page marker keep the two surfaces visually separate. */
 .dock-selection {
@@ -412,9 +406,25 @@ kbd {
   color: var(--accent);
   background: transparent;
 }
-.dock-item.active .dock-icon {
-  background: #e0eaff;
-  box-shadow: 0 1px 3px #4273d609;
+.dock-item.active .dock-icon,
+.dock-more-trigger[aria-expanded='true'] .dock-icon {
+  color: #3654b9;
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 3px #4273d645);
+}
+.dock-item:is(:hover, :focus-visible) .dock-icon {
+  color: #304ca7;
+  transform: scale(1.09);
+  filter: drop-shadow(0 0 5px #426bd65c);
+}
+.dock-item.active:is(:hover, :focus-visible) .dock-icon,
+.dock-more-trigger[aria-expanded='true']:is(:hover, :focus-visible) .dock-icon {
+  color: #293f9e;
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 6px #426bd670);
+}
+.dock-item:active .dock-icon {
+  transform: scale(0.98);
 }
 .workspace-surface {
   grid-column: 2;
@@ -5037,9 +5047,6 @@ details[open] > summary {
   color: var(--accent);
   background: #f2f6fc;
 }
-.dock-more-trigger[aria-expanded='true'] .dock-icon {
-  background: #e5edfd;
-}
 .dock-more-panel {
   position: absolute;
   left: calc(100% + 12px);
@@ -5107,7 +5114,11 @@ details[open] > summary {
   place-items: center;
   width: 34px;
   height: 32px;
-  border-radius: 10px;
+  filter: drop-shadow(0 0 0 transparent);
+  transition:
+    color 220ms,
+    filter 260ms,
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .dock-more-link:hover {
   color: var(--accent);
@@ -5116,6 +5127,24 @@ details[open] > summary {
 .dock-more-link.active {
   color: var(--accent);
   background: #edf3fe;
+}
+.dock-more-link.active > span:first-child {
+  color: #3654b9;
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 3px #4273d645);
+}
+.dock-more-link:is(:hover, :focus-visible) > span:first-child {
+  color: #304ca7;
+  transform: scale(1.09);
+  filter: drop-shadow(0 0 5px #426bd65c);
+}
+.dock-more-link.active:is(:hover, :focus-visible) > span:first-child {
+  color: #293f9e;
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 6px #426bd670);
+}
+.dock-more-link:active > span:first-child {
+  transform: scale(0.98);
 }
 .dock-more-panel[data-open='true'] .dock-more-link {
   opacity: 1;
