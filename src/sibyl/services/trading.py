@@ -14,6 +14,7 @@ from sibyl.models import ExchangeOrderRequest
 from sibyl.services.market import Market
 from sibyl.services.order_lifecycle import OrderLifecycle
 from sibyl.services.order_reconciliation import OrderReconciliation
+from sibyl.services.order_recovery import OrderRecovery
 from sibyl.storage import Store
 
 
@@ -33,6 +34,7 @@ class ExchangeTrading:
                 "id TEXT PRIMARY KEY, request_key TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)"
             )
         self.lifecycle = OrderLifecycle(self)
+        self.recovery = OrderRecovery(self)
         self.reconciliation = OrderReconciliation(self)
 
     def _enabled(self):
@@ -60,6 +62,14 @@ class ExchangeTrading:
         """Read native status and one execution page; Demo also advances its matcher."""
         self.lifecycle.refresh(intent_id)
         detail = self.reconciliation.sync(intent_id, manual=True)
+        return {**detail["order"], "reconciliation": detail["reconciliation"]}
+
+    def recover(self, intent_id: str) -> dict:
+        """Read one client-ID lookup page, then check status/fills only after identity is confirmed."""
+        intent = self.recovery.check(intent_id, manual=True)
+        if intent.get("exchange_order_id"):
+            return self.refresh(intent_id)
+        detail = self.reconciliation.detail(intent_id)
         return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def preview(self, request: ExchangeOrderRequest) -> dict:
@@ -186,7 +196,9 @@ class ExchangeTrading:
                 )
             if datetime.now(UTC) > datetime.fromisoformat(intent["expires_at"]):
                 raise ValueError("Order preview expired. Review a fresh quote before confirming.")
-            intent.update(status="submitting", tracking=True, next_check=0)
+            intent.update(
+                status="submitting", tracking=True, next_check=0, submitted_at=datetime.now(UTC).isoformat()
+            )
             self.lifecycle.write(db, intent)
         request = ExchangeOrderRequest(**intent["request"])
         try:

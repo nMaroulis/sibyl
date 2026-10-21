@@ -192,6 +192,8 @@ The existing exchange order preview accepts `order_type` (`market` by default, o
 
 `GET /exchange-orders/{id}/reconciliation` returns retained order/fill evidence without provider calls. `POST /exchange-orders/{id}/reconcile` checks native state and imports one exact-order execution page; the existing `/refresh` now does the same bounded import. `POST /exchange-orders/{id}/reconcile/tracking` changes the execution-read preference with `{enabled: boolean}`, including terminal follow-ups. `GET /exchange-orders/example/{id}/reconciliation` is an isolated fixture. See [evidence fields, pagination and error semantics](order-reconciliation.md).
 
+`POST /exchange-orders/{id}/recover` reads one bounded saved-client-ID lookup page for an uncertain submitted intent. A verified ID joins status/fill checks; missing/ambiguous evidence retains uncertainty without resubmission. Managed orders include safe `recovery` state, support/eligibility, progress and messages. GET does not start lookups. See [provider contracts, exact-detail validation and retry limits](order-recovery.md).
+
 ## Local alerts and implementation inventory
 
 `GET /alerts` reads persisted one-shot price rules. `POST /alerts` arms an exact `source` + `symbol`, `condition` (`above`/`below`) and positive `threshold`, with optional `label`. `POST /alerts/{id}/action` accepts `pause`, `arm`, `archive` or `restore`; `POST /alerts/{id}/check` respects the stored cooldown/backoff. `/alerts/example` is an isolated fixture.

@@ -2,7 +2,7 @@
 
 **Trade → Order monitor → Executions** compares a locally submitted order's cumulative native observation with individual executions in the shared account ledger. The detail dialog shows native and imported base quantities, their difference, reported quote cost, execution IDs and native-currency fees. Opening it only reads SQLite. **Check executions** explicitly refreshes native status and imports one bounded fill page.
 
-This is execution-evidence reconciliation, not a guarantee of settlement, complete account history or exchange P&L. Strategies remain paper-only and agents remain read-only. Native submissions without a confirmed order ID still require venue inspection using the displayed client ID; this feature never retries a write.
+This is execution-evidence reconciliation, not a guarantee of settlement, complete account history or exchange P&L. Strategies remain paper-only and agents remain read-only. Uncertain submissions without a confirmed order ID can now use bounded [client-ID recovery](order-recovery.md). A match joins this execution workflow; missing or ambiguous evidence still requires venue inspection. Neither feature retries a write.
 
 Demo's explicit Check executions action includes the existing managed-status check, which can match a virtual resting order before reading its fill. The execution-page method itself never advances the matcher. Native checks only read provider state.
 
@@ -68,4 +68,4 @@ All paths start with `/api/v1`.
 
 ## Remaining work
 
-Native client-ID recovery, all-account order discovery, private streams, additional provider adapters, execution bust/removal handling, fee-currency valuation, unlimited historical imports and definitive settlement reconciliation remain separate work. Automatic scans upsert returned facts; they do not delete a retained execution merely because a later page omits it. Authenticated venue/test-account acceptance is outstanding. Controlled tests cover identity rejection, pagination, restart, transaction rollback, duplicate imports, partial cancellation, late fee corrections, inactive accounts, bounded follow-ups and isolated Demo/example contracts.
+Broader recovery adapters, all-account order discovery, private streams, additional provider adapters, execution bust/removal handling, fee-currency valuation, unlimited historical imports and definitive settlement reconciliation remain separate work. Automatic scans upsert returned facts; they do not delete a retained execution merely because a later page omits it. Authenticated venue/test-account acceptance is outstanding. Controlled tests cover identity rejection, pagination, restart, transaction rollback, duplicate imports, partial cancellation, late fee corrections, inactive accounts, bounded follow-ups and isolated Demo/example contracts.

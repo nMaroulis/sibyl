@@ -11,6 +11,7 @@ import ccxt
 if TYPE_CHECKING:
     from sibyl.exchanges.funding import FundingPage
     from sibyl.exchanges.history import TradePage
+    from sibyl.exchanges.order_lookup import OrderLookupPage
 
 
 class ExchangeClient(ABC):
@@ -95,6 +96,12 @@ class ExchangeClient(ABC):
     def fetch_order(self, order_id: str, symbol: str) -> dict:
         """Read a known order, without submitting or retrying it."""
         raise ccxt.NotSupported("Order status reads are unavailable for this client.")
+
+    def fetch_order_lookup_page(
+        self, client_id: str, symbol: str, cursor: dict, start: int, end: int
+    ) -> "OrderLookupPage":
+        """Read existing orders by exact client ID; never submit or infer a rejection."""
+        raise ccxt.NotSupported("Client order ID recovery is not reviewed for this provider.")
 
     def fetch_order_fill_page(
         self, order_id: str, symbol: str, cursor: dict, limit: int = 100

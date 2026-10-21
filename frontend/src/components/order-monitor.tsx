@@ -36,6 +36,16 @@ export type ManagedOrder = {
   cancel_state?: string;
   cancel_message?: string;
   reconciliation?: Reconciliation;
+  recovery?: {
+    supported: boolean;
+    eligible: boolean;
+    state: string;
+    message: string;
+    pages?: number;
+    passes?: number;
+    checked_at?: string;
+    recovered_at?: string;
+  };
 };
 type CancelReview = {
   id: string;
@@ -65,7 +75,10 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
   const [phrase, setPhrase] = useState('');
   const [error, setError] = useState('');
   const toast = useToast();
-  const act = async (order: ManagedOrder, action: 'refresh' | 'tracking' | 'cancel/preview') => {
+  const act = async (
+    order: ManagedOrder,
+    action: 'refresh' | 'tracking' | 'cancel/preview' | 'recover',
+  ) => {
     if (example) return;
     setBusy(order.id);
     setError('');
@@ -77,6 +90,12 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
       if (action === 'cancel/preview') {
         setReview(result as CancelReview);
         setPhrase('');
+      } else if (action === 'recover') {
+        const outcome = result as ManagedOrder;
+        toast(
+          outcome.recovery?.message || outcome.message || 'Lookup updated.',
+          ['error', 'mismatch', 'ambiguous', 'unsupported'].includes(outcome.recovery?.state || ''),
+        );
       }
       refresh();
     } catch (reason) {
@@ -208,19 +227,33 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                   </td>
                   <td>
                     <div className="order-actions">
-                      <button
-                        className="icon-button"
-                        aria-label={`Check ${order.request.symbol} order`}
-                        title="Read native status"
-                        disabled={
-                          !!busy ||
-                          example ||
-                          (!order.exchange_order_id && order.exchange !== 'demo')
-                        }
-                        onClick={() => act(order, 'refresh')}
-                      >
-                        <RefreshCw size={14} />
-                      </button>
+                      {!order.exchange_order_id && order.recovery?.eligible ? (
+                        <button
+                          className="button secondary tiny"
+                          disabled={!!busy || example || !order.recovery.supported}
+                          onClick={() => act(order, 'recover')}
+                          title="Read existing orders by the saved client ID; never resubmit"
+                        >
+                          <RefreshCw size={14} />{' '}
+                          {order.recovery.state === 'searching'
+                            ? 'Continue lookup'
+                            : 'Recover order'}
+                        </button>
+                      ) : (
+                        <button
+                          className="icon-button"
+                          aria-label={`Check ${order.request.symbol} order`}
+                          title="Read native status"
+                          disabled={
+                            !!busy ||
+                            example ||
+                            (!order.exchange_order_id && order.exchange !== 'demo')
+                          }
+                          onClick={() => act(order, 'refresh')}
+                        >
+                          <RefreshCw size={14} />
+                        </button>
+                      )}
                       {!terminal.has(order.status) && (
                         <>
                           <button

@@ -59,11 +59,13 @@ class OrderLifecycle:
             (json.dumps(intent, allow_nan=False), intent["id"]),
         )
 
-    def observe(self, identity: str, result: dict) -> dict:
+    def observe(self, identity: str, result: dict, *, recovered: bool = False) -> dict:
         """Merge a native observation; partial-fill quantities are not invented executions."""
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             intent = self.read(db, identity)
+            if recovered:
+                self.trading.recovery.accept(db, intent, result)
             request = intent["request"]
             for key, expected in (
                 ("symbol", request["symbol"]),
@@ -126,30 +128,13 @@ class OrderLifecycle:
         return intent
 
     def refresh(self, identity: str) -> dict:
-        """Read a known native ID; only Demo can recover a lost ID from its local client key."""
+        """Read native status, attempting one bounded lookup when an uncertain intent lacks an ID."""
         with self.lock(identity):
             with self.store.db() as db:
                 intent = self.read(db, identity)
             connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
-            if (
-                not intent.get("exchange_order_id")
-                and connection.exchange == "demo"
-                and intent["status"] in {"submitting", "unknown"}
-            ):
-                with self.store.db() as db:
-                    found = db.execute(
-                        "SELECT payload FROM paper_limits WHERE request_key=?", (intent["client_order_id"],)
-                    ).fetchone()
-                    if found:
-                        recovered = json.loads(found[0])
-                        if (
-                            recovered["symbol"] == intent["request"]["symbol"]
-                            and recovered["side"] == intent["request"]["side"]
-                            and recovered["amount"] == intent["request"]["quantity"]
-                            and recovered["price"] == intent["request"].get("limit_price")
-                        ):
-                            intent["exchange_order_id"] = recovered["id"]
-                            self.write(db, intent)
+            if not intent.get("exchange_order_id") and intent["status"] in {"submitting", "unknown"}:
+                intent = self.trading.recovery.check(identity, manual=True)
             if not intent.get("exchange_order_id"):
                 raise ValueError(
                     "No exchange order ID is recorded. Check the exchange using the client order ID; do not resubmit an uncertain order."
@@ -262,7 +247,9 @@ class OrderLifecycle:
             intent = self.read(db, identity)
             if intent["status"] == "preview" or intent["status"] in TERMINAL:
                 raise ValueError("Tracking applies to nonterminal submitted orders only.")
-            intent.update(tracking=enabled, next_check=0)
+            intent.update(tracking=enabled, fill_tracking=enabled, next_check=0)
+            if enabled:
+                self.trading.recovery.resume(db, intent)
             self.write(db, intent)
             job = self.trading.reconciliation._read(db, identity)
             if job:
@@ -287,7 +274,10 @@ class OrderLifecycle:
                 connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
                 if not connection.active:
                     raise ValueError("Account is inactive; automatic status checks are paused.")
-                self.refresh(intent["id"])
+                if intent.get("exchange_order_id"):
+                    self.refresh(intent["id"])
+                else:
+                    self.trading.recovery.check(intent["id"])
             except Exception as error:
                 with self.lock(intent["id"]), self.store.db() as db:
                     db.execute("BEGIN IMMEDIATE")

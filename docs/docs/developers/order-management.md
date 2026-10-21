@@ -19,7 +19,7 @@ The adapter sends a base-quantity limit with `timeInForce=GTC`, an exact price a
 
 `ExchangeTrading.preview()` records an intent with a 60-second confirmation deadline. Limit notional is quantity × limit price; market notional is a side-of-book reference. A preview reserves nothing. Confirmation must match the displayed phrase and the account must still be active. New native orders also require `SIBYL_ALLOW_LIVE_TRADING=true`.
 
-Before sending, SQLite commits `submitting`, tracking preference and the client ID. Duplicate confirmation returns the persisted intent without sending again. A network timeout or unclear response becomes `unknown`, never a retry. The application may have stopped after the venue accepted but before its ID was saved. For native orders with no saved ID, the user must inspect the venue using the displayed client ID. Provider-specific client-ID recovery remains future work.
+Before sending, SQLite commits `submitting`, the submission time, tracking preference and the client ID. Duplicate confirmation returns the persisted intent without sending again. A network timeout or unclear response becomes `unknown`, never a retry. The application may have stopped after the venue accepted but before its ID was saved. Reviewed clients now offer bounded [client-ID recovery](order-recovery.md). Only an exact ID/details match is attached; missing or ambiguous evidence still requires venue inspection.
 
 A returned native ID allows later read-only recovery. Status observations validate identity and bounded cumulative filled/remaining quantities. A regressed fill is rejected, retaining the previous observation. Terminal orders cannot reopen, though a later explicit completed-fill observation can supersede a canceled observation. No individual fill IDs or final fees are fabricated from aggregate quantities. Exact-order [execution reconciliation](order-reconciliation.md) now imports native fill IDs into the shared Account history ledger, compares quantities/cost and exposes reported-fee gaps.
 
@@ -68,6 +68,6 @@ All paths have `/api/v1` prefix.
 
 ## Still missing
 
-Cancel/replace, stop/trigger, OCO, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution, native client-ID recovery, all-account order discovery and complete fill/fee/settlement reconciliation remain separate work. Strategies stay paper-only; agents stay read-only.
+Cancel/replace, stop/trigger, OCO, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution/recovery, all-account order discovery and complete fill/fee/settlement reconciliation remain separate work. Authenticated acceptance remains outstanding. Strategies stay paper-only; agents stay read-only.
 
 Implementation is informed by the [CCXT manual](https://docs.ccxt.com/docs/manual), [Binance Spot API](https://developers.binance.com/en/docs/products/spot/rest-api), [Coinbase Advanced create-order reference](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/create-order), and Kraken's [add-order](https://docs.kraken.com/api-reference/trading/add-order) / [cancel-order](https://docs.kraken.com/api-reference/trading/cancel-order) references.

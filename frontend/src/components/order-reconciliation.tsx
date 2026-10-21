@@ -84,14 +84,17 @@ export function OrderReconciliation({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const act = async (tracking?: boolean) => {
+  const act = async (
+    operation: 'reconcile' | 'recover' | 'tracking' = 'reconcile',
+    enabled?: boolean,
+  ) => {
     if (example) return;
     setBusy(true);
     setError('');
     try {
       await post(
-        `/exchange-orders/${identity}/reconcile${tracking == null ? '' : '/tracking'}`,
-        tracking == null ? {} : { enabled: tracking },
+        `/exchange-orders/${identity}/${operation === 'tracking' ? 'reconcile/tracking' : operation}`,
+        operation === 'tracking' ? { enabled } : {},
       );
       refresh();
     } catch (reason) {
@@ -179,7 +182,7 @@ export function OrderReconciliation({
               <button
                 className="button secondary"
                 disabled={busy || example}
-                onClick={() => act(!result.sync.enabled)}
+                onClick={() => act('tracking', !result.sync.enabled)}
               >
                 {result.sync.enabled ? <Pause size={14} /> : <Play size={14} />}
                 {result.sync.enabled ? 'Pause fill checks' : 'Resume fill checks'}
@@ -196,8 +199,29 @@ export function OrderReconciliation({
           )}
           {!record.order.exchange_order_id && (
             <p className="inline-alert">
-              No native order ID is confirmed. Check the venue using the client order ID before
-              creating another order.
+              {record.order.recovery?.message ||
+                'No native order ID is confirmed. Check the venue using the client order ID before creating another order.'}
+              {record.order.recovery?.eligible && record.order.recovery.supported && (
+                <button
+                  className="button secondary tiny"
+                  disabled={busy || example}
+                  onClick={() => act('recover')}
+                >
+                  <RefreshCw size={14} />{' '}
+                  {record.order.recovery.state === 'searching'
+                    ? 'Continue lookup'
+                    : 'Recover order'}
+                </button>
+              )}
+            </p>
+          )}
+          {record.order.recovery?.state === 'found' && (
+            <p className="footnote">
+              Native ID recovered from matching client-ID evidence
+              {record.order.recovery.recovered_at
+                ? ` · ${new Date(record.order.recovery.recovered_at).toLocaleString()}`
+                : ''}
+              .
             </p>
           )}
           <p className="footnote">

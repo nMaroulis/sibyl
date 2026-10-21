@@ -2,6 +2,7 @@
 
 from sibyl.services.ledger import ledger_fill
 from sibyl.services.order_reconciliation import summarize
+from sibyl.services.order_recovery import MESSAGES
 
 
 def order_examples() -> list[dict]:
@@ -11,6 +12,7 @@ def order_examples() -> list[dict]:
         ("BTC/USDT", "buy", 0.02, 50000, "open", 0.008),
         ("ETH/USDT", "sell", 0.5, 3500, "open", 0.0),
         ("SOL/USDT", "buy", 3.0, 140, "canceled", 1.0),
+        ("LINK/USDT", "buy", 5.0, 10, "unknown", None),
     ]:
         identity = "example-" + symbol.replace("/", "-") + "-" + status
         order = {
@@ -31,13 +33,26 @@ def order_examples() -> list[dict]:
             "status": status,
             "price": price,
             "filled": filled,
-            "remaining": quantity - filled,
+            "remaining": quantity - filled if filled is not None else None,
             "average": price if filled else None,
-            "cost": filled * price,
+            "cost": filled * price if filled is not None else None,
             "tracking": status == "open",
             "client_order_id": "example-only",
             "exchange_order_id": "example-only",
         }
+        if status == "unknown":
+            order.pop("exchange_order_id")
+            order.update(
+                message=MESSAGES["not_found"],
+                recovery={
+                    "supported": True,
+                    "eligible": True,
+                    "state": "not_found",
+                    "message": MESSAGES["not_found"],
+                    "pages": 1,
+                    "passes": 1,
+                },
+            )
         fills = []
         if filled:
             fills.append(

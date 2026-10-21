@@ -275,6 +275,38 @@ class DemoClient(ExchangeClient):
             raise ccxt.OrderNotFound("Paper order not found for this market.")
         return self._order(result)
 
+    def fetch_order_lookup_page(self, client_id: str, symbol: str, cursor: dict, start: int, end: int):
+        """Recover a virtual limit's ID from its exact persisted key without matching it."""
+        import json
+
+        from sibyl.exchanges.order_lookup import OrderLookupPage
+
+        self.market(symbol)
+        with self._workspace().db() as db:
+            row = db.execute("SELECT payload FROM paper_limits WHERE request_key=?", (client_id,)).fetchone()
+        if not row:
+            return OrderLookupPage([], {}, True)
+        order = json.loads(row[0])
+        result = {
+            key: order.get(key)
+            for key in (
+                "id",
+                "clientOrderId",
+                "symbol",
+                "type",
+                "side",
+                "amount",
+                "price",
+                "filled",
+                "remaining",
+                "average",
+                "cost",
+                "status",
+            )
+        }
+        result["timestamp"] = datetime.fromisoformat(order["created_at"]).timestamp() * 1000
+        return OrderLookupPage([result], {}, True)
+
     def fetch_open_orders(self, symbol: str) -> list[dict]:
         """Read resting Demo limit orders without advancing the matcher."""
         self.market(symbol)

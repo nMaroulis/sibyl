@@ -32,7 +32,7 @@ Review the reference notional and type the displayed confirmation, such as `BUY 
 
 Before contacting the exchange, Sibyl persists the intent as `submitting`. A repeated confirmation returns the persisted state and never creates a second order. Provider failures with an ambiguous outcome become `unknown`. A process crash can leave an intent as `submitting`, which also requires reconciliation.
 
-**Check the exchange before creating another order after an uncertain outcome.** Use the displayed client order ID and exchange order ID when available. The order monitor tracks confirmed native IDs, offers reviewed cancellation, and imports exact-order executions. Ambiguous submissions without a native ID still need venue inspection. Observed state is not a guarantee of final settlement.
+**Check the exchange before creating another order after an uncertain outcome.** Use **Recover order** to read existing orders by the saved client ID. A matching account, client ID, market, side, quantity and order type are required before Sibyl attaches a native ID and resumes status/fill checks. Continue lookup advances unfinished history reads. No match is not proof that no order exists; ambiguous, incomplete or mismatched evidence still needs venue inspection. Nothing is automatically resubmitted. See [recovery behavior and provider limits](../developers/order-recovery.md).
 
 The exchange receives a `clientOrderId` where supported by the adapter. Application-level duplicate protection remains the primary protection because exchange support differs.
 
@@ -56,7 +56,7 @@ Filter retained fills by account, market, direction and environment. Original fi
 
 The report combines the latest 200 manual paper fills and 100 exchange intents. Manual paper realized P&L matches recorded buys and sells FIFO, allocating buy and sell fees per unit. Opening seed balances have no recorded cost basis. Sales without matching recorded buys are excluded, and truncation of retained history can omit earlier lots. The P&L curve and currency selector use the full retained paper ledger, independently of table filters. Different quote currencies are never added together. Strategy-job fills remain in their isolated console.
 
-Exchange rows include unsubmitted previews as well as submissions; their notional is labeled **Preview reference**, even when an observed average fill price exists. P&L is not inferred from exchange previews. **Refresh records** reloads local history. **Check exchange** uses read-only `fetch_order` for a known exchange order ID, persisting the observed status, filled quantity, average price, and refresh timestamp. This remains available if new execution is disabled. If an uncertain submission has no exchange order ID, reconcile directly at the exchange using the client order ID; it is never resubmitted by refresh.
+Exchange rows include unsubmitted previews as well as submissions; their notional is labeled **Preview reference**, even when an observed average fill price exists. P&L is not inferred from exchange previews. **Refresh records** reloads local history. **Check exchange** reads a known exchange order ID, persisting its native observation and one execution page. Read checks remain available if new execution is disabled. For uncertain submissions without an ID, **Recover order** performs a bounded lookup; inspect the venue if it cannot verify one match.
 
 ## Resting limits and the order monitor
 

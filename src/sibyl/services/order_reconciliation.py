@@ -146,7 +146,9 @@ class OrderReconciliation:
                 "seen": [],
                 "pages": 0,
                 "caught_up": False,
-                "enabled": intent["status"] in TERMINAL or intent.get("tracking", False),
+                "enabled": intent.get(
+                    "fill_tracking", intent["status"] in TERMINAL or intent.get("tracking", False)
+                ),
                 "state": "queued",
                 "terminal_passes": 0,
                 "next_attempt": 0,
@@ -182,6 +184,7 @@ class OrderReconciliation:
             db.execute("BEGIN")
             intent = self.trading.lifecycle.read(db, identity)
             job = self._read(db, identity)
+            intent["recovery"] = self.trading.recovery.summary(db, intent)
             rows = db.execute(
                 "SELECT payload FROM account_fills WHERE account_id=? AND symbol=? "
                 "AND json_extract(payload,'$.order_id')=? ORDER BY timestamp_ms,id LIMIT ?",

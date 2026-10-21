@@ -9,6 +9,7 @@ from sibyl.exchanges.catalog import exchange_spec
 from sibyl.exchanges.funding import FundingPage, fetch_funding_page, funding_streams
 from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
 from sibyl.exchanges.order_fills import fetch_order_fill_page
+from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS, OrderLookupPage, lookup_order_page
 
 
 class CCXTClient(ExchangeClient):
@@ -246,7 +247,10 @@ class CCXTClient(ExchangeClient):
     @staticmethod
     def _order(row: dict) -> dict:
         return {
-            **{key: row.get(key) for key in ("id", "clientOrderId", "symbol", "status", "type", "side")},
+            **{
+                key: row.get(key)
+                for key in ("id", "clientOrderId", "symbol", "status", "type", "side", "timeInForce")
+            },
             **{
                 key: number(row.get(key))
                 for key in ("timestamp", "amount", "filled", "remaining", "price", "average", "cost")
@@ -259,6 +263,18 @@ class CCXTClient(ExchangeClient):
             self._require("fetchOrder", private=True)
             self.market(symbol)
             return self._order(self._exchange.fetch_order(order_id, symbol))
+
+    def fetch_order_lookup_page(
+        self, client_id: str, symbol: str, cursor: dict, start: int, end: int
+    ) -> OrderLookupPage:
+        """Use only reviewed native client-ID reads, retaining normalized order evidence."""
+        if self.id not in RECOVERY_PROVIDERS:
+            return super().fetch_order_lookup_page(client_id, symbol, cursor, start, end)
+        with self.lock:
+            self._require("fetchOrder", private=True)
+            self.market(symbol)
+            page = lookup_order_page(self._exchange, self.id, client_id, symbol, cursor, start, end)
+            return OrderLookupPage([self._order(row) for row in page.candidates], page.cursor, page.complete)
 
     def fetch_open_orders(self, symbol: str) -> list[dict]:
         """Read the selected spot market's open orders; no all-market fan-out."""

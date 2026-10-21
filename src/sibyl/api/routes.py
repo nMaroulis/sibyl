@@ -669,6 +669,13 @@ def refresh_exchange_order(intent_id: str, s: S, response: Response):
     return s.trading.refresh(intent_id)
 
 
+@router.post("/exchange-orders/{intent_id}/recover", tags=["Broker"])
+def recover_exchange_order(intent_id: str, s: S, response: Response):
+    """Read one saved-client-ID lookup page; never submit or retry a native order."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.recover(intent_id)
+
+
 @router.get("/exchange-orders/{intent_id}/reconciliation", tags=["Broker"])
 def order_reconciliation(intent_id: str, s: S, response: Response):
     """Read retained order/execution evidence, without probing a provider."""
