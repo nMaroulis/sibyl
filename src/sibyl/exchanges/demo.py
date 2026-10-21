@@ -290,6 +290,39 @@ class DemoClient(ExchangeClient):
         """Explicitly advance a virtual limit using the fixed Demo bid/ask feed."""
         return PaperLimits(self._workspace()).match(order_id, symbol, self.fetch_ticker(symbol))
 
+    def fetch_order_fill_page(self, order_id: str, symbol: str, cursor: dict, limit: int = 100) -> TradePage:
+        """Read the exact virtual order's fill without advancing its matcher or scanning history."""
+        import json
+
+        self.market(symbol)
+        if not 1 <= limit <= 100:
+            raise ValueError("Order execution page size must be between 1 and 100.")
+        with self._workspace().db() as db:
+            rows = db.execute(
+                "SELECT payload FROM orders WHERE json_extract(payload,'$.symbol')=? "
+                "AND COALESCE(json_extract(payload,'$.order_id'),id)=? ORDER BY id LIMIT ?",
+                (symbol, order_id, limit + 1),
+            ).fetchall()
+        if len(rows) > limit:
+            raise ccxt.ExchangeError("Unexpected number of virtual order executions.")
+        items = []
+        for row in rows:
+            fill = json.loads(row[0])
+            items.append(
+                {
+                    "id": fill["id"],
+                    "order": fill.get("order_id", fill["id"]),
+                    "symbol": symbol,
+                    "side": fill["side"],
+                    "timestamp": datetime.fromisoformat(fill["created_at"]).timestamp() * 1000,
+                    "amount": fill["quantity"],
+                    "price": fill["price"],
+                    "cost": fill["notional"],
+                    "fee": {"currency": symbol.split("/")[1], "cost": fill["fee"]},
+                }
+            )
+        return TradePage(items, {}, True)
+
     def fetch_my_trades(self, symbol: str, since: int | None = None, limit: int = 100) -> list[dict]:
         """Read a bounded page of persisted paper fills in chronological order."""
         self.market(symbol)

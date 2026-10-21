@@ -21,7 +21,7 @@ The adapter sends a base-quantity limit with `timeInForce=GTC`, an exact price a
 
 Before sending, SQLite commits `submitting`, tracking preference and the client ID. Duplicate confirmation returns the persisted intent without sending again. A network timeout or unclear response becomes `unknown`, never a retry. The application may have stopped after the venue accepted but before its ID was saved. For native orders with no saved ID, the user must inspect the venue using the displayed client ID. Provider-specific client-ID recovery remains future work.
 
-A returned native ID allows later read-only recovery. Status observations validate identity and bounded cumulative filled/remaining quantities. A regressed fill is rejected, retaining the previous observation. Terminal orders cannot reopen, though a later explicit completed-fill observation can supersede a canceled observation. No individual fill IDs or final fees are fabricated from aggregate quantities; import Account history for those.
+A returned native ID allows later read-only recovery. Status observations validate identity and bounded cumulative filled/remaining quantities. A regressed fill is rejected, retaining the previous observation. Terminal orders cannot reopen, though a later explicit completed-fill observation can supersede a canceled observation. No individual fill IDs or final fees are fabricated from aggregate quantities. Exact-order [execution reconciliation](order-reconciliation.md) now imports native fill IDs into the shared Account history ledger, compares quantities/cost and exposes reported-fee gaps.
 
 ## Tracking and restart
 

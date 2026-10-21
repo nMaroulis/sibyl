@@ -29,6 +29,7 @@ READS = {
     "fetch_trade_page",
     "fetch_funding_page",
     "fetch_order",
+    "fetch_order_fill_page",
 }
 WRITES = {"create_order", "cancel_order"}
 MESSAGES = {

@@ -67,6 +67,8 @@ Dedicated **Binance Testnet** and **Coinbase Sandbox** options are also availabl
 
 **Trade → Order monitor** now follows reviewed market and GTC limit orders, cumulative partial fills, cancellation requests and persisted status tracking. Native writes remain limited to Binance, Coinbase Advanced, Kraken and the dedicated test clients. Unknown writes are never automatically retried. Demo supports resting GTC limits with atomic virtual-wallet reservations, matching and cancellation; its fills enter the same paper ledger. **View example** changes no account records. Stop/OCO, cancel/replace and native client-ID recovery remain future work. See [order-management contracts and limits](docs/docs/developers/order-management.md).
 
+Open an order's **Executions** evidence to compare native filled quantity with imported fill IDs, reported cost and native-currency fees. Exact-order imports share Account history's identities, commit each page with its restart checkpoint, and make three bounded terminal passes for delayed fee evidence. Checks never retry an order submission. Missing fills/fees remain visible, and a match is not a final-settlement guarantee. Demo and isolated examples use the same detail view. See [reconciliation contracts and remaining scope](docs/docs/developers/order-reconciliation.md).
+
 ## Python package
 
 | File/module                                      | Responsibility                                                                                    |

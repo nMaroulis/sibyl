@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDownUp, History, ListOrdered, RefreshCw, ShieldCheck } from 'lucide-react';
 import {
   Badge,
@@ -42,13 +42,6 @@ export function Trading() {
         retry={accounts.retry}
       />
     );
-  if (!accounts.data.active_ids.length)
-    return (
-      <>
-        <PageTitle title="Trade" description="Choose your exchange accounts to get started." />
-        <AccountSetup selection={accounts.data} page="trading workspace" />
-      </>
-    );
   return <TradingActive key={accounts.data.signature} selection={accounts.data} />;
 }
 
@@ -57,6 +50,7 @@ function TradingActive({ selection }: { selection: AccountSelection }) {
   const requested = params.get('tab') ?? 'trade';
   const tab = sections.some((item) => item.id === requested) ? requested : 'trade';
   const asset = params.get('asset') || 'BTC';
+  const hasAccounts = selection.active_ids.length > 0;
   const [opened, setOpened] = useState([tab]);
   useEffect(() => {
     setOpened((old) => (old.includes(tab) ? old : [...old, tab]));
@@ -74,7 +68,9 @@ function TradingActive({ selection }: { selection: AccountSelection }) {
         description="Place spot orders, review executions, and explore account history."
         action={
           tab === 'trade' ? (
-            <AgentButton module="broker" context={{ symbol: `${asset}/USDT` }} />
+            hasAccounts ? (
+              <AgentButton module="broker" context={{ symbol: `${asset}/USDT` }} />
+            ) : undefined
           ) : (
             <button className="button secondary" onClick={refresh}>
               <RefreshCw size={14} /> Refresh records
@@ -91,8 +87,16 @@ function TradingActive({ selection }: { selection: AccountSelection }) {
         onChange={(value) => select('tab', value)}
       />
       <SectionPanel id="trade" value={tab}>
+        {!hasAccounts && tab !== 'trade' && (
+          <p className="inline-alert">
+            No accounts are active. Saved records and read-only examples remain available.{' '}
+            <Link to="/settings?tab=exchanges">Manage accounts ↗</Link>
+          </p>
+        )}
         <div hidden={tab !== 'trade'}>
-          {selection.mode !== 'demo' ? (
+          {!hasAccounts ? (
+            <AccountSetup selection={selection} page="trading workspace" />
+          ) : selection.mode !== 'demo' ? (
             <>
               <ExchangeExecution active={tab === 'trade'} />
               <OrderBook symbol={`${asset}/USDT`} active={tab === 'trade'} />

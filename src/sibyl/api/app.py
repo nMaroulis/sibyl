@@ -136,6 +136,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async def order_worker():
             while True:
                 await asyncio.to_thread(background_call, trading.lifecycle.tick)
+                await asyncio.to_thread(background_call, trading.reconciliation.tick)
                 await asyncio.sleep(1)
 
         async def alert_worker():

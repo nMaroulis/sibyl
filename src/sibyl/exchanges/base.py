@@ -96,6 +96,12 @@ class ExchangeClient(ABC):
         """Read a known order, without submitting or retrying it."""
         raise ccxt.NotSupported("Order status reads are unavailable for this client.")
 
+    def fetch_order_fill_page(
+        self, order_id: str, symbol: str, cursor: dict, limit: int = 100
+    ) -> "TradePage":
+        """Read one reviewed page of executions belonging to an exact native order."""
+        raise ccxt.NotSupported("Order execution imports are not reviewed for this provider.")
+
     def create_order(
         self,
         symbol: str,

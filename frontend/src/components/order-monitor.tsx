@@ -4,6 +4,8 @@ import { useResource } from '../lib/hooks';
 import { number, post, refresh } from '../lib/api';
 import type { OrderInput } from '../lib/types';
 import { Badge, Empty, ErrorState, Modal, Panel, PanelTitle, useToast } from './ui';
+import { OrderReconciliation, reconciliationLabel } from './order-reconciliation';
+import type { Reconciliation } from './order-reconciliation';
 
 export type ManagedOrder = {
   id: string;
@@ -33,6 +35,7 @@ export type ManagedOrder = {
   sync_error?: string;
   cancel_state?: string;
   cancel_message?: string;
+  reconciliation?: Reconciliation;
 };
 type CancelReview = {
   id: string;
@@ -58,6 +61,7 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
   );
   const [busy, setBusy] = useState('');
   const [review, setReview] = useState<CancelReview>();
+  const [inspected, setInspected] = useState<string>();
   const [phrase, setPhrase] = useState('');
   const [error, setError] = useState('');
   const toast = useToast();
@@ -107,13 +111,14 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
     <Panel className="full-panel order-monitor">
       <PanelTitle
         title="Order monitor"
-        subtitle="Resting orders, cumulative fills & cancellation status"
+        subtitle="Order status, execution evidence & reported fees"
         action={
           <button
             className="button secondary tiny"
             onClick={() => {
               setExample(!example);
               setReview(undefined);
+              setInspected(undefined);
             }}
           >
             {example ? 'Return to my orders' : 'View example'}
@@ -138,6 +143,7 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                 <th>Filled / remaining</th>
                 <th>Average fill</th>
                 <th>Status</th>
+                <th>Executions</th>
                 <th>Manage</th>
               </tr>
             </thead>
@@ -191,6 +197,14 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                         Checked {new Date(order.refreshed_at).toLocaleTimeString()}
                       </small>
                     )}
+                  </td>
+                  <td>
+                    <button className="text-button" onClick={() => setInspected(order.id)}>
+                      {reconciliationLabel(order.reconciliation?.status)} ↗
+                    </button>
+                    <small className="table-subline">
+                      {order.reconciliation?.fill_count ?? 0} retained fills
+                    </small>
                   </td>
                   <td>
                     <div className="order-actions">
@@ -257,9 +271,18 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
       <p className="footnote padded">
         Only orders submitted here are monitored. Status checks run on the server about every 20
         seconds while tracking and the account are active; failures back off. Cumulative fills are
-        observations, not individual executions or final fees. Import account history for those
-        details.
+        observations. Execution checks import exact-order fills into Account history without
+        duplicating history imports. Open the execution evidence to compare quantities and reported
+        fees.
       </p>
+      {inspected && (
+        <OrderReconciliation
+          key={inspected}
+          identity={inspected}
+          example={example}
+          onClose={() => setInspected(undefined)}
+        />
+      )}
       {review && (
         <Modal
           title="Review cancellation"

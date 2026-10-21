@@ -38,6 +38,7 @@ from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequ
 from sibyl.services.funding_sync import FundingSyncRequest
 from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
+from sibyl.services.order_examples import order_examples
 from sibyl.services.performance import OpeningInventory
 from sibyl.services.reporting import trading_report
 from sibyl.services.roadmap import implementation_status
@@ -648,37 +649,17 @@ def exchange_orders(s: S, response: Response):
 def order_monitor_example(response: Response):
     """Return illustrative status observations without creating wallet/order records."""
     response.headers["Cache-Control"] = "no-store"
-    return [
-        {
-            "id": "example-" + symbol.replace("/", "-") + "-" + status,
-            "request": {
-                "connection_id": "example",
-                "symbol": symbol,
-                "side": side,
-                "quantity": quantity,
-                "order_type": "limit",
-                "limit_price": price,
-            },
-            "account": "Example account",
-            "exchange": "demo",
-            "sandbox": True,
-            "environment": "illustrative",
-            "mode": "paper",
-            "status": status,
-            "price": price,
-            "filled": filled,
-            "remaining": quantity - filled,
-            "average": price if filled else None,
-            "tracking": status == "open",
-            "client_order_id": "example-only",
-            "exchange_order_id": "example-only",
-        }
-        for symbol, side, quantity, price, status, filled in [
-            ("BTC/USDT", "buy", 0.02, 50000, "open", 0.008),
-            ("ETH/USDT", "sell", 0.5, 3500, "open", 0.0),
-            ("SOL/USDT", "buy", 3.0, 140, "canceled", 1.0),
-        ]
-    ]
+    return [{**detail["order"], "reconciliation": detail["reconciliation"]} for detail in order_examples()]
+
+
+@router.get("/exchange-orders/example/{example_id}/reconciliation", tags=["Broker"])
+def order_reconciliation_example(example_id: str, response: Response):
+    """Inspect isolated execution evidence without importing fixtures into the workspace."""
+    response.headers["Cache-Control"] = "no-store"
+    detail = next((item for item in order_examples() if item["order"]["id"] == example_id), None)
+    if detail is None:
+        raise HTTPException(404, "Order example not found.")
+    return detail
 
 
 @router.post("/exchange-orders/{intent_id}/refresh", tags=["Broker"])
@@ -686,6 +667,26 @@ def refresh_exchange_order(intent_id: str, s: S, response: Response):
     """Read the status of a recorded exchange order without any resubmission."""
     response.headers["Cache-Control"] = "no-store"
     return s.trading.refresh(intent_id)
+
+
+@router.get("/exchange-orders/{intent_id}/reconciliation", tags=["Broker"])
+def order_reconciliation(intent_id: str, s: S, response: Response):
+    """Read retained order/execution evidence, without probing a provider."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.reconciliation.detail(intent_id)
+
+
+@router.post("/exchange-orders/{intent_id}/reconcile", tags=["Broker"])
+def reconcile_order(intent_id: str, s: S):
+    """Observe native state and import one exact-order execution page; never resubmit."""
+    s.trading.refresh(intent_id)
+    return s.trading.reconciliation.detail(intent_id)
+
+
+@router.post("/exchange-orders/{intent_id}/reconcile/tracking", tags=["Broker"])
+def track_order_executions(intent_id: str, body: OrderTracking, s: S):
+    """Pause/resume only the persisted fill-read job, including terminal orders."""
+    return s.trading.reconciliation.tracking(intent_id, body.enabled)
 
 
 @router.post("/exchange-orders/preview", tags=["Broker"])

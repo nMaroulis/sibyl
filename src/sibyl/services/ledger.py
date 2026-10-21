@@ -96,7 +96,7 @@ class AccountLedger:
     Disconnecting keeps the audit history and stops its import jobs.
     """
 
-    def __init__(self, store: Store):
+    def __init__(self, store: Store, *, recover: bool = True):
         self.store = store
         with store.db() as db:
             db.executescript("""
@@ -108,6 +108,9 @@ class AccountLedger:
                 );
                 CREATE INDEX IF NOT EXISTS account_fills_time ON account_fills(timestamp_ms DESC, id DESC);
                 CREATE INDEX IF NOT EXISTS account_fills_account ON account_fills(account_id, symbol);
+                CREATE INDEX IF NOT EXISTS account_fills_order ON account_fills(
+                    account_id, symbol, json_extract(payload,'$.order_id')
+                );
                 CREATE TABLE IF NOT EXISTS account_sync (
                     account_id TEXT NOT NULL, symbol TEXT NOT NULL, status TEXT NOT NULL,
                     next_attempt REAL NOT NULL, last_attempt REAL NOT NULL, payload TEXT NOT NULL,
@@ -115,7 +118,11 @@ class AccountLedger:
                 );
             """)
             # The application deliberately runs one API worker. Recover interrupted reads.
-            rows = db.execute("SELECT payload FROM account_sync WHERE status='running'").fetchall()
+            rows = (
+                db.execute("SELECT payload FROM account_sync WHERE status='running'").fetchall()
+                if recover
+                else []
+            )
             for row in rows:
                 job = json.loads(row[0])
                 job["status"], job["next_attempt"] = "queued", 0
@@ -167,6 +174,31 @@ class AccountLedger:
             for job in (json.loads(row[0]) for row in rows)
         ]
 
+    @staticmethod
+    def upsert_fills(db, fills: list[dict], seen: str) -> tuple[int, int]:
+        """Share native execution identities across history imports and order reconciliation."""
+        inserted, updated = 0, 0
+        for fill in fills:
+            payload = json.dumps(fill, sort_keys=True, allow_nan=False)
+            previous = db.execute("SELECT payload FROM account_fills WHERE id=?", (fill["id"],)).fetchone()
+            inserted += previous is None
+            updated += previous is not None and previous[0] != payload
+            db.execute(
+                "INSERT INTO account_fills VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
+                "payload=excluded.payload,last_seen_at=excluded.last_seen_at,timestamp_ms=excluded.timestamp_ms",
+                (
+                    fill["id"],
+                    fill["account_id"],
+                    fill["symbol"],
+                    fill["trade_id"],
+                    fill["timestamp_ms"],
+                    payload,
+                    seen,
+                    seen,
+                ),
+            )
+        return inserted, updated
+
     def commit_page(self, job: dict, page: TradePage) -> None:
         """Atomically upsert a validated page, preserving concurrent pause/disconnect."""
         signature = hashlib.sha256(json.dumps(page.cursor, sort_keys=True).encode()).hexdigest()
@@ -179,28 +211,7 @@ class AccountLedger:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             current = self.read_job(db, job["account_id"], job["symbol"])
-            inserted, updated = 0, 0
-            for fill in fills:
-                payload = json.dumps(fill, sort_keys=True, allow_nan=False)
-                previous = db.execute(
-                    "SELECT payload FROM account_fills WHERE id=?", (fill["id"],)
-                ).fetchone()
-                inserted += previous is None
-                updated += previous is not None and previous[0] != payload
-                db.execute(
-                    "INSERT INTO account_fills VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
-                    "payload=excluded.payload,last_seen_at=excluded.last_seen_at,timestamp_ms=excluded.timestamp_ms",
-                    (
-                        fill["id"],
-                        fill["account_id"],
-                        fill["symbol"],
-                        fill["trade_id"],
-                        fill["timestamp_ms"],
-                        payload,
-                        seen,
-                        seen,
-                    ),
-                )
+            inserted, updated = self.upsert_fills(db, fills, seen)
             current.update(
                 cursor=page.cursor,
                 pages=current["pages"] + 1,

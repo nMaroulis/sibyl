@@ -119,9 +119,10 @@ class OrderLifecycle:
             if status in TERMINAL:
                 intent["tracking"] = False
             intent["message"] = (
-                "Native order status observed. Filled quantity is cumulative; import account fills for execution IDs and final fees."
+                "Native order status observed. Filled quantity is cumulative; execution checks reconcile native fill IDs and reported fees separately."
             )
             self.write(db, intent)
+            self.trading.reconciliation.schedule(db, intent)
         return intent
 
     def refresh(self, identity: str) -> dict:
@@ -263,6 +264,10 @@ class OrderLifecycle:
                 raise ValueError("Tracking applies to nonterminal submitted orders only.")
             intent.update(tracking=enabled, next_check=0)
             self.write(db, intent)
+            job = self.trading.reconciliation._read(db, identity)
+            if job:
+                job.update(enabled=enabled, state="queued" if enabled else "paused", next_attempt=0)
+                self.trading.reconciliation._write(db, identity, job)
             return intent
 
     def tick(self) -> None:

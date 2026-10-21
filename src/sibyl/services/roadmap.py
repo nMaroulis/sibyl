@@ -34,9 +34,9 @@ AREAS = [
         "name": "Order management",
         "status": "partial",
         "priority": "next",
-        "working": "Reviewed market/GTC limits on the execution allowlist; typed cancellation; cumulative partial fills; restart-safe status tracking; Demo reservations.",
+        "working": "Reviewed market/GTC limits, cancellation, durable status tracking and exact-order fill imports; quantity/fee evidence, bounded late-fee checks and Demo reservations.",
         "pending": [
-            "Recovery of uncertain native submissions by client ID; full fill/fee settlement reconciliation.",
+            "Recovery of uncertain native submissions by client ID; all-account discovery and definitive fee/settlement reconciliation.",
             "Cancel/replace, stop/OCO, trailing, post-only, iceberg and other time-in-force choices.",
             "Execution review for additional providers and authenticated venue acceptance.",
         ],

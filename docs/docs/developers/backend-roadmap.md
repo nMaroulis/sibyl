@@ -10,7 +10,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------- |
 | Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.   |
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                        |
-| Order management               | partial       | Recovery of uncertain native submissions by client ID; full fill/fee settlement reconciliation. |
+| Order management               | partial       | Native client-ID recovery, all-account discovery and definitive fee/settlement reconciliation.   |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, durable health history and WebSockets.    |
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; recurring/crossing conditions.           |
 | Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.       |
@@ -73,11 +73,14 @@ Valuation now discovers direct, inverse and short bridge routes for held assets 
 
 Reviewed market/GTC limit orders, exact precision checks, durable cancellation reviews, cumulative fill observations and restart-safe REST tracking are implemented for the existing execution allowlist. Demo reserves funds and matches/cancels virtual resting orders. Ambiguous writes are never automatically retried. See [order management](order-management.md).
 
+Known orders now import native execution pages into the shared Account history ledger, compare quantity/cost and expose fee gaps in an in-place dialog. Three bounded terminal passes can pick up delayed evidence; complete settlement and uncertain client-ID recovery remain pending. See [order/fill reconciliation](order-reconciliation.md).
+
 - [ ] Review and enable execution for the remaining production providers; most added adapters are read-only.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
 - [ ] Add cancel/replace with venue-specific atomicity and reservation semantics.
 - [ ] Add stop, take-profit, trailing, OCO, additional time-in-force, post-only and iceberg support where the venue permits it.
-- [ ] Synchronize partial fills, final fees, rejects and cancellations into the account ledger.
+- [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
+- [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and all-account discovery.
 - [ ] Reconcile uncertain submissions by supported provider order/client-ID lookups.
 
 ### 4. Automated strategy execution — missing

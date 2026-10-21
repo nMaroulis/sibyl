@@ -13,6 +13,7 @@ from sibyl.exchanges.catalog import exchange_spec
 from sibyl.models import ExchangeOrderRequest
 from sibyl.services.market import Market
 from sibyl.services.order_lifecycle import OrderLifecycle
+from sibyl.services.order_reconciliation import OrderReconciliation
 from sibyl.storage import Store
 
 
@@ -32,6 +33,7 @@ class ExchangeTrading:
                 "id TEXT PRIMARY KEY, request_key TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)"
             )
         self.lifecycle = OrderLifecycle(self)
+        self.reconciliation = OrderReconciliation(self)
 
     def _enabled(self):
         if not self.market.settings.allow_live_trading:
@@ -51,11 +53,14 @@ class ExchangeTrading:
         """Inspect the latest 100 local intents, including previews and uncertain writes."""
         with self.store.db() as db:
             rows = db.execute("SELECT payload FROM exchange_orders ORDER BY rowid DESC LIMIT 100").fetchall()
-        return [json.loads(row[0]) for row in rows]
+        details = [self.reconciliation.detail(json.loads(row[0])["id"]) for row in rows]
+        return [{**detail["order"], "reconciliation": detail["reconciliation"]} for detail in details]
 
     def refresh(self, intent_id: str) -> dict:
-        """Read native status; Demo also advances its local synthetic limit matcher."""
-        return self.lifecycle.refresh(intent_id)
+        """Read native status and one execution page; Demo also advances its matcher."""
+        self.lifecycle.refresh(intent_id)
+        detail = self.reconciliation.sync(intent_id, manual=True)
+        return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def preview(self, request: ExchangeOrderRequest) -> dict:
         """Validate exact precision, native spot limits and free funds without reserving them.

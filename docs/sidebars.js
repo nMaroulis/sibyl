@@ -34,6 +34,7 @@ module.exports = {
         'developers/exchange-clients',
         'developers/account-sync',
         'developers/order-management',
+        'developers/order-reconciliation',
         'developers/funding-history',
         'developers/transfer-reconciliation',
         'developers/transfer-cost-basis',

@@ -7447,6 +7447,59 @@ details[open] > summary {
   overflow-wrap: anywhere;
   font-size: 11px;
 }
+.modal.order-reconciliation-dialog {
+  width: min(920px, calc(100vw - 32px));
+  max-width: 920px;
+}
+.order-reconciliation-body {
+  display: grid;
+  gap: 18px;
+  padding: 22px 0 0;
+  min-width: 0;
+}
+.order-reconciliation-heading,
+.order-reconciliation-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.order-reconciliation-heading {
+  justify-content: space-between;
+}
+.order-reconciliation-heading p {
+  margin-top: 6px;
+}
+.order-reconciliation-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.order-reconciliation-metrics > div {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.order-reconciliation-metrics span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.order-reconciliation-metrics strong {
+  font-size: 18px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .order-reconciliation-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.order-reconciliation-body code {
+  overflow-wrap: anywhere;
+}
 
 /* Local alerts and the audited implementation inventory. */
 .alert-delivery-note,

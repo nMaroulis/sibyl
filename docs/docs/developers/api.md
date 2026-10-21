@@ -190,6 +190,8 @@ The existing exchange order preview accepts `order_type` (`market` by default, o
 
 `POST /exchange-orders/{id}/cancel/preview` reads native state and creates a 60-second review. Confirm through `POST /exchange-orders/{id}/cancel` with `cancel_id` and the displayed `confirmation`. `POST /exchange-orders/{id}/tracking` persists an `enabled` boolean. `GET /exchange-orders/example` is read-only illustrative data. `/paper/balances` reports available `balances`, `total` and `used` reservations. See [complete contracts and failure semantics](order-management.md).
 
+`GET /exchange-orders/{id}/reconciliation` returns retained order/fill evidence without provider calls. `POST /exchange-orders/{id}/reconcile` checks native state and imports one exact-order execution page; the existing `/refresh` now does the same bounded import. `POST /exchange-orders/{id}/reconcile/tracking` changes the execution-read preference with `{enabled: boolean}`, including terminal follow-ups. `GET /exchange-orders/example/{id}/reconciliation` is an isolated fixture. See [evidence fields, pagination and error semantics](order-reconciliation.md).
+
 ## Local alerts and implementation inventory
 
 `GET /alerts` reads persisted one-shot price rules. `POST /alerts` arms an exact `source` + `symbol`, `condition` (`above`/`below`) and positive `threshold`, with optional `label`. `POST /alerts/{id}/action` accepts `pause`, `arm`, `archive` or `restore`; `POST /alerts/{id}/check` respects the stored cooldown/backoff. `/alerts/example` is an isolated fixture.

@@ -32,7 +32,7 @@ Review the reference notional and type the displayed confirmation, such as `BUY 
 
 Before contacting the exchange, Sibyl persists the intent as `submitting`. A repeated confirmation returns the persisted state and never creates a second order. Provider failures with an ambiguous outcome become `unknown`. A process crash can leave an intent as `submitting`, which also requires reconciliation.
 
-**Check the exchange before creating another order after an uncertain outcome.** Use the displayed client order ID and exchange order ID when available. The current version does not continuously synchronize order status, cancel orders, or automatically reconcile ambiguous submissions. The reported state is a submission snapshot, not a guarantee of final settlement.
+**Check the exchange before creating another order after an uncertain outcome.** Use the displayed client order ID and exchange order ID when available. The order monitor tracks confirmed native IDs, offers reviewed cancellation, and imports exact-order executions. Ambiguous submissions without a native ID still need venue inspection. Observed state is not a guarantee of final settlement.
 
 The exchange receives a `clientOrderId` where supported by the adapter. Application-level duplicate protection remains the primary protection because exchange support differs.
 
@@ -62,17 +62,17 @@ Exchange rows include unsubmitted previews as well as submissions; their notiona
 
 **Paper limit orders** uses the active Demo wallet. Choose a side, market, base quantity and limit price, review, then type the displayed phrase. Placement reserves virtual funds; market orders show only the remaining available balance. The separate Demo bid/ask feed matches a crossing order in full at its limit, with a 0.1% quote fee. It does not simulate queues or partial fills.
 
-The **Order monitor** in Trade and Executions lists submitted orders, cumulative filled/remaining quantities, average fill, status and tracking preference. A native `open` order with some fills appears as **Partially filled**. **View example** demonstrates the monitor without changing any data. The sample controls are disabled.
+The **Order monitor** in Trade and Executions lists submitted orders, cumulative filled/remaining quantities, average fill, status and tracking preference. A native `open` order with some fills appears as **Partially filled**. Its **Executions** column opens an in-place comparison with retained native fill IDs, quantities, reported cost and fees. **Check executions** imports one exact-order page; enabled background checks continue unfinished pages. Missing executions, incomplete fees and differing evidence are shown explicitly. **View example** demonstrates these details without changing any data; sample mutation/check controls are disabled.
 
 **Cancel…** reads the latest native state and opens an in-place review. Type the displayed cancellation phrase. Acknowledgment is not proof of cancellation; the status read determines whether cancellation or a fill won the race. An uncertain attempt is shown clearly and never automatically retried.
 
-Tracking reads status approximately every 20 seconds on the server, with increasing delays on errors. It survives restart, pauses for inactive accounts and can be paused/resumed per order. Pausing does not cancel a native order. Known-ID checks and reviewed cancellation remain available if new exchange execution is disabled. Filled quantities do not replace imported execution IDs or final fees. Demo fills appear only once in execution history.
+Tracking reads status approximately every 20 seconds on the server, with increasing delays on errors. It survives restart, pauses for inactive accounts and can be paused/resumed per order. Pausing does not cancel a native order. Known-ID checks and reviewed cancellation remain available if new exchange execution is disabled. Execution checks share Account history's ledger, so importing through both paths does not duplicate a fill. Terminal orders receive three bounded follow-up passes for late fee updates. You can pause/resume fill checks or recheck later. A match compares available evidence and never guarantees final settlement. Demo fills appear only once in execution history. See [reconciliation details and limits](../developers/order-reconciliation.md).
 
 GTC remains open until filled or canceled; the 60-second deadline applies to the review, not the submitted order. Stop/OCO, cancel/replace, post-only, iceberg and other time-in-force choices remain **Coming soon**. See [order contracts, provider support and recovery](../developers/order-management.md).
 
 ## Active accounts and first use
 
-With no active accounts, Trade shows Connect exchange accounts and the smaller Preview with Demo action. Demo activates the virtual order form with a persistent preview banner. Real/test selections show exchange order entry for active accounts; the virtual form is absent. Execution still requires its separate server enablement, review and confirmation. Deactivated accounts cannot review new orders or confirm an earlier preview. Retained execution records remain stored. Independent strategy simulations use isolated capital and do not activate a Demo wallet.
+With no active accounts, order entry shows Connect exchange accounts and the smaller Preview with Demo action. **Executions** and **Account history** remain readable, including isolated order examples, without activating any account. Demo activates the virtual order form with a persistent preview banner. Real/test selections show exchange order entry for active accounts; the virtual form is absent. Execution still requires its separate server enablement, review and confirmation. Deactivated accounts cannot review new orders or confirm an earlier preview. Independent strategy simulations use isolated capital and do not activate a Demo wallet.
 
 ## Retained account performance
 
