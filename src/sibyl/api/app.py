@@ -137,6 +137,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             while True:
                 await asyncio.to_thread(background_call, trading.lifecycle.tick)
                 await asyncio.to_thread(background_call, trading.reconciliation.tick)
+                await asyncio.to_thread(background_call, trading.discovery.tick)
                 await asyncio.sleep(1)
 
         async def alert_worker():
@@ -166,6 +167,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await asyncio.to_thread(account_sync.close)
             await asyncio.to_thread(funding_sync.close)
             await asyncio.to_thread(trading.lifecycle.close)
+            await asyncio.to_thread(trading.discovery.close)
             await asyncio.to_thread(alerts.close)
             await asyncio.to_thread(history.close)
             market.close()

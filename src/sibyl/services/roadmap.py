@@ -34,9 +34,9 @@ AREAS = [
         "name": "Order management",
         "status": "partial",
         "priority": "next",
-        "working": "Reviewed market/GTC limits, cancellation, durable status/fill tracking and bounded client-ID recovery; quantity/fee evidence, late-fee checks and Demo reservations.",
+        "working": "Reviewed market/GTC limits, cancellation, status/fill tracking, client-ID recovery and read-only combined account order discovery with shared execution evidence.",
         "pending": [
-            "All-account order discovery, broader recovery adapters and definitive fee/settlement reconciliation.",
+            "Broader discovery/recovery adapters, external amendment handling and definitive fee/settlement reconciliation.",
             "Cancel/replace, stop/OCO, trailing, post-only, iceberg and other time-in-force choices.",
             "Execution review for additional providers and authenticated venue acceptance.",
         ],

@@ -66,72 +66,79 @@ class OrderLifecycle:
             intent = self.read(db, identity)
             if recovered:
                 self.trading.recovery.accept(db, intent, result)
-            request = intent["request"]
-            for key, expected in (
-                ("symbol", request["symbol"]),
-                ("side", request["side"]),
-                ("id", intent.get("exchange_order_id")),
-            ):
-                if expected is not None and result.get(key) is not None and str(result[key]) != str(expected):
-                    raise ValueError("Provider order identity does not match the reviewed intent.")
-            filled = number(result.get("filled"))
-            if filled is not None:
-                if filled < 0 or filled > request["quantity"] + max(1e-10, request["quantity"] * 1e-8):
-                    raise ValueError("Provider returned an invalid filled quantity.")
-                if intent.get("filled") is not None and filled < intent["filled"]:
-                    raise ValueError(
-                        "Provider returned an older cumulative fill observation; retained status was preserved."
-                    )
-                intent["filled"] = filled
-            remaining = number(result.get("remaining"))
-            if remaining is not None and (
-                remaining < 0 or remaining > request["quantity"] + max(1e-10, request["quantity"] * 1e-8)
-            ):
-                raise ValueError("Provider returned an invalid remaining quantity.")
-            status = result.get("status") or intent["status"]
-            status = "canceled" if status == "cancelled" else status
-            if status not in OPEN | TERMINAL:
-                status = "unknown"
-            if intent["status"] in TERMINAL and status not in TERMINAL:
-                status = intent["status"]
-            if intent["status"] == "closed":
-                status = "closed"
-            intent["status"] = status
-            if intent.get("cancel_state"):
-                if status == "canceled":
-                    intent.update(
-                        cancel_state="confirmed",
-                        cancel_message="Native status confirms cancellation. Any cumulative fills remain recorded.",
-                    )
-                elif status == "closed":
-                    intent.update(
-                        cancel_state="filled",
-                        cancel_message="Native status reports a closed order. Inspect cumulative fills; cancellation cannot undo executions.",
-                    )
-                elif intent["cancel_state"] == "submitting":
-                    intent.update(
-                        cancel_state="unknown",
-                        cancel_message="No final cancellation acknowledgment was retained. Check native status before a fresh review; no write is retried.",
-                    )
-            for key in ("remaining", "average", "cost"):
-                value = number(result.get(key))
-                if value is not None and value >= 0:
-                    intent[key] = value
-            intent.update(refreshed_at=now(), sync_failures=0, sync_error=None, next_check=time.time() + 20)
-            if status in TERMINAL:
-                intent["tracking"] = False
-            intent["message"] = (
-                "Native order status observed. Filled quantity is cumulative; execution checks reconcile native fill IDs and reported fees separately."
-            )
-            self.write(db, intent)
-            self.trading.reconciliation.schedule(db, intent)
+            self.merge_observation(db, intent, result)
         return intent
+
+    def merge_observation(self, db, intent: dict, result: dict) -> None:
+        """Merge validated local status inside an existing atomic page transaction."""
+
+        request = intent["request"]
+        for key, expected in (
+            ("symbol", request["symbol"]),
+            ("side", request["side"]),
+            ("id", intent.get("exchange_order_id")),
+        ):
+            if expected is not None and result.get(key) is not None and str(result[key]) != str(expected):
+                raise ValueError("Provider order identity does not match the reviewed intent.")
+        filled = number(result.get("filled"))
+        if filled is not None:
+            if filled < 0 or filled > request["quantity"] + max(1e-10, request["quantity"] * 1e-8):
+                raise ValueError("Provider returned an invalid filled quantity.")
+            if intent.get("filled") is not None and filled < intent["filled"]:
+                raise ValueError(
+                    "Provider returned an older cumulative fill observation; retained status was preserved."
+                )
+            intent["filled"] = filled
+        remaining = number(result.get("remaining"))
+        if remaining is not None and (
+            remaining < 0 or remaining > request["quantity"] + max(1e-10, request["quantity"] * 1e-8)
+        ):
+            raise ValueError("Provider returned an invalid remaining quantity.")
+        status = result.get("status") or intent["status"]
+        status = "canceled" if status == "cancelled" else status
+        if status not in OPEN | TERMINAL:
+            status = "unknown"
+        if intent["status"] in TERMINAL and status not in TERMINAL:
+            status = intent["status"]
+        if intent["status"] == "closed":
+            status = "closed"
+        intent["status"] = status
+        if intent.get("cancel_state"):
+            if status == "canceled":
+                intent.update(
+                    cancel_state="confirmed",
+                    cancel_message="Native status confirms cancellation. Any cumulative fills remain recorded.",
+                )
+            elif status == "closed":
+                intent.update(
+                    cancel_state="filled",
+                    cancel_message="Native status reports a closed order. Inspect cumulative fills; cancellation cannot undo executions.",
+                )
+            elif intent["cancel_state"] == "submitting":
+                intent.update(
+                    cancel_state="unknown",
+                    cancel_message="No final cancellation acknowledgment was retained. Check native status before a fresh review; no write is retried.",
+                )
+        for key in ("remaining", "average", "cost"):
+            value = number(result.get(key))
+            if value is not None and value >= 0:
+                intent[key] = value
+        intent.update(refreshed_at=now(), sync_failures=0, sync_error=None, next_check=time.time() + 20)
+        if status in TERMINAL:
+            intent["tracking"] = False
+        intent["message"] = (
+            "Native order status observed. Filled quantity is cumulative; execution checks reconcile native fill IDs and reported fees separately."
+        )
+        self.write(db, intent)
+        self.trading.reconciliation.schedule(db, intent)
 
     def refresh(self, identity: str) -> dict:
         """Read native status, attempting one bounded lookup when an uncertain intent lacks an ID."""
         with self.lock(identity):
             with self.store.db() as db:
                 intent = self.read(db, identity)
+            if intent.get("origin") == "imported":
+                return self.trading.discovery.refresh(identity)
             connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
             if not intent.get("exchange_order_id") and intent["status"] in {"submitting", "unknown"}:
                 intent = self.trading.recovery.check(identity, manual=True)
@@ -148,6 +155,9 @@ class OrderLifecycle:
     def preview_cancel(self, identity: str) -> dict:
         """Observe the native order before creating a short-lived cancellation review."""
         with self.lock(identity):
+            with self.store.db() as db:
+                if self.read(db, identity).get("origin") == "imported":
+                    raise ValueError("Imported orders are read-only. Manage this order at the exchange.")
             intent = self.refresh(identity)
             if intent["status"] in TERMINAL or intent["status"] not in {"open", "pending", "submitted"}:
                 raise ValueError("Only an observed open order can be reviewed for cancellation.")
@@ -184,6 +194,8 @@ class OrderLifecycle:
                 if not row:
                     raise LookupError("Cancellation review not found.")
                 command, intent = json.loads(row[0]), self.read(db, identity)
+                if intent.get("origin") == "imported":
+                    raise ValueError("Imported orders are read-only. Manage this order at the exchange.")
                 if confirmation != command["confirmation"]:
                     raise ValueError("Type " + command["confirmation"] + " to confirm cancellation.")
                 if command["status"] != "preview":

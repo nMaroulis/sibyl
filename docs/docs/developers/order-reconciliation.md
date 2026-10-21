@@ -1,6 +1,6 @@
 # Order and fill reconciliation
 
-**Trade → Order monitor → Executions** compares a locally submitted order's cumulative native observation with individual executions in the shared account ledger. The detail dialog shows native and imported base quantities, their difference, reported quote cost, execution IDs and native-currency fees. Opening it only reads SQLite. **Check executions** explicitly refreshes native status and imports one bounded fill page.
+**Trade → Order monitor → Executions** compares a local or read-only imported order's cumulative native observation with individual executions in the shared account ledger. The detail dialog shows native and imported base quantities, their difference, reported quote cost, execution IDs and native-currency fees. Opening it only reads SQLite. **Check executions** explicitly refreshes native status and imports one bounded fill page.
 
 This is execution-evidence reconciliation, not a guarantee of settlement, complete account history or exchange P&L. Strategies remain paper-only and agents remain read-only. Uncertain submissions without a confirmed order ID can now use bounded [client-ID recovery](order-recovery.md). A match joins this execution workflow; missing or ambiguous evidence still requires venue inspection. Neither feature retries a write.
 
@@ -10,14 +10,14 @@ Demo's explicit Check executions action includes the existing managed-status che
 
 `ExchangeClient.fetch_order_fill_page(order_id, symbol, cursor, limit=100)` returns a `TradePage`. `exchanges/order_fills.py` implements reviewed pagination; the shared request coordinator admits these reads under the existing provider budgets and cooldowns.
 
-| Client | Read contract |
-| --- | --- |
-| Binance / Binance Testnet | Exact `orderId` and `fromId`, increasing native trade IDs; an empty page ends a pass. |
-| Coinbase Advanced Trade | Native `order_ids` and `product_ids`, with the returned opaque cursor. |
-| Coinbase Exchange Sandbox | Native `order_id` and `product_id`, with `CB-AFTER` response-header pagination. |
-| Kraken | Query one order with individual, unconsolidated trade IDs; snapshot at most 10,000 IDs, then query batches of at most 20 IDs. A new pass snapshots the IDs again. |
-| Demo | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher. |
-| Other adapters | Explicitly unsupported; no all-account scan or Demo fallback. |
+| Client                    | Read contract                                                                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Binance / Binance Testnet | Exact `orderId` and `fromId`, increasing native trade IDs; an empty page ends a pass.                                                                             |
+| Coinbase Advanced Trade   | Native `order_ids` and `product_ids`, with the returned opaque cursor.                                                                                            |
+| Coinbase Exchange Sandbox | Native `order_id` and `product_id`, with `CB-AFTER` response-header pagination.                                                                                   |
+| Kraken                    | Query one order with individual, unconsolidated trade IDs; snapshot at most 10,000 IDs, then query batches of at most 20 IDs. A new pass snapshots the IDs again. |
+| Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                               |
+| Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                     |
 
 Provider permissions, retention and actual authenticated account acceptance still require testing. Coinbase Advanced and Exchange Sandbox are different APIs. Native read contracts follow the [Binance account trade list](https://developers.binance.com/en/docs/catalog/core-trading-spot-trading/api/rest-api/account), [Coinbase Advanced fills](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/list-fills), Kraken's [order queries](https://docs.kraken.com/api-reference/account-data/query-orders-info) and [trade queries](https://docs.kraken.com/api-reference/account-data/query-trades-info). The installed CCXT Exchange adapter supplies sandbox fill parsing and authenticated transport.
 
@@ -41,15 +41,15 @@ Checkpoint, enabled state and next attempt survive restart. Failures retain the 
 
 ## Evidence states
 
-| State | Meaning |
-| --- | --- |
-| `matched` | Retained gross quantity matches native filled quantity within tolerance, available native quote costs agree, fee fields are known, and the order is terminal. This is not final settlement. |
-| `pending` | Order remains nonterminal, or an import pass is unfinished. |
-| `missing_fills` | Retained gross quantity is below the native cumulative quantity. |
-| `fees_missing` | Matching quantities have one or more executions with incomplete fee evidence. |
-| `mismatch` | Excess quantity, conflicting account/side/environment evidence, or a reported quote-cost difference. |
-| `unverified` / `not_checked` | No usable native cumulative quantity / no retained execution check. |
-| `limit_reached` | More than 10,000 retained fills match this order; comparison is bounded and must not be treated as complete. |
+| State                        | Meaning                                                                                                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `matched`                    | Retained gross quantity matches native filled quantity within tolerance, available native quote costs agree, fee fields are known, and the order is terminal. This is not final settlement. |
+| `pending`                    | Order remains nonterminal, or an import pass is unfinished.                                                                                                                                 |
+| `missing_fills`              | Retained gross quantity is below the native cumulative quantity.                                                                                                                            |
+| `fees_missing`               | Matching quantities have one or more executions with incomplete fee evidence.                                                                                                               |
+| `mismatch`                   | Excess quantity, conflicting account/side/environment evidence, or a reported quote-cost difference.                                                                                        |
+| `unverified` / `not_checked` | No usable native cumulative quantity / no retained execution check.                                                                                                                         |
+| `limit_reached`              | More than 10,000 retained fills match this order; comparison is bounded and must not be treated as complete.                                                                                |
 
 Quantities use Decimal comparisons with tolerance `max(1e-10, requested quantity × 1e-8)`. Native quote-cost comparison uses `max(1e-8, abs(native cost) × 1e-6)` for venue rounding. The full bounded selection supplies totals; the dialog displays at most its first 200 fills. Fee totals stay separate by asset, and base-asset fees do not alter gross executed quantity. Every summary reports `settlement_final: false`.
 
@@ -57,15 +57,17 @@ Quantities use Decimal comparisons with tolerance `max(1e-10, requested quantity
 
 All paths start with `/api/v1`.
 
-| Method | Path | Effect |
-| --- | --- | --- |
-| GET | `/exchange-orders` | Latest 100 intents, enriched with local reconciliation summaries. No remote reads. |
-| GET | `/exchange-orders/{id}/reconciliation` | Coherent `{order, reconciliation, fills, has_more}` retained snapshot; no new jobs. |
-| POST | `/exchange-orders/{id}/reconcile` | Native status check and one exact-order execution page. |
-| POST | `/exchange-orders/{id}/refresh` | Existing status-check response, now with one execution page and reconciliation summary. |
-| POST | `/exchange-orders/{id}/reconcile/tracking` | `{enabled: boolean}` changes only persisted execution-read scheduling. |
-| GET | `/exchange-orders/example/{id}/reconciliation` | Isolated illustrative evidence, without account/ledger writes. |
+| Method | Path                                           | Effect                                                                                  |
+| ------ | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
+| GET    | `/exchange-orders`                             | Latest 100 intents, enriched with local reconciliation summaries. No remote reads.      |
+| GET    | `/exchange-orders/{id}/reconciliation`         | Coherent `{order, reconciliation, fills, has_more}` retained snapshot; no new jobs.     |
+| POST   | `/exchange-orders/{id}/reconcile`              | Native status check and one exact-order execution page.                                 |
+| POST   | `/exchange-orders/{id}/refresh`                | Existing status-check response, now with one execution page and reconciliation summary. |
+| POST   | `/exchange-orders/{id}/reconcile/tracking`     | `{enabled: boolean}` changes only persisted execution-read scheduling.                  |
+| GET    | `/exchange-orders/example/{id}/reconciliation` | Isolated illustrative evidence, without account/ledger writes.                          |
 
 ## Remaining work
 
 Broader recovery adapters, all-account order discovery, private streams, additional provider adapters, execution bust/removal handling, fee-currency valuation, unlimited historical imports and definitive settlement reconciliation remain separate work. Automatic scans upsert returned facts; they do not delete a retained execution merely because a later page omits it. Authenticated venue/test-account acceptance is outstanding. Controlled tests cover identity rejection, pagination, restart, transaction rollback, duplicate imports, partial cancellation, late fee corrections, inactive accounts, bounded follow-ups and isolated Demo/example contracts.
+
+[Account order discovery](order-discovery.md) links native IDs to this same evidence without creating duplicate executions. Imported orders are read-only, including when checked from this dialog.

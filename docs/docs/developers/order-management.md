@@ -29,7 +29,7 @@ A dedicated application worker checks at most **one due order per second**, sepa
 
 Known-ID manual reads and reviewed cancellation remain available when new native execution is disabled. Manual checks can inspect a saved inactive account; the worker cannot. A disconnected account cannot be read or canceled until its credentials are available. Shutdown waits for an in-flight check before closing adapters. Workers never submit, replace or retry native orders/cancellations.
 
-This polls locally submitted intents, not every open order on every venue. The monitor lists the latest 100 intents; the worker queries all due tracked intents without that display limit. Run a single API worker: distributed coordination is not implemented.
+The combined monitor now also shows [read-only discovered orders](order-discovery.md), with exchange/account/origin/status filters applied before pagination. Discovery is explicitly enabled for reviewed active accounts and bounded recent ranges. Imported orders cannot be submitted or canceled through Sibyl. The legacy submissions endpoint retains its latest-100 contract; workers query due tracked records without that display limit. Run a single API worker: distributed coordination is not implemented.
 
 ## Cancellation review
 
@@ -48,7 +48,7 @@ Reading an order does not itself fill it. The explicit managed-order check or wo
 
 This is a deliberately simple fixture simulator: no queue, liquidity, partial-fill, latency or price-improvement modeling. Its deterministic Demo bid/ask is independent of the selected public market-data source. Actual providers' partial fills are displayed, but Demo does not generate them. A lost virtual ID can be recovered from the exact local client key and reviewed details without resubmitting.
 
-**View example** returns three read-only illustrative monitor rows, including a partial fill. It creates no account, reservation, order or fill; its action buttons are disabled.
+**View example** returns four read-only illustrative monitor rows, including a partial fill, an imported order and an uncertain submission. It creates no account, reservation, order or fill; its action buttons are disabled.
 
 ## HTTP contract
 
@@ -68,6 +68,6 @@ All paths have `/api/v1` prefix.
 
 ## Still missing
 
-Cancel/replace, stop/trigger, OCO, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution/recovery, all-account order discovery and complete fill/fee/settlement reconciliation remain separate work. Authenticated acceptance remains outstanding. Strategies stay paper-only; agents stay read-only.
+Cancel/replace, stop/trigger, OCO, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution/recovery, broader account order discovery, amendment handling and complete fill/fee/settlement reconciliation remain separate work. Authenticated acceptance remains outstanding. Strategies stay paper-only; agents stay read-only.
 
 Implementation is informed by the [CCXT manual](https://docs.ccxt.com/docs/manual), [Binance Spot API](https://developers.binance.com/en/docs/products/spot/rest-api), [Coinbase Advanced create-order reference](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/create-order), and Kraken's [add-order](https://docs.kraken.com/api-reference/trading/add-order) / [cancel-order](https://docs.kraken.com/api-reference/trading/cancel-order) references.

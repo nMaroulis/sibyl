@@ -41,3 +41,5 @@ Performance carries original FIFO lots for eligible equal-amount, explicitly zer
 **Multi-user hosting is deferred.** The current scope remains one local user and one API worker. Agents, Alerts, Research and Coming soon are under **More**. See [the audited pending inventory](../developers/backend-roadmap.md).
 
 Markets now includes a persistent source/environment/pair/timeframe archive, reviewed resumable historical imports, gap coverage, retention and immutable research inputs. Both chart modes support bounded zoom/pan/inspection/volume without an added dependency. Backtests retain their inputs and can replay saved datasets offline. Remaining market foundations are broader import adapters, shared budgets/health diagnostics and WebSockets. See [history coverage and limits](market-history.md).
+
+The combined Order monitor also includes read-only open/recent [exchange order discovery](../developers/order-discovery.md) for reviewed clients, filters before pagination, saved progress and shared fill evidence. Remaining scope includes additional providers, amendments, authenticated acceptance and definitive settlement.

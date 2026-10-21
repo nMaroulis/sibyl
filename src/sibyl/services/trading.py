@@ -12,6 +12,7 @@ import ccxt
 from sibyl.exchanges.catalog import exchange_spec
 from sibyl.models import ExchangeOrderRequest
 from sibyl.services.market import Market
+from sibyl.services.order_discovery import OrderDiscovery
 from sibyl.services.order_lifecycle import OrderLifecycle
 from sibyl.services.order_reconciliation import OrderReconciliation
 from sibyl.services.order_recovery import OrderRecovery
@@ -36,6 +37,7 @@ class ExchangeTrading:
         self.lifecycle = OrderLifecycle(self)
         self.recovery = OrderRecovery(self)
         self.reconciliation = OrderReconciliation(self)
+        self.discovery = OrderDiscovery(self)
 
     def _enabled(self):
         if not self.market.settings.allow_live_trading:
@@ -54,9 +56,62 @@ class ExchangeTrading:
     def list_orders(self) -> list[dict]:
         """Inspect the latest 100 local intents, including previews and uncertain writes."""
         with self.store.db() as db:
-            rows = db.execute("SELECT payload FROM exchange_orders ORDER BY rowid DESC LIMIT 100").fetchall()
+            rows = db.execute(
+                "SELECT payload FROM exchange_orders WHERE COALESCE(json_extract(payload,'$.origin'),'sibyl')!='imported' ORDER BY rowid DESC LIMIT 100"
+            ).fetchall()
         details = [self.reconciliation.detail(json.loads(row[0])["id"]) for row in rows]
         return [{**detail["order"], "reconciliation": detail["reconciliation"]} for detail in details]
+
+    def monitor(self, *, account_id="", exchange="", origin="", status="", limit=25, offset=0):
+        """Page retained local/imported orders with filters applied before the display limit."""
+        clauses, values = ["json_extract(payload,'$.status')!='preview'"], []
+        for column, value in (
+            ("json_extract(payload,'$.request.connection_id')", account_id),
+            ("json_extract(payload,'$.exchange')", exchange),
+            ("COALESCE(json_extract(payload,'$.origin'),'sibyl')", origin),
+        ):
+            if value:
+                clauses.append(column + "=?")
+                values.append(value)
+        if status == "active":
+            clauses.append(
+                "json_extract(payload,'$.status') NOT IN ('closed','canceled','expired','rejected')"
+            )
+        elif status == "terminal":
+            clauses.append("json_extract(payload,'$.status') IN ('closed','canceled','expired','rejected')")
+        where = " AND ".join(clauses)
+        with self.store.db() as db:
+            db.execute("BEGIN")
+            total = db.execute(f"SELECT COUNT(*) FROM exchange_orders WHERE {where}", values).fetchone()[0]
+            identities = [
+                row[0]
+                for row in db.execute(
+                    f"SELECT id FROM exchange_orders WHERE {where} ORDER BY json_extract(payload,'$.created_at') DESC,id DESC LIMIT ? OFFSET ?",
+                    [*values, limit, offset],
+                )
+            ]
+            accounts = {
+                row[0]: {"id": row[0], "label": row[1], "exchange": row[2]}
+                for row in db.execute(
+                    "SELECT DISTINCT json_extract(payload,'$.request.connection_id'),json_extract(payload,'$.account'),json_extract(payload,'$.exchange') FROM exchange_orders WHERE json_extract(payload,'$.status')!='preview'"
+                )
+            }
+        for connection in self.store.connections():
+            if connection.active or connection.id in accounts:
+                accounts[connection.id] = {
+                    "id": connection.id,
+                    "label": connection.label,
+                    "exchange": connection.exchange,
+                }
+        details = [self.reconciliation.detail(identity) for identity in identities]
+        return {
+            "items": [{**detail["order"], "reconciliation": detail["reconciliation"]} for detail in details],
+            "total": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + len(details) < total,
+            "accounts": sorted(accounts.values(), key=lambda row: (row["exchange"], row["label"], row["id"])),
+        }
 
     def refresh(self, intent_id: str) -> dict:
         """Read native status and one execution page; Demo also advances its matcher."""
@@ -183,6 +238,8 @@ class ExchangeTrading:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             intent = self.lifecycle.read(db, intent_id)
+            if intent.get("origin") == "imported":
+                raise ValueError("Imported orders are read-only and cannot be submitted.")
             if confirmation != intent["confirmation"]:
                 raise ValueError(f"Type {intent['confirmation']} to confirm this exchange order.")
             if intent["status"] != "preview":

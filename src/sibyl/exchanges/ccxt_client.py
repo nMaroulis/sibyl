@@ -8,6 +8,7 @@ from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.catalog import exchange_spec
 from sibyl.exchanges.funding import FundingPage, fetch_funding_page, funding_streams
 from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
+from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS, OrderDiscoveryPage, discovery_page
 from sibyl.exchanges.order_fills import fetch_order_fill_page
 from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS, OrderLookupPage, lookup_order_page
 
@@ -282,6 +283,30 @@ class CCXTClient(ExchangeClient):
             self._require("fetchOpenOrders", private=True)
             self.market(symbol)
             return [self._order(row) for row in self._exchange.fetch_open_orders(symbol)]
+
+    def fetch_account_order_page(
+        self, stream: str, cursor: dict, start: int, end: int, symbols: list[str]
+    ) -> OrderDiscoveryPage:
+        """Read reviewed spot pages and disclose excluded margin/delisted instruments."""
+        if self.id not in DISCOVERY_PROVIDERS:
+            return super().fetch_account_order_page(stream, cursor, start, end, symbols)
+        if stream not in {"open", "recent"} or not 0 < end - start <= 7 * 86_400_000:
+            raise ValueError("Choose open/recent orders within seven days.")
+        with self.lock:
+            if not self._private:
+                raise ccxt.AuthenticationError("A saved account is required.")
+            markets = self.load_markets()
+            if self.id in {"binance", "binance-testnet"} and stream == "recent":
+                for symbol in symbols:
+                    self.market(symbol)
+            page = discovery_page(self._exchange, self.id, stream, cursor, start, end, symbols)
+            selected = [row for row in page.items if row.get("symbol") in markets]
+            return OrderDiscoveryPage(
+                [self._order(row) for row in selected],
+                page.cursor,
+                page.complete,
+                page.skipped + len(page.items) - len(selected),
+            )
 
     def fetch_order_fill_page(self, order_id: str, symbol: str, cursor: dict, limit: int = 100) -> TradePage:
         """Read executions only for the reviewed execution providers and their test clients."""

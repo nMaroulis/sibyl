@@ -36,6 +36,7 @@ module.exports = {
         'developers/order-management',
         'developers/order-reconciliation',
         'developers/order-recovery',
+        'developers/order-discovery',
         'developers/funding-history',
         'developers/transfer-reconciliation',
         'developers/transfer-cost-basis',

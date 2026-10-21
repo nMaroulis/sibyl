@@ -29,7 +29,10 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
         expected = intent.get("filled")
         expected = Decimal(str(expected)) if expected is not None else None
         difference = quantity - expected if expected is not None else None
-        tolerance = max(Decimal("1e-10"), Decimal(str(intent["request"]["quantity"])) * Decimal("1e-8"))
+        tolerance = max(
+            Decimal("1e-10"),
+            Decimal(str(intent["request"].get("quantity") or expected or 0)) * Decimal("1e-8"),
+        )
         cost_known = all(fill["notional"] is not None for fill in fills)
         cost = sum((Decimal(str(fill["notional"])) for fill in fills), Decimal(0)) if cost_known else None
         native_cost = intent.get("cost")

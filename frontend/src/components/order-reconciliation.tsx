@@ -115,6 +115,12 @@ export function OrderReconciliation({
         <Loading />
       ) : (
         <div className="order-reconciliation-body">
+          {record.order.origin === 'imported' && (
+            <p className="inline-alert">
+              Imported from the exchange · read-only. Status and execution checks never modify this
+              order.
+            </p>
+          )}
           <div className="order-reconciliation-heading">
             <div>
               <h3>
@@ -298,7 +304,7 @@ export function OrderReconciliation({
           <p className="footnote">
             Native order ID: <code>{record.order.exchange_order_id || 'Unconfirmed'}</code>
             <br />
-            Client order ID: <code>{record.order.client_order_id}</code>
+            Client order ID: <code>{record.order.client_order_id || 'Not reported'}</code>
           </p>
         </div>
       )}

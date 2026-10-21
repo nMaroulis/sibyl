@@ -111,3 +111,11 @@ After reviewing an own-account pair in Funding, open **Performance** and recalcu
 **Transfer example** demonstrates a sale of an older transferred lot and a newer local purchase, without changing account records. Unsupported fees/amount differences, missing history and cross-market ambiguity remain provisional. This is market FIFO, not full account returns. See [carryover rules](../developers/transfer-cost-basis.md).
 
 To carry lots for a fee-bearing transfer, open its review and select **Review amount & fee allocation**. Choose both amount conventions, verify missing fee quantities and distinct charges, then check the allocation and explain it in the review note. Performance shows received lots and fee-unit inventory cost separately. Historical fee valuation remains unavailable, so final net stays provisional. **Transfer example → With a transfer fee** demonstrates this without account writes. See [fee review](../developers/transfer-fees.md).
+
+## Orders placed outside Sibyl
+
+In **Trade → Executions → Order monitor**, choose **Sync exchange orders**. Select one active supported account or all of them, then a recent range. Binance history additionally needs exact pairs such as `BTC/USDT`; leaving that field blank still discovers all supported open Binance orders. Coinbase and Kraken read their account-level recent pages. Demo reads actual virtual orders.
+
+Imported rows have an **Imported · read-only** badge. Use the exchange, account, origin and status filters to compare venues, or open execution evidence to inspect linked native fills and fees. Manage imported orders directly at the exchange. **Pause discovery** stops discovery pages; each order has a separate status-tracking preference. Neither control cancels orders. Enabled discovery repeats about every five minutes while accounts are active.
+
+Progress, errors, exclusions and checkpoints survive restart. Missing orders are not assumed canceled; incomplete or unavailable amounts stay unknown. This is bounded open/recent coverage, not a complete account-history guarantee. See [provider-specific coverage and limitations](../developers/order-discovery.md).

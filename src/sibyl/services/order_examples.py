@@ -54,6 +54,8 @@ def order_examples() -> list[dict]:
                 },
             )
         fills = []
+        if symbol == "ETH/USDT":
+            order.update(origin="imported", read_only=True, time_in_force="GTC")
         if filled:
             fills.append(
                 ledger_fill(

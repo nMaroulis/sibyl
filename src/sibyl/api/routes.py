@@ -38,6 +38,7 @@ from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequ
 from sibyl.services.funding_sync import FundingSyncRequest
 from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
+from sibyl.services.order_discovery import OrderDiscoveryRequest
 from sibyl.services.order_examples import order_examples
 from sibyl.services.performance import OpeningInventory
 from sibyl.services.reporting import trading_report
@@ -585,6 +586,10 @@ def delete_connection(connection_id: str, s: S):
     s.store.delete_connection(connection_id)
     s.account_sync.pause(connection_id, disconnected=True)
     s.funding_sync.pause(connection_id, disconnected=True)
+    with s.store.db() as db:
+        discovery = s.trading.discovery.read(db, connection_id)
+    if discovery:
+        s.trading.discovery.pause(connection_id, disconnected=True)
     s.market.forget(connection_id)
     return Response(status_code=204)
 
@@ -650,6 +655,45 @@ def order_monitor_example(response: Response):
     """Return illustrative status observations without creating wallet/order records."""
     response.headers["Cache-Control"] = "no-store"
     return [{**detail["order"], "reconciliation": detail["reconciliation"]} for detail in order_examples()]
+
+
+@router.get("/exchange-orders/monitor", tags=["Broker"])
+def combined_order_monitor(
+    s: S,
+    response: Response,
+    account_id: str = Query("", max_length=100),
+    exchange: str = Query("", max_length=40),
+    origin: Literal["", "sibyl", "imported"] = "",
+    status: Literal["", "active", "terminal"] = "",
+    limit: int = Query(25, ge=1, le=50),
+    offset: int = Query(0, ge=0, le=100000),
+):
+    """Filter/page all retained orders, including read-only orders discovered at exchanges."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.monitor(
+        account_id=account_id, exchange=exchange, origin=origin, status=status, limit=limit, offset=offset
+    )
+
+
+@router.get("/exchange-orders/discovery", tags=["Broker"])
+def order_discovery(s: S, response: Response):
+    """Inspect local discovery progress and supported active accounts without provider reads."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.discovery.snapshot()
+
+
+@router.post("/exchange-orders/discovery", tags=["Broker"])
+def start_order_discovery(body: OrderDiscoveryRequest, s: S, response: Response):
+    """Enable bounded read-only discovery; this never activates accounts or enables execution."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.discovery.enqueue(body)
+
+
+@router.post("/exchange-orders/discovery/{account_id}/pause", tags=["Broker"])
+def pause_order_discovery(account_id: str, s: S, response: Response):
+    """Pause discovery while preserving orders and private page checkpoints."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.discovery.pause(account_id)
 
 
 @router.get("/exchange-orders/example/{example_id}/reconciliation", tags=["Broker"])

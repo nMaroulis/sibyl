@@ -261,7 +261,12 @@ class DemoClient(ExchangeClient):
         """Read a persisted simulated order by its ID, including after a restart."""
         self.market(symbol)
         try:
-            return PaperLimits(self._workspace()).read(order_id, symbol)
+            order = PaperLimits(self._workspace()).read(order_id, symbol)
+            return {
+                **order,
+                "timestamp": datetime.fromisoformat(order["created_at"]).timestamp() * 1000,
+                "timeInForce": "GTC",
+            }
         except ccxt.OrderNotFound:
             pass
         with self._workspace().db() as db:
@@ -312,6 +317,66 @@ class DemoClient(ExchangeClient):
         self.market(symbol)
         self._workspace()
         return PaperLimits(self._workspace()).open_orders(symbol)
+
+    def fetch_account_order_page(self, stream, cursor, start, end, symbols):
+        """Discover actual virtual orders using keysets; never seed or advance the matcher."""
+        import json
+
+        from sibyl.exchanges.order_discovery import OrderDiscoveryPage
+
+        if stream not in {"open", "recent"}:
+            raise ValueError("Choose an open or recent stream.")
+        lower = datetime.fromtimestamp(start / 1000, UTC).isoformat()
+        upper = datetime.fromtimestamp(end / 1000, UTC).isoformat()
+        with self._workspace().db() as db:
+            rows = db.execute(
+                "SELECT id,payload,json_extract(payload,'$.created_at') AS stamp,1 AS resting FROM paper_limits "
+                "WHERE (json_extract(payload,'$.created_at'),id)>(?,?) "
+                + (
+                    "AND status='open' "
+                    if stream == "open"
+                    else "AND json_extract(payload,'$.created_at')>=? AND json_extract(payload,'$.created_at')<? "
+                )
+                + (
+                    ""
+                    if stream == "open"
+                    else "UNION ALL SELECT id,payload,created_at AS stamp,0 AS resting FROM orders WHERE json_extract(payload,'$.order_id') IS NULL AND (created_at,id)>(?,?) AND created_at>=? AND created_at<? "
+                )
+                + "ORDER BY stamp,id LIMIT 101",
+                (cursor.get("time", ""), cursor.get("id", ""))
+                if stream == "open"
+                else (cursor.get("time", ""), cursor.get("id", ""), lower, upper) * 2,
+            ).fetchall()
+        selected, items = rows[:100], []
+        for row in selected:
+            order = json.loads(row["payload"])
+            if row["resting"]:
+                item = {
+                    key: order.get(key)
+                    for key in (
+                        "id",
+                        "clientOrderId",
+                        "symbol",
+                        "type",
+                        "side",
+                        "amount",
+                        "price",
+                        "filled",
+                        "remaining",
+                        "average",
+                        "cost",
+                        "status",
+                    )
+                }
+                item.update(
+                    timestamp=datetime.fromisoformat(order["created_at"]).timestamp() * 1000,
+                    timeInForce="GTC",
+                )
+            else:
+                item = self._order(order)
+            items.append(item)
+        following = {"time": selected[-1]["stamp"], "id": selected[-1]["id"]} if selected else cursor
+        return OrderDiscoveryPage(items, following, len(rows) <= 100)
 
     def cancel_order(self, order_id: str, symbol: str) -> dict:
         """Cancel a virtual resting order, preserving fills and releasing its hold."""

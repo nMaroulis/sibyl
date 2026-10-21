@@ -6,20 +6,20 @@ This is an audit of the current Python backend, not a release schedule. **The ma
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
-| Area                           | Current state | Next missing foundation                                                                         |
-| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------- |
-| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.   |
-| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                        |
-| Order management               | partial       | All-account discovery, broader recovery adapters and definitive fee/settlement reconciliation.   |
-| Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, durable health history and WebSockets.    |
-| Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; recurring/crossing conditions.           |
-| Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.       |
-| Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.             |
-| ProtoLink workflows            | partial       | Richer scoped tools, inspected traces, streaming and per-agent models.                          |
-| Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                 |
-| Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                      |
-| Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                      |
-| Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                |
+| Area                           | Current state | Next missing foundation                                                                               |
+| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
+| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.         |
+| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
+| Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
+| Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, durable health history and WebSockets.          |
+| Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; recurring/crossing conditions.                 |
+| Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.             |
+| Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.                   |
+| ProtoLink workflows            | partial       | Richer scoped tools, inspected traces, streaming and per-agent models.                                |
+| Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                       |
+| Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
+| Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                            |
+| Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                      |
 
 ## Working foundations
 
@@ -45,7 +45,8 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Persist normalized fills, native order references, fee currencies and rebates in a shared ledger.
 - [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Sandbox and Kraken.
 - [ ] Review durable import pagination for the remaining exchange providers.
-- [ ] Persist and synchronize complete exchange order lifecycles alongside fills.
+- [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
+- [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
 - [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer entries, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
 - [ ] Extend funding adapters to remaining exchanges, fiat, earn/staking and subaccounts; reconcile late/pending events.
 - [x] Add bounded transfer suggestions, manual pairing, audited user confirmation, stale-source review and reversible link removal/restoration. See [transfer review](transfer-reconciliation.md).
@@ -54,7 +55,7 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [ ] Add historical fee valuation, other fee currencies/rebates, split/merged transfers, cross-market basis and reviewed external-funding classifications.
 - [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
 - [ ] Add full rescans, cash-event coverage and reconciliation status.
-- [ ] Reconcile remote records with locally submitted intents after disconnects or restarts.
+- [x] Match discovered native IDs to local submissions and resume saved discovery pages after restart; uncertain client IDs stay on the reviewed recovery path.
 - [ ] Exercise authenticated reads and sandbox order lifecycles against actual test accounts.
 
 ### 2. Portfolio valuation and performance — partial
@@ -80,7 +81,8 @@ Known orders now import native execution pages into the shared Account history l
 - [ ] Add cancel/replace with venue-specific atomicity and reservation semantics.
 - [ ] Add stop, take-profit, trailing, OCO, additional time-in-force, post-only and iceberg support where the venue permits it.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
-- [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and all-account discovery.
+- [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
+- [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [ ] Exercise authenticated recovery on actual sandbox/provider accounts, including delayed indexing, external amendments, permissions and retention.
 
@@ -189,7 +191,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 
 1. **Market-data foundations:** durable candle archive, bounded backfills, gap/health diagnostics and shared read budgets.
 2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
-3. **Close the order loop:** authenticated acceptance of status/fill/client-ID recovery, broader discovery and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
+3. **Close the order loop:** authenticated acceptance of status/fill/recovery/discovery, broader adapters and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
 4. **Build on local alerts:** rule editing/recurrence and operational diagnostics, then explicit external delivery and backup/restore.
 5. **Richer ProtoLink tools and test-environment strategies:** inspected evidence and durable workflows, with risk controls before any production automation.
 6. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.

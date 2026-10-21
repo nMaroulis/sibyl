@@ -213,7 +213,8 @@ export function ExchangeExecution({
                       <div>
                         <span>{orderType === 'limit' ? 'Limit price' : 'Reference price'}</span>
                         <strong>
-                          {number(intent.price, 8)} {intent.request.symbol.split('/')[1]}
+                          {intent.price == null ? '—' : number(intent.price, 8)}{' '}
+                          {intent.request.symbol.split('/')[1]}
                         </strong>
                       </div>
                       <div>
@@ -221,7 +222,8 @@ export function ExchangeExecution({
                           {orderType === 'limit' ? 'Order notional' : 'Reference notional'}
                         </span>
                         <strong>
-                          {number(intent.notional, 8)} {intent.request.symbol.split('/')[1]}
+                          {intent.notional == null ? '—' : number(intent.notional, 8)}{' '}
+                          {intent.request.symbol.split('/')[1]}
                         </strong>
                       </div>
                       <small>

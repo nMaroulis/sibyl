@@ -31,6 +31,7 @@ READS = {
     "fetch_order",
     "fetch_order_lookup_page",
     "fetch_order_fill_page",
+    "fetch_account_order_page",
 }
 WRITES = {"create_order", "cancel_order"}
 MESSAGES = {

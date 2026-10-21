@@ -209,3 +209,7 @@ The `/market-history` routes expose local coverage, resumable reviewed imports, 
 ## Observed source diagnostics
 
 `GET /providers/health` returns sanitized current-process read health, independent quote freshness, shared queues/cooldowns and persistent import counts. Optional `source` filters one source. It never probes providers. Deferred reads return HTTP 503 with a safe Retry-After header. See [provider control](provider-control.md).
+
+## Combined exchange order monitor
+
+`GET /exchange-orders/monitor` pages local submissions and read-only imported orders, filtering by account, exchange, origin and active/terminal status before the limit. `GET /exchange-orders/discovery` reads local progress; `POST` to that path starts/resumes bounded discovery with `account_id`, `symbols` and `days`. `POST /exchange-orders/discovery/{account_id}/pause` preserves the checkpoint and stops future pages. Imported rows cannot be submitted or canceled. See [coverage, response fields and durable scheduling](order-discovery.md).
