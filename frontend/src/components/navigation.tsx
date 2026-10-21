@@ -90,7 +90,9 @@ export function NavigationDock({
   return (
     <nav ref={dock} className="side-dock" aria-label="Main navigation">
       <span className="dock-selection" aria-hidden="true">
-        <span className="dock-connector" />
+        <span className="dock-connector">
+          <span key={location.pathname} className="dock-page-marker" />
+        </span>
       </span>
       {items.map((item) => (
         <NavLink

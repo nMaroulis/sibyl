@@ -373,8 +373,7 @@ kbd {
   height: 1px;
   background: #b5c7e6;
 }
-.dock-connector::after {
-  content: '';
+.dock-page-marker {
   position: absolute;
   right: 0;
   top: -14px;
@@ -383,6 +382,31 @@ kbd {
   border-radius: 3px;
   background: #86a5da;
   box-shadow: 0 0 0 4px #f0f4fc;
+  animation: dock-marker-arrive 700ms ease-out 220ms;
+}
+@keyframes dock-marker-arrive {
+  0%,
+  100% {
+    background: #86a5da;
+    box-shadow: 0 0 0 4px #f0f4fc;
+  }
+  25% {
+    background: #6268d6;
+    box-shadow:
+      0 0 0 4px #f0f4fc,
+      0 0 8px 2px #8995de66;
+  }
+  55% {
+    background: #7a88db;
+    box-shadow:
+      0 0 0 4px #f0f4fc,
+      0 0 6px 1px #8995de26;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock-page-marker {
+    animation: none;
+  }
 }
 .dock-item.active {
   color: var(--accent);
