@@ -21,7 +21,7 @@ from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.services.account_sync import AccountSync
 from sibyl.services.accounts import Accounts
-from sibyl.services.alerts import PriceAlerts
+from sibyl.services.alerts import AlertConflict, PriceAlerts
 from sibyl.services.data_settings import DataSettings
 from sibyl.services.funding_sync import FundingSync
 from sibyl.services.market import Market
@@ -88,6 +88,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             funding_sync,
             transfers,
         )
+        await agents.network.start()
         trading = ExchangeTrading(market, store)
         alerts = PriceAlerts(market, store)
         history = CandleHistory(market, store)
@@ -164,6 +165,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for background in (task, news_task, account_task, order_task, alert_task, candle_task):
                 with suppress(asyncio.CancelledError):
                     await background
+            await agents.network.close()
             await asyncio.to_thread(account_sync.close)
             await asyncio.to_thread(funding_sync.close)
             await asyncio.to_thread(trading.lifecycle.close)
@@ -217,6 +219,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(TransferConflict)
     async def stale_transfer_review(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=409)
+
+    @app.exception_handler(AlertConflict)
+    async def stale_alert_editor(_request, exc):
+        return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
 
     @app.exception_handler(LookupError)
     async def missing_record(_request, _exc):

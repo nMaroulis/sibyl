@@ -6,12 +6,23 @@ import { number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import { Badge, useToast } from './ui';
 
+export type PriceCondition = 'above' | 'below' | 'crosses_above' | 'crosses_below';
+export const conditionLabel = (condition: PriceCondition, past = false) =>
+  ({
+    above: 'at or above',
+    below: 'at or below',
+    crosses_above: `${past ? 'crossed' : 'crosses'} to or above`,
+    crosses_below: `${past ? 'crossed' : 'crosses'} to or below`,
+  })[condition];
+
 export type AlertNotification = {
   id: string;
   rule_id: string;
   label: string;
   symbol: string;
-  condition: 'above' | 'below';
+  condition: PriceCondition;
+  repeat?: 'once' | 'after_reset';
+  rule_revision?: number;
   threshold: number;
   price: number;
   source: string;
@@ -38,7 +49,7 @@ export function NotificationText({ item }: { item: AlertNotification }) {
       <strong>{item.label || `${item.symbol} price alert`}</strong>
       <span>
         {item.symbol} was {number(item.price, 8)} {item.symbol.split('/')[1]} ·{' '}
-        {item.condition === 'above' ? 'at or above' : 'at or below'} {number(item.threshold, 8)}
+        {conditionLabel(item.condition, true)} {number(item.threshold, 8)}
       </span>
       <small>
         {item.source_label} · {new Date(item.created_at).toLocaleString()}{' '}

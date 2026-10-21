@@ -11,10 +11,12 @@ FastAPI routes + validated request models
           ├── Portfolio ── Market + Store
           ├── Analytics ── pure Pandas/NumPy functions
           ├── Strategies ── backtests + persistent paper worker
-          ├── PriceAlerts ── one-shot rules + persistent local inbox
+          ├── PriceAlerts ── editable level/crossing rules + persistent local inbox
           ├── ExchangeTrading ── reviewed intents + CCXT create_order
           ├── Research ── glossary / RSS / blocks / optional equities
-          └── AgentRegistry ── ProtoLink Agent + read-only tools
+          └── AgentRegistry ── ProtoLink runtime registry + agent clients
+                              ├── Sibyl ── discover & consult
+                              └── Ten specialists + read-only tools
                        │
               Store: SQLite + Fernet vault
 ```
@@ -25,7 +27,9 @@ The original Sibyl dashboard, built entirely in Python with Streamlit, is availa
 
 ## Workspace navigation
 
-Portfolio is the home screen. New workspaces start with no active accounts. Connect multiple exchange accounts to combine their holdings, then filter by exchange or individual account. Activation controls keep saved credentials separate from active accounts. Demo is a clearly labeled optional preview and switches off when an exchange activates. The floating dock opens Markets, Trade, Strategies, Forecasting, News, and Settings. **More** expands to Agents, Alerts, Research and Coming soon. Settings combines **Exchanges**, **AI models**, **News**, **Market data**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider keys and activates preset/custom models immediately through ProtoLink. News saves collector choices and encrypted optional NewsAPI keys. Market data selects public exchange feeds, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys, applied immediately. Markets can override the feed for its own charts and Analyst without changing the default. Its editable watchlists persist per feed, with add/remove/reorder controls and Quick look cards following the saved order. See [market sources](docs/docs/developers/market-data.md). See the [Settings guide](docs/docs/guides/settings.md).
+Portfolio is the home screen. New workspaces start with no active accounts. Connect multiple exchange accounts to combine their holdings, then filter by exchange or individual account. Activation controls keep saved credentials separate from active accounts. Demo is a clearly labeled optional preview and switches off when an exchange activates. The floating dock opens **Sibyl**, Markets, Trade, Strategies, Forecasting, News, and Settings. **More** expands to Agents, Alerts, Research and Coming soon. Settings combines **Exchanges**, **AI models**, **News**, **Market data**, **Messaging**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider keys and activates preset/custom models immediately through ProtoLink. News saves collector choices and encrypted optional NewsAPI keys. Market data selects public exchange feeds, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys, applied immediately. Markets can override the feed for its own charts and Analyst without changing the default. Its editable watchlists persist per feed, with add/remove/reorder controls and Quick look cards following the saved order. See [market sources](docs/docs/developers/market-data.md). See the [Settings guide](docs/docs/guides/settings.md).
+
+**Sibyl** is the lead ProtoLink agent: it discovers the ten specialists through a real runtime registry, chooses whom to consult, and combines their evidence in a dedicated chat with saved conversations and a consultation trail. All eleven conversation gateways start with the app; module Ask buttons talk directly to their specialist through ProtoLink clients. Sibyl requires a configured API or local model and links to setup when one is missing. Mock responses are explicitly simulated. **Settings → Messaging** shows official icons and the required setup fields for WhatsApp, Telegram, Discord and Slack. These integrations are currently unavailable, with disabled inputs and no credential collection or draft saving. See the [Sibyl guide](docs/docs/guides/sibyl.md) and [agent architecture](docs/docs/developers/agents.md).
 
 ## Portfolio valuation
 
@@ -41,7 +45,7 @@ Portfolio prices actual held assets through exact direct, inverse or short conve
 
 ## Local alerts and pending work
 
-**More → Alerts** saves one-shot price thresholds for an exact pair/feed, with explicit Demo labeling, pause/rearm/archive/restore and a persistent in-app inbox. The bell counts unread notifications while retaining agent/backtest activity. The API must be running; stale/undated quotes do not trigger, failures back off, and missed offline crossings are not reconstructed. No trade or external message is sent. See the [user guide](docs/docs/guides/alerts.md) and [backend contracts](docs/docs/developers/alerts.md).
+**More → Alerts** saves editable level/crossing rules for an exact pair/feed, with one-time or reset-based repetition, cooldowns, explicit Demo labeling, pause/rearm/archive/restore and a persistent in-app inbox. Edits save paused and retain past notification evidence; crossing rules require newer ordered quotes and do not infer moves across gaps. The bell counts unread notifications while retaining agent/backtest activity. The API must be running; stale/undated quotes do not trigger, failures back off, and missed offline crossings are not reconstructed. No trade or external message is sent. See the [user guide](docs/docs/guides/alerts.md) and [backend contracts](docs/docs/developers/alerts.md).
 
 **Coming soon → Implementation status** now lists what works and what remains across all 12 areas, served by the backend’s audited inventory. **Multi-user support is deferred** and appears in Coming soon rather than the active implementation sequence. Candle history, reviewed resumable backfills, coverage gaps, retention and immutable backtest datasets are now implemented. Shared local read limits, cooldowns and observed source diagnostics are now implemented too. Next foundations include broader account reconciliation, authenticated order recovery/discovery validation, exact weighted quota policies and durable operational history. See the [complete refreshed checklist](docs/docs/developers/backend-roadmap.md).
 

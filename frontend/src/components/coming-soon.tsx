@@ -8,6 +8,11 @@ import { useResource } from '../lib/hooks';
 export const futureFeatures: { module: string; title: string; text: string; deferred?: boolean }[] =
   [
     {
+      module: 'sibyl',
+      title: 'Sibyl beyond the dashboard',
+      text: 'WhatsApp, Telegram, Discord and Slack channel clients. Settings → Messaging previews the required fields; the integrations are currently unavailable.',
+    },
+    {
       module: 'markets',
       title: 'Deeper relationships',
       text: 'Granger causality, distance correlation, MIC, regression, and SHAP explanations.',

@@ -1,6 +1,6 @@
 # Module agents
 
-Each workspace module has its own embedded [ProtoLink](https://github.com/nMaroulis/protolink) agent. Each specialist has its own role, instructions, and native read-only tool. There is no separate gRPC inference service or mandatory model download.
+Each workspace module has its own embedded [ProtoLink](https://github.com/nMaroulis/protolink) agent. Each specialist has its own role, instructions, and native read-only tool. All gateways start with the app and register with the in-process ProtoLink registry. Module Ask requests reach their specialist directly through a ProtoLink client. [Sibyl](./sibyl.md) is a separate lead agent that can discover and consult these specialists. There is no separate gRPC inference service or mandatory model download.
 
 ## Ask without leaving the page
 
@@ -17,13 +17,13 @@ The gradient **Ask** button opens a floating dialog over the current module. Clo
 
 Drafts and conversations remain available after closing and reopening the dialog during the current browser session. Different modules and page selections use separate sessions. **Recent conversations in this context** restores a saved session; the server retains recent turns for model inference. **New conversation** clears the current draft and starts a fresh session without deleting saved history. Browser reloads clear unsent drafts.
 
-The **Agents** dock entry is a directory of specialists and their native tools. It provides another way to open an agent dialog; it is not required for asking a module agent.
+The **More → Agents** dock entry is a directory of specialists and their native tools. It provides another way to open an agent dialog; it is not required for asking a module agent.
 
 ## Two useful modes
 
 ### Tool mode: works immediately
 
-`SIBYL_LLM_PROVIDER=none` runs the selected module's native Python tool through `Agent.sync.call_tool`. The response is a deterministic factual summary of actual tool output. It is labeled **Tool snapshot** and is not a language-model response.
+`SIBYL_LLM_PROVIDER=none` reaches the selected specialist through `AgentClient.peer(...).call_tool("consult", ...)`, then runs its native Python tool through `Agent.sync.call_tool`. The response is a deterministic factual summary of actual tool output. It is labeled **Tool snapshot** and is not a language-model response.
 
 This mode does not interpret an arbitrary question like a model. The question selects glossary matches for Wiki; other specialists return the selected module context snapshot. Page selections supply the market, horizon, strategy parameters, or equity ticker. Without page context, Analyst and Chronos default to BTC/USDT and Equity Analyst defaults to AAPL.
 

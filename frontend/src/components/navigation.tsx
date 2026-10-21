@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { SibylMark } from './sibyl-mark';
 import { LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -100,10 +101,12 @@ export function NavigationDock({
           key={item.path}
           to={item.path}
           aria-label={item.name}
-          className={({ isActive }) => `dock-item ${isActive ? 'active' : ''}`}
+          className={({ isActive }) =>
+            `dock-item ${item.path === '/sibyl' ? 'dock-sibyl' : ''} ${isActive ? 'active' : ''}`
+          }
         >
           <span className="dock-icon">
-            <item.icon size={21} />
+            {item.path === '/sibyl' ? <SibylMark small /> : <item.icon size={21} />}
           </span>
           <span>{item.name}</span>
         </NavLink>
@@ -192,9 +195,7 @@ export function NavigationDock({
             }}
             className={({ isActive }) => `dock-more-link ${isActive ? 'active' : ''}`}
           >
-            <span>
-              <item.icon size={21} />
-            </span>
+            <span>{item.path === '/sibyl' ? <SibylMark small /> : <item.icon size={21} />}</span>
             <span>{item.name}</span>
           </NavLink>
         ))}

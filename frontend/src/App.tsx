@@ -35,6 +35,7 @@ const StrategiesPage = lazy(() =>
 const Trading = lazy(() =>
   import('./pages/Trading').then((module) => ({ default: module.Trading })),
 );
+const Sibyl = lazy(() => import('./pages/Sibyl').then((module) => ({ default: module.Sibyl })));
 const Oracle = lazy(() => import('./pages/Oracle').then((module) => ({ default: module.Oracle })));
 const ForecastPage = lazy(() =>
   import('./pages/Research').then((module) => ({ default: module.ForecastPage })),
@@ -51,6 +52,7 @@ const Roadmap = lazy(() =>
   import('./components/coming-soon').then((module) => ({ default: module.Roadmap })),
 );
 const destinations = [
+  { path: '/sibyl', name: 'Sibyl', icon: Sparkles },
   { path: '/portfolio', name: 'Portfolio', icon: PieChart },
   { path: '/markets', name: 'Markets', icon: Activity },
   { path: '/trade', name: 'Trade', icon: ArrowDownUp },
@@ -86,7 +88,7 @@ function WorkspaceSearch({ close }: { close: () => void }) {
     { path: '/trade?tab=executions', name: 'Trade · Executions', icon: ArrowDownUp },
     { path: '/trade?tab=history', name: 'Trade · Account history', icon: History },
   ].filter((item) =>
-    `${item.name} ${item.path === '/settings' ? 'exchanges connections llm models apis workspace' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
+    `${item.name} ${item.path === '/settings' ? 'exchanges connections llm models apis workspace messaging whatsapp telegram' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
@@ -235,6 +237,7 @@ export function App() {
                     path="/connections"
                     element={<Navigate to="/settings?tab=exchanges" replace />}
                   />
+                  <Route path="/sibyl" element={<Sibyl />} />
                   <Route path="/oracle" element={<Oracle />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/forecast" element={<ForecastPage />} />

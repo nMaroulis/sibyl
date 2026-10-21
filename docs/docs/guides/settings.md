@@ -63,3 +63,16 @@ Manual exchange order permission is controlled separately by `SIBYL_ALLOW_LIVE_T
 ## Source health
 
 **Market data → Source health** shows observed connectivity, latest quote quality, response time, safe recent errors and queued work. Expand a source for details; use Show all sources to include unchecked providers. Refresh diagnostics reads local evidence without testing keys or contacting exchanges. Demo is explicitly offline, and a selectable feed is not marked healthy until a real read succeeds. Metrics reset on API restart; import job counts persist. Markets and populated Portfolio views show the same compact feed status. See [request policies and boundaries](../developers/provider-control.md).
+
+## Messaging
+
+Once available, you’ll be able to talk to [Sibyl](./sibyl.md) through WhatsApp, Telegram, Discord or Slack. These integrations are **currently unavailable**. Official app icons and disabled setup fields show what will be needed; there are no save or connect actions.
+
+| App | Planned setup fields |
+| --- | --- |
+| WhatsApp | Cloud API access token, business phone number ID, Meta app secret, webhook verification token, and your personal WhatsApp number |
+| Telegram | Bot token from BotFather and your numeric Telegram user ID |
+| Discord | Bot token, application ID, and your numeric Discord user ID |
+| Slack | Bot user OAuth token, app-level token for Socket Mode, and your member ID |
+
+The personal sender IDs will identify who is allowed to speak to your Sibyl when clients are implemented. WhatsApp will also require a public HTTPS callback URL; the planned Telegram polling, Discord Gateway and Slack Socket Mode connections do not need a public webhook. The setup links on each card lead to the providers’ documentation. No credentials are collected or saved today.

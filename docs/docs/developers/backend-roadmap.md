@@ -12,7 +12,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, durable health history and WebSockets.          |
-| Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; recurring/crossing conditions.                 |
+| Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
 | Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.             |
 | Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.                   |
 | ProtoLink workflows            | partial       | Richer scoped tools, inspected traces, streaming and per-agent models.                                |
@@ -29,9 +29,9 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Portfolio/account views, allocation, observed account-value snapshots and explicit unpriced holdings.
 - Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for Binance, Coinbase, Kraken and the two dedicated test clients.
 - Six rule-based strategies, historical backtests, durable paper jobs and their detailed monitor/journal.
-- Ten ProtoLink module agents with prompts, contextual read-only tools, saved conversations and optional LLM inference.
+- Sibyl orchestration and ten ProtoLink module agents with a startup runtime registry, client routing, contextual read-only tools, saved conversations and consultation evidence.
 - Encrypted LLM provider profiles, saved API keys and preset/custom model selection.
-- Durable source-pinned one-shot price alerts, a persistent unread in-app inbox and sanitized retry/backoff evidence.
+- Durable editable source-pinned level/crossing alerts with reset-based repetition, a persistent unread in-app inbox and sanitized retry/backoff evidence.
 - Multi-publisher news ingestion, a persistent archive and filtered text sentiment, fetched crypto profiles/history, a glossary, recent Bitcoin blocks and optional equity research.
 
 A paper strategy can consume live prices while still using virtual funds. Its running monitor does **not** mean it places exchange orders. Authenticated exchange acceptance testing remains outstanding despite implemented adapters and automated contract tests.
@@ -125,10 +125,11 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 
 ### 7. ProtoLink workflows — partial
 
-The agents are real ProtoLink agents with page context and read-only domain tools. They are request-driven assistants. Each module currently exposes one main tool, and one active workspace model profile is selected for inference.
+Sibyl and the ten specialists start as registered ProtoLink runtime gateways. Sibyl uses live discovery and bounded consultation tools; direct module requests use their specialist client. The agents have page context and read-only domain tools. They are request-driven assistants. Each module currently exposes one main tool, and one active workspace model profile is selected for inference.
 
 - [ ] Give modules richer, narrowly scoped tools for multi-step investigations.
-- [ ] Add explicit delegation/orchestration between modules where it improves a workflow.
+- [x] Sibyl discovers and consults registered specialists through ProtoLink clients; saved chats include collaboration evidence.
+- [ ] Implement WhatsApp, Telegram, Discord and Slack adapters; Settings previews the required fields without accepting credentials.
 - [ ] Add scheduled agent runs, durable task state and resumable long-running work.
 - [ ] Add per-agent model/provider selection if different modules need different models.
 - [ ] Add streaming responses and inspectable tool traces, usage and evaluation results.
@@ -170,7 +171,8 @@ Basic [price alerts and the local inbox](alerts.md) are implemented. Their worke
 - [x] Persist exact-pair, source-pinned one-shot price rules, Demo attribution, pause/rearm/archive/restore and a 50-rule non-archived budget.
 - [x] Evaluate fresh timestamped quotes with persisted scheduling/backoff; atomically save a trigger and its notification, including across restart and lifecycle races.
 - [x] Add retained in-app notification history, pagination, unread/read state and a top-bar inbox alongside existing run activity.
-- [ ] Add rule editing, recurring/crossing, portfolio-risk, strategy and connection-failure conditions.
+- [x] Add revision-checked edits that save paused, inclusive level/observed crossing conditions, reset-based recurrence and persisted cooldowns; preserve original notification evidence.
+- [ ] Add portfolio-risk, strategy and connection-failure conditions.
 - [ ] Add optional external delivery integrations with explicit recipients, delivery attempts and retries.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [ ] Add structured application/provider metrics, tracing and operational diagnostics beyond basic health/log output.
@@ -192,7 +194,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 1. **Market-data foundations:** durable candle archive, bounded backfills, gap/health diagnostics and shared read budgets.
 2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
 3. **Close the order loop:** authenticated acceptance of status/fill/recovery/discovery, broader adapters and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
-4. **Build on local alerts:** rule editing/recurrence and operational diagnostics, then explicit external delivery and backup/restore.
+4. **Build on local alerts:** portfolio/strategy/connection conditions and operational diagnostics, then explicit external delivery and backup/restore.
 5. **Richer ProtoLink tools and test-environment strategies:** inspected evidence and durable workflows, with risk controls before any production automation.
 6. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.
 

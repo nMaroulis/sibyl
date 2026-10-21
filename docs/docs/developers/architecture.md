@@ -43,7 +43,7 @@ FastAPI routes + validated request models
 | `api/app.py`                   | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
 | `api/routes.py`                | Thin versioned HTTP routes                                                                        |
 
-`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts a paper worker and a separate news collector, and cancels both during shutdown. Importing the package does not connect to an exchange or initialize a model.
+`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts the domain workers and the in-process ProtoLink agent network, and stops them during shutdown. The network registers Sibyl and ten persistent specialist gateways; fresh reasoning agents isolate each model request. See [agent lifecycle and collaboration](./agents.md). Importing the package does not connect to an exchange or initialize a model.
 
 ## Frontend
 

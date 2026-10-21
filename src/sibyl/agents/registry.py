@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from protolink import Agent, RunBudget, create_llm
 
+from sibyl.agents.network import AgentNetwork
 from sibyl.config import Settings
 from sibyl.models import AgentRequest, BacktestRequest
 from sibyl.services.account_sync import AccountSync
@@ -390,6 +391,7 @@ class AgentRegistry:
             "stocks": equity_quote,
         }
         self.agents = {module: self._compose(module) for module in ROLES}
+        self.network = AgentNetwork(self, ROLES)
 
     def _compose(
         self,
@@ -436,84 +438,84 @@ class AgentRegistry:
                 "tool": self._tools[module].__name__,
                 "mode": "tools" if configuration["provider"] == "none" else "llm",
                 "provider": configuration["provider"],
+                "registered": self.network.ready,
+                "transport": "runtime",
             }
             for module, role in ROLES.items()
         ]
 
     async def ask(self, request: AgentRequest) -> dict:
-        """Execute a module tool via ProtoLink and optionally run bounded model inference."""
-        async with self._semaphore:
-            configuration = self.models.resolve()
-            session_id = request.session_id or uuid4().hex
-            tool = self._tools[request.module]
-            context = request.context.model_dump(exclude_none=True, exclude_unset=True)
-            args = self._tool_arguments(request)
-            # Sync tools perform blocking exchange reads. Run their ProtoLink loop off the ASGI event loop.
-            evidence = await asyncio.to_thread(
-                self.agents[request.module].sync.call_tool, tool.__name__, **args
+        """Send module conversations through the registered ProtoLink agent client."""
+        return await self.network.ask_module(request)
+
+    async def _answer(self, request: AgentRequest, configuration: dict) -> dict:
+        """Answer a client-delivered module request with isolated read-only reasoning."""
+        session_id = request.session_id or uuid4().hex
+        tool = self._tools[request.module]
+        context = request.context.model_dump(exclude_none=True, exclude_unset=True)
+        args = self._tool_arguments(request)
+        # Sync tools perform blocking exchange reads. Run their ProtoLink loop off the ASGI event loop.
+        evidence = await asyncio.to_thread(self.agents[request.module].sync.call_tool, tool.__name__, **args)
+        if configuration["provider"] == "none":
+            answer = self._snapshot_answer(request.module, evidence)
+            mode = "tools"
+        else:
+            history = [
+                run["payload"]
+                for run in reversed(self.store.runs("agent"))
+                if run["payload"].get("session_id") == session_id
+                and run["payload"].get("module") == request.module
+                and run["payload"].get("context", {}) == context
+            ][-6:]
+            history = [{"question": turn["question"], "answer": turn["answer"]} for turn in history]
+            prompt = (
+                f"Validated page selection: {json.dumps(context)}\n"
+                f"Prior turns: {json.dumps(history)}\n"
+                f"Server observations: {json.dumps(evidence)}\nQuestion: {request.message}"
             )
-            if configuration["provider"] == "none":
-                answer = self._snapshot_answer(request.module, evidence)
-                mode = "tools"
-            else:
-                history = [
-                    run["payload"]
-                    for run in reversed(self.store.runs("agent"))
-                    if run["payload"].get("session_id") == session_id
-                    and run["payload"].get("module") == request.module
-                    and run["payload"].get("context", {}) == context
-                ][-6:]
-                history = [{"question": turn["question"], "answer": turn["answer"]} for turn in history]
-                prompt = (
-                    f"Validated page selection: {json.dumps(context)}\n"
-                    f"Prior turns: {json.dumps(history)}\n"
-                    f"Server observations: {json.dumps(evidence)}\nQuestion: {request.message}"
+
+            def invoke():
+                def selected_accounting_evidence() -> dict:
+                    """Read the selected report snapshot; no account reads or selection changes are available."""
+                    return evidence
+
+                tool_override = (
+                    selected_accounting_evidence
+                    if request.module == "accountant"
+                    and (
+                        request.context.funding_view
+                        or request.context.performance_view
+                        or request.context.transfer_view
+                    )
+                    else None
+                )
+                agent = self._compose(
+                    request.module,
+                    inference=True,
+                    configuration=configuration,
+                    **({"tool_override": tool_override} if tool_override else {}),
+                )
+                return agent.sync.invoke(
+                    prompt,
+                    budget=RunBudget(max_steps=6, max_llm_calls=6, max_tool_calls=6, max_runtime_seconds=80),
                 )
 
-                def invoke():
-                    def selected_accounting_evidence() -> dict:
-                        """Read the selected report snapshot; no account reads or selection changes are available."""
-                        return evidence
-
-                    tool_override = (
-                        selected_accounting_evidence
-                        if request.module == "accountant"
-                        and (
-                            request.context.funding_view
-                            or request.context.performance_view
-                            or request.context.transfer_view
-                        )
-                        else None
-                    )
-                    agent = self._compose(
-                        request.module,
-                        inference=True,
-                        configuration=configuration,
-                        **({"tool_override": tool_override} if tool_override else {}),
-                    )
-                    return agent.sync.invoke(
-                        prompt,
-                        budget=RunBudget(
-                            max_steps=6, max_llm_calls=6, max_tool_calls=6, max_runtime_seconds=80
-                        ),
-                    )
-
-                answer = str(await asyncio.wait_for(asyncio.to_thread(invoke), timeout=90))
-                mode = "llm"
-            result = {
-                "module": request.module,
-                "session_id": session_id,
-                "question": request.message,
-                "context": context,
-                "answer": answer,
-                "engine": "ProtoLink",
-                "mode": mode,
-                "provider": configuration["provider"],
-                "tool": tool.__name__,
-                "evidence": evidence,
-            }
-            record = self.store.record("agent", result)
-            return {**result, "id": record["id"], "created_at": record["created_at"]}
+            answer = str(await asyncio.wait_for(asyncio.to_thread(invoke), timeout=90))
+            mode = "llm"
+        result = {
+            "module": request.module,
+            "session_id": session_id,
+            "question": request.message,
+            "context": context,
+            "answer": answer,
+            "engine": "ProtoLink",
+            "mode": mode,
+            "provider": configuration["provider"],
+            "tool": tool.__name__,
+            "evidence": evidence,
+        }
+        record = self.store.record("agent", result)
+        return {**result, "id": record["id"], "created_at": record["created_at"]}
 
     @staticmethod
     def _tool_arguments(request: AgentRequest) -> dict:

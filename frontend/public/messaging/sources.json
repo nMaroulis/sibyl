@@ -1,0 +1,15 @@
+{
+  "whatsapp": {
+    "source": "https://www.whatsapp.com/",
+    "note": "Unmodified symbol paths from the official header, using the official green colorway."
+  },
+  "telegram": {
+    "source": "https://telegram.org/img/t_logo.svg"
+  },
+  "discord": {
+    "source": "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e3d80db9971f10a9757c99_Symbol.svg"
+  },
+  "slack": {
+    "source": "https://a.slack-edge.com/9cc0056/marketing/img/nav/logo.svg"
+  }
+}

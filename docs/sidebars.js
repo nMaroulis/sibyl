@@ -19,6 +19,7 @@ module.exports = {
         'guides/trading',
         'guides/strategies',
         'guides/strategy-monitor',
+        'guides/sibyl',
         'guides/oracle',
         'guides/research',
         'guides/security',

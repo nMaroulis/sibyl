@@ -7587,6 +7587,45 @@ details[open] > summary {
   font-size: 12px;
   color: var(--muted);
 }
+.price-rule-heading .price-rule-frequency {
+  margin-top: 5px;
+  font-size: 11px;
+}
+.price-rule-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 0 0 14px;
+}
+.price-alert-dialog {
+  width: min(100%, 620px);
+}
+.price-alert-form .alert-delivery-note {
+  display: block;
+  margin-bottom: 0;
+  padding: 12px 14px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.price-alert-form .alert-delivery-note > .badge {
+  margin-bottom: 6px;
+}
+.price-alert-form .alert-delivery-note > span:not(.badge) {
+  display: block;
+  min-width: 0;
+}
+.price-alert-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
 .price-rule-evidence {
   display: flex;
   align-items: center;

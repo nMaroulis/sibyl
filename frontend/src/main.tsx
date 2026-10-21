@@ -5,6 +5,7 @@ import { App } from './App';
 import { AgentProvider } from './components/agents';
 import { ToastProvider } from './components/ui';
 import './styles.css';
+import './styles/sibyl.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -213,3 +213,20 @@ The `/market-history` routes expose local coverage, resumable reviewed imports, 
 ## Combined exchange order monitor
 
 `GET /exchange-orders/monitor` pages local submissions and read-only imported orders, filtering by account, exchange, origin and active/terminal status before the limit. `GET /exchange-orders/discovery` reads local progress; `POST` to that path starts/resumes bounded discovery with `account_id`, `symbols` and `days`. `POST /exchange-orders/discovery/{account_id}/pause` preserves the checkpoint and stops future pages. Imported rows cannot be submitted or canceled. See [coverage, response fields and durable scheduling](order-discovery.md).
+
+Price alerts also accept `condition: crosses_above/crosses_below`, `repeat: once/after_reset` and integer `cooldown_seconds` (60–86400). `POST /alerts/{id}/edit` takes complete rule settings and `revision`, saves paused and returns `409` for a stale editor. Recurring reset/cooldown state persists; past notifications retain the original rule evidence. See [alert state and edit contracts](alerts.md).
+
+## Sibyl and messaging setup
+
+All paths below use the `/api/v1` prefix and existing workspace access controls.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/sibyl` | Runtime and model configuration readiness; safe setup reason and settings link |
+| POST | `/sibyl/ask` | `message` (1–4,000 nonblank characters), optional `session_id`; model-driven specialist collaboration |
+| GET / POST | `/sibyl/conversations` | Latest 100 local chats / create an empty chat |
+| GET | `/sibyl/conversations/{session_id}` | Latest 100 completed turns and actual consultation evidence |
+| DELETE | `/sibyl/conversations/{session_id}` | Permanently remove this chat; returns 204, or 409 while pending |
+| GET | `/settings/messaging` | Unavailable channel catalog, planned setup fields, and official setup links |
+
+Channels: `whatsapp`, `telegram`, `discord`, `slack`. Every channel reports `unavailable` and `connected: false`; no clients, credential collection, draft saving or delivery exist. Sibyl setup/duplicate-turn failures return 409, unknown chat IDs 404, provider failures a sanitized 502, and outer timeouts 504. Session IDs are 32 hexadecimal characters. The backend limits one pending turn per chat, two outer requests globally and four specialist consultation attempts per turn. See [agent contracts](./agents.md).

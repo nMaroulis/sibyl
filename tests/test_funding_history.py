@@ -1,6 +1,7 @@
 """Offline native funding contracts, atomic range imports and performance coverage."""
 
 import json
+import time
 from datetime import UTC, datetime
 
 import ccxt
@@ -420,9 +421,16 @@ def test_api_validates_ranges_and_demo_has_no_fabricated_funding(client):
     url = "/api/v1/connections/demo/funding-sync"
     payload = request(["deposit", "withdrawal", "transfer"]).model_dump(mode="json")
     assert client.post(url, json=payload).status_code == 202
-    for _ in range(3):
+    # The lifespan worker can own the nonblocking import lock while this test ticks.
+    # Wait for observable completion rather than assuming three calls acquired it.
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline:
         client.app.state.services.funding_sync.tick()
-    assert all(row["status"] == "caught_up" for row in client.get("/api/v1/funding-sync").json()["jobs"])
+        jobs = client.get("/api/v1/funding-sync").json()["jobs"]
+        if all(row["status"] == "caught_up" for row in jobs):
+            break
+        time.sleep(0.01)
+    assert all(row["status"] == "caught_up" for row in jobs), jobs
     assert client.get("/api/v1/account-ledger/funding").json()["items"] == []
     for changes in [
         {"start": "2024-01-01T00:00:00"},

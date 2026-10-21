@@ -1,4 +1,4 @@
-"""Persistent one-shot price rules and a local notification inbox.
+"""Persistent editable price/crossing rules and a local notification inbox.
 
 Rules pin an exact market and source. The worker performs one due quote read per
 turn; an atomic rule transition and unique cycle key prevent duplicate notices.
@@ -17,6 +17,7 @@ from pydantic import Field, field_validator
 from sibyl.exchanges.base import number
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import OrderRequest, Request
+from sibyl.services.alert_conditions import assess, rule_defaults
 
 
 class PriceAlertCreate(Request):
@@ -24,9 +25,11 @@ class PriceAlertCreate(Request):
 
     source: str = Field(min_length=1, max_length=120, pattern=r"^[a-z0-9:-]+$")
     symbol: str
-    condition: Literal["above", "below"]
+    condition: Literal["above", "below", "crosses_above", "crosses_below"]
     threshold: float = Field(gt=0, le=1e15)
     label: str = Field(default="", max_length=80)
+    repeat: Literal["once", "after_reset"] = "once"
+    cooldown_seconds: int = Field(default=300, ge=60, le=86400, strict=True)
 
     @field_validator("symbol")
     @classmethod
@@ -47,6 +50,16 @@ class PriceAlertAction(Request):
     """Pause, explicitly start a fresh cycle, or archive/restore a saved rule."""
 
     action: Literal["pause", "arm", "archive", "restore"]
+
+
+class PriceAlertUpdate(PriceAlertCreate):
+    """Replace reviewed settings using the editor's revision; saving leaves the rule paused."""
+
+    revision: int = Field(ge=1, strict=True)
+
+
+class AlertConflict(Exception):
+    """An explicit lifecycle/configuration change made an open editor stale."""
 
 
 def stamp() -> str:
@@ -77,7 +90,8 @@ class PriceAlerts:
 
     This service assumes one API process. In-flight reads commit only if the rule
     revision is still current, so pausing, archiving or rearming cannot be undone
-    by a delayed provider response. Triggered rules require explicit rearming.
+    by a delayed provider response. Repeat rules require fresh resets and honor
+    cooldowns; one-shot triggers require explicit rearming. Editing leaves rules paused.
     """
 
     limit = 50
@@ -105,7 +119,7 @@ class PriceAlerts:
         row = db.execute("SELECT payload FROM price_alerts WHERE id=?", (identity,)).fetchone()
         if row is None:
             raise LookupError("Price alert not found.")
-        return json.loads(row[0])
+        return rule_defaults(json.loads(row[0]))
 
     @staticmethod
     def _write(db, rule):
@@ -129,7 +143,7 @@ class PriceAlerts:
                 "SELECT COUNT(*) FROM price_alerts WHERE ? OR status!='archived'", (include_archived,)
             ).fetchone()[0]
         return {
-            "items": [json.loads(row[0]) for row in rows],
+            "items": [rule_defaults(json.loads(row[0])) for row in rows],
             "limit": self.limit,
             "count": count,
             "total": total,
@@ -145,24 +159,26 @@ class PriceAlerts:
             metadata = self.market.metadata()
             if request.symbol not in {row["symbol"] for row in self.market.symbols()["items"]}:
                 raise ValueError("This exact spot pair is unavailable on the selected feed.")
-        rule = {
-            "id": uuid4().hex,
-            **request.model_dump(),
-            "source_label": metadata["source_label"],
-            "environment": metadata["environment"],
-            "status": "armed",
-            "cycle": 1,
-            "revision": 1,
-            "created_at": stamp(),
-            "updated_at": stamp(),
-            "next_check": 0,
-            "last_checked_at": None,
-            "last_price": None,
-            "observed_at": None,
-            "triggered_at": None,
-            "error": None,
-            "failures": 0,
-        }
+        rule = rule_defaults(
+            {
+                "id": uuid4().hex,
+                **request.model_dump(),
+                "source_label": metadata["source_label"],
+                "environment": metadata["environment"],
+                "status": "armed",
+                "cycle": 1,
+                "revision": 1,
+                "created_at": stamp(),
+                "updated_at": stamp(),
+                "next_check": 0,
+                "last_checked_at": None,
+                "last_price": None,
+                "observed_at": None,
+                "triggered_at": None,
+                "error": None,
+                "failures": 0,
+            }
+        )
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             if (
@@ -176,6 +192,59 @@ class PriceAlerts:
                 "INSERT INTO price_alerts VALUES(?,?,?,?)", (rule["id"], rule["status"], 0, json.dumps(rule))
             )
         return rule
+
+    def edit(self, identity: str, request: PriceAlertUpdate) -> dict:
+        """Save settings paused without changing old notifications or accepting a delayed old quote.
+
+        Only changing source/pair requires catalog access. A label/level edit can
+        repair a rule even when its existing feed is temporarily unavailable.
+        Compare revisions again after catalog validation, inside the write transaction.
+        """
+        with self.store.db() as db:
+            previous = self._read(db, identity)
+        self._editable(previous, request.revision)
+        metadata = {key: previous[key] for key in ("source_label", "environment")}
+        if (request.source, request.symbol) != (previous["source"], previous["symbol"]):
+            with self.market.snapshot(request.source):
+                metadata = self.market.metadata()
+                if request.symbol not in {row["symbol"] for row in self.market.symbols()["items"]}:
+                    raise ValueError("This exact spot pair is unavailable on the selected feed.")
+        with self.store.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            current = self._read(db, identity)
+            self._editable(current, request.revision)
+            current.update(request.model_dump(exclude={"revision"}))
+            current.update(
+                source_label=metadata["source_label"],
+                environment=metadata["environment"],
+                status="paused",
+                revision=current["revision"] + 1,
+                updated_at=stamp(),
+                next_check=0,
+                failures=0,
+                error=None,
+                triggered_at=None,
+                last_price=None,
+                observed_at=None,
+                last_checked_at=None,
+                baseline_price=None,
+                baseline_at=None,
+                waiting_reset=False,
+                cooldown_until=0,
+                evaluation_note=None,
+            )
+            self._write(db, current)
+        return current
+
+    @staticmethod
+    def _editable(rule, revision):
+        """Reject stale editors and require restoring an archived rule before editing it."""
+        if rule["revision"] != revision:
+            raise AlertConflict(
+                "This alert changed while the editor was open. Reopen it to review the latest settings."
+            )
+        if rule["status"] == "archived":
+            raise ValueError("Restore this rule before editing it.")
 
     def change(self, identity: str, action: str) -> dict:
         """Persist explicit lifecycle changes; restoring always leaves a rule paused."""
@@ -213,6 +282,11 @@ class PriceAlerts:
                     last_price=None,
                     observed_at=None,
                     last_checked_at=None,
+                    baseline_price=None,
+                    baseline_at=None,
+                    waiting_reset=False,
+                    cooldown_until=0,
+                    evaluation_note=None,
                 )
             rule.update(
                 revision=rule["revision"] + 1, updated_at=stamp(), next_check=0, failures=0, error=None
@@ -261,6 +335,7 @@ class PriceAlerts:
                 return current
             current.update(last_checked_at=stamp(), error=error)
             if error:
+                current.update(baseline_price=None, baseline_at=None, evaluation_note=None)
                 failures = min(10, current["failures"] + int(deferred is None))
                 current.update(
                     failures=failures,
@@ -268,16 +343,19 @@ class PriceAlerts:
                     + (deferred.retry_after if deferred else min(900, 30 * 2**failures)),
                 )
             else:
-                current.update(
-                    last_price=price, observed_at=observed_at, failures=0, next_check=time.time() + 30
-                )
-                matched = (
-                    price >= current["threshold"]
-                    if current["condition"] == "above"
-                    else price <= current["threshold"]
-                )
+                current.update(failures=0, next_check=time.time() + 30)
+                matched = assess(current, price, observed_at, time.time())
                 if matched:
-                    current.update(status="triggered", triggered_at=stamp())
+                    recurring = current["repeat"] == "after_reset"
+                    if recurring and current["triggered_at"] is not None:
+                        current["cycle"] += 1
+                    current.update(status="armed" if recurring else "triggered", triggered_at=stamp())
+                    if recurring:
+                        current.update(
+                            waiting_reset=True,
+                            cooldown_until=time.time() + current["cooldown_seconds"],
+                            evaluation_note="Waiting for a price reset and cooldown before another notification.",
+                        )
                     payload = {
                         "rule_id": identity,
                         "label": current["label"],
@@ -290,6 +368,9 @@ class PriceAlerts:
                         "environment": current["environment"],
                         "observed_at": observed_at,
                         "cycle": current["cycle"],
+                        "repeat": current["repeat"],
+                        "cooldown_seconds": current["cooldown_seconds"],
+                        "rule_revision": current["revision"],
                     }
                     db.execute(
                         "INSERT INTO alert_notifications VALUES(?,?,?,?,NULL,?)",
@@ -380,6 +461,14 @@ def alert_example() -> dict:
     """Return isolated illustrative rules/inbox data; never write to a workspace."""
     time_string = "2026-10-21T08:00:00+00:00"
     shared = {
+        "repeat": "once",
+        "cooldown_seconds": 300,
+        "cooldown_until": 0,
+        "waiting_reset": False,
+        "baseline_price": None,
+        "baseline_at": time_string,
+        "evaluation_note": None,
+        "revision": 1,
         "source": "demo",
         "source_label": "Sibyl Demo",
         "environment": "demo",
@@ -408,7 +497,9 @@ def alert_example() -> dict:
             "id": "example-eth",
             "label": "Ether on my radar",
             "symbol": "ETH/USDT",
-            "condition": "below",
+            "condition": "crosses_below",
+            "repeat": "after_reset",
+            "baseline_price": 3200,
             "threshold": 2800,
             "last_price": 3200,
             "status": "armed",

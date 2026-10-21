@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from sibyl import __version__
+from sibyl.agents.conversations import SibylRequest
+from sibyl.agents.network import ModelRequired
 from sibyl.agents.providers import ProviderId
 from sibyl.api.app import Services
 from sibyl.exchanges.registry import provider_catalog
@@ -32,7 +34,7 @@ from sibyl.models import (
     Timeframe,
 )
 from sibyl.services.account_sync import AccountSyncRequest
-from sibyl.services.alerts import PriceAlertAction, PriceAlertCreate, alert_example
+from sibyl.services.alerts import PriceAlertAction, PriceAlertCreate, PriceAlertUpdate, alert_example
 from sibyl.services.analytics import analyze, correlation, forecast
 from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequest
 from sibyl.services.funding_sync import FundingSyncRequest
@@ -73,7 +75,7 @@ def system(s: S):
         "llm_provider": model["provider"],
         "llm_model": model["model"],
         "agent_engine": "ProtoLink",
-        "agents": len(s.agents.agents),
+        "agents": len(s.agents.network.cards),
         "allow_live_trading": s.settings.allow_live_trading,
         "accounts": s.accounts.public(),
     }
@@ -956,6 +958,68 @@ def stock(symbol: str, s: S):
     return s.research.stock(symbol)
 
 
+@router.get("/sibyl", tags=["Sibyl"])
+def sibyl_status(s: S):
+    """Read model setup and runtime registry readiness without a provider probe."""
+    return s.agents.network.status()
+
+
+@router.get("/sibyl/conversations", tags=["Sibyl"])
+def sibyl_conversations(s: S):
+    """List saved local conversation titles."""
+    return s.agents.network.conversations.list()
+
+
+@router.post("/sibyl/conversations", tags=["Sibyl"], status_code=201)
+def create_sibyl_conversation(s: S):
+    """Create a new chat without contacting a language model."""
+    return s.agents.network.conversations.create()
+
+
+@router.get("/sibyl/conversations/{session_id}", tags=["Sibyl"])
+def sibyl_conversation(session_id: str, s: S):
+    """Read completed messages and actual specialist consultations."""
+    return s.agents.network.conversation(session_id)
+
+
+@router.delete("/sibyl/conversations/{session_id}", tags=["Sibyl"], status_code=204)
+async def delete_sibyl_conversation(session_id: str, s: S):
+    """Delete a local chat; active conversations cannot be deleted."""
+    try:
+        s.agents.network.delete_conversation(session_id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.post("/sibyl/ask", tags=["Sibyl"])
+async def ask_sibyl(body: SibylRequest, s: S):
+    """Ask the lead ProtoLink agent; it chooses specialist consultations itself."""
+    try:
+        return await s.agents.network.ask(body)
+    except ModelRequired as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except TimeoutError as exc:
+        raise HTTPException(
+            504, "Sibyl timed out. Try a more focused question or check your model provider."
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except LookupError:
+        raise
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            502, "Sibyl could not complete this answer. Check your model provider and try again."
+        ) from exc
+
+
+@router.get("/settings/messaging", tags=["Settings"])
+def messaging_settings(s: S):
+    """Describe unavailable channels and their future setup requirements."""
+    return s.agents.network.messaging.public()
+
+
 @router.get("/agents", tags=["Oracle"])
 def agents(s: S):
     """Describe all embedded ProtoLink agents and their available module tools."""
@@ -1014,6 +1078,13 @@ def change_price_alert(rule_id: str, body: PriceAlertAction, s: S, response: Res
     """Pause, rearm, archive or restore a price rule."""
     response.headers["Cache-Control"] = "no-store"
     return s.alerts.change(rule_id, body.action)
+
+
+@router.post("/alerts/{rule_id}/edit", tags=["Alerts"])
+def edit_price_alert(rule_id: str, body: PriceAlertUpdate, s: S, response: Response):
+    """Save revised settings paused, preserving immutable past notifications."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.edit(rule_id, body)
 
 
 @router.post("/alerts/{rule_id}/check", tags=["Alerts"])

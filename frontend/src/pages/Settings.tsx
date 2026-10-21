@@ -8,6 +8,7 @@ import {
   Code2,
   KeyRound,
   Network,
+  MessageCircle,
   Newspaper,
   ChartNoAxesCombined,
   PlugZap,
@@ -20,6 +21,7 @@ import { ComingSoon } from '../components/coming-soon';
 import { SourceHealthPanel } from '../components/provider-health';
 import { ConfigHelper } from '../components/config-helper';
 import { NewsSettings } from '../components/news-settings';
+import { MessagingSettings } from '../components/messaging-settings';
 import { ModelSettings } from '../components/model-settings';
 import { ExchangeConnections } from '../components/exchange-connections';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
@@ -32,6 +34,7 @@ const sections = [
   { id: 'models', label: 'AI models', icon: Bot },
   { id: 'news', label: 'News', icon: Newspaper },
   { id: 'market', label: 'Market data', icon: ChartNoAxesCombined },
+  { id: 'messaging', label: 'Messaging', icon: MessageCircle },
   { id: 'workspace', label: 'Workspace', icon: Settings2 },
 ];
 
@@ -121,6 +124,9 @@ export function SettingsPage({ system }: { system?: System }) {
             the News tab.
           </p>
         </div>
+        <div hidden={tab !== 'messaging'}>
+          <MessagingSettings />
+        </div>
         <div hidden={tab !== 'workspace'}>
           <WorkspaceSettings system={system} />
         </div>
@@ -198,7 +204,7 @@ function WorkspaceSettings({ system }: { system?: System }) {
             </div>
             <div>
               <span>Agent engine</span>
-              <strong>ProtoLink · {system?.agents ?? '—'} specialists</strong>
+              <strong>ProtoLink · {system?.agents ?? '—'} agents</strong>
             </div>
             <div>
               <span>Language model</span>

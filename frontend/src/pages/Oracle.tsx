@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ArrowUpRight, Braces, Sparkles } from 'lucide-react';
 import { AgentButton } from '../components/agents';
 import { Badge, ErrorState, Loading, PageTitle, Panel } from '../components/ui';
@@ -23,7 +24,10 @@ export function Oracle() {
         <Sparkles size={18} />
         <p>
           Use the Ask button inside any module to talk to its agent in place. Each agent has its own
-          instructions and read-only tools.
+          instructions and read-only tools.{' '}
+          <Link className="text-link" to="/sibyl">
+            Let Sibyl bring them together.
+          </Link>
         </p>
       </div>
       {agents.loading ? (

@@ -8,6 +8,7 @@ import {
   Inbox as InboxIcon,
   ListChecks,
   Pause,
+  Pencil,
   Play,
   Plus,
   RefreshCw,
@@ -27,7 +28,12 @@ import {
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
 import { MarketSelector, type SpotCatalog } from '../components/market-controls';
 import { MarketSourcePicker } from '../components/market-source-picker';
-import { NotificationText, type Inbox } from '../components/notifications';
+import {
+  conditionLabel,
+  NotificationText,
+  type Inbox,
+  type PriceCondition,
+} from '../components/notifications';
 import { number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { MarketSettings } from '../lib/types';
@@ -39,7 +45,14 @@ type PriceRule = {
   source_label: string;
   environment: string;
   symbol: string;
-  condition: 'above' | 'below';
+  condition: PriceCondition;
+  repeat: 'once' | 'after_reset';
+  cooldown_seconds: number;
+  cooldown_until: number;
+  waiting_reset: boolean;
+  baseline_at: string | null;
+  evaluation_note: string | null;
+  revision: number;
   threshold: number;
   status: 'armed' | 'paused' | 'triggered' | 'archived';
   cycle: number;
@@ -65,6 +78,16 @@ const sections = [
   { id: 'rules', label: 'Price rules', icon: ListChecks },
   { id: 'inbox', label: 'Inbox', icon: InboxIcon },
 ];
+const ruleState = (rule: PriceRule) =>
+  rule.status !== 'armed'
+    ? rule.status
+    : rule.waiting_reset
+      ? 'Waiting for reset'
+      : rule.cooldown_until > Date.now() / 1000
+        ? 'Cooling down'
+        : rule.condition.startsWith('crosses_') && !rule.baseline_at
+          ? 'Awaiting first quote'
+          : 'Watching';
 
 /** Local alerts work with public prices independently of accounts or an LLM. */
 export function Alerts() {
@@ -73,6 +96,7 @@ export function Alerts() {
   const [showArchived, setArchived] = useState(false);
   const [example, setExample] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<PriceRule>();
   const [busy, setBusy] = useState('');
   const [offset, setOffset] = useState(0);
   const [ruleOffset, setRuleOffset] = useState(0);
@@ -83,7 +107,7 @@ export function Alerts() {
   );
   const inbox = useResource<Inbox>(`/notifications?limit=20&offset=${offset}`, 10000, !example);
   const sample = useResource<Example>('/alerts/example', 0, example);
-  const settings = useResource<MarketSettings>('/settings/market', 0, creating);
+  const settings = useResource<MarketSettings>('/settings/market', 0, creating || !!editing);
   const toast = useToast();
   const ruleData = example ? sample.data?.rules : rules.data;
   const inboxData = example ? sample.data?.inbox : inbox.data;
@@ -148,8 +172,8 @@ export function Alerts() {
       <div className="alert-delivery-note">
         <Bell size={17} />
         <span>
-          <strong>In-app notifications</strong> · One notification per armed cycle. The Sibyl API
-          must be running to check prices. No connected account or AI model is needed.
+          <strong>In-app notifications</strong> · One-time or repeat alerts with reset and cooldown.
+          The Sibyl API must be running to check prices. No connected account or AI model is needed.
         </span>
       </div>
       {example && (
@@ -178,7 +202,7 @@ export function Alerts() {
           <Panel className="full-panel">
             <PanelTitle
               title="Your price rules"
-              subtitle={`${ruleData?.count ?? 0} of ${ruleData?.limit ?? 50} non-archived rules · source stays fixed per rule`}
+              subtitle={`${ruleData?.count ?? 0} of ${ruleData?.limit ?? 50} non-archived rules · each rule uses its selected feed`}
               action={
                 <label className="alert-archive-toggle">
                   <input
@@ -207,17 +231,29 @@ export function Alerts() {
                       <div>
                         <h3>{rule.label || `${rule.symbol} price alert`}</h3>
                         <p>
-                          {rule.symbol} ·{' '}
-                          {rule.condition === 'above' ? 'at or above' : 'at or below'}{' '}
+                          {rule.symbol} · {conditionLabel(rule.condition)}{' '}
                           <strong>
                             {number(rule.threshold, 8)} {rule.symbol.split('/')[1]}
                           </strong>
                         </p>
+                        <p className="price-rule-frequency">
+                          {rule.repeat === 'after_reset'
+                            ? `Repeats after reset · ${number(rule.cooldown_seconds / 60, 2)} min cooldown`
+                            : 'One-time notification'}
+                        </p>
                       </div>
                       <Badge tone={rule.status === 'armed' ? 'lime' : 'neutral'}>
-                        {rule.status}
+                        {ruleState(rule)}
                       </Badge>
                     </div>
+                    {rule.status === 'armed' && rule.evaluation_note && (
+                      <p className="price-rule-note">
+                        {rule.evaluation_note}
+                        {rule.cooldown_until > Date.now() / 1000
+                          ? ` Cooldown ends ${new Date(rule.cooldown_until * 1000).toLocaleTimeString()}.`
+                          : ''}
+                      </p>
+                    )}
                     <div className="price-rule-evidence">
                       <span>
                         {rule.source_label}{' '}
@@ -255,7 +291,7 @@ export function Alerts() {
                     <div className="price-rule-footer">
                       <span>
                         {rule.triggered_at
-                          ? `Triggered ${new Date(rule.triggered_at).toLocaleString()}`
+                          ? `Last notified ${new Date(rule.triggered_at).toLocaleString()}`
                           : rule.observed_at
                             ? `Provider time ${new Date(rule.observed_at).toLocaleString()}`
                             : 'Fresh timestamped quotes only'}{' '}
@@ -272,6 +308,15 @@ export function Alerts() {
                           </button>
                         ) : (
                           <>
+                            <button
+                              className="icon-button"
+                              aria-label={`Edit ${rule.label || rule.symbol} alert`}
+                              title="Edit rule · saves paused"
+                              disabled={!!busy || example}
+                              onClick={() => setEditing(rule)}
+                            >
+                              <Pencil size={14} />
+                            </button>
                             {rule.status === 'armed' ? (
                               <>
                                 <button
@@ -349,11 +394,10 @@ export function Alerts() {
               </div>
             )}
             <p className="footnote padded">
-              Rules trigger once, including if the first fresh quote already meets the level.
-              Rearming starts a new cycle and may trigger again immediately. Checks are scheduled
-              about every 30 seconds, can take longer under load, and back off on errors. Missed
-              crossings while offline are not reconstructed. Email, push and messaging delivery are
-              coming later.
+              Level alerts can notify on their first fresh quote. Crossing alerts wait for a new
+              observed crossing. Repeat alerts require a price reset and cooldown; moves during
+              cooldown are skipped. Checks run about every 30 seconds and back off on errors. Missed
+              crossings are not reconstructed. Delivery stays in-app.
             </p>
           </Panel>
         ) : (
@@ -433,19 +477,33 @@ export function Alerts() {
           </Panel>
         )}
       </SectionPanel>
-      {creating && (
-        <Modal title="New price alert" onClose={() => setCreating(false)}>
+      {(creating || editing) && (
+        <Modal
+          className="price-alert-dialog"
+          title={editing ? 'Edit price alert' : 'New price alert'}
+          onClose={() => {
+            setCreating(false);
+            setEditing(undefined);
+          }}
+        >
           {settings.error ? (
             <ErrorState message={settings.error} retry={settings.retry} />
           ) : settings.data ? (
-            <NewRule
+            <PriceRuleForm
+              key={editing?.id || 'new'}
+              rule={editing}
               settings={settings.data}
-              initialSource={params.get('source') || settings.data.active.id}
-              initialSymbol={params.get('symbol') || 'BTC/USDT'}
+              initialSource={editing?.source || params.get('source') || settings.data.active.id}
+              initialSymbol={editing?.symbol || params.get('symbol') || 'BTC/USDT'}
               onSaved={() => {
                 setCreating(false);
                 refresh();
-                toast('Price alert saved.');
+                toast(
+                  editing
+                    ? 'Changes saved. Your alert is paused; resume when ready.'
+                    : 'Price alert saved.',
+                );
+                setEditing(undefined);
                 setRuleOffset(0);
                 setParams((previous) => {
                   const next = new URLSearchParams(previous);
@@ -463,12 +521,14 @@ export function Alerts() {
   );
 }
 
-function NewRule({
+function PriceRuleForm({
+  rule,
   settings,
   initialSource,
   initialSymbol,
   onSaved,
 }: {
+  rule?: PriceRule;
   settings: MarketSettings;
   initialSource: string;
   initialSymbol: string;
@@ -476,22 +536,35 @@ function NewRule({
 }) {
   const [source, setSource] = useState(initialSource);
   const [symbol, setSymbol] = useState(initialSymbol);
-  const [condition, setCondition] = useState('above');
-  const [threshold, setThreshold] = useState('');
-  const [label, setLabel] = useState('');
+  const [condition, setCondition] = useState(rule?.condition || 'above');
+  const [threshold, setThreshold] = useState(rule ? String(rule.threshold) : '');
+  const [label, setLabel] = useState(rule?.label || '');
+  const [repeat, setRepeat] = useState(rule?.repeat || 'once');
+  const [cooldown, setCooldown] = useState(rule?.cooldown_seconds || 300);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const catalog = useResource<SpotCatalog>(`/markets/symbols?source=${encodeURIComponent(source)}`);
-  const supported = !!catalog.data?.items.some((item) => item.symbol === symbol);
+  const sameMarket = !!rule && source === rule.source && symbol === rule.symbol;
+  const supported = sameMarket || !!catalog.data?.items.some((item) => item.symbol === symbol);
   const demo = source === 'demo';
   const create = async () => {
     setBusy(true);
     setError('');
     try {
-      await post('/alerts', { source, symbol, condition, threshold: Number(threshold), label });
+      await post(rule ? `/alerts/${rule.id}/edit` : '/alerts', {
+        source,
+        symbol,
+        condition,
+        threshold: Number(threshold),
+        label,
+        repeat,
+        cooldown_seconds: cooldown,
+        ...(rule ? { revision: rule.revision } : {}),
+      });
       onSaved();
     } catch (reason) {
       setError((reason as Error).message);
+      refresh();
     } finally {
       setBusy(false);
     }
@@ -507,6 +580,7 @@ function NewRule({
       <MarketSourcePicker
         settings={settings}
         value={source}
+        allowUnavailable={!!rule}
         onChange={(value) => {
           setSource(value);
           setSymbol('');
@@ -520,24 +594,31 @@ function NewRule({
           onChange={setSymbol}
           disabled={busy}
         />
+      ) : sameMarket ? (
+        <p className="inline-alert">
+          Saved pair: <strong>{symbol}</strong>. You can update its settings even while this feed is
+          unavailable.
+        </p>
       ) : (
         !catalog.error && <Loading />
       )}
-      {catalog.error && (
+      {catalog.error && !sameMarket && (
         <p className="form-error" role="alert">
           {catalog.error}
         </p>
       )}
       <div className="form-row">
         <label>
-          Notify when price is
+          Notify when price
           <select
             value={condition}
             disabled={busy}
-            onChange={(event) => setCondition(event.target.value)}
+            onChange={(event) => setCondition(event.target.value as PriceCondition)}
           >
             <option value="above">At or above</option>
             <option value="below">At or below</option>
+            <option value="crosses_above">Crosses to or above</option>
+            <option value="crosses_below">Crosses to or below</option>
           </select>
         </label>
         <label>
@@ -553,6 +634,39 @@ function NewRule({
             onChange={(event) => setThreshold(event.target.value)}
           />
         </label>
+      </div>
+      <div className="form-row">
+        <label>
+          Frequency
+          <select
+            value={repeat}
+            disabled={busy}
+            onChange={(event) => setRepeat(event.target.value as 'once' | 'after_reset')}
+          >
+            <option value="once">One time</option>
+            <option value="after_reset">Repeat after price resets</option>
+          </select>
+        </label>
+        {repeat === 'after_reset' && (
+          <label>
+            Minimum time between notifications
+            <select
+              value={cooldown}
+              disabled={busy}
+              onChange={(event) => setCooldown(Number(event.target.value))}
+            >
+              {![60, 300, 900, 3600, 21600, 86400].includes(cooldown) && (
+                <option value={cooldown}>{cooldown} seconds · saved</option>
+              )}
+              <option value={60}>1 minute</option>
+              <option value={300}>5 minutes</option>
+              <option value={900}>15 minutes</option>
+              <option value={3600}>1 hour</option>
+              <option value={21600}>6 hours</option>
+              <option value={86400}>1 day</option>
+            </select>
+          </label>
+        )}
       </div>
       <label>
         <span>
@@ -571,8 +685,13 @@ function NewRule({
           {demo ? 'Demo · simulated prices' : 'In-app only'}
         </Badge>
         <span>
-          The feed stays fixed for this rule. It triggers once when a fresh quote qualifies, even on
-          its first check. No trades or external messages are sent.
+          {condition.startsWith('crosses_')
+            ? 'The first quote sets a starting point; only a later observed crossing can notify. '
+            : 'A level alert can notify on its first fresh quote. '}
+          {repeat === 'after_reset'
+            ? 'Repeats need a reset and a new move after cooldown; moves during cooldown are skipped. '
+            : 'One notification, then the rule stops. '}
+          {rule ? 'Changes save paused; past notifications stay unchanged.' : 'Delivery is in-app.'}
         </span>
       </div>
       {error && (
@@ -580,18 +699,20 @@ function NewRule({
           {error}
         </p>
       )}
-      <button
-        className="button primary"
-        disabled={
-          busy || !supported || !Number.isFinite(Number(threshold)) || Number(threshold) <= 0
-        }
-      >
-        <Bell size={14} />
-        {busy ? 'Saving…' : 'Create price alert'}
-      </button>
-      <Link className="text-link" to="/settings?tab=market">
-        Manage market sources <ArrowUpRight size={12} />
-      </Link>
+      <div className="price-alert-actions">
+        <button
+          className="button primary"
+          disabled={
+            busy || !supported || !Number.isFinite(Number(threshold)) || Number(threshold) <= 0
+          }
+        >
+          <Bell size={14} />
+          {busy ? 'Saving…' : rule ? 'Save paused' : 'Create price alert'}
+        </button>
+        <Link className="text-link" to="/settings?tab=market">
+          Manage market sources <ArrowUpRight size={12} />
+        </Link>
+      </div>
     </form>
   );
 }
