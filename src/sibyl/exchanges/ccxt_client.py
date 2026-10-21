@@ -151,6 +151,42 @@ class CCXTClient(ExchangeClient):
                 candles[stamp] = values
             return [candles[key] for key in sorted(candles)][-limit:]
 
+    @property
+    def candle_history(self):
+        """Enable only reviewed native timestamp-window contracts."""
+        return self.id in {
+            "binance",
+            "binanceus",
+            "binance-testnet",
+            "coinbase",
+            "coinbase-sandbox",
+            "kraken",
+        }
+
+    def fetch_candle_page(self, symbol: str, timeframe: str, start: int, end: int) -> list[list]:
+        """Read at most 200 historical intervals, with no SDK auto-pagination."""
+        from sibyl.market_data.archive import now_ms, step_ms, validated_rows
+
+        if not self.candle_history:
+            return super().fetch_candle_page(symbol, timeframe, start, end)
+        step = step_ms(timeframe)
+        if not 0 < end - start <= 200 * step:
+            raise ValueError("Use a historical page of at most 200 intervals.")
+        if self.id == "kraken" and start < now_ms() - 719 * step:
+            raise ValueError("Kraken only exposes the most recent 720 intervals.")
+        with self.lock:
+            self._require("fetchOHLCV")
+            self.market(symbol)
+            if timeframe not in self.timeframes:
+                raise ccxt.NotSupported("Candle timeframe unavailable.")
+            params = {} if self.id == "kraken" else {"until": end - 1}
+            rows = self._exchange.fetch_ohlcv(symbol, timeframe, since=start, limit=200, params=params)
+            checked = validated_rows(rows, timeframe)
+            selected = [r for r in checked if start <= r[0] < end]
+            if checked and not selected:
+                raise ValueError("Provider did not return the requested historical window.")
+            return selected
+
     def fetch_order_book(self, symbol: str, limit: int = 10) -> dict:
         """Adapt discrete venue depth limits and return sorted finite levels."""
         if not 1 <= limit <= 100:

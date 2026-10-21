@@ -7,7 +7,7 @@ import type { MarketSettings, MarketSource } from '../lib/types';
 import { useResource } from '../lib/hooks';
 
 /** Reuse local exchange logos and distinct API-provider icon marks. */
-export function MarketSourceMark({ source }: { source: MarketSource }) {
+export function MarketSourceMark({ source }: { source: Pick<MarketSource, 'kind' | 'provider'> }) {
   return (
     <span className="news-source-mark" aria-hidden="true">
       {source.kind === 'api' ? (

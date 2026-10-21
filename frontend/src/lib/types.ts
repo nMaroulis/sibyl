@@ -198,6 +198,8 @@ export type Fill = {
   fee?: number;
 };
 export type Backtest = Source & {
+  dataset?: import('./market-history').Dataset;
+  engine_version?: string;
   id: string;
   strategy: string;
   symbol: string;

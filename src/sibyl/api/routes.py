@@ -10,6 +10,14 @@ from sibyl import __version__
 from sibyl.agents.providers import ProviderId
 from sibyl.api.app import Services
 from sibyl.exchanges.registry import provider_catalog
+from sibyl.market_data.backfills import (
+    CandleRange,
+    DatasetBacktest,
+    DatasetCreate,
+    ImportAction,
+    RetentionRequest,
+)
+from sibyl.market_data.research import current_backtest, saved_backtest
 from sibyl.models import (
     AccountActivation,
     AgentRequest,
@@ -33,7 +41,7 @@ from sibyl.services.market import TIMEFRAMES
 from sibyl.services.performance import OpeningInventory
 from sibyl.services.reporting import trading_report
 from sibyl.services.roadmap import implementation_status
-from sibyl.services.strategies import CATALOG, backtest
+from sibyl.services.strategies import CATALOG
 from sibyl.services.transfer_reconciliation import TransferConfirm, TransferPair
 from sibyl.services.watchlists import WatchlistItem, WatchlistOrder
 
@@ -151,6 +159,13 @@ def save_market_settings(body: MarketSettingsRequest, s: S, response: Response):
     if body.api_key is not None:
         s.market.forget_source(body.source)
     return result
+
+
+@router.get("/providers/health", tags=["Settings"])
+def provider_health(s: S, response: Response, source: MarketSource | None = None):
+    """Inspect observed source health and local queues; never probe a provider."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.provider_health(source)
 
 
 @router.delete("/settings/market/{provider}/key", tags=["Settings"])
@@ -715,13 +730,7 @@ def strategies():
 @router.post("/strategies/backtest", tags=["Broker"])
 def run_backtest(body: BacktestRequest, s: S):
     """Simulate a strategy with next-open fills, fees, and slippage; persist its result."""
-    with s.market.snapshot():
-        result = {
-            **backtest(s.market.candles(body.symbol, body.candles, body.timeframe), body),
-            "source": s.market.source,
-        }
-        record = s.store.record("backtest", result)
-        return {**result, "id": record["id"]}
+    return current_backtest(s.market, s.store, body)
 
 
 @router.get("/strategies/jobs", tags=["Broker"])
@@ -990,3 +999,85 @@ def price_alert_example(response: Response):
     """Inspect an isolated example without saving rules or triggering notifications."""
     response.headers["Cache-Control"] = "no-store"
     return alert_example()
+
+
+@router.get("/market-history", tags=["Market history"])
+def candle_history(
+    s: S,
+    response: Response,
+    source: MarketSource,
+    symbol: Symbol = "BTC/USDT",
+    timeframe: Timeframe = "1d",
+    start: str | None = Query(None, max_length=40),
+    end: str | None = Query(None, max_length=40),
+):
+    """Read retained closed bars, missing-slot evidence and saved import progress offline."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.history.status(source, symbol, timeframe, start, end)
+
+
+@router.post("/market-history/imports", status_code=202, tags=["Market history"])
+def queue_candles(body: CandleRange, s: S, response: Response):
+    """Queue an explicit historical range, without reading candle pages in this request."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.history.queue(body)
+
+
+@router.post("/market-history/imports/{identity}/action", tags=["Market history"])
+def change_candle_import(identity: str, body: ImportAction, s: S, response: Response):
+    """Pause/resume checkpoints, or explicitly rescan a completed/failed range."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.history.action(identity, body.action)
+
+
+@router.post("/market-history/retention", tags=["Market history"])
+def prune_candles(body: RetentionRequest, s: S, response: Response):
+    """Remove old mutable observations after typed review; immutable inputs survive."""
+    meta = s.history.metadata(body.source)
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.archive.prune(
+        body.source, meta["environment"], body.symbol, body.timeframe, body.before, body.confirmation
+    )
+
+
+@router.get("/market-history/series", tags=["Market history"])
+def candle_series(s: S, response: Response):
+    """Read retained series identities, including disconnected sources, offline."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.archive.catalog()
+
+
+@router.get("/market-history/datasets/{identity}/metadata", tags=["Market history"])
+def candle_dataset_metadata(identity: str, s: S, response: Response):
+    """Read one immutable dataset's verified metadata for a research form."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.archive.dataset(identity)["dataset"]
+
+
+@router.get("/market-history/datasets", tags=["Market history"])
+def candle_datasets(s: S, response: Response, offset: int = Query(0, ge=0, le=1_000_000)):
+    """Page immutable dataset metadata without loading large bar arrays."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.archive.datasets(offset)
+
+
+@router.post("/market-history/datasets", tags=["Market history"], status_code=201)
+def save_candle_dataset(body: DatasetCreate, s: S, response: Response):
+    """Freeze a complete retained range for reproducible research, without provider reads."""
+    meta = s.history.metadata(body.source)
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.archive.snapshot(meta, body.symbol, body.timeframe, body.start, body.end, body.label)
+
+
+@router.get("/market-history/datasets/{identity}", tags=["Market history"])
+def candle_dataset(identity: str, s: S, response: Response):
+    """Read the copied immutable input and its content digest, even after source disconnect."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.archive.dataset(identity)
+
+
+@router.post("/strategies/backtest/dataset", tags=["Broker"])
+def dataset_backtest(body: DatasetBacktest, s: S, response: Response):
+    """Backtest an exact immutable dataset; no account, network or trading operation occurs."""
+    response.headers["Cache-Control"] = "no-store"
+    return saved_backtest(s.market.archive, s.store, body)

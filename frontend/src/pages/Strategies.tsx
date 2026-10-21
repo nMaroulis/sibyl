@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronRight, FlaskConical, Play, Radio } from 'lucide-react';
 import {
   Badge,
@@ -19,8 +19,9 @@ import { AgentButton } from '../components/agents';
 import { MarketSelector, TimeframeSelect } from '../components/market-controls';
 import { ComingSoon } from '../components/coming-soon';
 import { ValueChart } from '../components/charts';
-import { exportCSV, number, post, refresh } from '../lib/api';
+import { downloadFile, exportCSV, number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
+import type { Dataset, DatasetList } from '../lib/market-history';
 import type { Backtest, Job, Run, Strategy, StrategyParams } from '../lib/types';
 
 export function StrategiesPage() {
@@ -33,7 +34,7 @@ export function StrategiesPage() {
   const catalog = useResource<Strategy[]>('/strategies');
   const jobs = useResource<Job[]>('/strategies/jobs', 30000);
   const history = useResource<Run[]>('/runs?kind=backtest');
-  const [params, setParams] = useState<StrategyParams>({
+  const [draftParams, setParams] = useState<StrategyParams>({
     strategy: 'ema',
     symbol: 'BTC/USDT',
     capital: 10000,
@@ -56,6 +57,30 @@ export function StrategiesPage() {
     tsi_short_period: 13,
     tsi_long_period: 25,
   });
+  const datasetId = search.get('dataset') || '';
+  const datasets = useResource<DatasetList>('/market-history/datasets');
+  const selectedDataset = useResource<Dataset>(
+    `/market-history/datasets/${datasetId}/metadata`,
+    0,
+    !!datasetId,
+  );
+  const dataset = selectedDataset.data;
+  const params: StrategyParams =
+    datasetId && dataset
+      ? {
+          ...draftParams,
+          symbol: dataset.symbol,
+          timeframe: dataset.timeframe,
+          candles: dataset.count,
+        }
+      : draftParams;
+  const chooseDataset = (id: string) => {
+    const next = new URLSearchParams(search);
+    id ? next.set('dataset', id) : next.delete('dataset');
+    setSearch(next);
+    setResult(undefined);
+    setError('');
+  };
   const [result, setResult] = useState<Backtest>();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -69,7 +94,10 @@ export function StrategiesPage() {
     setError('');
     try {
       if (kind === 'backtest') {
-        const response = await post<Backtest>('/strategies/backtest', params);
+        const response = await post<Backtest>(
+          datasetId ? '/strategies/backtest/dataset' : '/strategies/backtest',
+          datasetId ? { ...params, dataset_id: datasetId } : params,
+        );
         setResult(response);
         toast('Backtest complete. Results saved to your workspace.');
       } else {
@@ -84,7 +112,10 @@ export function StrategiesPage() {
       setBusy('');
     }
   };
-  const activeResult = result ?? (history.data?.[0]?.payload as Backtest | undefined);
+  const activeResult =
+    result ??
+    (history.data?.find((run) => !datasetId || (run.payload as Backtest).dataset?.id === datasetId)
+      ?.payload as Backtest | undefined);
   const view = selectedView === 'monitor' ? 'monitor' : 'build';
   const tabs = (
     <SectionTabs
@@ -135,7 +166,16 @@ export function StrategiesPage() {
         eyebrow="THOUGHTFUL BY DESIGN"
         title="Strategy studio"
         description="A little space to try your next idea."
-        action={<AgentButton module="broker" context={{ parameters: params }} />}
+        action={
+          <AgentButton
+            module="broker"
+            context={
+              datasetId
+                ? { symbol: params.symbol, timeframe: params.timeframe }
+                : { parameters: params }
+            }
+          />
+        }
       />
       {tabs}
       <SectionPanel id="strategies" value={view}>
@@ -176,6 +216,40 @@ export function StrategiesPage() {
               }}
             >
               <label>
+                Research input
+                <select value={datasetId} onChange={(event) => chooseDataset(event.target.value)}>
+                  <option value="">Current feed · save exact input automatically</option>
+                  {datasetId && !datasets.data?.items.some((d) => d.id === datasetId) && (
+                    <option value={datasetId}>{dataset?.label || 'Loading saved dataset…'}</option>
+                  )}
+                  {datasets.data?.items.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.label} · {d.source_label} · {d.count.toLocaleString()} bars
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="footnote">
+                <Link to="/markets?view=history&historyTab=datasets">Browse all datasets</Link> ·
+                Saved inputs work offline. Pair, timeframe and candle count are fixed; strategy
+                parameters remain editable.
+              </p>
+              {dataset && datasetId && (
+                <div className="history-input-caption">
+                  <Badge tone={dataset.source === 'demo' ? 'sand' : 'neutral'}>
+                    {dataset.source === 'demo' ? 'Synthetic demo' : dataset.environment}
+                  </Badge>
+                  <span>
+                    {dataset.source_label} · {new Date(dataset.start).toLocaleDateString()} —{' '}
+                    {new Date(dataset.end).toLocaleDateString()} (exclusive)
+                  </span>
+                </div>
+              )}
+              {selectedDataset.error && datasetId && (
+                <ErrorState message={selectedDataset.error} retry={selectedDataset.retry} />
+              )}
+              {datasets.error && <ErrorState message={datasets.error} retry={datasets.retry} />}
+              <label>
                 Strategy
                 <select
                   value={params.strategy}
@@ -189,10 +263,17 @@ export function StrategiesPage() {
                 </select>
               </label>
               <div className="form-row">
-                <MarketSelector
-                  value={params.symbol}
-                  onChange={(value) => update('symbol', value)}
-                />
+                {datasetId ? (
+                  <label>
+                    Saved pair
+                    <input value={params.symbol} readOnly />
+                  </label>
+                ) : (
+                  <MarketSelector
+                    value={params.symbol}
+                    onChange={(value) => update('symbol', value)}
+                  />
+                )}
                 <label>
                   Virtual capital · {params.symbol.split('/')[1]}
                   <input
@@ -209,8 +290,14 @@ export function StrategiesPage() {
                   Observations
                   <select
                     value={params.candles}
+                    disabled={!!datasetId}
                     onChange={(event) => update('candles', Number(event.target.value))}
                   >
+                    {datasetId && (
+                      <option value={params.candles}>
+                        {params.candles.toLocaleString()} saved candles
+                      </option>
+                    )}
                     <option value={90}>90 candles</option>
                     <option value={180}>180 candles</option>
                     <option value={365}>365 candles</option>
@@ -228,10 +315,17 @@ export function StrategiesPage() {
                   />
                 </label>
               </div>
-              <TimeframeSelect
-                value={params.timeframe ?? '1d'}
-                onChange={(value) => update('timeframe', value)}
-              />
+              {datasetId ? (
+                <label>
+                  Saved timeframe
+                  <input value={params.timeframe} readOnly />
+                </label>
+              ) : (
+                <TimeframeSelect
+                  value={params.timeframe ?? '1d'}
+                  onChange={(value) => update('timeframe', value)}
+                />
+              )}
               <details className="advanced-options" open>
                 <summary>Indicator parameters</summary>
                 <div className="form-row">
@@ -423,20 +517,25 @@ export function StrategiesPage() {
                   {error}
                 </p>
               )}
-              <button className="button primary full-width" type="submit" disabled={!!busy}>
+              <button
+                className="button primary full-width"
+                type="submit"
+                disabled={!!busy || (!!datasetId && !dataset)}
+              >
                 <FlaskConical size={15} />
                 {busy === 'backtest' ? 'Testing your idea…' : 'Run backtest'}
               </button>
               <button
                 className="button secondary full-width"
                 type="button"
-                disabled={!!busy}
+                disabled={!!busy || !!datasetId}
                 onClick={() => run('jobs')}
               >
                 <Play size={14} />
                 {busy === 'jobs' ? 'Starting…' : 'Start paper strategy'}
               </button>
               <p className="footnote">
+                {datasetId && 'Choose current-feed input to start a paper strategy. '}
                 Each paper strategy has its own virtual account. Evaluated every 30 seconds; trades
                 at most once per new closed candle.
               </p>
@@ -454,6 +553,47 @@ export function StrategiesPage() {
             />
             {activeResult ? (
               <>
+                {activeResult.dataset && (
+                  <div className="history-result-input">
+                    <Badge tone={activeResult.dataset.source === 'demo' ? 'sand' : 'neutral'}>
+                      {activeResult.dataset.source === 'demo'
+                        ? 'Synthetic demo input'
+                        : 'Saved input'}
+                    </Badge>
+                    <strong>
+                      {activeResult.dataset.source_label} ·{' '}
+                      {activeResult.dataset.count.toLocaleString()} bars
+                    </strong>
+                    <code title={activeResult.dataset.digest}>
+                      {activeResult.dataset.digest.slice(0, 16)}…
+                    </code>
+                    <button
+                      className="text-button"
+                      onClick={() => chooseDataset(activeResult.dataset!.id)}
+                    >
+                      Reuse input
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={async () => {
+                        try {
+                          await downloadFile(
+                            `/market-history/datasets/${activeResult.dataset!.id}`,
+                            `sibyl-dataset-${activeResult.dataset!.id.slice(0, 12)}.json`,
+                          );
+                        } catch (e) {
+                          setError((e as Error).message);
+                        }
+                      }}
+                    >
+                      Export input
+                    </button>
+                    <small>
+                      Recorded engine {activeResult.engine_version || 'unknown'}. Same input and
+                      settings can be rerun with the same engine.
+                    </small>
+                  </div>
+                )}
                 <div className="backtest-metrics">
                   <div>
                     <small>Total return</small>
@@ -585,6 +725,11 @@ export function StrategiesPage() {
                 </p>
                 <details className="fill-details">
                   <summary>Inspect {activeResult.fills.length} simulated fills</summary>
+                  {activeResult.fills.length > 200 && (
+                    <p className="footnote padded">
+                      Showing the latest 200 fills. Export fills above for the complete history.
+                    </p>
+                  )}
                   <div className="table-scroll">
                     <table>
                       <thead>
@@ -596,7 +741,7 @@ export function StrategiesPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {activeResult.fills.map((fill, i) => (
+                        {activeResult.fills.slice(-200).map((fill, i) => (
                           <tr key={i}>
                             <td>{new Date(fill.timestamp).toLocaleDateString()}</td>
                             <td>{fill.side}</td>

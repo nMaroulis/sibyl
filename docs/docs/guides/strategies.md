@@ -69,3 +69,7 @@ The drawdown view shows negative percentage distance below the running equity pe
 Stop-loss and take-profit thresholds use the observed close relative to entry price. They fill at the next open in a backtest and at a current quote on a subsequent worker tick in a paper job. They do not guarantee intrabar stop prices. Reaching a round-trip limit prevents further entries; paper jobs become completed after their final exit. Pause retains the virtual position. Completed and stopped jobs cannot resume.
 
 Freqtrade, ML/RL strategies, and automatic live exchange strategies are marked **Coming soon**. Broker can inspect current parameters but cannot run or execute them.
+
+## Reuse exact research inputs
+
+The **Research input** selector switches between a current feed and saved immutable datasets. Current-feed backtests retain their exact contiguous input automatically. Saved inputs fix the pair, timeframe and count, accept up to 20,000 consecutive candles and run offline. Results show source provenance, fingerprint, recorded engine version and reuse/export controls. Choose current-feed input to launch a separate paper job. See [saved datasets](market-history.md#save-a-research-input).

@@ -197,3 +197,11 @@ The existing exchange order preview accepts `order_type` (`market` by default, o
 `GET /notifications` pages retained local evidence with `limit` (1–100) and `offset`, plus unread totals. `POST /notifications/{id}/read` or `/notifications/read-all` acknowledges without deleting. Delivery is in-app only, never a trade or external send. See [complete alert contracts](alerts.md).
 
 `GET /roadmap` returns the human-audited capability inventory, including deferred multi-user scope; it performs no provider calls. The Coming soon page consumes it directly.
+
+## Retained market history
+
+The `/market-history` routes expose local coverage, resumable reviewed imports, retention and immutable datasets. `/strategies/backtest/dataset` runs saved inputs offline. Current-feed backtests also save their exact input. See the [complete endpoint contracts and limits](candle-history.md#api).
+
+## Observed source diagnostics
+
+`GET /providers/health` returns sanitized current-process read health, independent quote freshness, shared queues/cooldowns and persistent import counts. Optional `source` filters one source. It never probes providers. Deferred reads return HTTP 503 with a safe Retry-After header. See [provider control](provider-control.md).

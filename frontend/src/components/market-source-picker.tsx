@@ -9,10 +9,12 @@ export function MarketSourcePicker({
   settings,
   value,
   onChange,
+  allowUnavailable = false,
 }: {
   settings: MarketSettings;
   value: string;
   onChange: (source: string) => void;
+  allowUnavailable?: boolean;
 }) {
   const groups: PickerGroup[] = [
     { label: 'Exchanges', detail: 'Public feeds · no key', options: [] },
@@ -36,7 +38,9 @@ export function MarketSourcePicker({
         source.kind === 'demo'
           ? 'Simulated quotes, candles & order books'
           : !source.available
-            ? 'Set up an API key in Settings'
+            ? allowUnavailable
+              ? 'Retained data only · configure access to import'
+              : 'Set up an API key in Settings'
             : source.environment === 'test'
               ? 'Connected account · Test environment'
               : source.kind === 'connection'
@@ -52,7 +56,7 @@ export function MarketSourcePicker({
         source.id === settings.active.id ? (
           <span className="picker-default-badge">Default</span>
         ) : undefined,
-      disabled: !source.available,
+      disabled: !source.available && !allowUnavailable,
     });
   }
   return (

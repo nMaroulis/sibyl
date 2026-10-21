@@ -17,6 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from sibyl import __version__
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
+from sibyl.market_data.backfills import CandleHistory
+from sibyl.market_data.control import ProviderDeferred
 from sibyl.services.account_sync import AccountSync
 from sibyl.services.accounts import Accounts
 from sibyl.services.alerts import PriceAlerts
@@ -53,6 +55,7 @@ class Services:
     funding_sync: FundingSync
     transfers: TransferReconciliation
     alerts: PriceAlerts
+    history: CandleHistory
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -87,6 +90,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         trading = ExchangeTrading(market, store)
         alerts = PriceAlerts(market, store)
+        history = CandleHistory(market, store)
         app.state.services = Services(
             config,
             store,
@@ -104,11 +108,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             funding_sync,
             transfers,
             alerts,
+            history,
         )
+
+        def background_call(method):
+            with market.requests.background():
+                return method()
 
         async def worker():
             while True:
-                await asyncio.to_thread(strategies.tick)
+                await asyncio.to_thread(background_call, strategies.tick)
                 await asyncio.sleep(30)
 
         async def news_worker():
@@ -120,18 +129,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         async def account_worker():
             while True:
-                await asyncio.to_thread(account_sync.tick)
-                await asyncio.to_thread(funding_sync.tick)
+                await asyncio.to_thread(background_call, account_sync.tick)
+                await asyncio.to_thread(background_call, funding_sync.tick)
                 await asyncio.sleep(1)
 
         async def order_worker():
             while True:
-                await asyncio.to_thread(trading.lifecycle.tick)
+                await asyncio.to_thread(background_call, trading.lifecycle.tick)
                 await asyncio.sleep(1)
 
         async def alert_worker():
             while True:
-                await asyncio.to_thread(alerts.tick)
+                await asyncio.to_thread(background_call, alerts.tick)
+                await asyncio.sleep(1)
+
+        async def candle_worker():
+            while True:
+                await asyncio.to_thread(background_call, history.tick)
                 await asyncio.sleep(1)
 
         task = asyncio.create_task(worker())
@@ -139,18 +153,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         account_task = asyncio.create_task(account_worker())
         order_task = asyncio.create_task(order_worker())
         alert_task = asyncio.create_task(alert_worker())
+        candle_task = asyncio.create_task(candle_worker())
         try:
             yield
         finally:
-            for background in (task, news_task, account_task, order_task, alert_task):
+            for background in (task, news_task, account_task, order_task, alert_task, candle_task):
                 background.cancel()
-            for background in (task, news_task, account_task, order_task, alert_task):
+            for background in (task, news_task, account_task, order_task, alert_task, candle_task):
                 with suppress(asyncio.CancelledError):
                     await background
             await asyncio.to_thread(account_sync.close)
             await asyncio.to_thread(funding_sync.close)
             await asyncio.to_thread(trading.lifecycle.close)
             await asyncio.to_thread(alerts.close)
+            await asyncio.to_thread(history.close)
             market.close()
 
     app = FastAPI(
@@ -207,6 +223,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(
             {"detail": "Provider request failed. Check connectivity, market availability, and permissions."},
             status_code=502,
+        )
+
+    @app.exception_handler(ProviderDeferred)
+    async def provider_deferred(_request, exc):
+        return JSONResponse(
+            {
+                "detail": "Provider reads are queued or cooling down. Try again shortly.",
+                "retry_after": exc.retry_after,
+            },
+            status_code=503,
+            headers={"Retry-After": str(exc.retry_after), "Cache-Control": "no-store"},
         )
 
     for exception in (ccxt.BaseError, httpx.HTTPError):

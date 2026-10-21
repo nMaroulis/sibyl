@@ -8,6 +8,7 @@ import httpx
 
 from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.data import TIMEFRAMES
+from sibyl.market_data.control import retry_after
 
 COIN_IDS = {
     "BTC": "bitcoin",
@@ -59,6 +60,12 @@ class PublicAPIClient(ExchangeClient):
                 import json
 
                 result = json.loads(b"".join(chunks))
+                status = result.get("status", {}) if isinstance(result, dict) else {}
+                code = status.get("error_code") if isinstance(status, dict) else None
+                if code in {10002, 10010, 10011}:
+                    raise ccxt.AuthenticationError("Market provider rejected the API key.")
+                if code == 10005:
+                    raise ccxt.PermissionDenied("Market provider plan does not permit this operation.")
                 if (
                     not isinstance(result, dict)
                     or result.get("Response") == "Error"
@@ -66,6 +73,24 @@ class PublicAPIClient(ExchangeClient):
                 ):
                     raise ValueError("Market provider returned an unsuccessful response.")
                 return result
+        except httpx.HTTPStatusError as error:
+            code = error.response.status_code
+            kind = (
+                ccxt.RateLimitExceeded
+                if code == 429
+                else ccxt.AuthenticationError
+                if code == 401
+                else ccxt.PermissionDenied
+                if code == 403
+                else ccxt.RequestTimeout
+                if code == 408
+                else ccxt.ExchangeNotAvailable
+                if code >= 500
+                else ccxt.BadRequest
+            )
+            failure = kind("Market provider request failed. Check access and quota.")
+            failure.retry_after = retry_after(error.response.headers.get("retry-after"))
+            raise failure from None
         except httpx.HTTPError:
             raise ccxt.ExchangeNotAvailable(
                 "Market provider request failed. Check access and quota."
@@ -105,7 +130,9 @@ class CryptoCompareClient(PublicAPIClient):
     """CCCAGG reference quotes and direct-pair OHLCV; synthetic conversions are disabled."""
 
     id = "cryptocompare"
-    timeframes = TIMEFRAMES
+    candle_history = True
+    # A native seven-day aggregate is not necessarily a Monday-open weekly candle.
+    timeframes = {key: value for key, value in TIMEFRAMES.items() if key != "1w"}
     intervals = {
         "1m": ("histominute", 1),
         "5m": ("histominute", 5),
@@ -115,7 +142,6 @@ class CryptoCompareClient(PublicAPIClient):
         "4h": ("histohour", 4),
         "12h": ("histohour", 12),
         "1d": ("histoday", 1),
-        "1w": ("histoday", 7),
     }
 
     def __init__(self, api_key: str = "", transport=None):
@@ -175,6 +201,25 @@ class CryptoCompareClient(PublicAPIClient):
         }
 
     def fetch_ohlcv(self, symbol: str, timeframe: str = "1d", limit: int = 180) -> list[list]:
+        return self._candles(symbol, timeframe, limit)
+
+    def candle_page_size(self, timeframe: str) -> int:
+        """Respect the 2,000 underlying-interval budget, including one boundary bar."""
+        if timeframe not in self.intervals:
+            raise ValueError("Unsupported candle timeframe.")
+        return min(200, 2000 // self.intervals[timeframe][1] - 1)
+
+    def fetch_candle_page(self, symbol: str, timeframe: str, start: int, end: int) -> list[list]:
+        """Read one backward native toTs window, then keep its exact forward range."""
+        from sibyl.market_data.archive import step_ms
+
+        limit = self.candle_page_size(timeframe)
+        if not 0 < end - start <= limit * step_ms(timeframe):
+            raise ValueError(f"Use a historical page of at most {limit} intervals.")
+        rows = self._candles(symbol, timeframe, limit, end // 1000 - 1)
+        return [r for r in rows if start <= r[0] < end]
+
+    def _candles(self, symbol: str, timeframe: str, limit: int, to_ts: int | None = None) -> list[list]:
         self.market(symbol)
         if timeframe not in self.intervals or not 1 <= limit <= 1000:
             raise ValueError("Unsupported interval or candle count.")
@@ -194,6 +239,7 @@ class CryptoCompareClient(PublicAPIClient):
                 "aggregate": aggregate,
                 "aggregatePredictableTimePeriods": "true",
                 "tryConversion": "false",
+                **({"toTs": to_ts} if to_ts is not None else {}),
             },
         )
         rows = object_row(result.get("Data", {})).get("Data")

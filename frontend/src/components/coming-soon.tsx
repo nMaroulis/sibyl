@@ -54,8 +54,8 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     },
     {
       module: 'markets',
-      title: 'A longer market memory',
-      text: 'Persisted candle history, historical backfills, gap detection, shared provider health and WebSocket streams. Current charts use closed REST candle pages.',
+      title: 'Streaming markets',
+      text: 'WebSocket streams, reviewed endpoint-weight budgets and durable operational health history. Shared read limits, cooldowns, source diagnostics, retained candles and saved datasets are available now.',
     },
     {
       module: 'alerts',

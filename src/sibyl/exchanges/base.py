@@ -25,6 +25,7 @@ class ExchangeClient(ABC):
     id: str
     timeframes: dict
     history_kind: str = ""
+    candle_history: bool = False
 
     def __init__(self):
         self.lock = RLock()
@@ -54,6 +55,14 @@ class ExchangeClient(ABC):
     @abstractmethod
     def fetch_ohlcv(self, symbol: str, timeframe: str = "1d", limit: int = 180) -> list[list]:
         """Read ascending OHLCV rows, possibly including the still-open interval."""
+
+    def fetch_candle_page(self, symbol: str, timeframe: str, start: int, end: int) -> list[list]:
+        """Read one reviewed historical UTC window; the end boundary is exclusive."""
+        raise ccxt.NotSupported("Historical candle pagination is not reviewed for this provider.")
+
+    def candle_page_size(self, timeframe: str) -> int:
+        """Bound one historical request; providers may impose tighter aggregation limits."""
+        return 200
 
     @abstractmethod
     def fetch_order_book(self, symbol: str, limit: int = 10) -> dict:

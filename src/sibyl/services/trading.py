@@ -185,7 +185,7 @@ class ExchangeTrading:
             self.lifecycle.write(db, intent)
         request = ExchangeOrderRequest(**intent["request"])
         try:
-            with self.market.adapter(connection) as client:
+            with self.market.adapter(connection, write=True) as client:
                 kwargs = {"price": request.limit_price} if request.order_type == "limit" else {}
                 result = client.create_order(
                     request.symbol,

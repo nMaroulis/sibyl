@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { AgentButton } from '../components/agents';
 import { ComingSoon } from '../components/coming-soon';
+import { SourceHealthPanel } from '../components/provider-health';
 import { ConfigHelper } from '../components/config-helper';
 import { NewsSettings } from '../components/news-settings';
 import { ModelSettings } from '../components/model-settings';
@@ -79,6 +80,7 @@ export function SettingsPage({ system }: { system?: System }) {
             title="Market & research data"
             description="Choose a market feed, connect provider keys, and explore the services behind Research."
           />
+          <SourceHealthPanel active={tab === 'market'} />
           {system ? <ConfigHelper /> : <AccessNote />}
           <div className="settings-provider-grid">
             {[

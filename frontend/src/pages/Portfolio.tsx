@@ -23,6 +23,7 @@ import {
   Panel,
   PanelTitle,
 } from '../components/ui';
+import { SourceHealthSummary } from '../components/provider-health';
 import { AccountBalances } from '../components/account-balances';
 import { ExchangeMark } from '../components/exchange-mark';
 import { AgentButton } from '../components/agents';
@@ -175,6 +176,7 @@ function PortfolioWorkspace({
           </>
         }
       />
+      <SourceHealthSummary source={data.source} />
       <AccountContext selection={{ ...selection, mode: data.mode }} />
       <PortfolioScope selection={selection} scope={scope} onChange={select} />
       <PortfolioAccounts portfolio={data} select={select} />

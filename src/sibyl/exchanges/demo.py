@@ -30,6 +30,7 @@ class DemoClient(ExchangeClient):
 
     id = "demo"
     history_kind = "demo-keyset"
+    candle_history = True
     timeframes = TIMEFRAMES
 
     def __init__(self, store: "Store | None" = None):
@@ -101,7 +102,9 @@ class DemoClient(ExchangeClient):
         prices *= DEMO_ASSETS[base][1] / prices[-1]
         if base == "USDT":
             prices[:] = 1.0
-        closed_at = int(datetime.now(UTC).timestamp()) // seconds * seconds
+        from sibyl.market_data.archive import floor_time, now_ms
+
+        closed_at = floor_time(now_ms(), timeframe) // 1000
         start = datetime.fromtimestamp(closed_at, UTC) - timedelta(seconds=730 * seconds)
         result = []
         for i, close in enumerate(prices):
@@ -135,6 +138,14 @@ class DemoClient(ExchangeClient):
             ]
             for row in self._candles(symbol, limit, timeframe)
         ]
+
+    def fetch_candle_page(self, symbol: str, timeframe: str, start: int, end: int) -> list[list]:
+        """Page the same 730-bar deterministic series; absent older samples stay absent."""
+        from sibyl.market_data.archive import step_ms
+
+        if not 0 < end - start <= 200 * step_ms(timeframe):
+            raise ValueError("Use a historical page of at most 200 intervals.")
+        return [r for r in self.fetch_ohlcv(symbol, timeframe, 730) if start <= r[0] < end]
 
     def fetch_ticker(self, symbol: str) -> dict:
         """Generate a current synthetic snapshot from the last two fixture closes.

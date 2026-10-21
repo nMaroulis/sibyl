@@ -32,7 +32,7 @@ Editing a watchlist changes what you follow on Markets. Portfolio valuation uses
 
 Choose a supported exact market, a timeframe, and a sample size of up to 720 observations. Provider aggregation limits can reduce the choices. The API accepts 60–720 observations. Supported intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `12h`, `1d`, and `1w`, restricted to the live provider's available intervals. The currently forming candle is excluded. A provider may return fewer observations than requested.
 
-Switch between a line chart and OHLC candlesticks. Pointer movement and the keyboard-accessible inspection slider show each candle's timestamp, open, high, low, close, and volume. The indicator toggle adds Bollinger bands and EMA 9. Export saves the supplied OHLCV sample, market, and timeframe.
+Switch between a line chart and OHLC candlesticks. Use range presets, +/− zoom, drag-to-pan, volume controls and the history navigator; rendering is capped to 600 visible candles. Pointer movement and the keyboard-accessible inspection slider show each candle's timestamp, open, high, low, close, and volume. The indicator toggle adds Bollinger bands and EMA 9. Zoom/inspection reuse the loaded data without new provider reads. Export saves the supplied OHLCV sample, market, and timeframe.
 
 Demo history is deterministic and synthetic; cross quotes are ratios of aligned demo histories, with conservative OHLC ranges. Live data uses the selected exchange or API adapter. Quotes cache for 30 seconds, candles for 60 seconds, and the spot catalog for ten minutes.
 
@@ -63,3 +63,7 @@ Spearman ranks each aligned series and computes Pearson on those ranks. No causa
 Watchlist quotes can choose USD or USDC when USDT is unavailable, with the actual pair labeled. Analysis and correlations require exact provider pairs. Portfolio uses observed conversion routes without stablecoin parity; the separate paper reference-price helper still permits USD/USDC substitution. Actual exchange orders require the exact supported market. See [Market data sources](../developers/market-data.md) for caching, provider limits and backend contracts.
 
 Use **Price alerts** to open the alert manager with this exact pair/feed preselected. Creating a rule does not change your watchlist, account selection or workspace default. See [price alerts and inbox](alerts.md).
+
+## Retained candles and research inputs
+
+Open **History & datasets** to inspect exact-source coverage, import older candles, pause/resume/rescan progress, review gaps and manage mutable retention. Save complete intervals as immutable inputs for offline backtests and full JSON export. See [market history and saved datasets](market-history.md) for provider limitations and chart keyboard controls.

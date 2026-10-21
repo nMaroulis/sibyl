@@ -1,6 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Download, CandlestickChart, Network, ArrowUpRight, Star, Bell } from 'lucide-react';
+import {
+  Download,
+  CandlestickChart,
+  Network,
+  ArrowUpRight,
+  Star,
+  Bell,
+  History,
+} from 'lucide-react';
 import {
   AssetIcon,
   Badge,
@@ -15,7 +23,10 @@ import {
 } from '../components/ui';
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { AgentButton } from '../components/agents';
-import { IndicatorChart, Sparkline } from '../components/charts';
+import { Sparkline } from '../components/charts';
+import { SourceHealthSummary } from '../components/provider-health';
+import { MarketHistoryPage } from './MarketHistory';
+import { frameSeconds } from '../lib/market-history';
 import { Candlesticks } from '../components/candlesticks';
 import { MarketSelector, TimeframeSelect, type SpotCatalog } from '../components/market-controls';
 import { MarketWatchlist } from '../components/market-watchlist';
@@ -39,6 +50,7 @@ export function Markets() {
   const settings = useResource<MarketSettings>('/settings/market');
   if (settings.error) return <ErrorState message={settings.error} retry={settings.retry} />;
   if (!settings.data) return <Loading />;
+  if (params.get('view') === 'history') return <MarketHistoryPage settings={settings.data} />;
   const sourceId = params.get('source') || settings.data.active.id;
   const selected = settings.data.catalog.find((s) => s.id === sourceId) ?? settings.data.active;
   const feedControl = (
@@ -82,7 +94,9 @@ function MarketsView({
       pairs.find((p) => p.symbol === 'BTC/USD')?.symbol ||
       pairs[0]?.symbol ||
       wanted;
-  const [chosenFrame, setTimeframe] = useState<Timeframe>('1d');
+  const [chosenFrame, setTimeframe] = useState<Timeframe>(
+    (params.get('timeframe') || '') in frameSeconds ? (params.get('timeframe') as Timeframe) : '1d',
+  );
   const frames = catalog.data?.timeframes ?? [];
   const timeframe = frames.includes(chosenFrame)
     ? chosenFrame
@@ -142,6 +156,12 @@ function MarketsView({
             >
               <Bell size={14} /> Price alerts
             </Link>
+            <Link
+              className="button secondary"
+              to={`/markets?view=history&source=${encodeURIComponent(sourceId)}&symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}`}
+            >
+              <History size={14} /> History & datasets
+            </Link>
             <AgentButton module="analyst" context={context} />
           </>
         }
@@ -167,6 +187,7 @@ function MarketsView({
           </Link>
         </p>
       </div>
+      <SourceHealthSummary source={sourceId} />
       {catalog.data && (
         <div className="market-quick-heading">
           <span>Quick look · your watchlist</span>
@@ -322,14 +343,12 @@ function MarketsView({
                         </button>
                       </div>
                     </div>
-                    {view === 'candles' ? (
-                      <Candlesticks data={analysis.data.candles} bands={bands} />
-                    ) : (
-                      <IndicatorChart
-                        data={analysis.data.candles.map((row) => ({ ...row }))}
-                        bands={bands}
-                      />
-                    )}
+                    <Candlesticks
+                      data={analysis.data.candles}
+                      bands={bands}
+                      mode={view === 'line' ? 'line' : 'candles'}
+                      intervalSeconds={frameSeconds[timeframe]}
+                    />
                     <div className="chart-footnote">
                       <DataNote source={analysis.data.source} label={analysis.data.source_label} />
                       <button
@@ -495,7 +514,7 @@ function MarketsView({
             <div className="quiet-callout">
               <span className="four-point">✳</span>
               <h3>Keep the context.</h3>
-              <p>Ask your analyst about this market and the exact chart window you selected.</p>
+              <p>Ask your analyst about this market and the loaded candle sample.</p>
               <AgentButton module="analyst" context={context} compact>
                 Discuss this window
               </AgentButton>

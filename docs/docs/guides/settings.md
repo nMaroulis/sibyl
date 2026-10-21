@@ -59,3 +59,7 @@ Saved choices take precedence over environment defaults. This tab also describes
 Open `/settings?tab=workspace` for the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
 
 Manual exchange order permission is controlled separately by `SIBYL_ALLOW_LIVE_TRADING`. Paper strategy accounts always remain virtual. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
+
+## Source health
+
+**Market data → Source health** shows observed connectivity, latest quote quality, response time, safe recent errors and queued work. Expand a source for details; use Show all sources to include unchecked providers. Refresh diagnostics reads local evidence without testing keys or contacting exchanges. Demo is explicitly offline, and a selectable feed is not marked healthy until a real read succeeds. Metrics reset on API restart; import job counts persist. Markets and populated Portfolio views show the same compact feed status. See [request policies and boundaries](../developers/provider-control.md).

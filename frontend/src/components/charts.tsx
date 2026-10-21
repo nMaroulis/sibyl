@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import {
   Area,
   AreaChart,
@@ -34,6 +34,23 @@ export function ValueChart({
   unit?: string;
 }) {
   const id = useId().replaceAll(':', '');
+  // Keep each bucket's extrema and the endpoints; calculations/exports retain full data.
+  const plotted = useMemo(() => {
+    if (data.length <= 1200) return data;
+    const chosen = new Set([0, data.length - 1]);
+    const width = Math.ceil(data.length / 500);
+    for (let start = 0; start < data.length; start += width) {
+      let low = start,
+        high = start;
+      for (let i = start + 1; i < Math.min(data.length, start + width); i++) {
+        if (data[i].value < data[low].value) low = i;
+        if (data[i].value > data[high].value) high = i;
+      }
+      chosen.add(low);
+      chosen.add(high);
+    }
+    return [...chosen].sort((a, b) => a - b).map((i) => data[i]);
+  }, [data]);
   const intraday =
     data.length > 1 &&
     new Date(data[data.length - 1].timestamp).getTime() - new Date(data[0].timestamp).getTime() <
@@ -51,7 +68,7 @@ export function ValueChart({
   return (
     <div className="value-chart" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 20, right: 10, bottom: 0, left: 5 }}>
+        <AreaChart data={plotted} margin={{ top: 20, right: 10, bottom: 0, left: 5 }}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={0.22} />
@@ -105,10 +122,16 @@ export function ValueChart({
             stroke={color}
             strokeWidth={2}
             fill={`url(#${id})`}
-            animationDuration={600}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>
+      {plotted.length < data.length && (
+        <small className="chart-sampling-note">
+          Display sampled to {plotted.length.toLocaleString()} points, preserving bucket extrema.
+          Metrics and exports use all {data.length.toLocaleString()} observations.
+        </small>
+      )}
     </div>
   );
 }

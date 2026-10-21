@@ -4,14 +4,14 @@ Market data is independent from account mode and execution permissions. A worksp
 
 ## Available sources
 
-| Source | Credentials | Implemented reads |
-| --- | --- | --- |
-| Sibyl Demo | None | Offline deterministic quotes, OHLCV and synthetic order books |
-| 20 public exchanges | None for public endpoints | Active spot catalog, quotes, provider-supported OHLCV and order-book snapshots |
-| Saved exchange account | Existing encrypted exchange credentials | Its exchange and production/test environment; capabilities depend on that client |
-| CryptoCompare / CoinDesk CCCAGG | Provider API key | Six reference assets plus USDT/USDC/DAI conversion quotes; direct-pair quotes and OHLCV |
-| CoinGecko Demo API | Free Demo-plan API key | Six reference assets plus USDT/USDC/DAI quoted in USD; quotes only |
-| CoinGecko Pro API | Paid Pro API key | The same quote contract on the separate Pro endpoint |
+| Source                          | Credentials                             | Implemented reads                                                                       |
+| ------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------- |
+| Sibyl Demo                      | None                                    | Offline deterministic quotes, OHLCV and synthetic order books                           |
+| 20 public exchanges             | None for public endpoints               | Active spot catalog, quotes, provider-supported OHLCV and order-book snapshots          |
+| Saved exchange account          | Existing encrypted exchange credentials | Its exchange and production/test environment; capabilities depend on that client        |
+| CryptoCompare / CoinDesk CCCAGG | Provider API key                        | Six reference assets plus USDT/USDC/DAI conversion quotes; direct-pair quotes and OHLCV |
+| CoinGecko Demo API              | Free Demo-plan API key                  | Six reference assets plus USDT/USDC/DAI quoted in USD; quotes only                      |
+| CoinGecko Pro API               | Paid Pro API key                        | The same quote contract on the separate Pro endpoint                                    |
 
 The reference crypto assets are BTC, ETH, SOL, LINK, AVAX and DOT; the API catalogs also include USDT, USDC and DAI for observed conversion rates. Exchange spot catalogs are broader. Aggregators do not expose an exchange order book. CoinGecko's **Demo API plan supplies live data**; it is separate from Sibyl's offline Demo fixtures. Its adapter intentionally has no candles: simple-price observations do not contain OHLCV, and snapshot volume is not candle volume.
 
@@ -47,19 +47,19 @@ Watchlist quotes cache for 30 seconds, adapter quote batches for up to 60 second
 
 Only closed candles enter analysis. CryptoCompare requests direct pairs with `tryConversion=false`; it validates OHLCV, preserves base-asset volume and omits empty zero-price placeholder bars. Aggregation is restricted to at most 2,000 underlying intervals per request. `/markets/symbols` returns per-timeframe `candle_limits`, which the UI uses to constrain sample choices. Provider plan limits can be stricter.
 
-Live errors stay errors; there is no automatic Demo fallback. Durable historical backfill, WebSockets, global provider budgets and automatic source failover remain future work. Tests use mocked native responses and isolated Demo stores; authenticated provider acceptance testing still needs user-supplied accounts.
+Live errors stay errors; there is no automatic Demo fallback. Closed candle pages now persist in the exact-source archive. Reviewed historical imports, gap inspection, retention and immutable backtest inputs are implemented; see [candle history](candle-history.md). Market-owned clients now share local read admission, transport spacing, cooldowns and observed diagnostics; see [provider control](provider-control.md). WebSockets, reviewed endpoint-weight budgets, durable operational history, broader historical adapters and automatic source failover remain future work. Tests use mocked native responses and isolated Demo stores; authenticated provider acceptance testing still needs user-supplied accounts.
 
 ## Persisted watchlists
 
 `Watchlists` owns source-specific membership/order; `Market.quotes(symbols)` reads exact spot quotes. Portfolio uses the independent `Valuation` service and `Market.valuation_ticker()` for actual held assets; see [portfolio valuation](portfolio-valuation.md). `Market.overview()` remains a legacy six-asset reference helper, not the portfolio pricing universe. Watchlist edits cannot change account selection, holdings, portfolio pricing or order permissions.
 
-| Method | Endpoint | Body / result |
-| --- | --- | --- |
-| GET | `/markets/watchlist?source=binance` | Saved `symbols`, `revision`, `updated_at`, `limit` and source metadata; no ticker reads |
-| POST | `/markets/watchlist/items?source=binance` | `{"symbol":"ADA/USDT"}`; validates exact provider support before appending |
-| DELETE | `/markets/watchlist/items?source=binance&symbol=ADA%2FUSDT` | Idempotent removal; requires no successful provider quote |
-| POST | `/markets/watchlist/order?source=binance` | `{"symbols":["ETH/USDT","BTC/USDT"]}`; must be a permutation of current members |
-| GET | `/markets?source=binance` | Saved configuration plus quotes in its order, warnings and assembly time |
+| Method | Endpoint                                                    | Body / result                                                                           |
+| ------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| GET    | `/markets/watchlist?source=binance`                         | Saved `symbols`, `revision`, `updated_at`, `limit` and source metadata; no ticker reads |
+| POST   | `/markets/watchlist/items?source=binance`                   | `{"symbol":"ADA/USDT"}`; validates exact provider support before appending              |
+| DELETE | `/markets/watchlist/items?source=binance&symbol=ADA%2FUSDT` | Idempotent removal; requires no successful provider quote                               |
+| POST   | `/markets/watchlist/order?source=binance`                   | `{"symbols":["ETH/USDT","BTC/USDT"]}`; must be a permutation of current members         |
+| GET    | `/markets?source=binance`                                   | Saved configuration plus quotes in its order, warnings and assembly time                |
 
 All routes use existing workspace access controls. Omitting `source` selects the workspace default. `market_watchlists` stores one ordered list per source ID in SQLite. Defaults are initialized once from supported pairs; an explicitly empty row remains empty. Edits use an immediate transaction, so concurrent additions/removals do not overwrite each other. Add/remove are idempotent and only actual edits advance `revision`. Reorder rejects a stale membership set, preserving intervening additions/removals. Lists have at most 30 unique canonical ASCII spot symbols.
 

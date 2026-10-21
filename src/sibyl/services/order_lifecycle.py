@@ -15,6 +15,7 @@ from uuid import uuid4
 import ccxt
 
 from sibyl.exchanges.base import number
+from sibyl.market_data.control import ProviderDeferred
 
 TERMINAL = {"closed", "canceled", "expired", "rejected"}
 OPEN = {"open", "submitted", "pending", "unknown", "submitting"}
@@ -222,7 +223,7 @@ class OrderLifecycle:
                 self.write(db, intent)
             try:
                 connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
-                with self.market.adapter(connection) as client:
+                with self.market.adapter(connection, write=True) as client:
                     result = client.cancel_order(command["exchange_order_id"], command["symbol"])
                 command.update(
                     status="requested",
@@ -282,14 +283,15 @@ class OrderLifecycle:
                 if not connection.active:
                     raise ValueError("Account is inactive; automatic status checks are paused.")
                 self.refresh(intent["id"])
-            except Exception:
+            except Exception as error:
                 with self.lock(intent["id"]), self.store.db() as db:
                     db.execute("BEGIN IMMEDIATE")
                     current = self.read(db, intent["id"])
-                    count = min(10, current.get("sync_failures", 0) + 1)
+                    deferred = isinstance(error, ProviderDeferred)
+                    count = min(10, current.get("sync_failures", 0) + int(not deferred))
                     current.update(
                         sync_failures=count,
-                        next_check=time.time() + min(900, 20 * 2**count),
+                        next_check=time.time() + (error.retry_after if deferred else min(900, 20 * 2**count)),
                         sync_error="Status unavailable or account inactive/disconnected. The last observation is retained; no write was retried.",
                     )
                     self.write(db, current)

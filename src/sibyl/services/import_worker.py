@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 import ccxt
 
+from sibyl.market_data.control import ProviderDeferred
 from sibyl.services.ledger import now_iso
 
 
@@ -67,8 +68,7 @@ class ImportWorker:
                 if not connection.active:
                     self.pause(job["account_id"])
                     return
-                client = self.market.client(connection)
-                with client.lock:
+                with self.market.adapter(connection) as client:
                     page = self.read_page(client, job)
                 self.ledger.commit_page(job, page)
             except Exception as error:
@@ -98,9 +98,11 @@ class ImportWorker:
             current = self.ledger.read_job(db, job["account_id"], job[self.key_field])
             if job.get("revision") and current.get("revision") != job["revision"]:
                 return
-            retries = current["retries"] + 1
-            retry = transient and retries <= 5
-            next_attempt = time.time() + min(300, 15 * 2 ** min(retries - 1, 5)) if retry else 0
+            deferred = isinstance(error, ProviderDeferred)
+            retries = current["retries"] + int(not deferred)
+            retry = deferred or (transient and retries <= 5)
+            delay = error.retry_after if deferred else min(300, 15 * 2 ** min(retries - 1, 5))
+            next_attempt = time.time() + delay if retry else 0
             current.update(error=message, retries=retries, next_attempt=next_attempt)
             if current["status"] not in {"paused", "disconnected"}:
                 current["status"] = "retrying" if retry else "error"

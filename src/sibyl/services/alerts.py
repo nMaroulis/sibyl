@@ -15,6 +15,7 @@ from uuid import uuid4
 from pydantic import Field, field_validator
 
 from sibyl.exchanges.base import number
+from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import OrderRequest, Request
 
 
@@ -231,9 +232,13 @@ class PriceAlerts:
             rule = self._read(db, identity)
         if rule["status"] != "armed":
             return rule
+        deferred = None
         try:
             price, observed_at = self._observe(rule)
             error = None
+        except ProviderDeferred as exc:
+            deferred = exc
+            error = "Feed reads are queued or cooling down. The alert remains armed."
         except ValueError as exc:
             # Only our freshness messages are persisted; source/provider errors are sanitized below.
             safe = {
@@ -256,8 +261,12 @@ class PriceAlerts:
                 return current
             current.update(last_checked_at=stamp(), error=error)
             if error:
-                failures = min(10, current["failures"] + 1)
-                current.update(failures=failures, next_check=time.time() + min(900, 30 * 2**failures))
+                failures = min(10, current["failures"] + int(deferred is None))
+                current.update(
+                    failures=failures,
+                    next_check=time.time()
+                    + (deferred.retry_after if deferred else min(900, 30 * 2**failures)),
+                )
             else:
                 current.update(
                     last_price=price, observed_at=observed_at, failures=0, next_check=time.time() + 30

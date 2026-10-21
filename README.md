@@ -43,7 +43,7 @@ Portfolio prices actual held assets through exact direct, inverse or short conve
 
 **More → Alerts** saves one-shot price thresholds for an exact pair/feed, with explicit Demo labeling, pause/rearm/archive/restore and a persistent in-app inbox. The bell counts unread notifications while retaining agent/backtest activity. The API must be running; stale/undated quotes do not trigger, failures back off, and missed offline crossings are not reconstructed. No trade or external message is sent. See the [user guide](docs/docs/guides/alerts.md) and [backend contracts](docs/docs/developers/alerts.md).
 
-**Coming soon → Implementation status** now lists what works and what remains across all 12 areas, served by the backend’s audited inventory. **Multi-user support is deferred** and appears in Coming soon rather than the active implementation sequence. Next foundations are persisted candle history/backfills/gaps, broader account reconciliation, native order recovery and operational diagnostics. See the [complete refreshed checklist](docs/docs/developers/backend-roadmap.md).
+**Coming soon → Implementation status** now lists what works and what remains across all 12 areas, served by the backend’s audited inventory. **Multi-user support is deferred** and appears in Coming soon rather than the active implementation sequence. Candle history, reviewed resumable backfills, coverage gaps, retention and immutable backtest datasets are now implemented. Shared local read limits, cooldowns and observed source diagnostics are now implemented too. Next foundations include broader account reconciliation, native order recovery, exact weighted quota policies and durable operational history. See the [complete refreshed checklist](docs/docs/developers/backend-roadmap.md).
 
 ## News and sentiment
 
@@ -121,3 +121,11 @@ Monitor regression tests cover read-only polling, quote updates without duplicat
 ### Open a running strategy
 
 Go to **Strategies → Monitor → Open monitor**. Each run has observed price/equity/drawdown charts, execution and skipped-signal markers, a durable filtered journal, full log export, account/performance details, immutable launch parameters, and its own Broker context. Pause/Resume retain the paper position; Stop is terminal and performs no liquidation. Browser refresh is five seconds, worker observations are every 30 seconds, and signals evaluate once per newly closed candle. See the [strategy monitor guide](docs/docs/guides/strategy-monitor.md).
+
+### Retained market history and interactive charts
+
+**Markets → History & datasets** inspects locally retained exact-source candles, imports reviewed historical ranges with pause/resume/restart checkpoints, reports gaps and supports deliberate retention. Complete ranges can be frozen into immutable datasets with content fingerprints and JSON export. Backtests now retain their exact input; saved-dataset runs work offline with up to 20,000 consecutive candles. Line/candlestick charts add zoom, drag-to-pan, OHLCV inspection, volume, a navigator and visible CSV export, with at most 600 candles rendered and no new charting dependency. See the [user guide](docs/docs/guides/market-history.md), [backend contracts](docs/docs/developers/candle-history.md) and [updated pending checklist](docs/docs/developers/backend-roadmap.md).
+
+### Provider reliability and diagnostics
+
+Market-owned clients share read admission, conservative transport spacing, bounded concurrency and cooldowns. Interactive reads precede queued background work; identical market cache misses coalesce. **Settings → Market data → Source health** separates connectivity from quote freshness and shows safe errors, response times and queue counts without probing providers. Demo stays explicitly offline. Metrics reset on restart; imports retain their checkpoints. See [provider control and remaining scope](docs/docs/developers/provider-control.md).

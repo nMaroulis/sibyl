@@ -11,10 +11,10 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.   |
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                        |
 | Order management               | partial       | Recovery of uncertain native submissions by client ID; full fill/fee settlement reconciliation. |
-| Market-data infrastructure     | partial       | Persisted OHLCV archives, historical backfill, retention and gap detection.                     |
+| Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, durable health history and WebSockets.    |
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; recurring/crossing conditions.           |
 | Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.       |
-| Strategy research              | partial       | Benchmarks, retained datasets, parameter optimization and walk-forward/out-of-sample tests.     |
+| Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.             |
 | ProtoLink workflows            | partial       | Richer scoped tools, inspected traces, streaming and per-agent models.                          |
 | Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                 |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                      |
@@ -95,10 +95,13 @@ The existing persistent strategy worker is paper-only.
 
 The backend uses cached REST snapshots, source-specific catalogs/capabilities and provider-sized candle pages. Settings selects public exchanges, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys. Markets supports temporary overrides, exact pair analysis, timestamp/stale labels and quotes-only feeds. See [Market data](market-data.md).
 
-- [ ] Persist historical OHLCV with paginated backfill, retention and gap detection.
+- [x] Persist exact-source OHLCV, reviewed resumable backfills, coverage gaps, manual retention and immutable research snapshots. See [candle history](candle-history.md).
+- [ ] Review historical pagination for the remaining providers and exercise authenticated provider acceptance.
 - [ ] Add WebSocket market and account/order subscriptions with reconnection handling.
-- [ ] Centralize provider rate budgets, bounded concurrency and read-side backoff.
-- [ ] Expose stale/unavailable market-data state and provider health consistently.
+- [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
+- [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
+- [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Metrics currently reset on API restart.
+- [ ] Add durable operational health history and rolling availability/latency metrics.
 - [x] Support held-asset valuation and editable watchlists beyond the six defaults with bounded provider reads; broader aggregator discovery remains future work.
 
 ### 6. Strategy research — partial
@@ -106,7 +109,8 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 Six configurable strategies, fee/slippage-aware backtests, performance metrics and a paper monitor are implemented.
 
 - [ ] Add walk-forward/out-of-sample evaluation and parameter optimization.
-- [ ] Compare strategy versions against explicit benchmarks and retained datasets.
+- [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
+- [ ] Add additional explicit benchmarks and strategy-version comparisons.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
 - [ ] Define a plugin contract for custom strategies and optional Freqtrade integration.
 - [ ] Implement the planned ML/RL strategies with their own training/evaluation pipeline.
