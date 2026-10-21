@@ -94,7 +94,7 @@ function TradingActive({ selection }: { selection: AccountSelection }) {
         <div hidden={tab !== 'trade'}>
           {selection.mode !== 'demo' ? (
             <>
-              <ExchangeExecution />
+              <ExchangeExecution active={tab === 'trade'} />
               <OrderBook symbol={`${asset}/USDT`} active={tab === 'trade'} />
               <ComingSoon module="trade" />
             </>
@@ -109,7 +109,9 @@ function TradingActive({ selection }: { selection: AccountSelection }) {
           )}
         </div>
         <div hidden={tab !== 'executions'}>
-          {(tab === 'executions' || opened.includes('executions')) && <ExecutionHistory />}
+          {(tab === 'executions' || opened.includes('executions')) && (
+            <ExecutionHistory active={tab === 'executions'} />
+          )}
         </div>
         <div hidden={tab !== 'history'}>
           {(tab === 'history' || opened.includes('history')) && (
@@ -302,7 +304,7 @@ function TradeWorkspace({
               />
             </label>
             <div className="available-balance">
-              Paper balance{' '}
+              Available paper balance{' '}
               <strong>
                 {number(ledger.data?.balances[side === 'buy' ? 'USDT' : asset] ?? 0, 6)}{' '}
                 {side === 'buy' ? 'USDT' : asset}
@@ -354,6 +356,7 @@ function TradeWorkspace({
           </form>
         </Panel>
       </div>
+      <ExchangeExecution demo active={active} />
       <OrderBook symbol={`${asset}/USDT`} active={active} />
       <ComingSoon module="trade" />
     </>

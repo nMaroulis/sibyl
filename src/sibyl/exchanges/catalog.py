@@ -58,6 +58,8 @@ class ExchangeSpec:
             **asdict(self),
             "ccxt_id": self.ccxt_id or self.id,
             "verification": "adapter-tested; private account not acceptance-tested",
+            "limit_orders": self.market_orders or self.simulated,
+            "cancel_orders": self.market_orders or self.simulated,
         }
 
 

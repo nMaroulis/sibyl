@@ -461,6 +461,8 @@ export type AgentContext = {
   performance_account_id?: string;
   performance_environment?: '' | 'demo' | 'test' | 'production';
   performance_example?: boolean;
+  performance_transfer_example?: boolean;
+  performance_fee_example?: boolean;
   funding_view?: boolean;
   funding_account_id?: string;
   funding_asset?: string;
@@ -468,6 +470,8 @@ export type AgentContext = {
   funding_status?: '' | 'pending' | 'completed' | 'failed' | 'cancelled' | 'restricted' | 'unknown';
   funding_environment?: '' | 'demo' | 'test' | 'production';
   funding_example?: boolean;
+  transfer_view?: boolean;
+  transfer_example?: boolean;
   market_source?: string;
   crypto_id?: string;
   job_id?: string;
@@ -648,6 +652,8 @@ export type ExchangeProvider = {
   uid: boolean;
   sandbox: boolean;
   market_orders: boolean;
+  limit_orders: boolean;
+  cancel_orders: boolean;
   verification: string;
   capabilities: Record<string, 'native' | 'emulated' | 'unavailable' | 'simulated'>;
   timeframes: string[];

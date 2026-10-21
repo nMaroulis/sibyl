@@ -267,6 +267,7 @@ function AgentDialog({
             context.crypto_id?.split('-')[0].toUpperCase() ??
             (context.performance_view ? 'Retained market FIFO' : undefined) ??
             (context.funding_view ? 'Retained funding history' : undefined) ??
+            (context.transfer_view ? 'Transfer reconciliation' : undefined) ??
             (context.news_mode
               ? context.news_mode === 'live'
                 ? 'Public news'
@@ -299,7 +300,11 @@ function AgentDialog({
         {context.performance_view && (
           <span>
             {context.performance_example
-              ? 'Example calculation'
+              ? context.performance_transfer_example
+                ? context.performance_fee_example
+                  ? 'Transfer fee allocation example'
+                  : 'Transfer carryover example'
+                : 'Example calculation'
               : context.performance_environment || 'All environments'}
           </span>
         )}
@@ -307,6 +312,13 @@ function AgentDialog({
           <span>
             {context.funding_example
               ? 'Example movements'
+              : `${context.funding_asset || 'All assets'} · ${context.funding_environment || 'All environments'}`}
+          </span>
+        )}
+        {context.transfer_view && (
+          <span>
+            {context.transfer_example
+              ? 'Example reconciliation'
               : `${context.funding_asset || 'All assets'} · ${context.funding_environment || 'All environments'}`}
           </span>
         )}
@@ -320,7 +332,8 @@ function AgentDialog({
             </span>
             <h3>Stay here. Ask away.</h3>
             <p>
-              {context.funding_view ||
+              {context.transfer_view ||
+              context.funding_view ||
               context.performance_view ||
               context.parameters ||
               context.job_id ||
@@ -332,22 +345,27 @@ function AgentDialog({
                 : 'Ask this module’s specialist without leaving your workspace.'}
             </p>
             <div className="agent-suggestions">
-              {(context.funding_view
+              {(context.transfer_view
                 ? [
-                    'Summarize these movements and their coverage.',
-                    'Explain fees, internal transfers and pending records.',
+                    'Explain these suggestions and possible ambiguities.',
+                    'Which cost-basis gaps remain after a transfer is confirmed?',
                   ]
-                : context.performance_view
+                : context.funding_view
                   ? [
-                      'Explain the matched results and missing coverage.',
-                      'How do fees and opening inventory affect this calculation?',
+                      'Summarize these movements and their coverage.',
+                      'Explain fees, internal transfers and pending records.',
                     ]
-                  : context.crypto_id
+                  : context.performance_view
                     ? [
-                        'Summarize this project and its history.',
-                        'Explain its network and token supply.',
+                        'Explain the matched results and missing coverage.',
+                        'How do fees and opening inventory affect this calculation?',
                       ]
-                    : prompts[selection.module]
+                    : context.crypto_id
+                      ? [
+                          'Summarize this project and its history.',
+                          'Explain its network and token supply.',
+                        ]
+                      : prompts[selection.module]
               ).map((prompt) => (
                 <button key={prompt} onClick={() => onSend(prompt)} disabled={!agent}>
                   <span>{prompt}</span>

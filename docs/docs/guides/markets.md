@@ -61,3 +61,5 @@ Spearman ranks each aligned series and computes Pearson on those ranks. No causa
 **Ask Analyst** opens the same-page overlay and passes the selected source, symbol, timeframe, and sample limit to its ProtoLink tool. Observations come from the server. Separate selections have separate conversations.
 
 Watchlist quotes can choose USD or USDC when USDT is unavailable, with the actual pair labeled. Analysis and correlations require exact provider pairs. Portfolio uses observed conversion routes without stablecoin parity; the separate paper reference-price helper still permits USD/USDC substitution. Actual exchange orders require the exact supported market. See [Market data sources](../developers/market-data.md) for caching, provider limits and backend contracts.
+
+Use **Price alerts** to open the alert manager with this exact pair/feed preselected. Creating a rule does not change your watchlist, account selection or workspace default. See [price alerts and inbox](alerts.md).

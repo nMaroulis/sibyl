@@ -198,6 +198,14 @@ class CCXTClient(ExchangeClient):
             self.market(symbol)
             return self._exchange.amount_to_precision(symbol, amount)
 
+    def price_to_precision(self, symbol: str, price: float) -> str:
+        """Honor the provider tick size; never silently round a reviewed limit."""
+        if number(price) is None or price <= 0:
+            raise ValueError("Limit price must be positive and finite.")
+        with self.lock:
+            self.market(symbol)
+            return self._exchange.price_to_precision(symbol, price)
+
     @staticmethod
     def _order(row: dict) -> dict:
         return {
@@ -259,23 +267,61 @@ class CCXTClient(ExchangeClient):
             return fetch_funding_page(self._exchange, self.id, stream, cursor, limit)
 
     def create_order(
-        self, symbol: str, type: str, side: str, amount: float, params: dict | None = None
+        self,
+        symbol: str,
+        type: str,
+        side: str,
+        amount: float,
+        params: dict | None = None,
+        *,
+        price: float | None = None,
     ) -> dict:
         """Submit once for reviewed production providers and dedicated test environments."""
         if not self.spec.market_orders:
             raise ccxt.NotSupported(
                 "Market orders are not enabled for this provider. Read access is available."
             )
-        if type != "market" or side not in {"buy", "sell"} or number(amount) is None or amount <= 0:
-            raise ValueError("Use a market buy or sell with a positive finite base quantity.")
+        if (
+            type not in {"market", "limit"}
+            or side not in {"buy", "sell"}
+            or number(amount) is None
+            or amount <= 0
+        ):
+            raise ValueError("Use a market or limit buy/sell with a positive finite base quantity.")
+        if (type == "limit" and (number(price) is None or price <= 0)) or (
+            type == "market" and price is not None
+        ):
+            raise ValueError("Set a positive limit price only for limit orders.")
         params = params or {}
         if set(params) != {"clientOrderId"} or not params.get("clientOrderId"):
             raise ValueError("A client order ID is required; additional order parameters are unsupported.")
         with self.lock:
             self._require("createOrder", private=True)
             self.market(symbol)
-            result = self._submit_market_order(symbol, side, amount, params["clientOrderId"])
+            result = (
+                self._submit_limit_order(symbol, side, amount, price, params["clientOrderId"])
+                if type == "limit"
+                else self._submit_market_order(symbol, side, amount, params["clientOrderId"])
+            )
             return self._order(result)
+
+    def _submit_limit_order(
+        self, symbol: str, side: str, amount: float, price: float, client_order_id: str
+    ) -> dict:
+        """Submit one base-sized spot GTC limit; no conditional/derivative parameters."""
+        params = {"clientOrderId": client_order_id, "timeInForce": "GTC"}
+        if self.id == "coinbase":
+            params["client_order_id"] = params.pop("clientOrderId")
+        return self._exchange.create_order(symbol, "limit", side, amount, price, params=params)
+
+    def cancel_order(self, order_id: str, symbol: str) -> dict:
+        """Send a single cancellation only for the reviewed execution allowlist."""
+        if not self.spec.market_orders:
+            raise ccxt.NotSupported("Cancellation is not enabled for this provider.")
+        with self.lock:
+            self._require("cancelOrder", private=True)
+            self.market(symbol)
+            return self._order(self._exchange.cancel_order(order_id, symbol))
 
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
         """Provider hook for amount and client-ID semantics; never retry a submission."""

@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Link2,
   Pause,
   RefreshCw,
   X,
@@ -17,6 +18,7 @@ import { Badge, Empty, ErrorState, Loading, Panel, PanelTitle, useToast } from '
 import { ExchangeMark } from './exchange-mark';
 import { AgentButton } from './agents';
 import type { AgentContext } from '../lib/types';
+import { TransferReconciliation } from './transfer-reconciliation';
 
 type Stream = 'deposit' | 'withdrawal' | 'transfer';
 type FundingAccount = Connection & {
@@ -61,6 +63,7 @@ type Movement = {
   fee_known: boolean;
   first_seen_at?: string;
   last_seen_at?: string;
+  reconciliation?: { status: string; link_id: string; counterpart_account: string } | null;
 };
 type Funding = {
   example?: boolean;
@@ -102,6 +105,7 @@ export function FundingHistory({ active }: { active: boolean }) {
   const kind = params.get('fund_kind') || '';
   const status = params.get('fund_status') || '';
   const environment = params.get('environment') || '';
+  const transferMode = params.get('fund_view') === 'transfers';
   const offset = Math.min(1_000_000, Math.max(0, Number(params.get('fund_offset')) || 0));
   const change = (values: Record<string, string>, reset = true) =>
     setParams((old) => {
@@ -125,8 +129,8 @@ export function FundingHistory({ active }: { active: boolean }) {
   });
   const data = useResource<Funding>(
     example ? '/account-ledger/funding/example' : `/account-ledger/funding?${query}`,
-    active && !example ? 5000 : 0,
-    active,
+    active && !example && !transferMode ? 5000 : 0,
+    active && !transferMode,
   );
   const [busy, setBusy] = useState('');
   const toast = useToast();
@@ -170,6 +174,16 @@ export function FundingHistory({ active }: { active: boolean }) {
       setBusy('');
     }
   };
+  if (transferMode)
+    return (
+      <TransferReconciliation
+        active={active}
+        accounts={[
+          ...accounts.map((item) => ({ id: item.id, label: item.label })),
+          ...retired.map((item) => ({ id: item.account_id, label: `${item.account} · retained` })),
+        ]}
+      />
+    );
   return (
     <>
       <Panel className="full-panel">
@@ -178,6 +192,12 @@ export function FundingHistory({ active }: { active: boolean }) {
           subtitle="Read-only deposits, withdrawals and transfers; separate from trade fills"
           action={
             <div className="performance-actions">
+              <button
+                className="button secondary tiny"
+                onClick={() => change({ fund_view: 'transfers' })}
+              >
+                <Link2 size={13} /> Reconcile transfers
+              </button>
               <AgentButton
                 module="accountant"
                 compact
@@ -538,6 +558,27 @@ export function FundingHistory({ active }: { active: boolean }) {
                               {row.direction === 'in' ? 'Received' : 'Sent'}
                               {row.internal ? ' · internal at venue' : ''}
                             </small>
+                            {row.reconciliation && (
+                              <small>
+                                <button
+                                  className="text-link"
+                                  onClick={() =>
+                                    change({
+                                      fund_view: 'transfers',
+                                      fund_link: row.reconciliation!.link_id,
+                                    })
+                                  }
+                                >
+                                  {row.reconciliation.status === 'needs_review'
+                                    ? 'Transfer link needs review'
+                                    : 'User-confirmed transfer'}{' '}
+                                  <ArrowUpRight size={10} />
+                                </button>
+                              </small>
+                            )}
+                            {!row.reconciliation && row.status === 'completed' && !example && (
+                              <small>Transfer classification unreviewed</small>
+                            )}
                           </td>
                           <td>
                             <strong>

@@ -4,15 +4,15 @@
 
 ## Scope and coverage
 
-Each calculation uses **one account and one exact spot pair**. All retained buys and sells contribute, in timestamp order. Account, market and environment filters apply; fill-table direction and pagination filters do not. There is no date-range filter that could accidentally drop earlier acquisition lots. Reports reject selections above 20,000 fills rather than silently truncating history.
+Each output row uses **one account and one exact spot pair**. All retained buys and sells contribute, in timestamp order. Eligible confirmed transfers carry original acquisition slices between those account books. Account filters select output rows after donor/intermediate dependencies have been read and replayed. Account, market and environment filters apply; fill-table direction and pagination filters do not. There is no date-range filter that could accidentally drop earlier acquisition lots. Reports reject selections above 20,000 fills, including transfer dependencies, rather than silently truncating history. Transfer reads also reject selections above 2,000 current links or 20,000 funding observations. See the exact scope and budgets in [transfer cost basis](transfer-cost-basis.md).
 
-Totals retain their **environment and quote currency**. USD, USDT and BTC amounts are never added together or treated as equal. Demo and test results never enter production totals. Different accounts retain independent FIFO lots.
+Totals retain their **environment and quote currency**. USD, USDT and BTC amounts are never added together or treated as equal. Demo and test results never enter production totals. Accounts retain separate FIFO books; qualifying transfers move slices between them without creating a disposal.
 
-This is matched market P&L, not full account returns, cross-market accounting, a tax report or evidence that provider history is complete. Deposits, withdrawals, transfers and history outside the provider's retained range remain missing. A zero result may mean no known-cost sales were matched; inspect matched and unknown quantities.
+This is matched market P&L, not full account returns, cross-market accounting, a tax report or evidence that provider history is complete. Unapplied deposits, withdrawals, fee-bearing/ambiguous transfers and history outside the provider's retained range remain coverage gaps. A zero result may mean no known-cost sales were matched; inspect matched and unknown quantities.
 
 ## FIFO rules
 
-`services/performance.py` exposes a pure `fifo(fills, opening)` function. It uses `Decimal` arithmetic at 50-digit precision over the normalized ledger's recorded numeric values. Normalization currently uses JSON numbers; original exchange decimal-string precision is not recovered. Display values are finite floats or null; overflow never becomes JSON Infinity/NaN.
+`services/fifo.py` exposes the pure `fifo(fills, opening)` function and incremental `FifoBook`; `services/performance.py` retains the import for callers. Transfer replay uses that same book, so fee rules and sale matching do not diverge. It uses `Decimal` arithmetic at 50-digit precision over the normalized ledger's recorded numeric values. Normalization currently uses JSON numbers; original exchange decimal-string precision is not recovered. Display values are finite floats or null; overflow never becomes JSON Infinity/NaN.
 
 - Buy fees in the pair's quote increase acquisition cost. Sell quote fees reduce proceeds.
 - Buy fees in the base reduce acquired quantity. Sell base fees increase inventory consumed. This allocates the cost of base-denominated sale fees to the disposal.
@@ -22,6 +22,8 @@ This is matched market P&L, not full account returns, cross-market accounting, a
 - Missing reported execution totals use price × quantity for a provisional match, with final net suppressed.
 - Unknown-cost opening units are consumed before subsequent acquisitions. For a partially matched sale, only the known portion's proportional proceeds and cost contribute to matched P&L.
 - A sale before any recorded acquisition remains unmatched. A later purchase never supplies retroactive basis.
+- Transferred slices retain original acquisition dates, origin IDs and quote costs. Receipt dates do not reset FIFO age. Distinct transferred origins sharing an acquisition timestamp flag ordering ambiguity.
+- A source inventory shortfall transfers unknown-cost units with an unknown acquisition date, placed before dated lots for provisional inspection; net results remain unavailable.
 - Equal execution timestamps have no established native ordering. Deterministic ID ordering permits inspection, but final net remains unavailable.
 - Inconsistent net quantities or negative net costs/proceeds stop subsequent matching, rather than creating invalid lots.
 
@@ -58,13 +60,13 @@ The action shares cached balance reads per account, checks at most 20 market gro
 
 All endpoints live under `/api/v1`, use the existing workspace access controls and return `Cache-Control: no-store`.
 
-| Method | Route                                                       | Behavior                                                                       |
-| ------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| GET    | `/account-ledger/performance`                               | Optional `account_id`, exact `symbol`, `environment`, and `mark=false` filters |
-| POST   | `/connections/{id}/opening-inventory`                       | Save a validated assertion for a saved account                                 |
-| DELETE | `/connections/{id}/opening-inventory?symbol=BTC/USDT`       | Remove the current assertion while retaining its audit trail                   |
-| GET    | `/connections/{id}/opening-inventory/audit?symbol=BTC/USDT` | Latest 50 assertion changes, newest first                                      |
-| GET    | `/account-ledger/performance/example`                       | Compute an isolated four-fill educational fixture; no persistence or orders    |
+| Method | Route                                                       | Behavior                                                                                                                                    |
+| ------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/account-ledger/performance`                               | Optional `account_id`, exact `symbol`, `environment`, and `mark=false` filters                                                              |
+| POST   | `/connections/{id}/opening-inventory`                       | Save a validated assertion for a saved account                                                                                              |
+| DELETE | `/connections/{id}/opening-inventory?symbol=BTC/USDT`       | Remove the current assertion while retaining its audit trail                                                                                |
+| GET    | `/connections/{id}/opening-inventory/audit?symbol=BTC/USDT` | Latest 50 assertion changes, newest first                                                                                                   |
+| GET    | `/account-ledger/performance/example`                       | Isolated four-fill fixture; `transfers=true` selects a computed three-fill, two-wallet carryover example. Neither writes records or orders. |
 
 `GET /account-ledger/performance/markets` lists filter choices from both retained fills and opening-only assertions without provider reads.
 
@@ -79,14 +81,18 @@ Example opening request:
 }
 ```
 
-Reports include group summaries, per-currency fee totals, known/unknown sold and open quantities, the latest 100 disposal calculations and latest 500 cumulative matched-result points per market. Cumulative values include earlier matches even when earlier points are omitted. **Export summary** exports group-level results and scope notes, not every underlying disposal; use the fill ledger for original execution records.
+Reports include applied/unapplied transfer counts, dependency counts and bounded lot evidence, plus group summaries, per-currency fee totals, known/unknown sold and open quantities, the latest 100 disposal calculations and latest 500 cumulative matched-result points per market. Cumulative values include earlier matches even when earlier points are omitted. **Export summary** exports group-level results and scope notes, not every underlying disposal; use the fill ledger for original execution records.
 
 ## ProtoLink and testing
 
-The Accountant's `accountant_snapshot` native tool reads the same backend calculation with `performance_view=true` and validated account/market/environment context. `performance_example` selects the isolated fixture. It includes at most 20 market groups and ten recent disposals per group, with explicit evidence limits. It never requests marks or changes basis. Without an LLM, the agent formats the supplied totals and coverage note; with an LLM, its prompt requires the same boundaries.
+The Accountant's `accountant_snapshot` native tool reads the same backend calculation with `performance_view=true` and validated account/market/environment context. `performance_example` selects the isolated fixture; `performance_transfer_example=true` selects the carryover fixture. Transfer evidence is capped at six report links, three per market, and five slices per link in the agent snapshot. These display caps never truncate the underlying calculation. It includes at most 20 market groups and ten recent disposals per group, with explicit evidence limits. It never requests marks or changes basis. Without an LLM, the agent formats the supplied totals and coverage note; with an LLM, its prompt requires the same boundaries.
 
 `tests/test_account_performance.py` covers fee currencies/signs, partial lots, unknown basis, timestamp ambiguity, invalid/overlapping assertions, audit persistence, cross-market detection through filters, account/environment separation, safe numeric overflow, opt-in marks, source/balance failures, inactive accounts, report budgets, fixture isolation and the native ProtoLink tool. Authenticated exchange acceptance testing remains separate.
 
-## Retained funding coverage
+## Retained funding and transfer coverage
 
-[Funding observations](funding-history.md) now flag base-asset movements or base-denominated fees after the opening/history boundary. Non-failed/non-cancelled observations, including pending/restricted statuses, suppress final net matched/unrealized figures until reconciled. The provisional calculation remains inspectable. Funding records do not invent purchase cost, apply transferred lots or produce account returns; records before the opening assertion are not reapplied.
+[Funding observations](funding-history.md) flag base-asset movements and base-denominated fees. Without an explicit valid opening assertion, observations **before the first fill also count**: an early deposit cannot silently disappear from coverage. An opening assertion covers earlier observations; they are not reapplied.
+
+[Transfer cost basis](transfer-cost-basis.md) applies current confirmed zero-fee pairs or [explicit balanced same-asset fee allocations](transfer-fees.md), within one unambiguous exact-market denomination. Applied pairs clear their two funding gaps and carry acquisition slices without proceeds or realized P&L. Fee units and their known inventory cost are disclosed separately; nonzero transfer fees keep net/marks provisional until historical fee valuation exists. Unapplied observations and links continue to suppress net matched/unrealized figures. Pending/restricted/unknown funding also remains unresolved; failed/cancelled records are excluded.
+
+Unknown acquisition cost is never zero, and a current balance match cannot establish complete history. These calculations do not provide funding-adjusted account returns or tax results.

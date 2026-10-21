@@ -175,3 +175,25 @@ These responses use `Cache-Control: no-store`. Reports expose native fee totals,
 `GET /funding-sync` reads supported streams and saved progress. `POST /connections/{id}/funding-sync` queues explicit `streams`, `start` and `end` for an active account; aware past ranges must be shorter than 90 days. `POST /connections/{id}/funding-sync/pause?stream=deposit` pauses one stream; omit the query to pause all.
 
 `GET /account-ledger/funding` filters retained observations by `account_id`, `asset`, `kind`, `status`, `environment`, `limit` and `offset`. Completed summaries cover the full selection while records are paged. `GET /account-ledger/funding/example` returns an isolated fixture. No endpoint initiates a money movement. See [funding contracts](funding-history.md).
+
+## Transfer review and cost carryover
+
+`GET /account-ledger/transfers` reads saved links and suggestions with account/asset/environment filters; `include_removed` includes reversible removals. `/events` searches retained candidate records. `/example` and `/example/preview` operate on isolated fixtures.
+
+`POST /account-ledger/transfers/preview` reviews a native withdrawal/deposit pair; `POST /account-ledger/transfers` confirms the displayed source-version evidence. `GET /account-ledger/transfers/{id}` reads detail/audit evidence; `POST /account-ledger/transfers/{id}/review` reconfirms or restores it. `DELETE` removes the link reversibly without changing native funding rows. Stale-source confirmation returns `409`. See [transfer contracts](transfer-reconciliation.md).
+
+Performance consumes eligible confirmed transfers without creating fills. `GET /account-ledger/performance/example?transfers=true` demonstrates zero-fee carryover; `fees=true` demonstrates explicit fee allocation. Per-market results include carried original lot costs/dates, separate fee-unit inventory cost and unapplied-link reasons. Unsupported fee valuation and coverage remain provisional. See [cost carryover](transfer-cost-basis.md) and [fee allocation](transfer-fees.md).
+
+## Managed spot orders
+
+The existing exchange order preview accepts `order_type` (`market` by default, or `limit`) and requires a positive `limit_price` exactly for limits. Native limits are GTC. Demo uses the same managed-limit workflow with its virtual wallet; its existing market route stays separate.
+
+`POST /exchange-orders/{id}/cancel/preview` reads native state and creates a 60-second review. Confirm through `POST /exchange-orders/{id}/cancel` with `cancel_id` and the displayed `confirmation`. `POST /exchange-orders/{id}/tracking` persists an `enabled` boolean. `GET /exchange-orders/example` is read-only illustrative data. `/paper/balances` reports available `balances`, `total` and `used` reservations. See [complete contracts and failure semantics](order-management.md).
+
+## Local alerts and implementation inventory
+
+`GET /alerts` reads persisted one-shot price rules. `POST /alerts` arms an exact `source` + `symbol`, `condition` (`above`/`below`) and positive `threshold`, with optional `label`. `POST /alerts/{id}/action` accepts `pause`, `arm`, `archive` or `restore`; `POST /alerts/{id}/check` respects the stored cooldown/backoff. `/alerts/example` is an isolated fixture.
+
+`GET /notifications` pages retained local evidence with `limit` (1–100) and `offset`, plus unread totals. `POST /notifications/{id}/read` or `/notifications/read-all` acknowledges without deleting. Delivery is in-app only, never a trade or external send. See [complete alert contracts](alerts.md).
+
+`GET /roadmap` returns the human-audited capability inventory, including deferred multi-user scope; it performs no provider calls. The Coming soon page consumes it directly.

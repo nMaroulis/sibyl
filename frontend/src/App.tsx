@@ -4,8 +4,8 @@ import {
   Activity,
   ArrowDownUp,
   ArrowUpRight,
-  Bell,
   BookOpen,
+  Bell,
   Compass,
   Eye,
   EyeOff,
@@ -18,6 +18,7 @@ import {
   Waves,
 } from 'lucide-react';
 import { Badge, Loading, Modal } from './components/ui';
+import { NotificationBell } from './components/notifications';
 import { NavigationDock, PageView } from './components/navigation';
 import { useResource } from './lib/hooks';
 import type { Run, System } from './lib/types';
@@ -45,6 +46,7 @@ const ResearchPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('./pages/Settings').then((module) => ({ default: module.SettingsPage })),
 );
+const Alerts = lazy(() => import('./pages/Alerts').then((module) => ({ default: module.Alerts })));
 const Roadmap = lazy(() =>
   import('./components/coming-soon').then((module) => ({ default: module.Roadmap })),
 );
@@ -56,11 +58,14 @@ const destinations = [
   { path: '/forecast', name: 'Forecasting', icon: Compass },
   { path: '/news', name: 'News', icon: Globe2 },
   { path: '/oracle', name: 'Agents', icon: Sparkles },
+  { path: '/alerts', name: 'Alerts', icon: Bell },
   { path: '/research', name: 'Research', icon: BookOpen },
   { path: '/settings', name: 'Settings', icon: Settings2 },
   { path: '/roadmap', name: 'Coming soon', icon: Compass },
 ];
-const secondary = destinations.filter((item) => ['/research', '/roadmap'].includes(item.path));
+const secondary = destinations.filter((item) =>
+  ['/oracle', '/alerts', '/research', '/roadmap'].includes(item.path),
+);
 const primary = destinations.filter((item) => !secondary.includes(item));
 
 /** Keep bookmarked report/account filters while their home moves into Trade. */
@@ -133,7 +138,6 @@ export function App() {
   const { data: runs } = useResource<Run[]>('/runs', 30000);
   const [searchOpen, setSearchOpen] = useState(false);
   const [privateMode, setPrivateMode] = useState(false);
-  const [notifications, setNotifications] = useState(false);
   useEffect(() => {
     document.documentElement.dataset.theme = 'standard';
   }, []);
@@ -148,7 +152,6 @@ export function App() {
     return () => window.removeEventListener('keydown', key);
   }, []);
   useEffect(() => {
-    setNotifications(false);
     document.title = `Sibyl — ${destinations.find((item) => item.path === location.pathname)?.name ?? 'Workspace'}`;
   }, [location.pathname]);
   return (
@@ -202,37 +205,7 @@ export function App() {
           >
             {privateMode ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
-          <div className="notification-wrap">
-            <button
-              className="icon-button"
-              aria-label="Recent activity"
-              aria-expanded={notifications}
-              onClick={() => setNotifications((value) => !value)}
-            >
-              <Bell size={18} />
-              {!!runs?.length && <span className="notification-dot" />}
-            </button>
-            {notifications && (
-              <div className="notification-menu">
-                <strong>Recent activity</strong>
-                {runs?.length ? (
-                  runs.slice(0, 5).map((run) => (
-                    <Link key={run.id} to={run.kind === 'agent' ? '/oracle' : '/strategies'}>
-                      <span className="activity-icon">
-                        {run.kind === 'agent' ? <Sparkles size={15} /> : <Waves size={15} />}
-                      </span>
-                      <span>
-                        {run.kind === 'agent' ? 'Agent snapshot recorded' : 'Backtest completed'}
-                        <small>{new Date(run.created_at).toLocaleString()}</small>
-                      </span>
-                    </Link>
-                  ))
-                ) : (
-                  <p>Your agent runs and backtests will appear here.</p>
-                )}
-              </div>
-            )}
-          </div>
+          <NotificationBell runs={runs} />
           <Link className="avatar" to="/settings" aria-label="Workspace settings">
             N
           </Link>
@@ -263,6 +236,7 @@ export function App() {
                     element={<Navigate to="/settings?tab=exchanges" replace />}
                   />
                   <Route path="/oracle" element={<Oracle />} />
+                  <Route path="/alerts" element={<Alerts />} />
                   <Route path="/forecast" element={<ForecastPage />} />
                   <Route path="/news" element={<News />} />
                   <Route path="/research" element={<ResearchPage />} />

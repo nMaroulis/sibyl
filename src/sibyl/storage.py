@@ -49,6 +49,10 @@ class Store:
                     id TEXT PRIMARY KEY, idempotency_key TEXT UNIQUE NOT NULL,
                     payload TEXT NOT NULL, created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS paper_limits (
+                    id TEXT PRIMARY KEY, request_key TEXT UNIQUE NOT NULL,
+                    status TEXT NOT NULL, payload TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS runs (
                     id TEXT PRIMARY KEY, kind TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL
                 );
@@ -286,16 +290,28 @@ class Store:
                 if any(order[key] != getattr(request, key) for key in ("symbol", "side", "quantity")):
                     raise ValueError("This idempotency key belongs to a different order.")
                 return order
+            if db.execute(
+                "SELECT 1 FROM paper_limits WHERE request_key=?", (request.idempotency_key,)
+            ).fetchone():
+                raise ValueError("This paper key belongs to a limit order.")
             if (
                 require_demo
                 and not db.execute("SELECT 1 FROM active_accounts WHERE account_id='demo'").fetchone()
             ):
                 raise ValueError("Demo preview is no longer active. Review your account selection.")
             balances = dict(db.execute("SELECT asset, quantity FROM balances").fetchall())
+            from sibyl.exchanges.paper_limits import reserved
+
+            holds = reserved(db)
             notional = price * request.quantity
             fee = notional * fee_rate
             base_delta = request.quantity if request.side == "buy" else -request.quantity
             quote_delta = -(notional + fee) if request.side == "buy" else notional - fee
+            spending_asset, needed = (
+                (quote, notional + fee) if request.side == "buy" else (base, request.quantity)
+            )
+            if balances.get(spending_asset, 0) - holds.get(spending_asset, 0) < needed:
+                raise ValueError("Insufficient paper balance after open-order reservations.")
             if balances.get(base, 0) + base_delta < -1e-10 or balances.get(quote, 0) + quote_delta < -1e-8:
                 raise ValueError("Insufficient paper balance for this order and its fee.")
             for asset, delta in [(base, base_delta), (quote, quote_delta)]:

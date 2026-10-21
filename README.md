@@ -11,6 +11,7 @@ FastAPI routes + validated request models
           ├── Portfolio ── Market + Store
           ├── Analytics ── pure Pandas/NumPy functions
           ├── Strategies ── backtests + persistent paper worker
+          ├── PriceAlerts ── one-shot rules + persistent local inbox
           ├── ExchangeTrading ── reviewed intents + CCXT create_order
           ├── Research ── glossary / RSS / blocks / optional equities
           └── AgentRegistry ── ProtoLink Agent + read-only tools
@@ -24,7 +25,7 @@ The original Sibyl dashboard, built entirely in Python with Streamlit, is availa
 
 ## Workspace navigation
 
-Portfolio is the home screen. New workspaces start with no active accounts. Connect multiple exchange accounts to combine their holdings, then filter by exchange or individual account. Activation controls keep saved credentials separate from active accounts. Demo is a clearly labeled optional preview and switches off when an exchange activates. The floating dock opens Markets, Trade, Strategies, Forecasting, News, Agents, and Settings. Settings combines **Exchanges**, **AI models**, **News**, **Market data**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider keys and activates preset/custom models immediately through ProtoLink. News saves collector choices and encrypted optional NewsAPI keys. Market data selects public exchange feeds, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys, applied immediately. Markets can override the feed for its own charts and Analyst without changing the default. Its editable watchlists persist per feed, with add/remove/reorder controls and Quick look cards following the saved order. See [market sources](docs/docs/developers/market-data.md). See the [Settings guide](docs/docs/guides/settings.md).
+Portfolio is the home screen. New workspaces start with no active accounts. Connect multiple exchange accounts to combine their holdings, then filter by exchange or individual account. Activation controls keep saved credentials separate from active accounts. Demo is a clearly labeled optional preview and switches off when an exchange activates. The floating dock opens Markets, Trade, Strategies, Forecasting, News, and Settings. **More** expands to Agents, Alerts, Research and Coming soon. Settings combines **Exchanges**, **AI models**, **News**, **Market data**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider keys and activates preset/custom models immediately through ProtoLink. News saves collector choices and encrypted optional NewsAPI keys. Market data selects public exchange feeds, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys, applied immediately. Markets can override the feed for its own charts and Analyst without changing the default. Its editable watchlists persist per feed, with add/remove/reorder controls and Quick look cards following the saved order. See [market sources](docs/docs/developers/market-data.md). See the [Settings guide](docs/docs/guides/settings.md).
 
 ## Portfolio valuation
 
@@ -32,7 +33,17 @@ Portfolio prices actual held assets through exact direct, inverse or short conve
 
 ## Funding history
 
-**Trade → Account history → Funding** adds read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer ledger entries. Checkpoints, pause/resume, rescans and sanitized retries retain native IDs, statuses, amounts and fees. Summaries keep accounts, environments and assets separate. Demo has an actual empty funding history plus a standalone example. Ask Accountant reads the selected local observations through ProtoLink. Funding gaps flag affected market FIFO as provisional; full transfer reconciliation and cash-flow-adjusted returns remain future work. See [funding contracts, provider limits and remaining work](docs/docs/developers/funding-history.md).
+**Trade → Account history → Funding** adds read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer ledger entries. Checkpoints, pause/resume, rescans and sanitized retries retain native IDs, statuses, amounts and fees. Summaries keep accounts, environments and assets separate. Demo has an actual empty funding history plus a standalone example. Ask Accountant reads the selected local observations through ProtoLink. Funding gaps flag affected market FIFO as provisional; unsupported transfer/funding cases and cash-flow-adjusted returns remain future work. See [funding contracts, provider limits and remaining work](docs/docs/developers/funding-history.md).
+
+## Transfer review
+
+**Funding → Reconcile transfers** suggests possible own-account pairs, exposes competing matches and supports manual search of older records. Explicit confirmation stores source-version snapshots and an audit trail. Corrections flag links for review; removal/restoration is reversible and a source record can belong to one active link. Funding rows show the classification without changing their amounts. ProtoLink Accountant reads the same local evidence. **Performance** now carries original acquisition lots across eligible current confirmed zero-fee pairs or explicit, balanced same-asset fee allocations. It shows carried cost, original dates and unapplied reasons, and includes a separate transfer example. Review amount conventions and missing-fee assertions in the same dialog. Fee units and their historical inventory cost stay separate; final net remains provisional without historical fee valuation. Split/merged transfers, other fee currencies/rebates, cross-market basis and account returns remain future work. See [fee allocation contracts](docs/docs/developers/transfer-fees.md). See [carryover rules](docs/docs/developers/transfer-cost-basis.md). See [transfer review and limits](docs/docs/developers/transfer-reconciliation.md).
+
+## Local alerts and pending work
+
+**More → Alerts** saves one-shot price thresholds for an exact pair/feed, with explicit Demo labeling, pause/rearm/archive/restore and a persistent in-app inbox. The bell counts unread notifications while retaining agent/backtest activity. The API must be running; stale/undated quotes do not trigger, failures back off, and missed offline crossings are not reconstructed. No trade or external message is sent. See the [user guide](docs/docs/guides/alerts.md) and [backend contracts](docs/docs/developers/alerts.md).
+
+**Coming soon → Implementation status** now lists what works and what remains across all 12 areas, served by the backend’s audited inventory. **Multi-user support is deferred** and appears in Coming soon rather than the active implementation sequence. Next foundations are persisted candle history/backfills/gaps, broader account reconciliation, native order recovery and operational diagnostics. See the [complete refreshed checklist](docs/docs/developers/backend-roadmap.md).
 
 ## News and sentiment
 
@@ -46,36 +57,42 @@ Portfolio prices actual held assets through exact direct, inverse or short conve
 
 A shared `ExchangeClient` interface now backs **20 real spot providers plus an offline `DemoClient`**. Explicit CCXT subclasses normalize markets, quotes, candles, books, balances, order status, open orders and bounded fill history. The demo client is a normal saved connection with a Demo badge, a persistent paper wallet and simulated fills through the same interface. All fixtures and seed balances live in Python; Portfolio reads the same backend APIs for demo and real accounts. Exchange logos are self-hosted app assets. Settings loads the searchable exchange catalog and credential requirements from the backend; OKX/KuCoin/Bitget passphrases and BitMart API memos are supported.
 
-Implemented adapters: Binance, Binance.US, Coinbase, Kraken, OKX, Bybit, KuCoin, Gate, Bitget, MEXC, HTX, Crypto.com Exchange, Bitstamp, Gemini, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit. Newly added production providers are read-only; production manual market-order execution remains limited to the original Binance/Coinbase/Kraken reviewed flow. Authenticated accounts and real orders have not been acceptance-tested.
+Implemented adapters: Binance, Binance.US, Coinbase, Kraken, OKX, Bybit, KuCoin, Gate, Bitget, MEXC, HTX, Crypto.com Exchange, Bitstamp, Gemini, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit. Newly added production providers are read-only; production manual market/GTC limit execution remains limited to the original Binance/Coinbase/Kraken reviewed flow. Authenticated accounts and real orders have not been acceptance-tested.
 
-See the [client reference, provider matrix and remaining implementation checklist](docs/docs/developers/exchange-clients.md). Missing work includes authenticated provider validation, new-provider execution, cancel/limit orders, full fill imports and reconciliation, streaming, additional wallet/account variants and broader valuation. `GET /api/v1/exchanges` reports the installed SDK's capabilities and remaining unconfigured exchange IDs.
+See the [client reference, provider matrix and remaining implementation checklist](docs/docs/developers/exchange-clients.md). Missing work includes authenticated provider validation, new-provider execution, cancel/replace and conditional orders, broader fill imports and complete reconciliation, streaming, additional wallet/account variants and broader valuation. `GET /api/v1/exchanges` reports the installed SDK's capabilities and remaining unconfigured exchange IDs.
 
 Dedicated **Binance Testnet** and **Coinbase Sandbox** options are also available in Settings. They have separate credentials, forced sandbox routing and test-funds badges. Coinbase Sandbox uses the Coinbase Exchange API, separate from Advanced Trade. Test accounts are visible individually in Account balances and excluded from real portfolio totals. See the [test-environment setup guide](docs/docs/guides/exchanges.md#test-environments-and-orders).
 
+## Order management
+
+**Trade → Order monitor** now follows reviewed market and GTC limit orders, cumulative partial fills, cancellation requests and persisted status tracking. Native writes remain limited to Binance, Coinbase Advanced, Kraken and the dedicated test clients. Unknown writes are never automatically retried. Demo supports resting GTC limits with atomic virtual-wallet reservations, matching and cancellation; its fills enter the same paper ledger. **View example** changes no account records. Stop/OCO, cancel/replace and native client-ID recovery remain future work. See [order-management contracts and limits](docs/docs/developers/order-management.md).
+
 ## Python package
 
-| File/module                    | Responsibility                                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `config.py`                    | Validated environment configuration, with no import-time network work                             |
-| `models.py`                    | Strict request models, enum-like IDs, canonical symbol validation                                 |
-| `storage.py`                   | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                     |
-| `services/market.py`           | Client ownership, closed candles, source labels and bounded cache                                 |
-| `services/portfolio.py`        | Aggregate account balances, valuation, history, incomplete-account reporting                      |
-| `services/analytics.py`        | Pure indicator, correlation, and baseline forecasting functions                                   |
-| `services/strategies.py`       | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
-| `services/strategy_monitor.py` | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
-| `services/trading.py`          | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
-| `services/import_worker.py`    | Shared one-page scheduling, transport failure handling and safe shutdown                          |
-| `services/funding_sync.py`     | Explicit-range funding jobs, rescans, active-account gating and isolated examples                 |
-| `services/funding_ledger.py`   | Validated funding facts, atomic checkpoints and native completed-quantity summaries               |
-| `services/account_sync.py`     | Durable selected-market imports, retries, pause/resume and progress                               |
-| `services/performance.py`      | Decimal market FIFO, audited opening inventory and opt-in reconciled reference marks              |
-| `services/ledger.py`           | Normalized fills, native-currency fees and atomic import checkpoints                              |
-| `services/research.py`         | Bounded source-labeled research reads                                                             |
-| `news/`                        | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
-| `agents/registry.py`           | Roles, native tools, optional model composition, request limits, factual snapshots                |
-| `api/app.py`                   | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
-| `api/routes.py`                | Thin versioned HTTP routes                                                                        |
+| File/module                                      | Responsibility                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `config.py`                                      | Validated environment configuration, with no import-time network work                             |
+| `models.py`                                      | Strict request models, enum-like IDs, canonical symbol validation                                 |
+| `storage.py`                                     | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                     |
+| `services/market.py`                             | Client ownership, closed candles, source labels and bounded cache                                 |
+| `services/portfolio.py`                          | Aggregate account balances, valuation, history, incomplete-account reporting                      |
+| `services/analytics.py`                          | Pure indicator, correlation, and baseline forecasting functions                                   |
+| `services/strategies.py`                         | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
+| `services/strategy_monitor.py`                   | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
+| `services/trading.py`                            | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
+| `services/import_worker.py`                      | Shared one-page scheduling, transport failure handling and safe shutdown                          |
+| `services/transfer_reconciliation.py`            | Bounded suggestions, explicit transfer assertions, source-version checks, reservations and audit  |
+| `services/funding_sync.py`                       | Explicit-range funding jobs, rescans, active-account gating and isolated examples                 |
+| `services/funding_ledger.py`                     | Validated funding facts, atomic checkpoints and native completed-quantity summaries               |
+| `services/account_sync.py`                       | Durable selected-market imports, retries, pause/resume and progress                               |
+| `services/fifo.py`, `services/transfer_basis.py` | Shared decimal FIFO books, dependency replay and original-lot transfer carryover                  |
+| `services/performance.py`                        | Decimal market FIFO, audited opening inventory and opt-in reconciled reference marks              |
+| `services/ledger.py`                             | Normalized fills, native-currency fees and atomic import checkpoints                              |
+| `services/research.py`                           | Bounded source-labeled research reads                                                             |
+| `news/`                                          | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
+| `agents/registry.py`                             | Roles, native tools, optional model composition, request limits, factual snapshots                |
+| `api/app.py`                                     | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
+| `api/routes.py`                                  | Thin versioned HTTP routes                                                                        |
 
 `create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, and owns separate paper-strategy, news and account-import workers. Shutdown waits for an in-flight account read before closing its transport. Importing the package does not connect to an exchange or initialize a model.
 

@@ -88,10 +88,25 @@ class ExchangeClient(ABC):
         raise ccxt.NotSupported("Order status reads are unavailable for this client.")
 
     def create_order(
-        self, symbol: str, type: str, side: str, amount: float, params: dict | None = None
+        self,
+        symbol: str,
+        type: str,
+        side: str,
+        amount: float,
+        params: dict | None = None,
+        *,
+        price: float | None = None,
     ) -> dict:
-        """Submit one market order only for clients whose execution is reviewed."""
-        raise ccxt.NotSupported("Market orders are not enabled for this provider.")
+        """Submit one spot market/GTC limit only for reviewed execution clients."""
+        raise ccxt.NotSupported("Order execution is not enabled for this provider.")
+
+    def price_to_precision(self, symbol: str, price: float) -> str:
+        """Format a reviewed limit price using native market tick precision."""
+        raise ccxt.NotSupported("Limit price precision is unavailable for this client.")
+
+    def cancel_order(self, order_id: str, symbol: str) -> dict:
+        """Request cancellation once; acknowledgment alone need not establish final status."""
+        raise ccxt.NotSupported("Cancellation is not enabled for this provider.")
 
     def close(self) -> None:
         """Release transport resources when disconnecting or shutting down."""

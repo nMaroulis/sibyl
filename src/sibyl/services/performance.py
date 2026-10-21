@@ -3,17 +3,19 @@
 import json
 import math
 import time
-from collections import Counter, defaultdict, deque
+from collections import defaultdict
 from datetime import UTC, datetime
-from decimal import Decimal, localcontext
+from decimal import Decimal
 
 import ccxt
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from sibyl.exchanges.base import number
 from sibyl.models import OrderRequest, Request
+from sibyl.services.fifo import decimal, fifo, public
 from sibyl.services.ledger import ledger_fill
 from sibyl.services.market import Market
+from sibyl.services.transfer_basis import EVIDENCE_LIMIT, replay, snapshot
 from sibyl.services.valuation import MAX_SECONDS, Valuation
 from sibyl.storage import Store
 
@@ -22,26 +24,10 @@ MAX_MARKS = 20
 ZERO = Decimal(0)
 NOTE = (
     "Market-level FIFO over all retained fills and user-entered opening inventory. "
-    "Accounts, environments and quote currencies stay separate. Transfers, cash flows, "
+    "Accounts, environments and quote currencies stay separate. Eligible confirmed transfers carry original lots. Cash flows, "
     "cross-market basis and historical conversion of other-currency fees are not included. "
     "Matched results are not complete account returns or tax results."
 )
-
-
-def decimal(value) -> Decimal:
-    """Use recorded decimal text, rejecting non-finite accounting inputs."""
-    result = Decimal(str(value))
-    if not result.is_finite():
-        raise ValueError("Non-finite accounting value.")
-    return result
-
-
-def public(value: Decimal | None) -> float | None:
-    """Keep unsupported/overflow values nullable at the JSON boundary."""
-    if value is None:
-        return None
-    result = float(value)
-    return result if math.isfinite(result) else None
 
 
 class OpeningInventory(Request):
@@ -65,160 +51,11 @@ class OpeningInventory(Request):
         return self
 
 
-def fifo(fills: list[dict], opening: dict | None = None) -> dict:
-    """Match exact-market lots chronologically, with decimal quantity/cost arithmetic.
-
-    Quote fees adjust acquisition cost or disposal proceeds. Base fees adjust
-    received/consumed inventory. Rebates retain their signs. Missing fees and
-    third-currency fees prevent a final net figure. Unknown-basis quantities are
-    consumed in FIFO order and never silently assigned zero cost. Partial sales
-    report only their known matched portion, with unknown portions disclosed.
-    """
-    with localcontext() as context:
-        context.prec = 50
-        lots, issues, fee_totals = deque(), [], defaultdict(lambda: ZERO)
-        missing_fees, unknown_sold, realized, known_sold = 0, ZERO, ZERO, ZERO
-        disposals, curve = [], []
-        if opening:
-            lots.append(
-                {
-                    "quantity": decimal(opening["quantity"]),
-                    "cost": decimal(opening["total_cost"]) if opening["total_cost"] is not None else None,
-                }
-            )
-        ties = any(count > 1 for count in Counter(row["timestamp_ms"] for row in fills).values())
-        if ties:
-            issues.append("Some fills share a timestamp; their execution ordering is not established.")
-        blocked, estimated_notional, unconverted = False, False, set()
-        for row in sorted(fills, key=lambda item: (item["timestamp_ms"], item["id"])):
-            base, quote = row["symbol"].split("/")
-            quantity = decimal(row["quantity"])
-            notional = (
-                decimal(row["notional"]) if row["notional"] is not None else quantity * decimal(row["price"])
-            )
-            estimated_notional |= row["notional"] is None
-            base_fee, quote_fee = ZERO, ZERO
-            if not row["fees_known"]:
-                missing_fees += 1
-            for fee in row["fees"]:
-                currency, cost = fee["currency"], fee["cost"]
-                if currency is None or cost is None:
-                    continue
-                cost = decimal(cost)
-                fee_totals[currency] += cost
-                if currency == base:
-                    base_fee += cost
-                elif currency == quote:
-                    quote_fee += cost
-                elif cost:
-                    unconverted.add(currency)
-            if blocked:
-                continue
-            if row["side"] == "buy":
-                received, cost = quantity - base_fee, notional + quote_fee
-                if received <= 0 or cost < 0:
-                    blocked = True
-                    issues.append(
-                        "A fill has inconsistent net quantity or cost; subsequent lot matching is unavailable."
-                    )
-                    continue
-                # An unknown-currency/amount fee may change inventory itself.
-                lots.append({"quantity": received, "cost": cost if row["fees_known"] else None})
-                continue
-            consumed, proceeds = quantity + base_fee, notional - quote_fee
-            if consumed <= 0 or proceeds < 0:
-                blocked = True
-                issues.append(
-                    "A disposal has inconsistent net quantity or proceeds; subsequent lot matching is unavailable."
-                )
-                continue
-            remaining, known, matched_cost, unknown = consumed, ZERO, ZERO, ZERO
-            while remaining > 0 and lots:
-                lot = lots[0]
-                matched = min(remaining, lot["quantity"])
-                fraction = matched / lot["quantity"]
-                if lot["cost"] is None:
-                    unknown += matched
-                else:
-                    cost = lot["cost"] * fraction
-                    matched_cost += cost
-                    known += matched
-                    lot["cost"] -= cost
-                lot["quantity"] -= matched
-                remaining -= matched
-                if lot["quantity"] == 0:
-                    lots.popleft()
-            unknown += remaining
-            known_proceeds = proceeds * known / consumed
-            pnl = known_proceeds - matched_cost
-            realized += pnl
-            known_sold += known
-            unknown_sold += unknown
-            disposals.append(
-                {
-                    "id": row["id"],
-                    "trade_id": row["trade_id"],
-                    "timestamp": row["created_at"],
-                    "quantity": public(consumed),
-                    "known_quantity": public(known),
-                    "unknown_quantity": public(unknown),
-                    "matched_cost": public(matched_cost),
-                    "matched_proceeds": public(known_proceeds),
-                    "pnl_before_other_fees": public(pnl),
-                }
-            )
-            curve.append({"timestamp": row["created_at"], "value": public(realized)})
-        if missing_fees:
-            issues.append(
-                f"{missing_fees} fills have incomplete fee data; inventory and net P&L may be incomplete."
-            )
-        if unconverted:
-            issues.append(
-                "Fees/rebates in "
-                + ", ".join(sorted(unconverted))
-                + " are retained in native units, without historical quote conversion."
-            )
-        if estimated_notional:
-            issues.append(
-                "Some execution notionals use reported price × quantity rather than a reported total."
-            )
-        if unknown_sold:
-            issues.append(
-                "Some disposed units have no opening/purchase cost basis; their proceeds are excluded from matched P&L."
-            )
-        net_known = not (missing_fees or unconverted or ties or blocked or estimated_notional)
-        open_quantity = sum((lot["quantity"] for lot in lots), ZERO)
-        known_open_quantity = sum((lot["quantity"] for lot in lots if lot["cost"] is not None), ZERO)
-        open_cost = sum((lot["cost"] for lot in lots if lot["cost"] is not None), ZERO)
-        if any(public(value) is None for value in (realized, open_quantity, open_cost, unknown_sold)):
-            issues.append("Accounting values exceed the supported display range.")
-            net_known, blocked = False, True
-        return {
-            "fill_count": len(fills),
-            "disposal_count": len(disposals),
-            "matched_sold_quantity": public(known_sold),
-            "unknown_sold_quantity": public(unknown_sold),
-            "realized_before_other_fees": public(realized),
-            "net_matched_realized": public(realized) if net_known else None,
-            "open_quantity": public(open_quantity),
-            "known_open_quantity": public(known_open_quantity),
-            "known_open_cost": public(open_cost),
-            "unknown_open_quantity": public(open_quantity - known_open_quantity),
-            "fee_totals": {key: public(value) for key, value in fee_totals.items()},
-            "missing_fee_count": missing_fees,
-            "unconverted_fee_currencies": sorted(unconverted),
-            "net_known": net_known,
-            "matching_blocked": blocked,
-            "disposals": list(reversed(disposals[-100:])),
-            "curve": curve[-500:],
-            "issues": issues,
-        }
-
-
 class AccountPerformance:
     """Recompute retained exact-market FIFO and mark reconciled open lots on demand.
 
-    Opening inventory is a user assertion, stored separately from immutable
+    Eligible current transfer assertions carry lots across account books, while
+    unsupported funding remains provisional. Opening inventory is a user assertion, stored separately from immutable
     imported execution facts. Reads never submit orders or queue imports. A
     current account balance must match the single-market lot quantity before an
     unrealized result is available. This is not full account reconciliation.
@@ -314,12 +151,30 @@ class AccountPerformance:
         return {"items": [{"changed_at": row[0], **json.loads(row[1])} for row in rows], "limit": 50}
 
     def markets(self) -> dict:
-        """List retained markets, including opening-only inventory without an import job."""
+        """List markets and retained account choices, including receiving-only/disconnected history."""
         with self.store.db() as db:
+            db.execute("BEGIN")
             rows = db.execute(
                 "SELECT symbol FROM account_fills UNION SELECT symbol FROM opening_inventory ORDER BY symbol"
             ).fetchall()
-        return {"symbols": [row[0] for row in rows]}
+            choices = (
+                "SELECT DISTINCT account_id,json_extract(payload,'$.account') AS label FROM account_fills"
+            )
+            if db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='funding_events'"
+            ).fetchone():
+                choices += " UNION SELECT DISTINCT account_id,json_extract(payload,'$.account') AS label FROM funding_events"
+            retained = {row[0]: row[1] for row in db.execute(choices)}
+            for entry in db.execute("SELECT DISTINCT account_id FROM opening_inventory"):
+                retained.setdefault(entry[0], "Retained account")
+        saved = {connection.id: connection.label for connection in self.store.connections()}
+        return {
+            "symbols": [row[0] for row in rows],
+            "accounts": [
+                {"id": identity, "label": saved.get(identity, label)}
+                for identity, label in sorted(retained.items())
+            ],
+        }
 
     @staticmethod
     def example() -> dict:
@@ -400,69 +255,21 @@ class AccountPerformance:
             ],
         }
 
+    @staticmethod
+    def transfer_example(fees: bool = False) -> dict:
+        """Compute an isolated cross-account example without database or provider access."""
+        from sibyl.services.transfer_basis_example import example
+
+        return example(NOTE, fees)
+
     def report(
         self, account_id: str = "", symbol: str = "", environment: str = "", mark: bool = False
     ) -> dict:
         """Read one consistent ledger/basis snapshot, without applying page/side filters."""
-        clauses, values = [], []
-        for column, value in [
-            ("account_id", account_id),
-            ("symbol", symbol),
-            ("json_extract(payload,'$.environment')", environment),
-        ]:
-            if value:
-                clauses.append(f"{column}=?")
-                values.append(value)
-        where = " AND ".join(clauses) or "1=1"
         with self.store.db() as db:
             db.execute("BEGIN")
-            count = db.execute(f"SELECT COUNT(*) FROM account_fills WHERE {where}", values).fetchone()[0]
-            if count > MAX_FILLS:
-                raise ValueError(
-                    "This report supports up to 20,000 fills. Choose a single account or market; history is never silently truncated."
-                )
-            fills = [
-                json.loads(row[0])
-                for row in db.execute(
-                    f"SELECT payload FROM account_fills WHERE {where} ORDER BY timestamp_ms,id", values
-                )
-            ]
-            basis = [
-                dict(row)
-                for row in db.execute(
-                    "SELECT * FROM opening_inventory" + (" WHERE account_id=?" if account_id else ""),
-                    (account_id,) if account_id else (),
-                )
-                if not symbol or row["symbol"] == symbol
-            ]
-            # Detect outside-market inventory even when this report filters to one pair.
-            inventory_markets = defaultdict(set)
-            for identity, pair in db.execute(
-                "SELECT account_id,symbol FROM account_fills UNION SELECT account_id,symbol FROM opening_inventory"
-            ):
-                for asset in pair.split("/"):
-                    inventory_markets[(identity, asset)].add(pair)
-            # Funding is evidence of coverage gaps, never an invented acquisition
-            # cost or an automatic cross-account lot transfer.
-            funding_counts = {}
-            if db.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='funding_events'"
-            ).fetchone():
-                thresholds = {}
-                for fill in fills:
-                    thresholds.setdefault((fill["account_id"], fill["symbol"]), fill["timestamp_ms"])
-                for entry in basis:
-                    key = (entry["account_id"], entry["symbol"])
-                    stamp = datetime.fromisoformat(entry["as_of"]).timestamp() * 1000
-                    thresholds[key] = min(thresholds.get(key, stamp), stamp)
-                for (identity, pair), threshold in thresholds.items():
-                    asset = pair.split("/")[0]
-                    funding_counts[(identity, pair)] = db.execute(
-                        "SELECT COUNT(*) FROM funding_events WHERE account_id=? AND timestamp_ms>=? "
-                        "AND status NOT IN ('failed','cancelled') AND (asset=? OR "
-                        "(json_extract(payload,'$.fee.currency')=? AND json_extract(payload,'$.fee.cost')!=0))",
-                        (identity, threshold, asset, asset),
-                    ).fetchone()[0]
+            inputs = snapshot(db, account_id, symbol, environment, MAX_FILLS)
+        fills, basis = inputs["fills"], inputs["basis"]
         accounts = {row.id: row for row in self.store.connections()}
         grouped = defaultdict(list)
         for row in fills:
@@ -471,7 +278,7 @@ class AccountPerformance:
         for key in openings:
             if not environment or (key[0] in accounts and self._environment(accounts[key[0]]) == environment):
                 grouped.setdefault(key, [])
-        rows = []
+        groups = {}
         for (identity, pair), executions in sorted(grouped.items()):
             connection = accounts.get(identity)
             scope = (
@@ -485,38 +292,61 @@ class AccountPerformance:
                 }
             )
             opening = openings.get((identity, pair))
-            overlap = (
+            overlap = bool(
                 opening
                 and executions
                 and datetime.fromisoformat(opening["as_of"]).timestamp() * 1000
                 >= min(row["timestamp_ms"] for row in executions)
             )
-            summary = fifo(executions, None if overlap else opening)
-            funding_count = funding_counts.get((identity, pair), 0)
-            summary["funding_event_count"] = funding_count
-            if funding_count:
-                summary["issues"].append(
-                    f"{funding_count} retained funding observations affect this base asset after the opening/history boundary. "
-                    "Transfers, funding basis and pending/restricted movements are not reconciled into these FIFO lots; net results are provisional."
+            cross = len(inputs["markets"][(identity, pair.split("/")[0])]) > 1
+            mixed = len({row["environment"] for row in executions}) > 1
+            if mixed:
+                raise ValueError(
+                    "Retained fills mix environments for an account/market. Choose an environment filter; amounts are never combined across environments."
                 )
-                summary["net_known"] = False
-                summary["net_matched_realized"] = None
+            issues = []
             if overlap:
-                summary["issues"].append(
+                issues.append(
                     "Opening inventory now overlaps an earlier imported fill and is ignored. Review its date and quantity."
                 )
-                summary["net_known"] = False
-                summary["net_matched_realized"] = None
+            if cross:
+                issues.append(
+                    "This asset appears in other markets on this account. Cross-market cost basis is not reconstructed."
+                )
+            groups[(identity, pair)] = {
+                **{key: scope[key] for key in ("account_id", "account", "exchange", "environment")},
+                "symbol": pair,
+                "executions": executions,
+                "opening": opening,
+                "opening_applied": bool(opening and not overlap),
+                "cross_market": cross,
+                "initial_issues": issues,
+            }
+        calculated = replay(groups, inputs["links"], inputs["funding"], inputs["markets"])
+        rows = []
+        for (identity, pair), group in sorted(groups.items()):
+            if (
+                account_id
+                and identity != account_id
+                or symbol
+                and pair != symbol
+                or environment
+                and group["environment"] != environment
+            ):
+                continue
+            executions = group["executions"]
+            connection = accounts.get(identity)
             rows.append(
                 {
-                    **{key: scope[key] for key in ("account_id", "account", "exchange", "environment")},
-                    "symbol": pair,
+                    **{
+                        key: value
+                        for key, value in group.items()
+                        if key not in {"executions", "initial_issues"}
+                    },
                     "base": pair.split("/")[0],
                     "quote": pair.split("/")[1],
                     "first_fill_at": executions[0]["created_at"] if executions else None,
-                    **summary,
-                    "opening": opening,
-                    "opening_applied": bool(opening and not overlap),
+                    **calculated["summaries"][(identity, pair)],
                     "active": bool(connection and connection.active),
                     "unrealized": None,
                     "mark_price": None,
@@ -525,16 +355,14 @@ class AccountPerformance:
                     "mark_note": "Refresh current marks to compare FIFO inventory with an active account balance.",
                 }
             )
-        for row in rows:
-            if len(inventory_markets[(row["account_id"], row["base"])]) > 1:
-                row["issues"].append(
-                    "This asset appears in other markets on this account. Cross-market cost basis is not reconstructed."
-                )
-                row["cross_market"] = True
-                row["net_known"] = False
-                row["net_matched_realized"] = None
-            else:
-                row["cross_market"] = False
+        count = sum(row["fill_count"] for row in rows)
+        selected_transfers = [
+            item
+            for item in calculated["transfers"]
+            if (not account_id or account_id in {item["outgoing_account_id"], item["incoming_account_id"]})
+            and (not symbol or not item["symbol"] or item["symbol"] == symbol)
+            and (not environment or item["environment"] == environment)
+        ]
         if mark and rows:
             self._mark(rows, accounts)
         totals = defaultdict(
@@ -564,7 +392,17 @@ class AccountPerformance:
             "items": rows,
             "fill_count": count,
             "complete_history": False,
-            "basis_method": "FIFO by account and exact market",
+            "basis_method": "FIFO by account and exact market, with eligible confirmed lot carryover",
+            "dependency_fill_count": len(fills),
+            "dependency_account_count": len({key[0] for key in groups}),
+            "transfer_evidence": selected_transfers[:EVIDENCE_LIMIT],
+            "transfer_evidence_count": len(selected_transfers),
+            "transfer_evidence_limit": EVIDENCE_LIMIT,
+            "transfer_summary": {
+                "applied": sum(item["status"] == "applied" for item in selected_transfers),
+                "unapplied": sum(item["status"] != "applied" for item in selected_transfers),
+                "note": "Current zero-fee pairs or explicitly reviewed, balanced same-asset fee allocations. Fee inventory cost stays separate; full account returns and cross-market basis remain unavailable.",
+            },
             "totals": [
                 {
                     "environment": key[0],

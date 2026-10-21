@@ -18,6 +18,7 @@ from sibyl.services.performance import AccountPerformance
 from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
 from sibyl.services.strategies import CATALOG, Strategies
+from sibyl.services.transfer_reconciliation import TransferReconciliation
 from sibyl.storage import Store
 
 ROLES = {
@@ -82,7 +83,11 @@ MODULE_INSTRUCTIONS = {
         "unconverted fees, timestamp ambiguity and cross-market gaps. Never describe provisional figures as final net P&L. "
         "Opening inventory is a user assertion. Keep accounts, environments and quote currencies distinct. "
         "Funding observations are reported native quantities, not returns. Never infer fee inclusion, own-account transfers, "
-        "complete history or cost basis from a deposit. Pending/restricted/unknown movements are not completed totals."
+        "complete history or cost basis from a deposit. Pending/restricted/unknown movements are not completed totals. "
+        "Transfer suggestions are heuristics. Confirmed links are user assertions, and changed sources need review. "
+        "Unlinked observations are unreviewed, not established external cash flows. Never confirm links or infer transferred cost basis. "
+        "Performance evidence may carry original lots for current zero-fee links or explicit balanced same-asset fee allocations. Fee inventory cost is separate from trading P&L, not an expense valuation or tax conclusion. "
+        "Use only its applied/unapplied status and lot provenance; unknown costs or dates are not zero or receipt dates."
     ),
     "reporter": (
         "Summarize supplied publisher headlines and excerpts, cite publisher links and dates, "
@@ -114,6 +119,7 @@ class AgentRegistry:
         account_sync: AccountSync | None = None,
         performance: AccountPerformance | None = None,
         funding: FundingSync | None = None,
+        transfers: TransferReconciliation | None = None,
     ):
         self.settings, self.store = settings, store
         self.models = ModelSettings(settings, store)
@@ -132,12 +138,35 @@ class AgentRegistry:
             symbol: str = "",
             environment: str = "",
             example: bool = False,
+            transfers_example: bool = False,
+            fee_example: bool = False,
             funding_view: bool = False,
+            transfer_view: bool = False,
             asset: str = "",
             kind: str = "",
             status: str = "",
         ) -> dict:
             """Read portfolio evidence or local market FIFO; never fetch private balances for FIFO."""
+            if transfer_view:
+                result = (
+                    transfers.example()
+                    if transfers and example
+                    else transfers.report(account_id, asset, environment, limit=10)
+                    if transfers
+                    else {
+                        "items": [],
+                        "candidates": [],
+                        "total": 0,
+                        "note": "Transfer review service is unavailable.",
+                    }
+                )
+                return {
+                    **result,
+                    "view": "transfers",
+                    "candidates": result["candidates"][:6],
+                    "evidence_link_limit": 10,
+                    "evidence_suggestion_limit": 6,
+                }
             if funding_view:
                 result = (
                     funding.example()
@@ -174,18 +203,44 @@ class AgentRegistry:
                     "fill_count": 0,
                     "note": "Performance service is unavailable.",
                 }
-            result = performance.example() if example else performance.report(account_id, symbol, environment)
+            result = (
+                performance.transfer_example(fee_example)
+                if example and transfers_example
+                else performance.example()
+                if example
+                else performance.report(account_id, symbol, environment)
+            )
+
+            def transfer_evidence(items, limit):
+                return [
+                    {
+                        **item,
+                        "lots": item["lots"][:5],
+                        **{
+                            side: {**item[side], "lots": item[side]["lots"][:5]}
+                            for side in ("outgoing_fee_evidence", "incoming_fee_evidence")
+                            if item.get(side)
+                        },
+                    }
+                    for item in items[:limit]
+                ]
+
             return {
                 **result,
                 "view": "performance",
+                "transfer_evidence": transfer_evidence(result.get("transfer_evidence", []), 6),
                 "items": [
                     {
                         **{key: value for key, value in row.items() if key not in {"curve", "disposals"}},
                         "recent_disposals": row["disposals"][:10],
+                        "basis_transfers": transfer_evidence(row.get("basis_transfers", []), 3),
                     }
                     for row in result["items"][:20]
                 ],
                 "evidence_market_limit": 20,
+                "evidence_transfer_limit": 6,
+                "evidence_transfer_per_market_limit": 3,
+                "evidence_lot_limit": 5,
             }
 
         def market_analysis(
@@ -423,7 +478,11 @@ class AgentRegistry:
                     tool_override = (
                         selected_accounting_evidence
                         if request.module == "accountant"
-                        and (request.context.funding_view or request.context.performance_view)
+                        and (
+                            request.context.funding_view
+                            or request.context.performance_view
+                            or request.context.transfer_view
+                        )
                         else None
                     )
                     agent = self._compose(
@@ -460,6 +519,14 @@ class AgentRegistry:
     def _tool_arguments(request: AgentRequest) -> dict:
         """Map the page's validated selection to the module's explicit native tool arguments."""
         context = request.context
+        if request.module == "accountant" and context.transfer_view:
+            return {
+                "transfer_view": True,
+                "account_id": context.funding_account_id or "",
+                "asset": context.funding_asset or "",
+                "environment": context.funding_environment or "",
+                "example": bool(context.transfer_example),
+            }
         if request.module == "accountant" and context.funding_view:
             return {
                 "funding_view": True,
@@ -477,6 +544,8 @@ class AgentRegistry:
                 "symbol": context.symbol or "",
                 "environment": context.performance_environment or "",
                 "example": bool(context.performance_example),
+                "transfers_example": bool(context.performance_transfer_example),
+                "fee_example": bool(context.performance_fee_example),
             }
         if request.module in {"oracle", "accountant"}:
             return {"scope": context.portfolio_scope or "all"}
@@ -517,6 +586,12 @@ class AgentRegistry:
     def _snapshot_answer(module: str, evidence) -> str:
         """Format actual tool output when language-model inference has not been configured."""
         if module in {"oracle", "accountant"}:
+            if evidence.get("view") == "transfers":
+                return (
+                    ("Example reconciliation. " if evidence.get("example") else "")
+                    + f"{evidence['total']} saved transfer links in this selection, with {len(evidence['candidates'])} suggestions included for review. "
+                    + evidence["note"]
+                )
             if evidence.get("view") == "funding":
                 return (
                     ("Example movements. " if evidence.get("example") else "")

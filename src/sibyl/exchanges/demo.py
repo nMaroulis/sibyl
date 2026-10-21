@@ -12,6 +12,7 @@ from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.data import ASSETS, DEMO_ASSETS, STABLES, TIMEFRAMES
 from sibyl.exchanges.funding import FundingPage, funding_streams
 from sibyl.exchanges.history import TradePage
+from sibyl.exchanges.paper_limits import PaperLimits, reserved
 from sibyl.models import Candle, OrderRequest
 
 if TYPE_CHECKING:
@@ -23,7 +24,8 @@ class DemoClient(ExchangeClient):
 
     Market fills use Store.execute_paper, sharing its atomic idempotency and fee
     accounting. Without a Store, market-data reads work but account operations
-    require a workspace. Open limit orders, latency and partial fills are not simulated.
+    require a workspace. Resting GTC limits reserve virtual funds; liquidity, latency
+    and partial fills are not simulated.
     """
 
     id = "demo"
@@ -135,12 +137,16 @@ class DemoClient(ExchangeClient):
         ]
 
     def fetch_ticker(self, symbol: str) -> dict:
-        """Read a synthetic quote and movement over the last two daily fixture closes."""
+        """Generate a current synthetic snapshot from the last two fixture closes.
+
+        The timestamp is the simulator's quote generation time, not the opening
+        time of the historical candle used as its fixed sample price.
+        """
         rows = self.fetch_ohlcv(symbol, limit=2)
         last, previous = rows[-1][4], rows[-2][4]
         return {
             "symbol": symbol,
-            "timestamp": rows[-1][0],
+            "timestamp": datetime.now(UTC).timestamp() * 1000,
             "last": last,
             "close": last,
             "bid": last * 0.9995,
@@ -169,8 +175,22 @@ class DemoClient(ExchangeClient):
 
     def fetch_balance(self) -> dict:
         """Read the paper wallet; it can never read a saved exchange account."""
-        balances = self._workspace().balances()
-        return {"total": dict(balances), "free": dict(balances), "used": dict.fromkeys(balances, 0.0)}
+        with self._workspace().db() as db:
+            db.execute("BEGIN")
+            balances = dict(db.execute("SELECT asset,quantity FROM balances"))
+            holds = reserved(db)
+        return {
+            "total": dict(balances),
+            "free": {asset: max(0.0, value - holds.get(asset, 0)) for asset, value in balances.items()},
+            "used": {asset: holds.get(asset, 0.0) for asset in balances},
+        }
+
+    def price_to_precision(self, symbol: str, price: float) -> str:
+        """Use eight quote decimal places for the virtual limit contract."""
+        self.market(symbol)
+        if number(price) is None or price <= 0:
+            raise ValueError("Limit price must be positive and finite.")
+        return str(Decimal(str(price)).quantize(Decimal("0.00000001"), rounding=ROUND_DOWN))
 
     def amount_to_precision(self, symbol: str, amount: float) -> str:
         """Truncate fixture base quantities to eight decimal places."""
@@ -198,22 +218,41 @@ class DemoClient(ExchangeClient):
         }
 
     def create_order(
-        self, symbol: str, type: str, side: str, amount: float, params: dict | None = None
+        self,
+        symbol: str,
+        type: str,
+        side: str,
+        amount: float,
+        params: dict | None = None,
+        *,
+        price: float | None = None,
     ) -> dict:
-        """Persist one immediate paper fill, idempotently keyed by clientOrderId."""
+        """Persist an immediate market fill or resting GTC order, keyed by clientOrderId."""
         self.market(symbol)
         params = params or {}
-        if type != "market" or set(params) != {"clientOrderId"}:
-            raise ValueError("Demo supports market orders with a clientOrderId only.")
+        if type not in {"market", "limit"} or set(params) != {"clientOrderId"}:
+            raise ValueError("Demo supports market/limit orders with a clientOrderId only.")
         request = OrderRequest(
             symbol=symbol, side=side, quantity=amount, idempotency_key=params["clientOrderId"]
         )
-        result = self._workspace().execute_paper(request, self.fetch_ticker(symbol)["last"])
+        if type == "limit":
+            if number(price) is None or price <= 0:
+                raise ValueError("A positive finite limit price is required.")
+            return PaperLimits(self._workspace()).place(symbol, side, amount, price, params["clientOrderId"])
+        if price is not None:
+            raise ValueError("Market orders do not accept a limit price.")
+        result = self._workspace().execute_paper(
+            request, self.fetch_ticker(symbol)["last"], require_demo=True
+        )
         return {**self._order(result), "clientOrderId": params["clientOrderId"]}
 
     def fetch_order(self, order_id: str, symbol: str) -> dict:
         """Read a persisted simulated order by its ID, including after a restart."""
         self.market(symbol)
+        try:
+            return PaperLimits(self._workspace()).read(order_id, symbol)
+        except ccxt.OrderNotFound:
+            pass
         with self._workspace().db() as db:
             row = db.execute("SELECT payload FROM orders WHERE id = ?", (order_id,)).fetchone()
         if row is None:
@@ -226,10 +265,19 @@ class DemoClient(ExchangeClient):
         return self._order(result)
 
     def fetch_open_orders(self, symbol: str) -> list[dict]:
-        """Demo market orders fill immediately, so there are no resting orders."""
+        """Read resting Demo limit orders without advancing the matcher."""
         self.market(symbol)
         self._workspace()
-        return []
+        return PaperLimits(self._workspace()).open_orders(symbol)
+
+    def cancel_order(self, order_id: str, symbol: str) -> dict:
+        """Cancel a virtual resting order, preserving fills and releasing its hold."""
+        self.market(symbol)
+        return PaperLimits(self._workspace()).cancel(order_id, symbol)
+
+    def match_order(self, order_id: str, symbol: str) -> dict:
+        """Explicitly advance a virtual limit using the fixed Demo bid/ask feed."""
+        return PaperLimits(self._workspace()).match(order_id, symbol, self.fetch_ticker(symbol))
 
     def fetch_my_trades(self, symbol: str, since: int | None = None, limit: int = 100) -> list[dict]:
         """Read a bounded page of persisted paper fills in chronological order."""
@@ -248,7 +296,7 @@ class DemoClient(ExchangeClient):
                 result.append(
                     {
                         "id": fill["id"],
-                        "order": fill["id"],
+                        "order": fill.get("order_id", fill["id"]),
                         "symbol": symbol,
                         "side": fill["side"],
                         "timestamp": stamp,
@@ -283,7 +331,7 @@ class DemoClient(ExchangeClient):
             items.append(
                 {
                     "id": fill["id"],
-                    "order": fill["id"],
+                    "order": fill.get("order_id", fill["id"]),
                     "symbol": symbol,
                     "side": fill["side"],
                     "timestamp": datetime.fromisoformat(fill["created_at"]).timestamp() * 1000,

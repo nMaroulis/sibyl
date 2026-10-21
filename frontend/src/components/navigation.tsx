@@ -146,7 +146,7 @@ export function NavigationDock({
         id={panelId}
         className="dock-more-panel"
         style={{
-          gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, moreItems.length))}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, Math.ceil(Math.sqrt(moreItems.length))))}, minmax(0, 1fr))`,
         }}
         data-open={expanded}
         role="group"

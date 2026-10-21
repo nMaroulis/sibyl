@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   AlertCircle,
@@ -151,10 +151,14 @@ export function Modal({
   initialFocus?: string;
 }) {
   const id = useId();
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') close.current();
       if (event.key === 'Tab') {
         const dialog = document.getElementById(id);
         const elements = dialog?.querySelectorAll<HTMLElement>(
@@ -182,7 +186,7 @@ export function Modal({
       document.body.style.overflow = overflow;
       previous?.focus();
     };
-  }, [id, onClose, initialFocus]);
+  }, [id, initialFocus]);
   return (
     <div
       className={`modal-backdrop ${backdropClassName}`}

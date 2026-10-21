@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Download, CandlestickChart, Network, ArrowUpRight, Star } from 'lucide-react';
+import { Download, CandlestickChart, Network, ArrowUpRight, Star, Bell } from 'lucide-react';
 import {
   AssetIcon,
   Badge,
@@ -134,7 +134,17 @@ function MarketsView({
       <PageTitle
         title="Markets"
         description="Explore price, momentum, and the relationships between your markets."
-        action={<AgentButton module="analyst" context={context} />}
+        action={
+          <>
+            <Link
+              className="button secondary"
+              to={`/alerts?source=${encodeURIComponent(sourceId)}&symbol=${encodeURIComponent(symbol)}`}
+            >
+              <Bell size={14} /> Price alerts
+            </Link>
+            <AgentButton module="analyst" context={context} />
+          </>
+        }
       />
       <div className="market-explore-bar">
         {feedControl}

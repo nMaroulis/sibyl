@@ -1,3 +1,4 @@
+import { OrderMonitor } from './order-monitor';
 import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { Badge, Empty, ErrorState, Loading, Panel, PanelTitle, useToast } from './ui';
@@ -31,7 +32,7 @@ type Report = {
 };
 
 /** Searchable execution records with explicitly scoped, matched-lot paper results. */
-export function ExecutionHistory() {
+export function ExecutionHistory({ active = true }: { active?: boolean }) {
   const report = useResource<Report>('/reports/trading');
   const [busy, setBusy] = useState('');
   const toast = useToast();
@@ -70,6 +71,7 @@ export function ExecutionHistory() {
   const curve = report.data?.paper_pnl_curve.filter((p) => p.quote === quote) ?? [];
   return (
     <>
+      <OrderMonitor active={active} />
       <div className="report-summary-grid">
         <Panel>
           <PanelTitle

@@ -256,9 +256,18 @@ class FundingLedger:
                 f"FROM funding_events WHERE {where} AND status='completed' AND json_extract(payload,'$.fee_known')=1 GROUP BY 1,2,3 ORDER BY 1,2,3",
                 values,
             ).fetchall()
+            from sibyl.services.transfer_reconciliation import memberships
+
+            reconciliation = memberships(db, [json.loads(row[0])["id"] for row in items])
         return {
             "items": [
-                {**json.loads(row[0]), "first_seen_at": row[1], "last_seen_at": row[2]} for row in items
+                {
+                    **json.loads(row[0]),
+                    "first_seen_at": row[1],
+                    "last_seen_at": row[2],
+                    "reconciliation": reconciliation.get(json.loads(row[0])["id"]),
+                }
+                for row in items
             ],
             "total": total,
             "offset": offset,

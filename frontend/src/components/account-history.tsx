@@ -186,11 +186,10 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
   const performance = params.get('history_view') === 'performance';
   const funding = params.get('history_view') === 'funding';
   const historyView = funding ? 'funding' : performance ? 'performance' : 'fills';
-  const retainedMarkets = useResource<{ symbols: string[] }>(
-    '/account-ledger/performance/markets',
-    0,
-    active,
-  );
+  const retainedMarkets = useResource<{
+    symbols: string[];
+    accounts?: { id: string; label: string }[];
+  }>('/account-ledger/performance/markets', 0, active);
   const offset = Math.min(1_000_000, Math.max(0, Number(params.get('offset')) || 0));
   const change = (values: Record<string, string>, reset = true) => {
     setParams((old) => {
@@ -242,7 +241,13 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
   const jobs = sync.data?.jobs.filter((item) => !accountId || item.account_id === accountId) ?? [];
   const retired = [
     ...new Map(
-      (sync.data?.jobs ?? [])
+      [
+        ...(sync.data?.jobs ?? []),
+        ...(retainedMarkets.data?.accounts ?? []).map((item) => ({
+          account_id: item.id,
+          account: item.label,
+        })),
+      ]
         .filter((item) => !accounts.some((account) => account.id === item.account_id))
         .map((item) => [item.account_id, item]),
     ).values(),
@@ -268,6 +273,11 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
             {item.account} · disconnected
           </option>
         ))}
+        {accountId &&
+          !accounts.some((item) => item.id === accountId) &&
+          !retired.some((item) => item.account_id === accountId) && (
+            <option value={accountId}>Selected retained account</option>
+          )}
       </select>
     </label>
   );

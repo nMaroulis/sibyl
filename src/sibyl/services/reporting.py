@@ -40,6 +40,8 @@ def trading_report(store, trading) -> dict:
         for order in paper
     ]
     for intent in exchange:
+        if intent.get("mode") == "paper":
+            continue  # Demo native fills already appear in the paper ledger.
         request = intent["request"]
         rows.append(
             {

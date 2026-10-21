@@ -176,6 +176,28 @@ class ExchangeOrderRequest(OrderRequest):
     """Prepare an exchange order against an explicit saved account."""
 
     connection_id: str = Field(min_length=1, max_length=100)
+    order_type: Literal["market", "limit"] = "market"
+    limit_price: float | None = Field(default=None, gt=0, le=1e15)
+
+    @model_validator(mode="after")
+    def price_for_type(self):
+        """A GTC limit needs a price; market orders must not carry a hidden limit."""
+        if (self.order_type == "limit") != (self.limit_price is not None):
+            raise ValueError("Set a limit price only for limit orders.")
+        return self
+
+
+class CancelOrderConfirm(Request):
+    """Confirm a particular short-lived cancellation review, never an arbitrary provider ID."""
+
+    cancel_id: str = Field(min_length=1, max_length=100)
+    confirmation: str = Field(max_length=100)
+
+
+class OrderTracking(Request):
+    """Opt a locally submitted order into or out of background status reads."""
+
+    enabled: bool
 
 
 class ExchangeOrderConfirm(Request):
@@ -194,6 +216,8 @@ class AgentContext(Request):
     performance_account_id: str | None = Field(default=None, max_length=100)
     performance_environment: Literal["", "demo", "test", "production"] | None = None
     performance_example: bool | None = None
+    performance_transfer_example: bool | None = None
+    performance_fee_example: bool | None = None
     funding_view: bool | None = None
     funding_account_id: str | None = Field(default=None, max_length=100)
     funding_asset: str | None = Field(default=None, max_length=20, pattern=r"^$|^[A-Z0-9][A-Z0-9.]{0,19}$")
@@ -203,6 +227,8 @@ class AgentContext(Request):
     ) = None
     funding_environment: Literal["", "demo", "test", "production"] | None = None
     funding_example: bool | None = None
+    transfer_view: bool | None = None
+    transfer_example: bool | None = None
     timeframe: Timeframe | None = None
     limit: int | None = Field(default=None, ge=60, le=720)
     crypto_id: str | None = Field(

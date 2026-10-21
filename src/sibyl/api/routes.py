@@ -14,14 +14,17 @@ from sibyl.models import (
     AccountActivation,
     AgentRequest,
     BacktestRequest,
+    CancelOrderConfirm,
     Connection,
     ConnectionCreate,
     ExchangeOrderConfirm,
     ExchangeOrderRequest,
     OrderRequest,
+    OrderTracking,
     Timeframe,
 )
 from sibyl.services.account_sync import AccountSyncRequest
+from sibyl.services.alerts import PriceAlertAction, PriceAlertCreate, alert_example
 from sibyl.services.analytics import analyze, correlation, forecast
 from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequest
 from sibyl.services.funding_sync import FundingSyncRequest
@@ -29,7 +32,9 @@ from sibyl.services.llm_settings import ModelSettingsRequest
 from sibyl.services.market import TIMEFRAMES
 from sibyl.services.performance import OpeningInventory
 from sibyl.services.reporting import trading_report
+from sibyl.services.roadmap import implementation_status
 from sibyl.services.strategies import CATALOG, backtest
+from sibyl.services.transfer_reconciliation import TransferConfirm, TransferPair
 from sibyl.services.watchlists import WatchlistItem, WatchlistOrder
 
 router = APIRouter()
@@ -424,6 +429,88 @@ def funding_example(s: S, response: Response):
     return s.funding_sync.example()
 
 
+@router.get("/account-ledger/transfers", tags=["Accountant"])
+def transfer_reviews(
+    s: S,
+    response: Response,
+    account_id: str = Query("", max_length=100),
+    asset: str = Query("", max_length=20, pattern=r"^$|^[A-Z0-9][A-Z0-9.]{0,19}$"),
+    environment: Literal["", "demo", "test", "production"] = "",
+    include_removed: bool = False,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=1_000_000),
+):
+    """Read heuristic suggestions and user-confirmed classifications, without inferring cash-flow returns."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.report(account_id, asset, environment, include_removed, limit, offset)
+
+
+@router.get("/account-ledger/transfers/example", tags=["Accountant"])
+def transfer_example(s: S, response: Response):
+    """Compute an isolated ambiguous-pair example without inserting funding observations or links."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.example()
+
+
+@router.get("/account-ledger/transfers/events", tags=["Accountant"])
+def transfer_records(
+    s: S,
+    response: Response,
+    direction: Literal["in", "out"],
+    account_id: str = Query("", max_length=100),
+    asset: str = Query("", max_length=20, pattern=r"^$|^[A-Z0-9][A-Z0-9.]{0,19}$"),
+    environment: Literal["", "demo", "test", "production"] = "",
+    q: str = Query("", max_length=120),
+    limit: int = Query(25, ge=1, le=50),
+    offset: int = Query(0, ge=0, le=1_000_000),
+):
+    """Search retained records for a manual pair, including records outside the suggestion scan."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.events(direction, account_id, asset, environment, q, limit, offset)
+
+
+@router.post("/account-ledger/transfers/example/preview", tags=["Accountant"])
+def preview_example_transfer(body: TransferPair, s: S, response: Response):
+    """Validate an allocation against isolated fixture records only; no persistence."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.example_preview(body)
+
+
+@router.post("/account-ledger/transfers/preview", tags=["Accountant"])
+def preview_transfer(body: TransferPair, s: S, response: Response):
+    """Prepare exact source versions for a review; this endpoint persists nothing."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.preview(body)
+
+
+@router.post("/account-ledger/transfers", tags=["Accountant"])
+def confirm_transfer(body: TransferConfirm, s: S, response: Response):
+    """Save an audited user assertion; source-version checks and unique membership prevent stale/double links."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.confirm(body)
+
+
+@router.get("/account-ledger/transfers/{link_id}", tags=["Accountant"])
+def transfer_detail(link_id: str, s: S, response: Response):
+    """Read saved/current evidence and the latest fifty confirm/reconfirm/remove actions."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.detail(link_id)
+
+
+@router.post("/account-ledger/transfers/{link_id}/review", tags=["Accountant"])
+def review_transfer(link_id: str, body: TransferConfirm, s: S, response: Response):
+    """Reconfirm changed source facts or restore a removed link after reviewing current observations."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.transfers.confirm(body, link_id)
+
+
+@router.delete("/account-ledger/transfers/{link_id}", status_code=204, tags=["Accountant"])
+def remove_transfer(link_id: str, s: S):
+    """Soft-remove a classification; retain the audit trail and release source records for another review."""
+    s.transfers.remove(link_id)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
 @router.post("/connections/{connection_id}/opening-inventory", tags=["Accountant"])
 def save_opening_inventory(connection_id: str, body: OpeningInventory, s: S, response: Response):
     """Record user-entered opening quantity and optional quote cost, separate from fills."""
@@ -432,10 +519,10 @@ def save_opening_inventory(connection_id: str, body: OpeningInventory, s: S, res
 
 
 @router.get("/account-ledger/performance/example", tags=["Accountant"])
-def performance_example(s: S, response: Response):
+def performance_example(s: S, response: Response, transfers: bool = False, fees: bool = False):
     """Read an isolated computed example; never create paper orders or ledger entries."""
     response.headers["Cache-Control"] = "no-store"
-    return s.performance.example()
+    return s.performance.transfer_example(fees) if transfers or fees else s.performance.example()
 
 
 @router.get("/account-ledger/performance/markets", tags=["Accountant"])
@@ -496,7 +583,10 @@ def check_connection(connection_id: str, s: S):
 def paper_balances(s: S):
     """Read the separate manual paper ledger, including in live-data mode."""
     s.accounts.require_demo()
-    return {"mode": "paper", "balances": s.store.balances()}
+    from sibyl.exchanges.demo import DemoClient
+
+    balance = DemoClient(store=s.store).fetch_balance()
+    return {"mode": "paper", "balances": balance["free"], "total": balance["total"], "used": balance["used"]}
 
 
 @router.get("/orders", tags=["Broker"])
@@ -533,20 +623,59 @@ def place_order(body: OrderRequest, s: S):
 
 
 @router.get("/exchange-orders", tags=["Broker"])
-def exchange_orders(s: S):
+def exchange_orders(s: S, response: Response):
     """List exchange order intents and their actual submission status."""
+    response.headers["Cache-Control"] = "no-store"
     return s.trading.list_orders()
 
 
+@router.get("/exchange-orders/example", tags=["Broker"])
+def order_monitor_example(response: Response):
+    """Return illustrative status observations without creating wallet/order records."""
+    response.headers["Cache-Control"] = "no-store"
+    return [
+        {
+            "id": "example-" + symbol.replace("/", "-") + "-" + status,
+            "request": {
+                "connection_id": "example",
+                "symbol": symbol,
+                "side": side,
+                "quantity": quantity,
+                "order_type": "limit",
+                "limit_price": price,
+            },
+            "account": "Example account",
+            "exchange": "demo",
+            "sandbox": True,
+            "environment": "illustrative",
+            "mode": "paper",
+            "status": status,
+            "price": price,
+            "filled": filled,
+            "remaining": quantity - filled,
+            "average": price if filled else None,
+            "tracking": status == "open",
+            "client_order_id": "example-only",
+            "exchange_order_id": "example-only",
+        }
+        for symbol, side, quantity, price, status, filled in [
+            ("BTC/USDT", "buy", 0.02, 50000, "open", 0.008),
+            ("ETH/USDT", "sell", 0.5, 3500, "open", 0.0),
+            ("SOL/USDT", "buy", 3.0, 140, "canceled", 1.0),
+        ]
+    ]
+
+
 @router.post("/exchange-orders/{intent_id}/refresh", tags=["Broker"])
-def refresh_exchange_order(intent_id: str, s: S):
+def refresh_exchange_order(intent_id: str, s: S, response: Response):
     """Read the status of a recorded exchange order without any resubmission."""
+    response.headers["Cache-Control"] = "no-store"
     return s.trading.refresh(intent_id)
 
 
 @router.post("/exchange-orders/preview", tags=["Broker"])
 def preview_exchange_order(body: ExchangeOrderRequest, s: S):
-    """Validate an exchange market order and create a 60 second review intent."""
+    """Validate a spot market/GTC limit order and create a 60 second review intent."""
     return s.trading.preview(body)
 
 
@@ -554,6 +683,27 @@ def preview_exchange_order(body: ExchangeOrderRequest, s: S):
 def confirm_exchange_order(intent_id: str, body: ExchangeOrderConfirm, s: S):
     """Submit an explicit, user-confirmed exchange order at most once."""
     return s.trading.execute(intent_id, body.confirmation)
+
+
+@router.post("/exchange-orders/{intent_id}/cancel/preview", tags=["Broker"])
+def preview_cancellation(intent_id: str, s: S, response: Response):
+    """Observe native status and create a separate 60 second cancellation review."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.lifecycle.preview_cancel(intent_id)
+
+
+@router.post("/exchange-orders/{intent_id}/cancel", tags=["Broker"])
+def cancel_exchange_order(intent_id: str, body: CancelOrderConfirm, s: S, response: Response):
+    """Send a user-confirmed cancellation once; ambiguous outcomes remain uncertain."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.lifecycle.cancel(intent_id, body.cancel_id, body.confirmation)
+
+
+@router.post("/exchange-orders/{intent_id}/tracking", tags=["Broker"])
+def order_tracking(intent_id: str, body: OrderTracking, s: S, response: Response):
+    """Persist automatic native status reads; this never enables order execution."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.trading.lifecycle.track(intent_id, body.enabled)
 
 
 @router.get("/strategies", tags=["Broker"])
@@ -774,3 +924,69 @@ async def ask_agent(body: AgentRequest, s: S):
 def runs(s: S, kind: Literal["agent", "backtest"] | None = None):
     """Inspect the 50 latest persisted agent runs or historical backtests."""
     return s.store.runs(kind)
+
+
+@router.get("/roadmap", tags=["System"])
+def roadmap():
+    """Expose the audited implementation inventory, including explicitly deferred scope."""
+    return implementation_status()
+
+
+@router.get("/alerts", tags=["Alerts"])
+def price_alerts(
+    s: S, response: Response, include_archived: bool = False, offset: int = Query(0, ge=0, le=1_000_000)
+):
+    """Read saved rules without evaluating them or calling providers."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.rules(include_archived, offset)
+
+
+@router.post("/alerts", tags=["Alerts"], status_code=201)
+def create_price_alert(body: PriceAlertCreate, s: S, response: Response):
+    """Arm one source-pinned threshold rule; no trade or external delivery is possible."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.create(body)
+
+
+@router.post("/alerts/{rule_id}/action", tags=["Alerts"])
+def change_price_alert(rule_id: str, body: PriceAlertAction, s: S, response: Response):
+    """Pause, rearm, archive or restore a price rule."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.change(rule_id, body.action)
+
+
+@router.post("/alerts/{rule_id}/check", tags=["Alerts"])
+def check_price_alert(rule_id: str, s: S, response: Response):
+    """Check one armed rule if due; preserve the provider cooldown/backoff budget."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.check(rule_id)
+
+
+@router.get("/notifications", tags=["Alerts"])
+def notification_inbox(
+    s: S, response: Response, limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0, le=1_000_000)
+):
+    """Page retained local notifications; reading never acknowledges them."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.inbox(limit, offset)
+
+
+@router.post("/notifications/read-all", tags=["Alerts"])
+def read_all_notifications(s: S, response: Response):
+    """Acknowledge unread local notifications without deleting their evidence."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.mark_read()
+
+
+@router.post("/notifications/{notification_id}/read", tags=["Alerts"])
+def read_notification(notification_id: str, s: S, response: Response):
+    """Persist one notification's read state idempotently."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.alerts.mark_read(notification_id)
+
+
+@router.get("/alerts/example", tags=["Alerts"])
+def price_alert_example(response: Response):
+    """Inspect an isolated example without saving rules or triggering notifications."""
+    response.headers["Cache-Control"] = "no-store"
+    return alert_example()

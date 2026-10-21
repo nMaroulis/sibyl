@@ -2,16 +2,36 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
+## Audited snapshot — October 21, 2026
+
+The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
+
+| Area                           | Current state | Next missing foundation                                                                         |
+| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------- |
+| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.   |
+| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                        |
+| Order management               | partial       | Recovery of uncertain native submissions by client ID; full fill/fee settlement reconciliation. |
+| Market-data infrastructure     | partial       | Persisted OHLCV archives, historical backfill, retention and gap detection.                     |
+| Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; recurring/crossing conditions.           |
+| Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.       |
+| Strategy research              | partial       | Benchmarks, retained datasets, parameter optimization and walk-forward/out-of-sample tests.     |
+| ProtoLink workflows            | partial       | Richer scoped tools, inspected traces, streaming and per-agent models.                          |
+| Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                 |
+| Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                      |
+| Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                      |
+| Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                |
+
 ## Working foundations
 
 - FastAPI routes, validated inputs, SQLite persistence and an encrypted credential vault.
 - Twenty production spot-exchange clients, Binance Testnet, Coinbase Exchange Sandbox, and the persistent offline Demo account.
 - Public markets, candles, order-book snapshots, indicators, correlations and account balance reads.
 - Portfolio/account views, allocation, observed account-value snapshots and explicit unpriced holdings.
-- Manual paper orders and guarded manual market orders for Binance, Coinbase, Kraken and the two dedicated test clients.
+- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for Binance, Coinbase, Kraken and the two dedicated test clients.
 - Six rule-based strategies, historical backtests, durable paper jobs and their detailed monitor/journal.
 - Ten ProtoLink module agents with prompts, contextual read-only tools, saved conversations and optional LLM inference.
 - Encrypted LLM provider profiles, saved API keys and preset/custom model selection.
+- Durable source-pinned one-shot price alerts, a persistent unread in-app inbox and sanitized retry/backoff evidence.
 - Multi-publisher news ingestion, a persistent archive and filtered text sentiment, fetched crypto profiles/history, a glossary, recent Bitcoin blocks and optional equity research.
 
 A paper strategy can consume live prices while still using virtual funds. Its running monitor does **not** mean it places exchange orders. Authenticated exchange acceptance testing remains outstanding despite implemented adapters and automated contract tests.
@@ -27,7 +47,11 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [ ] Review durable import pagination for the remaining exchange providers.
 - [ ] Persist and synchronize complete exchange order lifecycles alongside fills.
 - [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer entries, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
-- [ ] Extend funding adapters to remaining exchanges, fiat, earn/staking and subaccounts; reconcile late/pending events and transfers.
+- [ ] Extend funding adapters to remaining exchanges, fiat, earn/staking and subaccounts; reconcile late/pending events.
+- [x] Add bounded transfer suggestions, manual pairing, audited user confirmation, stale-source review and reversible link removal/restoration. See [transfer review](transfer-reconciliation.md).
+- [x] Carry original acquisition lots/cost basis for current confirmed equal-amount, explicitly zero-fee transfers in one unambiguous exact market. See [carryover scope](transfer-cost-basis.md).
+- [x] Add explicit balanced same-asset fee allocations, missing-fee assertions, distinct-charge acknowledgment and separate fee-unit inventory cost. See [transfer fees](transfer-fees.md).
+- [ ] Add historical fee valuation, other fee currencies/rebates, split/merged transfers, cross-market basis and reviewed external-funding classifications.
 - [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
 - [ ] Add full rescans, cash-event coverage and reconciliation status.
 - [ ] Reconcile remote records with locally submitted intents after disconnects or restarts.
@@ -47,11 +71,12 @@ Valuation now discovers direct, inverse and short bridge routes for held assets 
 
 ### 3. Order management — partial
 
-Manual market-order previews, confirmation, expiry and at-most-once submission attempts exist. Status refresh is explicit, and ambiguous outcomes are not retried automatically.
+Reviewed market/GTC limit orders, exact precision checks, durable cancellation reviews, cumulative fill observations and restart-safe REST tracking are implemented for the existing execution allowlist. Demo reserves funds and matches/cancels virtual resting orders. Ambiguous writes are never automatically retried. See [order management](order-management.md).
 
 - [ ] Review and enable execution for the remaining production providers; most added adapters are read-only.
-- [ ] Add cancel/replace and resting limit-order lifecycle management.
-- [ ] Add stop, take-profit, trailing, OCO, time-in-force, post-only and iceberg support where the venue permits it.
+- [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
+- [ ] Add cancel/replace with venue-specific atomicity and reservation semantics.
+- [ ] Add stop, take-profit, trailing, OCO, additional time-in-force, post-only and iceberg support where the venue permits it.
 - [ ] Synchronize partial fills, final fees, rejects and cancellations into the account ledger.
 - [ ] Reconcile uncertain submissions by supported provider order/client-ID lookups.
 
@@ -128,17 +153,22 @@ Recent Bitcoin blocks, optional equity quotes/history/statistics and Pearson/Spe
 
 ## Cross-cutting and optional expansion
 
-### 11. Alerts and operational jobs — missing
+### 11. Alerts and operational jobs — partial
 
-- [ ] Implement durable price, portfolio-risk, strategy and connection-failure alert rules.
-- [ ] Add notification history, deduplication, delivery state and user-configured delivery integrations.
-- [ ] Add a job queue/scheduler for imports, alerts and other tasks that should outlive an HTTP request.
+Basic [price alerts and the local inbox](alerts.md) are implemented. Their worker is a bounded domain loop, not a general-purpose job scheduler.
+
+- [x] Persist exact-pair, source-pinned one-shot price rules, Demo attribution, pause/rearm/archive/restore and a 50-rule non-archived budget.
+- [x] Evaluate fresh timestamped quotes with persisted scheduling/backoff; atomically save a trigger and its notification, including across restart and lifecycle races.
+- [x] Add retained in-app notification history, pagination, unread/read state and a top-bar inbox alongside existing run activity.
+- [ ] Add rule editing, recurring/crossing, portfolio-risk, strategy and connection-failure conditions.
+- [ ] Add optional external delivery integrations with explicit recipients, delivery attempts and retries.
+- [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [ ] Add structured application/provider metrics, tracing and operational diagnostics beyond basic health/log output.
-- [ ] Add managed backup/restore and credential/key lifecycle tools.
+- [ ] Add managed backup/restore, notification retention/export and credential/key lifecycle tools.
 
-### 12. Hosted/multi-user product — optional, missing
+### 12. Hosted/multi-user product — deferred
 
-The present deployment is explicitly a single-user workspace with a bearer token and one API worker. These additions are necessary for a hosted multi-user product, not prerequisites for local use.
+**Deferred by user request.** These items remain visible in Coming soon and are excluded from current implementation priorities. The present deployment is explicitly a single-user workspace with a bearer token and one API worker. These additions are necessary for a hosted multi-user product, not prerequisites for local use.
 
 - [ ] User authentication, workspace ownership and per-account authorization.
 - [ ] Role/permission enforcement and tenant-isolated data/vault handling.
@@ -147,13 +177,15 @@ The present deployment is explicitly a single-user workspace with a bearer token
 
 Other optional expansions include derivatives, on-chain wallets/DeFi, exchange transfers, additional regional endpoints and managed local-model downloads/quantization. They should be scoped explicitly rather than counted as broken existing features.
 
-## Suggested implementation order
+## Local implementation sequence
 
-1. **Account sync + normalized ledger**, validated first with exchange test accounts.
-2. **Complete valuation + exchange P&L**, using that ledger rather than inferred history.
-3. **Order lifecycle + execution reconciliation**, including limit/cancel support.
-4. **Strategy execution on test environments + risk controls**, then deliberate production enablement.
-5. **Richer ProtoLink tools, scheduled workflows and alerts**, operating on the synchronized data.
-6. **Forecast training and advanced research modules**, followed by hosted infrastructure if that becomes the deployment goal.
+1. **Market-data foundations:** durable candle archive, bounded backfills, gap/health diagnostics and shared read budgets.
+2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
+3. **Close the order loop:** native client-ID recovery and execution/final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
+4. **Build on local alerts:** rule editing/recurrence and operational diagnostics, then explicit external delivery and backup/restore.
+5. **Richer ProtoLink tools and test-environment strategies:** inspected evidence and durable workflows, with risk controls before any production automation.
+6. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.
+
+Multi-user hosting is deferred. No user accounts, permissions, tenant isolation or distributed-worker work is included in this sequence.
 
 The [feature coverage table](../guides/feature-coverage.md) tracks current user-facing scope. The [exchange reference](./exchange-clients.md) contains the provider matrix and exchange-specific backlog.

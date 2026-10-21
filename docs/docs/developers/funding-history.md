@@ -46,7 +46,7 @@ Funding pages contain at most 50 records. A 2,000-page budget stops an overly la
 
 Raw provider payloads, wallet addresses, address tags, transaction keys and blockchain IDs are not retained or sent to the UI/agent. An unknown fee is not silently zero. Native amounts remain separate from fees: this importer does not infer whether the provider's amount includes a fee. Binance credited-but-locked deposits remain **restricted**. Kraken **completed** means a posted ledger observation, not an independent bank/chain settlement check.
 
-An internal-at-venue marker or shared reference does not prove that two connected accounts belong to the same owner, or establish a unique transfer pair. Cross-account pairing and transferred cost basis remain future work. Negative ledger amounts become outgoing quantities; positive amounts become incoming quantities, even for reversals associated with a withdrawal category.
+An internal-at-venue marker or shared reference does not prove that two connected accounts belong to the same owner, or establish a unique transfer pair. Explicit [cross-account transfer review](transfer-reconciliation.md) is available; [Performance](transfer-cost-basis.md) can carry original lots for eligible confirmed pairs. Negative ledger amounts become outgoing quantities; positive amounts become incoming quantities, even for reversals associated with a withdrawal category.
 
 As with the fill ledger, normalized display quantities use finite JSON numbers; this is not a lossless native decimal archive. Values above the reviewed numeric bounds reject the page.
 
@@ -60,7 +60,7 @@ Summaries cover the **entire filtered selection**, not just the current table pa
 
 ## Performance and ProtoLink
 
-The [FIFO report](account-performance.md) reads funding coverage in the same database snapshot as fills and opening assertions. Non-failed/non-cancelled funding observations affecting the base asset, or a nonzero fee in that asset, after its opening/history boundary suppress final net/unrealized figures. Pending observations also make coverage provisional. Funding before an asserted opening boundary is not reapplied. The provisional matched calculation stays inspectable, without inventing acquisition costs or consuming transferred lots.
+The [FIFO report](account-performance.md) reads funding coverage in the same database snapshot as fills and opening assertions. Unapplied non-failed/non-cancelled funding observations affecting the base asset, or a nonzero fee in that asset, suppress final net/unrealized figures. Eligible current confirmed transfers carry original lots and clear their two funding gaps. Pending observations also make coverage provisional. Funding before an asserted opening boundary is not reapplied. Without an explicit opening assertion, observations before the first retained fill also contribute to coverage. The provisional matched calculation stays inspectable without inventing acquisition costs.
 
 **Ask about funding** opens Accountant in place. Its ProtoLink native tool reads the selected local ledger, completed summaries and sanitized import progress. It never fetches private balances, queues jobs, pairs transfers or changes records. It includes at most ten records from real history (the isolated example has four), and labels the evidence limit. Without an LLM, it formats the supplied evidence directly. With an LLM, the module prompt preserves the same amount/fee/coverage limits.
 
@@ -90,4 +90,10 @@ Example request:
 
 Tests in `tests/test_funding_history.py` cover native cursor/offset requests, terminal pages, restricted statuses, corrections, atomic rollback, stale in-flight revisions, pause/restart/deactivation, repeated pages, unsupported/test clients, filtering/currency separation, example isolation, ProtoLink evidence and FIFO coverage flags.
 
-Remaining work: additional reviewed provider adapters; fiat/earn/subaccount coverage; reconciliation of pending and late events; cross-account transfer matching and cost-basis carryover; historical flow valuation and cash-flow-adjusted returns.
+Remaining work: additional reviewed provider adapters; fiat/earn/subaccount coverage; reconciliation of pending and late events; fee-aware/unequal cost-basis carryover and split/merged transfer allocation; historical flow valuation and cash-flow-adjusted returns.
+
+## Transfer annotations
+
+**Reconcile transfers** opens reviewed matching in the same Funding workspace. Funding rows expose linked/needs-review annotations and their detail shortcut. Source amounts, statuses and completed activity totals remain unchanged. Unlinked records remain unreviewed; confirmation alone does not supply acquisition facts or external cash-flow returns; Performance separately checks whether original lots can carry over. See [transfer assertions, source versions and restoration](transfer-reconciliation.md).
+
+Performance can now clear funding coverage gaps for eligible confirmed transfer pairs by replaying their original acquisition lots. Other observations remain unresolved; see [transfer cost basis](transfer-cost-basis.md) for exact fee, amount, ordering and denomination requirements.

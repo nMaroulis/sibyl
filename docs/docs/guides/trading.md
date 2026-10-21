@@ -26,7 +26,7 @@ Restart the API, connect an account with the appropriate spot trading permission
 
 The preview validates market availability, active spot status, base-quantity precision, amount/cost limits, and available balance. Buy previews require a 1% balance buffer for price movement and fees. It creates a server-side intent that expires after **60 seconds**. It does not reserve funds or submit a provider test order.
 
-Review the reference notional and type the displayed confirmation, such as `BUY BTC`. Confirmation submits one market order. Real fills and exchange fees can differ from the reference quote; Sibyl does not impose a market-price slippage bound.
+Review the reference notional and type the displayed confirmation, such as `BUY BTC`. Select **Market** or **Limit · GTC**, supply a limit price for a limit order, then confirm once. Real fills and exchange fees can differ from the reference quote; Sibyl does not impose a market-price slippage bound.
 
 ## Retry and uncertain outcomes
 
@@ -58,7 +58,17 @@ The report combines the latest 200 manual paper fills and 100 exchange intents. 
 
 Exchange rows include unsubmitted previews as well as submissions; their notional is labeled **Preview reference**, even when an observed average fill price exists. P&L is not inferred from exchange previews. **Refresh records** reloads local history. **Check exchange** uses read-only `fetch_order` for a known exchange order ID, persisting the observed status, filled quantity, average price, and refresh timestamp. This remains available if new execution is disabled. If an uncertain submission has no exchange order ID, reconcile directly at the exchange using the client order ID; it is never resubmitted by refresh.
 
-Advanced order types from the earlier UI are clearly marked **Coming soon**: limit, stop, take-profit, trailing, OCO, TIF, post-only, and iceberg. Current execution is market-only.
+## Resting limits and the order monitor
+
+**Paper limit orders** uses the active Demo wallet. Choose a side, market, base quantity and limit price, review, then type the displayed phrase. Placement reserves virtual funds; market orders show only the remaining available balance. The separate Demo bid/ask feed matches a crossing order in full at its limit, with a 0.1% quote fee. It does not simulate queues or partial fills.
+
+The **Order monitor** in Trade and Executions lists submitted orders, cumulative filled/remaining quantities, average fill, status and tracking preference. A native `open` order with some fills appears as **Partially filled**. **View example** demonstrates the monitor without changing any data. The sample controls are disabled.
+
+**Cancel…** reads the latest native state and opens an in-place review. Type the displayed cancellation phrase. Acknowledgment is not proof of cancellation; the status read determines whether cancellation or a fill won the race. An uncertain attempt is shown clearly and never automatically retried.
+
+Tracking reads status approximately every 20 seconds on the server, with increasing delays on errors. It survives restart, pauses for inactive accounts and can be paused/resumed per order. Pausing does not cancel a native order. Known-ID checks and reviewed cancellation remain available if new exchange execution is disabled. Filled quantities do not replace imported execution IDs or final fees. Demo fills appear only once in execution history.
+
+GTC remains open until filled or canceled; the 60-second deadline applies to the review, not the submitted order. Stop/OCO, cancel/replace, post-only, iceberg and other time-in-force choices remain **Coming soon**. See [order contracts, provider support and recovery](../developers/order-management.md).
 
 ## Active accounts and first use
 
@@ -85,3 +95,19 @@ Open **Trade → Account history → Funding**. Select an active supported accou
 Filter by account, asset, movement, status or environment. Completed summaries include all matching pages and keep currencies and directions separate. Pending, restricted and failed observations are absent from completed totals. Amounts and fees stay separate because fee inclusion is not inferred. An internal-at-venue marker does not prove an own-account transfer. **Export this page** downloads displayed records; **Ask about funding** uses the same selection through ProtoLink.
 
 Funding observations flag affected FIFO coverage; they do not supply cost basis or investment returns. No funding control deposits, withdraws or transfers money. See [funding support, permissions and limits](../developers/funding-history.md).
+
+## Review transfers between your accounts
+
+From **Funding**, choose **Reconcile transfers**. Review a suggested pair or use **Match records** to search older native IDs/accounts. Account filters match either side. Suggestions expose timing, reported amount/fee differences and competing counterparts; nothing is automatically paired.
+
+Choose **Confirm own-account transfer** after reviewing the current source records. Differing amounts or unusual timing require a review note. A later source correction marks the saved link **Needs review**. Open it to compare current/saved evidence and explicitly reconfirm. **Remove link** releases the records while preserving history; enable **Include removed links** to review and restore one.
+
+Funding-row classification links open the saved review. Classifications change neither native amount totals nor FIFO lots. Unmatched funding is unreviewed, not automatically external cash flow. **View example** is isolated and cannot save links; **Ask about transfers** reads the selected local evidence through ProtoLink. See [transfer review limits](../developers/transfer-reconciliation.md).
+
+### Preserve basis when moving between accounts
+
+After reviewing an own-account pair in Funding, open **Performance** and recalculate. Equal-amount, explicitly zero-fee confirmed pairs can carry the original acquisition lots and costs between accounts. Expand **Carried lots & unapplied links** to inspect original dates, source record IDs and reasons a link could not apply. Filtering to the receiving account still reads required donor/intermediate history.
+
+**Transfer example** demonstrates a sale of an older transferred lot and a newer local purchase, without changing account records. Unsupported fees/amount differences, missing history and cross-market ambiguity remain provisional. This is market FIFO, not full account returns. See [carryover rules](../developers/transfer-cost-basis.md).
+
+To carry lots for a fee-bearing transfer, open its review and select **Review amount & fee allocation**. Choose both amount conventions, verify missing fee quantities and distinct charges, then check the allocation and explain it in the review note. Performance shows received lots and fee-unit inventory cost separately. Historical fee valuation remains unavailable, so final net stays provisional. **Transfer example → With a transfer fee** demonstrates this without account writes. See [fee review](../developers/transfer-fees.md).

@@ -19,6 +19,7 @@ from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
 from sibyl.services.account_sync import AccountSync
 from sibyl.services.accounts import Accounts
+from sibyl.services.alerts import PriceAlerts
 from sibyl.services.data_settings import DataSettings
 from sibyl.services.funding_sync import FundingSync
 from sibyl.services.market import Market
@@ -27,6 +28,7 @@ from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
 from sibyl.services.strategies import Strategies
 from sibyl.services.trading import ExchangeTrading
+from sibyl.services.transfer_reconciliation import TransferConflict, TransferReconciliation
 from sibyl.services.watchlists import Watchlists
 from sibyl.storage import Store
 
@@ -49,6 +51,8 @@ class Services:
     accounts: Accounts
     performance: AccountPerformance
     funding_sync: FundingSync
+    transfers: TransferReconciliation
+    alerts: PriceAlerts
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -67,11 +71,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         strategies = Strategies(market, store)
         account_sync = AccountSync(market, store)
         funding_sync = FundingSync(market, store)
+        transfers = TransferReconciliation(store)
         performance = AccountPerformance(market, store)
         agents = AgentRegistry(
-            config, store, market, portfolio, strategies, research, account_sync, performance, funding_sync
+            config,
+            store,
+            market,
+            portfolio,
+            strategies,
+            research,
+            account_sync,
+            performance,
+            funding_sync,
+            transfers,
         )
         trading = ExchangeTrading(market, store)
+        alerts = PriceAlerts(market, store)
         app.state.services = Services(
             config,
             store,
@@ -87,6 +102,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             Accounts(store),
             performance,
             funding_sync,
+            transfers,
+            alerts,
         )
 
         async def worker():
@@ -107,19 +124,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await asyncio.to_thread(funding_sync.tick)
                 await asyncio.sleep(1)
 
+        async def order_worker():
+            while True:
+                await asyncio.to_thread(trading.lifecycle.tick)
+                await asyncio.sleep(1)
+
+        async def alert_worker():
+            while True:
+                await asyncio.to_thread(alerts.tick)
+                await asyncio.sleep(1)
+
         task = asyncio.create_task(worker())
         news_task = asyncio.create_task(news_worker())
         account_task = asyncio.create_task(account_worker())
+        order_task = asyncio.create_task(order_worker())
+        alert_task = asyncio.create_task(alert_worker())
         try:
             yield
         finally:
-            for background in (task, news_task, account_task):
+            for background in (task, news_task, account_task, order_task, alert_task):
                 background.cancel()
-            for background in (task, news_task, account_task):
+            for background in (task, news_task, account_task, order_task, alert_task):
                 with suppress(asyncio.CancelledError):
                     await background
             await asyncio.to_thread(account_sync.close)
             await asyncio.to_thread(funding_sync.close)
+            await asyncio.to_thread(trading.lifecycle.close)
+            await asyncio.to_thread(alerts.close)
             market.close()
 
     app = FastAPI(
@@ -163,6 +194,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(ValueError)
     async def invalid_request(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=400)
+
+    @app.exception_handler(TransferConflict)
+    async def stale_transfer_review(_request, exc):
+        return JSONResponse({"detail": str(exc)}, status_code=409)
 
     @app.exception_handler(LookupError)
     async def missing_record(_request, _exc):

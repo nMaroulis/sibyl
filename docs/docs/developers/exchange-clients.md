@@ -35,7 +35,7 @@ Clients reuse rate-limited transports with 12-second request timeouts and per-cl
 
 Every row has market/ticker/candle/book, balance, order-status, open-order and fill-page adapters. Individual methods remain subject to the installed SDK's capabilities, exchange availability and account permissions. `/api/v1/exchanges` reports `native`, `emulated` or `unavailable` separately. **Adapter implementation and automated fake-transport tests are not authenticated exchange acceptance tests.**
 
-| Provider / ID                     | Credentials beyond key + secret          | Wallet scope                                       | Sandbox exposed | Manual market orders                             |
+| Provider / ID                     | Credentials beyond key + secret          | Wallet scope                                       | Sandbox exposed | Manual market/GTC limit orders                   |
 | --------------------------------- | ---------------------------------------- | -------------------------------------------------- | --------------- | ------------------------------------------------ |
 | Binance / `binance`               | —                                        | Spot                                               | Yes             | Existing reviewed flow                           |
 | Binance.US / `binanceus`          | Separate US credentials                  | Spot                                               | No              | Pending                                          |
@@ -111,7 +111,7 @@ fill = demo.create_order(
 assert demo.fetch_order(fill["id"], "BTC/USDT")["status"] == "closed"
 ```
 
-Demo fills use the existing paper ledger's transactional idempotency and 0.1% quote-asset fee. Reusing the same ID and order details returns the original fill, including after restart. Insufficient paper funds reject the fill. This simulator has no resting limit orders, partial fills, latency or realistic liquidity. Price fixtures preserve the original deterministic sequence; they are not a realistic evolving exchange feed. Saved real connections are still real when explicitly checked in demo mode. Demo is never a fallback for failed live requests and is saved as a credential-free connection (`id=demo`). The backend connects and activates it only after an explicit Preview with Demo action. Fresh workspaces have no accounts active. Reconnecting restores the same wallet without resetting funds or duplicating balances.
+Demo fills use the existing paper ledger's transactional idempotency and 0.1% quote-asset fee. Reusing the same ID and order details returns the original fill, including after restart. Insufficient paper funds reject the fill. Resting GTC limits reserve virtual funds and match through managed-order checks; partial fills, latency and realistic liquidity are not simulated. See [order management](order-management.md). Price fixtures preserve the original deterministic sequence; they are not a realistic evolving exchange feed. Saved real connections are still real when explicitly checked in demo mode. Demo is never a fallback for failed live requests and is saved as a credential-free connection (`id=demo`). The backend connects and activates it only after an explicit Preview with Demo action. Fresh workspaces have no accounts active. Reconnecting restores the same wallet without resetting funds or duplicating balances.
 
 ## HTTP integration
 
@@ -133,7 +133,8 @@ These routes have the same workspace access controls as other APIs. Account read
 - [ ] Review and test actual order quantity, client-ID, fee and reconciliation behavior for the 17 newly added providers before enabling their writes. Gemini needs an explicit alternative to native market orders.
 - [x] Durable selected-market fill imports, native-currency fees/rebates, pause/resume and an Account history report for Demo, Binance/Binance.US/Testnet, Coinbase/Sandbox and Kraken. See [account synchronization](account-sync.md).
 - [ ] Durable pagination for remaining providers, complete account-history coverage, order/cash-event reconciliation and exchange P&L. Caught up is not complete account history.
-- [ ] Cancel/replace, resting limit orders, stop/OCO orders and their dedicated user review flows.
+- [x] Resting GTC limits, reviewed cancellation, cumulative fill status and persisted polling for the existing execution allowlist and Demo.
+- [ ] Cancel/replace and stop/OCO order flows.
 - [ ] WebSocket subscriptions, reconnect/backoff handling and streaming order updates. Current reads are REST snapshots.
 - [ ] Funding/earn/staking/subaccount wallets, transfers, derivatives and unified-account variants beyond the scopes above. Withdrawal APIs are not implemented.
 - [x] Held-asset spot valuation through exact direct/inverse/bridge routes and observed stablecoin/fiat rates; see [portfolio valuation](portfolio-valuation.md). Broader aggregator catalogs and external FX sources remain future work.
