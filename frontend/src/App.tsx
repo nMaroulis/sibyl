@@ -11,20 +11,20 @@ import {
   EyeOff,
   Globe2,
   History,
-  PieChart,
   Search,
   Settings2,
   Sparkles,
   Waves,
 } from 'lucide-react';
+import { exchangeCategoryIcons } from './lib/category-icons';
 import { Badge, Loading, Modal } from './components/ui';
 import { NotificationBell } from './components/notifications';
 import { NavigationDock, PageView } from './components/navigation';
 import { useResource } from './lib/hooks';
 import type { Run, System } from './lib/types';
 
-const PortfolioPage = lazy(() =>
-  import('./pages/Portfolio').then((module) => ({ default: module.PortfolioPage })),
+const AccountPage = lazy(() =>
+  import('./pages/Account').then((module) => ({ default: module.AccountPage })),
 );
 const Markets = lazy(() =>
   import('./pages/Markets').then((module) => ({ default: module.Markets })),
@@ -53,8 +53,8 @@ const Roadmap = lazy(() =>
 );
 const destinations = [
   { path: '/sibyl', name: 'Sibyl', icon: Sparkles },
-  { path: '/portfolio', name: 'Portfolio', icon: PieChart },
-  { path: '/markets', name: 'Markets', icon: Activity },
+  { path: '/account', name: 'Account', icon: exchangeCategoryIcons.account },
+  { path: '/markets', name: 'Markets', icon: exchangeCategoryIcons.market },
   { path: '/trade', name: 'Trade', icon: ArrowDownUp },
   { path: '/strategies', name: 'Strategies', icon: Waves },
   { path: '/forecast', name: 'Forecasting', icon: Compass },
@@ -80,6 +80,14 @@ function LegacyReportsRedirect() {
   );
 }
 
+/** Preserve shared account scopes from existing bookmarks. */
+function LegacyPortfolioRedirect() {
+  const location = useLocation();
+  return (
+    <Navigate to={{ pathname: '/account', search: location.search, hash: location.hash }} replace />
+  );
+}
+
 function WorkspaceSearch({ close }: { close: () => void }) {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
@@ -88,7 +96,7 @@ function WorkspaceSearch({ close }: { close: () => void }) {
     { path: '/trade?tab=executions', name: 'Trade · Executions', icon: ArrowDownUp },
     { path: '/trade?tab=history', name: 'Trade · Account history', icon: History },
   ].filter((item) =>
-    `${item.name} ${item.path === '/settings' ? 'exchanges connections llm models apis workspace messaging whatsapp telegram signal email' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
+    `${item.name} ${item.path === '/account' ? 'portfolio balances holdings allocation' : item.path === '/settings' ? 'exchanges connections llm models apis workspace messaging whatsapp telegram signal email' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
@@ -162,7 +170,7 @@ export function App() {
         Skip to content
       </a>
       <header className="topbar">
-        <Link to="/portfolio" className="app-brand" aria-label="Sibyl home">
+        <Link to="/account" className="app-brand" aria-label="Sibyl home">
           <img src="/brand/logo_transparent.png" alt="Sibyl" width="112" height="40" />
         </Link>
         <div className="topbar-context">
@@ -228,8 +236,9 @@ export function App() {
             <Suspense fallback={<Loading />}>
               <PageView>
                 <Routes>
-                  <Route path="/" element={<Navigate to="/portfolio" replace />} />
-                  <Route path="/portfolio" element={<PortfolioPage />} />
+                  <Route path="/" element={<Navigate to="/account" replace />} />
+                  <Route path="/account" element={<AccountPage />} />
+                  <Route path="/portfolio" element={<LegacyPortfolioRedirect />} />
                   <Route path="/markets" element={<Markets />} />
                   <Route path="/strategies" element={<StrategiesPage />} />
                   <Route path="/trade" element={<Trading />} />
@@ -251,8 +260,8 @@ export function App() {
                     element={
                       <div className="empty-state">
                         <h1>Page not found</h1>
-                        <Link className="button primary" to="/portfolio">
-                          Return to portfolio
+                        <Link className="button primary" to="/account">
+                          Return to Account
                         </Link>
                       </div>
                     }

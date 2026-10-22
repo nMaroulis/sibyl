@@ -16,7 +16,7 @@ Saving is not verification. Accounts display **Saved · unverified** until check
 
 ## Develop with demo data
 
-Choose **Preview with Demo** from Portfolio, Trade, or the smaller Demo section in Exchanges. No account is activated automatically at startup. The `DemoClient` supplies its persistent virtual wallet through the same client interface as exchanges. For fully offline reference prices, also select **Demo prices** in Market data. These choices are separate from the legacy `SIBYL_MODE` research default.
+Choose **Preview with Demo** from Account, Trade, or the smaller Demo section in Exchanges. No account is activated automatically at startup. The `DemoClient` supplies its persistent virtual wallet through the same client interface as exchanges. For fully offline reference prices, also select **Demo prices** in Market data. These choices are separate from the legacy `SIBYL_MODE` research default.
 
 The preview is explicitly labeled in the header and account-dependent pages. Only one virtual wallet exists per workspace. Reconnecting or previewing again keeps quantities and paper trades. **Exit preview** deactivates it without deleting records. Demo stays unavailable while exchange accounts are active; activating an exchange automatically turns it off. Actual-funds order entry never lists Demo.
 
@@ -41,7 +41,7 @@ Most clients read the spot trading wallet, excluding funding/earn/margin wallets
 
 Coinbase Sandbox here uses the **Coinbase Exchange API**, with separate sandbox credentials. The production Coinbase card uses **Advanced Trade**, whose CDP keys are different. The [Advanced Trade sandbox](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/sandbox) returns predefined mock accounts/orders; it is not the account-based Exchange sandbox integrated here. See [Coinbase's Exchange sandbox guide](https://docs.cdp.coinbase.com/exchange/introduction/sandbox).
 
-After saving, use **Check access** to read the test account. Test accounts appear individually in Portfolio's **Account balances**, with a sandbox/test-funds label. Their quantities are excluded from live portfolio totals. Valuation uses the selected public quote mode, not a guaranteed execution price on the test service.
+After saving, use **Check access** to read the test account. Test accounts appear individually in Account's **Account balances**, with a sandbox/test-funds label. Their quantities are excluded from live portfolio totals. Valuation uses the selected public quote mode, not a guaranteed execution price on the test service.
 
 The original Binance card still accepts its testnet checkbox for existing workflows. Optional sandboxes also remain configured for OKX, Bybit, Gate, Crypto.com Exchange, Gemini and Phemex. Instruments and credentials can differ from production. Sandbox routing is applied before the first provider request; there is no production fallback.
 
@@ -53,13 +53,13 @@ Disconnect removes the encrypted record, clears account caches and closes the pr
 
 ## Activation and combined views
 
-Saving a connection activates it. Use its Active/Inactive control to include or exclude it without deleting credentials. Multiple active exchange accounts feed **Portfolio → All exchanges**; the picker also offers exchange and individual-account scopes. No accounts are active on a fresh workspace. Demo is an explicit optional preview and is automatically deactivated when an exchange account activates. It cannot activate while exchange accounts remain active. Inactive accounts stop new imports and cannot submit orders; retained history stays accessible.
+Saving a connection activates it. Use its Active/Inactive control to include or exclude it without deleting credentials. Multiple active exchange accounts feed **Account → All exchanges**; the picker also offers exchange and individual-account scopes. No accounts are active on a fresh workspace. Demo is an explicit optional preview and is automatically deactivated when an exchange account activates. It cannot activate while exchange accounts remain active. Inactive accounts stop new imports and cannot submit orders; retained history stays accessible.
 
 ## Verification and missing work
 
 Contract tests exercise every client using controlled transports, and installed CCXT configuration is checked without account access. Authenticated exchange accounts and real orders have not been acceptance-tested. The [exchange client reference and checklist](../developers/exchange-clients.md#remaining-implementation-checklist) distinguish implemented adapters from missing execution, imports, streaming, account variants and additional venues.
 
-Public reference prices can resolve a missing USDT pair through USD or USDC at approximate parity. Actual order symbols always remain exact. Portfolio uses a separate exact-pair conversion engine for actual holdings, with observed stablecoin/fiat rates and explicit unpriced coverage.
+Public reference prices can resolve a missing USDT pair through USD or USDC at approximate parity. Actual order symbols always remain exact. Account uses a separate exact-pair conversion engine for actual holdings, with observed stablecoin/fiat rates and explicit unpriced coverage.
 
 ## Know what works before connecting
 

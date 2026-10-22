@@ -16,7 +16,8 @@ import {
 import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { Connection, ExchangeCatalog, ExchangeProvider, System } from '../lib/types';
-import { ExchangeProviderCard, exchangeCategoryIcons } from './exchange-provider-card';
+import { exchangeCategoryIcons } from '../lib/category-icons';
+import { ExchangeProviderCard } from './exchange-provider-card';
 import { SectionPanel, SectionTabs } from './section-tabs';
 import { ExchangeMark } from './exchange-mark';
 import { AccountContext, useAccounts } from './account-selection';
@@ -462,7 +463,7 @@ export function ExchangeConnections() {
       <Panel className="full-panel">
         <PanelTitle
           title="Saved accounts"
-          subtitle="Active accounts appear in Portfolio and Trade. Deactivating keeps credentials and history."
+          subtitle="Active accounts appear in Account and Trade. Deactivating keeps credentials and history."
           action={
             <Badge>
               {selection.data?.active_ids.length ?? 0} active · {connections.data?.length ?? 0}{' '}
@@ -626,11 +627,11 @@ export function ExchangeConnections() {
           <ArrowUpRight size={22} />
           <h3>A view across all exchanges.</h3>
           <p>
-            Activate several exchange accounts to see combined holdings. Portfolio can focus on one
+            Activate several exchange accounts to see combined holdings. Account can focus on one
             exchange or account. Demo turns off automatically when an exchange account is activated.
           </p>
-          <Link to="/portfolio" className="text-link">
-            Open Portfolio <ArrowUpRight size={13} />
+          <Link to="/account" className="text-link">
+            Open Account <ArrowUpRight size={13} />
           </Link>
         </Panel>
       </div>

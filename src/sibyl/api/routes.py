@@ -129,7 +129,8 @@ def activate_account(connection_id: str, body: AccountActivation, s: S):
     return result
 
 
-@router.get("/portfolio", tags=["Accountant"])
+@router.get("/portfolio", tags=["Accountant"], include_in_schema=False)
+@router.get("/account", tags=["Accountant"])
 def portfolio(s: S, scope: str = Query("all", max_length=120, pattern=r"^[a-z0-9:-]+$")):
     """Aggregate priced spot balances and disclose incomplete valuation."""
     return s.portfolio.overview(scope)
@@ -283,7 +284,8 @@ def orderbook(
         return s.market.orderbook(symbol, depth)
 
 
-@router.get("/portfolio/accounts", tags=["Accountant"])
+@router.get("/portfolio/accounts", tags=["Accountant"], include_in_schema=False)
+@router.get("/account/accounts", tags=["Accountant"])
 def account_details(s: S, scope: str = Query("all", max_length=120, pattern=r"^[a-z0-9:-]+$")):
     """Read separate account balances and available quote-conversion rates."""
     return s.portfolio.accounts(scope)

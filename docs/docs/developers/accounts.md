@@ -18,9 +18,9 @@ Connection metadata adds `active`; credentials remain write-only. Activation end
 - `GET /api/v1/system`: adds `accounts` with the same selection metadata. The legacy `mode` field remains the independent research-data default; the UI uses `accounts.mode` for account status.
 - `POST /api/v1/connections`: saving normally activates the connection and disables Demo; credential checking remains separate.
 
-## Portfolio views
+## Account views
 
-`GET /portfolio` and `/portfolio/accounts` accept `scope=all`, `exchange:<provider>`, or `account:<id>`. Unknown/inactive scopes fail rather than silently exposing another account. Resolution uses active saved metadata only.
+`GET /account` and `/account/accounts` accept `scope=all`, `exchange:<provider>`, or `account:<id>`. Unknown/inactive scopes fail rather than silently exposing another account. Resolution uses active saved metadata only.
 
 The combined primary set contains production accounts when present, otherwise test accounts, otherwise the explicitly active Demo wallet. Test funds never enter production totals. Group scopes use that primary set; individual test scopes remain available even when production accounts are active.
 
@@ -36,6 +36,8 @@ Deactivation pauses imports, and the worker independently checks activation befo
 
 ## Empty states and Demo
 
-Portfolio and Trade show a shared setup panel with a primary Connect exchange accounts action, activation choices for saved inactive accounts, and a smaller Preview with Demo action. A persistent preview banner and header badge identify virtual funds. Real/test selections do not render the Demo manual-order form. Settings distinguishes Active/Inactive from Verified/Unverified, since inclusion is not proof of credentials working.
+Account and Trade show a shared setup panel with a primary Connect exchange accounts action, activation choices for saved inactive accounts, and a smaller Preview with Demo action. A persistent preview banner and header badge identify virtual funds. Real/test selections do not render the Demo manual-order form. Settings distinguishes Active/Inactive from Verified/Unverified, since inclusion is not proof of credentials working.
 
 Public Markets and configured research/news tools do not require an exchange account. Model setup remains separate too. Strategy backtests/paper jobs have isolated simulation capital; they do not implicitly activate the manual Demo wallet.
+
+The dashboard destination is **Account** (`/account`). It displays portfolio valuation alongside individual exchange accounts. `/portfolio` bookmarks redirect while preserving filters; the old `/api/v1/portfolio` routes remain hidden compatibility aliases. Domain classes and agent context such as `Portfolio` and `portfolio_scope` describe the underlying financial portfolio, not a separate navigation tab.

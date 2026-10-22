@@ -57,6 +57,6 @@ Email previews incoming IMAP and outgoing SMTP settings with separate credential
 
 ## What your model receives
 
-Your question, recent chat turns, and any consulted specialists' observations are sent to your selected model provider. Portfolio consultations can include balances and other private account observations. Choose a local model to keep inference on your machine. The local conversation store is not encrypted; saved provider credentials use the workspace vault.
+Your question, recent chat turns, and any consulted specialists' observations are sent to your selected model provider. Account consultations can include balances and other private account observations. Choose a local model to keep inference on your machine. The local conversation store is not encrypted; saved provider credentials use the workspace vault.
 
 Sibyl and its specialists have read-only tools. They cannot place trades, withdraw funds, change settings, start strategies or send external messages. Verify sources, dates and uncertainty before acting on an answer.

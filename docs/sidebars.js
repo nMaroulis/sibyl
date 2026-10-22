@@ -10,7 +10,7 @@ module.exports = {
       type: 'category',
       label: 'User guide',
       items: [
-        'guides/portfolio',
+        'guides/account',
         'guides/exchanges',
         'guides/settings',
         'guides/markets',

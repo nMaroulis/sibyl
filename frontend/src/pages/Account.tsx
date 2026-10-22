@@ -41,7 +41,7 @@ import { useResource } from '../lib/hooks';
 import type { AccountSelection, Job, Order, Portfolio } from '../lib/types';
 const colors = ['#4675d2', '#8b9cc5', '#61a99a', '#d5aa65', '#a491c4'];
 
-export function PortfolioPage() {
+export function AccountPage() {
   const accounts = useAccounts();
   const [params, setParams] = useSearchParams();
   useEffect(() => {
@@ -63,7 +63,7 @@ export function PortfolioPage() {
   if (!accounts.data.active_ids.length)
     return (
       <>
-        <PageTitle title="Portfolio" description="All your exchange accounts, together." />
+        <PageTitle title="Account" description="All your exchange accounts, together." />
         <AccountSetup selection={accounts.data} />
       </>
     );
@@ -93,7 +93,7 @@ function PortfolioWorkspace({
   select: (scope: string) => void;
 }) {
   const { data, error, loading, retry } = useResource<Portfolio>(
-    `/portfolio?scope=${encodeURIComponent(scope)}`,
+    `/account?scope=${encodeURIComponent(scope)}`,
     60000,
   );
   const { data: jobs } = useResource<Job[]>('/strategies/jobs', 30000);
@@ -102,7 +102,7 @@ function PortfolioWorkspace({
   const [sort, setSort] = useState<'value' | 'change'>('value');
   if (loading) return <Loading />;
   if (error || !data)
-    return <ErrorState message={error || 'Portfolio unavailable.'} retry={retry} />;
+    return <ErrorState message={error || 'Account unavailable.'} retry={retry} />;
   const chartData = data.history.slice(
     -({ '1W': 7, '1M': 30, '3M': 90, ALL: data.history.length }[range] ?? 30),
   );
@@ -160,7 +160,7 @@ function PortfolioWorkspace({
   return (
     <>
       <PageTitle
-        title="Portfolio"
+        title="Account"
         description="Your assets, balances, and allocations."
         action={
           <>
@@ -435,7 +435,7 @@ function PortfolioWorkspace({
         </Panel>
         <div className="dashboard-side-stack">
           <Panel className="oracle-summary">
-            <PanelTitle title="Portfolio assistant" action={<Sparkles size={16} />} />
+            <PanelTitle title="Account assistant" action={<Sparkles size={16} />} />
             <p>
               Ask Accountant to explain your allocation, concentration, and the balances shown here.
             </p>

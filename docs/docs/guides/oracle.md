@@ -6,7 +6,7 @@ Each workspace module has its own embedded [ProtoLink](https://github.com/nMarou
 
 The gradient **Ask** button opens a floating dialog over the current module. Closing it returns to the same chart, form, selection, and scroll position. **Esc** closes the dialog, and keyboard focus returns to the button that opened it. On small screens the dialog uses the available screen height.
 
-- **Portfolio → Accountant:** allocation, concentration, and balances.
+- **Account → Accountant:** allocation, concentration, and balances.
 - **Markets → Analyst:** the selected market, chart timeframe, and sample window.
 - **Strategies → Broker:** the currently selected strategy and validated simulation parameters. Asking does not run a backtest or start a paper strategy.
 - **Trading → Broker:** the selected market and execution assumptions.

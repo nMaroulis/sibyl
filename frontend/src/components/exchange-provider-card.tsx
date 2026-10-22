@@ -1,24 +1,8 @@
 import { useState } from 'react';
-import {
-  ArrowUpRight,
-  Bot,
-  CandlestickChart,
-  ChartNoAxesCombined,
-  Check,
-  CircleHelp,
-  History,
-  Wallet,
-} from 'lucide-react';
+import { ArrowUpRight, Check, CircleHelp } from 'lucide-react';
+import { exchangeCategoryIcons } from '../lib/category-icons';
 import type { ExchangeProvider } from '../lib/types';
 import { ExchangeMark } from './exchange-mark';
-
-export const exchangeCategoryIcons = {
-  account: Wallet,
-  spot: ChartNoAxesCombined,
-  history: History,
-  market: CandlestickChart,
-  limits: Bot,
-};
 
 const coverageLabels = {
   supported: 'All listed features implemented',

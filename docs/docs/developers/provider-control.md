@@ -61,7 +61,7 @@ Connectivity status is separate from quote quality:
 
 Metrics include actual request/success/failure counts, the last transport latency, last completed successful read, foreground retries, deferrals and market-cache hits. Recent errors contain only a fixed category, fixed message and timestamp. URLs, keys, headers, request arguments, raw provider messages, balances and order payloads are excluded. Live session metrics reset on API restart; retained read history and imports persist separately. An unavailable source can keep previously observed evidence until it is retired or the API restarts.
 
-The dashboard shows a compact status line on Markets and populated Portfolio views, plus **Settings → Market data → Source health**. Expanding a source reveals its observed evidence. Refreshing diagnostics reads local state only. Hidden Settings sections stop their diagnostics polling.
+The dashboard shows a compact status line on Markets and populated Account views, plus **Settings → Market data → Source health**. Expanding a source reveals its observed evidence. Refreshing diagnostics reads local state only. Hidden Settings sections stop their diagnostics polling.
 
 ## Tests and remaining work
 

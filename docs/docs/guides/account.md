@@ -1,14 +1,14 @@
-# Portfolio
+# Account
 
-Portfolio is the home screen. It combines portfolio value, allocation, holdings, recent activity, valuation notes, per-account balances, and the contextual Accountant assistant.
+Account is the home screen. It combines portfolio value, allocation, holdings, recent activity, valuation notes, per-account balances, and the contextual Accountant assistant.
 
 ## Connect and select accounts
 
-A new workspace has **no active accounts**. Portfolio and Trade show a setup screen explaining that you can connect one or many exchange accounts. Public Markets, news and research remain independently usable.
+A new workspace has **no active accounts**. Account and Trade show a setup screen explaining that you can connect one or many exchange accounts. Public Markets, news and research remain independently usable.
 
 Use **Settings → Exchanges** to save a connection. Connecting activates it and automatically turns Demo off. Additional exchange accounts join the active selection, including multiple accounts at the same exchange. Each saved account has an **Active / Inactive** control. Deactivation keeps credentials, balances at the exchange, and retained history; it pauses imports and excludes the account from new account reads and order entry. Deactivating or disconnecting the last exchange account returns to setup. It never silently enables Demo.
 
-The **Portfolio view** picker offers **All exchanges**, **By exchange**, and **Individual accounts**. Totals, holdings, allocations, account balances and history use that same selection. Account cards show each constituent's value and open its individual view. Expand the account count beside a holding to see how its native quantity is split among accounts. The selected scope is shareable through the page's `scope` query parameter.
+The **Account view** picker offers **All exchanges**, **By exchange**, and **Individual accounts**. Totals, holdings, allocations, account balances and history use that same selection. Account cards show each constituent's value and open its individual view. Expand the account count beside a holding to see how its native quantity is split among accounts. The selected scope is shareable through the page's `scope` query parameter.
 
 Production totals exclude test accounts. When only test accounts are active, the combined view is clearly labeled **Combined test accounts**. Individual test scopes remain available alongside production scopes, with test-funds labels. A failed account read is identified and excluded; it never becomes a zero balance.
 
@@ -50,16 +50,18 @@ Paper cash belongs to the virtual ledger. Connected exchange funds are never add
 
 ## Navigation
 
-Use the floating dock on the left to switch between Portfolio, Markets, Trade, Strategies, Forecasting, News, Agents, and Settings. The dock stays vertically centered and sits apart from the window edge. A fine line and a matching page-edge marker follow the selected button, and pages unfold from that point. **More** unfolds a small horizontal dock to the right with Research and Coming soon. Trade includes its own Executions and Account history tabs. Its links slide into view without a modal or backdrop. Click More again, click elsewhere, or press Escape to close it. Keyboard users can press Right from More to enter the links, then use Left/Right, Home, or End to move between them. Press **⌘K** (or **Ctrl+K**) to search pages and supported assets.
+Use the floating dock on the left to switch between Account, Markets, Trade, Strategies, Forecasting, News, Agents, and Settings. The dock stays vertically centered and sits apart from the window edge. A fine line and a matching page-edge marker follow the selected button, and pages unfold from that point. **More** unfolds a small horizontal dock to the right with Research and Coming soon. Trade includes its own Executions and Account history tabs. Its links slide into view without a modal or backdrop. Click More again, click elsewhere, or press Escape to close it. Keyboard users can press Right from More to enter the links, then use Left/Right, Home, or End to move between them. Press **⌘K** (or **Ctrl+K**) to search pages and supported assets.
 
 Multi-section pages use a matching floating tab bar at the top. Its selected pill slides between sections and the content gently reveals. Arrow keys, Home, and End switch tabs; reduced-motion preferences disable the animations. [Settings](./settings.md) brings exchange accounts, AI models, other APIs, and workspace access into one destination.
 
 ## Separate account balances
 
-Open **Portfolio → Account balances** for each account's available (`free`), reserved (`used`), and total spot quantity. This panel follows the Portfolio view selection. You can further choose an account and filter assets. A missing provider balance component displays a dash, rather than an invented zero. Account read errors are marked explicitly.
+Open **Account → Account balances** for each account's available (`free`), reserved (`used`), and total spot quantity. This panel follows the Account view selection. You can further choose an account and filter assets. A missing provider balance component displays a dash, rather than an invented zero. Account read errors are marked explicitly.
 
 Account balances use the same valuation engine as the overview. Choose USDT, USD, USDC, BTC, ETH or EUR when an observed conversion rate exists. Conversion is for display/export, not a currency trade. Assets without a supported price remain visible and are excluded from the priced account total. Failed account totals display a dash, not a zero balance. Conversion captions explain the USDT reference price; the selected display currency divides by its current USDT rate. If that currency becomes unavailable, the selector returns to USDT. Demo preview shows the manual paper wallet; strategy jobs have separate virtual accounts in their console.
 
 CSV exports the currently filtered rows and selected valuation currency. Private balances cache for 30 seconds; the panel polls once a minute. Disconnecting an account clears its cached adapter and account balances.
 
 For cost-basis results, open **Trade → Account history → Performance**. It computes retained market FIFO with opening inventory and optional balance-checked current marks. These results have explicit coverage limits and are separate from daily market moves and portfolio valuation history. See the [trading guide](trading.md#retained-account-performance).
+
+Account uses the same wallet icon as the exchange cards’ Account overview category. Markets uses the same candlestick icon as Market data. The canonical dashboard URL is `/account`; existing `/portfolio` bookmarks preserve their query filters when redirected.

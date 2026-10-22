@@ -45,7 +45,7 @@ const starters = [
   {
     label: 'See the bigger picture',
     text: 'Help me understand my portfolio allocation and the risks I should pay attention to.',
-    hint: 'Portfolio & perspective',
+    hint: 'Account & perspective',
   },
   {
     label: 'Connect the dots',

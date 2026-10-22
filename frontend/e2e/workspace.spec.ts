@@ -13,12 +13,10 @@ test.beforeEach(async ({ request }) => {
   );
 });
 
-test('portfolio is home and shows a sourced portfolio and working date ranges', async ({
-  page,
-}) => {
+test('Account is home and shows a sourced portfolio and working date ranges', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveURL(/\/portfolio$/);
-  await expect(page.getByRole('heading', { name: 'Portfolio', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
   const navigation = page.getByRole('navigation', { name: 'Main navigation' });
   await expect(navigation.getByRole('link', { name: 'Overview', exact: true })).toHaveCount(0);
   await expect(navigation.getByRole('link', { name: 'Connections', exact: true })).toHaveCount(0);
@@ -148,7 +146,7 @@ test('market controls change interval, chart type, and correlation method', asyn
 });
 
 test('account balances and future features have explicit boundaries', async ({ page }) => {
-  await page.goto('/portfolio');
+  await page.goto('/account');
   await expect(page.getByRole('heading', { name: 'Account balances', exact: true })).toBeVisible();
   await page.getByLabel('Value in', { exact: true }).selectOption('BTC');
   await expect(page.getByRole('columnheader', { name: 'Value · BTC', exact: true })).toBeVisible();
@@ -350,4 +348,14 @@ test('exchange category icons open exact implementation details', async ({ page 
   await expect(
     dialog.getByText('Trading is not implemented for this exchange', { exact: true }),
   ).toBeVisible();
+});
+
+test('old portfolio bookmarks retain account scopes', async ({ page }) => {
+  await page.goto('/portfolio?scope=account%3Ademo#holdings');
+  await expect(page).toHaveURL(/\/account\?scope=account%3Ademo#holdings$/);
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Main navigation' })
+      .getByRole('link', { name: 'Account', exact: true }),
+  ).toHaveAttribute('aria-current', 'page');
 });

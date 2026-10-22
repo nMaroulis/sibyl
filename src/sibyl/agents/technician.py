@@ -30,7 +30,7 @@ GUIDES = {
             "Choose an exchange, give the account a label and enter its required credentials in Settings, never in chat.",
             "Inspect the exchange feature tabs before connecting. Use balance/order-history read permissions; add spot trading permission only for supported manual orders. Keep withdrawals and wallet transfers disabled; restrict IPs where supported.",
             "Save the connection and use its connection check to verify it. Saving metadata alone is not verification.",
-            "Activate the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
+            "Open Account after activating the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
             "For a preview, explicitly enable Demo. Actual active accounts turn Demo off; test environments remain clearly labeled.",
         ],
     },

@@ -17,7 +17,7 @@ export default function BrandHero() {
         </Link>
       </div>
       <div className="sibyl-doc-paths">
-        <Link to="/guides/portfolio">
+        <Link to="/guides/account">
           <span className="doc-card-index">01</span>
           <strong>Your portfolio</strong>
           <p>Connected accounts, balances, and a clear view of your assets.</p>

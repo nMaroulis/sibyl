@@ -6,7 +6,7 @@ Your watchlist starts with supported pairs for BTC, ETH, SOL, LINK, AVAX, and DO
 
 Use the searchable **Market feed** picker for a temporary page selection. Exchanges and APIs have separate sections and icons; offline **Demo** is last. A **Default** badge sits beside the source saved in [Settings → Market data](settings.md#market-data), without a duplicate default option. New workspaces use **Binance**, independently of account mode. Explicit saved choices remain effective. Public exchanges need no API key. Saved account feeds retain their production/test environment. CryptoCompare and CoinGecko Demo/Pro require their respective provider keys. The source appears in every response and follows your Analyst conversation.
 
-The override is bookmarkable as `?source=kraken`; it does not change the default used by Portfolio, Trade or paper strategies. Changing the source resets the analysis window and retains the selected coin when the new feed offers it, using a supported quote pair. Provider failures stay visible; Demo is never substituted automatically.
+The override is bookmarkable as `?source=kraken`; it does not change the default used by Account, Trade or paper strategies. Changing the source resets the analysis window and retains the selected coin when the new feed offers it, using a supported quote pair. Provider failures stay visible; Demo is never substituted automatically.
 
 CoinGecko is quotes-only in this adapter. Its watchlist works, while the page explains how to select a candle-capable feed for charts and correlations. Missing changes and volumes display **—**. Quote-only feeds never show fabricated history.
 
@@ -26,7 +26,7 @@ Use **Reorder**, then the up/down arrows, to move markets. Changes save automati
 
 Each source keeps its own list, including connected exchange/test environments. Switching feeds restores that feed's saved list. An empty list stays empty until you add a pair. Unavailable or delisted pairs remain visible with **Unavailable** and can still be removed; fixtures are never substituted. Quote failures do not erase saved preferences.
 
-Editing a watchlist changes what you follow on Markets. Portfolio valuation uses its independent reference prices, so removing a watched asset does not remove or revalue a holding. Chart and Analyst selections also remain independent from list membership.
+Editing a watchlist changes what you follow on Markets. Account valuation uses its independent reference prices, so removing a watched asset does not remove or revalue a holding. Chart and Analyst selections also remain independent from list membership.
 
 ## Chart controls
 
@@ -60,7 +60,7 @@ Spearman ranks each aligned series and computes Pearson on those ranks. No causa
 
 **Ask Analyst** opens the same-page overlay and passes the selected source, symbol, timeframe, and sample limit to its ProtoLink tool. Observations come from the server. Separate selections have separate conversations.
 
-Watchlist quotes can choose USD or USDC when USDT is unavailable, with the actual pair labeled. Analysis and correlations require exact provider pairs. Portfolio uses observed conversion routes without stablecoin parity; the separate paper reference-price helper still permits USD/USDC substitution. Actual exchange orders require the exact supported market. See [Market data sources](../developers/market-data.md) for caching, provider limits and backend contracts.
+Watchlist quotes can choose USD or USDC when USDT is unavailable, with the actual pair labeled. Analysis and correlations require exact provider pairs. Account uses observed conversion routes without stablecoin parity; the separate paper reference-price helper still permits USD/USDC substitution. Actual exchange orders require the exact supported market. See [Market data sources](../developers/market-data.md) for caching, provider limits and backend contracts.
 
 Use **Price alerts** to open the alert manager with this exact pair/feed preselected. Creating a rule does not change your watchlist, account selection or workspace default. See [price alerts and inbox](alerts.md).
 

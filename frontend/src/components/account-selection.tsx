@@ -13,7 +13,7 @@ export const useAccounts = () => useResource<AccountSelection>('/accounts', 3000
 /** First-use state: exchange connections are primary; Demo is an explicit preview. */
 export function AccountSetup({
   selection,
-  page = 'portfolio',
+  page = 'account',
 }: {
   selection: AccountSelection;
   page?: string;
@@ -144,7 +144,7 @@ export function PortfolioScope({
   return (
     <div className="portfolio-scope-bar">
       <SearchPicker
-        label="Portfolio view"
+        label="Account view"
         value={scope}
         onChange={onChange}
         placeholder="Find an exchange or account…"

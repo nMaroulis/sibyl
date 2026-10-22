@@ -11,12 +11,12 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/settings/llm`                 | Provider catalog, active model, saved metadata; keys are write-only                      |
 | POST       | `/settings/llm`                 | Save encrypted profile and activate for new requests                                     |
 | DELETE     | `/settings/llm/{provider}/key`  | Remove stored key; fall back to tool mode if active required key is unavailable          |
-| GET        | `/portfolio/accounts`           | Per-account free/reserved/total and conversion rates                                     |
+| GET        | `/account/accounts`           | Per-account free/reserved/total and conversion rates                                     |
 | GET        | `/markets/symbols`              | Active spot catalog and available timeframes                                             |
 | GET        | `/markets/orderbook`            | Public snapshot: symbol, depth 5–50                                                      |
 | GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                                              |
 | POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit                                       |
-| GET        | `/portfolio`                    | Priced balances, allocation, history, warnings                                           |
+| GET        | `/account`                    | Priced balances, allocation, history, warnings                                           |
 | GET        | `/markets`                      | Saved watchlist quotes, order and source labels                                          |
 | GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                                                    |
 | GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform                                         |
@@ -71,7 +71,7 @@ Event filters accept `all`, `fills`, `HOLD`, `SKIP_BUY`, `SKIP_SELL`, `ERROR`, `
 ## Examples
 
 ```bash
-curl http://127.0.0.1:8000/api/v1/portfolio
+curl http://127.0.0.1:8000/api/v1/account
 ```
 
 ```bash
@@ -156,11 +156,11 @@ Personal watchlist membership and order use `GET /markets/watchlist`, `POST` / `
 
 ## Portfolio pricing evidence
 
-`GET /portfolio` and `GET /portfolio/accounts` use the same held-asset conversion engine. They expose pricing coverage, direct/inverse/bridge paths, quote timestamps and explicit exclusions, independently of watchlists. Account failures use a null account total. See [portfolio valuation](portfolio-valuation.md) for the contracts, source boundaries and budgets.
+`GET /account` and `GET /account/accounts` use the same held-asset conversion engine. They expose pricing coverage, direct/inverse/bridge paths, quote timestamps and explicit exclusions, independently of watchlists. Account failures use a null account total. See [portfolio valuation](portfolio-valuation.md) for the contracts, source boundaries and budgets.
 
 ## Account activation and views
 
-`GET /accounts` describes saved/active accounts and view scopes without provider reads. `POST /accounts/demo` explicitly enables the virtual preview. `POST /connections/{id}/activation` accepts `{"active":true}` or `false`. Saving a new connection activates it. Portfolio endpoints accept `scope=all`, `exchange:<provider>`, or `account:<id>`. See [account selection](accounts.md) for invariants and execution gates.
+`GET /accounts` describes saved/active accounts and view scopes without provider reads. `POST /accounts/demo` explicitly enables the virtual preview. `POST /connections/{id}/activation` accepts `{"active":true}` or `false`. Saving a new connection activates it. Account endpoints accept `scope=all`, `exchange:<provider>`, or `account:<id>`. See [account selection](accounts.md) for invariants and execution gates.
 
 ## Retained account performance
 

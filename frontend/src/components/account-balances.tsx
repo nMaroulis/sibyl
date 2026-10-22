@@ -34,7 +34,7 @@ type Accounts = Source & {
 };
 export function AccountBalances({ scope = 'all' }: { scope?: string }) {
   const result = useResource<Accounts>(
-    `/portfolio/accounts?scope=${encodeURIComponent(scope)}`,
+    `/account/accounts?scope=${encodeURIComponent(scope)}`,
     60000,
   );
   const [account, setAccount] = useState('all');
