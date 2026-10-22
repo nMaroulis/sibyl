@@ -3,8 +3,9 @@
 import ccxt
 from pydantic import Field, field_validator
 
+from sibyl.exchanges.data import ASSETS, STABLES
 from sibyl.models import OrderRequest, Request
-from sibyl.services.market import ASSETS, STABLES, Market
+from sibyl.services.market import Market
 from sibyl.storage import Store
 
 WATCHLIST_LIMIT = 30

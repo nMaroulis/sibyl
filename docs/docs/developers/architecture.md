@@ -47,6 +47,8 @@ FastAPI routes + validated request models
 
 ## Frontend
 
+The header wordmark and favicon are served locally from `frontend/public/brand/`, copied unchanged from the original `assets/` files. Docusaurus uses matching copies in `docs/static/img/brand/`. Original assets remain available for future branding work.
+
 `pages/` owns domain screens. `components/ui.tsx` defines shared controls and notifications; `charts.tsx` wraps chart rendering; `ExchangeExecution.tsx` isolates the actual-funds review flow. `lib/types.ts` documents response contracts, `lib/api.ts` sends authenticated JSON requests, and `useResource` owns fetching, refresh, stale-response handling, and optional polling.
 
 Routes are browser history routes. Vite proxies the API in development. The Python app serves a built `frontend/dist` with a history fallback in a source checkout/container. Production compilation separates feature bundles through lazy page imports.
@@ -58,6 +60,8 @@ SQLite transactions serialize manual paper fills. One idempotency key maps to on
 This implementation assumes one API process and worker. It is not a distributed scheduler. Multiple backend workers could duplicate paper-job evaluation and should not be used without database-backed job claims.
 
 ## Source boundaries
+
+The original Streamlit runtime lives in the separate [sibyl-streamlit repository](https://github.com/nMaroulis/sibyl-streamlit); it is not a dependency of this application.
 
 Demo prices come from an explicit DemoClient and research fixtures have their own demo boundary; live errors never trigger fixture substitution. A portfolio records incomplete accounts and unpriced assets. A model-backed answer and the initial native tool evidence have separate labels. Charts show observed or simulated values with the relevant assumptions.
 

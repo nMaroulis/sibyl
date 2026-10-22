@@ -51,7 +51,7 @@ Live errors stay errors; there is no automatic Demo fallback. Closed candle page
 
 ## Persisted watchlists
 
-`Watchlists` owns source-specific membership/order; `Market.quotes(symbols)` reads exact spot quotes. Portfolio uses the independent `Valuation` service and `Market.valuation_ticker()` for actual held assets; see [portfolio valuation](portfolio-valuation.md). `Market.overview()` remains a legacy six-asset reference helper, not the portfolio pricing universe. Watchlist edits cannot change account selection, holdings, portfolio pricing or order permissions.
+`Watchlists` owns source-specific membership/order; `Market.quotes(symbols)` reads exact spot quotes. Portfolio uses the independent `Valuation` service and `Market.valuation_ticker()` for actual held assets; see [portfolio valuation](portfolio-valuation.md). Watchlist edits cannot change account selection, holdings, portfolio pricing or order permissions.
 
 | Method | Endpoint                                                    | Body / result                                                                           |
 | ------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |

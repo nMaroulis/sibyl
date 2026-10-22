@@ -163,7 +163,7 @@ export function App() {
       </a>
       <header className="topbar">
         <Link to="/portfolio" className="app-brand" aria-label="Sibyl home">
-          <span>S</span>Sibyl
+          <img src="/brand/logo_transparent.png" alt="Sibyl" width="112" height="40" />
         </Link>
         <div className="topbar-context">
           <span>Personal workspace</span>

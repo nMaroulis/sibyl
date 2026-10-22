@@ -1,7 +1,7 @@
 const config = {
   title: 'Sibyl',
   tagline: 'Your connected crypto workspace.',
-  favicon: 'img/favicon.svg',
+  favicon: 'img/brand/logo_brand.png',
   url: 'https://nmaroulis.github.io',
   baseUrl: '/sibyl/',
   organizationName: 'nMaroulis',
@@ -25,8 +25,8 @@ const config = {
   themeConfig: {
     colorMode: { defaultMode: 'light', respectPrefersColorScheme: false, disableSwitch: true },
     navbar: {
-      title: 'Sibyl Docs',
-      logo: { alt: 'Sibyl', src: 'img/favicon.svg' },
+      title: 'Docs',
+      logo: { alt: 'Sibyl', src: 'img/brand/logo_transparent.png', width: 100, height: 36 },
       items: [
         {
           type: 'docSidebar',

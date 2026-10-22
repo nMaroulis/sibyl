@@ -15,7 +15,7 @@ import numpy as np
 from sibyl.config import Settings
 from sibyl.exchanges import ExchangeClient, create_client
 from sibyl.exchanges.base import number
-from sibyl.exchanges.data import ASSETS, STABLES, TIMEFRAMES
+from sibyl.exchanges.data import STABLES, TIMEFRAMES
 from sibyl.market_data.archive import CandleArchive
 from sibyl.market_data.control import ProviderControl, ProviderDeferred
 from sibyl.models import Candle, Connection
@@ -359,71 +359,6 @@ class Market:
                 return {"error": "Quote unavailable from this feed."}
 
         return self._cached(f"valuation:{symbol}", load, 30)
-
-    @reference_read
-    def overview(self) -> dict:
-        """Fetch the watchlist with 24-hour moves and mini-chart data."""
-
-        def load():
-            items, warnings = [], []
-            for asset, (name, _, color) in ASSETS.items():
-                if asset in STABLES:
-                    continue
-                symbol = f"{asset}/USDT"
-                try:
-                    symbol = self.provider_symbol(symbol)
-                    ticker = self.client().fetch_ticker(symbol)
-                except (ccxt.BaseError, ValueError):
-                    warnings.append(f"{asset} is unavailable from the selected source.")
-                    continue
-                last = ticker.get("last") or ticker.get("close")
-                if not last or not np.isfinite(last) or last <= 0:
-                    warnings.append(f"{asset} has no valid reference price.")
-                    continue
-                history = []
-                if self._local.profile["candles"]:
-                    try:
-                        history = self.candles(symbol, 30)
-                    except (ccxt.BaseError, ValueError):
-                        warnings.append(
-                            f"{asset} mini-chart history is unavailable; its quote is still shown."
-                        )
-                change = ticker.get("percentage")
-                if change is None and self.source == "demo" and len(history) >= 2:
-                    change = (history[-1]["close"] / history[-2]["close"] - 1) * 100
-                stamp = ticker.get("timestamp")
-                stale = (
-                    self.source != "demo"
-                    and stamp is not None
-                    and datetime.now(UTC).timestamp() * 1000 - stamp > 300_000
-                )
-                items.append(
-                    {
-                        "symbol": symbol,
-                        "asset": asset,
-                        "name": name,
-                        "color": color,
-                        "price": float(last),
-                        "quote": symbol.split("/")[1],
-                        "change": float(change) if change is not None and np.isfinite(change) else None,
-                        "volume": ticker.get("quoteVolume"),
-                        "status": "stale" if stale else "fresh" if stamp is not None else "undated",
-                        "observed_at": datetime.fromtimestamp(stamp / 1000, UTC).isoformat()
-                        if stamp
-                        else None,
-                        "sparkline": [c["close"] for c in history],
-                    }
-                )
-            if not items:
-                raise ccxt.ExchangeNotAvailable("No watchlist quotes are available.")
-            return {
-                "items": items,
-                "warnings": warnings,
-                **self.metadata(),
-                "as_of": datetime.now(UTC).isoformat(),
-            }
-
-        return self._cached("overview", load)
 
     @reference_read
     def quotes(self, symbols: list[str]) -> dict:

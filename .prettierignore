@@ -4,5 +4,4 @@ docs/build
 docs/.docusaurus
 package-lock.json
 uv.lock
-notebooks
 assets

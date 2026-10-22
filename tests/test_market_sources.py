@@ -85,7 +85,7 @@ def test_disconnected_source_fails_without_demo_fallback(settings, store):
     store.delete_connection(account.id)
     assert not preferences.public_market()["active"]["available"]
     with pytest.raises(ValueError, match="unavailable"):
-        Market(settings, store, preferences).overview()
+        Market(settings, store, preferences).quotes(["BTC/USDT"])
 
 
 def test_saved_account_client_reuses_test_environment(settings, store, monkeypatch):
@@ -286,7 +286,7 @@ def test_stale_quote_shown_but_rejected_for_reference_price(settings, store, mon
         ),
     )
     monkeypatch.setattr(market, "client", lambda connection=None: adapter)
-    assert all(row["status"] == "stale" for row in market.overview()["items"])
+    assert all(row["status"] == "stale" for row in market.quotes(["BTC/USD", "ETH/USD"])["items"])
     with pytest.raises(ValueError, match="stale"):
         market.price("BTC/USD")
     adapter.close()
@@ -313,7 +313,7 @@ def test_cache_does_not_mix_sources_and_quote_survives_history_failure(settings,
     monkeypatch.setattr("sibyl.services.market.create_client", lambda provider, **kwargs: Quotes(provider))
     for source, expected in [("kraken", 123), ("coinbase", 456), ("kraken", 123)]:
         with market.snapshot(source):
-            overview = market.overview()
+            overview = market.quotes(["BTC/USDT", "ETH/USDT"])
             assert overview["source"] == source
             assert all(row["price"] == expected and row["sparkline"] == [] for row in overview["items"])
             assert overview["warnings"]

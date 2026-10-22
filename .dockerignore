@@ -11,5 +11,4 @@ docs/.docusaurus
 .pytest_cache
 .ruff_cache
 **/__pycache__
-notebooks
 assets

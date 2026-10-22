@@ -193,21 +193,12 @@ textarea:focus {
 .app-brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.8px;
+  flex-shrink: 0;
 }
-.app-brand > span {
-  width: 31px;
-  height: 33px;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: white;
-  border-radius: 10px;
-  font-size: 21px;
-  font-weight: 600;
+.app-brand > img {
+  display: block;
+  width: 112px;
+  height: auto;
 }
 .topbar-context {
   display: flex;
@@ -2792,9 +2783,6 @@ details[open] > summary {
   .strategy-catalog {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .agent-sidebar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
   .news-grid,
   .knowledge-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2900,15 +2888,8 @@ details[open] > summary {
     gap: 12px;
     padding: 0 16px;
   }
-  .app-brand {
-    font-size: 20px;
-    gap: 7px;
-  }
-  .app-brand > span {
-    height: 29px;
-    width: 28px;
-    border-radius: 9px;
-    font-size: 19px;
+  .app-brand > img {
+    width: 92px;
   }
   .topbar-context {
     margin-left: auto;
@@ -3098,10 +3079,6 @@ details[open] > summary {
   .correlation-container {
     padding: 16px;
   }
-  .agent-sidebar {
-    grid-template-columns: 1fr 1fr;
-    padding: 9px;
-  }
   .agent-mark {
     display: none;
   }
@@ -3120,12 +3097,6 @@ details[open] > summary {
   }
   .chat-header > .muted {
     display: none;
-  }
-  .oracle-welcome {
-    padding: 30px 16px 12px;
-  }
-  .oracle-welcome h2 {
-    font-size: 23px;
   }
   .prompt-grid {
     grid-template-columns: 1fr;
