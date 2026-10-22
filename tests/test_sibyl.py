@@ -193,7 +193,7 @@ def test_provider_failures_do_not_expose_credentials(client, monkeypatch):
     response = client.post("/api/v1/sibyl/ask", json={"message": "Hello"})
     assert response.status_code == 502
     assert "SENTINEL" not in response.text
-    assert client.get("/api/v1/sibyl/conversations").json()[0]["title"] == "New conversation"
+    assert client.get("/api/v1/sibyl/conversations").json()[0]["title"] == "Hello"
 
 
 def test_conversations_are_durable_separate_and_deletable(client, settings, monkeypatch):

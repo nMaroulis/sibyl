@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — October 21, 2026
+## Audited snapshot — October 22, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -15,7 +15,8 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
 | Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.             |
 | Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.                   |
-| ProtoLink workflows            | partial       | Richer scoped tools, inspected traces, streaming and per-agent models.                                |
+| Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
+| ProtoLink workflows            | partial       | Richer scoped specialist tools, per-agent models and explicit approval/audit contracts.               |
 | Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                       |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
 | Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                            |
@@ -30,6 +31,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for Binance, Coinbase, Kraken and the two dedicated test clients.
 - Six rule-based strategies, historical backtests, durable paper jobs and their detailed monitor/journal.
 - Sibyl orchestration and ten ProtoLink module agents with a startup runtime registry, client routing, contextual read-only tools, saved conversations and consultation evidence.
+- Live Sibyl consultation progress, request-specific cancellation and retained outcomes/evidence for completed, stopped, failed or interrupted requests. Startup marks unfinished requests interrupted without replaying them.
 - Encrypted LLM provider profiles, saved API keys and preset/custom model selection.
 - Durable editable source-pinned level/crossing alerts with reset-based repetition, a persistent unread in-app inbox and sanitized retry/backoff evidence.
 - Multi-publisher news ingestion, a persistent archive and filtered text sentiment, fetched crypto profiles/history, a glossary, recent Bitcoin blocks and optional equity research.
@@ -123,16 +125,18 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 
 ## AI and research work
 
-### 7. ProtoLink workflows — partial
+### 7. Sibyl and ProtoLink workflows — partial
 
 Sibyl and the ten specialists start as registered ProtoLink runtime gateways. Sibyl uses live discovery and bounded consultation tools; direct module requests use their specialist client. The agents have page context and read-only domain tools. They are request-driven assistants. Each module currently exposes one main tool, and one active workspace model profile is selected for inference.
 
 - [ ] Give modules richer, narrowly scoped tools for multi-step investigations.
 - [x] Sibyl discovers and consults registered specialists through ProtoLink clients; saved chats include collaboration evidence.
-- [ ] Implement WhatsApp, Telegram, Discord and Slack adapters; Settings previews the required fields without accepting credentials.
-- [ ] Add scheduled agent runs, durable task state and resumable long-running work.
+- [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.
+- [x] Mark unfinished requests interrupted on startup; block late consultations/answers after Stop and preserve already committed answers.
+- [ ] Add scheduled investigations and resumable long-running work. Retained request history is an audit, not workflow resumption.
 - [ ] Add per-agent model/provider selection if different modules need different models.
-- [ ] Add streaming responses and inspectable tool traces, usage and evaluation results.
+- [ ] Add token-by-token answers, deeper internal tool traces, usage/cost reporting and evaluated routing/grounding. Current progress is lifecycle polling rather than token streaming.
+- [ ] Implement WhatsApp, Telegram, Discord and Slack clients, authenticated sender binding, conversation mapping and reliable delivery/retries. Settings previews the required fields without accepting credentials; all channels remain unavailable.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
 ### 8. Forecasting / Chronos — baseline only
@@ -195,8 +199,9 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
 3. **Close the order loop:** authenticated acceptance of status/fill/recovery/discovery, broader adapters and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
 4. **Build on local alerts:** portfolio/strategy/connection conditions and operational diagnostics, then explicit external delivery and backup/restore.
-5. **Richer ProtoLink tools and test-environment strategies:** inspected evidence and durable workflows, with risk controls before any production automation.
-6. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.
+5. **Sibyl and richer ProtoLink tools:** evaluated collaboration, scoped specialist tools, per-agent models and resumable investigations. Messaging clients remain a separately scoped future integration.
+6. **Test-environment strategies:** reconcile actual orders/fills and implement risk controls before any production automation.
+7. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.
 
 Multi-user hosting is deferred. No user accounts, permissions, tenant isolation or distributed-worker work is included in this sequence.
 

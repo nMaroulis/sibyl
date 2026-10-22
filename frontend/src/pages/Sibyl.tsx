@@ -9,8 +9,11 @@ import {
   LoaderCircle,
   MessageCircle,
   Plus,
+  ClipboardList,
   Trash2,
 } from 'lucide-react';
+import { SibylProgress, SibylRequestHistory, activeRequest } from '../components/sibyl-activity';
+import type { SibylActivity, Consultation } from '../components/sibyl-activity';
 import { SibylMark } from '../components/sibyl-mark';
 import { Badge, ErrorState, Loading, Modal } from '../components/ui';
 import { api, post } from '../lib/api';
@@ -25,15 +28,6 @@ type Status = {
   model: string;
   simulated: boolean;
   specialists: number;
-};
-type Consultation = {
-  agent_id: string;
-  name: string;
-  question: string;
-  answer?: string;
-  status: string;
-  evidence?: unknown;
-  error?: string;
 };
 type Reply = {
   id: string;
@@ -72,11 +66,33 @@ export function Sibyl() {
   const chats = useResource<Chat[]>('/sibyl/conversations');
   const [params, setParams] = useSearchParams();
   const session = params.get('chat') ?? '';
-  const conversation = useResource<Chat>(`/sibyl/conversations/${session}`, 3000, Boolean(session));
+  const conversation = useResource<Chat>(`/sibyl/conversations/${session}`, 0, Boolean(session));
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState('');
   const [error, setError] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [requestId, setRequestId] = useState('');
+  const activity = useResource<SibylActivity | null>(
+    `/sibyl/conversations/${session}/activity`,
+    following || pending ? 1000 : 0,
+    Boolean(session),
+  );
+  const currentActivity = activity.data?.session_id === session ? activity.data : undefined;
+  const visibleActivity =
+    pending && currentActivity?.id !== requestId ? undefined : currentActivity;
+  const stoppableId = activeRequest(visibleActivity) ? visibleActivity?.id : undefined;
+  useEffect(() => {
+    setFollowing(activeRequest(currentActivity));
+  }, [currentActivity?.id, currentActivity?.status]);
+  useEffect(() => {
+    if (currentActivity && !activeRequest(currentActivity)) {
+      conversation.retry();
+      chats.retry();
+    }
+  }, [currentActivity?.id, currentActivity?.status, conversation.retry, chats.retry]);
   const [latest, setLatest] = useState<Reply>();
   const busy = useRef(false);
   const end = useRef<HTMLDivElement>(null);
@@ -93,7 +109,9 @@ export function Sibyl() {
   }, [turns.length, pending]);
   const ready = Boolean(status.data?.ready);
   const working = Boolean(
-    pending || (conversation.data?.id === session && conversation.data.pending),
+    pending ||
+    activeRequest(currentActivity) ||
+    (conversation.data?.id === session && conversation.data.pending && !currentActivity),
   );
   const send = async (message: string) => {
     if (!ready || busy.current || working || !message.trim()) return;
@@ -101,6 +119,8 @@ export function Sibyl() {
     setPending(message.trim());
     setDraft('');
     setError('');
+    const nextRequest = crypto.randomUUID().replaceAll('-', '');
+    setRequestId(nextRequest);
     try {
       let target = session;
       if (!target) {
@@ -108,11 +128,15 @@ export function Sibyl() {
         target = chat.id;
         setParams({ chat: target });
       }
-      const reply = await post<Reply>('/sibyl/ask', {
+      const reply = await post<
+        Reply | { status: 'cancelled'; request_id: string; session_id: string }
+      >('/sibyl/ask', {
         message: message.trim(),
         session_id: target,
+        request_id: nextRequest,
       });
-      setLatest(reply);
+      if ('status' in reply && reply.status === 'cancelled') setDraft(message);
+      else setLatest(reply as Reply);
       conversation.retry();
       chats.retry();
     } catch (reason) {
@@ -121,6 +145,23 @@ export function Sibyl() {
     } finally {
       busy.current = false;
       setPending('');
+      setStopping(false);
+      activity.retry();
+      conversation.retry();
+    }
+  };
+  const stop = async () => {
+    const id = stoppableId;
+    if (!session || !id || stopping) return;
+    setStopping(true);
+    try {
+      await post(`/sibyl/conversations/${session}/cancel`, { request_id: id });
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      activity.retry();
+      conversation.retry();
+      setStopping(false);
     }
   };
   const newChat = () => {
@@ -130,6 +171,9 @@ export function Sibyl() {
       setError('');
       setLatest(undefined);
       setDeleteOpen(false);
+      setFollowing(false);
+      setStopping(false);
+      setRequestId('');
       input.current?.focus();
     }
   };
@@ -145,6 +189,22 @@ export function Sibyl() {
   };
   return (
     <div className="sibyl-page">
+      {historyOpen && session && (
+        <Modal
+          title="Request history"
+          className="sibyl-history-dialog"
+          onClose={() => setHistoryOpen(false)}
+        >
+          <SibylRequestHistory
+            session={session}
+            onUseQuestion={(question) => {
+              setDraft(question);
+              setHistoryOpen(false);
+              input.current?.focus();
+            }}
+          />
+        </Modal>
+      )}
       {deleteOpen && (
         <Modal title="Delete this conversation?" onClose={() => setDeleteOpen(false)}>
           <p className="muted">
@@ -217,6 +277,16 @@ export function Sibyl() {
                   </option>
                 ))}
               </select>
+              {session && (
+                <button
+                  className="icon-button"
+                  aria-label="Request history"
+                  title="Request history"
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  <ClipboardList size={14} />
+                </button>
+              )}
               {session && (
                 <button
                   className="icon-button"
@@ -342,18 +412,17 @@ export function Sibyl() {
                 ))}
                 {working && (
                   <div className="sibyl-turn">
-                    {pending && (
+                    {(pending || currentActivity?.question) && (
                       <div className="sibyl-user-message">
                         <span>You</span>
-                        <p>{pending}</p>
+                        <p>{pending || currentActivity?.question}</p>
                       </div>
                     )}
-                    <div className="sibyl-thinking" role="status">
-                      <SibylMark small />
-                      <span>
-                        Sibyl is thinking<span className="sibyl-thinking-dots">…</span>
-                      </span>
-                    </div>
+                    <SibylProgress
+                      activity={visibleActivity}
+                      stopping={stopping}
+                      stop={session && stoppableId ? () => void stop() : undefined}
+                    />
                   </div>
                 )}
               </div>
@@ -361,6 +430,23 @@ export function Sibyl() {
             <div ref={end} />
           </div>
           <div className="sibyl-compose-area">
+            {!working &&
+              currentActivity &&
+              ['cancelled', 'failed', 'interrupted'].includes(currentActivity.status) && (
+                <div className="sibyl-request-outcome" role="status">
+                  <span>
+                    {currentActivity.status === 'cancelled'
+                      ? 'Request stopped.'
+                      : currentActivity.status === 'interrupted'
+                        ? 'The application restarted before this answer finished.'
+                        : 'This request could not finish.'}{' '}
+                    Completed consultations are kept in request history.
+                  </span>
+                  <button type="button" onClick={() => setHistoryOpen(true)}>
+                    View history
+                  </button>
+                </div>
+              )}
             {status.data && !ready && (
               <div className="sibyl-setup-note">
                 <SibylMark small />
@@ -429,7 +515,7 @@ export function Sibyl() {
                       !ready || working || !draft.trim() || Boolean(session && conversation.error)
                     }
                   >
-                    {pending ? <LoaderCircle className="spin" size={18} /> : <ArrowUp size={20} />}
+                    {working ? <LoaderCircle className="spin" size={18} /> : <ArrowUp size={20} />}
                   </button>
                 </div>
               </form>

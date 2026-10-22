@@ -10,6 +10,7 @@ from sibyl import __version__
 from sibyl.agents.conversations import SibylRequest
 from sibyl.agents.network import ModelRequired
 from sibyl.agents.providers import ProviderId
+from sibyl.agents.requests import CancelSibylRequest
 from sibyl.api.app import Services
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.market_data.backfills import (
@@ -987,6 +988,38 @@ async def delete_sibyl_conversation(session_id: str, s: S):
     """Delete a local chat; active conversations cannot be deleted."""
     try:
         s.agents.network.delete_conversation(session_id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.get("/sibyl/conversations/{session_id}/activity", tags=["Sibyl"])
+def sibyl_activity(session_id: str, s: S, response: Response):
+    """Read live collaboration progress and the last request outcome without inference."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.agents.network.activity(session_id)
+
+
+@router.get("/sibyl/conversations/{session_id}/requests", tags=["Sibyl"])
+def sibyl_request_history(session_id: str, s: S, response: Response):
+    """Read up to 20 recent request summaries, including stopped or failed attempts."""
+    response.headers["Cache-Control"] = "no-store"
+    s.agents.network.conversations.require(session_id)
+    return s.agents.network.requests.history(session_id)
+
+
+@router.get("/sibyl/conversations/{session_id}/requests/{request_id}", tags=["Sibyl"])
+def sibyl_request_detail(session_id: str, request_id: str, s: S, response: Response):
+    """Read retained consultation evidence for this exact request and conversation."""
+    response.headers["Cache-Control"] = "no-store"
+    s.agents.network.conversations.require(session_id)
+    return s.agents.network.requests.get(session_id, request_id)
+
+
+@router.post("/sibyl/conversations/{session_id}/cancel", tags=["Sibyl"], status_code=202)
+async def cancel_sibyl_request(session_id: str, body: CancelSibylRequest, s: S):
+    """Stop the exact pending request; preserve its completed read-only observations."""
+    try:
+        return await s.agents.network.cancel(session_id, body.request_id)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 

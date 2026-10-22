@@ -546,13 +546,176 @@
   line-height: 1.95;
   color: #5d677d;
 }
-.sibyl-thinking {
+.sibyl-live-progress {
+  border: 1px solid #e9e5f2;
+  border-radius: 16px;
+  background: linear-gradient(125deg, #f8f7fd, #f6f9fd);
+  padding: 14px 16px;
+  margin-top: 24px;
+  color: #83739e;
+  font-size: 11px;
+}
+.sibyl-progress-heading,
+.sibyl-progress-heading > span,
+.sibyl-progress-heading > button {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 24px;
+  gap: 8px;
+}
+.sibyl-progress-heading {
+  justify-content: space-between;
+}
+.sibyl-progress-heading > button {
+  color: #80748e;
+  background: #fff;
+  border: 1px solid #e7e2ee;
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 10px;
+  flex-shrink: 0;
+  transition:
+    background 150ms,
+    border-color 150ms;
+}
+.sibyl-progress-heading > button:hover:not(:disabled) {
+  background: #f1edf7;
+  border-color: #c9bedc;
+}
+.sibyl-progress-heading > button:disabled {
+  opacity: 0.5;
+}
+.sibyl-progress-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+.sibyl-progress-team > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9px;
+  padding: 7px 9px;
+  border: 1px solid #e5e0ef;
+  background: #ffffffb3;
+  font-size: 10px;
+}
+.sibyl-progress-team > span[data-status='completed'] {
+  color: #63877c;
+  border-color: #deebe6;
+}
+.sibyl-progress-team small {
+  font-size: 8px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+.sibyl-request-outcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #f7f6fb;
+  border-radius: 11px;
+  padding: 11px 13px;
+  margin-bottom: 10px;
+  color: #8c829d;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.sibyl-request-outcome > button {
+  color: #8a6eaf;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+}
+.modal.sibyl-history-dialog {
+  width: min(100%, 700px);
+}
+.sibyl-request-history {
   font-size: 11px;
-  color: #a397ba;
+  color: #69758a;
+}
+.sibyl-request-history > p {
+  font-size: 11px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+.sibyl-request-history > section {
+  border: 1px solid #e6e8f1;
+  border-radius: 13px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.sibyl-request-summary {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  padding: 15px;
+  align-items: center;
+  text-align: left;
+  background: #fafafe;
+}
+.sibyl-request-summary > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.sibyl-request-summary strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  color: #56617b;
+}
+.sibyl-request-summary small {
+  display: block;
+  color: #939bb0;
+  font-size: 9px;
+  margin-top: 4px;
+}
+.sibyl-request-summary > svg {
+  flex-shrink: 0;
+  transition: transform 150ms;
+}
+.sibyl-request-summary[aria-expanded='true'] > svg {
+  transform: rotate(180deg);
+}
+.sibyl-request-detail {
+  padding: 4px 16px 16px;
+  border-top: 1px solid #e6e8f1;
+}
+.sibyl-request-detail > div {
+  padding: 8px 0 12px;
+}
+.sibyl-request-detail > div + div {
+  border-top: 1px solid #edf0f6;
+}
+.sibyl-request-detail h4 {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 10px 0;
+}
+.sibyl-request-detail h4 .badge {
+  margin-left: auto;
+}
+.sibyl-request-detail p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.sibyl-request-detail pre {
+  font-size: 9px;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sibyl-request-detail > .button {
+  margin-top: 14px;
+  font-size: 10px;
 }
 .sibyl-thinking-dots {
   animation: sibyl-breathe 1.5s infinite;

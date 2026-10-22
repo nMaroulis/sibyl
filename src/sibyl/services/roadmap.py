@@ -90,14 +90,26 @@ AREAS = [
         ],
     },
     {
+        "id": "sibyl",
+        "name": "Sibyl & messaging",
+        "status": "partial",
+        "priority": "next",
+        "working": "Registry-discovered collaboration, saved chats, live consultation progress, request-specific Stop and durable completed/stopped/failed/interrupted request history.",
+        "pending": [
+            "Token-by-token answers, richer internal tool traces, usage/cost reporting and evaluated routing/grounding.",
+            "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
+            "WhatsApp, Telegram, Discord and Slack clients, authenticated sender binding, conversation mapping and reliable delivery; setup previews remain unavailable.",
+        ],
+    },
+    {
         "id": "agents",
         "name": "ProtoLink workflows",
         "status": "partial",
         "priority": "later",
-        "working": "Sibyl orchestration, ten read-only specialists, startup runtime registry/client routing, saved chats, consultation evidence and API/local model profiles.",
+        "working": "Ten read-only specialists, startup ProtoLink runtime registry/client routing, contextual tools and shared API/local model profiles.",
         "pending": [
-            "Richer scoped tools, inspected traces, streaming and per-agent models.",
-            "Resumable or scheduled workflows; WhatsApp/Telegram/Discord/Slack clients (unavailable setup previews only).",
+            "Richer narrowly scoped specialist tools and per-agent model/provider selection.",
+            "Evaluated tool/source selection, inspected internal traces and collaboration budgets.",
             "Explicit approvals and audit contracts before mutation tools.",
         ],
     },
@@ -154,10 +166,10 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-10-21",
+        "reviewed_on": "2026-10-22",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Foundational local data and operations; multi-user support is deferred.",
+        "current_focus": "Foundational local data and operations, plus observable and cancellable Sibyl requests. Multi-user support is deferred.",
         "execution_note": "Strategies remain paper-only; agents remain read-only. Authenticated venue acceptance is outstanding.",
         "release_dates": None,
     }

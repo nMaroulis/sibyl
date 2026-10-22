@@ -13,6 +13,11 @@ export const futureFeatures: { module: string; title: string; text: string; defe
       text: 'WhatsApp, Telegram, Discord and Slack channel clients. Settings → Messaging previews the required fields; the integrations are currently unavailable.',
     },
     {
+      module: 'sibyl',
+      title: 'Deeper investigations',
+      text: 'Token-by-token answers, scheduled and resumable research, per-agent models and evaluated collaboration. Live consultation progress, Stop and retained request outcomes are available now.',
+    },
+    {
       module: 'markets',
       title: 'Deeper relationships',
       text: 'Granger causality, distance correlation, MIC, regression, and SHAP explanations.',

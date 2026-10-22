@@ -25,13 +25,23 @@ When Sibyl consults someone, expand the **consultations** panel under the answer
 
 The model decides whether to use a specialist. The interface never invents consultation badges for an answer that involved no specialists.
 
+## Follow or stop a request
+
+While Sibyl works, the chat shows its current stage and the specialists actually being consulted, with working/completed states. Progress refreshes about once a second; the final answer appears when complete. It does not show private model reasoning or stream answer tokens.
+
+Use **Stop** to cancel this specific request, including one waiting for an available slot. Completed consultations remain available, and a stopped request does not add a pretend answer to the conversation. An already committed answer is retained if it completes just before Stop reaches the server. A provider call already in flight may still finish or incur charges; Stop prevents further consultations and a late answer from that request.
+
+Open **Request history** beside the conversation picker to inspect the latest 20 attempts and their retained consultation observations, including failures and stopped requests. **Use this question** puts a previous question back in the composer for you to review and send. This does not retry automatically.
+
 ## Saved conversations
 
 Choose a chat from **Saved conversations** or use **New chat** for a fresh context. Completed answers and consultation evidence persist locally across application restarts. A conversation displays its latest 100 completed turns; the model receives the latest six. The picker lists the most recent 100 chats. Unsent drafts are not saved across page reloads. Reopening a running conversation shows its pending state and refreshes completed answers automatically.
 
-One turn may run at a time in a conversation. Different chats and direct module questions share a two-request limit. A turn can consult up to four specialists and waits at most 150 seconds. Sibyl is request-driven; starting the app makes the agents available without running inference or creating background research tasks.
+One turn may run at a time in a conversation. Different chats and direct module questions share a two-request limit. A turn can consult up to four specialists and waits at most 150 seconds including queue time. Sibyl is request-driven; starting the app makes the agents available without running inference or creating background research tasks.
 
-**Delete conversation** permanently removes that chat's local messages and collaboration evidence. It does not remove separately recorded specialist runs. Deletion is blocked while an answer is running.
+If the application restarts before a request finishes, the attempt is marked **Interrupted by restart**. Completed consultation observations survive, but the investigation is not resumed or replayed. Reopening the chat lets you inspect it and choose whether to ask again.
+
+**Delete conversation** permanently removes that chat's local messages, request history and collaboration evidence. It does not remove separately recorded specialist runs. Deletion is blocked while an answer is running.
 
 ## Talk directly to a specialist
 

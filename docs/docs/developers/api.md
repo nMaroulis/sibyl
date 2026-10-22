@@ -220,13 +220,19 @@ Price alerts also accept `condition: crosses_above/crosses_below`, `repeat: once
 
 All paths below use the `/api/v1` prefix and existing workspace access controls.
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | `/sibyl` | Runtime and model configuration readiness; safe setup reason and settings link |
-| POST | `/sibyl/ask` | `message` (1–4,000 nonblank characters), optional `session_id`; model-driven specialist collaboration |
-| GET / POST | `/sibyl/conversations` | Latest 100 local chats / create an empty chat |
-| GET | `/sibyl/conversations/{session_id}` | Latest 100 completed turns and actual consultation evidence |
-| DELETE | `/sibyl/conversations/{session_id}` | Permanently remove this chat; returns 204, or 409 while pending |
-| GET | `/settings/messaging` | Unavailable channel catalog, planned setup fields, and official setup links |
+| Method     | Path                                                      | Purpose                                                                                                                       |
+| ---------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| GET        | `/sibyl`                                                  | Runtime and model configuration readiness; safe setup reason and settings link                                                |
+| POST       | `/sibyl/ask`                                              | `message` (1–4,000 nonblank characters), optional `session_id` and unique `request_id`; model-driven specialist collaboration |
+| GET / POST | `/sibyl/conversations`                                    | Latest 100 local chats / create an empty chat                                                                                 |
+| GET        | `/sibyl/conversations/{session_id}`                       | Latest 100 completed turns and actual consultation evidence                                                                   |
+| DELETE     | `/sibyl/conversations/{session_id}`                       | Permanently remove this chat; returns 204, or 409 while pending                                                               |
+| GET        | `/sibyl/conversations/{session_id}/activity`              | Latest request stage and consultation summaries without full evidence; null before the first attempt                          |
+| GET        | `/sibyl/conversations/{session_id}/requests`              | Latest 20 request summaries including stopped/failed/interrupted attempts                                                     |
+| GET        | `/sibyl/conversations/{session_id}/requests/{request_id}` | Exact request and retained consultation evidence within its owning chat                                                       |
+| POST       | `/sibyl/conversations/{session_id}/cancel`                | Required `request_id`; accepts exact queued/running request, returns 202                                                      |
+| GET        | `/settings/messaging`                                     | Unavailable channel catalog, planned setup fields, and official setup links                                                   |
 
-Channels: `whatsapp`, `telegram`, `discord`, `slack`. Every channel reports `unavailable` and `connected: false`; no clients, credential collection, draft saving or delivery exist. Sibyl setup/duplicate-turn failures return 409, unknown chat IDs 404, provider failures a sanitized 502, and outer timeouts 504. Session IDs are 32 hexadecimal characters. The backend limits one pending turn per chat, two outer requests globally and four specialist consultation attempts per turn. See [agent contracts](./agents.md).
+Successful Ask results include `request_id` and `status: completed`. If stopped, the original Ask returns 200 with `{status: cancelled, session_id, request_id}`, without saving a chat answer. Cancellation is idempotent for an already stopped request; completed/non-running requests return 409 and unknown/foreign request IDs return 404. Session and request IDs are 32 lowercase hexadecimal characters; repeated request IDs return 409 without another model call. Startup marks unfinished requests interrupted without replaying them. History retains completed consultation evidence; frequent activity reads omit answer/evidence payloads. These request reads use `Cache-Control: no-store`.
+
+Channels: `whatsapp`, `telegram`, `discord`, `slack`. Every channel reports `unavailable` and `connected: false`; no clients, credential collection, draft saving or delivery exist. Sibyl setup/duplicate-turn failures return 409, unknown chat IDs 404, provider failures a sanitized 502, and outer timeouts 504. The backend limits one pending turn per chat, two outer requests globally and four specialist consultation attempts per turn. See [agent contracts](./agents.md).

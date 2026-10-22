@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from pydantic import Field, field_validator
 
+from sibyl.agents.requests import SibylRequests
 from sibyl.models import Request
 from sibyl.storage import Store
 
@@ -15,6 +16,7 @@ class SibylRequest(Request):
 
     message: str = Field(min_length=1, max_length=4000)
     session_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    request_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
 
     @field_validator("message")
     @classmethod
@@ -72,6 +74,12 @@ class Conversations:
             ).fetchall()
         return {**dict(row), "turns": [json.loads(t[0]) for t in reversed(turns)]}
 
+    def require(self, session_id: str) -> None:
+        """Validate chat existence without loading its messages and consultation evidence."""
+        with self.store.db() as db:
+            if not db.execute("SELECT 1 FROM sibyl_conversations WHERE id=?", (session_id,)).fetchone():
+                raise LookupError("Conversation not found.")
+
     def append(self, result: dict) -> dict:
         """Commit the completed answer and update its chat title together."""
         now = datetime.now(UTC).isoformat()
@@ -82,6 +90,7 @@ class Conversations:
                 "SELECT 1 FROM sibyl_conversations WHERE id=?", (result["session_id"],)
             ).fetchone():
                 raise LookupError("Conversation not found.")
+            SibylRequests.complete(db, result)
             db.execute(
                 "INSERT INTO sibyl_turns VALUES (?,?,?,?)",
                 (
@@ -101,5 +110,6 @@ class Conversations:
     def delete(self, session_id: str) -> None:
         """Remove this chat's local messages and delegation evidence."""
         with self.store.db() as db:
+            db.execute("DELETE FROM sibyl_requests WHERE session_id=?", (session_id,))
             db.execute("DELETE FROM sibyl_turns WHERE session_id=?", (session_id,))
             db.execute("DELETE FROM sibyl_conversations WHERE id=?", (session_id,))
