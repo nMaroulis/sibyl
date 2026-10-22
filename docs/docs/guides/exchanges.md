@@ -73,6 +73,8 @@ Use a Bybit Unified Trading Account (UTA) or KuCoin classic spot trading account
 
 ## Card indicators
 
-Each exchange card has five category icons: account overview, spot trading, history, market data, and automation/limits. Green means every feature listed in that category is implemented; amber means some are implemented; grey means none are implemented. Hover or focus an icon for the exact count, or select it to open that category. Shapes distinguish full (check), partial (half-circle) and missing support (minus), in addition to color.
+Each exchange card has five category icons: account overview, spot trading, history, market data, and automation/limits. Green icons mean every feature listed in that category is implemented; amber means some are implemented; grey means none are implemented. Hover or focus an icon for the exact count, or select it to open that category. Icons include small status markers: a check for full support, a half-circle for partial support and a minus for missing support. Accessible labels and tooltips explicitly describe support and exact counts.
 
 The Python backend calculates these counts from the same feature rows displayed in the dialog. Missing features remain in the denominator. Read-only order/status methods belong to History, so they cannot make an exchange with no submission implementation appear to support trading. Icons describe implementation coverage, not credentials, server execution enablement or authenticated exchange acceptance. Demo remains explicitly simulated.
+
+Exchange cards use faint brand tints inspired by their bundled logos. Card tints are decorative; only the category icons indicate implementation coverage. Test environments share their parent exchange’s palette and retain their Testnet/Sandbox labels.

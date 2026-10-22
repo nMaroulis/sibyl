@@ -8568,6 +8568,8 @@ details[open] > summary {
 
 /* Provider cards: implementation coverage, independent from connection health. */
 .exchange-provider-card {
+  display: flex;
+  flex-direction: column;
   position: relative;
   min-width: 0;
   border: 1px solid #e3e7ed;
@@ -8585,6 +8587,7 @@ details[open] > summary {
   z-index: 2;
 }
 .exchange-provider-open {
+  flex: 1;
   display: flex;
   position: relative;
   width: 100%;
@@ -8646,10 +8649,6 @@ details[open] > summary {
   color: #4c6088;
   transform: translate(1px, -1px);
 }
-.exchange-provider-card.is-test .exchange-provider-open {
-  padding-top: 30px;
-  min-height: 104px;
-}
 .exchange-environment-tag {
   position: absolute;
   right: 16px;
@@ -8660,6 +8659,7 @@ details[open] > summary {
   letter-spacing: 0.03em;
 }
 .exchange-category-indicators {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   gap: 7px;
@@ -8705,29 +8705,6 @@ details[open] > summary {
   background: var(--coverage-soft);
   border-color: var(--coverage-color);
   outline: none;
-}
-.exchange-coverage-mark {
-  position: absolute;
-  right: 1px;
-  bottom: 2px;
-  display: grid;
-  place-items: center;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid white;
-  background: var(--coverage-color);
-  color: white;
-}
-.coverage-partial .exchange-coverage-mark {
-  background: linear-gradient(90deg, var(--coverage-color) 50%, white 50%);
-  box-shadow: 0 0 0 0.5px var(--coverage-color);
-}
-.coverage-unsupported .exchange-coverage-mark::after {
-  content: '';
-  width: 4px;
-  height: 1px;
-  background: white;
 }
 .exchange-category-tooltip {
   position: absolute;
@@ -8806,10 +8783,7 @@ details[open] > summary {
   border-radius: 50%;
   background: var(--coverage-color);
 }
-.exchange-coverage-legend i.coverage-partial {
-  background: linear-gradient(90deg, var(--coverage-color) 50%, white 50%);
-  box-shadow: 0 0 0 0.5px var(--coverage-color);
-}
+
 .exchange-coverage-legend p {
   margin: 0 0 0 auto;
   font-size: 10px;
@@ -8832,4 +8806,73 @@ details[open] > summary {
 .exchange-category-icon[data-tooltip-dismissed='true'] .exchange-category-tooltip {
   opacity: 0;
   visibility: hidden;
+}
+
+/* Quiet brand tints with standalone, colour-coded capability icons. */
+[data-card-style='brand'] {
+  gap: 15px;
+}
+[data-card-style='brand'] .exchange-provider-card {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--exchange-brand) 6%, white),
+    white 65%
+  );
+  box-shadow: 0 2px 5px #22334b03;
+}
+[data-card-style='brand'] .exchange-provider-card:hover {
+  border-color: color-mix(in srgb, var(--exchange-brand) 24%, #dce3ed);
+  box-shadow: 0 5px 16px #22334b0a;
+}
+[data-card-style='brand'] .exchange-provider-open {
+  min-height: 94px;
+  padding: 19px;
+}
+[data-card-style='brand'] .exchange-provider-emblem {
+  background: white;
+  border-color: #e8ecf2;
+  box-shadow: none;
+  border-radius: 12px;
+}
+[data-card-style='brand'] .exchange-provider-name strong {
+  color: #34405b;
+}
+[data-card-style='brand'] .exchange-provider-name small {
+  color: #64718b;
+}
+[data-card-style='brand'] .exchange-category-indicators {
+  border-color: #edf0f5;
+  background: #fafbfd;
+  padding: 11px 15px;
+  border-radius: 0 0 20px 20px;
+}
+
+.exchange-coverage-mark {
+  position: absolute;
+  right: 1px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid white;
+  background: var(--coverage-color);
+  color: white;
+}
+.coverage-partial .exchange-coverage-mark {
+  background: linear-gradient(90deg, var(--coverage-color) 50%, white 50%);
+  box-shadow: 0 0 0 0.5px var(--coverage-color);
+}
+.coverage-unsupported .exchange-coverage-mark::after {
+  content: '';
+  width: 4px;
+  height: 1px;
+  background: white;
+}
+.exchange-coverage-legend i.coverage-partial {
+  background: linear-gradient(90deg, var(--coverage-color) 50%, white 50%);
+  box-shadow: 0 0 0 0.5px var(--coverage-color);
 }

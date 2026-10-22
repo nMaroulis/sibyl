@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { ArrowUpRight, Check, CircleHelp } from 'lucide-react';
+import { exchangeBrand, exchangeBrandColors } from '../lib/exchange-icons';
 import { exchangeCategoryIcons } from '../lib/category-icons';
 import type { ExchangeProvider } from '../lib/types';
 import { ExchangeMark } from './exchange-mark';
@@ -19,6 +20,14 @@ export function ExchangeProviderCard({
   provider: ExchangeProvider;
   onOpen: (category?: string) => void;
 }) {
+  const [primary, secondary] = exchangeBrandColors[exchangeBrand(provider.id)] ?? [
+    '#718096',
+    '#b1bdcb',
+  ];
+  const brandStyle = {
+    '--exchange-brand': primary,
+    '--exchange-brand-secondary': secondary,
+  } as CSSProperties;
   const [dismissedTooltip, setDismissedTooltip] = useState<string>();
   const credentialLabel =
     provider.id === 'coinbase'
@@ -29,7 +38,10 @@ export function ExchangeProviderCard({
           ? 'Key, secret & memo'
           : 'API key & secret';
   return (
-    <article className={`exchange-provider-card ${provider.test_environment ? 'is-test' : ''}`}>
+    <article
+      style={brandStyle}
+      className={`exchange-provider-card ${provider.test_environment ? 'is-test' : ''}`}
+    >
       <button
         className="exchange-provider-open"
         aria-label={`View ${provider.name} support`}

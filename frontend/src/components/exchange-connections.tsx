@@ -441,7 +441,7 @@ export function ExchangeConnections() {
       ) : catalog.error ? (
         <ErrorState message={catalog.error} retry={catalog.retry} />
       ) : (
-        <div className="exchange-client-grid">
+        <div className="exchange-client-grid" data-card-style="brand">
           {exchanges
             .filter((provider) => !provider.simulated)
             .filter((provider) =>
