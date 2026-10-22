@@ -388,7 +388,10 @@ def test_sync_api_validates_inputs_and_exposes_no_private_cursor(client):
     assert client.get("/api/v1/account-ledger/fills?limit=0").status_code == 422
     assert client.get("/api/v1/account-ledger/fills?symbol=BTC%2FUSDT%3AUSDT").status_code == 422
     assert client.post("/api/v1/connections/demo/sync/pause?symbol=BTC/USDT").status_code == 200
-    evidence = client.app.state.services.agents._tools["technician"]()
+    network = client.app.state.services.agents.network
+    evidence = client.portal.call(
+        network.client.peer(network.cards["technician"]).call_tool, "connection_status"
+    )
     assert evidence["history_imports"][0]["symbol"] == "BTC/USDT"
     assert "cursor" not in json.dumps(evidence)
 

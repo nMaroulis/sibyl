@@ -128,10 +128,12 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 
 ### 7. Sibyl and ProtoLink workflows — partial
 
-Sibyl and the ten specialists start as registered ProtoLink runtime gateways. Sibyl uses live discovery and bounded consultation tools; direct module requests use their specialist client. The agents have page context and read-only domain tools. They are request-driven assistants. Each module currently exposes one main tool, and one active workspace model profile is selected for inference.
+Sibyl and the ten specialists start as native ProtoLink Agents with `.start()` and registry discovery. Each has its own file and prompt. ProtoLink automatically supplies discovered agents and handles native delegation for Sibyl; direct module requests use their specialist client. The agents have page context and read-only domain tools. They are request-driven assistants. Models choose evidence tools on demand. Reporter has cached news/article/source/index tools; Technician has setup guides and provider-specific instructions; other specialists include relevant method and capability help. One active workspace model profile is selected for inference.
 
-- [ ] Give modules richer, narrowly scoped tools for multi-step investigations.
-- [x] Sibyl discovers and consults registered specialists through ProtoLink clients; saved chats include collaboration evidence.
+- [x] Split each agent into its own native declaration with prompt and typed tools; remove consult gateways and per-request Agent construction.
+- [x] Add on-demand evidence tools, cached Reporter reads and practical Technician setup guides.
+- [ ] Expand investigations with deeper source-specific tools as domain features become available.
+- [x] Sibyl uses native ProtoLink discovery/delegation, with delegation disabled for specialists; saved chats include collaboration evidence.
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.
 - [x] Mark unfinished requests interrupted on startup; block late consultations/answers after Stop and preserve already committed answers.
 - [ ] Add scheduled investigations and resumable long-running work. Retained request history is an audit, not workflow resumption.

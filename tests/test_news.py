@@ -279,6 +279,7 @@ def test_reporter_can_open_archived_story_beyond_its_briefing_page(client, monke
     service = client.app.state.services.research.news_service
     service.providers = [StubProvider([story(i) for i in range(1, 21)])]
     monkeypatch.setattr(service, "_now", lambda: NOW)
+    service.refresh()  # Collection happens before Reporter reads the retained archive.
     result = client.post(
         "/api/v1/agents/ask",
         json={

@@ -4,7 +4,7 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from protolink import Agent, create_llm
+from protolink import create_llm
 
 from sibyl.agents.registry import ROLES
 from sibyl.api.app import create_app
@@ -49,19 +49,10 @@ def test_actual_protolink_tool_execution_for_every_module(client, module):
 def test_model_path_uses_protolink_with_mock_provider(client, monkeypatch):
     registry = client.app.state.services.agents
     registry.settings.llm_provider = "ollama"
-    native_compose = registry._compose
-
-    def compose(module, *, inference=False, configuration=None):
-        if not inference:
-            return native_compose(module)
-        return Agent(
-            name="test-sibyl-model",
-            llm=create_llm("mock", default_response="A controlled model response."),
-            tools=[registry._tools[module]],
-            verbosity=0,
-        )
-
-    monkeypatch.setattr(registry, "_compose", compose)
+    monkeypatch.setattr(
+        "sibyl.agents.registry.create_llm",
+        lambda *a, **kw: create_llm("mock", default_response="A controlled model response."),
+    )
     response = client.post("/api/v1/agents/ask", json={"module": "oracle", "message": "Explain my holdings"})
     assert response.status_code == 200, response.text
     assert response.json()["mode"] == "llm"

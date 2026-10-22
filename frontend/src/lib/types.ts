@@ -270,6 +270,8 @@ export type Agent = {
   description: string;
   engine: string;
   tool: string;
+  tools: string[];
+  url: string;
   mode: string;
   provider: string;
 };
@@ -285,6 +287,7 @@ export type AgentReply = {
   provider: string;
   tool: string;
   evidence: unknown;
+  observations?: { tool: string; arguments: Record<string, unknown>; evidence: unknown }[];
   created_at: string;
 };
 export type Forecast = Source & {

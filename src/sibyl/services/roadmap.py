@@ -94,7 +94,7 @@ AREAS = [
         "name": "Sibyl & messaging",
         "status": "partial",
         "priority": "next",
-        "working": "Registry-discovered collaboration, saved chats, live consultation progress, request-specific Stop and durable completed/stopped/failed/interrupted request history.",
+        "working": "Native ProtoLink automatic discovery/delegation (Sibyl only), saved chats, live consultation progress, request-specific Stop and durable completed/stopped/failed/interrupted request history.",
         "pending": [
             "Token-by-token answers, richer internal tool traces, usage/cost reporting and evaluated routing/grounding.",
             "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
@@ -106,9 +106,9 @@ AREAS = [
         "name": "ProtoLink workflows",
         "status": "partial",
         "priority": "later",
-        "working": "Ten read-only specialists, startup ProtoLink runtime registry/client routing, contextual tools and shared API/local model profiles.",
+        "working": "Ten native specialists with per-agent files/prompts, ProtoLink start/discovery/client tasks, on-demand evidence tools, cached news reads, settings guides and isolated task contexts.",
         "pending": [
-            "Richer narrowly scoped specialist tools and per-agent model/provider selection.",
+            "Deeper domain investigation tools as features expand, and per-agent model/provider selection.",
             "Evaluated tool/source selection, inspected internal traces and collaboration budgets.",
             "Explicit approvals and audit contracts before mutation tools.",
         ],

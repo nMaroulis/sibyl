@@ -8492,3 +8492,10 @@ details[open] > summary {
     margin-left: 40px;
   }
 }
+
+.agent-directory-tool > span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}

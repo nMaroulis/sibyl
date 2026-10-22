@@ -2,7 +2,7 @@
 
 **Sibyl** is your main conversation with the workspace. Open its gradient star in the floating dock. Ask a general question, investigate a market, compare news with indicators, or discuss your portfolio and strategies.
 
-Sibyl uses [ProtoLink](https://github.com/nMaroulis/protolink) to discover the registered specialists and decide which ones to consult. It can answer general questions directly. Questions that need workspace evidence can involve Analyst, Reporter, Accountant, Broker, Chronos, Wiki, Explorer, Technician, Oracle, or Equity Analyst. The choice comes from the model, rather than a keyword router.
+Sibyl uses [ProtoLink](https://github.com/nMaroulis/protolink)’s automatic registry discovery and native agent delegation. The SDK exposes the registered specialists to its model, which decides which ones to consult. It can answer general questions directly. Questions that need workspace evidence can involve Analyst, Reporter, Accountant, Broker, Chronos, Wiki, Explorer, Technician, Oracle, or Equity Analyst. The choice comes from the model, rather than a keyword router.
 
 ## Connect a model first
 
@@ -21,7 +21,7 @@ Try questions such as:
 
 Use an explicit market, exchange, account or strategy when you have one in mind. Sibyl can ask for clarification when the selection is ambiguous. Data still follows your workspace source and account settings. Demo observations, mock responses, and paper strategies remain labeled; Sibyl does not silently activate an account or switch a data source.
 
-When Sibyl consults someone, expand the **consultations** panel under the answer. It shows the actual specialist requests, completed or unavailable status, returned answers, selections, and initial source observations. This is a record of collaboration, not hidden model reasoning or every internal specialist tool call. Provider failures can leave a specialist unavailable; Sibyl should explain the missing evidence.
+When Sibyl consults someone, expand the **consultations** panel under the answer. It shows the actual specialist requests, completed or unavailable status, returned answers, selections, and returned source observations. This is a record of collaboration, not hidden model reasoning or every internal specialist tool call. A failed native specialist execution can end the turn; completed consultation evidence stays available in request history.
 
 The model decides whether to use a specialist. The interface never invents consultation badges for an answer that involved no specialists.
 
@@ -37,7 +37,7 @@ Open **Request history** beside the conversation picker to inspect the latest 20
 
 Choose a chat from **Saved conversations** or use **New chat** for a fresh context. Completed answers and consultation evidence persist locally across application restarts. A conversation displays its latest 100 completed turns; the model receives the latest six. The picker lists the most recent 100 chats. Unsent drafts are not saved across page reloads. Reopening a running conversation shows its pending state and refreshes completed answers automatically.
 
-One turn may run at a time in a conversation. Different chats and direct module questions share a two-request limit. A turn can consult up to four specialists and waits at most 150 seconds including queue time. Sibyl is request-driven; starting the app makes the agents available without running inference or creating background research tasks.
+One turn may run at a time in a conversation. Different chats and direct module questions share a two-request limit. Native ProtoLink run budgets bound delegation, model calls and tool reads. A turn waits at most 150 seconds including queue time. Sibyl is request-driven; starting the app makes the agents available without running inference or creating background research tasks.
 
 If the application restarts before a request finishes, the attempt is marked **Interrupted by restart**. Completed consultation observations survive, but the investigation is not resumed or replayed. Reopening the chat lets you inspect it and choose whether to ask again.
 

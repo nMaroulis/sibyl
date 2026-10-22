@@ -5,19 +5,19 @@ import threading
 from uuid import uuid4
 
 import pytest
+from agent_helpers import coordinator_factory, delegate
 from fastapi.testclient import TestClient
 from protolink import create_llm
 from pydantic import SecretStr
 
 from sibyl.agents.conversations import SibylRequest
-from sibyl.agents.runtime import RuntimeBridge
 from sibyl.api.app import create_app
 
 
 def prepare(client):
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     session = client.post("/api/v1/sibyl/conversations").json()["id"]
-    return client.app.state.services.agents.network, session
+    return (client.app.state.services.agents.network, session)
 
 
 def tool(name, **args):
@@ -26,14 +26,10 @@ def tool(name, **args):
 
 def test_completed_requests_share_answer_commit_and_survive_restart(client, settings, monkeypatch):
     network, session = prepare(client)
-    monkeypatch.setattr(
-        "sibyl.agents.network.create_llm",
+    coordinator_factory(
+        monkeypatch,
         lambda *a, **kw: create_llm(
-            "mock",
-            sequential_responses=[
-                tool("ask_agent", agent_id="wiki", question="Explain RSI"),
-                "A simulated answer.",
-            ],
+            "mock", sequential_responses=[delegate("wiki", "Explain RSI"), "A simulated answer."]
         ),
     )
     request_id = uuid4().hex
@@ -73,7 +69,7 @@ def test_failed_request_is_retained_without_private_adapter_error(client, monkey
     def fail(*args, **kwargs):
         raise RuntimeError("PRIVATE-PROVIDER-SECRET")
 
-    monkeypatch.setattr("sibyl.agents.network.create_llm", fail)
+    coordinator_factory(monkeypatch, fail)
     response = client.post("/api/v1/sibyl/ask", json={"session_id": session, "message": "Hello"})
     assert response.status_code == 502
     history = client.get(f"/api/v1/sibyl/conversations/{session}/requests")
@@ -83,27 +79,26 @@ def test_failed_request_is_retained_without_private_adapter_error(client, monkey
 
 def test_stop_returns_while_provider_is_blocked_and_prevents_late_consultation(client, monkeypatch):
     network, session = prepare(client)
-    started, release, rejected = threading.Event(), threading.Event(), threading.Event()
-    original_call = RuntimeBridge.call
+    started, release, finished = (threading.Event(), threading.Event(), threading.Event())
+    calls, send = ([], network.client.send_task)
 
-    async def bridge_call(self, operation, *args):
-        try:
-            return await original_call(self, operation, *args)
-        except asyncio.CancelledError:
-            rejected.set()
-            raise
+    async def capture(url, task, **kwargs):
+        calls.append(url)
+        return await send(url, task, **kwargs)
 
-    monkeypatch.setattr(RuntimeBridge, "call", bridge_call)
+    monkeypatch.setattr(network.client, "send_task", capture)
 
     def factory(*args, **kwargs):
+
         def answer(history, prompt):
             started.set()
             release.wait(timeout=5)
-            return tool("ask_agent", agent_id="wiki", question="A late consultation must not run")
+            finished.set()
+            return delegate("wiki", "A late consultation must not run")
 
         return create_llm("mock", response_callback=answer)
 
-    monkeypatch.setattr("sibyl.agents.network.create_llm", factory)
+    coordinator_factory(monkeypatch, factory)
     request_id = uuid4().hex
     future = client.portal.start_task_soon(
         network.ask, SibylRequest(session_id=session, request_id=request_id, message="A slow question")
@@ -118,7 +113,7 @@ def test_stop_returns_while_provider_is_blocked_and_prevents_late_consultation(c
         assert stopped.status_code == 202, stopped.text
         result = future.result(timeout=2)
         assert result["status"] == "cancelled"
-        assert not network._active_requests and not network._chat_locks
+        assert not network._active_requests and (not network._chat_locks)
         assert client.get(f"/api/v1/sibyl/conversations/{session}").json()["turns"] == []
         assert (
             client.post(
@@ -128,33 +123,30 @@ def test_stop_returns_while_provider_is_blocked_and_prevents_late_consultation(c
         )
     finally:
         release.set()
-    assert rejected.wait(timeout=2)
+    assert finished.wait(timeout=2)
+    assert calls == [network.cards["sibyl"].url]
     assert client.get("/api/v1/runs?kind=agent").json() == []
     assert client.get(f"/api/v1/sibyl/conversations/{session}/activity").json()["status"] == "cancelled"
 
 
 def test_progress_and_stop_preserve_completed_evidence_and_cancel_active_specialist(client, monkeypatch):
     network, session = prepare(client)
-    started, cancelled = asyncio.Event(), asyncio.Event()
-    original = network.owner._answer
+    started, release = threading.Event(), threading.Event()
+    read = network.owner.services.market.candles
 
-    async def specialist(request, configuration):
-        if request.module != "analyst":
-            return await original(request, configuration)
+    def blocked(*args, **kwargs):
         started.set()
-        try:
-            await asyncio.Event().wait()
-        finally:
-            cancelled.set()
+        release.wait(timeout=4)
+        return read(*args, **kwargs)
 
-    monkeypatch.setattr(network.owner, "_answer", specialist)
-    monkeypatch.setattr(
-        "sibyl.agents.network.create_llm",
+    monkeypatch.setattr(network.owner.services.market, "candles", blocked)
+    coordinator_factory(
+        monkeypatch,
         lambda *a, **kw: create_llm(
             "mock",
             sequential_responses=[
-                tool("ask_agent", agent_id="wiki", question="Explain RSI"),
-                tool("ask_agent", agent_id="analyst", question="Observe ETH", context={"symbol": "ETH/USDT"}),
+                delegate("wiki", "Explain RSI"),
+                delegate("analyst", "Observe ETH", context={"symbol": "ETH/USDT"}),
                 "This answer should not be committed.",
             ],
         ),
@@ -163,7 +155,7 @@ def test_progress_and_stop_preserve_completed_evidence_and_cancel_active_special
     future = client.portal.start_task_soon(
         network.ask, SibylRequest(session_id=session, request_id=request_id, message="Compare observations")
     )
-    client.portal.call(started.wait)
+    assert started.wait(timeout=2)
     progress = client.get(f"/api/v1/sibyl/conversations/{session}/activity").json()
     assert progress["phase"] == "consulting"
     assert [entry["status"] for entry in progress["delegations"]] == ["completed", "running"]
@@ -171,7 +163,7 @@ def test_progress_and_stop_preserve_completed_evidence_and_cancel_active_special
     stop = client.post(f"/api/v1/sibyl/conversations/{session}/cancel", json={"request_id": request_id})
     assert stop.status_code == 202
     assert future.result(timeout=2)["status"] == "cancelled"
-    client.portal.call(cancelled.wait)
+    release.set()
     detail = client.get(f"/api/v1/sibyl/conversations/{session}/requests/{request_id}").json()
     assert detail["status"] == "cancelled"
     assert [entry["status"] for entry in detail["delegations"]] == ["completed", "cancelled"]
@@ -183,7 +175,7 @@ def test_a_stale_cancel_cannot_stop_a_new_request_or_another_conversation(client
     network, session = prepare(client)
     first = client.post("/api/v1/sibyl/ask", json={"session_id": session, "message": "First"}).json()
     other = network.conversations.create()["id"]
-    started, release = asyncio.Event(), asyncio.Event()
+    started, release = (asyncio.Event(), asyncio.Event())
 
     async def waiting(request, configuration):
         started.set()
@@ -217,9 +209,7 @@ def test_a_stale_cancel_cannot_stop_a_new_request_or_another_conversation(client
 
 def test_queued_requests_can_be_stopped_without_a_model_call(client, monkeypatch):
     network, session = prepare(client)
-    monkeypatch.setattr(
-        "sibyl.agents.network.create_llm", lambda *a, **kw: pytest.fail("Queued model was called")
-    )
+    coordinator_factory(monkeypatch, lambda *a, **kw: pytest.fail("Queued model was called"))
     client.portal.call(network.owner._semaphore.acquire)
     client.portal.call(network.owner._semaphore.acquire)
     request_id = uuid4().hex
@@ -254,7 +244,7 @@ def test_restart_interrupts_unfinished_requests_without_replay(client, settings,
             {"name": "Analyst", "status": "running"},
         ],
     )
-    monkeypatch.setattr("sibyl.agents.network.create_llm", lambda *a, **kw: pytest.fail("Unexpected replay"))
+    coordinator_factory(monkeypatch, lambda *a, **kw: pytest.fail("Unexpected replay"))
     with TestClient(create_app(settings)) as restarted:
         detail = restarted.get(f"/api/v1/sibyl/conversations/{session}/requests/{record['id']}").json()
         assert detail["status"] == "interrupted"
@@ -266,17 +256,16 @@ def test_restart_interrupts_unfinished_requests_without_replay(client, settings,
 
 def test_a_committed_answer_wins_over_a_late_stop(client, monkeypatch):
     network, session = prepare(client)
-    committed, release = asyncio.Event(), asyncio.Event()
-    original = network._call
+    committed, release = (asyncio.Event(), asyncio.Event())
+    original = network._answer_sibyl
 
-    async def delayed(module, **arguments):
-        result = await original(module, **arguments)
-        if module == "sibyl":
-            committed.set()
-            await release.wait()
+    async def delayed(request, configuration):
+        result = await original(request, configuration)
+        committed.set()
+        await release.wait()
         return result
 
-    monkeypatch.setattr(network, "_call", delayed)
+    monkeypatch.setattr(network, "_answer_sibyl", delayed)
     request_id = uuid4().hex
     future = client.portal.start_task_soon(
         network.ask, SibylRequest(session_id=session, request_id=request_id, message="An answer wins")

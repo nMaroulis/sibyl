@@ -1,6 +1,6 @@
 # Module agents
 
-Each workspace module has its own embedded [ProtoLink](https://github.com/nMaroulis/protolink) agent. Each specialist has its own role, instructions, and native read-only tool. All gateways start with the app and register with the in-process ProtoLink registry. Module Ask requests reach their specialist directly through a ProtoLink client. [Sibyl](./sibyl.md) is a separate lead agent that can discover and consult these specialists. There is no separate gRPC inference service or mandatory model download.
+Each workspace module has its own embedded [ProtoLink](https://github.com/nMaroulis/protolink) agent. Each specialist has its own role, instructions, and native read-only tools. All agents start with the app and register with the in-process ProtoLink registry. Module Ask requests reach their specialist directly through a ProtoLink client. [Sibyl](./sibyl.md) is a separate lead agent that can discover and consult these specialists. There is no separate gRPC inference service or mandatory model download.
 
 ## Ask without leaving the page
 
@@ -12,7 +12,7 @@ The gradient **Ask** button opens a floating dialog over the current module. Clo
 - **Trading → Broker:** the selected market and execution assumptions.
 - **Forecasting → Chronos:** the selected market and forecast horizon.
 - **News → Reporter:** the feed, or a specific story when opened from its card.
-- **Settings → Technician:** saved connection metadata and configuration, excluding credentials.
+- **Settings → Technician:** practical setup guides, provider-specific connection instructions and saved metadata, excluding credentials.
 - **Research → Wiki / Explorer / Equity Analyst:** the glossary search, Bitcoin blocks, or selected equity ticker.
 
 Drafts and conversations remain available after closing and reopening the dialog during the current browser session. Different modules and page selections use separate sessions. **Recent conversations in this context** restores a saved session; the server retains recent turns for model inference. **New conversation** clears the current draft and starts a fresh session without deleting saved history. Browser reloads clear unsent drafts.
@@ -23,15 +23,15 @@ The **More → Agents** dock entry is a directory of specialists and their nativ
 
 ### Tool mode: works immediately
 
-`SIBYL_LLM_PROVIDER=none` reaches the selected specialist through `AgentClient.peer(...).call_tool("consult", ...)`, then runs its native Python tool through `Agent.sync.call_tool`. The response is a deterministic factual summary of actual tool output. It is labeled **Tool snapshot** and is not a language-model response.
+`SIBYL_LLM_PROVIDER=none` sends a native tool task through `AgentClient` to the selected specialist. The response is a deterministic factual summary of actual tool output. It is labeled **Tool snapshot** and is not a language-model response.
 
 This mode does not interpret an arbitrary question like a model. The question selects glossary matches for Wiki; other specialists return the selected module context snapshot. Page selections supply the market, horizon, strategy parameters, or equity ticker. Without page context, Analyst and Chronos default to BTC/USDT and Equity Analyst defaults to AAPL.
 
 ### Model mode: conversational reasoning
 
-Select and save a model in **Settings → AI models** to let ProtoLink interpret the question, inspect module evidence, and call its read-only tool with supported arguments. Each request gets an isolated Agent instance. Up to six recent turns from the same session and module are supplied explicitly; model state is not shared across unrelated conversations.
+Select and save a model in **Settings → AI models** to let ProtoLink interpret the question, inspect module evidence, and call its read-only tool with supported arguments. The same agent stays available throughout the app lifetime; ProtoLink isolates each task’s model history. Evidence is read only when the agent calls a tool, rather than preloaded into its prompt. Up to six recent turns from the same session and module are supplied explicitly; model state is not shared across unrelated conversations.
 
-Each response shows the provider, the native tool, and its initial evidence. Expand **Inspect evidence** to see the server observations. This view does not claim to be a complete model reasoning trace or full record of every model-selected tool call.
+Each response shows the provider and actual completed tool observations. Expand **Inspect evidence** to see returned data; multiple tool reads can be inspected together. An answer without workspace reads says so. This is evidence, not hidden model reasoning. Reporter can read the existing news archive, article excerpts, publisher health and cached Fear & Greed index. Technician can explain how to connect Binance or configure any Settings tab without reading credentials.
 
 ## Connect a provider
 
@@ -61,6 +61,6 @@ Model-backed requests send the selected module's evidence, your message, and rec
 
 Exchange API keys and secrets are not available to agents. Native agent tools do not place orders, change credentials, start strategies, execute shell commands, or access arbitrary files. News and user text are treated as untrusted input in agent instructions, but factual answers still require your own review.
 
-Two requests may run concurrently. ProtoLink inference has a six-step budget; the HTTP request waits at most 90 seconds for inference. A provider thread already in progress may finish after the HTTP timeout. It has only read-only module tools and cannot execute trades.
+Two requests may run concurrently. ProtoLink inference has an eight-step budget with at most six tool calls; the page request waits at most 95 seconds. A provider thread already in progress may finish after the HTTP timeout. It has only read-only module tools and cannot execute trades.
 
-Requests and responses are stored locally, including questions, answers, and initial tool evidence. **New conversation** resets the active module's session context without deleting saved run history.
+Requests and responses are stored locally, including questions, answers, and completed tool observations. **New conversation** resets the active module's session context without deleting saved run history.

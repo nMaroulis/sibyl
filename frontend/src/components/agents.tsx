@@ -387,13 +387,28 @@ function AgentDialog({
                 </Badge>
               </div>
               <p>{reply.answer}</p>
-              <details className="evidence-details">
-                <summary>
-                  <Braces size={13} />
-                  Inspect {reply.tool} evidence
-                </summary>
-                <pre>{JSON.stringify(reply.evidence, null, 2)}</pre>
-              </details>
+              {reply.mode === 'llm' && reply.observations?.length === 0 ? (
+                <small className="muted">Answered without reading workspace data.</small>
+              ) : (
+                <details className="evidence-details">
+                  <summary>
+                    <Braces size={13} />
+                    Inspect{' '}
+                    {reply.observations && reply.observations.length > 1
+                      ? `${reply.observations.length} tool observations`
+                      : `${reply.tool} evidence`}
+                  </summary>
+                  <pre>
+                    {JSON.stringify(
+                      reply.observations && reply.observations.length > 1
+                        ? reply.observations
+                        : reply.evidence,
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
+              )}
               <small>{new Date(reply.created_at).toLocaleTimeString()} · Saved locally</small>
             </div>
           </div>

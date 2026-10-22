@@ -464,26 +464,24 @@ def test_accountant_transfer_evidence_is_read_only_and_scoped(client, monkeypatc
 
 
 def test_transfer_inference_cannot_change_selection_or_confirm_links(client, monkeypatch):
-    from inspect import signature
-
-    from protolink import Agent, create_llm
+    from protolink import create_llm
 
     registry = client.app.state.services.agents
     registry.settings.llm_provider = "ollama"
-    observed = []
-
-    def compose(module, *, inference=False, configuration=None, tool_override=None):
-        assert module == "accountant" and inference and tool_override
-        assert not signature(tool_override).parameters
-        observed.append(tool_override())
-        return Agent(
-            name="test-transfer-review",
-            llm=create_llm("mock", default_response="The review remains an explicit user action."),
-            tools=[tool_override],
-            verbosity=0,
-        )
-
-    monkeypatch.setattr(registry, "_compose", compose)
+    monkeypatch.setattr(
+        "sibyl.agents.registry.create_llm",
+        lambda *a, **kw: create_llm(
+            "mock",
+            sequential_responses=[
+                {
+                    "type": "tool_call",
+                    "tool": "accountant_snapshot",
+                    "args": {"transfer_view": False, "account_id": "another-account", "example": False},
+                },
+                "The review remains an explicit user action.",
+            ],
+        ),
+    )
     response = client.post(
         "/api/v1/agents/ask",
         json={
@@ -493,5 +491,6 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
         },
     )
     assert response.status_code == 200 and response.json()["mode"] == "llm"
-    assert observed[0]["view"] == "transfers" and observed[0]["example"]
+    assert response.json()["evidence"]["view"] == "transfers" and response.json()["evidence"]["example"]
+    assert set(registry.agents["accountant"].tools) == {"accountant_snapshot"}
     assert client.app.state.services.transfers.report()["total"] == 0

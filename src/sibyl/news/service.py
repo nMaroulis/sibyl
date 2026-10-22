@@ -202,9 +202,11 @@ class NewsService:
         days: int = 7,
         limit: int = 24,
         offset: int = 0,
+        refresh: bool = True,
     ) -> dict:
         """Filter on the backend and aggregate the whole matching set before pagination.
 
+        ``refresh=False`` reads only the retained archive, for read-only agent tools.
         A time window excludes undated articles; ``days=0`` includes all retained
         articles. Keyword search matches every whitespace-separated term literally.
         """
@@ -219,7 +221,7 @@ class NewsService:
             raise ValueError("Choose a supported news asset.")
         if publisher and publisher not in {p.source.id for p in self.providers} | {"demo", "newsapi"}:
             raise ValueError("Choose a supported news publisher.")
-        if resolved == "live":
+        if resolved == "live" and refresh:
             self.refresh()
         now = self._now()
         items = demo_items(now) if resolved == "demo" else self._archive()

@@ -48,7 +48,11 @@ export function Oracle() {
               <p>{agent.description}</p>
               <div className="agent-directory-tool">
                 <Braces size={13} />
-                <code>{agent.tool}</code>
+                <span>
+                  {(agent.tools ?? [agent.tool]).map((tool) => (
+                    <code key={tool}>{tool}</code>
+                  ))}
+                </span>
               </div>
               <AgentButton module={agent.id as ModuleId} />
               <small>

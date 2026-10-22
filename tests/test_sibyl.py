@@ -1,6 +1,7 @@
 """Actual ProtoLink discovery, client tasks, bounded collaboration, and local chat settings."""
 
 import pytest
+from agent_helpers import coordinator_factory, delegate
 from fastapi.testclient import TestClient
 from protolink import create_llm
 from protolink.transport.runtime_transport import RuntimeTransport
@@ -21,9 +22,7 @@ def tool(name, **args):
 
 def script(monkeypatch, actions):
     """Replace only provider I/O; discovery, agents, transports and tools stay real."""
-    monkeypatch.setattr(
-        "sibyl.agents.network.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=actions)
-    )
+    coordinator_factory(monkeypatch, lambda *a, **kw: create_llm("mock", sequential_responses=actions))
 
 
 def test_agents_start_register_and_stop_with_each_app(client, settings):
@@ -34,6 +33,10 @@ def test_agents_start_register_and_stop_with_each_app(client, settings):
     assert len(client.portal.call(network.registry.client.discover, {"tags": "specialist"})) == 10
     assert client.get("/api/v1/system").json()["agents"] == 11
     assert all(item["registered"] for item in client.get("/api/v1/agents").json())
+    assert all(
+        {skill.id for skill in network.cards[key].skills} == set(agent.tools)
+        for key, agent in network.agents.items()
+    )
     with TestClient(create_app(settings)) as other:
         other_network = other.app.state.services.agents.network
         assert other_network.namespace != network.namespace
@@ -43,14 +46,13 @@ def test_agents_start_register_and_stop_with_each_app(client, settings):
 
 
 def test_sibyl_requires_model_without_creating_chat_or_calling_provider(client, monkeypatch):
-    monkeypatch.setattr("sibyl.agents.network.create_llm", lambda *a, **kw: pytest.fail("provider called"))
+    coordinator_factory(monkeypatch, lambda *a, **kw: pytest.fail("provider called"))
     state = client.get("/api/v1/sibyl").json()
-    assert not state["ready"] and state["network_ready"] and "model" in state["reason"]
+    assert not state["ready"] and state["network_ready"] and ("model" in state["reason"])
     assert state["settings_url"] == "/settings?tab=models"
     response = client.post("/api/v1/sibyl/ask", json={"message": "Hello"})
     assert response.status_code == 409
     assert client.get("/api/v1/sibyl/conversations").json() == []
-    # Module factual snapshots continue to work without a model.
     assert (
         client.post("/api/v1/agents/ask", json={"module": "wiki", "message": "RSI"}).json()["mode"] == "tools"
     )
@@ -68,7 +70,7 @@ def test_missing_key_and_dependency_are_setup_states(client, monkeypatch):
 
 def test_direct_ask_uses_agent_client_without_routing_through_sibyl(client, monkeypatch):
     network = client.app.state.services.agents.network
-    calls, send = [], network.client.send_task
+    calls, send = ([], network.client.send_task)
 
     async def capture(url, task, **kwargs):
         calls.append(url)
@@ -93,24 +95,15 @@ def test_sibyl_discovers_and_consults_multiple_agents_over_real_clients(client, 
     script(
         monkeypatch,
         [
-            tool("discover_agents"),
-            tool(
-                "ask_agent",
-                agent_id="analyst",
-                question="Explain ETH indicators",
-                context={"symbol": "ETH/USDT", "market_source": "demo"},
+            delegate(
+                "analyst", "Explain ETH indicators", context={"symbol": "ETH/USDT", "market_source": "demo"}
             ),
-            tool(
-                "ask_agent",
-                agent_id="broker",
-                question="Explain paper strategies",
-                context={"symbol": "ETH/USDT"},
-            ),
+            delegate("broker", "Explain paper strategies", context={"symbol": "ETH/USDT"}),
             "I consulted Analyst and Broker. These observations use demo data and paper strategies.",
         ],
     )
     network = client.app.state.services.agents.network
-    calls, send = [], network.client.send_task
+    calls, send = ([], network.client.send_task)
 
     async def capture(url, task, **kwargs):
         calls.append(url)
@@ -123,7 +116,7 @@ def test_sibyl_discovers_and_consults_multiple_agents_over_real_clients(client, 
     assert [item["agent_id"] for item in result["delegations"]] == ["analyst", "broker"]
     assert all(item["status"] == "completed" for item in result["delegations"])
     assert result["delegations"][0]["evidence"]["symbol"] == "ETH/USDT"
-    assert calls == [network.cards[key].url for key in ("sibyl", "analyst", "broker")]
+    assert calls == [network.cards["sibyl"].url]
     assert result["mode"] == "mock" and result["provider"] == "mock"
     assert client.get("/api/v1/strategies/jobs").json() == []
     assert client.get("/api/v1/orders").json() == []
@@ -140,47 +133,46 @@ def test_generic_question_can_be_answered_without_forced_delegation(client):
     assert "simulated" in response.json()["answer"]
 
 
-def test_unknown_recursive_and_external_targets_cannot_be_contacted(client, monkeypatch):
+@pytest.mark.parametrize("target", ["sibyl-sibyl", "unknown", "https://example.com"])
+def test_native_validation_rejects_cycles_unknown_agents_and_urls(client, monkeypatch, target):
+    model(client)
+    script(monkeypatch, [delegate(target, "Read data"), "That target is unavailable."])
+    result = client.post("/api/v1/sibyl/ask", json={"message": "Check target"})
+    assert result.status_code == 200, result.text
+    assert result.json()["delegations"] == []
+    assert client.get("/api/v1/runs?kind=agent").json() == []
+
+
+def test_native_shared_budget_bounds_delegation(client, monkeypatch):
+    model(client)
+    script(monkeypatch, [delegate("wiki", f"Explain RSI, part {i}") for i in range(12)] + ["Done"])
+    response = client.post("/api/v1/sibyl/ask", json={"message": "Bound this investigation"})
+    assert response.status_code == 502
+    saved = client.get("/api/v1/runs?kind=agent").json()
+    assert 0 < len(saved) < 12
+    session = client.get("/api/v1/sibyl/conversations").json()[0]["id"]
+    assert client.get(f"/api/v1/sibyl/conversations/{session}/activity").json()["status"] == "failed"
+
+
+def test_native_delegated_tool_arguments_are_validated_before_dispatch(client, monkeypatch):
     model(client)
     script(
         monkeypatch,
         [
-            tool("ask_agent", agent_id=target, question="Read data")
-            for target in ("sibyl", "unknown", "https://example.com")
-        ]
-        + ["Those agents are unavailable."],
-    )
-    response = client.post("/api/v1/sibyl/ask", json={"message": "Check unavailable agents"})
-    assert response.status_code == 200, response.text
-    assert response.json()["delegations"] == []
-    assert client.get("/api/v1/runs?kind=agent").json() == []
-
-
-def test_consultation_budget_is_enforced(client, monkeypatch):
-    model(client)
-    script(
-        monkeypatch,
-        [tool("ask_agent", agent_id="wiki", question=f"Explain RSI, part {index}") for index in range(5)]
-        + ["Done."],
-    )
-    response = client.post("/api/v1/sibyl/ask", json={"message": "Check RSI"})
-    assert response.status_code == 200, response.text
-    assert len(response.json()["delegations"]) == 4
-    assert len(client.get("/api/v1/runs?kind=agent").json()) == 4
-
-
-@pytest.mark.parametrize("context", [{"symbol": "ETH"}, {"api_key": "PRIVATE-SENTINEL"}])
-def test_delegated_context_is_validated_and_not_reflected(client, monkeypatch, context):
-    model(client)
-    script(
-        monkeypatch,
-        [tool("ask_agent", agent_id="analyst", question="Read prices", context=context), "Missing evidence."],
+            {
+                "type": "agent_call",
+                "agent": "sibyl-analyst",
+                "action": "tool_call",
+                "tool": "market_analysis",
+                "args": {"api_key": "PRIVATE-SENTINEL"},
+            },
+            "The tool arguments were invalid.",
+        ],
     )
     response = client.post("/api/v1/sibyl/ask", json={"message": "Explain prices"})
     assert response.status_code == 200, response.text
-    assert response.json()["delegations"][0]["status"] == "unavailable"
+    assert response.json()["delegations"] == []
     assert "SENTINEL" not in response.text
-    assert client.get("/api/v1/runs?kind=agent").json() == []
 
 
 def test_provider_failures_do_not_expose_credentials(client, monkeypatch):
@@ -189,7 +181,7 @@ def test_provider_failures_do_not_expose_credentials(client, monkeypatch):
     def fail(*args, **kwargs):
         raise RuntimeError("PRIVATE-TOKEN-SENTINEL")
 
-    monkeypatch.setattr("sibyl.agents.network.create_llm", fail)
+    coordinator_factory(monkeypatch, fail)
     response = client.post("/api/v1/sibyl/ask", json={"message": "Hello"})
     assert response.status_code == 502
     assert "SENTINEL" not in response.text
@@ -201,13 +193,14 @@ def test_conversations_are_durable_separate_and_deletable(client, settings, monk
     seen = []
 
     def factory(*a, **kw):
+
         def capture(history, system):
             seen.append(str(history.messages))
             return "A saved reply."
 
         return create_llm("mock", response_callback=capture)
 
-    monkeypatch.setattr("sibyl.agents.network.create_llm", factory)
+    coordinator_factory(monkeypatch, factory)
     first = client.post("/api/v1/sibyl/ask", json={"message": "unique-first-question"}).json()
     again = client.post("/api/v1/sibyl/ask", json={"message": "follow-up", "session_id": first["session_id"]})
     assert again.status_code == 200
@@ -226,11 +219,9 @@ def test_snapshot_shared_by_sibyl_and_delegates_when_model_selection_changes(cli
 
     def factory(*args, **kwargs):
         client.app.state.services.agents.models.save(ModelSettingsRequest(provider="none"))
-        return create_llm(
-            "mock", sequential_responses=[tool("ask_agent", agent_id="wiki", question="RSI"), "Done"]
-        )
+        return create_llm("mock", sequential_responses=[delegate("wiki", "RSI"), "Done"])
 
-    monkeypatch.setattr("sibyl.agents.network.create_llm", factory)
+    coordinator_factory(monkeypatch, factory)
     response = client.post("/api/v1/sibyl/ask", json={"message": "Explain RSI"})
     assert response.status_code == 200, response.text
     assert response.json()["provider"] == "mock"
@@ -335,7 +326,7 @@ def test_concurrent_turns_and_deletion_are_rejected_while_chat_is_running(client
     model(client)
     network = client.app.state.services.agents.network
     session = network.conversations.create()["id"]
-    started, release = asyncio.Event(), asyncio.Event()
+    started, release = (asyncio.Event(), asyncio.Event())
 
     async def waiting(request, configuration):
         started.set()
@@ -357,44 +348,37 @@ def test_concurrent_turns_and_deletion_are_rejected_while_chat_is_running(client
     assert client.delete(f"/api/v1/sibyl/conversations/{session}").status_code == 204
 
 
-def test_failed_specialist_is_reported_and_does_not_prevent_other_consultations(client, monkeypatch):
+def test_native_failed_specialist_retains_prior_completed_consultations(client, monkeypatch):
     model(client)
     owner = client.app.state.services.agents
-    original = owner._answer
-
-    async def answer(request, configuration):
-        if request.module == "analyst":
-            raise RuntimeError("PRIVATE-ERROR-SENTINEL")
-        return await original(request, configuration)
-
-    monkeypatch.setattr(owner, "_answer", answer)
+    monkeypatch.setattr(
+        owner.services.market,
+        "candles",
+        lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("PRIVATE-ERROR-SENTINEL")),
+    )
     script(
-        monkeypatch,
-        [
-            tool("ask_agent", agent_id="analyst", question="Prices"),
-            tool("ask_agent", agent_id="wiki", question="Explain risk"),
-            "Market data unavailable; Wiki helped explain risk.",
-        ],
+        monkeypatch, [delegate("wiki", "Explain risk"), delegate("analyst", "Prices"), "Must not be saved"]
     )
     response = client.post("/api/v1/sibyl/ask", json={"message": "Help with risk"})
-    assert response.status_code == 200, response.text
-    assert [item["status"] for item in response.json()["delegations"]] == ["unavailable", "completed"]
-    assert "SENTINEL" not in response.text
+    assert response.status_code == 502 and "SENTINEL" not in response.text
+    session = client.get("/api/v1/sibyl/conversations").json()[0]["id"]
+    latest = client.get(f"/api/v1/sibyl/conversations/{session}/requests").json()[0]
+    detail = client.get(f"/api/v1/sibyl/conversations/{session}/requests/{latest['id']}").json()
+    assert [row["status"] for row in detail["delegations"]] == ["completed", "unavailable"]
+    assert detail["delegations"][0]["evidence"]
+    assert "SENTINEL" not in str(detail)
 
 
-def test_native_agent_call_cannot_bypass_bounded_consultation_tools(client, monkeypatch):
+def test_native_agent_call_is_sibyls_only_delegation_path(client, monkeypatch):
     model(client)
-    script(
-        monkeypatch,
-        [
-            {"type": "agent_call", "agent": "sibyl-wiki", "action": "infer", "prompt": "RSI"},
-            "Use the consultation tools instead.",
-        ],
-    )
+    network = client.app.state.services.agents.network
+    assert network.agents["sibyl"].tools == {}
+    assert network.cards["sibyl"].capabilities.delegation
+    assert all(not network.cards[key].capabilities.delegation for key in ROLES)
+    script(monkeypatch, [delegate("wiki", "RSI"), "Wiki explained RSI."])
     response = client.post("/api/v1/sibyl/ask", json={"message": "Explain RSI"})
-    # Runtime capability enforcement blocks the alternate delegation path.
     assert response.status_code == 200, response.text
-    assert client.get("/api/v1/runs?kind=agent").json() == []
+    assert response.json()["delegations"][0]["agent_id"] == "wiki"
 
 
 def test_blocking_model_does_not_block_health_or_other_api_requests(client, monkeypatch):
@@ -404,9 +388,10 @@ def test_blocking_model_does_not_block_health_or_other_api_requests(client, monk
     from sibyl.agents.conversations import SibylRequest
 
     model(client)
-    started, release = threading.Event(), threading.Event()
+    started, release = (threading.Event(), threading.Event())
 
     def factory(*args, **kwargs):
+
         def response(history, system):
             started.set()
             release.wait(timeout=3)
@@ -414,7 +399,7 @@ def test_blocking_model_does_not_block_health_or_other_api_requests(client, monk
 
         return create_llm("mock", response_callback=response)
 
-    monkeypatch.setattr("sibyl.agents.network.create_llm", factory)
+    coordinator_factory(monkeypatch, factory)
     future = client.portal.start_task_soon(
         client.app.state.services.agents.network.ask, SibylRequest(message="Test a slow model")
     )

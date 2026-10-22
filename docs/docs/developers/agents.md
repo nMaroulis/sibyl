@@ -1,77 +1,193 @@
-# ProtoLink integration
+# ProtoLink agents
 
-The engine dependency is `protolink>=0.8.2,<0.9`. Sibyl uses public ProtoLink `Agent`, `AgentCard`, `AgentClient`, `Registry`, `RegistryServer`, `AgentServer`, `RuntimeTransport` and `RunBudget` interfaces. Provider construction uses `create_llm`. There is no parallel agent framework.
+Each specialist lives in its own file under `src/sibyl/agents/`. The file defines its prompt, typed tools and an ordinary ProtoLink `Agent`. Business logic stays in the existing domain services; tools call those services when the model needs evidence.
 
-## Lifecycle and discovery
+The dependency is `protolink>=0.8.2,<0.9`. In this version, local in-process transport is named **`runtime`**, and the discovery entry point is **`protolink.discovery.Registry`**.
 
-FastAPI's lifespan constructs `AgentRegistry`, starts `AgentNetwork`, then starts the domain workers. The network starts a real ProtoLink registry server and eleven agent servers on **in-process runtime transports**: ten specialists and Sibyl. Each card is registered through the native registry client. Startup does not construct a hosted model, contact its provider, or start autonomous inference.
+## Files and responsibilities
 
-Application-unique `runtime://sibyl-<uuid>/...` namespaces isolate simultaneous app instances and tests. No additional TCP ports, unauthenticated agent listeners or public registry routes are opened. Existing workspace access controls protect the browser-facing API.
+| File | Owns |
+| --- | --- |
+| `oracle.py` | Portfolio perspective and `portfolio_snapshot` |
+| `accountant.py` | Holdings and selected local performance, funding and transfer reports |
+| `analyst.py` | Market indicators and analysis-method help |
+| `broker.py` | Selected paper jobs/backtests and strategy rules |
+| `chronos.py` | Forecast observations and baseline-method explanation |
+| `reporter.py` | Cached news, selected articles, publisher attribution and cached Fear & Greed |
+| `technician.py` | Connection metadata, settings guides and provider-specific setup instructions |
+| `wiki.py` | Glossary, supported crypto IDs and sourced crypto profiles |
+| `explorer.py` | Recent Bitcoin blocks and blockchain help |
+| `stocks.py` | Equity quote/history and provider setup help |
+| `sibyl.py` | Native coordinator declaration and prompt; delegation enabled |
+| `telemetry.py` | Observe native task lifecycle for existing chat progress and saved evidence |
+| `common.py` | Service references, shared read-only instructions and request-local selections/observations |
+| `runtime.py` | Small request-scoped provider adapter; no agent orchestration |
+| `network.py` | Native startup/shutdown, client task submission and chat lifecycle |
+| `registry.py` | Module wiring, model configuration and HTTP response persistence |
+| `snapshots.py` | Deterministic tool selection/formatting when no model is configured |
+| `conversations.py`, `requests.py` | Durable chats and request outcome audit |
 
-Shutdown unregisters the cards and stops each agent server, registry server and client transport. `GET /sibyl` reports network readiness separately from model configuration readiness. `GET /agents` remains the ten-specialist catalog and includes runtime registration status; `/system` reports eleven agents including Sibyl.
+There is no `consult` gateway agent and no per-request Agent construction. The registered agents are the reasoning agents.
 
-## Persistent gateways, isolated reasoning
+## A module declaration
 
-Each persistent ProtoLink gateway exposes a typed asynchronous `consult(message, session_id, context, request_id)` tool. Only Sibyl uses the request ID for progress tracking. Its closure fixes the receiving module; a user cannot change a tool argument to impersonate another agent. Native `AgentClient.peer(card).call_tool("consult", ...)` creates serialized ProtoLink tasks and executes the receiving agent's validation and tool runtime.
+The pattern used by the modules is deliberately small:
 
-A request then composes a fresh reasoning Agent with that role's prompt, native tools and an immutable model/provider/key snapshot. This separation keeps the gateway available throughout the application lifetime without sharing an LLM's conversation state between users' chats or page selections. Saving model settings applies to the next request without restarting the registry. A Sibyl turn and all of its consultations use the same model snapshot even if settings change midway through the request.
+```python
+from protolink import Agent
+from sibyl.agents.common import COMMON_PROMPT, Services, background_tool, selected
 
-## Module tools
+SYSTEM_PROMPT = (
+    "Explain the requested news using news_briefing. Cite returned publishers and dates. "
+    "Read only the retained archive; never invent full article text."
+)
 
-| Agent          | Initial domain tool   |
-| -------------- | --------------------- |
-| Oracle         | `portfolio_snapshot`  |
-| Accountant     | `accountant_snapshot` |
-| Analyst        | `market_analysis`     |
-| Broker         | `strategy_context`    |
-| Chronos        | `price_forecast`      |
-| Reporter       | `news_briefing`       |
-| Technician     | `connection_status`   |
-| Wiki           | `search_knowledge`    |
-| Explorer       | `bitcoin_blocks`      |
-| Equity Analyst | `equity_quote`        |
 
-Functions have typed arguments and docstrings; ProtoLink derives schemas and validates calls. Domain tools call the same services as the HTTP API. Broker only reads strategy state, never starts a job or places an order.
+def create_agent(services: Services, **runtime) -> Agent:
+    def news_briefing(asset: str | None = None) -> dict:
+        """Read already-fetched news mentioning an asset; do not refresh publishers."""
+        return services.research.news(
+            asset=selected("news_asset", asset, ""), refresh=False, limit=8
+        )
 
-Direct module requests validate `AgentRequest` and `AgentContext`, acquire a shared two-request semaphore, and call that module through the agent client. The receiver maps page selections to initial native tool arguments, executes blocking reads in a worker thread, and either formats a factual snapshot or runs isolated model inference. Model inference uses six steps/calls/tool calls and an 80-second runtime budget, with a 90-second inference wait and 95-second outer client deadline.
+    return Agent(
+        name="sibyl-reporter",
+        description="Explain sourced crypto reporting.",
+        tools=[background_tool(news_briefing)],
+        system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
+        **runtime,
+    )
+```
 
-Selected Accountant report views retain their fixed-evidence override: the inference agent cannot switch an offline funding/performance/transfer selection into private balance reads. Prior turns match session, module and exact context.
+The actual Reporter has four tools. Python annotations and docstrings become ProtoLink tool schemas. `background_tool` preserves that signature, moves blocking service reads off the API event loop, and records completed results for evidence inspection. It does not choose or dispatch tools. Sibyl has no custom consultation tools; delegation is a native SDK action.
 
-## Sibyl's collaboration tools
+`selected()` uses an explicit tool argument first, then the validated page selection, then the documented default. Omitted arguments can therefore inspect the current ETH chart without silently switching to BTC. If the user asks about another asset, the agent can supply a different symbol. Accountant's selected offline report is deliberately fixed: tool arguments cannot switch it into private balance reads or change its account/example filters.
 
-`AgentNetwork._answer_sibyl` creates a reasoning Agent with two tools:
+## Startup and local URLs
 
-- `discover_agents()` queries `RegistryClient.discover` for current specialist cards and returns their roles and supported context field names.
-- `ask_agent(agent_id, question, context)` queries the registry again, accepts only an application-owned registered specialist card, validates context using `AgentContext`, then calls that card through `AgentClient`.
+FastAPI starts one native discovery registry and eleven native agents before accepting API traffic:
 
-The LLM chooses its own collaborators; there is no keyword routing or fixed sequence. Sibyl can also answer without delegation. Self-delegation, unknown IDs, external URLs and foreign registry cards cannot be dispatched. Its reasoning card disables native unrestricted delegation so model-generated `agent_call` actions cannot bypass the bounded consultation tool.
+```python
+from protolink.discovery import Registry
 
-Each turn permits four consultation attempts, ten model/tool calls, twelve steps and 140 seconds of ProtoLink runtime. A specialist consultation waits at most 45 seconds; the complete client request waits at most 150 seconds including shared-semaphore queue time. Failed consultations return sanitized unavailable observations and the model can continue with other specialists. Like existing module inference, a blocking provider thread can finish after its wait expires; it only has read-only tools.
+registry = Registry(transport="runtime", url="runtime://workspace/registry")
+registry.start(background=True)
+agent = Agent(
+    name="reporter", url="runtime://workspace/reporter",
+    transport="runtime", registry=registry,
+    llm=llm, tools=[news_briefing], system_prompt=SYSTEM_PROMPT,
+)
+agent.start(background=True)
+```
 
-Blocking model/provider calls run in worker threads. `RuntimeBridge` sends consultation tools back to the application event loop so clients and transport limits stay on their owning loop; cancellation closes the bridge and cancels outstanding consultations. Provider threads may finish, but cannot start late consultations after the request closes.
+The application performs these blocking lifecycle calls in worker threads. ProtoLink's `.start()` owns its server and registration; the app does not construct `AgentServer` or `RegistryServer` manually. Startup checks that every expected URL is discoverable. Shutdown calls each `.stop()`, stops the registry and releases the client transport.
 
-Only outer user requests acquire the shared semaphore. Delegated consultations use the existing slot, preventing orchestration deadlocks when two Sibyl chats run concurrently. Per-chat locks reject simultaneous turns and deletion while a request is pending.
+Actual URLs use an application-unique `runtime://sibyl-<uuid>/...` namespace. Simultaneous app instances do not share agents, and no extra TCP ports are exposed. Registry cards carry specialist/coordinator tags. `GET /agents` includes the native URL, complete tool list and registration state. `GET /sibyl` separates network readiness from model setup; `/system` reports eleven agents.
 
-The persisted delegation trail contains actual requests, validated selections, initial observations, responses and completion/unavailable status. It excludes private reasoning and does not claim to capture every internal specialist tool call.
+Startup registers agents without constructing a hosted model, contacting a model provider or running autonomous inference.
 
-## Persistence and API
+## Requests use AgentClient
 
-`agents/conversations.py` owns `sibyl_conversations` and `sibyl_turns` SQLite tables. Completed answers and delegation evidence are committed together with the conversation's title/update. Conversation reads also expose transient pending state, allowing the page to recover a running chat after navigation. The UI reads the latest 100 turns; model context includes the latest six. Conversation lists are capped at 100. Specialist runs keep their existing separate rolling run history. Deleting a Sibyl chat does not delete those module runs.
+The browser-facing API sends native tasks to the selected agent URL:
 
-`agents/requests.py` owns the durable `sibyl_requests` audit. Requests transition from `queued` to `running`, optionally `cancelling`, then `completed`, `cancelled`, `failed` or `interrupted`. A partial unique index permits only one active request per chat; client-supplied duplicate IDs cannot create a second inference. Answer persistence and request completion share a SQLite transaction, so Stop cannot erase a committed answer. Late progress writes cannot change terminal outcomes. Startup marks unfinished rows interrupted and retains completed consultations without replaying inference.
+```python
+from protolink import Task, RunBudget
+from protolink.client import AgentClient
 
-`GET /sibyl/conversations/{id}/activity` returns the latest request stage and consultation summaries, excluding answer/evidence payloads. The UI polls this once a second only while following work, then reloads completed turns; it does not repeatedly transfer full chat evidence. `GET .../requests` returns the latest 20 summaries and `GET .../requests/{request_id}` loads full observations on demand. This records actual lifecycle events, not private reasoning, token streaming or all internal tool calls.
+client = AgentClient("runtime", url="runtime://workspace/client")
+task = Task.create_infer(
+    "Explain the latest news",
+    budget=RunBudget(max_steps=8, max_llm_calls=8, max_tool_calls=6),
+)
+result = await client.send_task(agent.card.url, task)
+result.raise_for_status()
+answer = result.get_last_part_content()
+```
 
-`POST .../cancel` requires the exact request ID. It cancels queued or running child work, closes the runtime bridge and retains completed observations. Stale IDs cannot cancel later turns; completed requests return 409, unknown/foreign IDs return 404, and already cancelled requests are idempotent. The original Ask returns a `cancelled` result without a fabricated saved turn. A provider call already in flight may finish or incur charges, but it cannot start new consultations or commit a late answer. This is cooperative cancellation, not provider-side billing cancellation or resumable scheduling.
+Production paths use `Task.create_infer` / `Task.create_tool_call` and `AgentClient.send_task`, not direct `Agent.invoke`. A page's Ask button addresses its specialist directly. It does not route through Sibyl.
 
-`SibylRequest` accepts a nonblank message of at most 4,000 characters and optional 32-character hexadecimal session/request IDs. Unknown fields are rejected. Missing model setup returns 409 before a chat or provider request is created; unknown session IDs return 404. Provider failures return a generic 502 without reflecting adapter exceptions or credentials. Conversation and request access use the same local workspace token as all versioned routes. Deleting a chat also removes its retained request audit.
+Model requests include the question, validated selection defaults and up to six matching saved turns. **No initial domain snapshot is fetched or embedded.** The agent decides whether and which tools to call. A conceptual question can be answered without reading balances or news. Responses retain actual tool names, arguments and returned observations; an answer without tool reads is identified in the dialog.
 
-`MessagingSettings` is a read-only catalog of provider-specific setup fields. WhatsApp, Telegram, Discord, Slack, Signal and Email always report `unavailable` and `connected: false`. The disabled UI accepts no credentials; there are no save/draft endpoints. No channel adapter, token handling, webhook, background receiver, or message-sending tool exists yet.
+With no model configured, module dialogs submit a single native tool task and format its result as a **Tool snapshot**. This factual mode does not interpret arbitrary questions. `snapshots.py` maps validated selections to the appropriate tool arguments and formats existing domain results. Sibyl itself requires a configured model.
 
-## Extending and testing
+## Models and concurrent requests
 
-Add a module ID, a `ROLES` entry, a typed read-only function and its `_tools` mapping. The network creates its gateway/card automatically at startup; discovery and the directory then expose it. Add frontend module names, suggestions and an `AgentButton` with typed page context. New mutation tools require a separate explicit execution/approval design.
+`WorkspaceLLM` uses ProtoLink's standard portable JSON action loop with the selected ProtoLink provider's text-generation interface. It delegates action parsing, schema validation, tool dispatch, task-local history and budgets to ProtoLink. It does not implement another reasoning loop. Provider-native function-call envelopes and token streaming are not used on this path.
 
-`tests/test_sibyl.py` uses the installed ProtoLink runtime, registry, clients, servers and tools. Only provider I/O is replaced by scripted Mock LLM responses. Tests exercise multi-specialist collaboration, startup/shutdown isolation, model gating, shared configuration snapshots, bounded dispatch, unavailable evidence, durable chat separation, and unavailable channel requirements and rejected writes. Existing module API tests still execute all ten specialists through native tool tasks.
+Each turn lazily constructs its provider adapters from one frozen settings snapshot. Each participating agent has its own adapter; child tasks keep native SDK history isolation. The registered Agent remains the same. The adapters stay in private request-local context; credentials are never copied into native task payloads, model messages or tool outputs. Saving a model applies to later turns without restarting agents. Sibyl and its consultations share the same configuration snapshot even if settings change midway.
 
-`tests/test_sibyl_requests.py` adds real-runtime progress, partial-evidence retention, cancellation while queued/consulting/in a provider call, blocked late dispatch, stale Stop races, atomic completion, sanitized failures, restart interruption and workspace access-control checks.
+ProtoLink supplies task-local LLM history. A `ContextVar` holds the current page selection, per-agent provider adapters and completed observations, so simultaneous requests to the same agent do not share selections or chat state. Blocking provider I/O runs in a worker; transports and async tools remain on the API loop. There is no custom cross-loop runtime bridge.
+
+Only outer user requests acquire the shared two-request semaphore. Native delegated child tasks do not acquire another application slot. Specialist tasks allow eight model steps/calls, six tool calls and 80 seconds of runtime; the outer page request waits at most 95 seconds.
+
+## Domain tools
+
+| Agent | Native tools |
+| --- | --- |
+| Oracle | `portfolio_snapshot` |
+| Accountant | `accountant_snapshot` |
+| Analyst | `market_analysis`, `analysis_help` |
+| Broker | `strategy_context`, `strategy_guide` |
+| Chronos | `price_forecast`, `forecast_method` |
+| Reporter | `news_briefing`, `read_article`, `news_sources`, `fear_and_greed` |
+| Technician | `connection_status`, `settings_guide`, `exchange_setup` |
+| Wiki | `search_knowledge`, `crypto_catalog` |
+| Explorer | `bitcoin_blocks`, `blockchain_help` |
+| Equity Analyst | `equity_quote`, `equity_help` |
+| Sibyl | No custom tools; ProtoLink supplies discovered agents and native `agent_call` |
+
+Reporter uses the same archive/filter service as News with `refresh=False`. Publisher collection stays with the News page/background worker. An empty live archive remains empty live evidence; it never silently becomes demo reporting. Article tools return retained publisher excerpts, not an invented full article. Fear & Greed reads its attributed cache without refreshing the external provider.
+
+Technician's help covers every Settings tab. `exchange_setup("binance")` returns required fields, the app's connection steps, activation behavior and the Settings URL. Exchange-specific fields come from the same catalog as connection forms, including passphrases, API memos and test environments. Help never reads exchange credentials or claims a connection was checked.
+
+All tools remain read-only. There are no agent tools for order execution, job control, credentials, arbitrary files, shell commands or messaging.
+
+## Native discovery and delegation
+
+Sibyl's declaration passes the native registry to `Agent` and enables delegation:
+
+```python
+agent = Agent(
+    name="sibyl-sibyl",
+    registry=registry,
+    transport="runtime",
+    url="runtime://workspace/sibyl",
+    llm=llm,
+    system_prompt=SYSTEM_PROMPT,
+)
+agent.card.capabilities.delegation = True
+```
+
+There is no discovery or consultation tool. Before inference, ProtoLink automatically discovers registry cards, includes advertised agents/tools in the model context, and provides its native `agent_call` action. The model can request specialist inference or an advertised specialist tool. ProtoLink resolves the target through the registry, validates the action and tool arguments, creates a correlated child task, sends it through the agent's client, and returns the observation to Sibyl.
+
+All ten specialist declarations explicitly set `agent.card.capabilities.delegation = False`. They receive only their own tools, do not discover peers during inference, and cannot delegate to another specialist or back to Sibyl. SDK validation rejects unavailable agents, direct URLs and cycles. Registering a new agent with this app's private registry makes it automatically visible to Sibyl without editing a routing table or discovery tool.
+
+Delegated inference carries the question and exact market/account/source details in its prompt. The specialist chooses explicit typed tool arguments from that question; there is no application-specific `ask_agent(context=...)` protocol. A direct delegated tool call is checked against its advertised schema by ProtoLink. Browser module questions still use validated `AgentContext` for their page defaults.
+
+`RunBudget` governs the native run and propagated child budgets: Sibyl has twelve steps, ten model calls, ten tool calls and 140 seconds of runtime. The complete browser request waits at most 150 seconds including queue time. There is no separate application consultation loop, four-call limit, specialist dispatch timeout or custom cancellation bridge. An execution failure can end the native parent task; prior completed observations remain in the failed-request audit.
+
+`ChatTelemetry` observes native task lifecycle hooks and delegation events to project actual child tasks into the existing consultation panel and saved run history. It never discovers, selects or dispatches agents, intercepts model actions, or mutates task execution. The saved trail includes native task IDs, actual questions/tool calls, timestamps, returned answers and evidence. It excludes private reasoning. Cancellation propagation, child task relationships and dispatch belong to ProtoLink.
+
+## Chats, progress and Stop
+
+`conversations.py` owns completed chat turns; `requests.py` owns queued/running/completed/cancelled/failed/interrupted attempts. A chat permits one active turn. Saving an answer and marking its request completed share one SQLite transaction. Stop cannot erase an already committed answer.
+
+`GET /sibyl/conversations/{id}/activity` returns lightweight lifecycle progress. `GET .../requests` returns the latest 20 summaries; `GET .../requests/{request_id}` loads retained evidence on demand. Stop requires the exact request ID; stale IDs cannot cancel later turns. Chat deletion is blocked while work is pending and removes that chat's request audit afterward.
+
+Cancelling a client wait propagates to the native task and active specialist work. Completed consultation evidence is retained; cancelled worker results cannot become late observations or saved answers. A provider/network read already in a worker can finish and may incur provider charges. Startup marks unfinished requests interrupted without replaying them. These records are an audit, not resumable scheduling.
+
+Messaging settings remain unavailable previews for WhatsApp, Telegram, Discord, Slack, Signal and Email. No clients, credentials, receivers or delivery are implemented.
+
+## Keeping agents current
+
+When adding or changing a module feature:
+
+1. Update the corresponding agent file's prompt and tool docstrings. Describe supported behavior and actual limits.
+2. Add a narrowly scoped typed tool that calls the existing service. Keep credentials and mutation methods out of its return value.
+3. Add it to that file's `Agent(tools=[...])`. Discovery and the directory expose the current roster automatically.
+4. Pass any new page selection through `AgentContext` and the module's Ask button. For factual mode, update `snapshots.py` when needed.
+5. Update this tool table/user guide and test the path through real `AgentClient` tasks with a scripted ProtoLink Mock provider. Assert that facts are read on demand and unavailable sources stay explicit.
+
+For a new dashboard module, add its declaration to `registry.MODULES` and its module ID/frontend entry. The network starts and registers it automatically. Independently registered agents are also visible to Sibyl through native discovery. New mutation tools need a separate explicit approval/action design.
+
+`test_native_agents.py` covers on-demand news reads, no eager portfolio reads, practical setup guides, native guide tools, fixed offline accounting selections, same-agent concurrent history/selection isolation and cancellation during a real specialist tool. Existing chat/request tests cover startup/shutdown, native clients, model snapshots, propagated SDK budgets, persistence and Stop races. Additional tests register a new agent without changing Sibyl and verify that specialists never attempt discovery/delegation. Tests replace provider I/O, not ProtoLink's runtime.

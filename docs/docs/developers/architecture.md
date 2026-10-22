@@ -39,11 +39,12 @@ FastAPI routes + validated request models
 | `agents/providers.py`          | ProtoLink provider capabilities, model presets, dependency metadata                               |
 | `services/llm_settings.py`     | Encrypted provider profiles, active selection, request-scoped adapter configuration               |
 | `news/`                        | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
-| `agents/registry.py`           | Roles, native tools, optional model composition, request limits, factual snapshots                |
+| `agents/<module>.py`           | Native Agent declarations, module prompts and typed read-only tools                                |
+| `agents/registry.py`, `agents/network.py` | Wiring, native lifecycle, client tasks and request persistence                              |
 | `api/app.py`                   | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
 | `api/routes.py`                | Thin versioned HTTP routes                                                                        |
 
-`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts the domain workers and the in-process ProtoLink agent network, and stops them during shutdown. The network registers Sibyl and ten persistent specialist gateways; fresh reasoning agents isolate each model request. See [agent lifecycle and collaboration](./agents.md). Importing the package does not connect to an exchange or initialize a model.
+`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts the domain workers and the in-process ProtoLink agent network, and stops them during shutdown. The network starts Sibyl and ten persistent native specialist Agents using ProtoLink `.start()`. Each agent has its own file, prompt and tools. Native client tasks and task-local history isolate requests; tools fetch evidence on demand. See [agent lifecycle and collaboration](./agents.md). Importing the package does not connect to an exchange or initialize a model.
 
 ## Frontend
 

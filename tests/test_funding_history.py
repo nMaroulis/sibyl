@@ -569,27 +569,25 @@ def test_funding_before_opening_boundary_does_not_double_count_user_assertion(cl
     assert row["funding_event_count"] == 0 and row["known_open_cost"] == 100
 
 
-def test_funding_model_only_receives_a_fixed_report_tool(client, monkeypatch):
-    from inspect import signature
-
-    from protolink import Agent, create_llm
+def test_funding_model_cannot_change_fixed_report_selection(client, monkeypatch):
+    from protolink import create_llm
 
     registry = client.app.state.services.agents
     registry.settings.llm_provider = "ollama"
-    observed = []
-
-    def compose(module, *, inference=False, configuration=None, tool_override=None):
-        assert module == "accountant" and inference
-        assert tool_override is not None and not signature(tool_override).parameters
-        observed.append(tool_override())
-        return Agent(
-            name="test-scoped-funding",
-            llm=create_llm("mock", default_response="The selected funding snapshot."),
-            tools=[tool_override],
-            verbosity=0,
-        )
-
-    monkeypatch.setattr(registry, "_compose", compose)
+    monkeypatch.setattr(
+        "sibyl.agents.registry.create_llm",
+        lambda *a, **kw: create_llm(
+            "mock",
+            sequential_responses=[
+                {
+                    "type": "tool_call",
+                    "tool": "accountant_snapshot",
+                    "args": {"funding_view": False, "account_id": "other-account", "example": False},
+                },
+                "The selected funding snapshot.",
+            ],
+        ),
+    )
     monkeypatch.setattr(
         client.app.state.services.market,
         "account_balances",
@@ -604,7 +602,7 @@ def test_funding_model_only_receives_a_fixed_report_tool(client, monkeypatch):
         },
     )
     assert response.status_code == 200
-    assert observed[0]["example"] and observed[0]["total"] == 4
+    assert response.json()["evidence"]["example"] and response.json()["evidence"]["total"] == 4
     assert response.json()["mode"] == "llm"
 
 
