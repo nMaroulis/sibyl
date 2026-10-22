@@ -8454,18 +8454,39 @@ details[open] > summary {
 /* Exchange details: the app's reviewed capabilities, before credential entry. */
 .exchange-vault-notice {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 14px 18px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  color: var(--muted);
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 0 0 28px;
+  border: 1px solid #dce5f3;
+  border-left: 3px solid #849bc6;
+  border-radius: 16px;
+  background: #f0f4fb;
+  color: #596b83;
   font-size: 12px;
   line-height: 1.65;
 }
-.exchange-vault-notice svg {
+.exchange-vault-icon {
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  margin-top: 2px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: #e2eaf8;
+  color: #536fa7;
+}
+.exchange-vault-notice strong {
+  display: block;
+  color: #344d73;
+  font-size: 13px;
+  font-weight: 600;
+}
+.exchange-vault-notice p {
+  margin: 4px 0 0;
+}
+.exchange-catalog-heading {
+  margin-top: 24px;
 }
 
 .exchange-details-modal {

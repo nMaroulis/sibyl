@@ -402,10 +402,15 @@ export function ExchangeConnections() {
         </Badge>
       </div>
       {catalog.data && (
-        <p className="exchange-vault-notice">
-          <ShieldCheck size={17} />
-          <span>{catalog.data.key_storage}</span>
-        </p>
+        <div className="exchange-vault-notice" role="note" aria-label="API key storage">
+          <span className="exchange-vault-icon">
+            <ShieldCheck size={19} />
+          </span>
+          <div>
+            <strong>Local, encrypted storage</strong>
+            <p>{catalog.data.key_storage}</p>
+          </div>
+        </div>
       )}
       {selection.data && <AccountContext selection={selection.data} />}
       <div className="exchange-catalog-heading">
