@@ -4,6 +4,7 @@ A CCXT method existing is sufficient for shared bounded reads, but never enables
 submission, resumable imports or recovery. Those require Sibyl's explicit gates.
 """
 
+from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import funding_streams
 from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS
 from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS
@@ -39,7 +40,13 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
 
     funding = funding_streams(spec.id)
     market_orders = spec.market_orders or demo
-    return [
+    balance_reads = capabilities.get("balances") in {"native", "emulated", "simulated"}
+    backfills = (demo or spec.id in CANDLE_HISTORY_PROVIDERS) and capabilities.get("candles") in {
+        "native",
+        "emulated",
+        "simulated",
+    }
+    groups = [
         {
             "id": "account",
             "label": "Account overview",
@@ -62,8 +69,11 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "permissions",
                     "Credential check",
-                    True,
-                    "Check access reads balances only. It does not verify trading permissions or place an order.",
+                    balance_reads,
+                    "Check access reads balances only. It does not verify trading permissions or place an order."
+                    if balance_reads
+                    else "Balance verification is unavailable through this adapter.",
+                    unavailable=not balance_reads,
                 ),
             ],
         },
@@ -98,18 +108,6 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                     if spec.spot_trading
                     else "Cancellation is not enabled in Sibyl for this exchange.",
                 ),
-                read(
-                    "order_status",
-                    "Order status & partial fills",
-                    "Bybit status reads cover the last 500 account orders; older orders may require checking at the exchange. Detailed fill evidence is listed under History."
-                    if spec.id == "bybit"
-                    else "Read cumulative execution status for a known order ID. Detailed fill evidence is listed under History.",
-                ),
-                read(
-                    "open_orders",
-                    "Read open orders",
-                    "Read a bounded snapshot for an exact spot pair; account-wide discovery is listed under History.",
-                ),
                 feature(
                     "advanced_orders",
                     "Stop / OCO / cancel-replace",
@@ -122,6 +120,18 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
             "id": "history",
             "label": "History & synchronization",
             "features": [
+                read(
+                    "order_status",
+                    "Order status & partial fills",
+                    "Bybit status reads cover the last 500 account orders; older orders may require checking at the exchange. Detailed fill evidence is listed under History."
+                    if spec.id == "bybit"
+                    else "Read cumulative execution status for a known order ID. Detailed fill evidence is listed under History.",
+                ),
+                read(
+                    "open_orders",
+                    "Read open orders",
+                    "Read a bounded snapshot for an exact spot pair; account-wide discovery is listed under History.",
+                ),
                 read(
                     "trade_history",
                     "Recent trade reads",
@@ -191,10 +201,10 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "backfills",
                     "Historical candle backfills",
-                    demo
-                    or spec.id
-                    in {"binance", "binanceus", "binance-testnet", "coinbase", "coinbase-sandbox", "kraken"},
-                    "Persisted historical candles with reviewed native pagination and gap inspection.",
+                    backfills,
+                    "Persisted historical candles with reviewed native pagination and gap inspection."
+                    if backfills
+                    else "Historical pagination is not implemented for this provider; current chart samples can still be retained.",
                 ),
                 feature(
                     "websocket",
@@ -231,3 +241,28 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
             ],
         },
     ]
+
+    for group in groups:
+        group["summary"] = category_summary(group["features"])
+    return groups
+
+
+def category_summary(features: list[dict]) -> dict:
+    """Count every listed feature; missing/unsupported rows cannot turn a category green.
+
+    This is implementation coverage, never network health, credential verification
+    or a guarantee that an exchange grants access to a particular user's account.
+    """
+    total = len(features)
+    implemented = sum(row["status"] in {"available", "simulated"} for row in features)
+    simulated = any(row["status"] == "simulated" for row in features)
+    status = (
+        "unsupported"
+        if not implemented
+        else "simulated"
+        if simulated
+        else "supported"
+        if implemented == total
+        else "partial"
+    )
+    return {"status": status, "implemented": implemented, "total": total}

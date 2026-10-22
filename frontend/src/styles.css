@@ -5678,43 +5678,6 @@ details[open] > summary {
   gap: 10px;
   margin-bottom: 26px;
 }
-.exchange-client-option {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 16px 12px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  text-align: left;
-  color: var(--text);
-  transition:
-    background 0.18s,
-    border-color 0.18s,
-    transform 0.18s;
-}
-.exchange-client-option:hover {
-  background: #f5f8ff;
-  border-color: #b6c7ed;
-  transform: translateY(-2px);
-}
-.exchange-client-option > span:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-}
-.exchange-client-option strong {
-  font-size: 13px;
-}
-.exchange-client-option small {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-  margin-top: 5px;
-  line-height: 1.5;
-}
-.exchange-client-option .provider-logo {
-  flex-shrink: 0;
-}
 @media (max-width: 1200px) {
   .exchange-client-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5738,28 +5701,16 @@ details[open] > summary {
     width: 100%;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .exchange-client-option {
-    transition: none;
-  }
-}
 
 .exchange-mark {
   display: block;
   object-fit: contain;
   border-radius: 5px;
 }
-.exchange-client-option .provider-logo,
 .connection-account .provider-logo {
   background: #fff;
 }
-.exchange-client-option:disabled {
-  opacity: 1;
-  cursor: default;
-  border-color: #d7d7ef;
-  background: #f8f7ff;
-  transform: none;
-}
+
 .demo-exchange-mark {
   color: #7961c5;
   background: #f0ebff !important;
@@ -8516,12 +8467,7 @@ details[open] > summary {
   flex-shrink: 0;
   margin-top: 2px;
 }
-.exchange-support-summary {
-  display: block;
-  margin-top: 5px;
-  font-size: 10px;
-  color: var(--muted);
-}
+
 .exchange-details-modal {
   width: min(860px, calc(100vw - 32px));
 }
@@ -8618,4 +8564,272 @@ details[open] > summary {
   .exchange-details .section-tabs-wrap {
     justify-content: flex-start;
   }
+}
+
+/* Provider cards: implementation coverage, independent from connection health. */
+.exchange-provider-card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid #e3e7ed;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #fff 35%, #fafbfd);
+  box-shadow: 0 2px 5px #22334b03;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.exchange-provider-card:hover,
+.exchange-provider-card:focus-within {
+  border-color: #c6d0e0;
+  box-shadow: 0 7px 24px #22334b0a;
+  z-index: 2;
+}
+.exchange-provider-open {
+  display: flex;
+  position: relative;
+  width: 100%;
+  min-height: 94px;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 20px 18px;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: transparent;
+  color: var(--text);
+}
+.exchange-provider-open:focus-visible {
+  outline: 2px solid #7b91c2;
+  outline-offset: -4px;
+}
+.exchange-provider-emblem {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1px solid #e9ecf2;
+  background: white;
+  box-shadow: 0 2px 4px #1e293b04;
+  border-radius: 14px;
+}
+.exchange-provider-emblem .exchange-mark {
+  width: 28px;
+  height: 28px;
+}
+.exchange-provider-name {
+  flex: 1;
+  min-width: 0;
+}
+.exchange-provider-name strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+}
+.exchange-provider-name small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.exchange-provider-arrow {
+  color: #a6afbc;
+  flex-shrink: 0;
+  transition:
+    color 0.18s,
+    transform 0.18s;
+}
+.exchange-provider-open:hover .exchange-provider-arrow {
+  color: #4c6088;
+  transform: translate(1px, -1px);
+}
+.exchange-provider-card.is-test .exchange-provider-open {
+  padding-top: 30px;
+  min-height: 104px;
+}
+.exchange-environment-tag {
+  position: absolute;
+  right: 16px;
+  top: 10px;
+  color: #77639b;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.exchange-category-indicators {
+  display: flex;
+  justify-content: space-between;
+  gap: 7px;
+  padding: 12px 18px;
+  border-top: 1px solid #edf0f5;
+  border-radius: 0 0 22px 22px;
+}
+.exchange-category-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.coverage-supported {
+  --coverage-color: #27815f;
+  --coverage-soft: #edf7f1;
+  color: var(--coverage-color);
+}
+.coverage-partial {
+  --coverage-color: #a16b1b;
+  --coverage-soft: #fbf4e6;
+  color: var(--coverage-color);
+}
+.coverage-unsupported {
+  --coverage-color: #7e8998;
+  --coverage-soft: #f0f2f5;
+  color: var(--coverage-color);
+}
+.coverage-simulated {
+  --coverage-color: #8161a7;
+  --coverage-soft: #f3eef9;
+  color: var(--coverage-color);
+}
+.exchange-category-icon:hover,
+.exchange-category-icon:focus-visible {
+  background: var(--coverage-soft);
+  border-color: var(--coverage-color);
+  outline: none;
+}
+.exchange-coverage-mark {
+  position: absolute;
+  right: 1px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid white;
+  background: var(--coverage-color);
+  color: white;
+}
+.coverage-partial .exchange-coverage-mark {
+  background: linear-gradient(90deg, var(--coverage-color) 50%, white 50%);
+  box-shadow: 0 0 0 0.5px var(--coverage-color);
+}
+.coverage-unsupported .exchange-coverage-mark::after {
+  content: '';
+  width: 4px;
+  height: 1px;
+  background: white;
+}
+.exchange-category-tooltip {
+  position: absolute;
+  z-index: 5;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  width: max-content;
+  max-width: min(260px, 80vw);
+  padding: 10px 12px;
+  border: 1px solid #e2e7ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 22px #253a5614;
+  color: #293547;
+  text-align: left;
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.14s,
+    transform 0.14s,
+    visibility 0.14s;
+}
+.exchange-category-tooltip strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.exchange-category-tooltip > span {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.exchange-category-icon:first-child .exchange-category-tooltip {
+  left: -8px;
+  transform: translateY(3px);
+}
+.exchange-category-icon:last-child .exchange-category-tooltip {
+  left: auto;
+  right: -8px;
+  transform: translateY(3px);
+}
+.exchange-category-icon:hover .exchange-category-tooltip,
+.exchange-category-icon:focus-visible .exchange-category-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.exchange-category-icon:first-child:hover .exchange-category-tooltip,
+.exchange-category-icon:first-child:focus-visible .exchange-category-tooltip,
+.exchange-category-icon:last-child:hover .exchange-category-tooltip,
+.exchange-category-icon:last-child:focus-visible .exchange-category-tooltip {
+  transform: translateY(0);
+}
+.exchange-coverage-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0 0 16px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.exchange-coverage-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.exchange-coverage-legend i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--coverage-color);
+}
+.exchange-coverage-legend i.coverage-partial {
+  background: linear-gradient(90deg, var(--coverage-color) 50%, white 50%);
+  box-shadow: 0 0 0 0.5px var(--coverage-color);
+}
+.exchange-coverage-legend p {
+  margin: 0 0 0 auto;
+  font-size: 10px;
+}
+@media (max-width: 600px) {
+  .exchange-coverage-legend p {
+    flex-basis: 100%;
+    margin: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exchange-provider-card,
+  .exchange-provider-arrow,
+  .exchange-category-icon,
+  .exchange-category-tooltip {
+    transition: none;
+  }
+}
+
+.exchange-category-icon[data-tooltip-dismissed='true'] .exchange-category-tooltip {
+  opacity: 0;
+  visibility: hidden;
 }

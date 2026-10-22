@@ -6,6 +6,7 @@ import ccxt
 
 from sibyl.exchanges.base import ExchangeClient, number
 from sibyl.exchanges.catalog import exchange_spec
+from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import FundingPage, fetch_funding_page, funding_streams
 from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
 from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS, OrderDiscoveryPage, discovery_page
@@ -157,14 +158,7 @@ class CCXTClient(ExchangeClient):
     @property
     def candle_history(self):
         """Enable only reviewed native timestamp-window contracts."""
-        return self.id in {
-            "binance",
-            "binanceus",
-            "binance-testnet",
-            "coinbase",
-            "coinbase-sandbox",
-            "kraken",
-        }
+        return self.id in CANDLE_HISTORY_PROVIDERS
 
     def fetch_candle_page(self, symbol: str, timeframe: str, start: int, end: int) -> list[list]:
         """Read at most 200 historical intervals, with no SDK auto-pagination."""

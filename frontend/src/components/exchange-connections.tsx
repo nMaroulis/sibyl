@@ -2,10 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
-  Wallet,
-  CandlestickChart,
-  History,
-  ChartNoAxesCombined,
   CircleHelp,
   Check,
   KeyRound,
@@ -20,6 +16,7 @@ import {
 import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { Connection, ExchangeCatalog, ExchangeProvider, System } from '../lib/types';
+import { ExchangeProviderCard, exchangeCategoryIcons } from './exchange-provider-card';
 import { SectionPanel, SectionTabs } from './section-tabs';
 import { ExchangeMark } from './exchange-mark';
 import { AccountContext, useAccounts } from './account-selection';
@@ -203,22 +200,17 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
 function ExchangeDetails({
   provider,
   keyStorage,
+  initialSection,
   close,
 }: {
   provider: ExchangeProvider;
   keyStorage: string;
+  initialSection: string;
   close: () => void;
 }) {
-  const [section, setSection] = useState('account');
+  const [section, setSection] = useState(initialSection);
   const [connecting, setConnecting] = useState(false);
   const system = useResource<System>('/system');
-  const icons = {
-    account: Wallet,
-    spot: ChartNoAxesCombined,
-    history: History,
-    market: CandlestickChart,
-    limits: CircleHelp,
-  };
   const group = provider.support.find((item) => item.id === section);
   return (
     <div className="exchange-details">
@@ -253,7 +245,8 @@ function ExchangeDetails({
             items={provider.support.map((item) => ({
               id: item.id,
               label: item.label,
-              icon: icons[item.id as keyof typeof icons] ?? CircleHelp,
+              icon:
+                exchangeCategoryIcons[item.id as keyof typeof exchangeCategoryIcons] ?? CircleHelp,
             }))}
             value={section}
             onChange={setSection}
@@ -332,6 +325,11 @@ export function ExchangeConnections() {
   const exchanges = catalog.data?.items ?? [];
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<string>();
+  const [selectedSection, setSelectedSection] = useState('account');
+  const openExchange = (identity: string, section = 'account') => {
+    setSelectedSection(section);
+    setSelected(identity);
+  };
   const [removing, setRemoving] = useState<Connection>();
   const [busy, setBusy] = useState('');
   const [checks, setChecks] = useState<
@@ -425,6 +423,18 @@ export function ExchangeConnections() {
           environments · {exchanges.filter((provider) => provider.simulated).length} demo
         </span>
       </div>
+      <div className="exchange-coverage-legend" aria-label="Implementation coverage legend">
+        <span>
+          <i className="coverage-supported" /> Full
+        </span>
+        <span>
+          <i className="coverage-partial" /> Partial
+        </span>
+        <span>
+          <i className="coverage-unsupported" /> Not implemented
+        </span>
+        <p>Listed feature coverage · not account verification. Select an icon for details.</p>
+      </div>
       {catalog.loading ? (
         <Loading />
       ) : catalog.error ? (
@@ -437,58 +447,11 @@ export function ExchangeConnections() {
               `${provider.name} ${provider.id}`.toLowerCase().includes(query.trim().toLowerCase()),
             )
             .map((provider) => (
-              <button
+              <ExchangeProviderCard
                 key={provider.id}
-                className="exchange-client-option"
-                aria-label={`View ${provider.name} support`}
-                disabled={
-                  provider.simulated &&
-                  connections.data?.some((connection) => connection.exchange === 'demo')
-                }
-                onClick={() => setSelected(provider.id)}
-              >
-                <span
-                  className={`provider-logo small-logo ${provider.simulated ? 'demo-exchange-mark' : ''}`}
-                >
-                  <ExchangeMark exchange={provider.id} />
-                </span>
-                <span>
-                  <strong>{provider.name}</strong>
-                  <small>
-                    {provider.simulated
-                      ? connections.data?.some((connection) => connection.exchange === 'demo')
-                        ? 'Account connected'
-                        : 'Simulated funds · no keys'
-                      : provider.test_environment
-                        ? provider.id === 'binance-testnet'
-                          ? 'Spot test network · test keys'
-                          : 'Exchange API · key, secret & passphrase'
-                        : provider.id === 'coinbase'
-                          ? 'CDP key & PEM'
-                          : provider.passphrase
-                            ? 'Key, secret & passphrase'
-                            : provider.uid
-                              ? 'Key, secret & memo'
-                              : 'API key & secret'}
-                    <span className="exchange-support-summary">
-                      {provider.market_orders
-                        ? 'Market & limit trading'
-                        : provider.limit_orders
-                          ? 'Limit trading'
-                          : 'Account & data reads · trading pending'}
-                    </span>
-                  </small>
-                </span>
-                {provider.simulated ? (
-                  <Badge tone="demo">Demo</Badge>
-                ) : provider.test_environment ? (
-                  <Badge tone="purple">
-                    {provider.id === 'binance-testnet' ? 'Testnet' : 'Sandbox'}
-                  </Badge>
-                ) : (
-                  <Plus size={15} />
-                )}
-              </button>
+                provider={provider}
+                onOpen={(section) => openExchange(provider.id, section)}
+              />
             ))}
           {exchanges.length > 0 &&
             !exchanges.some((provider) =>
@@ -583,7 +546,7 @@ export function ExchangeConnections() {
               </button>
               <button
                 className="button secondary tiny"
-                onClick={() => setSelected(connection.exchange)}
+                onClick={() => openExchange(connection.exchange)}
               >
                 Features
               </button>
@@ -679,6 +642,7 @@ export function ExchangeConnections() {
         >
           <ExchangeDetails
             key={selected}
+            initialSection={selectedSection}
             keyStorage={catalog.data?.key_storage ?? ''}
             provider={exchanges.find((provider) => provider.id === selected)!}
             close={() => setSelected(undefined)}

@@ -646,6 +646,11 @@ export type CryptoProfile = Source & {
 export type ExchangeSupportGroup = {
   id: string;
   label: string;
+  summary: {
+    status: 'supported' | 'partial' | 'unsupported' | 'simulated';
+    implemented: number;
+    total: number;
+  };
   features: {
     id: string;
     label: string;

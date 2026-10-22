@@ -44,3 +44,16 @@ DEMO_ASSETS = ASSETS | {
     "USD": ("US Dollar", 1 / 1.002, "#83aa96"),
     "EUR": ("Euro", 1.08 / 1.002, "#8b9bc5"),
 }
+
+
+# Shared by the actual client gate and its user-facing support inventory.
+CANDLE_HISTORY_PROVIDERS = frozenset(
+    {
+        "binance",
+        "binanceus",
+        "binance-testnet",
+        "coinbase",
+        "coinbase-sandbox",
+        "kraken",
+    }
+)

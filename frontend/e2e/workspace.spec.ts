@@ -317,3 +317,37 @@ test('crypto profiles uses the backend catalog and keeps asset selection in the 
     page.locator('.crypto-name-row').getByRole('heading', { name: 'Bitcoin', exact: true }),
   ).toBeVisible();
 });
+
+test('exchange category icons open exact implementation details', async ({ page }) => {
+  await page.goto('/settings?tab=exchanges');
+  const binance = page.getByRole('group', { name: 'Binance feature categories', exact: true });
+  await expect(binance.getByRole('button')).toHaveCount(5);
+  const account = binance.getByRole('button', {
+    name: /^Account overview: All listed features implemented/,
+  });
+  await expect(account).toHaveClass(/coverage-supported/);
+  await account.focus();
+  await expect(account.getByRole('tooltip')).toBeVisible();
+  await account.press('Escape');
+  await expect(account.getByRole('tooltip')).not.toBeVisible();
+  await account.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('tab', { name: 'Account overview', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await dialog.getByRole('button', { name: 'Close dialog' }).click();
+  const gate = page.getByRole('group', { name: 'Gate feature categories', exact: true });
+  const trading = gate.getByRole('button', {
+    name: /^Spot trading: No listed features implemented/,
+  });
+  await expect(trading).toHaveClass(/coverage-unsupported/);
+  await trading.click();
+  await expect(dialog.getByRole('tab', { name: 'Spot trading', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(
+    dialog.getByText('Trading is not implemented for this exchange', { exact: true }),
+  ).toBeVisible();
+});

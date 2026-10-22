@@ -70,3 +70,9 @@ Spot trading additionally shows whether execution is enabled on your server. Man
 **API keys are stored locally and encrypted on the machine running Sibyl's Python backend** (the `.sibyl` workspace by default). A separate local vault key unlocks them. They are not returned by the API or passed to AI agents. The backend uses the credentials to authenticate requests to the exchange. Saving or checking a connection never places an order.
 
 Use a Bybit Unified Trading Account (UTA) or KuCoin classic spot trading account; other account variants are not configured. Gemini has no native market-order flow through the installed adapter; choose a GTC limit. Bybit status reads cover the last 500 orders. Native authenticated account and order acceptance remains pending.
+
+## Card indicators
+
+Each exchange card has five category icons: account overview, spot trading, history, market data, and automation/limits. Green means every feature listed in that category is implemented; amber means some are implemented; grey means none are implemented. Hover or focus an icon for the exact count, or select it to open that category. Shapes distinguish full (check), partial (half-circle) and missing support (minus), in addition to color.
+
+The Python backend calculates these counts from the same feature rows displayed in the dialog. Missing features remain in the denominator. Read-only order/status methods belong to History, so they cannot make an exchange with no submission implementation appear to support trading. Icons describe implementation coverage, not credentials, server execution enablement or authenticated exchange acceptance. Demo remains explicitly simulated.
