@@ -4,6 +4,7 @@ import { Activity, ArrowUpRight, ChevronDown, RefreshCw } from 'lucide-react';
 import { Badge, ErrorState, Loading, Panel, PanelTitle } from './ui';
 import { MarketSourceMark } from './config-helper';
 import { useResource } from '../lib/hooks';
+import { ProviderReadHistory } from './provider-read-history';
 import {
   healthLabels,
   type ProviderHealth,
@@ -29,7 +30,7 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
   const [environment, setEnvironment] = useState('all');
   const rows = (report.data?.items ?? []).filter(
     (s) =>
-      (all || s.default || s.requests > 0 || s.queued > 0 || s.last_error) &&
+      (all || s.default || s.requests > 0 || s.queued > 0 || s.last_error || s.history_available) &&
       (environment === 'all' || s.environment === environment) &&
       `${s.name} ${s.provider}`.toLowerCase().includes(query.toLowerCase()),
   );
@@ -91,6 +92,12 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
                 {all ? 'Show observed & default' : 'Show all sources'}
               </button>
             </div>
+            {report.data.history_recording.dropped_observations > 0 && (
+              <p className="source-health-error" role="status">
+                Some read history could not be saved during this API session. Expand a source for
+                details.
+              </p>
+            )}
             <div className="source-health-rows">
               {rows.map((s) => (
                 <div key={s.id} className="source-health-entry">
@@ -119,7 +126,9 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
                             ? `Last read ${new Date(s.last_success_at).toLocaleTimeString()}`
                             : s.status === 'demo'
                               ? 'No external requests'
-                              : 'No successful transport read yet'}
+                              : s.history_available
+                                ? 'Saved history · not checked this session'
+                                : 'No successful transport read yet'}
                       </small>
                     </span>
                     <span className="source-health-latency">
@@ -132,7 +141,7 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
                     <div className="source-health-detail">
                       <div className="source-health-evidence">
                         <div>
-                          <small>Transport requests</small>
+                          <small>Transport requests · this session</small>
                           <strong>
                             {s.requests} · {s.failed_requests} failed
                           </strong>
@@ -186,6 +195,7 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
                           process. A saved key or selectable card does not establish connectivity.
                         </p>
                       )}
+                      <ProviderReadHistory source={s.id} demo={s.status === 'demo'} />
                       <Link
                         className="text-link"
                         to={
@@ -218,8 +228,9 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
             </p>
             <p className="footnote">
               Connectivity and quote freshness are separate. Refresh reads local diagnostics only.
-              Metrics started {when(report.data.started_at)} and reset on API restart; import counts
-              are persisted jobs. News and other research providers keep their own health reporting.
+              Session metrics started {when(report.data.started_at)} and reset on API restart. Saved
+              read history and import jobs persist. News and other research providers keep their own
+              health reporting.
             </p>
           </>
         )}

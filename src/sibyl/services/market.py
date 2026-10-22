@@ -18,6 +18,7 @@ from sibyl.exchanges.base import number
 from sibyl.exchanges.data import STABLES, TIMEFRAMES
 from sibyl.market_data.archive import CandleArchive
 from sibyl.market_data.control import ProviderControl, ProviderDeferred
+from sibyl.market_data.health_history import ProviderHistory
 from sibyl.models import Candle, Connection
 from sibyl.services.crypto_library import ASSETS as RESEARCH_ASSETS
 from sibyl.services.data_settings import DataSettings
@@ -47,7 +48,8 @@ class Market:
         self.settings, self.store = settings, store
         self.data_settings = data_settings
         self.archive = CandleArchive(store)
-        self.requests = ProviderControl()
+        self.read_history = ProviderHistory(store)
+        self.requests = ProviderControl(history=self.read_history)
         self._pending = {}
         self._cache_epoch = 0
         self._source_epochs = {}
@@ -556,7 +558,21 @@ class Market:
             with self.snapshot():
                 profile = self._local.profile
                 catalog, active = [{**profile, "available": True}], profile["id"]
+        retained = self.read_history.identities()
+        configured = {row["id"] for row in catalog}
+        catalog = [
+            *catalog,
+            *[
+                {**row, "name": f"{row['provider']} · previously observed", "available": False}
+                for row in retained
+                if row["id"] not in configured
+            ],
+        ]
         result = self.requests.snapshot(catalog, active)
+        retained_ids = {row["id"] for row in retained}
+        for row in result["items"]:
+            row["history_available"] = row["id"] in retained_ids
+        result["history_recording"] = self.read_history.recording()
         with self.store.db() as db:
             candle = db.execute(
                 "SELECT COUNT(*) FROM candle_imports WHERE status IN ('queued','running','retrying')"
@@ -583,3 +599,11 @@ class Market:
             if not result["items"]:
                 raise ValueError("Unknown configured or observed source.")
         return result
+
+    def provider_health_history(self, source: str, hours: int = 24) -> dict:
+        """Inspect retained reads without restoring old credentials or probing a provider."""
+        selected = self.provider_health(source)["items"][0]
+        return {
+            **self.read_history.read(source, hours),
+            "source": {key: selected[key] for key in ("id", "name", "kind", "provider", "environment")},
+        }

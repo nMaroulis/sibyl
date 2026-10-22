@@ -65,7 +65,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'markets',
       title: 'Streaming markets',
-      text: 'WebSocket streams, reviewed endpoint-weight budgets and durable operational health history. Shared read limits, cooldowns, source diagnostics, retained candles and saved datasets are available now.',
+      text: 'WebSocket streams, reviewed endpoint-weight budgets and richer operational metrics. Shared read limits, cooldowns, saved HTTP read history, source diagnostics, retained candles and saved datasets are available now.',
     },
     {
       module: 'alerts',

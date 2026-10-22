@@ -8292,6 +8292,77 @@ details[open] > summary {
   font-size: 11px;
   color: var(--muted);
 }
+.provider-read-history {
+  border: 1px solid #e5eaf2;
+  border-radius: 13px;
+  background: #fbfcfe;
+  padding: 16px;
+  margin: 18px 0;
+}
+.provider-history-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.provider-history-heading h4 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #70809a;
+}
+.provider-history-heading select {
+  font-size: 11px;
+  padding: 6px 26px 6px 9px;
+  min-width: 100px;
+}
+.provider-history-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.provider-history-stats small {
+  display: block;
+  color: #8b96a9;
+  font-size: 9px;
+  margin-bottom: 5px;
+}
+.provider-history-stats strong {
+  font-size: 18px;
+  font-weight: 500;
+  color: #56647c;
+}
+.provider-history-chart svg {
+  display: block;
+  width: 100%;
+  height: 80px;
+  overflow: visible;
+  border-radius: 4px;
+}
+.provider-history-axis {
+  display: flex;
+  justify-content: space-between;
+  color: #8b96a9;
+  font-size: 9px;
+  margin-top: 6px;
+}
+.provider-history-hover {
+  min-height: 15px;
+  font-size: 10px;
+  color: #8590a5;
+  margin: 11px 0;
+}
+@media (max-width: 650px) {
+  .provider-history-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .source-health-summary > a {
   display: inline-flex;
   align-items: center;

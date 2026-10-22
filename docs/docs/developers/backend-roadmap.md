@@ -11,7 +11,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.         |
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
-| Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, durable health history and WebSockets.          |
+| Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
 | Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.             |
 | Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.                   |
@@ -108,8 +108,9 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 - [ ] Add WebSocket market and account/order subscriptions with reconnection handling.
 - [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
 - [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
-- [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Metrics currently reset on API restart.
-- [ ] Add durable operational health history and rolling availability/latency metrics.
+- [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Live session counters reset on API restart.
+- [x] Persist bounded hourly HTTP read outcomes, success rate, mean/peak response time and sanitized errors; inspect 24-hour/7-day windows across restart. History never establishes current credential readiness or uptime. See [retained read history](provider-control.md#retained-read-history).
+- [ ] Add richer latency distributions and application-wide operational metrics. Continuous availability monitoring remains a separate future capability.
 - [x] Support held-asset valuation and editable watchlists beyond the six defaults with bounded provider reads; broader aggregator discovery remains future work.
 
 ### 6. Strategy research — partial

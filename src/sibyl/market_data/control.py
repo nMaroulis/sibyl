@@ -14,6 +14,7 @@ from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from functools import wraps
+from uuid import uuid4
 
 import ccxt
 
@@ -128,10 +129,11 @@ class ClientGuard:
 class ProviderControl:
     """Coordinate explicit adapter operations before locks and actual HTTP reads after them."""
 
-    def __init__(self, min_interval=0.25, max_inflight=4, max_wait=5):
+    def __init__(self, min_interval=0.25, max_inflight=4, max_wait=5, history=None):
         self.min_interval = min_interval
         self.max_inflight = max_inflight
         self.max_wait = max_wait
+        self.history = history
         self.started_at = utc()
         self._condition = threading.Condition(threading.RLock())
         self._local = threading.local()
@@ -175,6 +177,7 @@ class ProviderControl:
                     "last_error": None,
                     "errors": deque(maxlen=5),
                     "quote": None,
+                    "generation": uuid4().hex,
                 }
                 if retained:
                     self._sources[identity] = state
@@ -306,12 +309,15 @@ class ProviderControl:
                 self._http_waiters.remove(ticket)
                 self._condition.notify_all()
         start = time.monotonic()
+        outcome = None
         try:
             result = loader()
             with self._condition:
                 state["successful_requests"] += 1
+            outcome = "success"
             return result
         except Exception as error:
+            outcome = failure_kind(error)
             with self._condition:
                 state["failed_requests"] += 1
             hint = getattr(error, "retry_after", None)
@@ -322,10 +328,15 @@ class ProviderControl:
             context["counter"]["errors"] += 1
             raise
         finally:
+            latency = round((time.monotonic() - start) * 1000, 1)
             with self._condition:
-                state["latency_ms"] = round((time.monotonic() - start) * 1000, 1)
+                state["latency_ms"] = latency
                 self._inflight -= 1
                 self._condition.notify_all()
+            if self.history is not None and outcome is not None:
+                self.history.record(
+                    source, state["generation"], latency, None if outcome == "success" else outcome
+                )
 
     def _failure(self, source, error, hint=None):
         if isinstance(error, ProviderDeferred):

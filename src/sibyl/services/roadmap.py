@@ -46,10 +46,10 @@ AREAS = [
         "name": "Market-data infrastructure",
         "status": "partial",
         "priority": "next",
-        "working": "Exact-source REST data and retained OHLCV; resumable backfills, immutable inputs, shared read admission/cooldowns and observed source diagnostics.",
+        "working": "Exact-source REST data, retained OHLCV/backfills and immutable inputs; shared read controls and durable hourly HTTP read history, timings and sanitized errors.",
         "pending": [
             "Review historical pagination for remaining providers and authenticated provider acceptance.",
-            "Reviewed endpoint-weight/IP/account quota policies and durable operational health history.",
+            "Reviewed endpoint-weight/IP/account quotas, richer latency distributions and application-wide operational diagnostics.",
             "WebSocket prices and private account/order streams with reconnect recovery.",
         ],
     },
@@ -169,7 +169,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-22",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Foundational local data and operations, plus observable and cancellable Sibyl requests. Multi-user support is deferred.",
+        "current_focus": "Durable market data and observed read history, account reconciliation and local operations. Multi-user support is deferred.",
         "execution_note": "Strategies remain paper-only; agents remain read-only. Authenticated venue acceptance is outstanding.",
         "release_dates": None,
     }

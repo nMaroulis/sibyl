@@ -173,6 +173,15 @@ def provider_health(s: S, response: Response, source: MarketSource | None = None
     return s.market.provider_health(source)
 
 
+@router.get("/providers/health/history", tags=["Settings"])
+def provider_health_history(
+    s: S, response: Response, source: MarketSource, window: Literal["24h", "7d"] = "24h"
+):
+    """Read retained hourly transport outcomes; gaps do not establish provider downtime."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.market.provider_health_history(source, 24 if window == "24h" else 168)
+
+
 @router.delete("/settings/market/{provider}/key", tags=["Settings"])
 def remove_market_key(provider: str, s: S, response: Response):
     """Delete a provider credential; select another default before removing a required key."""

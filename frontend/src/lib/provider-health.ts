@@ -14,6 +14,7 @@ export type ProviderHealth = Pick<
   read_retries: number;
   deferred: number;
   cache_hits: number;
+  history_available: boolean;
   last_success_at: string | null;
   last_request_at: string | null;
   latency_ms: number | null;
@@ -26,6 +27,37 @@ export type ProviderHealth = Pick<
   shared_queued: number;
   shared_busy: boolean;
 };
+export type HistoryRecording = {
+  status: 'ready' | 'partial';
+  dropped_observations: number;
+  last_failure_at: string | null;
+};
+export type ProviderReadHistory = {
+  source_id: string;
+  as_of: string;
+  start: string;
+  hours: number;
+  retention_days: number;
+  totals: {
+    requests: number;
+    successes: number;
+    failures: number;
+    success_rate: number | null;
+    mean_latency_ms: number | null;
+    max_latency_ms: number | null;
+    first_at: string | null;
+    last_at: string | null;
+  };
+  series: {
+    at: string;
+    requests: number;
+    successes: number;
+    failures: number;
+    mean_latency_ms: number | null;
+  }[];
+  recent_errors: HealthError[];
+  recording: HistoryRecording;
+};
 export type HealthError = { at: string; kind: string; message: string };
 export type ProviderHealthReport = {
   items: ProviderHealth[];
@@ -33,6 +65,7 @@ export type ProviderHealthReport = {
   started_at: string;
   in_flight: number;
   queued: number;
+  history_recording: HistoryRecording;
   jobs: { candle_imports: number; fill_imports: number; funding_imports: number };
   policy: {
     min_interval_ms: number;
