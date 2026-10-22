@@ -90,6 +90,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "market_exchange": services.settings.market_exchange,
             "permissions": "Agents are read-only. Manual spot trading depends on provider support, API permissions and the server execution setting.",
             "history_imports": services.account_sync.snapshot()["jobs"] if services.account_sync else [],
+            "history_help": "Trade → Account history → Fills & imports. Sync resumes saved pages. Pause active work before Rescan available history to refresh older fees/fills within provider retention; retained observations are never deleted.",
             "history_scope": "Imports cover selected spot markets and provider retention, not reconciled account history or exchange P&L.",
             "model": ModelSettings(services.settings, services.store).public(),
         }

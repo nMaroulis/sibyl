@@ -39,7 +39,9 @@ Portfolio prices actual held assets through exact direct, inverse or short conve
 
 ## Funding history
 
-**Trade → Account history → Funding** adds read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer ledger entries. Checkpoints, pause/resume, rescans and sanitized retries retain native IDs, statuses, amounts and fees. Summaries keep accounts, environments and assets separate. Demo has an actual empty funding history plus a standalone example. Ask Accountant reads the selected local observations through ProtoLink. Funding gaps flag affected market FIFO as provisional; unsupported transfer/funding cases and cash-flow-adjusted returns remain future work. See [funding contracts, provider limits and remaining work](docs/docs/developers/funding-history.md).
+**Trade → Account history → Fills & imports** supports durable selected-market fills for eleven clients/environments, including OKX, Bybit UTA, KuCoin classic and Bitget classic. Incremental sync resumes checkpoints; **Rescan available history** checks older available fills for fee/data corrections while retaining local observations. Provider retention, retained execution ranges and per-pass corrections remain explicit. OKX, Bybit and KuCoin also support exact-order fill reconciliation. See [account imports](docs/docs/developers/account-sync.md).
+
+**Trade → Account history → Funding** adds read-only range imports for Binance crypto deposits/withdrawals, Kraken deposit/withdrawal/transfer ledger entries and Bybit master-UID on-chain withdrawals. Checkpoints, pause/resume, rescans and sanitized retries retain native IDs, statuses, amounts and fees. Summaries keep accounts, environments and assets separate. Demo has an actual empty funding history plus a standalone example. Ask Accountant reads the selected local observations through ProtoLink. Funding gaps flag affected market FIFO as provisional; unsupported transfer/funding cases and cash-flow-adjusted returns remain future work. See [funding contracts, provider limits and remaining work](docs/docs/developers/funding-history.md).
 
 ## Transfer review
 
@@ -101,7 +103,7 @@ Open an order's **Executions** evidence to compare native filled quantity with i
 | `services/research.py`                           | Bounded source-labeled research reads                                                             |
 | `news/`                                          | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
 | `agents/<module>.py`                             | Each native ProtoLink agent, its prompt and typed read-only tools                                 |
-| `agents/registry.py`, `agents/network.py`          | Wiring, native lifecycle/client tasks, request limits and persistence                             |
+| `agents/registry.py`, `agents/network.py`        | Wiring, native lifecycle/client tasks, request limits and persistence                             |
 | `api/app.py`                                     | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
 | `api/routes.py`                                  | Thin versioned HTTP routes                                                                        |
 

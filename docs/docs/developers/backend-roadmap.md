@@ -42,21 +42,22 @@ A paper strategy can consume live prices while still using virtual funds. Its ru
 
 ### 1. Account synchronization — partial
 
-There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports for seven clients/environments. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
+There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports for eleven clients/environments, with provider retention shown in the UI. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
 
 - [x] Persist normalized fills, native order references, fee currencies and rebates in a shared ledger.
-- [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Sandbox and Kraken.
+- [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic.
 - [ ] Review durable import pagination for the remaining exchange providers.
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
-- [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals and Kraken deposit/withdrawal/transfer entries, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
-- [ ] Extend funding adapters to remaining exchanges, fiat, earn/staking and subaccounts; reconcile late/pending events.
+- [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals, Kraken deposit/withdrawal/transfer entries and Bybit master-UID on-chain withdrawals, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
+- [ ] Extend funding adapters to remaining exchanges, Bybit deposits/off-chain transfers, fiat, earn/staking and subaccounts; schedule refresh of late/pending events.
 - [x] Add bounded transfer suggestions, manual pairing, audited user confirmation, stale-source review and reversible link removal/restoration. See [transfer review](transfer-reconciliation.md).
 - [x] Carry original acquisition lots/cost basis for current confirmed equal-amount, explicitly zero-fee transfers in one unambiguous exact market. See [carryover scope](transfer-cost-basis.md).
 - [x] Add explicit balanced same-asset fee allocations, missing-fee assertions, distinct-charge acknowledgment and separate fee-unit inventory cost. See [transfer fees](transfer-fees.md).
 - [ ] Add historical fee valuation, other fee currencies/rebates, split/merged transfers, cross-market basis and reviewed external-funding classifications.
 - [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
-- [ ] Add full rescans, cash-event coverage and reconciliation status.
+- [x] Add available-history rescans, revision guards for stale in-flight responses, repeated-page protection, correction counts and retained execution ranges.
+- [ ] Add complete cash-event coverage, account-wide balance reconciliation, execution bust/removal handling and versioned correction audits.
 - [x] Match discovered native IDs to local submissions and resume saved discovery pages after restart; uncertain client IDs stay on the reviewed recovery path.
 - [ ] Exercise authenticated reads and sandbox order lifecycles against actual test accounts.
 
@@ -82,6 +83,7 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
 - [ ] Add cancel/replace with venue-specific atomicity and reservation semantics.
 - [ ] Add stop, take-profit, trailing, OCO, additional time-in-force, post-only and iceberg support where the venue permits it.
+- [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini detailed imports remain pending.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
 - [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
 - [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.

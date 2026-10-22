@@ -4,6 +4,16 @@ import ccxt
 
 from sibyl.exchanges.history import TradePage, _token, normalize_trade
 
+ORDER_FILL_KINDS = {
+    "binance-id",
+    "coinbase-cursor",
+    "coinbase-exchange-cursor",
+    "kraken-cursor",
+    "okx-bill",
+    "bybit-execution",
+    "kucoin-hf",
+}
+
 
 def fetch_order_fill_page(
     exchange, kind: str, order_id: str, symbol: str, cursor: dict, limit: int
@@ -15,6 +25,10 @@ def fetch_order_fill_page(
     Cursors are private server state and a new pass starts from the beginning.
     """
     market = exchange.market(symbol)
+    if kind in {"okx-bill", "bybit-execution", "kucoin-hf"}:
+        from sibyl.exchanges.spot_history import fetch_spot_page
+
+        return fetch_spot_page(exchange, kind, symbol, cursor, limit, order_id=order_id)
     if kind == "binance-id":
         after = int(cursor.get("from_id", "0"))
         rows = exchange.fetch_my_trades(

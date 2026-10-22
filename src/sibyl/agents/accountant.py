@@ -25,7 +25,9 @@ SYSTEM_PROMPT = (
     "original lots for current zero-fee links or explicit balanced same-asset fee allocations. Fee "
     "inventory cost is separate from trading P&L, not an expense valuation or tax conclusion. Use only "
     "its applied/unapplied status and lot provenance; unknown costs or dates are not zero or receipt "
-    "dates. "
+    "dates. For imported execution history, corrections or sync coverage, call account_history. "
+    "A completed pass or rescan only exhausts available provider pages, not complete account history. "
+    "Missing records are not deleted by rescans, and provider retention can hide old corrections. "
 )
 
 
@@ -38,6 +40,31 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Read priced holdings, source labels, warnings, and account allocation."""
         result = portfolio.overview(scope)
         return {key: value for key, value in result.items() if key != "history"}
+
+    def account_history(account_id: str = "", symbol: str = "") -> dict:
+        """Read ten retained spot fills and saved import/retention evidence; never queue reads."""
+        if any(page_context().get(view) for view in ("transfer_view", "funding_view", "performance_view")):
+            return accountant_snapshot()
+        sync = services.account_sync
+        if sync is None:
+            return {"items": [], "note": "Account history service is unavailable."}
+        state = sync.snapshot()
+        return {
+            **sync.ledger.fills(account_id=account_id, symbol=symbol, limit=10),
+            "imports": [
+                job
+                for job in state["jobs"]
+                if (not account_id or job["account_id"] == account_id)
+                and (not symbol or job["symbol"] == symbol)
+            ][:12],
+            "provider_limits": [
+                {"account_id": account["id"], "note": account["history_note"]}
+                for account in state["accounts"]
+                if not account_id or account["id"] == account_id
+            ][:24],
+            "evidence_record_limit": 10,
+            "url": "/trade?tab=history",
+        }
 
     def accountant_snapshot(
         scope: str = "all",
@@ -185,7 +212,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-accountant",
         description=DESCRIPTION,
-        tools=[background_tool(accountant_snapshot)],
+        tools=[background_tool(accountant_snapshot), background_tool(account_history)],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

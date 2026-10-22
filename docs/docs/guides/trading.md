@@ -121,3 +121,9 @@ In **Trade → Executions → Order monitor**, choose **Sync exchange orders**. 
 Imported rows have an **Imported · read-only** badge. Use the exchange, account, origin and status filters to compare venues, or open execution evidence to inspect linked native fills and fees. Manage imported orders directly at the exchange. **Pause discovery** stops discovery pages; each order has a separate status-tracking preference. Neither control cancels orders. Enabled discovery repeats about every five minutes while accounts are active.
 
 Progress, errors, exclusions and checkpoints survive restart. Missing orders are not assumed canceled; incomplete or unavailable amounts stay unknown. This is bounded open/recent coverage, not a complete account-history guarantee. See [provider-specific coverage and limitations](../developers/order-discovery.md).
+
+## Refresh imported history
+
+In **Account history → Fills & imports**, choose an active account and exact spot market. The form explains that provider’s retention. **Sync market history** starts an import or resumes its saved checkpoint; **Sync again** collects new observations. To recheck older fees or delayed fills, pause active work and choose **Rescan available history**. Rescans keep local history and update returned records by native identity. The progress list shows retained dates and new/corrected fills in the last completed pass; dates do not establish gap-free coverage. Records outside provider retention may be unavailable.
+
+OKX covers the last 89 days, Bybit UTA traverses up to 730 days in seven-day windows, KuCoin classic exposes seven days of inactive-order fills, and Bitget classic covers 89 days. Authenticated account validation remains outstanding; these are implemented read contracts, not verified connectivity for a particular account. See [provider contracts](../developers/account-sync.md).

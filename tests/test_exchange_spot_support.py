@@ -165,7 +165,8 @@ def test_support_matrix_is_app_scoped_and_lists_gaps():
         )
         if provider["id"] == "okx":
             assert features["market_orders"]["status"] == "available"
-            assert features["history_import"]["status"] == "pending"
+            assert features["history_import"]["status"] == "available"
+            assert features["fill_reconciliation"]["status"] == "available"
         if provider["id"] == "upbit":
             assert features["trade_history"]["status"] == "unavailable"
         if provider["id"] == "gemini":

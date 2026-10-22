@@ -50,6 +50,51 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
     assert before == {key: id(agent) for key, agent in owner.network.agents.items()}
 
 
+def test_accountant_history_tool_reads_retained_facts_without_credentials_or_private_calls(
+    client, monkeypatch
+):
+    owner = client.app.state.services.agents
+    monkeypatch.setattr(owner.store, "credentials", lambda *_: pytest.fail("History help decrypted keys"))
+    monkeypatch.setattr(
+        owner.services.market, "adapter", lambda *_: pytest.fail("History help fetched private data")
+    )
+    network = owner.network
+    result = client.portal.call(
+        network.client.send_task,
+        network.cards["accountant"].url,
+        Task.create_tool_call("account_history", {"account_id": "demo", "symbol": "BTC/USDT"}),
+    )
+    result.raise_for_status()
+    evidence = result.get_last_item().parts[-1].as_tool_output().result
+    assert evidence["evidence_record_limit"] == 10 and evidence["complete_history"] is False
+    assert evidence["provider_limits"][0]["account_id"] == "demo"
+    assert "cursor" not in json.dumps(evidence) and "revision" not in json.dumps(evidence)
+
+
+def test_new_history_tool_honors_the_selected_offline_example(client, monkeypatch):
+    owner = client.app.state.services.agents
+    monkeypatch.setattr(
+        owner.services.account_sync.ledger,
+        "fills",
+        lambda **_: pytest.fail("Changed selected offline report"),
+    )
+    use_model(
+        client,
+        monkeypatch,
+        [action("account_history", account_id="another-account"), "The selected example remains an example."],
+    )
+    response = client.post(
+        "/api/v1/agents/ask",
+        json={
+            "module": "accountant",
+            "message": "Explain these transfers",
+            "context": {"transfer_view": True, "transfer_example": True},
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["evidence"]["view"] == "transfers" and response.json()["evidence"]["example"]
+
+
 def test_reporter_selects_cached_tools_instead_of_preloaded_observations(client, monkeypatch):
     owner = client.app.state.services.agents
     research = owner.services.research

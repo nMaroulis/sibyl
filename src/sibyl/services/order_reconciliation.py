@@ -4,6 +4,7 @@ import hashlib
 import json
 import time
 from collections import defaultdict
+from datetime import datetime
 from decimal import Decimal, localcontext
 
 import ccxt
@@ -240,6 +241,15 @@ class OrderReconciliation:
                         self._write(db, identity, job)
                     return self.detail(identity)
                 cursor = {} if job["caught_up"] else job["cursor"]
+                if not cursor and intent["exchange"] == "bybit":
+                    # Skip empty years for a newly submitted order. Native cursors
+                    # still exhaust every seven-day slice from its creation time.
+                    cursor = {
+                        "start": max(
+                            1,
+                            int(datetime.fromisoformat(intent["created_at"]).timestamp() * 1000) - 86_400_000,
+                        )
+                    }
                 seen = [] if job["caught_up"] else job["seen"]
                 pages = 0 if job["caught_up"] else job["pages"]
                 if pages >= 100:

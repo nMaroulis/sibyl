@@ -304,7 +304,9 @@ class CCXTClient(ExchangeClient):
 
     def fetch_order_fill_page(self, order_id: str, symbol: str, cursor: dict, limit: int = 100) -> TradePage:
         """Read executions only for the reviewed execution providers and their test clients."""
-        if not self.spec.spot_trading or not self.history_kind:
+        from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
+
+        if not self.spec.spot_trading or self.history_kind not in ORDER_FILL_KINDS:
             return super().fetch_order_fill_page(order_id, symbol, cursor, limit)
         if not 1 <= limit <= 100:
             raise ValueError("Order execution page size must be between 1 and 100.")

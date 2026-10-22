@@ -158,17 +158,26 @@ class AccountLedger:
         with self.store.db() as db:
             rows = db.execute("SELECT payload FROM account_sync ORDER BY account_id,symbol").fetchall()
             counts = {
-                (row[0], row[1]): row[2]
-                for row in db.execute("SELECT account_id,symbol,COUNT(*) FROM account_fills GROUP BY 1,2")
+                (row[0], row[1]): {
+                    "record_count": row[2],
+                    "oldest_timestamp_ms": row[3],
+                    "newest_timestamp_ms": row[4],
+                }
+                for row in db.execute(
+                    "SELECT account_id,symbol,COUNT(*),MIN(timestamp_ms),MAX(timestamp_ms) FROM account_fills GROUP BY 1,2"
+                )
             }
         return [
             {
                 **{
                     key: value
                     for key, value in job.items()
-                    if key not in {"cursor", "seen_cursors", "last_attempt"}
+                    if key not in {"cursor", "seen_cursors", "seen_pages", "revision", "last_attempt"}
                 },
-                "record_count": counts.get((job["account_id"], job["symbol"]), 0),
+                **counts.get(
+                    (job["account_id"], job["symbol"]),
+                    {"record_count": 0, "oldest_timestamp_ms": None, "newest_timestamp_ms": None},
+                ),
                 "complete_history": False,
             }
             for job in (json.loads(row[0]) for row in rows)
@@ -207,27 +216,55 @@ class AccountLedger:
         ):
             raise ValueError("The provider history cursor did not advance.")
         fills = [ledger_fill(row, job) for row in page.items]
+        if len({fill["id"] for fill in fills}) != len(fills):
+            raise ValueError("Duplicate fill identities in one page.")
+        page_signature = (
+            hashlib.sha256(
+                json.dumps(sorted(fills, key=lambda row: row["id"]), sort_keys=True).encode()
+            ).hexdigest()
+            if fills
+            else None
+        )
+        if page_signature and page_signature in job.get("seen_pages", []):
+            raise ValueError("Fill history repeated a page without progress.")
         seen = now_iso()
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             current = self.read_job(db, job["account_id"], job["symbol"])
+            if not current or current.get("revision") != job.get("revision"):
+                return
             inserted, updated = self.upsert_fills(db, fills, seen)
             current.update(
                 cursor=page.cursor,
                 pages=current["pages"] + 1,
                 inserted=current["inserted"] + inserted,
                 updated=current["updated"] + updated,
+                pass_pages=current.get("pass_pages", 0) + 1,
+                pass_inserted=current.get("pass_inserted", 0) + inserted,
+                pass_updated=current.get("pass_updated", 0) + updated,
+                pass_complete=page.caught_up,
                 last_success_at=seen,
                 error=None,
                 retries=0,
                 next_attempt=0,
                 retry_at=None,
                 seen_cursors=[] if page.caught_up else [*job.get("seen_cursors", []), signature][-64:],
+                seen_pages=[]
+                if page.caught_up
+                else [*job.get("seen_pages", []), *([page_signature] if page_signature else [])][-64:],
             )
             if current["status"] not in {"paused", "disconnected"}:
                 current["status"] = "caught_up" if page.caught_up else "queued"
             if page.caught_up:
                 current["caught_up_at"] = seen
+                current["last_pass"] = {
+                    "mode": current.get("mode", "incremental"),
+                    "started_at": current.get("pass_started_at", current["started_at"]),
+                    "completed_at": seen,
+                    "pages": current["pass_pages"],
+                    "inserted": current["pass_inserted"],
+                    "updated": current["pass_updated"],
+                }
             if not db.execute("SELECT 1 FROM connections WHERE id=?", (job["account_id"],)).fetchone():
                 current["status"] = "disconnected"
             self.write_job(db, current)
@@ -288,5 +325,5 @@ class AccountLedger:
             "fee_totals": dict(fee_totals),
             "missing_fee_count": missing_fees,
             "complete_history": False,
-            "note": "Retained fills for explicitly selected spot markets. Provider retention and late records can limit coverage. Deposits, withdrawals, opening inventory and cost basis are not imported. These are not P&L or tax results.",
+            "note": "Retained fills for explicitly selected spot markets. Provider retention and late records can limit coverage. Funding movements have a separate ledger; opening inventory and cost basis are not established by these fills. These are not P&L or tax results.",
         }

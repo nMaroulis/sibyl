@@ -60,6 +60,8 @@ class FundingSync(ImportWorker):
                         if row.exchange == "binance-testnet" or (row.exchange == "binance" and row.sandbox)
                         else "Kraken imports posted ledger entries for the default wallet. Pending funding requests are outside this source."
                         if row.exchange == "kraken"
+                        else "Bybit master-UID on-chain withdrawals only, read in 29-day windows. Deposits, off-chain transfers, sub-UID history and extra tax charges are not imported. Rescan a saved range to refresh pending statuses and fees."
+                        if row.exchange == "bybit" and supported(row)
                         else "Funding import is coming soon for this exchange/environment."
                         if not supported(row)
                         else ""

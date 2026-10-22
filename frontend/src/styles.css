@@ -4742,7 +4742,8 @@ details[open] > summary {
   padding-top: 0;
 }
 .account-import-form > .footnote {
-  max-width: 290px;
+  flex-basis: 100%;
+  max-width: none;
   margin-bottom: 4px;
 }
 .account-import-jobs {
@@ -4759,6 +4760,13 @@ details[open] > summary {
 .account-import-description {
   flex: 1;
   min-width: 200px;
+}
+.account-import-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .account-import-description strong {
   font-size: 12px;

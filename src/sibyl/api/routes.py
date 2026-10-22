@@ -366,7 +366,7 @@ def sync_account(connection_id: str, body: AccountSyncRequest, s: S):
     connection = account_connection(s, connection_id)
     if not connection.active:
         raise ValueError("Activate this account in Settings before importing history.")
-    return s.account_sync.enqueue(connection, body.symbols)
+    return s.account_sync.enqueue(connection, body.symbols, body.mode)
 
 
 @router.post("/connections/{connection_id}/sync/pause", tags=["Accountant"])

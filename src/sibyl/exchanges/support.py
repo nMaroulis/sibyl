@@ -7,7 +7,9 @@ submission, resumable imports or recovery. Those require Sibyl's explicit gates.
 from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import funding_streams
 from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS
+from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS
+from sibyl.exchanges.spot_history import history_note
 
 KEY_STORAGE = (
     "API keys are stored locally and encrypted on the machine running Sibyl's Python backend. "
@@ -141,16 +143,18 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                     "history_import",
                     "Resumable trade imports",
                     bool(history),
-                    "Selected-market imports, native fees, checkpoints and incremental sync; exchange retention still applies."
+                    "Selected-market imports, native fees, checkpoints, incremental sync and full available-history rescans. "
+                    + history_note(spec.id)
                     if history
                     else "Durable pagination and checkpoints are not implemented for this exchange.",
                 ),
                 feature(
                     "fill_reconciliation",
                     "Order fill reconciliation",
-                    bool(history) and spec.spot_trading,
-                    "Match native fills and fees to orders with bounded, resumable pages."
-                    if history and spec.spot_trading
+                    (demo or history in ORDER_FILL_KINDS) and spec.spot_trading,
+                    "Match native fills and fees to orders with bounded, resumable pages. "
+                    + history_note(spec.id)
+                    if (demo or history in ORDER_FILL_KINDS) and spec.spot_trading
                     else "Detailed fill/fee reconciliation is pending; cumulative native order status is separate.",
                 ),
                 feature(
@@ -171,9 +175,13 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 ),
                 feature(
                     "funding",
-                    "Deposit / withdrawal history",
-                    "deposit" in funding and "withdrawal" in funding,
-                    "Read-only funding imports; unavailable in optional sandboxes."
+                    "On-chain withdrawal history"
+                    if funding == ["withdrawal"]
+                    else "Deposit / withdrawal history",
+                    "deposit" in funding or "withdrawal" in funding,
+                    "Master-UID on-chain withdrawal reads, native cursors and status/fee rescans. Deposits, off-chain transfers, additional tax charges and sub-UID reads remain pending; unavailable in optional sandboxes."
+                    if spec.id == "bybit" and funding
+                    else "Read-only funding imports; unavailable in optional sandboxes."
                     if funding
                     else "Funding history imports are not implemented for this provider/environment.",
                 ),

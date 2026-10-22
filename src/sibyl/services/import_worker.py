@@ -25,6 +25,7 @@ class ImportWorker:
 
     table = "account_sync"
     key_field = "symbol"
+    limit_message = "Import budget reached. Pause this stream and choose a smaller date range."
 
     def __init__(self, market, store, ledger):
         self.market, self.store, self.ledger = market, store, ledger
@@ -90,13 +91,13 @@ class ImportWorker:
                 "The provider is temporarily unavailable or rate limited. The saved checkpoint is retained."
             )
         elif isinstance(error, ImportLimitError):
-            message = "Import budget reached. Pause this stream and choose a smaller date range."
+            message = self.limit_message
         else:
             message = "The history page could not be validated. The saved checkpoint is retained."
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             current = self.ledger.read_job(db, job["account_id"], job[self.key_field])
-            if job.get("revision") and current.get("revision") != job["revision"]:
+            if current is None or current.get("revision") != job.get("revision"):
                 return
             deferred = isinstance(error, ProviderDeferred)
             retries = current["retries"] + int(not deferred)

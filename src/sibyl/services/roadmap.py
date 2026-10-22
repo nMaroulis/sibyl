@@ -10,10 +10,10 @@ AREAS = [
         "name": "Account synchronization",
         "status": "partial",
         "priority": "next",
-        "working": "Durable selected-market fills for seven clients/environments; Binance/Kraken funding ranges; reviewed transfers and fee allocations.",
+        "working": "Durable selected-market fills for eleven clients/environments; incremental sync and available-history rescans with correction counts and retained ranges; Binance/Kraken funding and Bybit on-chain withdrawals; reviewed transfers and fee allocations.",
         "pending": [
             "Import pagination and funding support for remaining providers; fiat, staking and subaccounts.",
-            "Full rescans, late-event updates and order/fill/funding reconciliation.",
+            "Scheduled refresh of old/pending events, execution bust/removal handling, versioned correction audits and complete order/fill/funding/balance reconciliation.",
             "Authenticated read and sandbox lifecycle acceptance tests.",
         ],
     },
@@ -39,7 +39,7 @@ AREAS = [
             "Broader discovery/recovery adapters, external amendment handling and definitive fee/settlement reconciliation.",
             "Cancel/replace, stop/OCO, trailing, post-only, iceberg and other time-in-force choices.",
             "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; authenticated venue acceptance for all providers.",
-            "Detailed fill reconciliation, resumable imports, client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
+            "Detailed fill reconciliation and resumable imports for Bitstamp/Gemini; client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
         ],
     },
     {

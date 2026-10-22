@@ -26,6 +26,7 @@ def funding_streams(exchange: str) -> list[str]:
         "demo": ["deposit", "withdrawal", "transfer"],
         "binance": ["deposit", "withdrawal"],
         "kraken": ["deposit", "withdrawal", "transfer"],
+        "bybit": ["withdrawal"],
     }.get(exchange, [])
 
 
@@ -84,6 +85,59 @@ def fetch_funding_page(exchange, provider: str, stream: str, cursor: dict, limit
     if not 1 <= limit <= 50:
         raise ValueError("Funding pages support 1–50 records.")
     start, end = cursor["start"], cursor["end"]
+    if provider == "bybit":
+        # The endpoint permits less than thirty days per request. Freeze and
+        # paginate each 29-day slice; the user-selected range can be longer.
+        window_start = cursor.get("window_start", start)
+        window_end = min(end, window_start + 29 * DAY - 1)
+        request = {"startTime": window_start, "endTime": window_end, "withdrawType": 0, "limit": limit}
+        if cursor.get("page"):
+            request["cursor"] = cursor["page"]
+        result = exchange.privateGetV5AssetWithdrawQueryRecord(request)["result"]
+        raw, following = result["rows"], _token(result.get("nextPageCursor"))
+        if (
+            not isinstance(raw, list)
+            or len(raw) > limit
+            or (following and (not raw or following == cursor.get("page")))
+        ):
+            raise ccxt.ExchangeError("Invalid withdrawal history cursor.")
+        if "nextPageCursor" not in result:
+            raise ccxt.ExchangeError("Missing withdrawal history cursor.")
+        rows = []
+        for row in raw:
+            if row.get("withdrawType") != 0 or (row.get("tax") not in (None, "") and number(row["tax"]) != 0):
+                raise ccxt.NotSupported("Off-chain withdrawals and additional taxes are not reviewed.")
+            asset = exchange.safe_currency_code(row.get("coin"))
+            rows.append(
+                {
+                    "native_id": row.get("withdrawId"),
+                    "reference": None,
+                    "asset": asset,
+                    "timestamp_ms": number(row.get("createTime")),
+                    "kind": stream,
+                    "direction": "out",
+                    "quantity": row.get("amount"),
+                    "fee": {"currency": asset, "cost": row.get("withdrawFee")},
+                    "status": {
+                        "success": "completed",
+                        "CancelByUser": "cancelled",
+                        "Reject": "failed",
+                        "Fail": "failed",
+                        "SecurityCheck": "pending",
+                        "Pending": "pending",
+                        "BlockchainConfirmed": "pending",
+                        "MoreInformationRequired": "restricted",
+                    }.get(row.get("status"), "unknown"),
+                    "internal": False,
+                    "amount_basis": "provider_reported",
+                }
+            )
+        done = not following
+        next_cursor = {**cursor, "window_start": window_start, "page": following}
+        if done and window_end < end:
+            next_cursor.update(window_start=window_end + 1, page=None)
+            done = False
+        return FundingPage(rows, next_cursor, done)
     if provider == "binance":
         if end - start >= 90 * DAY:
             raise ValueError("Binance funding ranges must be shorter than 90 days.")

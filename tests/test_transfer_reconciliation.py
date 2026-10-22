@@ -492,5 +492,5 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
     )
     assert response.status_code == 200 and response.json()["mode"] == "llm"
     assert response.json()["evidence"]["view"] == "transfers" and response.json()["evidence"]["example"]
-    assert set(registry.agents["accountant"].tools) == {"accountant_snapshot"}
+    assert set(registry.agents["accountant"].tools) == {"accountant_snapshot", "account_history"}
     assert client.app.state.services.transfers.report()["total"] == 0

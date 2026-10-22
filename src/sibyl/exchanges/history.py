@@ -59,6 +59,10 @@ def fetch_trade_page(exchange, kind: str, symbol: str, cursor: dict, limit: int)
     assumed: fills can share a timestamp and providers have different defaults.
     """
     market = exchange.market(symbol)
+    from sibyl.exchanges.spot_history import KINDS, fetch_spot_page
+
+    if kind in KINDS:
+        return fetch_spot_page(exchange, kind, symbol, cursor, limit)
     if kind == "binance-id":
         after = int(cursor.get("from_id", "0"))
         rows = exchange.fetch_my_trades(symbol, limit=limit, params={"fromId": str(after)})

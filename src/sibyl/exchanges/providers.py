@@ -72,6 +72,7 @@ class OKXClient(CCXTClient):
     """OKX trading wallet, passphrase signing, and explicit simulated-trading mode."""
 
     id = "okx"
+    history_kind = "okx-bill"
     options = {"fetchMarkets": {"types": ["spot"]}}
     balance_params = {"type": "spot"}
 
@@ -94,6 +95,7 @@ class BybitClient(CCXTClient):
     """Bybit spot markets and unified balances, which may include shared collateral."""
 
     id = "bybit"
+    history_kind = "bybit-execution"
     options = {
         "fetchMarkets": {"types": ["spot"]},
         "enableUnifiedAccount": True,
@@ -118,6 +120,7 @@ class KuCoinClient(CCXTClient):
     """KuCoin classic spot trading wallet; main/funding and UTA imports remain separate."""
 
     id = "kucoin"
+    history_kind = "kucoin-hf"
     options = {"fetchMarkets": {"types": ["spot"]}, "uta": False}
     balance_params = {"type": "trade"}
     book_limits = (20, 100)
@@ -135,6 +138,7 @@ class BitgetClient(CCXTClient):
     """Bitget classic spot assets and passphrase authentication."""
 
     id = "bitget"
+    history_kind = "bitget-id"
     balance_params = {"type": "spot"}
 
 

@@ -11,6 +11,7 @@ import {
   ListOrdered,
   Pause,
   RefreshCw,
+  RotateCcw,
 } from 'lucide-react';
 import { exportCSV, number, post, refresh, shortDate } from '../lib/api';
 import { useResource } from '../lib/hooks';
@@ -30,6 +31,7 @@ const historyViews = [
 type SyncAccount = Connection & {
   environment: string;
   history_import: string | null;
+  history_note: string;
 };
 type SyncJob = {
   account_id: string;
@@ -46,6 +48,10 @@ type SyncJob = {
   caught_up_at: string | null;
   error: string | null;
   retry_at?: string | null;
+  oldest_timestamp_ms?: number | null;
+  newest_timestamp_ms?: number | null;
+  mode?: string;
+  last_pass?: { mode: string; inserted: number; updated: number; completed_at: string };
 };
 type SyncStatus = { accounts: SyncAccount[]; jobs: SyncJob[]; scope: string };
 type Fill = {
@@ -169,7 +175,7 @@ function ImportMarket({ account, done }: { account: SyncAccount; done: () => voi
         {busy ? 'Queuing…' : 'Sync market history'}
       </button>
       <p className="footnote">
-        Imports run in the background. Sync again later to collect new fills.
+        {account.history_note} Imports run in the background. Sync again later to collect new fills.
       </p>
     </form>
   );
@@ -215,7 +221,7 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
   );
   const [busy, setBusy] = useState('');
   const toast = useToast();
-  const action = async (item: SyncJob, pause: boolean) => {
+  const action = async (item: SyncJob, pause: boolean, rescan = false) => {
     const key = `${item.account_id}:${item.symbol}`;
     setBusy(key);
     try {
@@ -223,12 +229,16 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
         pause
           ? `/connections/${item.account_id}/sync/pause?symbol=${encodeURIComponent(item.symbol)}`
           : `/connections/${item.account_id}/sync`,
-        pause ? {} : { symbols: [item.symbol] },
+        pause ? {} : { symbols: [item.symbol], mode: rescan ? 'rescan' : 'incremental' },
       );
       sync.retry();
       ledger.retry();
       toast(
-        pause ? 'Import paused. Retained fills and progress are saved.' : 'History import queued.',
+        pause
+          ? 'Import paused. Retained fills and progress are saved.'
+          : rescan
+            ? 'Available history rescan queued. Retained fills will be checked for corrections.'
+            : 'History import queued.',
       );
     } catch (error) {
       toast((error as Error).message, true);
@@ -379,6 +389,21 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                               : ''}
                           </p>
                         )}
+                        {item.oldest_timestamp_ms && item.newest_timestamp_ms && (
+                          <p>
+                            Retained executions{' '}
+                            {shortDate(new Date(item.oldest_timestamp_ms).toISOString())} –{' '}
+                            {shortDate(new Date(item.newest_timestamp_ms).toISOString())}. Gaps may
+                            remain.
+                          </p>
+                        )}
+                        {item.last_pass && (
+                          <p>
+                            Last {item.last_pass.mode === 'rescan' ? 'rescan' : 'sync'}:{' '}
+                            {item.last_pass.inserted} new · {item.last_pass.updated} corrected
+                            fills.
+                          </p>
+                        )}
                         {item.error && (
                           <p className="negative">
                             {item.error}
@@ -400,28 +425,43 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                         {statusLabel[item.status] ?? item.status}
                       </Badge>
                       {accounts.some((account) => account.id === item.account_id) && (
-                        <button
-                          className="button secondary tiny"
-                          disabled={
-                            !!busy ||
-                            (!activeStatuses.includes(item.status) &&
-                              !accounts.find((account) => account.id === item.account_id)?.active)
-                          }
-                          onClick={() => action(item, activeStatuses.includes(item.status))}
-                        >
-                          {activeStatuses.includes(item.status) ? (
-                            <Pause size={13} />
-                          ) : (
-                            <RefreshCw size={13} />
+                        <div className="account-import-actions">
+                          <button
+                            className="button secondary tiny"
+                            disabled={
+                              !!busy ||
+                              (!activeStatuses.includes(item.status) &&
+                                !accounts.find((account) => account.id === item.account_id)?.active)
+                            }
+                            onClick={() => action(item, activeStatuses.includes(item.status))}
+                          >
+                            {activeStatuses.includes(item.status) ? (
+                              <Pause size={13} />
+                            ) : (
+                              <RefreshCw size={13} />
+                            )}
+                            {busy === `${item.account_id}:${item.symbol}`
+                              ? 'Updating…'
+                              : activeStatuses.includes(item.status)
+                                ? 'Pause'
+                                : item.status === 'caught_up'
+                                  ? 'Sync again'
+                                  : 'Resume'}
+                          </button>
+                          {!activeStatuses.includes(item.status) && (
+                            <button
+                              className="button ghost tiny"
+                              disabled={
+                                !!busy ||
+                                !accounts.find((account) => account.id === item.account_id)?.active
+                              }
+                              onClick={() => action(item, false, true)}
+                              title="Start at the provider’s available history boundary. Updates existing fills and retains records outside provider retention."
+                            >
+                              <RotateCcw size={13} /> Rescan available history
+                            </button>
                           )}
-                          {busy === `${item.account_id}:${item.symbol}`
-                            ? 'Updating…'
-                            : activeStatuses.includes(item.status)
-                              ? 'Pause'
-                              : item.status === 'caught_up'
-                                ? 'Sync again'
-                                : 'Resume'}
-                        </button>
+                        </div>
                       )}
                     </div>
                   ))}
