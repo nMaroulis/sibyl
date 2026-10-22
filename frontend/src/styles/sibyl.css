@@ -840,6 +840,7 @@
   padding: 24px;
   background: #fff;
   min-width: 0;
+  align-self: start;
 }
 .messaging-card-heading {
   display: flex;
@@ -884,6 +885,23 @@
   background: #f9eef4;
   color: #b183a4;
 }
+.channel-signal {
+  background: #eef1ff;
+}
+.channel-email {
+  background: #f5f0e9;
+  color: #ad8962;
+}
+.messaging-field-group {
+  border-top: 1px solid #edf0f6;
+  margin-top: 15px;
+  padding: 12px 0 2px;
+}
+.messaging-field-group > summary {
+  color: #7a859e;
+  font-size: 11px;
+  cursor: pointer;
+}
 .messaging-card > p {
   font-size: 11px;
   line-height: 1.7;
@@ -897,7 +915,8 @@
   color: #7a859e;
   margin-top: 14px;
 }
-.messaging-card input {
+.messaging-card input,
+.messaging-card select {
   font-size: 12px;
 }
 .messaging-fields {
@@ -906,7 +925,8 @@
   padding: 0;
   border: 0;
 }
-.messaging-fields input:disabled {
+.messaging-fields input:disabled,
+.messaging-fields select:disabled {
   color: #7a859e;
   background: #f8f9fc;
   opacity: 1;

@@ -88,7 +88,7 @@ function WorkspaceSearch({ close }: { close: () => void }) {
     { path: '/trade?tab=executions', name: 'Trade · Executions', icon: ArrowDownUp },
     { path: '/trade?tab=history', name: 'Trade · Account history', icon: History },
   ].filter((item) =>
-    `${item.name} ${item.path === '/settings' ? 'exchanges connections llm models apis workspace messaging whatsapp telegram' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
+    `${item.name} ${item.path === '/settings' ? 'exchanges connections llm models apis workspace messaging whatsapp telegram signal email' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );

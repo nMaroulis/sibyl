@@ -66,13 +66,19 @@ Manual exchange order permission is controlled separately by `SIBYL_ALLOW_LIVE_T
 
 ## Messaging
 
-Once available, you’ll be able to talk to [Sibyl](./sibyl.md) through WhatsApp, Telegram, Discord or Slack. These integrations are **currently unavailable**. Official app icons and disabled setup fields show what will be needed; there are no save or connect actions.
+Once available, you’ll be able to talk to [Sibyl](./sibyl.md) through WhatsApp, Telegram, Discord, Slack, Signal or email. These integrations are **currently unavailable**. App icons and disabled setup fields show what will be needed; there are no save or connect actions.
 
-| App | Planned setup fields |
-| --- | --- |
-| WhatsApp | Cloud API access token, business phone number ID, Meta app secret, webhook verification token, and your personal WhatsApp number |
-| Telegram | Bot token from BotFather and your numeric Telegram user ID |
-| Discord | Bot token, application ID, and your numeric Discord user ID |
-| Slack | Bot user OAuth token, app-level token for Socket Mode, and your member ID |
+| App      | Planned setup fields                                                                                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WhatsApp | Cloud API access token, business phone number ID, Meta app secret, webhook verification token, and your personal WhatsApp number                                        |
+| Telegram | Bot token from BotFather and your numeric Telegram user ID                                                                                                              |
+| Discord  | Bot token, application ID, and your numeric Discord user ID                                                                                                             |
+| Slack    | Bot user OAuth token, app-level token for Socket Mode, and your member ID                                                                                               |
+| Signal   | Local signal-cli HTTP bridge URL, linked Signal account (phone number or ACI), and your allowed sender ACI                                                              |
+| Email    | Sibyl mailbox and allowed sender addresses; IMAP host/port, encryption, username, password/app password and folder; SMTP host/port, encryption and separate credentials |
 
 The personal sender IDs will identify who is allowed to speak to your Sibyl when clients are implemented. WhatsApp will also require a public HTTPS callback URL; the planned Telegram polling, Discord Gateway and Slack Socket Mode connections do not need a public webhook. The setup links on each card lead to the providers’ documentation. No credentials are collected or saved today.
+
+Signal's planned route uses the **unofficial [signal-cli](https://github.com/AsamK/signal-cli)** JSON-RPC HTTP daemon, linked separately; it does not use a Signal bot API key or collect a Signal PIN. The sender ACI is the stable UUID in received message envelopes. No bridge is started, account linked or Signal message read/sent by Sibyl.
+
+Email groups its previews into **Mailbox**, **Incoming · IMAP** and **Outgoing · SMTP**. Expand each group to inspect its fields. TLS and STARTTLS choices are shown without a plaintext option. This preview targets password/app-password IMAP/SMTP accounts; provider-specific OAuth sign-in remains future work. No mailbox is accessed or email sent. Server settings come from your mail provider; see [manual mail configuration](https://support.mozilla.org/en-US/kb/manual-account-configuration).

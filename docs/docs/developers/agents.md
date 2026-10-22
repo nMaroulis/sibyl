@@ -66,7 +66,7 @@ The persisted delegation trail contains actual requests, validated selections, i
 
 `SibylRequest` accepts a nonblank message of at most 4,000 characters and optional 32-character hexadecimal session/request IDs. Unknown fields are rejected. Missing model setup returns 409 before a chat or provider request is created; unknown session IDs return 404. Provider failures return a generic 502 without reflecting adapter exceptions or credentials. Conversation and request access use the same local workspace token as all versioned routes. Deleting a chat also removes its retained request audit.
 
-`MessagingSettings` is a read-only catalog of provider-specific setup fields. WhatsApp, Telegram, Discord and Slack always report `unavailable` and `connected: false`. The disabled UI accepts no credentials; there are no save/draft endpoints. No channel adapter, token handling, webhook, background receiver, or message-sending tool exists yet.
+`MessagingSettings` is a read-only catalog of provider-specific setup fields. WhatsApp, Telegram, Discord, Slack, Signal and Email always report `unavailable` and `connected: false`. The disabled UI accepts no credentials; there are no save/draft endpoints. No channel adapter, token handling, webhook, background receiver, or message-sending tool exists yet.
 
 ## Extending and testing
 

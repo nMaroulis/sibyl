@@ -244,7 +244,7 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
     response = client.get("/api/v1/settings/messaging")
     assert response.status_code == 200
     channels = {item["id"]: item for item in response.json()["channels"]}
-    assert set(channels) == {"whatsapp", "telegram", "discord", "slack"}
+    assert set(channels) == {"whatsapp", "telegram", "discord", "slack", "signal", "email"}
     assert all(not item["connected"] and item["status"] == "unavailable" for item in channels.values())
     assert "draft" not in response.text and "OLD-" not in response.text
     assert {f["id"] for f in channels["whatsapp"]["fields"]} == {
@@ -261,6 +261,29 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
         "allowed_user_id",
     }
     assert {f["id"] for f in channels["slack"]["fields"]} == {"bot_token", "app_token", "allowed_user_id"}
+    assert {f["id"] for f in channels["signal"]["fields"]} == {"bridge_url", "account", "allowed_sender_aci"}
+    assert channels["signal"]["planned_transport"] == "signal_cli_jsonrpc"
+    assert "unofficial" in channels["signal"]["setup_note"]
+    email_fields = {field["id"]: field for field in channels["email"]["fields"]}
+    assert set(email_fields) == {
+        "email_address",
+        "allowed_sender",
+        "imap_host",
+        "imap_port",
+        "imap_security",
+        "imap_username",
+        "imap_password",
+        "imap_folder",
+        "smtp_host",
+        "smtp_port",
+        "smtp_security",
+        "smtp_username",
+        "smtp_password",
+    }
+    assert channels["email"]["planned_transport"] == "imap_smtp"
+    for protocol in ("imap", "smtp"):
+        assert email_fields[f"{protocol}_password"]["type"] == "password"
+        assert set(email_fields[f"{protocol}_security"]["options"]) == {"TLS", "STARTTLS"}
     for channel in channels.values():
         assert channel["docs_url"].startswith("https://")
         assert all(
@@ -271,12 +294,13 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
         assert not any("value" in field for field in channel["fields"])
 
 
-def test_unavailable_channels_accept_no_credentials_or_draft_writes(client):
-    before = client.app.state.services.store.data_profile("messaging:whatsapp")
+@pytest.mark.parametrize("channel", ["whatsapp", "telegram", "discord", "slack", "signal", "email"])
+def test_unavailable_channels_accept_no_credentials_or_draft_writes(client, channel):
+    before = client.app.state.services.store.data_profile(f"messaging:{channel}")
     for method in (client.put, client.post, client.delete):
-        response = method("/api/v1/settings/messaging/whatsapp")
+        response = method(f"/api/v1/settings/messaging/{channel}")
         assert response.status_code in {404, 405}
-    assert client.app.state.services.store.data_profile("messaging:whatsapp") == before
+    assert client.app.state.services.store.data_profile(f"messaging:{channel}") == before
     assert "/api/v1/settings/messaging/{channel}" not in client.get("/openapi.json").json()["paths"]
 
 

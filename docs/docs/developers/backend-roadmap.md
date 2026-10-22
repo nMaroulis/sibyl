@@ -136,7 +136,7 @@ Sibyl and the ten specialists start as registered ProtoLink runtime gateways. Si
 - [ ] Add scheduled investigations and resumable long-running work. Retained request history is an audit, not workflow resumption.
 - [ ] Add per-agent model/provider selection if different modules need different models.
 - [ ] Add token-by-token answers, deeper internal tool traces, usage/cost reporting and evaluated routing/grounding. Current progress is lifecycle polling rather than token streaming.
-- [ ] Implement WhatsApp, Telegram, Discord and Slack clients, authenticated sender binding, conversation mapping and reliable delivery/retries. Settings previews the required fields without accepting credentials; all channels remain unavailable.
+- [ ] Implement WhatsApp, Telegram, Discord, Slack, Signal and Email clients, authenticated sender binding, conversation mapping and reliable delivery/retries. Settings previews the required fields without accepting credentials; all channels remain unavailable.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
 ### 8. Forecasting / Chronos — baseline only

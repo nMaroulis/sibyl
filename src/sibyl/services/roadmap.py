@@ -98,7 +98,7 @@ AREAS = [
         "pending": [
             "Token-by-token answers, richer internal tool traces, usage/cost reporting and evaluated routing/grounding.",
             "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
-            "WhatsApp, Telegram, Discord and Slack clients, authenticated sender binding, conversation mapping and reliable delivery; setup previews remain unavailable.",
+            "WhatsApp, Telegram, Discord, Slack, Signal and Email clients, authenticated sender binding, conversation mapping and reliable delivery; setup previews remain unavailable.",
         ],
     },
     {

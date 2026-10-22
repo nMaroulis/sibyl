@@ -49,9 +49,11 @@ The gradient **Ask** buttons on module pages still open the corresponding specia
 
 ## Messaging channels: coming soon
 
-Once available, you’ll be able to talk to Sibyl through WhatsApp, Telegram, Discord or Slack.
+Once available, you’ll be able to talk to Sibyl through WhatsApp, Telegram, Discord, Slack, Signal or email.
 
-**Settings → Messaging** shows official app icons, a clear **Unavailable** status, and disabled previews of the credentials and personal sender IDs each integration will need. There are no save buttons or draft storage. Channel clients, authentication, webhooks, message delivery and external chat access are not implemented yet; no credentials can be entered or saved.
+**Settings → Messaging** shows app icons, a clear **Unavailable** status, and disabled previews of the credentials and personal sender IDs each integration will need. There are no save buttons or draft storage. Channel clients, authentication, webhooks, message delivery and external chat access are not implemented yet; no credentials can be entered or saved.
+
+Email previews incoming IMAP and outgoing SMTP settings with separate credentials and TLS/STARTTLS options. Signal previews a separately linked account on the unofficial signal-cli bridge. See the [Messaging setup fields](./settings.md#messaging) for the requirements and limitations.
 
 ## What your model receives
 

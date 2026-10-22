@@ -10,7 +10,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'sibyl',
       title: 'Sibyl beyond the dashboard',
-      text: 'WhatsApp, Telegram, Discord and Slack channel clients. Settings → Messaging previews the required fields; the integrations are currently unavailable.',
+      text: 'WhatsApp, Telegram, Discord, Slack, Signal and Email channel clients. Settings → Messaging previews the required fields; the integrations are currently unavailable.',
     },
     {
       module: 'sibyl',
