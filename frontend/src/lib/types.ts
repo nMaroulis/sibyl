@@ -643,6 +643,16 @@ export type CryptoProfile = Source & {
 };
 
 /** Backend-owned exchange configuration; capabilities describe the installed SDK. */
+export type ExchangeSupportGroup = {
+  id: string;
+  label: string;
+  features: {
+    id: string;
+    label: string;
+    status: 'available' | 'simulated' | 'pending' | 'unavailable';
+    detail: string;
+  }[];
+};
 export type ExchangeProvider = {
   id: string;
   name: string;
@@ -660,10 +670,12 @@ export type ExchangeProvider = {
   limit_orders: boolean;
   cancel_orders: boolean;
   verification: string;
+  support: ExchangeSupportGroup[];
   capabilities: Record<string, 'native' | 'emulated' | 'unavailable' | 'simulated'>;
   timeframes: string[];
 };
 export type ExchangeCatalog = {
+  key_storage: string;
   items: ExchangeProvider[];
   ccxt_version: string;
   not_configured: string[];

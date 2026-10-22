@@ -308,6 +308,7 @@ class LookupTransport:
     [
         ("binance", "origClientOrderId"),
         ("binance-testnet", "origClientOrderId"),
+        ("binanceus", "origClientOrderId"),
         ("coinbase-sandbox", "clientOrderId"),
     ],
 )

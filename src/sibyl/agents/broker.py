@@ -3,6 +3,7 @@
 from protolink import Agent
 
 from sibyl.agents.common import COMMON_PROMPT, Services, background_tool, selected
+from sibyl.exchanges.registry import provider_catalog
 from sibyl.models import BacktestRequest
 from sibyl.services.strategies import CATALOG
 
@@ -12,7 +13,8 @@ DESCRIPTION = "Explain strategy rules, simulation assumptions, and execution ris
 SYSTEM_PROMPT = (
     "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. Call "
     "strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
-    "supported rules and assumptions. Running strategies use virtual capital, not live automated "
+    "supported rules and assumptions. Call exchange_support for manual spot order support, permissions "
+    "and provider-specific history/recovery limits. Running strategies use virtual capital, not live automated "
     "execution. You cannot place, cancel, replace orders or start/stop jobs. "
 )
 
@@ -81,10 +83,25 @@ def create_agent(services: Services, **runtime) -> Agent:
             "url": "/strategies",
         }
 
+    def exchange_support(exchange: str = "binance") -> dict:
+        """Read manual spot trading support and gaps; never inspect keys or execute an order."""
+        provider = next((item for item in provider_catalog()["items"] if item["id"] == exchange), None)
+        return {
+            "provider": provider,
+            "manual_execution_enabled": services.settings.allow_live_trading,
+            "permissions": "Balance/order-history reads; spot trading permission only for supported manual orders. Withdrawals and transfers stay disabled.",
+            "url": "/settings?tab=exchanges",
+            "note": "Trading remains manual with an explicit preview/confirmation. Strategies and agents cannot submit orders. Private account acceptance is pending.",
+        }
+
     agent = Agent(
         name="sibyl-broker",
         description=DESCRIPTION,
-        tools=[background_tool(strategy_context), background_tool(strategy_guide)],
+        tools=[
+            background_tool(strategy_context),
+            background_tool(strategy_guide),
+            background_tool(exchange_support),
+        ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

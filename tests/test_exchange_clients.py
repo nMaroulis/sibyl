@@ -278,7 +278,7 @@ def test_new_adapters_do_not_enable_unreviewed_execution(monkeypatch, identity):
     assert client._exchange.calls == 0
 
 
-@pytest.mark.parametrize("identity", ["binance", "coinbase", "kraken"])
+@pytest.mark.parametrize("identity", [spec.id for spec in EXCHANGES if spec.market_orders])
 def test_market_submission_never_retries_ambiguous_response(monkeypatch, identity):
     client = fake_client(monkeypatch, identity)
     client._exchange.failure = ccxt.RequestTimeout("PRIVATE-SENTINEL")

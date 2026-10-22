@@ -296,7 +296,7 @@ class CCXTClient(ExchangeClient):
             if not self._private:
                 raise ccxt.AuthenticationError("A saved account is required.")
             markets = self.load_markets()
-            if self.id in {"binance", "binance-testnet"} and stream == "recent":
+            if self.id in {"binance", "binanceus", "binance-testnet"} and stream == "recent":
                 for symbol in symbols:
                     self.market(symbol)
             page = discovery_page(self._exchange, self.id, stream, cursor, start, end, symbols)
@@ -310,7 +310,7 @@ class CCXTClient(ExchangeClient):
 
     def fetch_order_fill_page(self, order_id: str, symbol: str, cursor: dict, limit: int = 100) -> TradePage:
         """Read executions only for the reviewed execution providers and their test clients."""
-        if not self.spec.market_orders or not self.history_kind:
+        if not self.spec.spot_trading or not self.history_kind:
             return super().fetch_order_fill_page(order_id, symbol, cursor, limit)
         if not 1 <= limit <= 100:
             raise ValueError("Order execution page size must be between 1 and 100.")
@@ -366,10 +366,8 @@ class CCXTClient(ExchangeClient):
         price: float | None = None,
     ) -> dict:
         """Submit once for reviewed production providers and dedicated test environments."""
-        if not self.spec.market_orders:
-            raise ccxt.NotSupported(
-                "Market orders are not enabled for this provider. Read access is available."
-            )
+        if not self.spec.supports_order(type):
+            raise ccxt.NotSupported(f"{type.title()} orders are not enabled for this provider.")
         if (
             type not in {"market", "limit"}
             or side not in {"buy", "sell"}
@@ -405,7 +403,7 @@ class CCXTClient(ExchangeClient):
 
     def cancel_order(self, order_id: str, symbol: str) -> dict:
         """Send a single cancellation only for the reviewed execution allowlist."""
-        if not self.spec.market_orders:
+        if not self.spec.spot_trading:
             raise ccxt.NotSupported("Cancellation is not enabled for this provider.")
         with self.lock:
             self._require("cancelOrder", private=True)

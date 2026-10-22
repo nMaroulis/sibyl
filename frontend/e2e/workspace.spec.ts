@@ -104,8 +104,14 @@ test('knowledge search and exchange setup are accessible', async ({ page }) => {
   await page.getByLabel('Search knowledge').fill('diversification');
   await expect(page.getByRole('heading', { name: 'Diversification', exact: true })).toBeVisible();
   await page.goto('/settings?tab=exchanges');
-  await page.getByRole('button', { name: 'Connect Binance', exact: true }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'View Binance support', exact: true }).click();
+  const exchange = page.getByRole('dialog');
+  await expect(exchange).toBeVisible();
+  await exchange.getByRole('tab', { name: 'Spot trading', exact: true }).click();
+  await expect(exchange.getByText('Market buy & sell', { exact: true })).toBeVisible();
+  await expect(exchange.getByText('Stop / OCO / cancel-replace', { exact: true })).toBeVisible();
+  await expect(exchange.getByText('Not implemented', { exact: true })).toBeVisible();
+  await exchange.getByRole('button', { name: 'Connect Binance', exact: true }).click();
   await expect(page.getByLabel('API key', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -262,7 +268,9 @@ test('Settings groups connections and configuration with persistent drafts and k
     'aria-selected',
     'true',
   );
-  await expect(page.getByRole('button', { name: 'Connect Binance', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'View Binance support', exact: true }),
+  ).toBeVisible();
   await tabs.getByRole('tab', { name: 'AI models', exact: true }).click();
   await expect(page).toHaveURL(/settings\?tab=models$/);
   await page.getByRole('button', { name: 'Local', exact: true }).click();
@@ -282,7 +290,9 @@ test('Settings groups connections and configuration with persistent drafts and k
   await expect(page.getByLabel('Workspace API token', { exact: true })).toBeVisible();
   await page.keyboard.press('Home');
   await expect(tabs.getByRole('tab', { name: 'Exchanges', exact: true })).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Connect Binance', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'View Binance support', exact: true }),
+  ).toBeVisible();
 });
 
 test('crypto profiles uses the backend catalog and keeps asset selection in the URL', async ({

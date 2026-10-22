@@ -23,16 +23,15 @@ export function ExchangeExecution({
       (c) =>
         c.active &&
         (demo ? c.exchange === 'demo' : c.exchange !== 'demo') &&
-        catalog.data?.items.some(
-          (provider) =>
-            provider.id === c.exchange && (demo ? provider.limit_orders : provider.market_orders),
-        ),
+        catalog.data?.items.some((provider) => provider.id === c.exchange && provider.limit_orders),
     ) ?? [];
   const [connectionId, setConnectionId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('0.001');
-  const [orderType, setOrderType] = useState<'market' | 'limit'>(demo ? 'limit' : 'market');
+  const [requestedOrderType, setOrderType] = useState<'market' | 'limit'>(
+    demo ? 'limit' : 'market',
+  );
   const [limitPrice, setLimitPrice] = useState('50000');
   const [intent, setIntent] = useState<ManagedOrder>();
   const [confirmation, setConfirmation] = useState('');
@@ -40,6 +39,11 @@ export function ExchangeExecution({
   const [error, setError] = useState('');
   const toast = useToast();
   const accountId = connectionId || (demo ? eligible[0]?.id : '');
+  const selectedProvider = catalog.data?.items.find(
+    (provider) => provider.id === eligible.find((account) => account.id === accountId)?.exchange,
+  );
+  const orderType =
+    demo || selectedProvider?.market_orders === false ? 'limit' : requestedOrderType;
   const reset = () => {
     setIntent(undefined);
     setConfirmation('');
@@ -164,7 +168,9 @@ export function ExchangeExecution({
                         reset();
                       }}
                     >
-                      {!demo && <option value="market">Market</option>}
+                      {!demo && selectedProvider?.market_orders !== false && (
+                        <option value="market">Market</option>
+                      )}
                       <option value="limit">Limit · GTC</option>
                     </select>
                   </label>
@@ -285,7 +291,7 @@ export function ExchangeExecution({
                 <p>
                   {demo
                     ? 'A buy reserves quote currency plus its paper fee. A sell reserves the base asset. Market orders cannot spend those funds until the limit fills or is canceled.'
-                    : 'Review your account, environment, market, side, quantity and price. Native execution is enabled only for Binance, Coinbase Advanced, Kraken and the Binance / Coinbase test environments.'}
+                    : 'Review your account, environment, market, side, quantity and price. Order types depend on the selected exchange; inspect its feature tabs in Settings for support and history/recovery limits.'}
                 </p>
                 <p>
                   {demo

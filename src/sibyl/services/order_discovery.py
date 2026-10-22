@@ -151,7 +151,7 @@ class OrderDiscovery:
                     **connection.model_dump(mode="json"),
                     "environment": environment(connection),
                     "supported": connection.exchange in DISCOVERY_PROVIDERS,
-                    "history_requires_symbols": connection.exchange in {"binance", "binance-testnet"},
+                    "history_requires_symbols": connection.exchange in {"binance", "binanceus", "binance-testnet"},
                 }
                 for connection in self.store.connections()
             ],

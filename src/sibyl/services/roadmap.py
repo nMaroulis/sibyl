@@ -34,11 +34,12 @@ AREAS = [
         "name": "Order management",
         "status": "partial",
         "priority": "next",
-        "working": "Reviewed market/GTC limits, cancellation, status/fill tracking, client-ID recovery and read-only combined account order discovery with shared execution evidence.",
+        "working": "Manual market/GTC limits and cancellation for eight production providers, Gemini limits, and test clients. Per-exchange support tabs; selected providers have fill reconciliation, recovery and discovery.",
         "pending": [
             "Broader discovery/recovery adapters, external amendment handling and definitive fee/settlement reconciliation.",
             "Cancel/replace, stop/OCO, trailing, post-only, iceberg and other time-in-force choices.",
-            "Execution review for additional providers and authenticated venue acceptance.",
+            "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; authenticated venue acceptance for all providers.",
+            "Detailed fill reconciliation, resumable imports, client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
         ],
     },
     {

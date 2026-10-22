@@ -143,7 +143,7 @@ class ExchangeTrading:
             self._enabled()
         if not connection.active:
             raise ValueError("Activate this exchange account in Settings before reviewing an order.")
-        if not (demo or exchange_spec(connection.exchange).market_orders):
+        if not (demo or exchange_spec(connection.exchange).supports_order(request.order_type)):
             raise ValueError(
                 "Manual exchange orders are not enabled for this provider. Read access is available."
             )
@@ -193,6 +193,7 @@ class ExchangeTrading:
                 if limits.get("max") is not None and value > limits["max"]:
                     raise ValueError(f"Order exceeds the exchange maximum {field}.")
             balances = client.fetch_balance().get("free", {})
+            client_order_id = client.format_client_order_id(str(uuid4()))
         base, quote = request.symbol.split("/")
         buffer = 1.001 if demo else 1.01
         needed, asset = (notional * buffer, quote) if request.side == "buy" else (request.quantity, base)
@@ -216,7 +217,7 @@ class ExchangeTrading:
             "confirmation": f"{request.side.upper()} {base}",
             "created_at": now.isoformat(),
             "expires_at": (now + timedelta(seconds=60)).isoformat(),
-            "client_order_id": str(uuid4()),
+            "client_order_id": client_order_id,
             "tracking": False,
         }
         try:

@@ -45,6 +45,7 @@ class ExchangeSpec:
     uid: bool = False
     sandbox: bool = False
     market_orders: bool = False
+    limit_only: bool = False
     account: str = "Spot trading wallet"
     credentials_required: bool = True
     simulated: bool = False
@@ -52,37 +53,56 @@ class ExchangeSpec:
     ccxt_id: str = ""
     setup_url: str = ""
 
+    @property
+    def spot_trading(self) -> bool:
+        """Whether Sibyl has reviewed an order submission and cancellation path."""
+        return self.market_orders or self.limit_only or self.simulated
+
+    def supports_order(self, order_type: str) -> bool:
+        """Keep domain and adapter execution gates aligned, including limit-only venues."""
+        if order_type == "limit":
+            return self.spot_trading
+        return order_type == "market" and self.market_orders
+
     def public(self) -> dict:
         """Return non-secret metadata consumed by connection forms and API clients."""
         return {
             **asdict(self),
             "ccxt_id": self.ccxt_id or self.id,
             "verification": "adapter-tested; private account not acceptance-tested",
-            "limit_orders": self.market_orders or self.simulated,
-            "cancel_orders": self.market_orders or self.simulated,
+            "limit_orders": self.spot_trading,
+            "cancel_orders": self.spot_trading,
         }
 
 
 EXCHANGES = (
     ExchangeSpec("binance", "Binance", sandbox=True, market_orders=True),
-    ExchangeSpec("binanceus", "Binance.US", account="US spot account; separate Binance.US keys"),
+    ExchangeSpec(
+        "binanceus", "Binance.US", market_orders=True, account="US spot account; separate Binance.US keys"
+    ),
     ExchangeSpec("coinbase", "Coinbase", "CDP API key name + supported PEM private key", market_orders=True),
     ExchangeSpec("kraken", "Kraken", market_orders=True),
     ExchangeSpec(
         "okx",
         "OKX",
         "API key + secret + passphrase",
+        market_orders=True,
         passphrase=True,
         sandbox=True,
         account="Trading account; funding wallet excluded",
     ),
     ExchangeSpec(
-        "bybit", "Bybit", sandbox=True, account="Unified account; balances may include shared collateral"
+        "bybit",
+        "Bybit",
+        sandbox=True,
+        market_orders=True,
+        account="Unified account; balances may include shared collateral",
     ),
     ExchangeSpec(
         "kucoin",
         "KuCoin",
         "API key + secret + passphrase",
+        market_orders=True,
         passphrase=True,
         account="Spot trading account; main/funding wallet excluded",
     ),
@@ -91,8 +111,8 @@ EXCHANGES = (
     ExchangeSpec("mexc", "MEXC"),
     ExchangeSpec("htx", "HTX"),
     ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True),
-    ExchangeSpec("bitstamp", "Bitstamp"),
-    ExchangeSpec("gemini", "Gemini", sandbox=True),
+    ExchangeSpec("bitstamp", "Bitstamp", market_orders=True),
+    ExchangeSpec("gemini", "Gemini", sandbox=True, limit_only=True),
     ExchangeSpec("bitfinex", "Bitfinex", account="Exchange wallet; margin/funding wallets excluded"),
     ExchangeSpec("coinex", "CoinEx"),
     ExchangeSpec("bitmart", "BitMart", "API key + secret + API memo", uid=True),

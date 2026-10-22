@@ -7,7 +7,15 @@ import ccxt
 from sibyl.exchanges.base import number
 from sibyl.exchanges.history import _token
 
-RECOVERY_PROVIDERS = {"binance", "binance-testnet", "coinbase", "coinbase-sandbox", "kraken", "demo"}
+RECOVERY_PROVIDERS = {
+    "binance",
+    "binanceus",
+    "binance-testnet",
+    "coinbase",
+    "coinbase-sandbox",
+    "kraken",
+    "demo",
+}
 
 
 @dataclass(frozen=True)
@@ -28,7 +36,7 @@ def lookup_order_page(
     an exact-product creation window. Kraken reads client-filtered open orders,
     then closed orders with an opening-time window. No SDK auto-pagination runs.
     """
-    if provider in {"binance", "binance-testnet", "coinbase-sandbox"}:
+    if provider in {"binance", "binanceus", "binance-testnet", "coinbase-sandbox"}:
         params = (
             {"origClientOrderId": client_id}
             if provider != "coinbase-sandbox"

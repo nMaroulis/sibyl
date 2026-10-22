@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
+  Wallet,
+  CandlestickChart,
+  History,
+  ChartNoAxesCombined,
+  CircleHelp,
   Check,
   KeyRound,
   Network,
@@ -14,7 +19,8 @@ import {
 } from 'lucide-react';
 import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
-import type { Connection, ExchangeCatalog, ExchangeProvider } from '../lib/types';
+import type { Connection, ExchangeCatalog, ExchangeProvider, System } from '../lib/types';
+import { SectionPanel, SectionTabs } from './section-tabs';
 import { ExchangeMark } from './exchange-mark';
 import { AccountContext, useAccounts } from './account-selection';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
@@ -75,7 +81,9 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
             ? 'Use API credentials created in this test environment. This account holds test funds only.'
             : provider.simulated
               ? 'Explore with simulated funds and sample prices. No API keys are needed.'
-              : 'Create a dedicated read-only key. Enable balance access and disable trading and withdrawals.'}
+              : provider.limit_orders
+                ? 'Use a dedicated key with balance and order-history read access. Add spot trading permission only if you want to place manual orders in Trade. Keep withdrawals and wallet transfers disabled.'
+                : 'Use a dedicated read-only key for balances and order history. Trading is not enabled for this exchange in Sibyl. Keep withdrawals and wallet transfers disabled.'}
         </p>
       </div>
       <label>
@@ -153,6 +161,17 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
         {provider.id === 'coinbase-sandbox' &&
           ' Use Coinbase Exchange sandbox credentials, rather than Advanced Trade CDP keys.'}
       </p>
+      {provider.id === 'bybit' && (
+        <p className="footnote">
+          Use a Unified Trading Account (UTA). Classic accounts are not supported by this adapter.
+        </p>
+      )}
+      {provider.id === 'kucoin' && (
+        <p className="footnote">
+          Use a classic spot trading account. KuCoin Unified Trading Accounts are not supported by
+          this adapter.
+        </p>
+      )}
       {provider.setup_url && (
         <a className="text-link" href={provider.setup_url} target="_blank" rel="noreferrer">
           Open {provider.name} to create API keys <ArrowUpRight size={13} />
@@ -174,9 +193,135 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
       <p className="footnote">
         {provider.simulated
           ? 'Your demo wallet is saved locally. Reconnecting keeps its existing balances and paper trades.'
-          : 'Credentials are encrypted on your server and cannot be retrieved through the API. Saved connections are verified separately.'}
+          : 'API keys are stored locally and encrypted on the machine running the Python backend. They cannot be retrieved through the API or read by AI agents. Check access verifies balance access separately.'}
       </p>
     </form>
+  );
+}
+
+/** Feature truth comes from the backend's reviewed app paths, not raw SDK flags. */
+function ExchangeDetails({
+  provider,
+  keyStorage,
+  close,
+}: {
+  provider: ExchangeProvider;
+  keyStorage: string;
+  close: () => void;
+}) {
+  const [section, setSection] = useState('account');
+  const [connecting, setConnecting] = useState(false);
+  const system = useResource<System>('/system');
+  const icons = {
+    account: Wallet,
+    spot: ChartNoAxesCombined,
+    history: History,
+    market: CandlestickChart,
+    limits: CircleHelp,
+  };
+  const group = provider.support.find((item) => item.id === section);
+  return (
+    <div className="exchange-details">
+      <div className="exchange-details-intro">
+        <span className="provider-logo">
+          <ExchangeMark exchange={provider.id} />
+        </span>
+        <div>
+          <strong>{provider.account}</strong>
+          <p>{provider.note}</p>
+        </div>
+        {provider.test_environment && <Badge tone="purple">Test funds</Badge>}
+        {provider.simulated && <Badge tone="demo">Demo</Badge>}
+      </div>
+      {connecting ? (
+        <>
+          <button className="text-link" onClick={() => setConnecting(false)}>
+            ← Back to supported features
+          </button>
+          <ConnectionForm provider={provider} close={close} />
+        </>
+      ) : (
+        <>
+          <p className="footnote">
+            Support describes what Sibyl implements. Access still depends on your account, region
+            and API permissions. Private accounts and real orders have not been acceptance-tested.
+          </p>
+          <SectionTabs
+            id="exchange-support"
+            label="Exchange features"
+            compact
+            items={provider.support.map((item) => ({
+              id: item.id,
+              label: item.label,
+              icon: icons[item.id as keyof typeof icons] ?? CircleHelp,
+            }))}
+            value={section}
+            onChange={setSection}
+          />
+          <SectionPanel id="exchange-support" value={section}>
+            {section === 'spot' && !provider.simulated && (
+              <div className="callout exchange-execution-note">
+                <strong>
+                  {provider.limit_orders
+                    ? system.loading
+                      ? 'Checking server execution setting…'
+                      : system.error
+                        ? 'Server execution setting unavailable'
+                        : system.data?.allow_live_trading
+                          ? 'Manual execution enabled on this server'
+                          : 'Manual execution disabled on this server'
+                    : 'Trading is not implemented for this exchange'}
+                </strong>
+                <p>
+                  {provider.limit_orders
+                    ? 'Supported orders require a trading-enabled key and an explicit review in Trade. Saving a connection or checking access never submits an order.'
+                    : 'Connect for account and market reads. A trading-enabled key does not enable pending Sibyl features.'}
+                </p>
+              </div>
+            )}
+            <div className="exchange-feature-list">
+              {group?.features.map((feature) => (
+                <div className="exchange-feature" key={feature.id}>
+                  <div>
+                    <strong>{feature.label}</strong>
+                    <p>{feature.detail}</p>
+                  </div>
+                  <Badge
+                    tone={
+                      feature.status === 'available'
+                        ? 'lime'
+                        : feature.status === 'simulated'
+                          ? 'demo'
+                          : 'neutral'
+                    }
+                  >
+                    {feature.status === 'available' ? (
+                      <>
+                        <Check size={11} /> Supported
+                      </>
+                    ) : feature.status === 'simulated' ? (
+                      'Simulated'
+                    ) : feature.status === 'pending' ? (
+                      'Not implemented'
+                    ) : (
+                      'Unavailable'
+                    )}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </SectionPanel>
+          <div className="exchange-details-footer">
+            <p className="footnote">
+              <ShieldCheck size={14} /> {keyStorage}
+            </p>
+            <button className="button primary" onClick={() => setConnecting(true)}>
+              <Plus size={15} /> Connect {provider.name}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -251,12 +396,18 @@ export function ExchangeConnections() {
       <div className="settings-section-intro">
         <div>
           <h2>Exchange accounts</h2>
-          <p>Connect multiple accounts, combine exchanges, and choose which accounts are active.</p>
+          <p>Choose an exchange to see supported features, then connect one or more accounts.</p>
         </div>
         <Badge tone="lime">
           <ShieldCheck size={12} /> Locally encrypted
         </Badge>
       </div>
+      {catalog.data && (
+        <p className="exchange-vault-notice">
+          <ShieldCheck size={17} />
+          <span>{catalog.data.key_storage}</span>
+        </p>
+      )}
       {selection.data && <AccountContext selection={selection.data} />}
       <div className="exchange-catalog-heading">
         <label className="exchange-search">
@@ -289,7 +440,7 @@ export function ExchangeConnections() {
               <button
                 key={provider.id}
                 className="exchange-client-option"
-                aria-label={`Connect ${provider.name}`}
+                aria-label={`View ${provider.name} support`}
                 disabled={
                   provider.simulated &&
                   connections.data?.some((connection) => connection.exchange === 'demo')
@@ -319,6 +470,13 @@ export function ExchangeConnections() {
                             : provider.uid
                               ? 'Key, secret & memo'
                               : 'API key & secret'}
+                    <span className="exchange-support-summary">
+                      {provider.market_orders
+                        ? 'Market & limit trading'
+                        : provider.limit_orders
+                          ? 'Limit trading'
+                          : 'Account & data reads · trading pending'}
+                    </span>
                   </small>
                 </span>
                 {provider.simulated ? (
@@ -423,6 +581,12 @@ export function ExchangeConnections() {
                 <RefreshCw size={13} className={busy === connection.id ? 'spin' : ''} />
                 {connection.exchange === 'demo' ? 'Check account' : 'Check access'}
               </button>
+              <button
+                className="button secondary tiny"
+                onClick={() => setSelected(connection.exchange)}
+              >
+                Features
+              </button>
               <Link
                 className="button secondary tiny"
                 to={`/trade?tab=history&account=${encodeURIComponent(connection.id)}`}
@@ -483,7 +647,7 @@ export function ExchangeConnections() {
           <h3>Your keys stay with you.</h3>
           <p>
             Credentials are encrypted using a local vault key. They are used only by the Python
-            exchange adapter, and are never passed to Oracle.
+            exchange adapter, and are never passed to AI agents.
           </p>
         </Panel>
         <Panel>
@@ -509,10 +673,13 @@ export function ExchangeConnections() {
       </div>
       {selected && exchanges.find((provider) => provider.id === selected) && (
         <Modal
-          title={`Connect ${exchanges.find((exchange) => exchange.id === selected)?.name}`}
+          title={`${exchanges.find((exchange) => exchange.id === selected)?.name}`}
+          className="exchange-details-modal"
           onClose={() => setSelected(undefined)}
         >
-          <ConnectionForm
+          <ExchangeDetails
+            key={selected}
+            keyStorage={catalog.data?.key_storage ?? ''}
             provider={exchanges.find((provider) => provider.id === selected)!}
             close={() => setSelected(undefined)}
           />

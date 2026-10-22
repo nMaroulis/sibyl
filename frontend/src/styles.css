@@ -8499,3 +8499,123 @@ details[open] > summary {
   gap: 5px;
   min-width: 0;
 }
+
+/* Exchange details: the app's reviewed capabilities, before credential entry. */
+.exchange-vault-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.exchange-vault-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.exchange-support-summary {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.exchange-details-modal {
+  width: min(860px, calc(100vw - 32px));
+}
+.exchange-details-intro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.exchange-details-intro > div {
+  flex: 1;
+  min-width: 0;
+}
+.exchange-details-intro p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.exchange-details .section-tabs-wrap {
+  margin: 20px 0 16px;
+}
+.exchange-details .section-tabs {
+  max-width: 100%;
+}
+.exchange-details .section-tabs [role='tab'] {
+  gap: 6px;
+  padding: 11px 12px;
+  font-size: 12px;
+}
+.exchange-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+.exchange-feature > div {
+  flex: 1;
+  min-width: 0;
+}
+.exchange-feature strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.exchange-feature p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 5px 0 0;
+}
+.exchange-feature .badge {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-size: 10px;
+}
+.exchange-details-footer {
+  margin-top: 22px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+.exchange-details-footer > p {
+  flex: 1;
+  margin: 0;
+  line-height: 1.6;
+}
+.exchange-details-footer > button {
+  flex-shrink: 0;
+}
+.exchange-execution-note {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.exchange-execution-note strong {
+  font-size: 12px;
+}
+.exchange-execution-note p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 5px 0 0;
+}
+@media (max-width: 600px) {
+  .exchange-details-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .exchange-feature {
+    gap: 10px;
+  }
+  .exchange-details .section-tabs-wrap {
+    justify-content: flex-start;
+  }
+}

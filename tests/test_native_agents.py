@@ -160,6 +160,8 @@ def test_technician_provides_provider_specific_setup_instructions_without_creden
     assert result.status_code == 200, result.text
     reply = result.json()
     assert reply["tool"] == "exchange_setup"
+    assert reply["evidence"]["exchange"]["support"]
+    assert "locally and encrypted" in reply["evidence"]["key_storage"]
     assert reply["evidence"]["required_fields"] == fields
     assert reply["evidence"]["url"] == "/settings?tab=exchanges"
     assert len(reply["evidence"]["steps"]) >= 4
@@ -171,6 +173,7 @@ def test_technician_provides_provider_specific_setup_instructions_without_creden
     [
         ("analyst", "analysis_help", {}),
         ("broker", "strategy_guide", {}),
+        ("broker", "exchange_support", {"exchange": "gemini"}),
         ("chronos", "forecast_method", {}),
         ("wiki", "crypto_catalog", {}),
         ("explorer", "blockchain_help", {}),

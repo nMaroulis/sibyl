@@ -401,7 +401,7 @@ class Native:
         return row
 
 
-@pytest.mark.parametrize("provider", ["binance", "binance-testnet"])
+@pytest.mark.parametrize("provider", ["binance", "binanceus", "binance-testnet"])
 def test_binance_reads_all_open_orders_and_selected_history_windows(provider):
     native = Native([order()])
     assert discovery_page(native, provider, "open", {}, DAY_MS, 3 * DAY_MS, []).complete

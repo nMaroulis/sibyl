@@ -7,7 +7,15 @@ import ccxt
 from sibyl.exchanges.base import number
 from sibyl.exchanges.history import _token
 
-DISCOVERY_PROVIDERS = {"binance", "binance-testnet", "coinbase", "coinbase-sandbox", "kraken", "demo"}
+DISCOVERY_PROVIDERS = {
+    "binance",
+    "binanceus",
+    "binance-testnet",
+    "coinbase",
+    "coinbase-sandbox",
+    "kraken",
+    "demo",
+}
 DAY_MS = 86_400_000
 
 
@@ -36,7 +44,7 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
     than skipping timestamp ties. Other clients use native cursors/offsets. Open
     snapshots without native pagination fail explicitly above 1,000 orders.
     """
-    if provider in {"binance", "binance-testnet"}:
+    if provider in {"binance", "binanceus", "binance-testnet"}:
         if stream == "open":
             rows = exchange.privateGetOpenOrders({})
             if not isinstance(rows, list) or len(rows) > 1000:

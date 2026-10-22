@@ -22,6 +22,8 @@ Exchange execution is disabled by default. To enable it, set:
 SIBYL_ALLOW_LIVE_TRADING=true
 ```
 
+Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic and Bitstamp, plus the dedicated test clients. Gemini supports GTC limits and cancellation only. Other production providers remain read-only. Settings → Exchanges shows the current support and gaps for each provider.
+
 Restart the API, connect an account with the appropriate spot trading permission, and use the separate **Exchange execution** section. Choose the account and its production/sandbox environment carefully. This flow can spend actual exchange funds.
 
 The preview validates market availability, active spot status, base-quantity precision, amount/cost limits, and available balance. Buy previews require a 1% balance buffer for price movement and fees. It creates a server-side intent that expires after **60 seconds**. It does not reserve funds or submit a provider test order.
@@ -32,7 +34,7 @@ Review the reference notional and type the displayed confirmation, such as `BUY 
 
 Before contacting the exchange, Sibyl persists the intent as `submitting`. A repeated confirmation returns the persisted state and never creates a second order. Provider failures with an ambiguous outcome become `unknown`. A process crash can leave an intent as `submitting`, which also requires reconciliation.
 
-**Check the exchange before creating another order after an uncertain outcome.** Use **Recover order** to read existing orders by the saved client ID. A matching account, client ID, market, side, quantity and order type are required before Sibyl attaches a native ID and resumes status/fill checks. Continue lookup advances unfinished history reads. No match is not proof that no order exists; ambiguous, incomplete or mismatched evidence still needs venue inspection. Nothing is automatically resubmitted. See [recovery behavior and provider limits](../developers/order-recovery.md).
+**Check the exchange before creating another order after an uncertain outcome.** Where the provider implements client-ID recovery (Binance/Binance.US/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo), use **Recover order** to read existing orders by the saved client ID. Other execution providers require manual inspection at the exchange after an ambiguous submission. A matching account, client ID, market, side, quantity and order type are required before Sibyl attaches a native ID and resumes status/fill checks. Continue lookup advances unfinished history reads. No match is not proof that no order exists; ambiguous, incomplete or mismatched evidence still needs venue inspection. Nothing is automatically resubmitted. See [recovery behavior and provider limits](../developers/order-recovery.md).
 
 The exchange receives a `clientOrderId` where supported by the adapter. Application-level duplicate protection remains the primary protection because exchange support differs.
 

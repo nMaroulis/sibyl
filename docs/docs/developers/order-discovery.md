@@ -6,7 +6,7 @@ Trade → Executions combines Sibyl submissions with **read-only imported orders
 
 | Client                    | Open orders                             | Recent history                                                                                                |
 | ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Binance / Binance Testnet | Account-wide spot snapshot              | Up to 12 explicitly selected exact pairs; blank means open orders only                                        |
+| Binance / Binance.US / Binance Testnet | Account-wide spot snapshot              | Up to 12 explicitly selected exact pairs; blank means open orders only                                        |
 | Coinbase Advanced Trade   | Account-level Advanced Trade spot pages | Orders created in the selected range, in the key's permitted portfolio and `RETAIL_ADVANCED` placement source |
 | Coinbase Exchange Sandbox | Default open/pending/active order pages | Native `status=all` pages with date bounds                                                                    |
 | Kraken                    | Account-wide orders without leverage    | Orders closed in the selected range, including older orders closed recently                                   |

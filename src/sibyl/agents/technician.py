@@ -4,6 +4,7 @@ from protolink import Agent
 
 from sibyl.agents.common import COMMON_PROMPT, Services, background_tool
 from sibyl.exchanges.catalog import CATALOG, exchange_spec
+from sibyl.exchanges.registry import provider_catalog
 from sibyl.services.llm_settings import ModelSettings
 
 NAME = "Technician"
@@ -27,7 +28,7 @@ GUIDES = {
         "url": "/settings?tab=exchanges",
         "steps": [
             "Choose an exchange, give the account a label and enter its required credentials in Settings, never in chat.",
-            "Use a dedicated read-only API key with withdrawals disabled; restrict IPs where supported.",
+            "Inspect the exchange feature tabs before connecting. Use balance/order-history read permissions; add spot trading permission only for supported manual orders. Keep withdrawals and wallet transfers disabled; restrict IPs where supported.",
             "Save the connection and use its connection check to verify it. Saving metadata alone is not verification.",
             "Activate the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
             "For a preview, explicitly enable Demo. Actual active accounts turn Demo off; test environments remain clearly labeled.",
@@ -87,7 +88,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "connections": [item.model_dump(mode="json") for item in services.store.connections()],
             "mode": services.settings.mode,
             "market_exchange": services.settings.market_exchange,
-            "permissions": "Read-only balance access; agents cannot execute exchange orders.",
+            "permissions": "Agents are read-only. Manual spot trading depends on provider support, API permissions and the server execution setting.",
             "history_imports": services.account_sync.snapshot()["jobs"] if services.account_sync else [],
             "history_scope": "Imports cover selected spot markets and provider retention, not reconciled account history or exchange P&L.",
             "model": ModelSettings(services.settings, services.store).public(),
@@ -110,7 +111,9 @@ def create_agent(services: Services, **runtime) -> Agent:
         if spec.uid:
             fields.append("uid (API memo)")
         return {
-            "exchange": spec.public(),
+            "exchange": next(item for item in provider_catalog()["items"] if item["id"] == exchange),
+            "key_storage": provider_catalog()["key_storage"],
+            "manual_execution_enabled": services.settings.allow_live_trading,
             "required_fields": ["label", *fields],
             **GUIDES["exchanges"],
             "note": "Demo accepts no credentials." if spec.simulated else spec.note,

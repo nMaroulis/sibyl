@@ -75,21 +75,50 @@ class OKXClient(CCXTClient):
     options = {"fetchMarkets": {"types": ["spot"]}}
     balance_params = {"type": "spot"}
 
+    def format_client_order_id(self, identity: str) -> str:
+        """OKX accepts at most 32 alphanumeric characters; persist the native ID."""
+        return identity.replace("-", "")
+
+    def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
+        """Use cash trading and base units, including market buys."""
+        return self._exchange.create_order(
+            symbol,
+            "market",
+            side,
+            amount,
+            params={"clientOrderId": client_order_id, "tdMode": "cash", "tgtCcy": "base_ccy"},
+        )
+
 
 class BybitClient(CCXTClient):
     """Bybit spot markets and unified balances, which may include shared collateral."""
 
     id = "bybit"
-    options = {"fetchMarkets": {"types": ["spot"]}}
+    options = {
+        "fetchMarkets": {"types": ["spot"]},
+        "enableUnifiedAccount": True,
+        "enableUnifiedMargin": False,
+        "fetchOrder": {"acknowledged": True},
+    }
     balance_params = {"accountType": "UNIFIED"}
     book_limits = (1, 50, 200)
+
+    def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
+        """UTA spot buys/sells use the reviewed base quantity, never quote cost."""
+        return self._exchange.create_order(
+            symbol,
+            "market",
+            side,
+            amount,
+            params={"clientOrderId": client_order_id, "marketUnit": "baseCoin", "isLeverage": 0},
+        )
 
 
 class KuCoinClient(CCXTClient):
     """KuCoin classic spot trading wallet; main/funding and UTA imports remain separate."""
 
     id = "kucoin"
-    options = {"fetchMarkets": {"types": ["spot"]}}
+    options = {"fetchMarkets": {"types": ["spot"]}, "uta": False}
     balance_params = {"type": "trade"}
     book_limits = (20, 100)
 

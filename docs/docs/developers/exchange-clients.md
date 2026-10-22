@@ -33,24 +33,24 @@ Clients reuse rate-limited transports with 12-second request timeouts and per-cl
 
 ## Implemented providers
 
-Every row has market/ticker/candle/book, balance, order-status, open-order and fill-page adapters. Individual methods remain subject to the installed SDK's capabilities, exchange availability and account permissions. `/api/v1/exchanges` reports `native`, `emulated` or `unavailable` separately. **Adapter implementation and automated fake-transport tests are not authenticated exchange acceptance tests.**
+Provider subclasses share market, balance, order-status, open-order and bounded trade-read methods. A method is unavailable where the installed SDK does not implement it (for example Upbit trade history). Individual methods remain subject to the installed SDK's capabilities, exchange availability and account permissions. `/api/v1/exchanges` reports `native`, `emulated` or `unavailable` separately. **Adapter implementation and automated fake-transport tests are not authenticated exchange acceptance tests.**
 
 | Provider / ID                     | Credentials beyond key + secret          | Wallet scope                                       | Sandbox exposed | Manual market/GTC limit orders                   |
 | --------------------------------- | ---------------------------------------- | -------------------------------------------------- | --------------- | ------------------------------------------------ |
 | Binance / `binance`               | —                                        | Spot                                               | Yes             | Existing reviewed flow                           |
-| Binance.US / `binanceus`          | Separate US credentials                  | Spot                                               | No              | Pending                                          |
+| Binance.US / `binanceus`          | Separate US credentials                  | Spot                                               | No              | Implemented · guarded manual flow                |
 | Coinbase / `coinbase`             | CDP key name + supported PEM private key | Advanced Trade spot                                | No              | Existing reviewed flow                           |
 | Kraken / `kraken`                 | —                                        | Spot                                               | No              | Existing reviewed flow                           |
-| OKX / `okx`                       | Passphrase                               | Trading wallet                                     | Yes             | Pending                                          |
-| Bybit / `bybit`                   | —                                        | Unified account; shared collateral may be included | Yes             | Pending                                          |
-| KuCoin / `kucoin`                 | Passphrase                               | Classic spot trading wallet                        | No              | Pending                                          |
+| OKX / `okx`                       | Passphrase                               | Trading wallet                                     | Yes             | Implemented · guarded manual flow                |
+| Bybit / `bybit`                   | —                                        | Unified account; shared collateral may be included | Yes             | Implemented · guarded manual flow                |
+| KuCoin / `kucoin`                 | Passphrase                               | Classic spot trading wallet                        | No              | Implemented · guarded manual flow                |
 | Gate / `gate`                     | —                                        | Spot                                               | Yes             | Pending                                          |
 | Bitget / `bitget`                 | Passphrase                               | Classic spot wallet                                | No              | Pending                                          |
 | MEXC / `mexc`                     | —                                        | Spot                                               | No              | Pending                                          |
 | HTX / `htx`                       | —                                        | Spot                                               | No              | Pending                                          |
 | Crypto.com Exchange / `cryptocom` | Exchange keys, separate from retail app  | Exchange wallet                                    | Yes             | Pending                                          |
-| Bitstamp / `bitstamp`             | —                                        | Spot                                               | No              | Pending                                          |
-| Gemini / `gemini`                 | —                                        | Spot                                               | Yes             | Not supported as a native market-order flow here |
+| Bitstamp / `bitstamp`             | —                                        | Spot                                               | No              | Implemented · guarded manual flow                |
+| Gemini / `gemini`                 | —                                        | Spot                                               | Yes             | GTC limit + cancel only; no native market orders |
 | Bitfinex / `bitfinex`             | —                                        | Exchange wallet                                    | No              | Pending                                          |
 | CoinEx / `coinex`                 | —                                        | Spot                                               | No              | Pending                                          |
 | BitMart / `bitmart`               | API memo → CCXT `uid`                    | Spot                                               | No              | Pending                                          |
@@ -130,7 +130,9 @@ These routes have the same workspace access controls as other APIs. Account read
 - [x] Unified markets, quotes, candles, books, balances, order reads and bounded fill reads.
 - [x] Backend-driven searchable connection UI and reference-exchange selection.
 - [ ] Authenticated read acceptance tests for **every provider**, including sandbox accounts. No private accounts were used to develop this layer.
-- [ ] Review and test actual order quantity, client-ID, fee and reconciliation behavior for the 17 newly added providers before enabling their writes. Gemini needs an explicit alternative to native market orders.
+- [x] Review base-sized market/GTC limit submission and cancellation for Binance.US, OKX, Bybit UTA, KuCoin classic and Bitstamp; GTC limits/cancellation for Gemini. Test actual SDK request generation without network writes.
+- [ ] Implement submission/cancellation for the remaining 11 production providers; their client-ID and base/quote semantics need separate review.
+- [ ] Detailed fill/fee reconciliation, durable imports, client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini; these are separate from cumulative status reads.
 - [x] Durable selected-market fill imports, native-currency fees/rebates, pause/resume and an Account history report for Demo, Binance/Binance.US/Testnet, Coinbase/Sandbox and Kraken. See [account synchronization](account-sync.md).
 - [ ] Durable pagination for remaining providers, complete account-history coverage, order/cash-event reconciliation and exchange P&L. Caught up is not complete account history.
 - [x] Resting GTC limits, reviewed cancellation, cumulative fill status and persisted polling for the existing execution allowlist and Demo.
@@ -151,3 +153,13 @@ These routes have the same workspace access controls as other APIs. Account read
 5. Update this matrix. The Settings catalog and server configuration choices update from the backend automatically.
 
 For providers outside CCXT, implement `ExchangeClient` directly, as the demo client does. Keep provider payloads inside the adapter. Reference: [CCXT official documentation](https://docs.ccxt.com/).
+
+## Settings support details
+
+Clicking a provider opens five feature categories before credential entry: Account overview, Spot trading, History & synchronization, Market data, and Automation & limits. Each feature is **Supported**, **Simulated**, **Not implemented** or **Unavailable**. Saved accounts have a **Features** button for reopening the same view. `support.py` assembles these app-level groups in `/api/v1/exchanges`; raw CCXT `has` flags remain separate. A provider API offering an operation does not enable it in Sibyl.
+
+Spot submission now includes Binance.US, OKX, Bybit UTA, KuCoin classic and Bitstamp, alongside the original providers. Gemini supports GTC limits and cancellation, with market submission blocked. `ExchangeSpec.supports_order()` gates both the service and adapter, and Trade hides market orders for limit-only accounts. Reviewed quantities are always base units. OKX persists a 32-character alphanumeric client ID before submission and explicitly uses `tdMode=cash`, `tgtCcy=base_ccy`. Bybit uses UTA, `marketUnit=baseCoin` and no leverage. KuCoin pins classic spot mode instead of probing or silently switching to UTA. Bybit known-order status uses the acknowledged last-500-orders endpoint; older observations may be unavailable.
+
+Native request-generation tests replace the final SDK transport and check buy/sell amounts, GTC prices, client IDs, cancellation and status reads. They never submit an order. Provider references: [Binance.US](https://docs.binance.us/), [OKX place order](https://www.okx.com/docs-v5/en/#order-book-trading-trade-post-place-order), [Bybit place order](https://bybit-exchange.github.io/docs/v5/order/create-order), [KuCoin classic orders](https://www.kucoin.com/docs-new/rest/spot-trading/orders/add-order), [Bitstamp](https://www.bitstamp.net/api/), [Gemini orders](https://developer.gemini.com/trading/rest-api/orders).
+
+Binance.US also uses the reviewed Binance client-ID recovery and account-order discovery contracts. For OKX, Bybit, KuCoin, Bitstamp and Gemini, manual submission/cancellation and cumulative status are implemented, but durable history imports, order-level detailed fill/fee reconciliation, client-ID recovery and account-wide discovery remain pending. An ambiguous submission is never retried: inspect it at the exchange. Funding imports remain limited to the existing production Binance/Kraken paths. Optional sandboxes do not inherit funding support.

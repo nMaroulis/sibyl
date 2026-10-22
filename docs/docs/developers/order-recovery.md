@@ -6,7 +6,7 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 
 | Client | Lookup |
 | --- | --- |
-| Binance / Binance Testnet | Direct native order read using `origClientOrderId` and the exact spot symbol. |
+| Binance / Binance.US / Binance Testnet | Direct native order read using `origClientOrderId` and the exact spot symbol. |
 | Coinbase Exchange Sandbox | Direct client-ID namespace lookup through the installed Exchange SDK adapter. |
 | Coinbase Advanced | Native order-history pages for one exact product and creation-time window, filtering the returned `client_order_id` exactly. |
 | Kraken | Client-filtered open orders, followed by client-filtered closed-order pages within an opening-time window. Uses `cl_ord_id`, not numeric `userref`. |

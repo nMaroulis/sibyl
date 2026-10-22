@@ -27,6 +27,9 @@ class FakeExchange:
         self.failure = None
         self.free = {"USDT": 100000, "BTC": 2}
 
+    def format_client_order_id(self, identity):
+        return identity
+
     def load_markets(self):
         return self.markets
 

@@ -464,8 +464,24 @@ def test_native_limit_and_cancel_adapter_contract(monkeypatch, identity):
     assert client.cancel_order("native", "BTC/USDT")["status"] == "canceled"
 
 
-def test_read_only_provider_rejects_new_limit_and_cancel(monkeypatch):
-    client = fake_client(monkeypatch, "bybit")
+@pytest.mark.parametrize(
+    "identity",
+    [
+        "gate",
+        "bitget",
+        "mexc",
+        "htx",
+        "cryptocom",
+        "bitfinex",
+        "coinex",
+        "bitmart",
+        "phemex",
+        "poloniex",
+        "upbit",
+    ],
+)
+def test_read_only_provider_rejects_new_limit_and_cancel(monkeypatch, identity):
+    client = fake_client(monkeypatch, identity)
     with pytest.raises(ccxt.NotSupported):
         client.create_order("BTC/USDT", "limit", "buy", 0.01, {"clientOrderId": "reviewed-id"}, price=50000)
     with pytest.raises(ccxt.NotSupported):

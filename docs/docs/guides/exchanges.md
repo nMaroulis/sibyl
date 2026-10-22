@@ -6,8 +6,8 @@ Supported providers: Binance, Binance.US, Coinbase, Kraken, OKX, Bybit, KuCoin, 
 
 ## Connect an account
 
-1. Create an exchange API key dedicated to Sibyl with balance/account read access.
-2. Find your provider in **Settings → Exchanges**, then enter an account label, key and secret.
+1. Create an exchange API key dedicated to Sibyl with balance/account and order-history read access. Add spot trading permission only for supported manual orders. Keep withdrawals and wallet transfers disabled.
+2. Find your provider in **Settings → Exchanges**, review its feature tabs, then select **Connect** and enter an account label, key and secret.
 3. OKX, KuCoin and Bitget also require an API passphrase. BitMart requires the API memo. Coinbase uses the supported CDP key name and PEM private key, rather than an ordinary secret string.
 4. Where offered, select sandbox/testnet and use credentials created for that environment.
 5. Save, then select **Check access** to make an actual read-only balance request.
@@ -45,7 +45,7 @@ After saving, use **Check access** to read the test account. Test accounts appea
 
 The original Binance card still accepts its testnet checkbox for existing workflows. Optional sandboxes also remain configured for OKX, Bybit, Gate, Crypto.com Exchange, Gemini and Phemex. Instruments and credentials can differ from production. Sandbox routing is applied before the first provider request; there is no production fallback.
 
-Manual market orders for the two dedicated test providers use the existing 60-second preview, typed confirmation and server execution setting. This server setting currently guards all exchange submission, including test funds. No test or real orders are sent automatically when a connection is saved or checked. Production market orders remain limited to Binance, Coinbase and Kraken. Module agents have no submission or credential tools.
+Manual market orders for the two dedicated test providers use the existing 60-second preview, typed confirmation and server execution setting. This server setting currently guards all exchange submission, including test funds. No test or real orders are sent automatically when a connection is saved or checked. Production market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic and Bitstamp. Gemini supports GTC limits and cancellation only. Other clients remain read-only. Module agents have no submission or credential tools.
 
 ## Disconnect
 
@@ -60,3 +60,13 @@ Saving a connection activates it. Use its Active/Inactive control to include or 
 Contract tests exercise every client using controlled transports, and installed CCXT configuration is checked without account access. Authenticated exchange accounts and real orders have not been acceptance-tested. The [exchange client reference and checklist](../developers/exchange-clients.md#remaining-implementation-checklist) distinguish implemented adapters from missing execution, imports, streaming, account variants and additional venues.
 
 Public reference prices can resolve a missing USDT pair through USD or USDC at approximate parity. Actual order symbols always remain exact. Portfolio uses a separate exact-pair conversion engine for actual holdings, with observed stablecoin/fiat rates and explicit unpriced coverage.
+
+## Know what works before connecting
+
+Click any exchange card to inspect **Account overview**, **Spot trading**, **History & synchronization**, **Market data**, and **Automation & limits**. Each row explicitly states Supported, Simulated, Not implemented or Unavailable. Supported describes Sibyl's code; it does not confirm your credentials, regional access or trading permissions. **Check access** verifies balance reads only. Saved accounts also have a **Features** button.
+
+Spot trading additionally shows whether execution is enabled on your server. Manual orders remain disabled by default, require a trading-enabled key and an explicit review in Trade. Automated strategies remain paper-only. A supported manual order does not imply durable historical imports, detailed fill reconciliation or recovery is implemented; check the History category for each provider.
+
+**API keys are stored locally and encrypted on the machine running Sibyl's Python backend** (the `.sibyl` workspace by default). A separate local vault key unlocks them. They are not returned by the API or passed to AI agents. The backend uses the credentials to authenticate requests to the exchange. Saving or checking a connection never places an order.
+
+Use a Bybit Unified Trading Account (UTA) or KuCoin classic spot trading account; other account variants are not configured. Gemini has no native market-order flow through the installed adapter; choose a GTC limit. Bybit status reads cover the last 500 orders. Native authenticated account and order acceptance remains pending.

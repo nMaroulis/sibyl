@@ -7,6 +7,7 @@ import ccxt
 from sibyl.exchanges.catalog import DEMO, EXCHANGES, TEST_ENVIRONMENTS
 from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.exchanges.providers import CLIENTS
+from sibyl.exchanges.support import KEY_STORAGE, support_groups
 
 
 @lru_cache(maxsize=1)
@@ -26,6 +27,7 @@ def provider_catalog() -> dict:
         "timeframes": list(TIMEFRAMES),
         "history_import": "demo-keyset",
     }
+    demo["support"] = support_groups(DEMO, demo["capabilities"], demo["history_import"])
     items = [demo]
     for spec in (*TEST_ENVIRONMENTS, *EXCHANGES):
         adapter = getattr(ccxt, spec.ccxt_id or spec.id)()
@@ -49,11 +51,13 @@ def provider_catalog() -> dict:
                 "history_import": CLIENTS[spec.id].history_kind or None,
             }
         )
+        items[-1]["support"] = support_groups(spec, capabilities, items[-1]["history_import"])
         session = getattr(adapter, "session", None)
         if session is not None:
             session.close()
     return {
         "items": items,
+        "key_storage": KEY_STORAGE,
         "ccxt_version": ccxt.__version__,
         "not_configured": sorted(
             set(ccxt.exchanges) - {spec.ccxt_id or spec.id for spec in (*EXCHANGES, *TEST_ENVIRONMENTS)}

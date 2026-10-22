@@ -32,6 +32,10 @@ class ExchangeClient(ABC):
     def __init__(self):
         self.lock = RLock()
 
+    def format_client_order_id(self, identity: str) -> str:
+        """Format a new intent ID before persistence; never transform a submitted ID."""
+        return identity
+
     @abstractmethod
     def load_markets(self) -> dict:
         """Return active spot markets with base, quote, precision and limits."""

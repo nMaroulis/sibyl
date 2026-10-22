@@ -4,12 +4,13 @@ Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native 
 
 ## Provider scope
 
-| Provider                                   | Market                     | GTC limit             | Reviewed cancel      | Status                              |
-| ------------------------------------------ | -------------------------- | --------------------- | -------------------- | ----------------------------------- |
-| Binance, Coinbase Advanced Trade, Kraken   | Yes                        | Yes                   | Yes                  | REST native order ID                |
-| Binance Testnet, Coinbase Exchange Sandbox | Yes                        | Yes                   | Yes                  | REST native order ID                |
-| Demo                                       | Existing paper market form | Virtual resting order | Virtual cancellation | Local synthetic matcher             |
-| Other configured exchanges                 | No                         | No                    | No                   | Read-only adapter capabilities vary |
+| Provider                                                                                       | Market                     | GTC limit             | Reviewed cancel      | Status                              |
+| ---------------------------------------------------------------------------------------------- | -------------------------- | --------------------- | -------------------- | ----------------------------------- |
+| Binance, Binance.US, Coinbase Advanced Trade, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp | Yes                        | Yes                   | Yes                  | REST native order ID                |
+| Binance Testnet, Coinbase Exchange Sandbox                                                     | Yes                        | Yes                   | Yes                  | REST native order ID                |
+| Demo                                                                                           | Existing paper market form | Virtual resting order | Virtual cancellation | Local synthetic matcher             |
+| Gemini                                                                                         | No                         | Yes                   | Yes                  | REST native order ID                |
+| Other configured exchanges                                                                     | No                         | No                    | No                   | Read-only adapter capabilities vary |
 
 Native account acceptance testing remains outstanding. Contract tests use controlled transports; they do not establish production account permissions, regional availability or authenticated exchange acceptance. Coinbase Advanced and Coinbase Exchange Sandbox use different APIs.
 
@@ -21,7 +22,7 @@ The adapter sends a base-quantity limit with `timeInForce=GTC`, an exact price a
 
 Before sending, SQLite commits `submitting`, the submission time, tracking preference and the client ID. Duplicate confirmation returns the persisted intent without sending again. A network timeout or unclear response becomes `unknown`, never a retry. The application may have stopped after the venue accepted but before its ID was saved. Reviewed clients now offer bounded [client-ID recovery](order-recovery.md). Only an exact ID/details match is attached; missing or ambiguous evidence still requires venue inspection.
 
-A returned native ID allows later read-only recovery. Status observations validate identity and bounded cumulative filled/remaining quantities. A regressed fill is rejected, retaining the previous observation. Terminal orders cannot reopen, though a later explicit completed-fill observation can supersede a canceled observation. No individual fill IDs or final fees are fabricated from aggregate quantities. Exact-order [execution reconciliation](order-reconciliation.md) now imports native fill IDs into the shared Account history ledger, compares quantities/cost and exposes reported-fee gaps.
+A returned native ID allows later read-only status tracking. Detailed fill reconciliation and client-ID recovery are provider-specific; see each exchange’s History feature tab. Bybit status reads cover the last 500 account orders. Status observations validate identity and bounded cumulative filled/remaining quantities. A regressed fill is rejected, retaining the previous observation. Terminal orders cannot reopen, though a later explicit completed-fill observation can supersede a canceled observation. No individual fill IDs or final fees are fabricated from aggregate quantities. Exact-order [execution reconciliation](order-reconciliation.md) now imports native fill IDs into the shared Account history ledger, compares quantities/cost and exposes reported-fee gaps.
 
 ## Tracking and restart
 
