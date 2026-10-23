@@ -129,7 +129,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             rows = db.execute(
                 "SELECT payload,created_at FROM alert_notifications "
                 "WHERE json_extract(payload,'$.kind')='strategy' "
-                "AND (?='' OR json_extract(payload,'$.job_id')=?) ORDER BY created_at DESC,id DESC LIMIT 10",
+                "AND (?='' OR json_extract(payload,'$.job_id')=?) ORDER BY created_at DESC,rowid DESC LIMIT 10",
                 (job_id, job_id),
             ).fetchall()
         return {

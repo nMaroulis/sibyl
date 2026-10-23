@@ -9791,3 +9791,44 @@ details[open] > summary {
     flex-wrap: wrap;
   }
 }
+
+.connection-alert-source {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface-soft, #f7f8fb);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.connection-alert-source > span {
+  flex: 1;
+  min-width: 0;
+}
+.connection-alert-source small {
+  display: block;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.connection-alert-source .market-source-mark {
+  flex: none;
+}
+.connection-alert-incidents {
+  display: grid;
+  gap: 8px;
+  padding: 0 20px 14px;
+}
+.connection-alert-incidents > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  font-size: 12px;
+}
+.connection-alert-incidents span,
+.connection-alert-incidents small {
+  color: var(--muted);
+}
+.connection-alert-note {
+  padding: 0 20px 12px;
+}

@@ -333,9 +333,15 @@ class ProviderControl:
                 state["latency_ms"] = latency
                 self._inflight -= 1
                 self._condition.notify_all()
+                retired = self._sources.get(source["id"]) is not state
             if self.history is not None and outcome is not None:
                 self.history.record(
-                    source, state["generation"], latency, None if outcome == "success" else outcome
+                    source,
+                    state["generation"],
+                    latency,
+                    None if outcome == "success" else outcome,
+                    operation=context["name"],
+                    retired=retired,
                 )
 
     def _failure(self, source, error, hint=None):

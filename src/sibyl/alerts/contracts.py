@@ -1,4 +1,4 @@
-"""Validated subscriptions to the existing strategy journal; no execution fields."""
+"""Validated local alert subscriptions; no execution or credential fields."""
 
 from typing import Literal
 
@@ -46,8 +46,33 @@ class StrategyAlertUpdate(StrategyAlertCreate):
     revision: int = Field(ge=1, strict=True)
 
 
-class StrategyAlertAction(Request):
+class AlertAction(Request):
     """Apply a lifecycle action only to the revision the user actually reviewed."""
 
     action: Literal["pause", "arm", "archive", "restore"]
+    revision: int = Field(ge=1, strict=True)
+
+
+# Existing strategy callers retain the same shared lifecycle contract.
+StrategyAlertAction = AlertAction
+
+
+class ConnectionAlertCreate(Request):
+    """Watch transport failures per operation on one configured/observed source."""
+
+    source: str = Field(min_length=1, max_length=120, pattern=r"^[a-z0-9:-]+$")
+    failures_required: int = Field(default=3, ge=1, le=10, strict=True)
+    successes_required: int = Field(default=2, ge=1, le=5, strict=True)
+    notify_recovery: bool = Field(default=True, strict=True)
+    label: str = Field(default="", max_length=80)
+
+    @field_validator("label")
+    @classmethod
+    def single_line(cls, value):
+        return StrategyAlertCreate.single_line(value)
+
+
+class ConnectionAlertUpdate(ConnectionAlertCreate):
+    """Save reviewed changes paused; restart observation only on explicit Resume."""
+
     revision: int = Field(ge=1, strict=True)

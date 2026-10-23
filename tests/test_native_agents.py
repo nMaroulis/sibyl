@@ -36,7 +36,12 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
         "news_sources",
         "fear_and_greed",
     }
-    assert set(owner.agents["technician"].tools) == {"connection_status", "settings_guide", "exchange_setup"}
+    assert set(owner.agents["technician"].tools) == {
+        "connection_status",
+        "connection_alerts",
+        "settings_guide",
+        "exchange_setup",
+    }
     use_model(client, monkeypatch, ["A general explanation without account reads."])
     monkeypatch.setattr(
         owner.services.portfolio, "overview", lambda *_: pytest.fail("Unrequested portfolio read")

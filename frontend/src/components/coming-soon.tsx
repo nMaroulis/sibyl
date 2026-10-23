@@ -70,7 +70,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'alerts',
       title: 'More signals, more ways to hear',
-      text: 'Portfolio-risk and connection alerts, silent-worker outage detection and optional external delivery. Price/crossing rules, per-run strategy journal alerts and the persistent in-app inbox are available now.',
+      text: 'Portfolio-risk alerts, silent-worker outage detection and optional external delivery. Price/crossing rules, strategy journal subscriptions, connection read-failure/recovery watches and the persistent in-app inbox are available now.',
     },
     {
       module: 'workspace',

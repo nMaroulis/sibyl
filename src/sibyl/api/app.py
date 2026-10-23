@@ -161,6 +161,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await asyncio.to_thread(strategies.alerts.tick)
                 await asyncio.sleep(1)
 
+        async def connection_alert_worker():
+            # Evidence-only checks stay independent of provider-backed workers.
+            while True:
+                await asyncio.to_thread(market.connection_alerts.tick)
+                await asyncio.sleep(1)
+
         async def candle_worker():
             while True:
                 await asyncio.to_thread(background_call, history.tick)
@@ -174,6 +180,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         alert_task = asyncio.create_task(alert_worker())
         candle_task = asyncio.create_task(candle_worker())
         strategy_alert_task = asyncio.create_task(strategy_alert_worker())
+        connection_alert_task = asyncio.create_task(connection_alert_worker())
         try:
             yield
         finally:
@@ -185,6 +192,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 alert_task,
                 candle_task,
                 strategy_alert_task,
+                connection_alert_task,
                 messaging_task,
             ):
                 background.cancel()
@@ -196,6 +204,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 alert_task,
                 candle_task,
                 strategy_alert_task,
+                connection_alert_task,
                 messaging_task,
             ):
                 with suppress(asyncio.CancelledError):
@@ -209,6 +218,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await asyncio.to_thread(trading.discovery.close)
             await asyncio.to_thread(alerts.close)
             await asyncio.to_thread(strategies.alerts.close)
+            await asyncio.to_thread(market.connection_alerts.close)
             await asyncio.to_thread(history.close)
             market.close()
 
@@ -304,6 +314,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.strategy_alerts import router as strategy_alerts_router
 
     app.include_router(strategy_alerts_router)
+    from sibyl.api.connection_alerts import router as connection_alerts_router
+
+    app.include_router(connection_alerts_router)
 
     @app.get("/health", tags=["System"])
     def health():

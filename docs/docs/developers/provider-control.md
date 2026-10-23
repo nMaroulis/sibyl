@@ -84,3 +84,9 @@ Hourly aggregates are retained for up to 14 days, bounded globally to 50,000 pro
 Each completed transport read attempts an immediate local commit outside the request-coordinator lock. SQLite lock waits are bounded to 50 ms. Busy/unavailable storage does not replace the provider result or trigger a provider retry; recording counts dropped observations and the UI discloses partial history. Those loss counters are process-local, while successful history commits survive restart. No buffer is replayed, and the history is observational diagnostics rather than an execution audit.
 
 `tests/test_provider_history.py` covers persistence, weighted totals, source/environment boundaries, sparse windows, caps/retention, Demo/cache/deferral/mutation exclusions, storage contention, retired profiles, restart readiness, read-only access and workspace authorization.
+
+### Read-event journal and connection alerts
+
+Alongside hourly aggregates, each recorded transport completion now appends a bounded event for **Alerts → Connections**. The event includes an allowlisted operation, random session/profile generation, sequence and retired-profile flag. It shares the telemetry commit and its 50 ms lock budget; storage loss cannot trigger retries or mask the provider result. No cache hit, deferral, Demo or mutation/preflight read is added. An offline/quiet source is unobserved, not failed.
+
+The journal keeps a contiguous ID suffix up to 14 days/50,000 events and a durable pruning watermark. Per-stream sequences expose missing/reordered observations; restarts and credential changes reset streak continuity. Connection alerts use this evidence for consecutive failure/recovery notices, without restoring current health or probing credentials. See [connection read subscriptions](alerts.md#connection-read-subscriptions) for contracts and limitations.

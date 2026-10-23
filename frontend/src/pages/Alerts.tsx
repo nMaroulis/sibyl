@@ -12,6 +12,7 @@ import {
   Play,
   Plus,
   RefreshCw,
+  Radio,
   Undo2,
   Waves,
 } from 'lucide-react';
@@ -27,6 +28,8 @@ import {
   useToast,
 } from '../components/ui';
 import { StrategyRules, type StrategyAlertExample } from '../components/alerts/strategy-rules';
+import { ConnectionRules } from '../components/alerts/connection-rules';
+import { connectionSettingsURL, type ConnectionAlertExample } from '../lib/connection-alerts';
 import { monitorURL } from '../lib/strategy-monitor';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
 import { MarketSelector, type SpotCatalog } from '../components/market-controls';
@@ -80,6 +83,7 @@ type Example = { rules: Rules; inbox: Inbox };
 const sections = [
   { id: 'rules', label: 'Price rules', icon: ListChecks },
   { id: 'strategies', label: 'Strategy alerts', icon: Waves },
+  { id: 'connections', label: 'Connections', icon: Radio },
   { id: 'inbox', label: 'Inbox', icon: InboxIcon },
 ];
 const ruleState = (rule: PriceRule) =>
@@ -99,9 +103,11 @@ export function Alerts() {
   const tab =
     params.get('tab') === 'inbox'
       ? 'inbox'
-      : params.get('tab') === 'strategies'
-        ? 'strategies'
-        : 'rules';
+      : params.get('tab') === 'connections'
+        ? 'connections'
+        : params.get('tab') === 'strategies'
+          ? 'strategies'
+          : 'rules';
   const [showArchived, setArchived] = useState(false);
   const [example, setExample] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -121,16 +127,31 @@ export function Alerts() {
     0,
     example && tab === 'inbox',
   );
+  const connectionSample = useResource<ConnectionAlertExample>(
+    '/connection-alerts/example',
+    0,
+    example && tab === 'inbox',
+  );
   const settings = useResource<MarketSettings>('/settings/market', 0, creating || !!editing);
   const toast = useToast();
   const ruleData = example ? sample.data?.rules : rules.data;
   const inboxData = example
-    ? sample.data?.inbox && strategySample.data?.inbox
+    ? sample.data?.inbox && strategySample.data?.inbox && connectionSample.data?.inbox
       ? {
           ...sample.data.inbox,
-          items: [...strategySample.data.inbox.items, ...sample.data.inbox.items],
-          total: sample.data.inbox.total + strategySample.data.inbox.total,
-          unread: sample.data.inbox.unread + strategySample.data.inbox.unread,
+          items: [
+            ...connectionSample.data.inbox.items,
+            ...strategySample.data.inbox.items,
+            ...sample.data.inbox.items,
+          ],
+          total:
+            sample.data.inbox.total +
+            strategySample.data.inbox.total +
+            connectionSample.data.inbox.total,
+          unread:
+            sample.data.inbox.unread +
+            strategySample.data.inbox.unread +
+            connectionSample.data.inbox.unread,
         }
       : undefined
     : inbox.data;
@@ -162,10 +183,10 @@ export function Alerts() {
     }
   };
   const error =
-    tab === 'strategies'
+    tab === 'strategies' || tab === 'connections'
       ? ''
       : example
-        ? sample.error || (tab === 'inbox' ? strategySample.error : '')
+        ? sample.error || (tab === 'inbox' ? strategySample.error || connectionSample.error : '')
         : tab === 'rules'
           ? rules.error
           : inbox.error;
@@ -173,6 +194,7 @@ export function Alerts() {
     ? () => {
         sample.retry();
         strategySample.retry();
+        connectionSample.retry();
       }
     : tab === 'rules'
       ? rules.retry
@@ -181,7 +203,7 @@ export function Alerts() {
     <>
       <PageTitle
         title="Alerts"
-        description="Price milestones and strategy changes, together in your local inbox."
+        description="Price milestones, strategy changes and connection reads in your local inbox."
         action={
           <>
             <button
@@ -194,7 +216,7 @@ export function Alerts() {
             >
               {example ? 'Return to my alerts' : 'View example'}
             </button>
-            {tab !== 'strategies' && (
+            {(tab === 'rules' || tab === 'inbox') && (
               <button
                 className="button primary"
                 onClick={() => {
@@ -211,8 +233,8 @@ export function Alerts() {
       <div className="alert-delivery-note">
         <Bell size={17} />
         <span>
-          <strong>In-app notifications</strong> · Watch prices or recorded strategy events. The
-          Sibyl API must be running; no AI model is needed. Alert controls change notifications
+          <strong>In-app notifications</strong> · Watch prices, strategy events or read failures.
+          The Sibyl API must be running; no AI model is needed. Alert controls change notifications
           only.
         </span>
       </div>
@@ -243,6 +265,12 @@ export function Alerts() {
             key={`${example}-${params.get('job_id') || ''}`}
             example={example}
             jobId={params.get('job_id') || ''}
+          />
+        ) : tab === 'connections' ? (
+          <ConnectionRules
+            key={`${example}-${params.get('source') || ''}`}
+            example={example}
+            initialSource={params.get('source') || ''}
           />
         ) : tab === 'rules' ? (
           <Panel className="full-panel">
@@ -471,16 +499,29 @@ export function Alerts() {
                     key={item.id}
                   >
                     <span className="activity-icon">
-                      {item.kind === 'strategy' ? <Waves size={17} /> : <Bell size={17} />}
+                      {item.kind === 'strategy' ? (
+                        <Waves size={17} />
+                      ) : item.kind === 'connection' ? (
+                        <Radio size={17} />
+                      ) : (
+                        <Bell size={17} />
+                      )}
                     </span>
                     <div className="notification-copy">
                       <NotificationText item={item} />
                       <small>
                         {item.kind === 'strategy'
                           ? `Journal event ${item.event_id}`
-                          : `Price cycle ${item.cycle}`}{' '}
+                          : item.kind === 'connection'
+                            ? `Transport read ${item.event_id}`
+                            : `Price cycle ${item.cycle}`}{' '}
                         · observed {new Date(item.observed_at).toLocaleString()}
                       </small>
+                      {item.kind === 'connection' && !example && (
+                        <Link className="text-button" to={connectionSettingsURL(item.source)}>
+                          Source settings <ArrowUpRight size={12} />
+                        </Link>
+                      )}
                       {item.kind === 'strategy' && !example && (
                         <Link className="text-button" to={monitorURL(item.job_id)}>
                           Open strategy monitor <ArrowUpRight size={12} />
@@ -503,8 +544,8 @@ export function Alerts() {
               </div>
             ) : (
               <Empty title="All quiet for now">
-                Price triggers and watched strategy events leave a record here, even if the browser
-                was closed.
+                Price triggers, watched strategy events and connection notices leave a record here,
+                even if the browser was closed.
               </Empty>
             )}
             {!!inboxData?.total && !example && (

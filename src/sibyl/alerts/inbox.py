@@ -17,13 +17,13 @@ class NotificationInbox:
             )""")
 
     def page(self, limit: int = 20, offset: int = 0) -> dict:
-        """Read a mixed price/strategy page without evaluating any alert."""
+        """Read a mixed price/strategy/connection page without evaluating any alert."""
         if not 1 <= limit <= 100 or not 0 <= offset <= 1_000_000:
             raise ValueError("Choose a valid notification page.")
         with self.store.db() as db:
             db.execute("BEGIN")
             rows = db.execute(
-                "SELECT * FROM alert_notifications ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?",
+                "SELECT * FROM alert_notifications ORDER BY created_at DESC,rowid DESC LIMIT ? OFFSET ?",
                 (limit, offset),
             ).fetchall()
             total, unread = db.execute(

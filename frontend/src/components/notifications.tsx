@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUpRight, Bell, CheckCheck, Sparkles, Waves } from 'lucide-react';
+import { ArrowUpRight, Bell, CheckCheck, Sparkles, Waves, Radio } from 'lucide-react';
 import type { Run } from '../lib/types';
 import { strategyActionLabel, type StrategyAlertRun } from '../lib/strategy-alerts';
+import { operationLabel, connectionSettingsURL } from '../lib/connection-alerts';
 import { monitorURL } from '../lib/strategy-monitor';
 import { number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
@@ -21,7 +22,6 @@ type NotificationBase = {
   id: string;
   rule_id: string;
   label: string;
-  symbol: string;
   source: string;
   source_label: string;
   environment: string;
@@ -35,10 +35,22 @@ export type AlertNotification = NotificationBase &
   (
     | {
         kind?: 'price';
+        symbol: string;
         condition: PriceCondition;
         repeat?: 'once' | 'after_reset';
         threshold: number;
         price: number;
+      }
+    | {
+        kind: 'connection';
+        operation: string;
+        action: 'failing' | 'recovered';
+        reason: string;
+        event_id: number;
+        failures: number;
+        successes: number;
+        failures_required: number;
+        successes_required: number;
       }
     | (StrategyAlertRun & {
         kind: 'strategy';
@@ -52,7 +64,11 @@ export type AlertNotification = NotificationBase &
       })
   );
 export const notificationURL = (item: AlertNotification) =>
-  item.kind === 'strategy' ? monitorURL(item.job_id) : '/alerts?tab=inbox';
+  item.kind === 'strategy'
+    ? monitorURL(item.job_id)
+    : item.kind === 'connection'
+      ? connectionSettingsURL(item.source)
+      : '/alerts?tab=inbox';
 export type Inbox = {
   items: AlertNotification[];
   total: number;
@@ -64,6 +80,26 @@ export type Inbox = {
 
 /** Describe observed evidence without implying a trade or an external notification. */
 export function NotificationText({ item }: { item: AlertNotification }) {
+  if (item.kind === 'connection')
+    return (
+      <>
+        <strong>
+          {item.label || item.source_label} ·{' '}
+          {item.action === 'failing' ? 'Read failures observed' : 'Successful reads resumed'}
+        </strong>
+        <span>
+          {operationLabel(item.operation)} ·{' '}
+          {item.action === 'failing'
+            ? `${item.failures} consecutive failed reads`
+            : `${item.successes} consecutive successful reads`}
+        </span>
+        <span className="strategy-notification-reason">{item.reason}</span>
+        <small>
+          {item.source_label} · {new Date(item.created_at).toLocaleString()}{' '}
+          <Badge tone={item.environment === 'test' ? 'peach' : 'neutral'}>{item.environment}</Badge>
+        </small>
+      </>
+    );
   if (item.kind === 'strategy')
     return (
       <>
@@ -180,7 +216,13 @@ export function NotificationBell({ runs }: { runs?: Run[] }) {
                 to={notificationURL(item)}
               >
                 <span className="activity-icon">
-                  {item.kind === 'strategy' ? <Waves size={15} /> : <Bell size={15} />}
+                  {item.kind === 'strategy' ? (
+                    <Waves size={15} />
+                  ) : item.kind === 'connection' ? (
+                    <Radio size={15} />
+                  ) : (
+                    <Bell size={15} />
+                  )}
                 </span>
                 <span className="notification-copy">
                   <NotificationText item={item} />
@@ -188,7 +230,7 @@ export function NotificationBell({ runs }: { runs?: Run[] }) {
               </Link>
             ))
           ) : (
-            <p>No notifications yet. Follow a price or a strategy run.</p>
+            <p>No notifications yet. Watch prices, strategy runs or connection reads.</p>
           )}
           <Link className="notification-manage" to="/alerts">
             Alerts & inbox <ArrowUpRight size={13} />

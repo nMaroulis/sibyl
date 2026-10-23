@@ -12,6 +12,7 @@ from typing import Any
 import ccxt
 import numpy as np
 
+from sibyl.alerts.connections import ConnectionAlerts
 from sibyl.config import Settings
 from sibyl.exchanges import ExchangeClient, create_client
 from sibyl.exchanges.base import number
@@ -49,6 +50,7 @@ class Market:
         self.data_settings = data_settings
         self.archive = CandleArchive(store)
         self.read_history = ProviderHistory(store)
+        self.connection_alerts = ConnectionAlerts(self, store)
         self.requests = ProviderControl(history=self.read_history)
         self._pending = {}
         self._cache_epoch = 0

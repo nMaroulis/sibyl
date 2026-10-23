@@ -1,5 +1,7 @@
 """Technician: connection status and practical help for every settings section."""
 
+import json
+
 from protolink import Agent
 
 from sibyl.agents.common import COMMON_PROMPT, Services, background_tool
@@ -20,7 +22,8 @@ SYSTEM_PROMPT = (
     "Never ask users to paste secrets into chat. Do not claim connectivity was verified by listing "
     "metadata. Explain provider-specific credential fields from the tool. Telegram is available with encrypted bot credentials, one allowed private user, "
     "explicit connection checks and enable/pause. Other messaging channels are unavailable previews. Agents cannot connect accounts or "
-    "mutate settings for the user. "
+    "mutate settings for the user. For saved read-failure alerts and notifications call connection_alerts; "
+    "these are transport observations, not uptime checks, full data validation or verification of current credentials. "
 )
 
 GUIDES = {
@@ -76,6 +79,8 @@ GUIDES = {
             "Choose a saved run, select pauses/errors/recovery and/or lifecycle changes, then Watch strategy events. Only future committed journal entries are watched; existing errors are not replayed.",
             "Pausing an alert stops notifications only. Resume starts from the current journal tail, while armed alerts retain their cursor across API restarts. The API must be running to process events.",
             "Inbox and the top-bar bell show retained evidence with Paper/Exchange and Demo/test labels. Open monitor follows that exact run. Mark read acknowledges a notice without deleting it.",
+            "Connections tab: select a configured/previously observed source and consecutive failed-read threshold. Successes of the same operation can notify recovery. Rules watch future recorded HTTP reads only, without polling or activating the source. Demo has no connection; View example is isolated.",
+            "Read counters reset on session/profile changes, recording gaps or more than five minutes between reads. No observations means no connection-status conclusion. Recovery describes successful transport reads, not fully validated data or verified current credentials. Pausing/resuming begins a new observation window.",
             "No AI model is required. Alerts do not execute, stop strategies, cancel orders, close positions, detect silent worker outages or send external messages.",
         ],
     },
@@ -104,6 +109,23 @@ def create_agent(services: Services, **runtime) -> Agent:
             "history_help": "Trade → Account history → Fills & imports. Sync resumes saved pages. Pause active work before Rescan available history to refresh older fees/fills within provider retention; retained observations are never deleted.",
             "history_scope": "Imports cover selected spot markets and provider retention, not reconciled account history or exchange P&L.",
             "model": ModelSettings(services.settings, services.store).public(),
+        }
+
+    def connection_alerts() -> dict:
+        """Read saved connection-alert rules and the last ten transport notices; never probe, evaluate or change them."""
+        with services.store.db() as db:
+            rows = db.execute(
+                "SELECT payload,created_at FROM alert_notifications "
+                "WHERE json_extract(payload,'$.kind')='connection' "
+                "ORDER BY created_at DESC,rowid DESC LIMIT 10"
+            ).fetchall()
+        return {
+            "rules": services.market.connection_alerts.rules(),
+            "recent_notifications": [
+                {**json.loads(row["payload"]), "created_at": row["created_at"]} for row in rows
+            ],
+            "url": "/alerts?tab=connections",
+            "scope": "Recorded transport reads only; no continuous uptime, credential verification or external delivery.",
         }
 
     def settings_guide(section: str = "exchanges") -> dict:
@@ -137,6 +159,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         description=DESCRIPTION,
         tools=[
             background_tool(connection_status),
+            background_tool(connection_alerts),
             background_tool(settings_guide),
             background_tool(exchange_setup),
         ],

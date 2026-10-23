@@ -59,9 +59,9 @@ AREAS = [
         "name": "Alerts & local operations",
         "status": "partial",
         "priority": "next",
-        "working": "Editable source-pinned price/crossing rules and per-run strategy journal subscriptions; revision checks, atomic event cursors, restart catch-up, a shared local inbox and unread state.",
+        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox.",
         "pending": [
-            "Portfolio-risk and connection-failure rules; fill/order policies and silent-worker outage detection; operational diagnostics.",
+            "Portfolio-risk rules; optional fill/order policies and silent-worker outage detection; broader operational diagnostics.",
             "Optional external delivery with retries and delivery state.",
             "General durable task scheduling, metrics/diagnostics and managed backup/restore.",
         ],
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-23",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Market statistics and durable per-run strategy alerts are implemented. Next foundations: broader account reconciliation, order lifecycle controls, portfolio/connection alerts and local operations. Multi-user support is deferred.",
+        "current_focus": "Market statistics, strategy alerts and connection read-failure/recovery watches are implemented. Next foundations: broader account reconciliation, order lifecycle controls, portfolio-risk alerts and local operations. Multi-user support is deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only; authenticated venue acceptance is outstanding.",
         "release_dates": None,
     }

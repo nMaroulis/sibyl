@@ -209,6 +209,14 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
                         {s.available ? 'Open this feed' : 'Configure this source'}{' '}
                         <ArrowUpRight size={12} />
                       </Link>
+                      {s.provider !== 'demo' && (
+                        <Link
+                          className="text-link"
+                          to={`/alerts?tab=connections&source=${encodeURIComponent(s.id)}`}
+                        >
+                          Watch read failures <ArrowUpRight size={12} />
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

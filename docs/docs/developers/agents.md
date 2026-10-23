@@ -130,7 +130,7 @@ Only outer user requests acquire the shared two-request semaphore. Native delega
 | Broker         | `strategy_context`, `strategy_guide`, `exchange_support`                      |
 | Chronos        | `price_forecast`, `forecast_method`                                           |
 | Reporter       | `news_briefing`, `read_article`, `news_sources`, `fear_and_greed`             |
-| Technician     | `connection_status`, `settings_guide`, `exchange_setup`                       |
+| Technician     | `connection_status`, `connection_alerts`, `settings_guide`, `exchange_setup`                       |
 | Wiki           | `search_knowledge`, `crypto_catalog`                                          |
 | Explorer       | `bitcoin_blocks`, `blockchain_help`                                           |
 | Equity Analyst | `equity_quote`, `equity_help`                                                 |

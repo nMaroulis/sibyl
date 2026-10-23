@@ -11,6 +11,7 @@ from contextlib import closing
 from datetime import UTC, datetime, timedelta
 
 from sibyl.market_data.control import MESSAGES
+from sibyl.market_data.read_events import ProviderReadEvents
 from sibyl.storage import Store
 
 RETENTION_DAYS = 14
@@ -33,6 +34,7 @@ class ProviderHistory:
         self._lock = threading.Lock()
         self._dropped = 0
         self._last_failure_at = None
+        self.events = ProviderReadEvents(store)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS provider_read_hours (
@@ -56,6 +58,7 @@ class ProviderHistory:
     def _prune(self, db):
         """Bound age and row counts, independently of how many profiles have been used."""
         cutoff = (self.clock() - timedelta(days=RETENTION_DAYS)).isoformat()
+        self.events.prune_age(db, cutoff)
         db.execute("DELETE FROM provider_read_hours WHERE hour < ?", (cutoff,))
         db.execute("DELETE FROM provider_read_errors WHERE at < ?", (cutoff,))
         db.execute(
@@ -78,7 +81,16 @@ class ProviderHistory:
                 "last_failure_at": self._last_failure_at,
             }
 
-    def record(self, source: dict, generation: str, latency_ms: float, error_kind: str | None):
+    def record(
+        self,
+        source: dict,
+        generation: str,
+        latency_ms: float,
+        error_kind: str | None,
+        *,
+        operation: str = "read",
+        retired: bool = False,
+    ):
         """Commit one actual read; cache hits, deferrals, Demo and mutations never call this."""
         if source["provider"] == "demo":
             return
@@ -88,6 +100,9 @@ class ProviderHistory:
         hour = at.replace(minute=0, second=0, microsecond=0).isoformat()
         failed = error_kind is not None
         kind = error_kind if error_kind in MESSAGES else "invalid_data"
+        observation = self.events.prepare(
+            source, generation, at.isoformat(), kind if failed else None, operation, retired
+        )
         try:
             with closing(sqlite3.connect(self.store.path, timeout=0.05)) as db, db:
                 db.execute("BEGIN IMMEDIATE")
@@ -128,6 +143,7 @@ class ProviderHistory:
                         "INSERT INTO provider_read_errors(source_id,generation,at,kind) VALUES (?,?,?,?)",
                         (source["id"], generation, at.isoformat(), kind),
                     )
+                self.events.append(db, observation)
                 if inserted or failed:
                     self._prune(db)
         except sqlite3.Error:
