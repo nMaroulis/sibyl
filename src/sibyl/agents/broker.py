@@ -40,6 +40,10 @@ SYSTEM_PROMPT = (
     "Stop & cancel approval does not cancel the new sell. "
     "Residual ownership keeps the account/pair assigned to the stopped run; dust/position handoff "
     "to a new run is pending. Do not suggest a new run can simply adopt these units. "
+    "Use strategy_alerts to inspect saved per-run notification rules and retained notifications. "
+    "They watch journal pauses/errors/recovery and lifecycle events; they never control trading. "
+    "Creating/resuming a rule skips older events; armed rules catch up across restart. Pauses can be manual. "
+    "Notification time differs from journal time; neither proves an order is canceled or a position closed. "
     "You cannot place, cancel, replace orders, approve execution or start/stop jobs. "
 )
 
@@ -94,6 +98,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                 },
                 "observations": monitor["observations"],
                 "recent_events": strategies.journal.events(job_id, 20)["items"],
+                "alert_rules": strategies.alerts.rules(job_id=job_id),
             }
         simulation = BacktestRequest(**({"symbol": symbol} | (parameters or {})))
         return {
@@ -109,6 +114,31 @@ def create_agent(services: Services, **runtime) -> Agent:
                 }
                 for run in store.runs("backtest")[:5]
             ],
+        }
+
+    def strategy_alerts(job_id: str | None = None) -> dict:
+        """Read this run's saved alert rules and recent notifications without evaluating them."""
+        job_id = selected("job_id", job_id, "")
+        if job_id:
+            strategies.journal.job(job_id)
+        rules = strategies.alerts.rules(job_id=job_id or None)
+        # Filter in SQL before limiting, so unrelated price notices cannot hide this run's evidence.
+        import json
+
+        with store.db() as db:
+            rows = db.execute(
+                "SELECT payload,created_at FROM alert_notifications "
+                "WHERE json_extract(payload,'$.kind')='strategy' "
+                "AND (?='' OR json_extract(payload,'$.job_id')=?) ORDER BY created_at DESC,id DESC LIMIT 10",
+                (job_id, job_id),
+            ).fetchall()
+        return {
+            "rules": rules,
+            "recent_notifications": [
+                {**json.loads(row["payload"]), "created_at": row["created_at"]} for row in rows
+            ],
+            "url": "/alerts?tab=strategies",
+            "delivery": "in_app",
         }
 
     def strategy_guide() -> dict:
@@ -201,6 +231,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         tools=[
             background_tool(strategy_context),
             background_tool(strategy_guide),
+            background_tool(strategy_alerts),
             background_tool(exchange_support),
             background_tool(backtest_report),
             background_tool(validation_report),

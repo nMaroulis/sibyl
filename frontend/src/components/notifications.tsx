@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowUpRight, Bell, CheckCheck, Sparkles, Waves } from 'lucide-react';
 import type { Run } from '../lib/types';
+import { strategyActionLabel, type StrategyAlertRun } from '../lib/strategy-alerts';
+import { monitorURL } from '../lib/strategy-monitor';
 import { number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import { Badge, useToast } from './ui';
@@ -15,16 +17,11 @@ export const conditionLabel = (condition: PriceCondition, past = false) =>
     crosses_below: `${past ? 'crossed' : 'crosses'} to or below`,
   })[condition];
 
-export type AlertNotification = {
+type NotificationBase = {
   id: string;
   rule_id: string;
   label: string;
   symbol: string;
-  condition: PriceCondition;
-  repeat?: 'once' | 'after_reset';
-  rule_revision?: number;
-  threshold: number;
-  price: number;
   source: string;
   source_label: string;
   environment: string;
@@ -32,7 +29,30 @@ export type AlertNotification = {
   created_at: string;
   read_at: string | null;
   cycle: number;
+  rule_revision?: number;
 };
+export type AlertNotification = NotificationBase &
+  (
+    | {
+        kind?: 'price';
+        condition: PriceCondition;
+        repeat?: 'once' | 'after_reset';
+        threshold: number;
+        price: number;
+      }
+    | (StrategyAlertRun & {
+        kind: 'strategy';
+        job_id: string;
+        action: string;
+        journal_action: string;
+        reason: string;
+        job_status: string | null;
+        event_id: number;
+        group: string;
+      })
+  );
+export const notificationURL = (item: AlertNotification) =>
+  item.kind === 'strategy' ? monitorURL(item.job_id) : '/alerts?tab=inbox';
 export type Inbox = {
   items: AlertNotification[];
   total: number;
@@ -44,6 +64,27 @@ export type Inbox = {
 
 /** Describe observed evidence without implying a trade or an external notification. */
 export function NotificationText({ item }: { item: AlertNotification }) {
+  if (item.kind === 'strategy')
+    return (
+      <>
+        <strong>
+          {item.label || item.name} · {strategyActionLabel(item.action)}
+        </strong>
+        <span>
+          {item.symbol} · {item.timeframe} · run {item.job_id.slice(0, 8)}
+        </span>
+        <span className="strategy-notification-reason">{item.reason}</span>
+        <small>
+          {item.source_label} · {new Date(item.created_at).toLocaleString()}{' '}
+          <Badge>{item.mode === 'paper' ? 'Paper' : 'Exchange'}</Badge>
+          {item.environment === 'demo' ? (
+            <Badge tone="demo">Demo</Badge>
+          ) : item.environment === 'test' ? (
+            <Badge tone="peach">Test</Badge>
+          ) : null}
+        </small>
+      </>
+    );
   return (
     <>
       <strong>{item.label || `${item.symbol} price alert`}</strong>
@@ -136,10 +177,10 @@ export function NotificationBell({ runs }: { runs?: Run[] }) {
               <Link
                 className={item.read_at ? '' : 'notification-unread'}
                 key={item.id}
-                to="/alerts?tab=inbox"
+                to={notificationURL(item)}
               >
                 <span className="activity-icon">
-                  <Bell size={15} />
+                  {item.kind === 'strategy' ? <Waves size={15} /> : <Bell size={15} />}
                 </span>
                 <span className="notification-copy">
                   <NotificationText item={item} />
@@ -147,7 +188,7 @@ export function NotificationBell({ runs }: { runs?: Run[] }) {
               </Link>
             ))
           ) : (
-            <p>No price alerts yet. Create a rule to follow a market.</p>
+            <p>No notifications yet. Follow a price or a strategy run.</p>
           )}
           <Link className="notification-manage" to="/alerts">
             Alerts & inbox <ArrowUpRight size={13} />

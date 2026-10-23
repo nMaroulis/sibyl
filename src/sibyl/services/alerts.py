@@ -14,6 +14,8 @@ from uuid import uuid4
 
 from pydantic import Field, field_validator
 
+from sibyl.alerts.contracts import AlertConflict
+from sibyl.alerts.inbox import NotificationInbox
 from sibyl.exchanges.base import number
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import OrderRequest, Request
@@ -58,10 +60,6 @@ class PriceAlertUpdate(PriceAlertCreate):
     revision: int = Field(ge=1, strict=True)
 
 
-class AlertConflict(Exception):
-    """An explicit lifecycle/configuration change made an open editor stale."""
-
-
 def stamp() -> str:
     """Return an aware UTC observation time."""
     return datetime.now(UTC).isoformat()
@@ -98,6 +96,7 @@ class PriceAlerts:
 
     def __init__(self, market, store):
         self.market, self.store = market, store
+        self._inbox = NotificationInbox(store)
         self._worker = threading.Lock()
         self._closed = False
         with store.db() as db:
@@ -107,11 +106,6 @@ class PriceAlerts:
                     next_check REAL NOT NULL, payload TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS price_alerts_due ON price_alerts(status,next_check);
-                CREATE TABLE IF NOT EXISTS alert_notifications (
-                    id TEXT PRIMARY KEY, rule_id TEXT NOT NULL, cycle INTEGER NOT NULL,
-                    created_at TEXT NOT NULL, read_at TEXT, payload TEXT NOT NULL,
-                    UNIQUE(rule_id,cycle)
-                );
             """)
 
     @staticmethod
@@ -413,48 +407,12 @@ class PriceAlerts:
             self._closed = True
 
     def inbox(self, limit: int = 20, offset: int = 0) -> dict:
-        """Page retained notifications, with unread totals independent of pagination."""
-        if not 1 <= limit <= 100 or not 0 <= offset <= 1_000_000:
-            raise ValueError("Choose a valid notification page.")
-        with self.store.db() as db:
-            db.execute("BEGIN")
-            rows = db.execute(
-                "SELECT * FROM alert_notifications ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?",
-                (limit, offset),
-            ).fetchall()
-            total, unread = db.execute(
-                "SELECT COUNT(*),COALESCE(SUM(read_at IS NULL),0) FROM alert_notifications"
-            ).fetchone()
-        return {
-            "items": [
-                {
-                    "id": row["id"],
-                    "created_at": row["created_at"],
-                    "read_at": row["read_at"],
-                    **json.loads(row["payload"]),
-                }
-                for row in rows
-            ],
-            "total": total,
-            "unread": unread,
-            "limit": limit,
-            "offset": offset,
-            "delivery": "in_app",
-        }
+        """Read mixed retained notifications without provider reads or implicit acknowledgment."""
+        return self._inbox.page(limit, offset)
 
     def mark_read(self, identity: str | None = None) -> dict:
-        """Persist read state idempotently; history remains available after acknowledging."""
-        with self.store.db() as db:
-            if identity is not None:
-                if not db.execute("SELECT 1 FROM alert_notifications WHERE id=?", (identity,)).fetchone():
-                    raise LookupError("Notification not found.")
-                db.execute(
-                    "UPDATE alert_notifications SET read_at=COALESCE(read_at,?) WHERE id=?",
-                    (stamp(), identity),
-                )
-            else:
-                db.execute("UPDATE alert_notifications SET read_at=? WHERE read_at IS NULL", (stamp(),))
-        return self.inbox()
+        """Acknowledge a price/strategy notification, preserving its trigger evidence."""
+        return self._inbox.mark_read(identity)
 
 
 def alert_example() -> dict:

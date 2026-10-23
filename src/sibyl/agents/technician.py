@@ -12,7 +12,7 @@ TAGLINE = "Keep everything connected"
 DESCRIPTION = "Explain account connectivity, settings and read-only API permissions. Never request secrets."
 SYSTEM_PROMPT = (
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
-    "settings_guide with exchanges, models, news, market, messaging or workspace. For a particular "
+    "settings_guide with exchanges, models, news, market, messaging, alerts or workspace. For a particular "
     "exchange, call exchange_setup with its catalog ID, e.g. binance. Use connection_status only when "
     "actual saved setup matters. Give numbered, practical instructions and a settings link. Explain "
     "that users can connect multiple accounts and view combined or individual portfolios. No account is "
@@ -69,6 +69,16 @@ GUIDES = {
             "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. Other channels remain unavailable previews.",
         ],
     },
+    "alerts": {
+        "url": "/alerts?tab=strategies",
+        "steps": [
+            "Open More → Alerts → Strategy alerts, or Run alerts in a strategy monitor.",
+            "Choose a saved run, select pauses/errors/recovery and/or lifecycle changes, then Watch strategy events. Only future committed journal entries are watched; existing errors are not replayed.",
+            "Pausing an alert stops notifications only. Resume starts from the current journal tail, while armed alerts retain their cursor across API restarts. The API must be running to process events.",
+            "Inbox and the top-bar bell show retained evidence with Paper/Exchange and Demo/test labels. Open monitor follows that exact run. Mark read acknowledges a notice without deleting it.",
+            "No AI model is required. Alerts do not execute, stop strategies, cancel orders, close positions, detect silent worker outages or send external messages.",
+        ],
+    },
     "workspace": {
         "url": "/settings?tab=workspace",
         "steps": [
@@ -97,7 +107,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def settings_guide(section: str = "exchanges") -> dict:
-        """Get actionable Sibyl setup instructions: exchanges, models, news, market, messaging or workspace."""
+        """Get actionable Sibyl setup instructions: exchanges, models, news, market, messaging, alerts or workspace."""
         if section not in GUIDES:
             return {"sections": list(GUIDES), "note": "Choose a listed settings section."}
         return {"section": section, **GUIDES[section]}

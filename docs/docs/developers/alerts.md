@@ -59,6 +59,30 @@ The API accepts no arbitrary destination, webhook, credential or trade field. Cr
 
 ## Current limits
 
-Editable level/crossing rules and reset-based repetition are implemented. Portfolio-risk, strategy and connection-health conditions remain pending. Delivery is in-app only. Notification history is retained locally and paginated, without managed retention/export yet. No general-purpose durable job queue, external delivery retries, guarantee of timely delivery or multiple-worker coordination is claimed.
+Editable level/crossing rules and reset-based repetition are implemented. Strategy journal subscriptions are also implemented below. Portfolio-risk, connection-health and silent-worker outage conditions remain pending. Delivery is in-app only. Notification history is retained locally and paginated, without managed retention/export yet. No general-purpose durable job queue, external delivery retries, guarantee of timely delivery or multiple-worker coordination is claimed.
 
 Tests use disposable stores, exact controlled feeds and API examples. They cover threshold equality, crossing direction/baselines, cooldown reset sequences, ordered timestamps/gaps, cached-data aging, failures/backoff, edit conflicts, source pinning, concurrency and delayed-response races, atomic rollback and restart persistence, unread acknowledgment, pagination, archive/restore, capacity and absence of trading effects. See the [user guide](../guides/alerts.md).
+
+## Strategy journal subscriptions
+
+`alerts/strategies.py` owns `StrategyAlerts`, attached to the strategy domain at startup. `alerts/contracts.py` declares strict create/update/action schemas. `alerts/inbox.py` owns the shared notification table and read acknowledgments; the existing price service delegates its inbox methods to this repository. Prior price notifications default to `kind: price`; new strategy payloads have `kind: strategy`. No legacy row rewrite is needed.
+
+`strategy_alerts` stores one JSON rule with indexed `job_id`, status and next-check time. A partial unique index permits one non-archived rule per run. A separate 50-rule non-archived budget applies. JSON includes categories, run/source/mode/environment snapshot, revision, current global journal ID cursor, last observed job status, check/event/notification times and cumulative notification count.
+
+Creating a rule captures the job, metadata and its maximum event ID inside `BEGIN IMMEDIATE`. This defines the subscription boundary atomically with concurrent journal writes. No existing events are delivered. Pausing/archive does not advance the cursor, but explicit Resume creates a new boundary at the then-current tail and skips the paused interval. Editing validates revision, saves paused and preserves all original notification evidence. Restore checks budget and duplicate-run constraints and leaves the rule paused. Lifecycle/configuration actions advance revision; worker progress does not.
+
+The dedicated lifespan task is independent of the provider-backed price loop. Each tick serializes a local write transaction and reads at most 100 ascending event IDs for one due armed rule. Ignored decisions also advance the cursor. Each matched event inserts an inbox record with unique `(rule_id, event_id)` using the shared `cycle` column. Cursor/status progress and notices commit together. A crash rolls both back; concurrent consumers serialize and cannot duplicate a committed notice. Full pages remain due for catch-up, otherwise checks are scheduled five seconds later. Selection by next-check/row order bounds work across rules. Shutdown waits for the bounded local transaction.
+
+`Strategies._event` now records `job_status` beside the existing action/reason at journal time. Attention matches `PAUSE`, `ERROR`, `RECOVERED`; lifecycle matches `RESUME`, `STOP`, `STOP_CANCEL`, plus the first transition to `completed`, even if its journal action is `SELL` or `SKIP_BUY`. Later events in the same completed state do not duplicate completion. Ordinary HOLD/BUY/SELL/order observations do not notify by themselves. Existing journal error suppression remains authoritative; this is event delivery, not a new error-detection engine.
+
+Strategy payloads retain rule revision/name, job ID, algorithm/pair/interval, source/mode/environment/account label, classification and original journal action, status, reason, event ID/time and receipt time. Credentials, balances and complete job/order payloads are not copied. UI helpers render the mixed inbox and route strategy entries to their exact monitor. Read acknowledgments cover both kinds without deleting history. Broker has a native read-only `strategy_alerts` evidence tool; Technician's `settings_guide(section="alerts")` explains setup. Neither can create rules or change runs.
+
+| Method | Path | Contract |
+| --- | --- | --- |
+| GET | `/strategy-alerts?include_archived=false&offset=0&job_id=...` | Optional exact-run filter; 50-row pages, global non-archived budget and category descriptions; local reads only |
+| POST | `/strategy-alerts` | Exact saved `job_id`, `events: [attention/lifecycle]`, optional single-line label; returns 201, watching future events |
+| POST | `/strategy-alerts/{id}/edit` | Full create configuration plus positive integer `revision`; saves paused, conflict 409 |
+| POST | `/strategy-alerts/{id}/action` | `action: pause/arm/archive/restore`, reviewed `revision`; never a strategy control |
+| GET | `/strategy-alerts/example` | Isolated sample rule/notification, no persistence |
+
+Paths use `/api/v1`, existing workspace access controls and `Cache-Control: no-store`. Schemas reject unknown execution/delivery fields. This remains one local API worker, in-app delivery and retained journal catch-up—not a distributed scheduler, worker liveness alarm, order settlement guarantee or external notification system.

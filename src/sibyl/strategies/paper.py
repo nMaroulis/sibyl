@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from sibyl.alerts.strategies import StrategyAlerts
 from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.models import BacktestRequest
 from sibyl.services.analytics import performance_metrics
@@ -32,6 +33,7 @@ class Strategies:
                 "CREATE TABLE IF NOT EXISTS strategy_jobs (id TEXT PRIMARY KEY, payload TEXT NOT NULL)"
             )
         self.journal = StrategyJournal(store)
+        self.alerts = StrategyAlerts(store)
         self.validation = StrategyValidation(store, market.archive)
         self.execution = None
 
@@ -58,6 +60,7 @@ class Strategies:
             "timestamp": datetime.now(UTC).isoformat(),
             "kind": "decision" if action in {"BUY", "SELL", "HOLD", "SKIP_BUY", "SKIP_SELL"} else "system",
             "action": action,
+            "job_status": job["status"],
             "reason": reason,
             "cash": job["cash"],
             "position": job["quantity"],

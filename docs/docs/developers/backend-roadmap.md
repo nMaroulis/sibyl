@@ -12,7 +12,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
-| Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
+| Alerts & local operations      | partial       | Portfolio-risk and connection-failure rules; silent-worker outage detection and diagnostics.                       |
 | Automated strategy execution   | partial       | Authenticated acceptance, broader risk policies, residual exit handling and fee valuation.            |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
@@ -190,7 +190,8 @@ Basic [price alerts and the local inbox](alerts.md) are implemented. Their worke
 - [x] Evaluate fresh timestamped quotes with persisted scheduling/backoff; atomically save a trigger and its notification, including across restart and lifecycle races.
 - [x] Add retained in-app notification history, pagination, unread/read state and a top-bar inbox alongside existing run activity.
 - [x] Add revision-checked edits that save paused, inclusive level/observed crossing conditions, reset-based recurrence and persisted cooldowns; preserve original notification evidence.
-- [ ] Add portfolio-risk, strategy and connection-failure conditions.
+- [x] Add per-run journal subscriptions for pauses/errors/recovery and lifecycle changes, atomic cursors/notifications, restart catch-up, revision-checked controls and monitor links. See [strategy alerts](alerts.md#strategy-journal-subscriptions).
+- [ ] Add portfolio-risk and connection-failure conditions, silent-worker outage detection and optional fill/order notification policies.
 - [ ] Add optional external delivery integrations with explicit recipients, delivery attempts and retries.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [ ] Add structured application/provider metrics, tracing and operational diagnostics beyond basic health/log output.
@@ -212,7 +213,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 1. **Market-data foundations:** durable candle archive, bounded backfills, gap/health diagnostics and shared read budgets.
 2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
 3. **Close the order loop:** authenticated acceptance of status/fill/recovery/discovery, broader adapters and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
-4. **Build on local alerts:** portfolio/strategy/connection conditions and operational diagnostics, then explicit external delivery and backup/restore.
+4. **Build on local alerts:** portfolio/connection conditions, broader strategy-event policies and operational diagnostics, then explicit external delivery and backup/restore.
 5. **Sibyl and richer ProtoLink tools:** evaluated collaboration, scoped specialist tools, per-agent models and resumable investigations. Messaging clients remain a separately scoped future integration.
 6. **Test-environment strategies:** reconcile actual orders/fills and implement risk controls before any production automation.
 7. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.

@@ -13,6 +13,7 @@ import {
   Plus,
   RefreshCw,
   Undo2,
+  Waves,
 } from 'lucide-react';
 import {
   Badge,
@@ -25,6 +26,8 @@ import {
   PanelTitle,
   useToast,
 } from '../components/ui';
+import { StrategyRules, type StrategyAlertExample } from '../components/alerts/strategy-rules';
+import { monitorURL } from '../lib/strategy-monitor';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
 import { MarketSelector, type SpotCatalog } from '../components/market-controls';
 import { MarketSourcePicker } from '../components/market-source-picker';
@@ -76,6 +79,7 @@ type Rules = {
 type Example = { rules: Rules; inbox: Inbox };
 const sections = [
   { id: 'rules', label: 'Price rules', icon: ListChecks },
+  { id: 'strategies', label: 'Strategy alerts', icon: Waves },
   { id: 'inbox', label: 'Inbox', icon: InboxIcon },
 ];
 const ruleState = (rule: PriceRule) =>
@@ -92,7 +96,12 @@ const ruleState = (rule: PriceRule) =>
 /** Local alerts work with public prices independently of accounts or an LLM. */
 export function Alerts() {
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'inbox' ? 'inbox' : 'rules';
+  const tab =
+    params.get('tab') === 'inbox'
+      ? 'inbox'
+      : params.get('tab') === 'strategies'
+        ? 'strategies'
+        : 'rules';
   const [showArchived, setArchived] = useState(false);
   const [example, setExample] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -107,10 +116,24 @@ export function Alerts() {
   );
   const inbox = useResource<Inbox>(`/notifications?limit=20&offset=${offset}`, 10000, !example);
   const sample = useResource<Example>('/alerts/example', 0, example);
+  const strategySample = useResource<StrategyAlertExample>(
+    '/strategy-alerts/example',
+    0,
+    example && tab === 'inbox',
+  );
   const settings = useResource<MarketSettings>('/settings/market', 0, creating || !!editing);
   const toast = useToast();
   const ruleData = example ? sample.data?.rules : rules.data;
-  const inboxData = example ? sample.data?.inbox : inbox.data;
+  const inboxData = example
+    ? sample.data?.inbox && strategySample.data?.inbox
+      ? {
+          ...sample.data.inbox,
+          items: [...strategySample.data.inbox.items, ...sample.data.inbox.items],
+          total: sample.data.inbox.total + strategySample.data.inbox.total,
+          unread: sample.data.inbox.unread + strategySample.data.inbox.unread,
+        }
+      : undefined
+    : inbox.data;
   const action = async (id: string, kind: string) => {
     if (example) return;
     setBusy(id);
@@ -138,13 +161,27 @@ export function Alerts() {
       setBusy('');
     }
   };
-  const error = example ? sample.error : tab === 'rules' ? rules.error : inbox.error;
-  const retry = example ? sample.retry : tab === 'rules' ? rules.retry : inbox.retry;
+  const error =
+    tab === 'strategies'
+      ? ''
+      : example
+        ? sample.error || (tab === 'inbox' ? strategySample.error : '')
+        : tab === 'rules'
+          ? rules.error
+          : inbox.error;
+  const retry = example
+    ? () => {
+        sample.retry();
+        strategySample.retry();
+      }
+    : tab === 'rules'
+      ? rules.retry
+      : inbox.retry;
   return (
     <>
       <PageTitle
         title="Alerts"
-        description="A little less watching. A heads-up when a price reaches your level."
+        description="Price milestones and strategy changes, together in your local inbox."
         action={
           <>
             <button
@@ -157,23 +194,26 @@ export function Alerts() {
             >
               {example ? 'Return to my alerts' : 'View example'}
             </button>
-            <button
-              className="button primary"
-              onClick={() => {
-                setExample(false);
-                setCreating(true);
-              }}
-            >
-              <Plus size={15} /> New price alert
-            </button>
+            {tab !== 'strategies' && (
+              <button
+                className="button primary"
+                onClick={() => {
+                  setExample(false);
+                  setCreating(true);
+                }}
+              >
+                <Plus size={15} /> New price alert
+              </button>
+            )}
           </>
         }
       />
       <div className="alert-delivery-note">
         <Bell size={17} />
         <span>
-          <strong>In-app notifications</strong> · One-time or repeat alerts with reset and cooldown.
-          The Sibyl API must be running to check prices. No connected account or AI model is needed.
+          <strong>In-app notifications</strong> · Watch prices or recorded strategy events. The
+          Sibyl API must be running; no AI model is needed. Alert controls change notifications
+          only.
         </span>
       </div>
       {example && (
@@ -198,6 +238,12 @@ export function Alerts() {
       <SectionPanel id="alerts" value={tab}>
         {error ? (
           <ErrorState message={error} retry={retry} />
+        ) : tab === 'strategies' ? (
+          <StrategyRules
+            key={`${example}-${params.get('job_id') || ''}`}
+            example={example}
+            jobId={params.get('job_id') || ''}
+          />
         ) : tab === 'rules' ? (
           <Panel className="full-panel">
             <PanelTitle
@@ -425,14 +471,21 @@ export function Alerts() {
                     key={item.id}
                   >
                     <span className="activity-icon">
-                      <Bell size={17} />
+                      {item.kind === 'strategy' ? <Waves size={17} /> : <Bell size={17} />}
                     </span>
                     <div className="notification-copy">
                       <NotificationText item={item} />
                       <small>
-                        Provider time {new Date(item.observed_at).toLocaleString()} · cycle{' '}
-                        {item.cycle}
+                        {item.kind === 'strategy'
+                          ? `Journal event ${item.event_id}`
+                          : `Price cycle ${item.cycle}`}{' '}
+                        · observed {new Date(item.observed_at).toLocaleString()}
                       </small>
+                      {item.kind === 'strategy' && !example && (
+                        <Link className="text-button" to={monitorURL(item.job_id)}>
+                          Open strategy monitor <ArrowUpRight size={12} />
+                        </Link>
+                      )}
                     </div>
                     {item.read_at ? (
                       <Badge>Read</Badge>
@@ -450,7 +503,8 @@ export function Alerts() {
               </div>
             ) : (
               <Empty title="All quiet for now">
-                Triggered price rules will leave a record here, even if the browser was closed.
+                Price triggers and watched strategy events leave a record here, even if the browser
+                was closed.
               </Empty>
             )}
             {!!inboxData?.total && !example && (

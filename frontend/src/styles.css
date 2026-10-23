@@ -9647,3 +9647,147 @@ details[open] > summary {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Journal subscriptions share the alert surfaces without resembling run controls. */
+.strategy-alert-intro {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  margin: 0 22px 18px;
+  padding: 15px 17px;
+  background: #f4f6fb;
+  border: 1px solid #e5eaf3;
+  border-radius: 12px;
+  color: #6b7fa0;
+}
+.strategy-alert-intro svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.strategy-alert-intro p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+  color: var(--subtle);
+}
+.strategy-alert-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px 18px;
+  gap: 15px;
+}
+.strategy-alert-tags,
+.strategy-alert-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.strategy-alert-tags {
+  margin-top: 10px;
+}
+.strategy-alert-groups {
+  padding: 16px 0 12px;
+}
+.strategy-alert-groups > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #5f779b;
+  padding: 5px 9px;
+  background: #f3f6fc;
+  border-radius: 6px;
+}
+.strategy-alert-card .price-rule-footer {
+  align-items: center;
+  gap: 16px;
+}
+.strategy-alert-card .price-rule-footer > .muted {
+  font-size: 10px;
+  line-height: 1.6;
+}
+.strategy-alert-card .price-rule-evidence {
+  flex-wrap: wrap;
+}
+.strategy-alert-form fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.strategy-alert-event-choices legend {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.strategy-alert-event-choices > label {
+  display: flex;
+  flex-direction: row;
+  align-items: start;
+  gap: 12px;
+  border: 1px solid var(--border);
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  background: white;
+}
+.strategy-alert-event-choices > label.selected {
+  background: #f3f6fd;
+  border-color: #b5c5e6;
+}
+.strategy-alert-event-choices input {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  accent-color: #6a81b0;
+}
+.strategy-alert-event-choices strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.strategy-alert-event-choices small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 5px;
+  color: var(--subtle);
+  font-weight: 400;
+}
+.strategy-alert-form .footnote {
+  line-height: 1.8;
+}
+.strategy-alert-example {
+  margin-top: 20px;
+}
+.strategy-alert-example > .notification-copy {
+  padding: 0 22px 22px;
+}
+.strategy-notification-reason {
+  font-size: 11px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.alert-inbox-item .notification-copy > .text-button {
+  font-size: 11px;
+  margin-top: 10px;
+}
+.disabled-link {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (max-width: 700px) {
+  .strategy-alert-filters,
+  .strategy-alert-card .price-rule-footer {
+    align-items: start;
+    flex-direction: column;
+  }
+  .strategy-alert-intro {
+    margin: 0 14px 16px;
+  }
+  .strategy-alert-card .price-rule-actions {
+    flex-wrap: wrap;
+  }
+}

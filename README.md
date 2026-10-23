@@ -152,3 +152,7 @@ Market-owned clients share read admission, conservative transport spacing, bound
 ### Market statistics
 
 **Markets** now includes server-calculated returns/distributions, trend/momentum, volatility, sample drawdowns and tail risk, volume/flow and mechanical price references. An explainable technical-bias score exposes its votes and weights; it rates direction, not investment quality or profit probability. Gaps, stale samples and insufficient inputs are explicit. Charts support drag-to-select time-region zoom, pan, reset and CSV export with no new chart library. Statistics retain the full consecutive analysis sample when you zoom. See [metrics, formulas and score rules](docs/docs/guides/market-statistics.md).
+
+### Strategy notifications
+
+**Alerts → Strategy alerts** watches future journal events from a selected paper or exchange run: pauses/errors/recovery, resumes/stops and completion. Rules have revision-checked edit/pause/resume/archive controls; armed cursors and notifications commit together for restart catch-up without duplicates. The shared inbox/bell retains original event evidence and links to the exact monitor, with Paper/Exchange and Demo/test attribution. **Run alerts** opens setup from a monitor. Alerts make no provider calls, change no execution controls and deliver only inside Sibyl. See [setup and limits](docs/docs/guides/alerts.md#strategy-alerts) and [backend contracts](docs/docs/developers/alerts.md#strategy-journal-subscriptions).

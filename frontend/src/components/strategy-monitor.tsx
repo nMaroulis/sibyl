@@ -11,6 +11,7 @@ import {
   Activity,
   List,
   SlidersHorizontal,
+  Bell,
 } from 'lucide-react';
 import {
   Badge,
@@ -157,6 +158,12 @@ export function StrategyMonitor({
         </div>
         <div className="monitor-run-actions">
           <AgentButton module="broker" context={{ job_id: job.id }} compact />
+          <Link
+            className="button secondary"
+            to={`/alerts?tab=strategies&job_id=${encodeURIComponent(job.id)}`}
+          >
+            <Bell size={14} /> Run alerts
+          </Link>
           {!terminal && (
             <>
               <button

@@ -1,4 +1,4 @@
-# Price alerts & inbox
+# Alerts & inbox
 
 Open **More → Alerts**, or choose **Price alerts** on Markets. Alerts use public market data independently of your portfolio accounts, execution permission and AI model. No account or LLM is required for a public feed. A connected-account feed still needs that account active; API feeds need their saved key.
 
@@ -34,7 +34,7 @@ If another edit or lifecycle action changed the rule while the editor was open, 
 
 ## Where notifications appear
 
-The top-bar bell shows unread price notifications and retains the previous recent agent/backtest activity below them. The unread dot counts price notifications, not run activity. Opening the bell or inbox does not mark anything read.
+The top-bar bell shows unread price and strategy notifications and retains the previous recent agent/backtest activity below them. The unread dot counts retained alert notifications, not general run activity. Opening the bell or inbox does not mark anything read.
 
 Use **Alerts → Inbox** for retained notification pages, **Mark read** for one notification or **Mark all read** for the whole inbox. Acknowledgment persists across restarts and never deletes the observed price/source evidence. Demo alerts are labeled in the bell and inbox too.
 
@@ -47,3 +47,22 @@ A dedicated server worker checks at most one due rule per second. Rules are norm
 Checks continue with the browser closed while the API remains running. A stopped/sleeping host cannot monitor prices. After restart, saved armed rules resume using current quotes; prices that crossed and recovered while offline are not reconstructed. This is a polling convenience, not a guaranteed real-time alarm service.
 
 See [implementation and HTTP contracts](../developers/alerts.md) and the [complete remaining-work inventory](../developers/backend-roadmap.md).
+
+## Strategy alerts
+
+Open **Alerts → Strategy alerts**, or choose **Run alerts** in any saved strategy's monitor. Choose **New strategy alert**, select a paper or exchange run and choose one or both categories:
+
+- **Pauses, errors & recovery:** recorded manual/safety pauses, evaluation errors and recovery observations.
+- **Run lifecycle:** recorded resumes, stops, Stop & cancel requests and transitions to completed. A final sell can complete a paper run; its completion is recognized even though the journal action is `SELL`.
+
+Watching is opt-in, with one non-archived rule per run and at most **50 non-archived strategy rules**, separate from the 50 price-rule budget. An account need not remain active to read already committed journal events. No model or provider read is needed by the notification worker.
+
+**Watch strategy events** starts at the run's current journal tail. Existing pauses/errors and earlier lifecycle events do not produce immediate notifications. It watches that exact saved run, not future runs with the same algorithm. **View example** shows an isolated rule and notification; it creates no job, rule or connected account.
+
+**Pause alert** stops notifications only; the strategy continues in its existing state. **Resume alert** starts at the current journal tail and skips everything recorded during the alert's pause. Editing saves the alert paused, preserves old notification evidence, and requires an explicit Resume. **Archive** is reversible; **Restore paused** does not resume observation. A stale editor/action cannot overwrite newer settings.
+
+Armed rules keep their position across an API restart. Events committed after that position, including a startup safety pause of an exchange run, are processed once when the worker resumes. A dedicated local loop processes at most one rule and 100 journal events per second; rules normally become due again after five seconds. A backlog or many active rules can delay delivery. There is no new exchange polling and no reconstruction of events that were never recorded.
+
+Notifications appear in the shared **Inbox** and top-bar bell with the exact run, source, Paper/Exchange mode, Demo/test attribution, original journal reason and event time. Receipt time and journal time are distinct. The bell's strategy entries and **Open strategy monitor** link lead back to that run; opening them does not acknowledge unread state. Use **Mark read** or **Mark all read** for acknowledgment.
+
+Only recorded journal changes are monitored. An `ERROR` notice does not imply the run stopped, a manual pause is not necessarily a failure, and a Stop & cancel notice reports the request—not successful native cancellation. A completion notice does not prove an exchange position is flat. Inspect the monitor's orders, fills and holdings. Notifications cannot control execution, cancel orders or liquidate. Silent worker outages, every-fill/order policies, portfolio-risk and connection-failure alerts remain pending. Delivery stays in-app; Telegram chat does not automatically receive these notices.

@@ -47,7 +47,7 @@ AREAS = [
         "name": "Market-data infrastructure",
         "status": "partial",
         "priority": "next",
-        "working": "Exact-source REST data, retained OHLCV/backfills and immutable inputs; shared read controls and durable hourly HTTP read history, timings and sanitized errors.",
+        "working": "Exact-source REST data, descriptive market statistics and explainable technical bias, region zoom, retained OHLCV/backfills and immutable inputs; shared read controls and retained HTTP diagnostics.",
         "pending": [
             "Review historical pagination for remaining providers and authenticated provider acceptance.",
             "Reviewed endpoint-weight/IP/account quotas, richer latency distributions and application-wide operational diagnostics.",
@@ -59,9 +59,9 @@ AREAS = [
         "name": "Alerts & local operations",
         "status": "partial",
         "priority": "next",
-        "working": "Editable source-pinned level/crossing rules, reset-based repeats/cooldowns, revision checks, durable in-app notifications and unread state.",
+        "working": "Editable source-pinned price/crossing rules and per-run strategy journal subscriptions; revision checks, atomic event cursors, restart catch-up, a shared local inbox and unread state.",
         "pending": [
-            "Portfolio-risk, strategy and connection-failure rules; operational diagnostics.",
+            "Portfolio-risk and connection-failure rules; fill/order policies and silent-worker outage detection; operational diagnostics.",
             "Optional external delivery with retries and delivery state.",
             "General durable task scheduling, metrics/diagnostics and managed backup/restore.",
         ],
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-23",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Bounded walk-forward strategy research is implemented. Next foundations: broader account reconciliation, order lifecycle controls and local operations. Multi-user support is deferred.",
+        "current_focus": "Market statistics and durable per-run strategy alerts are implemented. Next foundations: broader account reconciliation, order lifecycle controls, portfolio/connection alerts and local operations. Multi-user support is deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only; authenticated venue acceptance is outstanding.",
         "release_dates": None,
     }
