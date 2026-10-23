@@ -1,4 +1,4 @@
-import { MessageCircle, ArrowUpRight, Mail } from 'lucide-react';
+import { MessageCircle, ArrowUpRight, Mail, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { api, post, refresh } from '../lib/api';
@@ -53,6 +53,21 @@ export function MessagingSettings() {
           </p>
         </div>
       </div>
+      {resource.data?.telegram?.llm_ready === false && (
+        <div className="messaging-model-warning" role="status">
+          <TriangleAlert size={20} aria-hidden="true" />
+          <div>
+            <strong>No AI model is active</strong>
+            <p>
+              You can set up and enable messaging now. Add an AI model when you’re ready for Sibyl
+              to answer questions.
+            </p>
+          </div>
+          <Link className="text-link" to="/settings?tab=models">
+            AI model settings <ArrowUpRight size={13} />
+          </Link>
+        </div>
+      )}
       <p className="messaging-unavailable-note" id="messaging-unavailable-note">
         <strong>Telegram is available.</strong> Other apps and email remain coming soon. Telegram
         can relay workspace information through your bot and selected AI provider; only enable it
@@ -81,12 +96,14 @@ export function MessagingSettings() {
             )}
         </div>
       )}
-      <p className="footnote">
-        Messaging will use Sibyl’s configured AI model.{' '}
-        <Link className="text-link" to="/settings?tab=models">
-          AI model settings <ArrowUpRight size={12} />
-        </Link>
-      </p>
+      {resource.data?.telegram?.llm_ready && (
+        <p className="footnote">
+          Messaging will use Sibyl’s configured AI model.{' '}
+          <Link className="text-link" to="/settings?tab=models">
+            AI model settings <ArrowUpRight size={12} />
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -178,11 +195,6 @@ function TelegramSetup({
           </small>
         </label>
       </div>
-      {!health?.llm_ready && (
-        <p className="inline-alert">
-          Configure an <Link to="/settings?tab=models">AI model</Link> before enabling Telegram.
-        </p>
-      )}
       {(error || channel.error) && (
         <p className="form-error" role="alert">
           {error || channel.error}
@@ -207,7 +219,7 @@ function TelegramSetup({
         </button>
         <button
           className="button secondary"
-          disabled={!!busy || !channel.has_token || (!channel.enabled && !health?.llm_ready)}
+          disabled={!!busy || !channel.has_token}
           onClick={() => action(channel.enabled ? 'pause' : 'enable')}
         >
           {channel.enabled ? 'Pause Telegram' : 'Enable Telegram'}

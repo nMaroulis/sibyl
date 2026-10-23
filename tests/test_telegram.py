@@ -116,6 +116,42 @@ async def test_unbound_users_groups_forwarded_and_old_messages_never_reach_sibyl
     assert service.settings.profile()["offset"] == 5
 
 
+async def test_setup_enable_and_commands_work_without_model_then_ai_answers_without_reconnecting(
+    service, monkeypatch
+):
+    ready = [False]
+    monkeypatch.setattr(
+        service.network,
+        "status",
+        lambda: {
+            "ready": ready[0],
+            "provider": "mock" if ready[0] else "none",
+            "model": "mock" if ready[0] else "",
+        },
+    )
+    service.save(TelegramSettingsRequest(bot_token=TOKEN, allowed_user_id=USER))
+    await service.check()
+    await service.enable()
+    profile = service.settings.profile()
+    assert profile["enabled"]
+    assert service.public()["telegram"]["llm_ready"] is False
+    for identity, text in [(1, "/status"), (2, "Explain my strategy")]:
+        service.ingest(service.settings.profile(), [message(identity, text=text)])
+        await service.process(service.settings.profile())
+        await service.deliver(service.settings.profile())
+    replies = [body["text"] for method, body in service.calls if method == "sendMessage"]
+    assert "not ready" in replies[0]
+    assert "Configure an AI model" in replies[1]
+    assert service.network.calls == []
+    ready[0] = True
+    service.ingest(service.settings.profile(), [message(3)])
+    await service.process(service.settings.profile())
+    await service.deliver(service.settings.profile())
+    assert service.settings.profile()["revision"] == profile["revision"]
+    assert len(service.network.calls) == 1
+    assert service.calls[-1][1]["text"] == "A grounded strategy explanation."
+
+
 async def test_pause_and_disconnect_perform_no_polls_or_sends(service):
     await service.enable()
     service.pause()
@@ -189,6 +225,7 @@ def test_configuration_api_has_real_controls_and_no_secret_echo(client):
         "/api/v1/settings/messaging/telegram", json={"bot_token": TOKEN, "allowed_user_id": USER}
     )
     assert reply.status_code == 200 and TOKEN not in reply.text
+    assert reply.json()["telegram"]["llm_ready"] is False
     telegram = next(c for c in reply.json()["channels"] if c["id"] == "telegram")
     assert telegram["status"] == "available" and telegram["has_token"] and not telegram["enabled"]
     assert (

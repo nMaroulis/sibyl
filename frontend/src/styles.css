@@ -9192,6 +9192,7 @@ details[open] > summary {
 .telegram-live-card .messaging-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: start;
   gap: 18px;
 }
 .telegram-actions {

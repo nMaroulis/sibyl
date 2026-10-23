@@ -49,7 +49,7 @@ The gradient **Ask** buttons on module pages still open the corresponding specia
 
 ## Messaging channels
 
-[Telegram](./telegram.md) is implemented. Configure your bot token and numeric private user ID in **Settings → Messaging**, check the bot and explicitly enable it. Messages use the same ProtoLink Sibyl coordinator and saved conversations as the dashboard. An AI model and running backend are required. Delivery outcomes and interruption limits are described in the guide.
+[Telegram](./telegram.md) is implemented. Configure your bot token and numeric private user ID in **Settings → Messaging**, check the bot and explicitly enable it. Messages use the same ProtoLink Sibyl coordinator and saved conversations as the dashboard. Connection setup, enabling and help/status commands work without an AI model; AI questions need a configured model and receive setup guidance until one is active. The Python backend must be running. Delivery outcomes and interruption limits are described in the guide.
 
 WhatsApp, Discord, Slack, Signal and Email remain unavailable setup previews. Their disabled fields do not collect credentials. Signal uses a planned unofficial signal-cli bridge; Email previews IMAP/SMTP requirements.
 

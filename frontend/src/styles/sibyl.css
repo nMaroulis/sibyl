@@ -815,6 +815,33 @@
   display: grid;
   place-items: center;
 }
+.messaging-model-warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin: 8px 0 16px;
+  border: 1px solid #eee0bc;
+  border-radius: 14px;
+  background: #fff9ed;
+  color: #8a7042;
+}
+.messaging-model-warning > div {
+  flex: 1 1 240px;
+}
+.messaging-model-warning strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.messaging-model-warning p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.messaging-model-warning .text-link {
+  font-size: 11px;
+}
 .messaging-unavailable-note {
   padding: 14px 18px;
   background: #f8f9fc;

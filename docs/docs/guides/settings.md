@@ -66,7 +66,7 @@ Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated
 
 ## Messaging
 
-[Telegram](./telegram.md) is available: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. A configured AI model is required. Other channels below remain unavailable previews with disabled fields.
+[Telegram](./telegram.md) is available: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
 
 | App      | Planned setup fields                                                                                                                                                    |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -121,7 +121,11 @@ class TelegramService:
         return self.public()
 
     async def enable(self):
-        """Explicitly allow private inbound text and replies through the configured model."""
+        """Enable the verified transport independently of model setup.
+
+        Help/status commands work without a model. Ordinary questions receive
+        setup guidance until the coordinator is ready; no inference is attempted.
+        """
         initial = self.settings.profile()
         await self.check()
         with self._lock:
@@ -130,8 +134,6 @@ class TelegramService:
                 "control_id"
             ):
                 raise ValueError("Telegram connection changed while enabling it. Review its current state.")
-            if not self.network.status()["ready"]:
-                raise ValueError("Configure an AI model in Settings before enabling Telegram.")
             self._update(
                 profile["revision"],
                 enabled=True,

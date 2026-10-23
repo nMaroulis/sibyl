@@ -1,12 +1,12 @@
 # Talk to Sibyl on Telegram
 
-Telegram connects your private bot chat to the same ProtoLink Sibyl agent and specialist registry used by the dashboard. It needs a configured AI model and a running Python backend. No public webhook or Telegram SDK is required.
+Telegram connects your private bot chat to the same ProtoLink Sibyl agent and specialist registry used by the dashboard. A running Python backend is required. You can save, check and enable the connection before configuring an AI model; AI answers need an active model. No public webhook or Telegram SDK is required.
 
 1. Create a bot using [BotFather](https://core.telegram.org/bots/tutorial#obtain-your-bot-token).
 2. Find your **numeric Telegram user ID**. This is neither your username nor the bot ID. If needed, send a message to your new bot and inspect `message.from.id` using Telegram's [getUpdates API](https://core.telegram.org/bots/api#getupdates) locally before enabling Sibyl. Keep the bot token private.
 3. In **Settings → Messaging**, enter the bot token and your numeric user ID, then **Save connection**. The token is encrypted in Sibyl's local vault; it is never returned to the browser or passed to agents.
 4. Select **Check bot**. Sibyl validates bot identity and checks for an existing webhook. It never deletes a webhook or replaces another bot application's configuration.
-5. Configure an AI model, select **Enable Telegram**, open your bot's private chat and press Start. Only ordinary private messages from your configured user are accepted; groups, other users and forwarded messages are ignored.
+5. Select **Enable Telegram**, open your bot's private chat and press Start. Only ordinary private messages from your configured user are accepted; groups, other users and forwarded messages are ignored. Without an active model, help/status commands work and questions receive model-setup guidance. Configure a model whenever you are ready; the enabled connection will use it without needing to reconnect.
 
 Ask a question normally. `/new` starts a fresh conversation; `/status` shows model readiness; `/help` explains the connection. Questions and answers appear in Sibyl's saved local conversations. Commands are processed in order, so a long AI answer can delay a later command. Messages older than the first enablement are ignored. A paused connection resumes its saved polling position.
 

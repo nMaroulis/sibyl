@@ -66,7 +66,7 @@ GUIDES = {
         "url": "/settings?tab=messaging",
         "steps": [
             "WhatsApp, Telegram, Discord, Slack, Signal and Email are planned ways to talk to Sibyl.",
-            "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Configure an AI model first. Open the bot’s private chat and press Start. Other channels remain unavailable previews.",
+            "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. Other channels remain unavailable previews.",
         ],
     },
     "workspace": {
