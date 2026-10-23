@@ -10,7 +10,9 @@ from sibyl.models import ExchangeOrderRequest
 from sibyl.services.analytics import performance_metrics
 from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.approvals import StrategyApprovals
+from sibyl.strategies.execution.cancellation import StrategyCancellations
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, ExecutionGuard, ExecutionParameters
+from sibyl.strategies.execution.stop_reviews import StopCancellationReviews
 from sibyl.strategies.execution.venue import is_dust, observation, order_size, supported
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
 
@@ -36,6 +38,8 @@ class ExchangeStrategies:
                 "CREATE INDEX IF NOT EXISTS exchange_orders_strategy ON exchange_orders(json_extract(payload,'$.strategy_job_id'))"
             )
         self.approvals = StrategyApprovals(self)
+        self.cancellations = StrategyCancellations(self)
+        self.stop_reviews = StopCancellationReviews(self)
         for job in self.jobs():
             if job["status"] == "running":
                 self._pause(
@@ -80,7 +84,7 @@ class ExchangeStrategies:
                 for row in self.store.connections()
                 if row.exchange != "demo"
             ],
-            "execution": "Price-capped GTC limit orders. Open/uncertain orders block further submissions. Pause/Stop do not cancel orders or sell holdings.",
+            "execution": "Price-capped GTC limits with optional approved, best-effort local expiry. Pending orders block submissions. Pause/Stop do not request immediate cancellation; an approved expiry policy continues. Stop & cancel requires separate approval. No control sells holdings.",
         }
 
     def markets(self, identity):
@@ -134,6 +138,8 @@ class ExchangeStrategies:
             and not job["unresolved_orders"]
         ):
             job["pending"] = None
+        if job["status"] != "running" and not job["unresolved_orders"]:
+            job["execution_state"] = job["status"]
         return job
 
     def status(self, job_id, state):
@@ -264,6 +270,9 @@ class ExchangeStrategies:
                         self.journal.save(job, self.host._event(job, "ERROR", message))
 
     def _step(self, identity):
+        # Cancellation is an independent, already approved lifecycle policy.
+        # It may continue on paused/stopped runs, including after restart.
+        self.cancellations.step(identity)
         with self.lock:
             job = self._project(self.journal.job(identity))
             self.journal.save(job)
@@ -381,6 +390,7 @@ class ExchangeStrategies:
             with self.store.db() as db:
                 intent = self.trading.lifecycle.read(db, intent["id"])
                 intent.update(origin="strategy", strategy_job_id=job["id"])
+                intent["strategy_expiry_seconds"] = job["risk"].get("order_lifetime_seconds")
                 self.trading.lifecycle.write(db, intent)
             current = self.journal.job(identity)
             if (

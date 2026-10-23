@@ -841,6 +841,13 @@ def strategy_events(
         "ORDER_PLANNED",
         "ORDER_SUBMITTED",
         "FILL_CORRECTION",
+        "STOP_CANCEL",
+        "CANCEL_QUEUED",
+        "CANCEL_BLOCKED",
+        "CANCEL_REQUESTED",
+        "CANCEL_UNKNOWN",
+        "CANCEL_RECONCILING",
+        "CANCEL_RECONCILED",
     ] = "all",
 ):
     """Page the durable decision journal newest first, with optional action filtering."""
@@ -868,6 +875,13 @@ def strategy_events_export(
         "ORDER_PLANNED",
         "ORDER_SUBMITTED",
         "FILL_CORRECTION",
+        "STOP_CANCEL",
+        "CANCEL_QUEUED",
+        "CANCEL_BLOCKED",
+        "CANCEL_REQUESTED",
+        "CANCEL_UNKNOWN",
+        "CANCEL_RECONCILING",
+        "CANCEL_RECONCILED",
     ] = "all",
 ):
     """Stream the complete matching journal in CSV without exposing credentials."""

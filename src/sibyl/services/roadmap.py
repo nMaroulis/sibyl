@@ -71,10 +71,10 @@ AREAS = [
         "name": "Automated strategy execution",
         "status": "partial",
         "priority": "later",
-        "working": "Isolated paper runs plus explicitly approved exchange strategies for nine provider/environment variants. Account/pair budgets, capped GTC limits, shared native order/fill reconciliation, restart pause, loss/spread/order-count guards and real ownership/fee evidence.",
+        "working": "Isolated paper runs and approved exchange strategies for nine provider/environment variants. Scoped budgets, capped GTC limits, optional durable expiry, separate Stop & cancel approval, native fills/fees, restart pause and per-run risk guards. Cancellation recovery never repeats an uncertain write.",
         "pending": [
             "Authenticated test-environment/provider acceptance before deliberate production enablement.",
-            "Automatic order expiry/cancellation, reviewed flattening, portfolio-wide exposure/daily-loss controls and a global kill switch.",
+            "Reviewed position flattening, portfolio-wide exposure/daily-loss controls and a global kill switch.",
             "Third-currency fee valuation, manual position reconciliation/adoption, settlement corrections and more execution providers.",
         ],
     },

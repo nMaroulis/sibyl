@@ -18,6 +18,7 @@ class ExecutionRisk(Request):
     max_spread_bps: float = Field(default=50, gt=0, le=500)
     price_limit_bps: float = Field(default=25, gt=0, le=200)
     fee_reserve_bps: float = Field(default=100, ge=10, le=500)
+    order_lifetime_seconds: int | None = Field(default=None, ge=60, le=86_400, strict=True)
 
 
 class ExecutionParameters(BacktestRequest):

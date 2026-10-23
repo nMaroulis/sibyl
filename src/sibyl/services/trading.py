@@ -259,6 +259,11 @@ class ExchangeTrading:
             intent.update(
                 status="submitting", tracking=True, next_check=0, submitted_at=datetime.now(UTC).isoformat()
             )
+            if strategy_job_id and intent.get("strategy_expiry_seconds") is not None:
+                intent["strategy_expires_at"] = (
+                    datetime.fromisoformat(intent["submitted_at"])
+                    + timedelta(seconds=intent["strategy_expiry_seconds"])
+                ).isoformat()
             self.lifecycle.write(db, intent)
         request = ExchangeOrderRequest(**intent["request"])
         try:

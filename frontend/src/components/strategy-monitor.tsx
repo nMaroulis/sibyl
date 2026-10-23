@@ -28,6 +28,7 @@ import { AgentButton } from './agents';
 import { StrategyChart } from './strategy-chart';
 import { DecisionJournal } from './strategy-journal';
 import { ExchangeRunEvidence } from './strategies/exchange-evidence';
+import { StopCancellation } from './strategies/stop-cancellation';
 import { exportCSV, number, post, refresh } from '../lib/api';
 import { date, formatted, monitorURL, runName, tone } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
@@ -174,6 +175,13 @@ export function StrategyMonitor({
               </button>
             </>
           )}
+          {exchangeRun &&
+            (!terminal ||
+              job.orders?.some(
+                (order) =>
+                  !['closed', 'canceled', 'expired', 'rejected'].includes(order.status) &&
+                  !order.strategy_abandoned,
+              )) && <StopCancellation job={job} />}
         </div>
       </Panel>
       {exchangeRun && <ExchangeRunEvidence job={job} />}
@@ -213,7 +221,7 @@ export function StrategyMonitor({
       {job.status === 'paused' && (
         <div className="monitor-notice">
           {exchangeRun
-            ? 'New submissions are paused. Native orders remain live and can fill. Resume requires resolved orders and complete fill/fee evidence, then waits for the next closed candle.'
+            ? 'New submissions are paused. Native orders remain live until confirmed otherwise; an approved expiry policy still runs. Resume requires resolved orders and complete fill/fee evidence, then waits for the next closed candle.'
             : 'Evaluation and price sampling are paused. Your virtual position is retained; Resume continues from the latest closed candle.'}
         </div>
       )}
@@ -573,7 +581,7 @@ export function StrategyMonitor({
           <p className="monitor-stop-copy">
             This permanently stops evaluation for this run. Its {number(job.quantity, 8)} {base}{' '}
             {exchangeRun
-              ? 'strategy-owned position and history are retained. Native orders are not canceled and can still fill. This does not sell the position. Manage remaining orders and holdings in Trade.'
+              ? 'strategy-owned position and history are retained. Stop alone does not request cancellation, but an already approved expiry policy continues. Orders can still fill. Use the separate Stop & cancel action to request immediate cleanup. No position is sold.'
               : 'virtual position and history are retained. It does not sell the position, and its displayed valuation will stop updating.'}
           </p>
           <div className="modal-actions">

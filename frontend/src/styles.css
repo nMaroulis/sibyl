@@ -3999,6 +3999,24 @@ details[open] > summary {
   font-size: 10px;
   margin-top: 5px;
 }
+.strategy-exchange-evidence .footnote {
+  display: block;
+}
+.strategy-exchange-evidence table {
+  min-width: 760px;
+}
+.strategy-exchange-evidence td:nth-child(3) {
+  max-width: 220px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.strategy-exchange-evidence td:last-child {
+  width: 32%;
+  min-width: 220px;
+  max-width: 360px;
+  white-space: normal;
+  line-height: 1.6;
+}
 .book-table td {
   font-variant-numeric: tabular-nums;
   width: 25%;

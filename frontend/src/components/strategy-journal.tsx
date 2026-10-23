@@ -63,6 +63,13 @@ export function DecisionJournal({
             <option value="ORDER_PLANNED">Exchange order plans</option>
             <option value="ORDER_SUBMITTED">Exchange order submissions</option>
             <option value="FILL_CORRECTION">Native fill corrections</option>
+            <option value="CANCEL_QUEUED">Cancellation queued</option>
+            <option value="CANCEL_REQUESTED">Cancellation requested</option>
+            <option value="CANCEL_UNKNOWN">Cancellation uncertain</option>
+            <option value="CANCEL_BLOCKED">Cancellation blocked</option>
+            <option value="CANCEL_RECONCILING">Cancellation fill checks</option>
+            <option value="CANCEL_RECONCILED">Cancellation evidence matched</option>
+            <option value="STOP_CANCEL">Stop &amp; cancel approvals</option>
             <option value="HOLD">Hold decisions</option>
             <option value="SKIP_BUY">Skipped buys</option>
             <option value="SKIP_SELL">Skipped sells</option>

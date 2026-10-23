@@ -70,7 +70,7 @@ The **Order monitor** in Trade and Executions lists submitted orders, cumulative
 
 Tracking reads status approximately every 20 seconds on the server, with increasing delays on errors. It survives restart, pauses for inactive accounts and can be paused/resumed per order. Pausing does not cancel a native order. Known-ID checks and reviewed cancellation remain available if new exchange execution is disabled. Execution checks share Account history's ledger, so importing through both paths does not duplicate a fill. Terminal orders receive three bounded follow-up passes for late fee updates. You can pause/resume fill checks or recheck later. A match compares available evidence and never guarantees final settlement. Demo fills appear only once in execution history. See [reconciliation details and limits](../developers/order-reconciliation.md).
 
-GTC remains open until filled or canceled; the 60-second deadline applies to the review, not the submitted order. Stop/OCO, cancel/replace, post-only, iceberg and other time-in-force choices remain **Coming soon**. See [order contracts, provider support and recovery](../developers/order-management.md).
+GTC remains open until filled or canceled; the 60-second deadline applies to the review, not the submitted order. Approved exchange strategies can separately authorize [best-effort local order expiry or Stop & cancel](strategy-execution.md#order-lifetime-and-cancellation); manual GTC orders have no automatic expiry. Stop/OCO, cancel/replace, post-only, iceberg and other native time-in-force choices remain **Coming soon**. See [order contracts, provider support and recovery](../developers/order-management.md).
 
 ## Active accounts and first use
 

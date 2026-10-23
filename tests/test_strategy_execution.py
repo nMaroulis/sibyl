@@ -15,7 +15,7 @@ from sibyl.models import ConnectionCreate
 from sibyl.services.market import Market
 from sibyl.services.trading import ExchangeTrading
 from sibyl.strategies import Strategies
-from sibyl.strategies.execution import runner, venue
+from sibyl.strategies.execution import cancellation, runner, venue
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest
 
 
@@ -36,6 +36,9 @@ class Venue:
         self.free = {"USDT": 100000.0, "BTC": 50.0}
         self.orders, self.fills, self.calls = {}, [], []
         self.failure = None
+        self.cancels, self.reads = [], []
+        self.cancel_failure = None
+        self.cancel_terminal = True
         self.bid, self.ask = 99.95, 100.05
 
     def load_markets(self):
@@ -83,6 +86,15 @@ class Venue:
         return result
 
     def fetch_order(self, identity, symbol):
+        self.reads.append(identity)
+        return self.orders[identity].copy()
+
+    def cancel_order(self, identity, symbol):
+        self.cancels.append(identity)
+        if self.cancel_failure:
+            raise self.cancel_failure
+        if self.cancel_terminal and self.orders[identity]["status"] != "closed":
+            self.orders[identity]["status"] = "canceled"
         return self.orders[identity].copy()
 
     def fetch_order_fill_page(self, identity, symbol, cursor, limit=100):
@@ -129,6 +141,7 @@ def execution(settings, store, monkeypatch):
     clock = SimpleNamespace(time=lambda: native.clock)
     monkeypatch.setattr(venue, "time", clock)
     monkeypatch.setattr(runner, "time", clock)
+    monkeypatch.setattr(cancellation, "time", clock)
     monkeypatch.setattr(runner, "signals", lambda frame, *args: pd.Series([1] * len(frame)))
     strategies = Strategies(market, store)
     trading = ExchangeTrading(market, store)

@@ -268,11 +268,24 @@ export type Job = Source & {
   fee_assets?: Record<string, number>;
   unvalued_fees?: Record<string, number>;
   native_fill_count?: number;
-  risk?: Record<string, number>;
+  risk?: Record<string, number | null>;
+  stop_cancellation?: { review_id: string; requested_at: string };
   orders?: {
     id: string;
     status: string;
     strategy_abandoned?: boolean;
+    strategy_expires_at?: string;
+    cancel_state?: string;
+    cancel_message?: string;
+    strategy_cancellation?: {
+      state: string;
+      message: string;
+      reason: string;
+      checked_at: string;
+      outcome?: string;
+      terminal_checks?: number;
+      next_check?: number;
+    };
     exchange_order_id?: string;
     client_order_id?: string;
     filled?: number;

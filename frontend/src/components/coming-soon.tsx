@@ -30,7 +30,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'strategies',
       title: 'More execution controls',
-      text: 'Automatic order expiry, reviewed position flattening, portfolio-wide risk limits and more providers. Account-bound exchange strategies with capped limits, native fills and restart pause are available now; private venue acceptance remains pending.',
+      text: 'Reviewed position flattening, portfolio-wide risk limits and more providers. Account-bound strategies, optional order expiry and separate Stop & cancel approvals are available now; private venue acceptance remains pending.',
     },
     {
       module: 'trade',

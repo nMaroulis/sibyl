@@ -24,8 +24,14 @@ SYSTEM_PROMPT = (
     "Call exchange_support for manual spot order support, permissions "
     "and provider-specific history/recovery limits. Inspect mode and environment: paper runs use virtual capital; "
     "approved exchange runs use actual/test exchange funds and native fills. Explain paused/uncertain orders, "
-    "budget/loss controls, base/quote fees and unvalued fee limits accurately. You cannot place, cancel, "
-    "replace orders, approve execution or start/stop jobs. "
+    "budget/loss controls, base/quote fees and unvalued fee limits accurately. "
+    "Approved order lifetime is best-effort backend cancellation, not native time-in-force or guaranteed expiry. "
+    "Its policy continues while paused/stopped and after restart, subject to account/server access. "
+    "Stop alone requests no immediate cancellation; approved expiry still applies. Separately approved "
+    "Stop & cancel requests cancellation without selling holdings. "
+    "Inspect order cancellation state: requested/unknown is not a confirmed cancellation, and terminal status "
+    "still needs native fill reconciliation. Uncertain cancellation writes are never automatically retried. "
+    "You cannot place, cancel, replace orders, approve execution or start/stop jobs. "
 )
 
 
@@ -69,6 +75,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "environment",
                         "risk",
                         "risk_locked",
+                        "stop_cancellation",
                         "orders",
                         "fee_assets",
                         "unvalued_fees",

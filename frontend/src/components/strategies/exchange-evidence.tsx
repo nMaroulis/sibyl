@@ -7,7 +7,7 @@ import type { Job } from '../../lib/types';
 export function ExchangeRunEvidence({ job }: { job: Job }) {
   const quote = job.parameters.symbol.split('/')[1];
   return (
-    <Panel className="full-panel">
+    <Panel className="full-panel strategy-exchange-evidence">
       <PanelTitle
         title="Exchange execution"
         subtitle={`${job.account} · ${job.exchange} · ${job.environment}`}
@@ -19,6 +19,12 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
         Base fees reduce owned units; quote fees reduce cash. Valuation uses the last observed
         exchange midpoint.
       </p>
+      {job.stop_cancellation && (
+        <p className="monitor-notice">
+          Stop &amp; cancel was approved. New submissions are stopped; cancellation outcomes and
+          native fill evidence are shown below. Holdings are retained.
+        </p>
+      )}
       {(job.accounting_incomplete || Object.keys(job.unvalued_fees ?? {}).length > 0) && (
         <p className="monitor-notice">
           Accounting is incomplete or fees use another currency. No further orders are allowed until
@@ -55,6 +61,14 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
           <small>Orders / rolling 24h</small>
           <strong>{job.risk?.max_orders_per_day}</strong>
         </div>
+        <div>
+          <small>Approved order lifetime</small>
+          <strong>
+            {job.risk?.order_lifetime_seconds == null
+              ? 'GTC · no expiry'
+              : `${job.risk.order_lifetime_seconds}s`}
+          </strong>
+        </div>
       </div>
       <p className="footnote padded">
         Reported fees:{' '}
@@ -73,6 +87,7 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
                 <th>State</th>
                 <th>Native / client ID</th>
                 <th>Filled / requested</th>
+                <th>Expiry / cancellation</th>
               </tr>
             </thead>
             <tbody>
@@ -95,6 +110,39 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
                     {order.filled == null ? '—' : number(order.filled, 8)} /{' '}
                     {number(order.request.quantity, 8)}
                   </td>
+                  <td>
+                    {order.strategy_cancellation ? (
+                      <>
+                        <Badge
+                          tone={
+                            ['blocked', 'unknown'].includes(order.strategy_cancellation.state)
+                              ? 'sand'
+                              : 'neutral'
+                          }
+                        >
+                          {order.strategy_cancellation.state.replaceAll('_', ' ')}
+                        </Badge>
+                        <small className="table-subline">
+                          {order.strategy_cancellation.message}
+                        </small>
+                        <small className="table-subline">
+                          Checked{' '}
+                          {new Date(order.strategy_cancellation.checked_at).toLocaleString()}
+                          {order.strategy_cancellation.terminal_checks != null &&
+                            ` · ${order.strategy_cancellation.terminal_checks}/3 late status checks`}
+                        </small>
+                      </>
+                    ) : order.strategy_expires_at ? (
+                      <small>
+                        Cancellation due {new Date(order.strategy_expires_at).toLocaleString()}
+                      </small>
+                    ) : (
+                      'No automatic expiry'
+                    )}
+                    {order.cancel_state && !order.strategy_cancellation && (
+                      <small className="table-subline">Cancellation: {order.cancel_state}</small>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -103,8 +151,9 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
       )}
       <p className="footnote padded">
         <Link to="/trade?tab=executions">Manage and reconcile exchange orders in Trade →</Link> ·
-        Pause/Stop prevent future submissions. They never cancel a native order or liquidate a
-        position. Already submitted orders can still fill.
+        Pause/Stop prevent future submissions; approved expiry still runs. Stop &amp; cancel has a
+        separate review. Native orders can fill until confirmed terminal; no control liquidates a
+        position.
       </p>
     </Panel>
   );

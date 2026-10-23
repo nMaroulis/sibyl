@@ -13,7 +13,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
-| Automated strategy execution   | partial       | Authenticated acceptance, automatic expiry/flattening, broader risk policies and fee valuation.       |
+| Automated strategy execution   | partial       | Authenticated acceptance, reviewed flattening, broader risk policies and fee valuation.               |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, per-agent models and explicit approval/audit contracts.               |
@@ -98,10 +98,12 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Keep paper as the default; require both execution flags for exchange test/production runs.
 - [x] Submit price-capped GTC intents through the shared at-most-once order pipeline and derive ownership from native fills/fees.
 - [x] Persist plans/client IDs and pause on restart; reconcile existing orders without replaying old signals or uncertain writes.
-- [x] Define Pause/Stop: prevent future submissions, retain holdings and leave native orders live for reviewed management in Trade.
+- [x] Define Pause/Stop: prevent future submissions and retain holdings; previously approved expiry continues.
+- [x] Persist optional order lifetimes at submission; cancel due remainders through the shared pipeline, retain partial fills and recover uncertain attempts by reading only.
+- [x] Add separate typed Stop & cancel approval, durable restart recovery, bounded late native status checks, monitor evidence and journal/CSV events.
 - [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
 - [ ] Exercise authenticated sandbox/provider acceptance before deliberate production enablement.
-- [ ] Add automatic expiry/cancellation, reviewed flattening, global kill controls and portfolio-wide exposure/daily-loss policies.
+- [ ] Add reviewed position flattening, global kill controls and portfolio-wide exposure/daily-loss policies.
 - [ ] Value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.
 
 ### 5. Market-data infrastructure — partial

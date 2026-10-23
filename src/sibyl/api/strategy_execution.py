@@ -30,3 +30,15 @@ def preview(body: ExchangeStrategyRequest, s: S):
 def start(review_id: str, body: StrategyApproval, s: S):
     """Approve the reviewed budget and policy; wait for the next closed candle."""
     return s.strategies.execution.start(review_id, body.confirmation)
+
+
+@router.post("/jobs/{job_id}/stop-cancel-review")
+def stop_cancel_review(job_id: str, s: S):
+    """Read a run's cancellation scope without changing it or contacting its exchange."""
+    return s.strategies.execution.stop_reviews.preview(job_id)
+
+
+@router.post("/stop-reviews/{review_id}/confirm")
+def stop_cancel(review_id: str, body: StrategyApproval, s: S):
+    """Permanently stop submissions and authorize owned-order cancellation, never liquidation."""
+    return s.strategies.execution.stop_reviews.confirm(review_id, body.confirmation)

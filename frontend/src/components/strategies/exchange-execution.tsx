@@ -13,6 +13,7 @@ type Risk = {
   max_spread_bps: number;
   price_limit_bps: number;
   fee_reserve_bps: number;
+  order_lifetime_seconds: number | null;
 };
 type Options = {
   enabled: boolean;
@@ -50,6 +51,7 @@ export function ExchangeStrategySetup({
     max_spread_bps: 50,
     price_limit_bps: 25,
     fee_reserve_bps: 100,
+    order_lifetime_seconds: 300,
   });
   const [review, setReview] = useState<Review>();
   const [confirmation, setConfirmation] = useState('');
@@ -225,6 +227,30 @@ export function ExchangeStrategySetup({
                 onChange={(e) => setRisk({ ...risk, max_loss_pct: Number(e.target.value) })}
               />
             </label>
+            <label>
+              Cancel unfilled orders after
+              <select
+                value={risk.order_lifetime_seconds ?? ''}
+                onChange={(event) =>
+                  setRisk({
+                    ...risk,
+                    order_lifetime_seconds: event.target.value ? Number(event.target.value) : null,
+                  })
+                }
+              >
+                <option value="">No automatic expiry · GTC</option>
+                <option value={60}>1 minute</option>
+                <option value={300}>5 minutes</option>
+                <option value={900}>15 minutes</option>
+                <option value={3600}>1 hour</option>
+                <option value={86400}>1 day</option>
+              </select>
+            </label>
+            <p className="footnote">
+              Best-effort cancellation by the running backend, not exchange-native expiry. Partial
+              fills remain owned. An approved expiry continues while paused or stopped and after
+              restart, subject to account access and execution flags.
+            </p>
             <details className="advanced-options">
               <summary>Execution limits</summary>
               {(
@@ -250,8 +276,8 @@ export function ExchangeStrategySetup({
             <p className="footnote">
               Price-capped GTC limits can remain open. One unresolved order blocks the run. Budgets
               are tracked locally and do not reserve exchange funds. Pause/Stop disable future
-              orders; they do not cancel orders or sell positions. Loss guards are not guaranteed
-              stop orders.
+              orders. Approved expiry can still cancel outstanding orders. Stop &amp; cancel has its
+              own review; no control sells positions. Loss guards are not guaranteed stop orders.
             </p>
             <button
               className="button secondary full-width"
@@ -312,6 +338,9 @@ export function ExchangeStrategySetup({
               attempts per rolling 24 hours.
             </p>
             <p className="footnote">
+              {review.request.risk.order_lifetime_seconds == null
+                ? 'No automatic order expiry. '
+                : `Cancellation will be requested after ${review.request.risk.order_lifetime_seconds} seconds from each submission attempt. This is best-effort local policy, not guaranteed native expiry. `}
               Loss pause {review.request.risk.max_loss_pct}% · spread limit{' '}
               {review.request.risk.max_spread_bps} bps · price allowance{' '}
               {review.request.risk.price_limit_bps} bps · fee reserve{' '}

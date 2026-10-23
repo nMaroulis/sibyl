@@ -45,6 +45,8 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/strategies/exchange/markets/{id}`       | Exact account-exchange pairs/timeframes                                                  |
 | POST       | `/strategies/exchange/preview`            | Read-only account/budget review                                                          |
 | POST       | `/strategies/exchange/reviews/{id}/start` | Approve a fixed scope; wait for the next closed candle                                   |
+| POST       | `/strategies/exchange/jobs/{id}/stop-cancel-review` | Read local fixed-run cancellation scope; no native call or mutation             |
+| POST       | `/strategies/exchange/stop-reviews/{id}/confirm` | Typed approval; stop submissions and queue owned-order cancellation                |
 | POST       | `/strategies/jobs/{id}/pause`             | Stop evaluating a paper job                                                              |
 | POST       | `/strategies/jobs/{id}/resume`            | Resume evaluation                                                                        |
 | GET        | `/forecast`                               | `symbol`, `horizon` 1–30                                                                 |
@@ -72,7 +74,9 @@ Chronological validation has separate retained-study endpoints: `GET /strategies
 | GET    | `/strategies/jobs/{id}/events.csv` | Stream complete chronological matching history with a fixed high-water event ID                              |
 | POST   | `/strategies/jobs/{id}/stop`       | Permanently stop evaluation while retaining the virtual position and history                                 |
 
-Event filters accept `all`, `fills`, `HOLD`, `SKIP_BUY`, `SKIP_SELL`, `ERROR`, `START`, `PAUSE`, `RESUME`, `STOP`, `BUY`, `SELL`, and `RECOVERED`. `fills` includes BUY and SELL. CSV text fields are protected against spreadsheet formula interpretation. Reads never perform a worker tick. Stop is terminal; pause/resume semantics are described in the [monitor guide](../guides/strategy-monitor.md).
+Event filters accept `all`, `fills`, `HOLD`, `SKIP_BUY`, `SKIP_SELL`, `ERROR`, `START`, `PAUSE`, `RESUME`, `STOP`, `BUY`, `SELL`, `RECOVERED`, `FILL_CORRECTION`, `ORDER_PLANNED`, `ORDER_SUBMITTED`, `STOP_CANCEL`, `CANCEL_QUEUED`, `CANCEL_BLOCKED`, `CANCEL_REQUESTED`, `CANCEL_UNKNOWN`, `CANCEL_RECONCILING` and `CANCEL_RECONCILED`. `fills` includes BUY and SELL. CSV text fields are protected against spreadsheet formula interpretation. Cancellation events include `order_id`, `cancel_state`, shared `cancellation_id` when available, and `expires_at`. Reads never perform a worker tick. Stop is terminal; pause/resume semantics are described in the [monitor guide](../guides/strategy-monitor.md).
+
+Exchange reviews accept nullable `risk.order_lifetime_seconds`: an integer 60–86,400 or `null` (default, including older jobs). Submitted strategy intents retain `strategy_expires_at`; monitor order rows include `strategy_cancellation` state/message, outcome, check time and terminal follow-up count, plus shared `cancel_state`. The Stop & cancel confirmation body is `{ "confirmation": "<displayed phrase>" }`. Repeated confirmation returns the same stopped run; it never repeats a native write. Stop persists before the worker attempts cancellation and may return while access is blocked. See [lifetime, permissions and restart semantics](../guides/strategy-execution.md#order-lifetime-and-cancellation).
 
 ## Examples
 

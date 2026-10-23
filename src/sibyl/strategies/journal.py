@@ -32,6 +32,9 @@ EVENT_COLUMNS = (
     "order_id",
     "native_fill_id",
     "fees",
+    "cancel_state",
+    "cancellation_id",
+    "expires_at",
 )
 
 

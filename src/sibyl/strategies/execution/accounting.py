@@ -140,6 +140,10 @@ def project(job, trading):
                     "message",
                     "request",
                     "strategy_abandoned",
+                    "strategy_expires_at",
+                    "strategy_cancellation",
+                    "cancel_state",
+                    "cancel_message",
                 )
             }
             for order in orders[-100:]
