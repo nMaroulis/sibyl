@@ -127,7 +127,14 @@ class ExchangeTrading:
         detail = self.reconciliation.detail(intent_id)
         return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
-    def preview(self, request: ExchangeOrderRequest) -> dict:
+    def preview(
+        self,
+        request: ExchangeOrderRequest,
+        *,
+        strategy_job_id=None,
+        strategy_close_review_id=None,
+        strategy_expiry_seconds=None,
+    ) -> dict:
         """Validate exact precision, native spot limits and free funds without reserving them.
 
         GTC limits use their explicit price for notional checks. Market orders use
@@ -155,6 +162,11 @@ class ExchangeTrading:
             intent = json.loads(previous[0])
             if intent["request"] != request.model_dump():
                 raise ValueError("This idempotency key belongs to a different exchange order.")
+            if strategy_job_id is not None and (
+                intent.get("strategy_job_id"),
+                intent.get("strategy_close_review_id"),
+            ) != (strategy_job_id, strategy_close_review_id):
+                raise ValueError("This order key belongs to another strategy approval.")
             return intent
         with self.market.adapter(connection) as client:
             client.load_markets()
@@ -220,6 +232,14 @@ class ExchangeTrading:
             "client_order_id": client_order_id,
             "tracking": False,
         }
+        if strategy_job_id is not None:
+            intent.update(
+                origin="strategy",
+                strategy_job_id=strategy_job_id,
+                strategy_action="close" if strategy_close_review_id else "signal",
+                strategy_close_review_id=strategy_close_review_id,
+                strategy_expiry_seconds=strategy_expiry_seconds,
+            )
         try:
             with self.store.db() as db:
                 db.execute(
@@ -227,15 +247,36 @@ class ExchangeTrading:
                     (intent["id"], request.idempotency_key, json.dumps(intent, allow_nan=False)),
                 )
         except sqlite3.IntegrityError:
-            return self.preview(request)
+            return self.preview(
+                request,
+                strategy_job_id=strategy_job_id,
+                strategy_close_review_id=strategy_close_review_id,
+                strategy_expiry_seconds=strategy_expiry_seconds,
+            )
         return intent
 
-    def execute(self, intent_id: str, confirmation: str, *, strategy_job_id: str | None = None) -> dict:
+    def execute(
+        self,
+        intent_id: str,
+        confirmation: str,
+        *,
+        strategy_job_id: str | None = None,
+        before_submit=None,
+    ) -> dict:
         """Persist submitting before one native write; duplicate confirmations never resend."""
         with self.lifecycle.lock(intent_id):
-            return self._execute(intent_id, confirmation, strategy_job_id=strategy_job_id)
+            return self._execute(
+                intent_id, confirmation, strategy_job_id=strategy_job_id, before_submit=before_submit
+            )
 
-    def _execute(self, intent_id: str, confirmation: str, *, strategy_job_id: str | None = None) -> dict:
+    def _execute(
+        self,
+        intent_id: str,
+        confirmation: str,
+        *,
+        strategy_job_id: str | None = None,
+        before_submit=None,
+    ) -> dict:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             intent = self.lifecycle.read(db, intent_id)
@@ -256,6 +297,10 @@ class ExchangeTrading:
                 )
             if datetime.now(UTC) > datetime.fromisoformat(intent["expires_at"]):
                 raise ValueError("Order preview expired. Review a fresh quote before confirming.")
+            if before_submit is not None:
+                # Internal domain guard reads ownership in this same write
+                # transaction, immediately before committing the native write boundary.
+                before_submit(db, intent)
             intent.update(
                 status="submitting", tracking=True, next_check=0, submitted_at=datetime.now(UTC).isoformat()
             )

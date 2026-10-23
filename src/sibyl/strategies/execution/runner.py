@@ -11,6 +11,7 @@ from sibyl.services.analytics import performance_metrics
 from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.approvals import StrategyApprovals
 from sibyl.strategies.execution.cancellation import StrategyCancellations
+from sibyl.strategies.execution.closing import ClosePositions
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, ExecutionGuard, ExecutionParameters
 from sibyl.strategies.execution.stop_reviews import StopCancellationReviews
 from sibyl.strategies.execution.venue import is_dust, observation, order_size, supported
@@ -40,6 +41,7 @@ class ExchangeStrategies:
         self.approvals = StrategyApprovals(self)
         self.cancellations = StrategyCancellations(self)
         self.stop_reviews = StopCancellationReviews(self)
+        self.closing = ClosePositions(self)
         for job in self.jobs():
             if job["status"] == "running":
                 self._pause(
@@ -84,7 +86,7 @@ class ExchangeStrategies:
                 for row in self.store.connections()
                 if row.exchange != "demo"
             ],
-            "execution": "Price-capped GTC limits with optional approved, best-effort local expiry. Pending orders block submissions. Pause/Stop do not request immediate cancellation; an approved expiry policy continues. Stop & cancel requires separate approval. No control sells holdings.",
+            "execution": "Price-capped GTC limits with optional approved, best-effort local expiry. Pending orders block submissions. Pause/Stop request no immediate cancellation; approved expiry continues. Stop & cancel retains holdings. Selling a retained position requires a separate Close position approval.",
         }
 
     def markets(self, identity):
@@ -140,6 +142,7 @@ class ExchangeStrategies:
             job["pending"] = None
         if job["status"] != "running" and not job["unresolved_orders"]:
             job["execution_state"] = job["status"]
+        self.closing.progress(job)
         return job
 
     def status(self, job_id, state):

@@ -70,6 +70,13 @@ export function DecisionJournal({
             <option value="CANCEL_RECONCILING">Cancellation fill checks</option>
             <option value="CANCEL_RECONCILED">Cancellation evidence matched</option>
             <option value="STOP_CANCEL">Stop &amp; cancel approvals</option>
+            <option value="CLOSE_APPROVED">Exit approvals</option>
+            <option value="CLOSE_SUBMITTED">Exit orders submitted</option>
+            <option value="CLOSE_UNKNOWN">Exit outcome uncertain</option>
+            <option value="CLOSE_RECONCILING">Exit fill checks</option>
+            <option value="CLOSE_RECONCILED">Exit evidence matched</option>
+            <option value="CLOSE_INTERRUPTED">Interrupted exits</option>
+            <option value="CLOSE_REJECTED">Rejected exits</option>
             <option value="HOLD">Hold decisions</option>
             <option value="SKIP_BUY">Skipped buys</option>
             <option value="SKIP_SELL">Skipped sells</option>

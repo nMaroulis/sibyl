@@ -72,6 +72,8 @@ Tracking reads status approximately every 20 seconds on the server, with increas
 
 GTC remains open until filled or canceled; the 60-second deadline applies to the review, not the submitted order. Approved exchange strategies can separately authorize [best-effort local order expiry or Stop & cancel](strategy-execution.md#order-lifetime-and-cancellation); manual GTC orders have no automatic expiry. Stop/OCO, cancel/replace, post-only, iceberg and other native time-in-force choices remain **Coming soon**. See [order contracts, provider support and recovery](../developers/order-management.md).
 
+Strategy monitors also offer [Close position](strategy-execution.md#close-a-retained-position), a separate typed sell approval after stopping and reconciling. Its order is tagged as a strategy exit, uses the same native status/fill pipeline and can be inspected or manually canceled here. It never sells unrelated holdings or automatically replaces a partially filled exit.
+
 ## Active accounts and first use
 
 With no active accounts, order entry shows Connect exchange accounts and the smaller Preview with Demo action. **Executions** and **Account history** remain readable, including isolated order examples, without activating any account. Demo activates the virtual order form with a persistent preview banner. Real/test selections show exchange order entry for active accounts; the virtual form is absent. Execution still requires its separate server enablement, review and confirmation. Deactivated accounts cannot review new orders or confirm an earlier preview. Independent strategy simulations use isolated capital and do not activate a Demo wallet.

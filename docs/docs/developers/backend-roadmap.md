@@ -13,7 +13,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
-| Automated strategy execution   | partial       | Authenticated acceptance, reviewed flattening, broader risk policies and fee valuation.               |
+| Automated strategy execution   | partial       | Authenticated acceptance, broader risk policies, residual exit handling and fee valuation.            |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, per-agent models and explicit approval/audit contracts.               |
@@ -101,10 +101,11 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Define Pause/Stop: prevent future submissions and retain holdings; previously approved expiry continues.
 - [x] Persist optional order lifetimes at submission; cancel due remainders through the shared pipeline, retain partial fills and recover uncertain attempts by reading only.
 - [x] Add separate typed Stop & cancel approval, durable restart recovery, bounded late native status checks, monitor evidence and journal/CSV events.
+- [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Partial fills and native caps never cause automatic replacement sells.
 - [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
 - [ ] Exercise authenticated sandbox/provider acceptance before deliberate production enablement.
-- [ ] Add reviewed position flattening, global kill controls and portfolio-wide exposure/daily-loss policies.
-- [ ] Value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.
+- [ ] Add global kill controls and portfolio-wide exposure/daily-loss policies. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
+- [ ] Add reviewed residual/dust ownership handoff to new runs; value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.
 
 ### 5. Market-data infrastructure — partial
 

@@ -4017,6 +4017,53 @@ details[open] > summary {
   white-space: normal;
   line-height: 1.6;
 }
+.strategy-close-form .footnote {
+  display: block;
+}
+.strategy-close-quote {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-raised);
+}
+.strategy-close-quote small,
+.strategy-close-progress small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.strategy-close-quote strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.strategy-close-actions,
+.strategy-close-progress > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.strategy-close-progress {
+  padding: 18px 22px;
+  border-block: 1px solid var(--border);
+}
+.strategy-close-progress strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.strategy-close-progress p {
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 10px 0 7px;
+  color: var(--muted);
+}
 .book-table td {
   font-variant-numeric: tabular-nums;
   width: 25%;

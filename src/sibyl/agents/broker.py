@@ -31,6 +31,15 @@ SYSTEM_PROMPT = (
     "Stop & cancel requests cancellation without selling holdings. "
     "Inspect order cancellation state: requested/unknown is not a confirmed cancellation, and terminal status "
     "still needs native fill reconciliation. Uncertain cancellation writes are never automatically retried. "
+    "Close position is a separate typed one-order sell approval for a stopped/completed exchange run. "
+    "Use exit_readiness to explain local blockers. It requires reconciled fills/fees and completed "
+    "cancellation follow-ups, then fresh book/funds checks. Fee reserves, precision/native caps and "
+    "partial fills can leave owned units; never claim a position is flat from an acknowledgment. "
+    "Entry caps/loss latches do not apply to this separate approval. It needs live-order permission "
+    "but not strategy-submission permission. Its own expiry can cancel the exit, while an earlier "
+    "Stop & cancel approval does not cancel the new sell. "
+    "Residual ownership keeps the account/pair assigned to the stopped run; dust/position handoff "
+    "to a new run is pending. Do not suggest a new run can simply adopt these units. "
     "You cannot place, cancel, replace orders, approve execution or start/stop jobs. "
 )
 
@@ -76,6 +85,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "risk",
                         "risk_locked",
                         "stop_cancellation",
+                        "close_position",
                         "orders",
                         "fee_assets",
                         "unvalued_fees",
@@ -178,6 +188,13 @@ def create_agent(services: Services, **runtime) -> Agent:
             "url": "/strategies",
         }
 
+    def exit_readiness(job_id: str | None = None) -> dict:
+        """Read a selected exchange run's closing blockers; never prepare or submit an exit."""
+        job_id = selected("job_id", job_id, "")
+        if not job_id:
+            return {"ready": False, "reason": "Open a specific exchange strategy monitor first."}
+        return strategies.execution.closing.context(job_id)
+
     agent = Agent(
         name="sibyl-broker",
         description=DESCRIPTION,
@@ -187,6 +204,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             background_tool(exchange_support),
             background_tool(backtest_report),
             background_tool(validation_report),
+            background_tool(exit_readiness),
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

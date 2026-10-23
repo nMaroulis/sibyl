@@ -277,7 +277,8 @@ export function ExchangeStrategySetup({
               Price-capped GTC limits can remain open. One unresolved order blocks the run. Budgets
               are tracked locally and do not reserve exchange funds. Pause/Stop disable future
               orders. Approved expiry can still cancel outstanding orders. Stop &amp; cancel has its
-              own review; no control sells positions. Loss guards are not guaranteed stop orders.
+              own review and retains holdings. Close position requires a separate sell approval.
+              Loss guards are not guaranteed stop orders.
             </p>
             <button
               className="button secondary full-width"

@@ -115,7 +115,15 @@ class StrategyCancellations:
         with self.runner.lock:
             job = self.journal.job(identity)
             for snapshot in self.orders(identity):
-                explicit = bool(job.get("stop_cancellation"))
+                # A later, separately reviewed closing order is not part of an
+                # earlier Stop & cancel approval. Its own expiry still applies.
+                closing = snapshot.get("strategy_action") == "close"
+                stop = job.get("stop_cancellation")
+                explicit = bool(stop) and (
+                    not closing
+                    or datetime.fromisoformat(snapshot["created_at"])
+                    <= datetime.fromisoformat(stop["requested_at"])
+                )
                 due = snapshot.get("strategy_expires_at")
                 expired = due and time.time() >= datetime.fromisoformat(due).timestamp()
                 if not (explicit or expired or snapshot.get("strategy_cancellation")):
@@ -169,7 +177,7 @@ class StrategyCancellations:
                             # at process loss, all cross the same durable write boundary.
                             intent = self.trading.lifecycle.refresh(intent["id"])
                         else:
-                            self._allowed(job, explicit=explicit)
+                            self._allowed(job, explicit=explicit or closing)
                             try:
                                 review = self.trading.lifecycle.preview_cancel(intent["id"])
                             except ValueError:
@@ -179,7 +187,7 @@ class StrategyCancellations:
                                     self._observed(job, intent)
                                     return
                                 raise
-                            self._allowed(self.journal.job(identity), explicit=explicit)
+                            self._allowed(self.journal.job(identity), explicit=explicit or closing)
                             # Record which shared review was authorized, before its
                             # own durable 'submitting' transition and native write.
                             with self.store.db() as db:

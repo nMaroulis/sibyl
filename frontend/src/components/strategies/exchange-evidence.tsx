@@ -22,8 +22,32 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
       {job.stop_cancellation && (
         <p className="monitor-notice">
           Stop &amp; cancel was approved. New submissions are stopped; cancellation outcomes and
-          native fill evidence are shown below. Holdings are retained.
+          native fill evidence are shown below. Selling holdings requires a separate exit approval.
         </p>
+      )}
+      {job.close_position && (
+        <section className="strategy-close-progress" aria-label="Reviewed position exit">
+          <div>
+            <strong>Reviewed position exit</strong>
+            <Badge
+              tone={
+                ['unknown', 'interrupted', 'rejected'].includes(job.close_position.state)
+                  ? 'sand'
+                  : 'neutral'
+              }
+            >
+              {job.close_position.state}
+            </Badge>
+          </div>
+          <p>{job.close_position.message}</p>
+          <small>
+            Order {job.close_position.intent_id.slice(0, 12)} · Filled{' '}
+            {job.close_position.filled == null ? '—' : number(job.close_position.filled, 8)} /{' '}
+            {number(job.close_position.requested ?? 0, 8)} {job.parameters.symbol.split('/')[0]} ·
+            Remaining owned {number(job.quantity, 8)} · Realized P&amp;L{' '}
+            {number(job.realized_pnl ?? 0, 8)} {quote}
+          </small>
+        </section>
       )}
       {(job.accounting_incomplete || Object.keys(job.unvalued_fees ?? {}).length > 0) && (
         <p className="monitor-notice">
@@ -50,7 +74,7 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
           <strong>{job.native_fill_count ?? 0}</strong>
         </div>
         <div>
-          <small>Order cap · {quote}</small>
+          <small>Strategy order cap · {quote}</small>
           <strong>{number(job.risk?.max_order_quote ?? 0, 8)}</strong>
         </div>
         <div>
@@ -62,7 +86,7 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
           <strong>{job.risk?.max_orders_per_day}</strong>
         </div>
         <div>
-          <small>Approved order lifetime</small>
+          <small>Strategy order lifetime</small>
           <strong>
             {job.risk?.order_lifetime_seconds == null
               ? 'GTC · no expiry'
@@ -95,6 +119,12 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
                 <tr key={order.id}>
                   <td>
                     {order.request.side.toUpperCase()}
+                    {order.strategy_action === 'close' && (
+                      <>
+                        {' '}
+                        <Badge>Exit</Badge>
+                      </>
+                    )}
                     <br />
                     <code>{order.id.slice(0, 12)}</code>
                   </td>
@@ -132,6 +162,9 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
                             ` · ${order.strategy_cancellation.terminal_checks}/3 late status checks`}
                         </small>
                       </>
+                    ) : order.strategy_abandoned ||
+                      ['closed', 'canceled', 'expired', 'rejected'].includes(order.status) ? (
+                      <small>No pending cancellation</small>
                     ) : order.strategy_expires_at ? (
                       <small>
                         Cancellation due {new Date(order.strategy_expires_at).toLocaleString()}
@@ -152,8 +185,8 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
       <p className="footnote padded">
         <Link to="/trade?tab=executions">Manage and reconcile exchange orders in Trade →</Link> ·
         Pause/Stop prevent future submissions; approved expiry still runs. Stop &amp; cancel has a
-        separate review. Native orders can fill until confirmed terminal; no control liquidates a
-        position.
+        separate review and retains holdings. Close position requires its own sell approval. Native
+        orders can fill until confirmed terminal.
       </p>
     </Panel>
   );

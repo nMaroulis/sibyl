@@ -44,6 +44,28 @@ def observation(client, parameters) -> dict:
         raise ExecutionGuard("The latest closed execution candle is stale.")
     if any(not math.isfinite(float(value)) or float(value) <= 0 for row in rows for value in row[1:5]):
         raise ExecutionGuard("The exchange returned invalid execution candles.")
+    observed = order_book(client, symbol, started=started)
+    return {
+        **observed,
+        "candles": [
+            dict(
+                zip(
+                    ("timestamp", "open", "high", "low", "close", "volume"),
+                    [datetime.fromtimestamp(row[0] / 1000, UTC).isoformat(), *row[1:6]],
+                    strict=True,
+                )
+            )
+            for row in rows
+        ],
+    }
+
+
+def order_book(client, symbol, *, started=None):
+    """Read a fresh, two-sided spot book; position exits do not depend on candle history."""
+    started = time.time() if started is None else started
+    market = client.market(symbol)
+    if not market.get("spot") or market.get("active") is False:
+        raise ExecutionGuard("Choose an active spot market on this account's exchange.")
     book = client.fetch_order_book(symbol, limit=10)
     bid, ask = float(book["bids"][0][0]), float(book["asks"][0][0])
     stamp = book.get("timestamp")
@@ -55,16 +77,6 @@ def observation(client, parameters) -> dict:
     ):
         raise ExecutionGuard("A fresh two-sided exchange order book is required.")
     return {
-        "candles": [
-            dict(
-                zip(
-                    ("timestamp", "open", "high", "low", "close", "volume"),
-                    [datetime.fromtimestamp(row[0] / 1000, UTC).isoformat(), *row[1:6]],
-                    strict=True,
-                )
-            )
-            for row in rows
-        ],
         "bid": bid,
         "ask": ask,
         "price": (bid + ask) / 2,

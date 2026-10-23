@@ -2,12 +2,13 @@
 
 import json
 from collections import defaultdict
+from contextlib import nullcontext
 
 from sibyl.services.order_reconciliation import summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
 
 
-def project(job, trading):
+def project(job, trading, *, db=None):
     """Attribute only this strategy's orders; account deposits and unrelated holdings are excluded.
 
     Recalculation prevents duplicate fills and incorporates late fee corrections.
@@ -15,8 +16,10 @@ def project(job, trading):
     and block new orders until reviewed; no invented conversion enters P&L.
     """
     base, quote = job["parameters"]["symbol"].split("/")
-    with trading.store.db() as db:
-        db.execute("BEGIN")
+    with trading.store.db() if db is None else nullcontext(db) as connection:
+        if db is None:
+            connection.execute("BEGIN")
+        db = connection
         orders = [
             json.loads(row[0])
             for row in db.execute(
@@ -29,7 +32,7 @@ def project(job, trading):
             "ON f.account_id=json_extract(o.payload,'$.request.connection_id') "
             "AND f.symbol=json_extract(o.payload,'$.request.symbol') "
             "AND json_extract(f.payload,'$.order_id')=json_extract(o.payload,'$.exchange_order_id') "
-            "WHERE json_extract(o.payload,'$.strategy_job_id')=? ORDER BY f.timestamp_ms,f.id LIMIT 10001",
+            "WHERE json_extract(o.payload,'$.strategy_job_id')=? ORDER BY f.timestamp_ms,o.rowid,f.id LIMIT 10001",
             (job["id"],),
         ).fetchall()
         sync = {
@@ -144,6 +147,8 @@ def project(job, trading):
                     "strategy_cancellation",
                     "cancel_state",
                     "cancel_message",
+                    "strategy_action",
+                    "strategy_close_review_id",
                 )
             }
             for order in orders[-100:]

@@ -3,7 +3,11 @@
 from fastapi import APIRouter
 
 from sibyl.api.routes import S
-from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, StrategyApproval
+from sibyl.strategies.execution.contracts import (
+    ClosePositionRequest,
+    ExchangeStrategyRequest,
+    StrategyApproval,
+)
 
 router = APIRouter(prefix="/api/v1/strategies/exchange", tags=["Broker"])
 
@@ -42,3 +46,21 @@ def stop_cancel_review(job_id: str, s: S):
 def stop_cancel(review_id: str, body: StrategyApproval, s: S):
     """Permanently stop submissions and authorize owned-order cancellation, never liquidation."""
     return s.strategies.execution.stop_reviews.confirm(review_id, body.confirmation)
+
+
+@router.get("/jobs/{job_id}/close-position")
+def close_position_context(job_id: str, s: S):
+    """Read local eligibility and retained position without contacting the exchange."""
+    return s.strategies.execution.closing.context(job_id)
+
+
+@router.post("/jobs/{job_id}/close-preview")
+def close_position_preview(job_id: str, body: ClosePositionRequest, s: S):
+    """Read the exact exchange book/funds and save a short-lived fixed exit review."""
+    return s.strategies.execution.closing.preview(job_id, body)
+
+
+@router.post("/close-reviews/{review_id}/confirm")
+def close_position_confirm(review_id: str, body: StrategyApproval, s: S):
+    """Approve one strategy-owned sell; duplicate requests never repeat a native write."""
+    return s.strategies.execution.closing.confirm(review_id, body.confirmation)

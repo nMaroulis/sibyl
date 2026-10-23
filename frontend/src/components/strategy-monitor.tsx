@@ -29,6 +29,7 @@ import { StrategyChart } from './strategy-chart';
 import { DecisionJournal } from './strategy-journal';
 import { ExchangeRunEvidence } from './strategies/exchange-evidence';
 import { StopCancellation } from './strategies/stop-cancellation';
+import { ClosePosition } from './strategies/close-position';
 import { exportCSV, number, post, refresh } from '../lib/api';
 import { date, formatted, monitorURL, runName, tone } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
@@ -182,6 +183,7 @@ export function StrategyMonitor({
                   !['closed', 'canceled', 'expired', 'rejected'].includes(order.status) &&
                   !order.strategy_abandoned,
               )) && <StopCancellation job={job} />}
+          {exchangeRun && <ClosePosition key={job.id} job={job} />}
         </div>
       </Panel>
       {exchangeRun && <ExchangeRunEvidence job={job} />}

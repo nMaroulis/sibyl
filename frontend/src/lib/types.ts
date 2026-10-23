@@ -270,10 +270,23 @@ export type Job = Source & {
   native_fill_count?: number;
   risk?: Record<string, number | null>;
   stop_cancellation?: { review_id: string; requested_at: string };
+  close_position?: {
+    review_id: string;
+    intent_id: string;
+    state: string;
+    message: string;
+    checked_at: string;
+    native_status?: string;
+    filled?: number;
+    requested?: number;
+    remaining_position?: number;
+  };
   orders?: {
     id: string;
     status: string;
     strategy_abandoned?: boolean;
+    strategy_action?: string;
+    strategy_close_review_id?: string;
     strategy_expires_at?: string;
     cancel_state?: string;
     cancel_message?: string;

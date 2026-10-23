@@ -45,3 +45,12 @@ class StrategyApproval(Request):
     """Confirm the immutable, expiring server-side strategy review."""
 
     confirmation: str = Field(min_length=1, max_length=120)
+
+
+class ClosePositionRequest(Request):
+    """One separately reviewed exit, with an explicit limit floor and fee reserve."""
+
+    price_limit_bps: float = Field(default=25, gt=0, le=200)
+    max_spread_bps: float = Field(default=50, gt=0, le=500)
+    fee_reserve_bps: float = Field(default=100, ge=10, le=500)
+    order_lifetime_seconds: int | None = Field(default=300, ge=60, le=86_400, strict=True)
