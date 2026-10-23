@@ -11,6 +11,8 @@ from sibyl.models import ConnectionCreate
 from sibyl.services.data_settings import MarketSettingsRequest
 from sibyl.services.valuation import Valuation
 
+VALUATION_TIME = datetime(2026, 10, 1, tzinfo=UTC)
+
 
 def feed(client, monkeypatch, pairs, balances=None):
     """Install an isolated exact-pair adapter; no test contacts a public provider."""
@@ -123,13 +125,21 @@ def test_failed_direct_quote_uses_a_fresh_supported_path_without_parity(client, 
     "ticker,status",
     [
         ({"last": 10, "timestamp": 1}, "stale"),
-        ({"last": 10, "timestamp": datetime.now(UTC).timestamp() * 1000 + 120000}, "unavailable"),
+        ({"last": 10, "timestamp": VALUATION_TIME.timestamp() * 1000 + 120000}, "unavailable"),
         ({"last": float("nan")}, "unavailable"),
         ({"last": -1}, "unavailable"),
         ({"last": True}, "unavailable"),
     ],
 )
 def test_invalid_or_stale_leg_excludes_the_holding(client, monkeypatch, ticker, status):
+    # Parametrization runs during collection, potentially minutes before CI
+    # reaches this test. Keep the quote and valuation clock fixed together.
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return VALUATION_TIME.astimezone(tz) if tz else VALUATION_TIME.replace(tzinfo=None)
+
+    monkeypatch.setattr("sibyl.services.valuation.datetime", FrozenDatetime)
     feed(client, monkeypatch, {"ALT/USDT": ticker}, {"ALT": 2, "USDT": 10})
     result = client.get("/api/v1/portfolio").json()
     assert result["total"] == 10
