@@ -25,3 +25,23 @@ Broker's native ProtoLink `backtest_report` tool reads selected results and at m
 | POST   | `/strategies/jobs/demo`            | Start the actual paper evaluator pinned to Demo prices                           |
 
 Paper Demo runs have their own capital, decisions and journal. Their source is pinned independently of account activation and the default market feed. Other paper jobs retain the existing source-change pause behavior. Approved exchange execution is implemented separately in `strategies/execution/`; see the [execution guide](../guides/strategy-execution.md).
+
+## Chronological parameter validation
+
+`strategies/validation.py` defines strict `WalkForwardRequest`/`ValidationParameters`, a deterministic `WalkForwardEngine` and the `StrategyValidation` persistence boundary owned by `Strategies.validation`. The API passes the request to this domain; it does not implement selection logic. No provider read is required. `validation/options` exposes the actual strategy-specific searchable fields and limits. Unknown/irrelevant fields, duplicate/nonfinite values, invalid period combinations and excessive grids fail before simulation.
+
+The initial training boundary is `floor(count * initial_train_pct / 100)`. The remainder is divided into disjoint test intervals using integer boundaries; every remaining bar is tested exactly once. Training expands from the dataset start through the boundary immediately before each test. Candidates share the maximum warm-up of all candidates and fixed settings, then are ordered by the requested training score and stable candidate ID; optional minimum completed training trades controls eligibility. No test simulation is evaluated until that window's selection is fixed.
+
+`BacktestEngine.run(..., evaluation_start=index)` computes causal indicators over the supplied prefix but starts in cash at that index. Only its suffix contributes fills, benchmark and performance. Training receives no test candles; selected/fixed test simulations receive no candles after their own test end. Tests force a cost-aware close and reset capital per window. Their summary is an unweighted mean, never a stitched deployment account. Prior tests may enter later training history. See the [user guide](../guides/strategy-validation.md) for interpretation.
+
+The work guard counts `sum(candidates * train_end + 2 * test_end)` input rows, including indicator context; the 60,000-row bound is checked before calculation. Requests allow two axes, four distinct values each, five windows, 20 scored initial training bars and 20 bars per test. A nonblocking per-workspace lock prevents concurrent searches in the supported single-worker deployment. This is bounded synchronous research, not a general background job system.
+
+Completed results commit atomically to `strategy_validations`, with compact metadata separate from full rankings/test executions. A failed or interrupted request leaves no partial record. Summary reads return the latest 50 rows with an optional Demo filter. Replay loads the saved request and integrity-checked immutable dataset, uses the current engine, and saves a new `rerun_of` result. It never overwrites a study or changes a job/account/source. Broker's native `validation_report` reads summary/window evidence without invoking research or execution.
+
+| Method | `/api/v1` path                       | Purpose                                                       |
+| ------ | ------------------------------------ | ------------------------------------------------------------- |
+| GET    | `/strategies/validation/options`     | Implemented search fields and bounds                          |
+| POST   | `/strategies/validations`            | Bounded offline parameter search and chronological evaluation |
+| GET    | `/strategies/validations?demo=true`  | Latest 50 compact summaries; optional Demo boundary           |
+| GET    | `/strategies/validations/{id}`       | Complete retained study, also usable as a JSON export         |
+| POST   | `/strategies/validations/{id}/rerun` | Recompute exact original input/settings and retain the parent |

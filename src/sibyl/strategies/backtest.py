@@ -8,7 +8,7 @@ from sibyl.services.analytics import performance_metrics
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
 
 
-def _simulate(candles: list[dict], request: BacktestRequest) -> dict:
+def _simulate(candles: list[dict], request: BacktestRequest, start: int) -> dict:
     """Run a long-only simulation with previous-close signals and next-open fills.
 
     Fee and slippage apply on both sides. The last position is liquidated at the
@@ -21,7 +21,7 @@ def _simulate(candles: list[dict], request: BacktestRequest) -> dict:
     fee, slip = request.fee_bps / 10_000, request.slippage_bps / 10_000
     fills, curve, completed_returns = [], [], []
     entry_cost, entry_price = 0.0, 0.0
-    warmup = request.warmup
+    warmup = start
     for i in range(warmup, len(frame)):
         row = frame.iloc[i]
         direction = int(signal.iloc[i - 1])
@@ -119,11 +119,19 @@ class BacktestEngine:
 
     version = "next-open-v2"
 
-    def run(self, candles: list[dict], request: BacktestRequest) -> dict:
-        """Validate chronological input and attach price, benchmark and trade evidence."""
+    def run(
+        self, candles: list[dict], request: BacktestRequest, *, evaluation_start: int | None = None
+    ) -> dict:
+        """Simulate a suffix, using its earlier prefix only for causal indicator context.
+
+        Normal backtests start after indicator warm-up. Walk-forward tests pass
+        their first test-bar index: no prefix trades, positions or performance
+        enter the test, but the previous close can signal its first open.
+        """
         import math
 
-        if len(candles) <= request.warmup:
+        start = request.warmup if evaluation_start is None else evaluation_start
+        if type(start) is not int or not request.warmup <= start < len(candles):
             raise ValueError("Not enough closed candles after strategy warm-up.")
         times = pd.to_datetime([bar["timestamp"] for bar in candles], utc=True)
         if not times.is_monotonic_increasing or times.has_duplicates:
@@ -137,7 +145,7 @@ class BacktestEngine:
             for key in ("open", "high", "low", "close")
         ):
             raise ValueError("Backtest prices must be finite and positive.")
-        result = _simulate(candles, request)
+        result = _simulate(candles, request, start)
         fills, trades = result["fills"], []
         for index in range(0, len(fills), 2):
             entry, exit = fills[index : index + 2]
@@ -162,12 +170,11 @@ class BacktestEngine:
                     ).total_seconds(),
                 }
             )
-        first = candles[request.warmup]
+        first = candles[start]
         fee, slip = request.fee_bps / 10000, request.slippage_bps / 10000
         units = request.capital / (first["open"] * (1 + slip) * (1 + fee))
         benchmark = [
-            {"timestamp": bar["timestamp"], "value": units * bar["close"]}
-            for bar in candles[request.warmup :]
+            {"timestamp": bar["timestamp"], "value": units * bar["close"]} for bar in candles[start:]
         ]
         benchmark[-1]["value"] = request.capital * (1 + result["benchmark_pct"] / 100)
         gross_wins = sum(max(0, trade["pnl"]) for trade in trades)
@@ -193,7 +200,7 @@ class BacktestEngine:
             engine_revision=self.version,
             price_series=[
                 {k: bar[k] for k in ("timestamp", "open", "high", "low", "close", "volume")}
-                for bar in candles
+                for bar in (candles if evaluation_start is None else candles[start:])
             ],
             benchmark_curve=benchmark,
             round_trips=trades,
@@ -212,7 +219,7 @@ class BacktestEngine:
                 if trades
                 else None,
                 "evaluated_bars": len(result["curve"]),
-                "warmup_bars": request.warmup,
+                "warmup_bars": start,
                 "start": first["timestamp"],
                 "end": candles[-1]["timestamp"],
             },

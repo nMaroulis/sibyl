@@ -101,8 +101,7 @@ function PortfolioWorkspace({
   const [range, setRange] = useState('1M');
   const [sort, setSort] = useState<'value' | 'change'>('value');
   if (loading) return <Loading />;
-  if (error || !data)
-    return <ErrorState message={error || 'Account unavailable.'} retry={retry} />;
+  if (error || !data) return <ErrorState message={error || 'Account unavailable.'} retry={retry} />;
   const chartData = data.history.slice(
     -({ '1W': 7, '1M': 30, '3M': 90, ALL: data.history.length }[range] ?? 30),
   );

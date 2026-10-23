@@ -83,9 +83,9 @@ AREAS = [
         "name": "Strategy research",
         "status": "partial",
         "priority": "later",
-        "working": "Six configurable algorithms, progressive strategy setup, deterministic cost-aware backtests, price-chart executions, round-trip P&L, comparable saved experiments, exact-input reruns and explicit Demo research/paper runs.",
+        "working": "Six configurable algorithms, cost-aware backtests and paper runs; bounded grid search, chronological holdout/expanding walk-forward tests, fixed-setting/buy-and-hold comparisons, saved rankings/test executions, exact-study replay and read-only Broker evidence.",
         "pending": [
-            "Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.",
+            "Additional benchmarks, continuous rebalanced deployment simulation, nested validation and broader optimization methods.",
             "Custom strategy plugins, optional Freqtrade and multi-asset allocation.",
             "Separate ML/RL training and evaluation pipelines.",
         ],
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-23",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Durable market data and observed read history, account reconciliation and local operations. Multi-user support is deferred.",
+        "current_focus": "Bounded walk-forward strategy research is implemented. Next foundations: broader account reconciliation, order lifecycle controls and local operations. Multi-user support is deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only; authenticated venue acceptance is outstanding.",
         "release_dates": None,
     }

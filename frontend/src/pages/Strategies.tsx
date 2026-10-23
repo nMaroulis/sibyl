@@ -21,6 +21,7 @@ import { MarketSelector, TimeframeSelect } from '../components/market-controls';
 import type { SpotCatalog } from '../components/market-controls';
 import { BacktestChart } from '../components/strategies/backtest-chart';
 import { ExchangeStrategySetup } from '../components/strategies/exchange-execution';
+import { ValidationWorkspace } from '../components/strategies/validation-workspace';
 import { ComingSoon } from '../components/coming-soon';
 import { ValueChart } from '../components/charts';
 import { downloadFile, exportCSV, number, post, refresh } from '../lib/api';
@@ -1065,6 +1066,11 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
             )}
           </Panel>
         </div>
+        <ValidationWorkspace
+          dataset={activeResult?.dataset ?? dataset}
+          parameters={activeResult?.parameters ?? params}
+          demo={demoInput}
+        />
         {jobs.error ? (
           <ErrorState message={jobs.error} retry={jobs.retry} />
         ) : (

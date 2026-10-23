@@ -13,6 +13,7 @@ from sibyl.services.market import Market
 from sibyl.storage import Store
 from sibyl.strategies.journal import StrategyJournal
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
+from sibyl.strategies.validation import StrategyValidation
 
 
 class Strategies:
@@ -31,6 +32,7 @@ class Strategies:
                 "CREATE TABLE IF NOT EXISTS strategy_jobs (id TEXT PRIMARY KEY, payload TEXT NOT NULL)"
             )
         self.journal = StrategyJournal(store)
+        self.validation = StrategyValidation(store, market.archive)
         self.execution = None
 
     def attach_execution(self, trading):

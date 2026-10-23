@@ -18,6 +18,7 @@ module.exports = {
         'guides/alerts',
         'guides/trading',
         'guides/strategies',
+        'guides/strategy-validation',
         'guides/strategy-monitor',
         'guides/strategy-execution',
         'guides/sibyl',

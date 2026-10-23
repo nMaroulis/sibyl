@@ -522,6 +522,7 @@ export type Run = {
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
   backtest_id?: string;
+  validation_id?: string;
   portfolio_scope?: string;
   performance_view?: boolean;
   performance_account_id?: string;

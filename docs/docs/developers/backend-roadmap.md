@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — October 22, 2026
+## Audited snapshot — October 23, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -13,8 +13,8 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
-| Automated strategy execution   | partial       | Authenticated acceptance, automatic expiry/flattening, broader risk policies and fee valuation.         |
-| Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.                   |
+| Automated strategy execution   | partial       | Authenticated acceptance, automatic expiry/flattening, broader risk policies and fee valuation.       |
+| Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, per-agent models and explicit approval/audit contracts.               |
 | Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                       |
@@ -122,7 +122,8 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 
 Six configurable strategies, fee/slippage-aware backtests, performance metrics and a paper monitor are implemented.
 
-- [ ] Add walk-forward/out-of-sample evaluation and parameter optimization.
+- [x] Add bounded grid search, chronological holdout/expanding walk-forward evaluation, fixed-settings comparisons, recorded training rankings/test executions, exact-study reruns and Broker evidence tools. See [validation](../guides/strategy-validation.md).
+- [ ] Add nested validation, continuous rebalanced deployment simulations and broader random/Bayesian optimization; repeated user experiments can still overfit.
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
 - [ ] Add additional explicit benchmarks and strategy-version comparisons.
 - [ ] Add multi-asset strategy execution and allocation rules if required.

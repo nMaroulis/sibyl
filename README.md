@@ -37,6 +37,8 @@ Account is the home screen. New workspaces start with no active accounts. Connec
 
 Strategies starts with historical research and isolated paper runs. Expand **Run on a connected exchange** for account/pair selection, native quote budgets and risk limits. Nine provider/environment variants use price-capped GTC orders and the shared native order/fill pipeline. Both backend execution flags and a typed scoped approval are required; startup pauses exchange runs. Agents remain read-only. Automatic expiry/flattening and authenticated venue acceptance remain pending. See the [exchange strategy guide](docs/docs/guides/strategy-execution.md).
 
+Expand **Validate on unseen data** for bounded parameter search on earlier candles and independent later-window tests. Saved immutable inputs support chronological holdouts and expanding walk-forward evaluation, fixed-settings and cost-aware buy-and-hold comparisons, test-chart executions, training rankings, exact-study reruns and JSON/CSV evidence. Research never changes or starts a trading strategy. See [validation setup and interpretation](docs/docs/guides/strategy-validation.md).
+
 ## Portfolio valuation
 
 Portfolio prices actual held assets through exact direct, inverse or short conversion routes from the selected market feed. Stablecoins and fiat use observed rates; no parity is assumed. Holdings expose conversion evidence and coverage, and unavailable quantities stay visible. Complete account observations form the history. The Demo wallet exercises an extra coin, stablecoin and fiat through the same engine. See [portfolio valuation](docs/docs/developers/portfolio-valuation.md).

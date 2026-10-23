@@ -15,7 +15,13 @@ SYSTEM_PROMPT = (
     "strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
     "supported rules and assumptions. Call backtest_report for a saved or selected historical run: "
     "explain actual simulated fills, costs, input provenance and metrics. Never describe a backtest "
-    "as predictive or confuse synthetic Demo input with observed exchange prices. Call exchange_support for manual spot order support, permissions "
+    "as predictive or confuse synthetic Demo input with observed exchange prices. "
+    "Use validation_report for a selected walk-forward study: distinguish training selection from "
+    "later independent test windows, fixed-parameter and buy-and-hold comparisons. Explain that "
+    "test returns reset virtual capital rather than forming a continuous account, later training "
+    "includes earlier test windows, and repeated searches can overfit. Never call the best training "
+    "score an out-of-sample result or imply that this proves future performance. "
+    "Call exchange_support for manual spot order support, permissions "
     "and provider-specific history/recovery limits. Inspect mode and environment: paper runs use virtual capital; "
     "approved exchange runs use actual/test exchange funds and native fills. Explain paused/uncertain orders, "
     "budget/loss controls, base/quote fees and unvalued fee limits accurately. You cannot place, cancel, "
@@ -94,6 +100,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "catalog": CATALOG,
             "execution": "Paper runs use isolated virtual capital. Approved exchange runs use account-bound price-capped GTC limits and native fills; both backend execution flags are required. This agent cannot approve, start or submit orders.",
             "backtests": "Next-open fills, configured fees and slippage; no look-ahead signal fills.",
+            "validation": "Bounded two-axis grid search on expanding training prefixes, followed by disjoint test windows. Tests start in cash; fixed parameters and cost-aware buy-and-hold are compared. Settings are never applied to live or paper jobs automatically.",
             "url": "/strategies",
         }
 
@@ -129,6 +136,41 @@ def create_agent(services: Services, **runtime) -> Agent:
             "note": "Manual orders require per-order review. Supported automated strategies require their own fixed-scope account/budget approval and execution flags. Agents cannot submit or approve orders. Private account acceptance is pending.",
         }
 
+    def validation_report(validation_id: str = "", window: int = 1) -> dict:
+        """Read retained walk-forward evidence without running a search or accessing an exchange."""
+        validation_id = selected("validation_id", validation_id or None, "")
+        if not validation_id:
+            return {"note": "Choose a saved walk-forward study first.", "url": "/strategies"}
+        result = strategies.validation.get(validation_id)
+        if not 1 <= window <= len(result["folds"]):
+            return {"note": "Choose one of the study's recorded test windows."}
+        fold = result["folds"][window - 1]
+        return {
+            **{
+                key: result[key]
+                for key in ("id", "dataset", "method", "engine_revision", "request", "summary", "assumptions")
+            },
+            "windows": [
+                {
+                    "index": item["index"],
+                    "train": item["train"],
+                    "test": item["test"],
+                    "selected": item["selected"],
+                    "test_return_pct": item["out_of_sample"]["return_pct"],
+                    "fixed_return_pct": item["fixed_parameters"]["return_pct"],
+                    "benchmark_pct": item["out_of_sample"]["benchmark_pct"],
+                }
+                for item in result["folds"]
+            ],
+            "selected_window": {
+                "index": window,
+                "training_ranking": fold["training_ranking"],
+                "recent_test_round_trips": fold["out_of_sample"]["round_trips"][-10:],
+            },
+            "simulation": True,
+            "url": "/strategies",
+        }
+
     agent = Agent(
         name="sibyl-broker",
         description=DESCRIPTION,
@@ -137,6 +179,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             background_tool(strategy_guide),
             background_tool(exchange_support),
             background_tool(backtest_report),
+            background_tool(validation_report),
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

@@ -239,6 +239,7 @@ class AgentContext(Request):
     parameters: BacktestRequest | None = None
     job_id: str | None = Field(default=None, min_length=1, max_length=100)
     backtest_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    validation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     article_id: str | None = Field(default=None, max_length=100)
     news_mode: Literal["demo", "live"] | None = None
     news_publisher: str | None = Field(default=None, max_length=40)

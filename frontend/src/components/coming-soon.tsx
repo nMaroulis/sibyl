@@ -25,7 +25,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'strategies',
       title: 'More ways to test an idea',
-      text: 'Freqtrade integration, machine learning strategies, and reinforcement learning.',
+      text: 'Nested validation, broader search methods, Freqtrade integration and ML/RL strategies. Bounded parameter search and chronological walk-forward tests are available now.',
     },
     {
       module: 'strategies',
