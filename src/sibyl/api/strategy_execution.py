@@ -1,6 +1,6 @@
 """Read-only strategy reviews and explicit account-scoped execution approvals."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
 from sibyl.api.routes import S
 from sibyl.strategies.execution.contracts import (
@@ -8,6 +8,7 @@ from sibyl.strategies.execution.contracts import (
     ExchangeStrategyRequest,
     StrategyApproval,
 )
+from sibyl.strategies.execution.controls import ControlAction
 
 router = APIRouter(prefix="/api/v1/strategies/exchange", tags=["Broker"])
 
@@ -16,6 +17,20 @@ router = APIRouter(prefix="/api/v1/strategies/exchange", tags=["Broker"])
 def options(s: S):
     """Return implemented providers, saved accounts and server authorization state."""
     return s.strategies.execution.options()
+
+
+@router.get("/controls")
+def controls(s: S, response: Response):
+    """Read the durable global halt and retained audit; never contact an exchange."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.controls.state()
+
+
+@router.post("/controls")
+def change_controls(body: ControlAction, s: S, response: Response):
+    """Pause exchange runs or explicitly release admission without resuming any run."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.controls.change(body)
 
 
 @router.get("/markets/{connection_id}")

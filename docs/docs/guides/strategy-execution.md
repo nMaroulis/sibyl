@@ -12,6 +12,16 @@ Strategies supports isolated paper runs and explicitly approved exchange runs. E
 
 Approval allows future orders within that fixed scope without reviewing each order. The run primes the current closed candle and waits for the next one; it does not immediately trade an old signal. An AI model is not needed. Broker can explain the run's evidence but cannot approve or submit orders.
 
+## Halt automation across accounts
+
+The **Exchange automation** control above the workspace is available in both Build & backtest and Monitor. Select **Halt automation** to pause every running exchange strategy and block new automatic entries/exits across all accounts, including exchange test environments. The halt persists after backend restart and works even when exchange access is unavailable. Paper strategies and backtests continue normally.
+
+Wait for the active-halt confirmation. A request can wait for an already admitted provider operation, and an in-flight order may finish before the action returns. The halt does not cancel orders or sell holdings. Existing orders can still fill; native reconciliation, approved order-expiry policies, manual Trade and separately reviewed position exits/cancellations keep their existing permissions.
+
+Open **Review & release** to inspect the control history and type `RELEASE STRATEGY HALT`. Releasing leaves every run paused. Review each run's orders, fills and current ownership, then Resume individually. The normal account, loss, reconciliation and fresh-candle checks still apply. Old unused Start reviews and unsent signal orders remain invalid; create a fresh review when starting a new run.
+
+**Controls** shows the newest 20 changes, their notes, exact paused-run links and timestamps. The backend retains the newest 200 changes, and each affected run keeps its own journal pause event. Agents can explain this state but cannot change it. This is a manual submission control; portfolio-wide automatic exposure/daily-loss policies remain pending. See the [developer contract](../developers/strategy-controls.md).
+
 ## Execution and risk controls
 
 Every decision uses the latest closed candle from the exact exchange pair. Missing, stale or discontinuous data block execution. Fresh two-sided order-book reads determine a reference midpoint and spread. A native book timestamp is validated when provided; otherwise freshness is the local request observation, not a guarantee about the venue's internal book age.
@@ -65,7 +75,7 @@ Readiness and a current reconciliation match do not establish final settlement. 
 
 ## Pending
 
-Authenticated sandbox/production acceptance, automatic multi-order liquidation, adoption/reconciliation of manually changed positions, third-currency fee valuation, full settlement/bust handling, global kill controls, portfolio-wide exposure/daily-loss policies and additional providers remain on the [implementation checklist](../developers/backend-roadmap.md). Current residual exits require fresh approvals. Do not interpret a supported adapter badge as successful private-account verification.
+Authenticated sandbox/production acceptance, automatic multi-order liquidation, adoption/reconciliation of manually changed positions, third-currency fee valuation, full settlement/bust handling, portfolio-wide exposure/daily-loss policies and additional providers remain on the [implementation checklist](../developers/backend-roadmap.md). Current residual exits require fresh approvals. Do not interpret a supported adapter badge as successful private-account verification.
 
 The code is in `src/sibyl/strategies/execution/`: `contracts.py`, `approvals.py`, `venue.py`, `accounting.py`, `cancellation.py`, `stop_reviews.py`, `closing.py` and `runner.py`. Cancellation progress lives on each owned order intent; the persisted stop policy and deadlines reconstruct work after restart. Closing reviews persist separately; their deterministic request keys and linked intents protect duplicate confirmations. A domain guard compares a coherent ownership digest within the shared submission transaction. Host locks precede per-intent locks, matching the submission pipeline. Equal native fill timestamps use local order creation order as the causal tiebreaker for this serialized strategy. It reuses `ExchangeTrading`, order recovery and native fill reconciliation rather than introducing another exchange client. Native limit-order reference: [Binance Spot trading API](https://developers.binance.com/docs/binance-spot-api-docs/rest-api/trading-endpoints).
 

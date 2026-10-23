@@ -36,6 +36,7 @@ EVENT_COLUMNS = (
     "cancellation_id",
     "expires_at",
     "close_review_id",
+    "control_revision",
 )
 
 

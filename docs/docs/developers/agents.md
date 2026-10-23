@@ -11,7 +11,7 @@ The dependency is `protolink>=0.8.2,<0.9`. In this version, local in-process tra
 | `oracle.py`                       | Portfolio perspective and `portfolio_snapshot`                                              |
 | `accountant.py`                   | Holdings and selected local performance, funding and transfer reports                       |
 | `analyst.py`                      | Market indicators and analysis-method help                                                  |
-| `broker.py`                       | Selected paper jobs/backtests and strategy rules                                            |
+| `broker.py`                       | Selected runs/backtests, strategy rules and read-only global execution controls                                            |
 | `chronos.py`                      | Forecast observations and baseline-method explanation                                       |
 | `reporter.py`                     | Cached news, selected articles, publisher attribution and cached Fear & Greed               |
 | `technician.py`                   | Connection metadata, settings guides and provider-specific setup instructions               |
@@ -125,7 +125,7 @@ Only outer user requests acquire the shared two-request semaphore. Native delega
 | Agent          | Native tools                                                                  |
 | -------------- | ----------------------------------------------------------------------------- |
 | Oracle         | `portfolio_snapshot`                                                          |
-| Accountant     | `accountant_snapshot`                                                         |
+| Accountant     | `accountant_snapshot`, `account_history`, `risk_alerts`                                                         |
 | Analyst        | `market_analysis`, `analysis_help`                                            |
 | Broker         | `strategy_context`, `strategy_guide`, `exchange_support`                      |
 | Chronos        | `price_forecast`, `forecast_method`                                           |
@@ -191,3 +191,5 @@ When adding or changing a module feature:
 For a new dashboard module, add its declaration to `registry.MODULES` and its module ID/frontend entry. The network starts and registers it automatically. Independently registered agents are also visible to Sibyl through native discovery. New mutation tools need a separate explicit approval/action design.
 
 `test_native_agents.py` covers on-demand news reads, no eager portfolio reads, practical setup guides, native guide tools, fixed offline accounting selections, same-agent concurrent history/selection isolation and cancellation during a real specialist tool. Existing chat/request tests cover startup/shutdown, native clients, model snapshots, propagated SDK budgets, persistence and Stop races. Additional tests register a new agent without changing Sibyl and verify that specialists never attempt discovery/delegation. Tests replace provider I/O, not ProtoLink's runtime.
+
+Broker exposes `execution_controls` through its native ProtoLink agent to read the durable global submission halt and retained audit. Its prompt distinguishes automatic signal submissions from manual Trade, separately reviewed exits and approved cancellation policies. No agent can halt, release or resume a strategy. See [control contracts](strategy-controls.md).

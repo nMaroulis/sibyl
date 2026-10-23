@@ -9832,3 +9832,247 @@ details[open] > summary {
 .connection-alert-note {
   padding: 0 20px 12px;
 }
+
+/* Account-risk watches keep limits readable; deeper valuation evidence is on demand. */
+.risk-rule-reading {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 20px;
+  padding: 8px 20px 20px;
+}
+.risk-rule-reading > div,
+.risk-evidence-summary > div {
+  display: grid;
+  gap: 7px;
+}
+.risk-rule-reading span,
+.risk-evidence-summary small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.risk-rule-reading strong {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+}
+.risk-rule-reading > div + div strong {
+  font-size: 17px;
+  align-self: center;
+}
+.risk-rule-error {
+  margin: 0 20px 15px;
+  padding: 12px 15px;
+  border-radius: 13px;
+  color: var(--text);
+  background: #fff6e9;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.risk-account-choices {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.risk-account-choices legend {
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.risk-account-choices legend small {
+  float: right;
+  color: var(--muted);
+  font-weight: 400;
+}
+.form .risk-account-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  cursor: pointer;
+}
+.form .risk-account-option.selected {
+  background: var(--primary-soft);
+  border-color: #bdc9ea;
+}
+.form .risk-account-option input {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  accent-color: var(--primary);
+  margin: 0;
+}
+.risk-account-option > span {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+.risk-account-option strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.risk-account-option small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.risk-advanced {
+  padding: 14px 16px;
+  background: var(--surface-soft, #f6f7fb);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+}
+.risk-advanced summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+}
+.risk-advanced[open] summary {
+  margin-bottom: 18px;
+}
+.risk-advanced .footnote {
+  margin-bottom: 0;
+}
+.risk-alert-dialog {
+  width: min(660px, calc(100vw - 32px));
+}
+.risk-evidence-dialog {
+  width: min(940px, calc(100vw - 32px));
+}
+.risk-evidence {
+  display: grid;
+  gap: 20px;
+}
+.risk-evidence-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 18px;
+}
+.risk-evidence-summary strong {
+  font-size: 17px;
+  font-weight: 500;
+}
+.risk-evidence-summary > div:last-child strong {
+  font-size: 12px;
+}
+.risk-evidence-picker {
+  display: grid;
+  gap: 8px;
+  max-width: 300px;
+  font-size: 12px;
+}
+.risk-evidence .footnote {
+  margin: 0;
+}
+.risk-evidence details summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+.risk-evidence details[open] {
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 620px) {
+  .risk-rule-reading,
+  .risk-evidence-summary {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .risk-rule-reading > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 15px;
+  }
+}
+
+/* Durable strategy admission controls, visually separate from individual run actions. */
+.strategy-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  padding: 16px 20px;
+  margin: 0 0 24px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.strategy-controls.is-halted {
+  border-color: #e9c6c2;
+  background: #fcf4f2;
+}
+.strategy-control-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 340px;
+}
+.strategy-control-symbol {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  flex: 0 0 34px;
+}
+.is-halted .strategy-control-symbol {
+  color: #ad5c54;
+}
+.strategy-control-summary strong {
+  font-size: 13px;
+}
+.strategy-control-summary p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+.strategy-control-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.strategy-control-history {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+}
+.strategy-control-history li {
+  border-top: 1px solid var(--border);
+  padding: 14px 0;
+}
+.strategy-control-history li > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.strategy-control-history time {
+  color: var(--muted);
+  font-size: 11px;
+}
+.strategy-control-history p {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+.strategy-control-job-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 11px;
+}
+@media (max-width: 650px) {
+  .strategy-controls {
+    padding: 14px;
+  }
+  .strategy-control-actions {
+    width: 100%;
+  }
+}

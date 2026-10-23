@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import ccxt
 
+from sibyl.alerts.risk import RiskAlerts
 from sibyl.services.accounts import Accounts
 from sibyl.services.market import STABLES, Market
 from sibyl.services.valuation import CURRENCY, Valuation
@@ -25,6 +26,7 @@ class Portfolio:
     def __init__(self, market: Market, store: Store):
         self.market, self.store = market, store
         self.selection = Accounts(store)
+        self.risk_alerts = RiskAlerts(market, store)
 
     def connections(self, scope: str = "all"):
         """Select overview accounts; sandbox funds never aggregate with production."""

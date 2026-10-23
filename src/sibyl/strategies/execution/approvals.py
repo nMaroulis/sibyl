@@ -65,6 +65,7 @@ class StrategyApprovals:
             connection, observed = self._validate(request)
             review = {
                 "id": uuid4().hex,
+                "control_revision": self.runner.controls.require()["revision"],
                 "request": request.model_dump(),
                 "account": connection.label,
                 "exchange": connection.exchange,
@@ -99,6 +100,7 @@ class StrategyApprovals:
                 raise ExecutionGuard("Strategy review expired. Review the current account and budget again.")
             if sum(job["status"] == "running" for job in self.host.jobs()) >= 10:
                 raise ExecutionGuard("Pause another strategy before starting more than ten runs.")
+            self.runner.controls.require(review.get("control_revision", 0))
             request = ExchangeStrategyRequest(**review["request"])
             connection, observed = self._validate(request)
             if (connection.exchange, connection.sandbox) != (review["exchange"], review["sandbox"]):

@@ -12,7 +12,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
-| Alerts & local operations      | partial       | Portfolio-risk rules; silent-worker outage detection, broader operational diagnostics and delivery.                       |
+| Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and external delivery.                       |
 | Automated strategy execution   | partial       | Authenticated acceptance, broader risk policies, residual exit handling and fee valuation.            |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
@@ -104,7 +104,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Partial fills and native caps never cause automatic replacement sells.
 - [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
 - [ ] Exercise authenticated sandbox/provider acceptance before deliberate production enablement.
-- [ ] Add global kill controls and portfolio-wide exposure/daily-loss policies. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
+- [x] Add a durable global strategy submission halt: atomically pause exchange runs, invalidate old reviews/unsent signal plans, enforce the shared write boundary, retain audit history and require revision-bound typed release. Release never resumes runs; approved cancellations/manual orders/separately reviewed exits remain available.
+- [ ] Add portfolio-wide exposure/daily-loss policies. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
 - [ ] Add reviewed residual/dust ownership handoff to new runs; value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.
 
 ### 5. Market-data infrastructure — partial
@@ -184,7 +185,7 @@ Recent Bitcoin blocks, optional equity quotes/history/statistics and Pearson/Spe
 
 ### 11. Alerts and operational jobs — partial
 
-Basic [price, strategy and connection alerts with the local inbox](alerts.md) are implemented. Their worker is a bounded domain loop, not a general-purpose job scheduler.
+Basic [price, strategy and connection alerts](alerts.md), [account-risk watches](account-risk.md) and the local inbox are implemented. Their worker is a bounded domain loop, not a general-purpose job scheduler.
 
 - [x] Persist exact-pair, source-pinned one-shot price rules, Demo attribution, pause/rearm/archive/restore and a 50-rule non-archived budget.
 - [x] Evaluate fresh timestamped quotes with persisted scheduling/backoff; atomically save a trigger and its notification, including across restart and lifecycle races.
@@ -192,7 +193,8 @@ Basic [price, strategy and connection alerts with the local inbox](alerts.md) ar
 - [x] Add revision-checked edits that save paused, inclusive level/observed crossing conditions, reset-based recurrence and persisted cooldowns; preserve original notification evidence.
 - [x] Add per-run journal subscriptions for pauses/errors/recovery and lifecycle changes, atomic cursors/notifications, restart catch-up, revision-checked controls and monitor links. See [strategy alerts](alerts.md#strategy-journal-subscriptions).
 - [x] Add connection read-failure/recovery rules per operation, bounded credential-free evidence, atomic cursor/inbox commits, restart catch-up and revision-checked controls. No polling/uptime claim; see [connection alerts](alerts.md#connection-read-subscriptions).
-- [ ] Add portfolio-risk conditions, silent-worker outage detection and optional fill/order notification policies.
+- [x] Add fixed-account-set value floors, asset concentration and observed-value drawdown watches with complete fresh valuation, recovery/cooldown, atomic evidence/inbox commits and read-only Accountant tools. See [account risk](account-risk.md).
+- [ ] Add broader risk metrics, silent-worker outage detection and optional fill/order notification policies. Execution exposure/daily-loss enforcement remains separate work.
 - [ ] Add optional external delivery integrations with explicit recipients, delivery attempts and retries.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [ ] Add structured application/provider metrics, tracing and operational diagnostics beyond basic health/log output.
@@ -214,7 +216,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 1. **Market-data foundations:** durable candle archive, bounded backfills, gap/health diagnostics and shared read budgets.
 2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
 3. **Close the order loop:** authenticated acceptance of status/fill/recovery/discovery, broader adapters and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
-4. **Build on local alerts:** portfolio-risk conditions, broader strategy-event policies and operational diagnostics, then explicit external delivery and backup/restore.
+4. **Build on local alerts:** broader risk metrics, strategy-event policies and operational diagnostics, then explicit external delivery and backup/restore.
 5. **Sibyl and richer ProtoLink tools:** evaluated collaboration, scoped specialist tools, per-agent models and resumable investigations. Messaging clients remain a separately scoped future integration.
 6. **Test-environment strategies:** reconcile actual orders/fills and implement risk controls before any production automation.
 7. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.

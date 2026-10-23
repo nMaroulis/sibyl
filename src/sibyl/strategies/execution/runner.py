@@ -13,6 +13,7 @@ from sibyl.strategies.execution.approvals import StrategyApprovals
 from sibyl.strategies.execution.cancellation import StrategyCancellations
 from sibyl.strategies.execution.closing import ClosePositions
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, ExecutionGuard, ExecutionParameters
+from sibyl.strategies.execution.controls import StrategyControls
 from sibyl.strategies.execution.stop_reviews import StopCancellationReviews
 from sibyl.strategies.execution.venue import is_dust, observation, order_size, supported
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
@@ -38,6 +39,7 @@ class ExchangeStrategies:
             db.execute(
                 "CREATE INDEX IF NOT EXISTS exchange_orders_strategy ON exchange_orders(json_extract(payload,'$.strategy_job_id'))"
             )
+        self.controls = StrategyControls(self)
         self.approvals = StrategyApprovals(self)
         self.cancellations = StrategyCancellations(self)
         self.stop_reviews = StopCancellationReviews(self)
@@ -52,7 +54,10 @@ class ExchangeStrategies:
     def jobs(self):
         return [job for job in self.host.jobs() if job.get("mode") == "exchange"]
 
-    def enabled(self):
+    def enabled(self, *, submissions=True):
+        """Check server permissions; only new signal orders consult the global halt."""
+        if submissions:
+            self.controls.require()
         if not self.market.settings.allow_live_trading:
             raise ExecutionGuard(
                 "Exchange orders are disabled. Enable SIBYL_ALLOW_LIVE_TRADING on the backend first."
@@ -74,9 +79,14 @@ class ExchangeStrategies:
 
     def options(self):
         """Advertise code-backed support and actual activation; never probe private accounts."""
+        controls = self.controls.state()
         return {
             "enabled": self.market.settings.allow_live_trading
+            and self.market.settings.allow_strategy_execution
+            and not controls["halted"],
+            "server_enabled": self.market.settings.allow_live_trading
             and self.market.settings.allow_strategy_execution,
+            "controls": controls,
             "required_flags": ["SIBYL_ALLOW_LIVE_TRADING", "SIBYL_ALLOW_STRATEGY_EXECUTION"],
             "providers": [
                 {"id": spec.id, "name": spec.name} for spec in CATALOG.values() if supported(spec.id)
@@ -282,6 +292,7 @@ class ExchangeStrategies:
             if job["status"] != "running":
                 return
             self.enabled()
+            control_revision = self.controls.require()["revision"]
             connection = self.account(job["connection_id"])
             if (connection.exchange, connection.sandbox) != (job["exchange"], job["sandbox"]):
                 raise ExecutionGuard("Execution account environment changed.")
@@ -304,6 +315,7 @@ class ExchangeStrategies:
             if job["status"] != "running":
                 return
             self.enabled()
+            self.controls.require(control_revision)
             self.account(job["connection_id"])
             job.update(
                 reference_price=observed["price"],
@@ -392,7 +404,9 @@ class ExchangeStrategies:
             # attempts, including API/manual callers, require the same strategy owner.
             with self.store.db() as db:
                 intent = self.trading.lifecycle.read(db, intent["id"])
-                intent.update(origin="strategy", strategy_job_id=job["id"])
+                intent.update(
+                    origin="strategy", strategy_job_id=job["id"], strategy_control_revision=control_revision
+                )
                 intent["strategy_expiry_seconds"] = job["risk"].get("order_lifetime_seconds")
                 self.trading.lifecycle.write(db, intent)
             current = self.journal.job(identity)

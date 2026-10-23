@@ -1,7 +1,9 @@
 """Application factory, lifecycle ownership, and local API access controls."""
 
 import asyncio
+import logging
 import secrets
+import sqlite3
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -35,6 +37,7 @@ from sibyl.services.transfer_reconciliation import TransferConflict, TransferRec
 from sibyl.services.watchlists import Watchlists
 from sibyl.storage import Store
 from sibyl.strategies import Strategies
+from sibyl.strategies.execution.controls import ControlConflict
 
 
 @dataclass
@@ -167,6 +170,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await asyncio.to_thread(market.connection_alerts.tick)
                 await asyncio.sleep(1)
 
+        async def risk_alert_worker():
+            # Opt-in private reads never hold up local journal/inbox checks.
+            while True:
+                try:
+                    await asyncio.to_thread(background_call, portfolio.risk_alerts.tick)
+                except sqlite3.Error:
+                    logging.getLogger(__name__).warning(
+                        "Account risk storage unavailable; the worker will retry."
+                    )
+                await asyncio.sleep(1)
+
         async def candle_worker():
             while True:
                 await asyncio.to_thread(background_call, history.tick)
@@ -181,6 +195,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         candle_task = asyncio.create_task(candle_worker())
         strategy_alert_task = asyncio.create_task(strategy_alert_worker())
         connection_alert_task = asyncio.create_task(connection_alert_worker())
+        risk_alert_task = asyncio.create_task(risk_alert_worker())
         try:
             yield
         finally:
@@ -193,6 +208,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 candle_task,
                 strategy_alert_task,
                 connection_alert_task,
+                risk_alert_task,
                 messaging_task,
             ):
                 background.cancel()
@@ -205,6 +221,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 candle_task,
                 strategy_alert_task,
                 connection_alert_task,
+                risk_alert_task,
                 messaging_task,
             ):
                 with suppress(asyncio.CancelledError):
@@ -219,6 +236,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await asyncio.to_thread(alerts.close)
             await asyncio.to_thread(strategies.alerts.close)
             await asyncio.to_thread(market.connection_alerts.close)
+            await asyncio.to_thread(portfolio.risk_alerts.close)
             await asyncio.to_thread(history.close)
             market.close()
 
@@ -267,6 +285,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(TransferConflict)
     async def stale_transfer_review(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=409)
+
+    @app.exception_handler(ControlConflict)
+    async def stale_strategy_control(_request, exc):
+        return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
 
     @app.exception_handler(AlertConflict)
     async def stale_alert_editor(_request, exc):
@@ -317,6 +339,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.connection_alerts import router as connection_alerts_router
 
     app.include_router(connection_alerts_router)
+    from sibyl.api.risk_alerts import router as risk_alerts_router
+
+    app.include_router(risk_alerts_router)
 
     @app.get("/health", tags=["System"])
     def health():

@@ -42,6 +42,7 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | POST       | `/strategies/backtest`                    | Historical simulation and persisted result                                               |
 | GET / POST | `/strategies/jobs`                        | List paper/exchange runs / start isolated paper jobs                                     |
 | GET        | `/strategies/exchange/options`            | Actual automation support, account activation and execution flags                        |
+| GET / POST | `/strategies/exchange/controls`            | Passive global halt/history or revision-bound Halt / typed Release; resumes no runs     |
 | GET        | `/strategies/exchange/markets/{id}`       | Exact account-exchange pairs/timeframes                                                  |
 | POST       | `/strategies/exchange/preview`            | Read-only account/budget review                                                          |
 | POST       | `/strategies/exchange/reviews/{id}/start` | Approve a fixed scope; wait for the next closed candle                                   |
@@ -84,6 +85,8 @@ Exchange reviews accept nullable `risk.order_lifetime_seconds`: an integer 60–
 Closing readiness reads no native endpoints. `close-preview` accepts `price_limit_bps` (default 25, >0–200), `max_spread_bps` (default 50, >0–500), `fee_reserve_bps` (default 100, 10–500) and nullable `order_lifetime_seconds` (default 300, 60–86,400). It requires stopped/completed status, current matched native fill/fee evidence, no pending order and completed cancellation follow-ups. The result fixes account/environment/pair, owned/sell units, limit floor, gross floor proceeds, illustrative quote-fee allowance, base reserve and residual estimate. The confirmation body contains only the displayed `confirmation`; quantities/prices cannot be edited there. Evidence and expiry are checked again inside the shared submitting transaction. No AI agent can approve the operation.
 
 The run's `close_position` contains `review_id`, `intent_id`, state/message, check time, native status, requested/filled units and remaining owned units. Order rows include `strategy_action: close` and `strategy_close_review_id`. Event/CSV filters additionally accept `CLOSE_APPROVED`, `CLOSE_SUBMITTED`, `CLOSE_UNKNOWN`, `CLOSE_RECONCILING`, `CLOSE_RECONCILED`, `CLOSE_INTERRUPTED` and `CLOSE_REJECTED`, carrying `close_review_id` and `order_id`. No close request is replayed after restart. See [exit scope and residuals](../guides/strategy-execution.md#close-a-retained-position).
+
+Global controls are documented in the [submission-halt contract](strategy-controls.md). `options.enabled` includes the halt; `options.server_enabled` reports the two server flags separately. Global pause journal/CSV records carry `control_revision`.
 
 ## Examples
 
@@ -255,3 +258,5 @@ Successful Ask results include `request_id` and `status: completed`. If stopped,
 Channels: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `email`. Every channel reports `unavailable` and `connected: false`; no clients, credential collection, draft saving or delivery exist. Sibyl setup/duplicate-turn failures return 409, unknown chat IDs 404, provider failures a sanitized 502, and outer timeouts 504. The backend limits one pending turn per chat and two outer requests globally; native ProtoLink run budgets bound delegation/model/tool work. See [agent contracts](./agents.md).
 
 `GET/POST /connection-alerts`, `POST /connection-alerts/{id}/edit` and `/action` manage passive read-failure/recovery subscriptions. Strict thresholds, revisions and lifecycle controls operate only on local evidence. `GET /connection-alerts/example` is isolated. The shared inbox accepts `kind: connection` alongside price and strategy notices. See [connection read contracts](alerts.md#connection-read-subscriptions).
+
+`GET/POST /risk-alerts`, `POST /risk-alerts/{id}/edit`, `/action` and `/check` manage opt-in fixed-account risk watches. `/evidence` reads retained complete snapshots without provider calls; `/example` is isolated. Risk notices share the inbox with `kind: risk`. See [account-risk contracts](account-risk.md).

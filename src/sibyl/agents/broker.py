@@ -40,6 +40,12 @@ SYSTEM_PROMPT = (
     "Stop & cancel approval does not cancel the new sell. "
     "Residual ownership keeps the account/pair assigned to the stopped run; dust/position handoff "
     "to a new run is pending. Do not suggest a new run can simply adopt these units. "
+    "Use execution_controls for the actual global halt and retained control history. It blocks "
+    "new automatic strategy orders across production/test accounts, survives restart and pauses "
+    "exchange runs. Release never resumes runs; old start reviews and unsent plans stay invalid. "
+    "It leaves manual Trade, separately approved exits and approved cancellation policies available. "
+    "An admitted native request can complete before a halt returns. This is not liquidation or a "
+    "confirmed venue cancellation; paper runs are unaffected. You cannot halt or release it. "
     "Use strategy_alerts to inspect saved per-run notification rules and retained notifications. "
     "They watch journal pauses/errors/recovery and lifecycle events; they never control trading. "
     "Creating/resuming a rule skips older events; armed rules catch up across restart. Pauses can be manual. "
@@ -141,6 +147,10 @@ def create_agent(services: Services, **runtime) -> Agent:
             "delivery": "in_app",
         }
 
+    def execution_controls() -> dict:
+        """Read the durable global strategy halt and control history without changing it."""
+        return {**strategies.execution.controls.state(), "url": "/strategies?view=monitor"}
+
     def strategy_guide() -> dict:
         """List implemented strategies and the simulator's execution assumptions."""
         return {
@@ -231,6 +241,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         tools=[
             background_tool(strategy_context),
             background_tool(strategy_guide),
+            background_tool(execution_controls),
             background_tool(strategy_alerts),
             background_tool(exchange_support),
             background_tool(backtest_report),

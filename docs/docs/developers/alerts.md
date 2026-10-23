@@ -108,3 +108,7 @@ Creation/resume establishes a fresh global journal-tail baseline and clears inci
 All paths use the `/api/v1` prefix, workspace authorization and `Cache-Control: no-store`. Unknown/Demo source IDs return 400; strict invalid/unknown body fields return 422. Shared notification acknowledgment/pagination supports all three kinds without deleting evidence.
 
 `tests/test_connection_alerts.py` covers real local journal writes, operation isolation, thresholds and recurrence, request-error exclusions, credential/session/timing/recording continuity, retired profiles, partial telemetry, pruning, lifecycle/revision/budgets, restart recovery, atomic rollback, duplicate consumers, bounded backlog, HTTP contracts and the native Technician client tool. No private exchange or external delivery is used.
+
+## Account risk subscriptions
+
+`Portfolio.risk_alerts` evaluates fixed active-account sets with source-pinned complete fresh valuation. Value floors, concentration and observed-value drawdown, recovery/cooldown, revision-checked controls and bounded snapshots share the inbox with `kind: risk`. These are notification policies, separate from execution protection. See [contracts and concurrency boundaries](account-risk.md).

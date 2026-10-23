@@ -21,6 +21,7 @@ import { MarketSelector, TimeframeSelect } from '../components/market-controls';
 import type { SpotCatalog } from '../components/market-controls';
 import { BacktestChart } from '../components/strategies/backtest-chart';
 import { ExchangeStrategySetup } from '../components/strategies/exchange-execution';
+import { ExecutionControls } from '../components/strategies/execution-controls';
 import { ValidationWorkspace } from '../components/strategies/validation-workspace';
 import { ComingSoon } from '../components/coming-soon';
 import { ValueChart } from '../components/charts';
@@ -217,6 +218,7 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
         />
         {accountContext}
         {tabs}
+        <ExecutionControls />
         <SectionPanel id="strategies" value={view}>
           {!selection.active_ids.length && (
             <p className="inline-alert">
@@ -249,6 +251,7 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
           description="Build, test and understand your trading ideas."
         />
         {tabs}
+        <ExecutionControls />
         <SectionPanel id="strategies" value={view}>
           <AccountSetup
             selection={selection}
@@ -283,6 +286,7 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
       />
       {accountContext}
       {tabs}
+      <ExecutionControls />
       <SectionPanel id="strategies" value={view}>
         {catalog.error && <ErrorState message={catalog.error} retry={catalog.retry} />}
         <div className="strategy-studio-intro">

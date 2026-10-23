@@ -17,6 +17,8 @@ type Risk = {
 };
 type Options = {
   enabled: boolean;
+  server_enabled: boolean;
+  controls: { halted: boolean };
   accounts: (Connection & { supported: boolean })[];
   providers: { id: string; name: string }[];
 };
@@ -136,11 +138,17 @@ export function ExchangeStrategySetup({
             </Link>
           </p>
         )}
-        {options.data && !options.data.enabled && (
+        {options.data && !options.data.server_enabled && (
           <p className="monitor-notice">
             Execution is disabled on this backend. Both <code>SIBYL_ALLOW_LIVE_TRADING=true</code>{' '}
             and <code>SIBYL_ALLOW_STRATEGY_EXECUTION=true</code> are required, including for
             exchange test environments. Restart the backend after changing them.
+          </p>
+        )}
+        {options.data?.controls.halted && (
+          <p className="monitor-notice">
+            Global halt is active. Release it using the controls above before reviewing a new
+            exchange strategy.
           </p>
         )}
         <label>

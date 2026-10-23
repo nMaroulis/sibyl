@@ -7,6 +7,7 @@ import {
   Layers3,
   Plus,
   ShieldCheck,
+  ShieldAlert,
   Sparkles,
   Wallet,
   Waves,
@@ -164,6 +165,12 @@ function PortfolioWorkspace({
         action={
           <>
             <AgentButton module="accountant" context={{ portfolio_scope: scope }} />
+            <Link
+              className="button secondary"
+              to={`/alerts?tab=risk&scope=${encodeURIComponent(scope)}`}
+            >
+              <ShieldAlert size={15} /> Risk alerts
+            </Link>
             <button className="button secondary" onClick={exportHoldings}>
               <Download size={15} />
               Export

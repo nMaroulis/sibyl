@@ -17,6 +17,7 @@ from sibyl.services.order_lifecycle import OrderLifecycle
 from sibyl.services.order_reconciliation import OrderReconciliation
 from sibyl.services.order_recovery import OrderRecovery
 from sibyl.storage import Store
+from sibyl.strategies.execution.controls import require_submissions
 
 
 class ExchangeTrading:
@@ -297,6 +298,15 @@ class ExchangeTrading:
                 )
             if datetime.now(UTC) > datetime.fromisoformat(intent["expires_at"]):
                 raise ValueError("Order preview expired. Review a fresh quote before confirming.")
+            if intent.get("origin") == "strategy" and not intent.get("strategy_close_review_id"):
+                require_submissions(db, intent.get("strategy_control_revision", 0))
+                if not self.market.settings.allow_strategy_execution:
+                    raise ValueError("Automated execution is disabled on this backend.")
+                row = db.execute(
+                    "SELECT payload FROM strategy_jobs WHERE id=?", (strategy_job_id,)
+                ).fetchone()
+                if not row or json.loads(row[0])["status"] != "running" or intent.get("strategy_abandoned"):
+                    raise ValueError("This strategy is paused or its unsent order was abandoned.")
             if before_submit is not None:
                 # Internal domain guard reads ownership in this same write
                 # transaction, immediately before committing the native write boundary.

@@ -44,7 +44,7 @@ class StrategyCancellations:
         if explicit:
             self.trading._enabled()
         else:
-            self.runner.enabled()
+            self.runner.enabled(submissions=False)
         return self._readable(job)
 
     def _readable(self, job):

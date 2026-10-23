@@ -30,7 +30,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'strategies',
       title: 'More execution controls',
-      text: 'Portfolio-wide risk limits, a global emergency stop and more providers. Reviewed position exits, order expiry and Stop & cancel are available now; residual sells need fresh reviews and private venue acceptance remains pending.',
+      text: 'Portfolio-wide exposure/daily-loss limits and more providers. A durable global submission halt, reviewed position exits, order expiry and Stop & cancel are available now; residual sells need fresh reviews and private venue acceptance remains pending.',
     },
     {
       module: 'trade',
@@ -70,7 +70,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'alerts',
       title: 'More signals, more ways to hear',
-      text: 'Portfolio-risk alerts, silent-worker outage detection and optional external delivery. Price/crossing rules, strategy journal subscriptions, connection read-failure/recovery watches and the persistent in-app inbox are available now.',
+      text: 'Broader risk metrics, silent-worker outage detection and optional external delivery. Value-floor, concentration and observed-value drawdown watches, price/crossing rules, strategy/connection alerts and the persistent in-app inbox are available now.',
     },
     {
       module: 'workspace',

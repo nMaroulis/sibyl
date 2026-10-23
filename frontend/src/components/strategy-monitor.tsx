@@ -35,6 +35,7 @@ import { exportCSV, number, post, refresh } from '../lib/api';
 import { date, formatted, monitorURL, runName, tone } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
 import type { Job, Strategy, StrategyMonitorData } from '../lib/types';
+import type { StrategyControl } from '../lib/strategy-controls';
 export { StrategyList } from './strategy-run-list';
 
 /** Detail view of one real persisted run; browser refresh never ticks the strategy. */
@@ -68,6 +69,11 @@ export function StrategyMonitor({
     return () => clearInterval(timer);
   }, []);
   const job = monitor.data?.job;
+  const executionControls = useResource<StrategyControl>(
+    '/strategies/exchange/controls',
+    5000,
+    job?.mode === 'exchange',
+  );
   const control = async (action: 'pause' | 'resume' | 'stop') => {
     setBusy(action);
     try {
@@ -168,7 +174,19 @@ export function StrategyMonitor({
             <>
               <button
                 className="button secondary"
-                disabled={!!busy}
+                disabled={
+                  !!busy ||
+                  (exchangeRun &&
+                    job.status !== 'running' &&
+                    (!executionControls.data ||
+                      !!executionControls.error ||
+                      executionControls.data.halted))
+                }
+                title={
+                  exchangeRun && executionControls.data?.halted
+                    ? 'Release the global halt above before resuming this run.'
+                    : undefined
+                }
                 onClick={() => control(job.status === 'running' ? 'pause' : 'resume')}
               >
                 {job.status === 'running' ? <Pause size={14} /> : <Play size={14} />}{' '}

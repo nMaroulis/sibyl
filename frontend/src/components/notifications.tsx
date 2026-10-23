@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUpRight, Bell, CheckCheck, Sparkles, Waves, Radio } from 'lucide-react';
+import { ArrowUpRight, Bell, CheckCheck, Sparkles, Waves, Radio, ShieldAlert } from 'lucide-react';
 import type { Run } from '../lib/types';
 import { strategyActionLabel, type StrategyAlertRun } from '../lib/strategy-alerts';
 import { operationLabel, connectionSettingsURL } from '../lib/connection-alerts';
+import {
+  riskLabel,
+  riskValue,
+  riskURL,
+  type RiskMetric,
+  type RiskAccount,
+} from '../lib/risk-alerts';
 import { monitorURL } from '../lib/strategy-monitor';
 import { number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
@@ -42,6 +49,22 @@ export type AlertNotification = NotificationBase &
         price: number;
       }
     | {
+        kind: 'risk';
+        metric: RiskMetric;
+        asset: string;
+        threshold: number;
+        reset_threshold: number;
+        action: 'breached' | 'recovered';
+        metric_value: number;
+        total: number;
+        currency: string;
+        peak: number | null;
+        peak_at: string | null;
+        sample_id: number;
+        accounts: RiskAccount[];
+        account_ids: string[];
+      }
+    | {
         kind: 'connection';
         operation: string;
         action: 'failing' | 'recovered';
@@ -64,11 +87,13 @@ export type AlertNotification = NotificationBase &
       })
   );
 export const notificationURL = (item: AlertNotification) =>
-  item.kind === 'strategy'
-    ? monitorURL(item.job_id)
-    : item.kind === 'connection'
-      ? connectionSettingsURL(item.source)
-      : '/alerts?tab=inbox';
+  item.kind === 'risk'
+    ? riskURL(item.rule_id, item.sample_id)
+    : item.kind === 'strategy'
+      ? monitorURL(item.job_id)
+      : item.kind === 'connection'
+        ? connectionSettingsURL(item.source)
+        : '/alerts?tab=inbox';
 export type Inbox = {
   items: AlertNotification[];
   total: number;
@@ -80,6 +105,42 @@ export type Inbox = {
 
 /** Describe observed evidence without implying a trade or an external notification. */
 export function NotificationText({ item }: { item: AlertNotification }) {
+  if (item.kind === 'risk')
+    return (
+      <>
+        <strong>
+          {item.label || riskLabel(item.metric, item.asset)} ·{' '}
+          {item.action === 'breached' ? 'Risk limit reached' : 'Recovery level reached'}
+        </strong>
+        <span className="monetary">
+          {riskLabel(item.metric, item.asset)}: {riskValue(item.metric_value, item.metric)} ·{' '}
+          {item.action === 'breached' ? 'limit' : 'recovery'}{' '}
+          {riskValue(
+            item.action === 'breached' ? item.threshold : item.reset_threshold,
+            item.metric,
+          )}
+        </span>
+        <span>
+          {item.accounts.map((a) => a.label).join(' + ')} · {item.accounts.length} pinned account
+          {item.accounts.length === 1 ? '' : 's'}
+        </span>
+        {item.metric === 'drawdown' && (
+          <span className="strategy-notification-reason">
+            Observed account value includes cash movements; this is not investment return.
+          </span>
+        )}
+        <small>
+          {item.source_label} · {new Date(item.created_at).toLocaleString()}{' '}
+          {item.environment === 'demo' ? (
+            <Badge tone="demo">Demo</Badge>
+          ) : item.environment === 'test' ? (
+            <Badge tone="peach">Test funds</Badge>
+          ) : (
+            <Badge>Production funds</Badge>
+          )}
+        </small>
+      </>
+    );
   if (item.kind === 'connection')
     return (
       <>
@@ -216,7 +277,9 @@ export function NotificationBell({ runs }: { runs?: Run[] }) {
                 to={notificationURL(item)}
               >
                 <span className="activity-icon">
-                  {item.kind === 'strategy' ? (
+                  {item.kind === 'risk' ? (
+                    <ShieldAlert size={15} />
+                  ) : item.kind === 'strategy' ? (
                     <Waves size={15} />
                   ) : item.kind === 'connection' ? (
                     <Radio size={15} />
@@ -230,7 +293,9 @@ export function NotificationBell({ runs }: { runs?: Run[] }) {
               </Link>
             ))
           ) : (
-            <p>No notifications yet. Watch prices, strategy runs or connection reads.</p>
+            <p>
+              No notifications yet. Watch prices, account risk, strategy runs or connection reads.
+            </p>
           )}
           <Link className="notification-manage" to="/alerts">
             Alerts & inbox <ArrowUpRight size={13} />

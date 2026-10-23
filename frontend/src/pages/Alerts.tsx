@@ -13,6 +13,7 @@ import {
   Plus,
   RefreshCw,
   Radio,
+  ShieldAlert,
   Undo2,
   Waves,
 } from 'lucide-react';
@@ -30,6 +31,8 @@ import {
 import { StrategyRules, type StrategyAlertExample } from '../components/alerts/strategy-rules';
 import { ConnectionRules } from '../components/alerts/connection-rules';
 import { connectionSettingsURL, type ConnectionAlertExample } from '../lib/connection-alerts';
+import { RiskRules } from '../components/alerts/risk-rules';
+import { riskURL, type RiskExample } from '../lib/risk-alerts';
 import { monitorURL } from '../lib/strategy-monitor';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
 import { MarketSelector, type SpotCatalog } from '../components/market-controls';
@@ -82,6 +85,7 @@ type Rules = {
 type Example = { rules: Rules; inbox: Inbox };
 const sections = [
   { id: 'rules', label: 'Price rules', icon: ListChecks },
+  { id: 'risk', label: 'Account risk', icon: ShieldAlert },
   { id: 'strategies', label: 'Strategy alerts', icon: Waves },
   { id: 'connections', label: 'Connections', icon: Radio },
   { id: 'inbox', label: 'Inbox', icon: InboxIcon },
@@ -100,14 +104,10 @@ const ruleState = (rule: PriceRule) =>
 /** Local alerts work with public prices independently of accounts or an LLM. */
 export function Alerts() {
   const [params, setParams] = useSearchParams();
-  const tab =
-    params.get('tab') === 'inbox'
-      ? 'inbox'
-      : params.get('tab') === 'connections'
-        ? 'connections'
-        : params.get('tab') === 'strategies'
-          ? 'strategies'
-          : 'rules';
+  const requestedTab = params.get('tab');
+  const tab = sections.some((section) => section.id === requestedTab)
+    ? requestedTab || 'rules'
+    : 'rules';
   const [showArchived, setArchived] = useState(false);
   const [example, setExample] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -132,14 +132,23 @@ export function Alerts() {
     0,
     example && tab === 'inbox',
   );
+  const riskSample = useResource<RiskExample>(
+    '/risk-alerts/example',
+    0,
+    example && tab === 'inbox',
+  );
   const settings = useResource<MarketSettings>('/settings/market', 0, creating || !!editing);
   const toast = useToast();
   const ruleData = example ? sample.data?.rules : rules.data;
   const inboxData = example
-    ? sample.data?.inbox && strategySample.data?.inbox && connectionSample.data?.inbox
+    ? sample.data?.inbox &&
+      strategySample.data?.inbox &&
+      connectionSample.data?.inbox &&
+      riskSample.data?.inbox
       ? {
           ...sample.data.inbox,
           items: [
+            ...riskSample.data.inbox.items,
             ...connectionSample.data.inbox.items,
             ...strategySample.data.inbox.items,
             ...sample.data.inbox.items,
@@ -147,11 +156,13 @@ export function Alerts() {
           total:
             sample.data.inbox.total +
             strategySample.data.inbox.total +
-            connectionSample.data.inbox.total,
+            connectionSample.data.inbox.total +
+            riskSample.data.inbox.total,
           unread:
             sample.data.inbox.unread +
             strategySample.data.inbox.unread +
-            connectionSample.data.inbox.unread,
+            connectionSample.data.inbox.unread +
+            riskSample.data.inbox.unread,
         }
       : undefined
     : inbox.data;
@@ -183,10 +194,13 @@ export function Alerts() {
     }
   };
   const error =
-    tab === 'strategies' || tab === 'connections'
+    tab === 'strategies' || tab === 'connections' || tab === 'risk'
       ? ''
       : example
-        ? sample.error || (tab === 'inbox' ? strategySample.error || connectionSample.error : '')
+        ? sample.error ||
+          (tab === 'inbox'
+            ? strategySample.error || connectionSample.error || riskSample.error
+            : '')
         : tab === 'rules'
           ? rules.error
           : inbox.error;
@@ -195,6 +209,7 @@ export function Alerts() {
         sample.retry();
         strategySample.retry();
         connectionSample.retry();
+        riskSample.retry();
       }
     : tab === 'rules'
       ? rules.retry
@@ -203,7 +218,7 @@ export function Alerts() {
     <>
       <PageTitle
         title="Alerts"
-        description="Price milestones, strategy changes and connection reads in your local inbox."
+        description="Your price milestones, account limits and activity in one local inbox."
         action={
           <>
             <button
@@ -233,9 +248,9 @@ export function Alerts() {
       <div className="alert-delivery-note">
         <Bell size={17} />
         <span>
-          <strong>In-app notifications</strong> · Watch prices, strategy events or read failures.
-          The Sibyl API must be running; no AI model is needed. Alert controls change notifications
-          only.
+          <strong>In-app notifications</strong> · Watch prices, account risk, strategy events or
+          read failures. The Sibyl API must be running; no AI model is needed. Alert controls change
+          notifications only.
         </span>
       </div>
       {example && (
@@ -265,6 +280,16 @@ export function Alerts() {
             key={`${example}-${params.get('job_id') || ''}`}
             example={example}
             jobId={params.get('job_id') || ''}
+          />
+        ) : tab === 'risk' ? (
+          <RiskRules
+            key={`${example}-${params.get('rule_id') || ''}-${params.get('sample_id') || ''}`}
+            example={example}
+            initialRuleId={params.get('rule_id') || ''}
+            initialSampleId={
+              Number(params.get('sample_id')) > 0 ? Number(params.get('sample_id')) : undefined
+            }
+            initialScope={params.get('scope') || 'all'}
           />
         ) : tab === 'connections' ? (
           <ConnectionRules
@@ -499,7 +524,9 @@ export function Alerts() {
                     key={item.id}
                   >
                     <span className="activity-icon">
-                      {item.kind === 'strategy' ? (
+                      {item.kind === 'risk' ? (
+                        <ShieldAlert size={17} />
+                      ) : item.kind === 'strategy' ? (
                         <Waves size={17} />
                       ) : item.kind === 'connection' ? (
                         <Radio size={17} />
@@ -510,13 +537,20 @@ export function Alerts() {
                     <div className="notification-copy">
                       <NotificationText item={item} />
                       <small>
-                        {item.kind === 'strategy'
-                          ? `Journal event ${item.event_id}`
-                          : item.kind === 'connection'
-                            ? `Transport read ${item.event_id}`
-                            : `Price cycle ${item.cycle}`}{' '}
+                        {item.kind === 'risk'
+                          ? `Valuation sample ${item.sample_id}`
+                          : item.kind === 'strategy'
+                            ? `Journal event ${item.event_id}`
+                            : item.kind === 'connection'
+                              ? `Transport read ${item.event_id}`
+                              : `Price cycle ${item.cycle}`}{' '}
                         · observed {new Date(item.observed_at).toLocaleString()}
                       </small>
+                      {item.kind === 'risk' && !example && (
+                        <Link className="text-button" to={riskURL(item.rule_id, item.sample_id)}>
+                          View valuation evidence <ArrowUpRight size={12} />
+                        </Link>
+                      )}
                       {item.kind === 'connection' && !example && (
                         <Link className="text-button" to={connectionSettingsURL(item.source)}>
                           Source settings <ArrowUpRight size={12} />
@@ -544,8 +578,8 @@ export function Alerts() {
               </div>
             ) : (
               <Empty title="All quiet for now">
-                Price triggers, watched strategy events and connection notices leave a record here,
-                even if the browser was closed.
+                Price and risk triggers, watched strategy events and connection notices leave a
+                record here, even if the browser was closed.
               </Empty>
             )}
             {!!inboxData?.total && !example && (

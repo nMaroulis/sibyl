@@ -14,7 +14,7 @@ TAGLINE = "Keep everything connected"
 DESCRIPTION = "Explain account connectivity, settings and read-only API permissions. Never request secrets."
 SYSTEM_PROMPT = (
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
-    "settings_guide with exchanges, models, news, market, messaging, alerts or workspace. For a particular "
+    "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace. For a particular "
     "exchange, call exchange_setup with its catalog ID, e.g. binance. Use connection_status only when "
     "actual saved setup matters. Give numbered, practical instructions and a settings link. Explain "
     "that users can connect multiple accounts and view combined or individual portfolios. No account is "
@@ -27,6 +27,15 @@ SYSTEM_PROMPT = (
 )
 
 GUIDES = {
+    "strategies": {
+        "url": "/strategies?view=monitor",
+        "steps": [
+            "Use Halt automation above the strategy workspace to block new automatic strategy orders across all accounts and pause exchange runs.",
+            "Wait for confirmation; an already admitted native request can finish before the halt returns. Existing orders and holdings remain live.",
+            "Approved cancellation policies, manual Trade, separately reviewed exits and paper runs keep their existing permissions.",
+            "Review & release requires the displayed phrase. Releasing resumes no run; inspect orders/fills and Resume each run explicitly. Old unused Start reviews stay invalid.",
+        ],
+    },
     "exchanges": {
         "url": "/settings?tab=exchanges",
         "steps": [
@@ -81,6 +90,8 @@ GUIDES = {
             "Inbox and the top-bar bell show retained evidence with Paper/Exchange and Demo/test labels. Open monitor follows that exact run. Mark read acknowledges a notice without deleting it.",
             "Connections tab: select a configured/previously observed source and consecutive failed-read threshold. Successes of the same operation can notify recovery. Rules watch future recorded HTTP reads only, without polling or activating the source. Demo has no connection; View example is isolated.",
             "Read counters reset on session/profile changes, recording gaps or more than five minutes between reads. No observations means no connection-status conclusion. Recovery describes successful transport reads, not fully validated data or verified current credentials. Pausing/resuming begins a new observation window.",
+            "Account risk tab: select a fixed set of up to ten active accounts in one environment and a reference feed. Choose a value floor in USDT, asset concentration or observed-value drawdown limit. Arming authorizes background balance/quote reads. New connections are not automatically included; deactivate a pinned account and the watch waits for complete coverage.",
+            "Recovery levels prevent repeated notices near a limit. Edits save paused; Resume resets the observed peak and incident state. Drawdown includes deposits and withdrawals, so it is not investment return. View evidence reads retained valuation details without fetching accounts.",
             "No AI model is required. Alerts do not execute, stop strategies, cancel orders, close positions, detect silent worker outages or send external messages.",
         ],
     },
@@ -129,7 +140,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def settings_guide(section: str = "exchanges") -> dict:
-        """Get actionable Sibyl setup instructions: exchanges, models, news, market, messaging, alerts or workspace."""
+        """Get actionable Sibyl setup instructions: exchanges, models, news, market, messaging, alerts, strategies or workspace."""
         if section not in GUIDES:
             return {"sections": list(GUIDES), "note": "Choose a listed settings section."}
         return {"section": section, **GUIDES[section]}

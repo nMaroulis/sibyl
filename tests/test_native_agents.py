@@ -223,6 +223,7 @@ def test_technician_provides_provider_specific_setup_instructions_without_creden
     [
         ("analyst", "analysis_help", {}),
         ("broker", "strategy_guide", {}),
+        ("broker", "execution_controls", {}),
         ("broker", "exchange_support", {"exchange": "gemini"}),
         ("chronos", "forecast_method", {}),
         ("wiki", "crypto_catalog", {}),

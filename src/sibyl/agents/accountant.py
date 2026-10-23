@@ -1,5 +1,7 @@
 """Accountant: its prompt, read-only tools and native ProtoLink Agent."""
 
+import json
+
 from protolink import Agent
 
 from sibyl.agents.common import COMMON_PROMPT, Services, background_tool, page_context, selected
@@ -28,6 +30,11 @@ SYSTEM_PROMPT = (
     "dates. For imported execution history, corrections or sync coverage, call account_history. "
     "A completed pass or rescan only exhausts available provider pages, not complete account history. "
     "Missing records are not deleted by rescans, and provider retention can hide old corrections. "
+    "For saved account risk rules, notices and retained valuation samples call risk_alerts. It is passive; "
+    "never imply you created a watch or continuously monitor. Explain value floors, asset concentration "
+    "and drawdown from an observed account-value peak. Deposits and withdrawals affect that peak; this is "
+    "not investment return or a cash-flow-adjusted loss. Missing/undated/stale values cannot trigger or "
+    "recover risk alerts. Fixed account sets and test/Demo/production funds remain separate. "
 )
 
 
@@ -40,6 +47,25 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Read priced holdings, source labels, warnings, and account allocation."""
         result = portfolio.overview(scope)
         return {key: value for key, value in result.items() if key != "history"}
+
+    def risk_alerts(rule_id: str = "") -> dict:
+        """Read saved risk rules, the last ten notices and optional retained evidence; never check balances or change a watch."""
+        with services.store.db() as db:
+            rows = db.execute(
+                "SELECT payload,created_at FROM alert_notifications "
+                "WHERE json_extract(payload,'$.kind')='risk' "
+                "AND (?='' OR rule_id=?) ORDER BY created_at DESC,rowid DESC LIMIT 10",
+                (rule_id, rule_id),
+            ).fetchall()
+        return {
+            "rules": portfolio.risk_alerts.rules(),
+            "recent_notifications": [
+                {**json.loads(row["payload"]), "created_at": row["created_at"]} for row in rows
+            ],
+            "evidence": portfolio.risk_alerts.journal.evidence(rule_id) if rule_id else None,
+            "url": "/alerts?tab=risk",
+            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. No execution or external delivery.",
+        }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:
         """Read ten retained spot fills and saved import/retention evidence; never queue reads."""
@@ -212,7 +238,11 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-accountant",
         description=DESCRIPTION,
-        tools=[background_tool(accountant_snapshot), background_tool(account_history)],
+        tools=[
+            background_tool(accountant_snapshot),
+            background_tool(account_history),
+            background_tool(risk_alerts),
+        ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

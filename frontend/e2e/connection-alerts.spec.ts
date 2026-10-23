@@ -17,7 +17,7 @@ test('connection alert preview explains read evidence and joins the mixed inbox'
   await expect(card.getByRole('button', { name: 'Pause alert', exact: true })).toBeDisabled();
   await expect(page.locator('.strategy-alert-example')).toContainText('Read failures observed');
   await page.getByRole('tab', { name: 'Inbox', exact: true }).click();
-  await expect(page.locator('.alert-inbox-item')).toHaveCount(3);
+  await expect(page.locator('.alert-inbox-item')).toHaveCount(4);
   await expect(page.locator('.alert-inbox-list')).toContainText('My price feed');
   await expect(page.locator('.alert-inbox-list')).toContainText('Transport read 3');
   await expect(page.getByRole('button', { name: 'Mark all read', exact: true })).toBeDisabled();

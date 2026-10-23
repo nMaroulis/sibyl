@@ -65,3 +65,7 @@ CSV exports the currently filtered rows and selected valuation currency. Private
 For cost-basis results, open **Trade → Account history → Performance**. It computes retained market FIFO with opening inventory and optional balance-checked current marks. These results have explicit coverage limits and are separate from daily market moves and portfolio valuation history. See the [trading guide](trading.md#retained-account-performance).
 
 Account uses the same wallet icon as the exchange cards’ Account overview category. Markets uses the same candlestick icon as Market data. The canonical dashboard URL is `/account`; existing `/portfolio` bookmarks preserve their query filters when redirected.
+
+## Watch your own limits
+
+**Risk alerts** opens setup for the current account view. Watches pin the accounts you review, with value floors, asset concentration or observed-value drawdown. They require complete fresh pricing and deliver in-app notices; they do not trade or enforce strategy risk policies. See [account risk alerts](account-risk.md).

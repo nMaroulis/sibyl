@@ -17,6 +17,7 @@ module.exports = {
         'guides/market-statistics',
         'guides/market-history',
         'guides/alerts',
+        'guides/account-risk',
         'guides/trading',
         'guides/strategies',
         'guides/strategy-validation',
@@ -37,6 +38,7 @@ module.exports = {
       items: [
         'developers/architecture',
         'developers/strategy-research',
+        'developers/strategy-controls',
         'developers/backend-roadmap',
         'developers/exchange-clients',
         'developers/account-sync',
@@ -56,6 +58,7 @@ module.exports = {
         'developers/provider-control',
         'developers/candle-history',
         'developers/alerts',
+        'developers/account-risk',
         'developers/agents',
         'developers/api',
         'developers/extending',

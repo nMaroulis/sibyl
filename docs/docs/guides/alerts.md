@@ -34,7 +34,7 @@ If another edit or lifecycle action changed the rule while the editor was open, 
 
 ## Where notifications appear
 
-The top-bar bell shows unread price, strategy and connection notifications and retains the previous recent agent/backtest activity below them. The unread dot counts retained alert notifications, not general run activity. Opening the bell or inbox does not mark anything read.
+The top-bar bell shows unread price, account-risk, strategy and connection notifications and retains the previous recent agent/backtest activity below them. The unread dot counts retained alert notifications, not general run activity. Opening the bell or inbox does not mark anything read.
 
 Use **Alerts → Inbox** for retained notification pages, **Mark read** for one notification or **Mark all read** for the whole inbox. Acknowledgment persists across restarts and never deletes the observed price/source evidence. Demo alerts are labeled in the bell and inbox too.
 
@@ -78,3 +78,7 @@ The inbox says **Read failures observed** or **Successful reads resumed**, with 
 Counters restart after a session/profile change, missing/out-of-order evidence or more than five minutes between reads. Retired profiles' late reads are ignored. Cache hits, admission deferrals, Demo and order submission/cancellation/preflight reads supply no evidence. Read evidence is retained for up to 14 days and globally bounded to 50,000 observations; recording or retention gaps may prevent a notice and are disclosed. An unresolved recorded incident remains historical evidence until enough confirming reads of the same operation arrive.
 
 Each source permits one non-archived rule, with a separate budget of 50 connection rules. **Edit** saves paused; **Resume** starts from the current read-history tail and forgets old incident/count state. **Pause** and **Archive** stop processing only. **Restore paused** preserves past notifications without rearming. Armed cursors survive API restarts and catch up on retained evidence, so a notice can arrive after its observation time. Delivery stays in-app and requires the API running; no LLM or external messaging is involved.
+
+## Account risk watches
+
+**Alerts → Account risk** adds opt-in fixed-account value floors, asset concentration and observed-value drawdown limits. Complete fresh spot valuation is required; notices do not control orders or strategies. See [setup, formulas and limits](account-risk.md).

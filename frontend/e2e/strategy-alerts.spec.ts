@@ -19,7 +19,7 @@ test('strategy alert preview and mixed inbox remain explicitly illustrative', as
   );
   await expect(page.locator('.strategy-alert-example')).toContainText('Run paused');
   await page.getByRole('tab', { name: 'Inbox', exact: true }).click();
-  await expect(page.locator('.alert-inbox-item')).toHaveCount(3);
+  await expect(page.locator('.alert-inbox-item')).toHaveCount(4);
   await expect(page.locator('.alert-inbox-list')).toContainText('Bitcoin milestone');
   await expect(page.locator('.alert-inbox-list')).toContainText('My trend strategy');
   await expect(page.getByRole('button', { name: 'Mark all read', exact: true })).toBeDisabled();
