@@ -114,7 +114,26 @@ def snapshot_answer(module: str, evidence) -> str:
     if module == "analyst":
         if "rsi" not in evidence:
             return f"{evidence['symbol']}: {evidence['price']:,.4f}. Source: {evidence['source_label']}. {evidence['note']}"
-        return f"{evidence['symbol']}: RSI {evidence['rsi']:.1f}, {evidence['trend'].lower()} EMA alignment, annualized return volatility {evidence['volatility']:.1f}%. Source: {evidence['source']}. These describe the observed sample and do not guarantee future moves."
+
+        def reading(value):
+            return f"{value:.1f}" if value is not None else "unavailable"
+
+        statistics = evidence["statistics"]
+        assessment = statistics["assessment"]
+        score = (
+            f"{assessment['score']}/100 ({assessment['label'].lower()})"
+            if assessment["score"] is not None
+            else f"unavailable: {assessment['reason']}"
+        )
+        return (
+            f"{evidence['symbol']}: technical bias {score}; RSI {reading(evidence['rsi'])}, "
+            f"annualized return volatility {reading(evidence['volatility'])}%, "
+            f"sample maximum drawdown {reading(statistics['risk']['max_drawdown_pct'])}%. "
+            f"Source: {evidence['source']}; {evidence['timeframe']}; "
+            f"{statistics['sample']['observations']} consecutive candles. "
+            + " ".join(statistics["sample"]["warnings"])
+            + " Higher bias means more bullish, not safer. These historical readings are not a trade recommendation."
+        )
     if module == "wiki" and isinstance(evidence, dict):
         asset = evidence["asset"]
         profile, history = (evidence.get("profile") or {}, evidence.get("history") or {})

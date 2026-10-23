@@ -36,7 +36,7 @@ Dataset selection does not start a running strategy. Choose current-feed input t
 
 ## Navigate a chart
 
-Both line and candlestick views have zoom buttons, range presets, a draggable chart, a full-sample navigator, volume controls and a visible-candle CSV export. Hover or use the inspection slider for OHLCV details.
+Both line and candlestick views have zoom buttons, range presets, drag-to-select region zoom, a pan mode (also Shift+drag), a full-sample navigator, volume controls and a visible-candle CSV export. Drag in either direction to select a time region (minimum 12 candles); prices autoscale to its candles. Double-click or use Reset to latest to restore the default 180-candle view. Escape cancels an unfinished selection. Keyboard zoom and the history navigator remain available. Hover or use the inspection slider for OHLCV details.
 
 Focus the chart and use **arrows** to inspect, **Shift+arrows** to pan, **+ / −** to zoom, **Home / End** to inspect the edges and **Shift+Home / End** to move the window. Double-click or use Reset to return to the latest bars. Price lines break at missing intervals; amber markers identify gaps. Bars are spaced by observation rather than elapsed time.
 

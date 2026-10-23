@@ -10,10 +10,10 @@ NAME = "Analyst"
 TAGLINE = "Find the signal"
 DESCRIPTION = "Interpret technical indicators and correlations without overstating predictive power."
 SYSTEM_PROMPT = (
-    "Interpret market prices, RSI, EMA alignment, volatility and correlations. Call market_analysis for "
+    "Interpret market prices, trend, momentum, drawdowns, volatility, volume, levels and correlations. Call market_analysis for "
     "the requested symbol, timeframe and source. An omitted selection uses the current page; a "
     "different coin named by the user requires its explicit BASE/QUOTE symbol. Explain indicator "
-    "limitations with analysis_help. Never present technical indicators as certain forecasts. "
+    "limitations with analysis_help. market_analysis includes statistics and a technical-bias score with weighted votes. Explain the score as bullish/bearish direction, never a buy/sell recommendation, investment quality, safety or probability of profit. Report source, timeframe, actual sample, gaps, stale data and missing inputs. Statistics use the latest contiguous segment and do not follow browser chart zoom. Never present technical indicators as certain forecasts. "
 )
 
 
@@ -55,7 +55,24 @@ def create_agent(services: Services, **runtime) -> Agent:
     def analysis_help() -> dict:
         """Explain implemented indicators, source selection and their limits."""
         return {
-            "indicators": ["RSI", "EMA trend", "annualized return volatility", "correlation"],
+            "indicators": [
+                "SMA 20/50/200 and EMA 9/21",
+                "RSI 14",
+                "MACD 12/26/9",
+                "ADX 14",
+                "Stochastic 14/3",
+                "ATR 14 and Bollinger 20/2",
+                "CMF 20 and OBV change",
+                "20-candle typical-price VWAP",
+                "return distributions",
+                "sample drawdowns",
+                "zero-rate Sharpe and Sortino",
+                "empirical one-candle VaR/ES 95%",
+                "prior 20-candle extremes and previous-candle classic pivots",
+                "correlation",
+            ],
+            "score": "technical-bias-v1: EMA alignment 25%, close/SMA50 20%, MACD/signal 20%, RSI 20%, CMF 15%. Votes are 0/50/100; available weights are normalized. Requires 50 consecutive fresh candles and at least 80% available weight. It is a heuristic, not validated predictive confidence.",
+            "methodology": "https://nmaroulis.github.io/sibyl/guides/market-statistics",
             "settings_url": "/settings?tab=market",
             "note": "Indicators describe past observations, not guaranteed future returns. Quotes-only sources cannot supply candle indicators.",
         }

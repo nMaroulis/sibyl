@@ -32,7 +32,7 @@ Editing a watchlist changes what you follow on Markets. Account valuation uses i
 
 Choose a supported exact market, a timeframe, and a sample size of up to 720 observations. Provider aggregation limits can reduce the choices. The API accepts 60–720 observations. Supported intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `12h`, `1d`, and `1w`, restricted to the live provider's available intervals. The currently forming candle is excluded. A provider may return fewer observations than requested.
 
-Switch between a line chart and OHLC candlesticks. Use range presets, +/− zoom, drag-to-pan, volume controls and the history navigator; rendering is capped to 600 visible candles. Pointer movement and the keyboard-accessible inspection slider show each candle's timestamp, open, high, low, close, and volume. The indicator toggle adds Bollinger bands and EMA 9. Zoom/inspection reuse the loaded data without new provider reads. Export saves the supplied OHLCV sample, market, and timeframe.
+Switch between a line chart and OHLC candlesticks. Use range presets, +/− zoom, **drag-to-select region zoom**, explicit pan mode (or Shift+drag), volume controls and the history navigator; rendering is capped to 600 visible candles. Pointer movement and the keyboard-accessible inspection slider show each candle's timestamp, open, high, low, close, and volume. The indicator toggle adds Bollinger bands and EMA 9. Zoom/inspection reuse the loaded data without new provider reads. Export saves the supplied OHLCV sample, market, and timeframe.
 
 Demo history is deterministic and synthetic; cross quotes are ratios of aligned demo histories, with conservative OHLC ranges. Live data uses the selected exchange or API adapter. Quotes cache for 30 seconds, candles for 60 seconds, and the spot catalog for ten minutes.
 
@@ -49,6 +49,10 @@ Demo history is deterministic and synthetic; cross quotes are ratios of aligned 
 | Volatility      | Sample deviation of candle simple returns × square root of periods per year × 100 |
 
 Annualization uses `365 × 86400 / interval_seconds`. This assumes continuous crypto trading; an intraday annualized statistic can be unstable. Warm-up values serialize as `null`. EMA alignment describes the sample, not a forecast.
+
+## Market statistics and technical bias
+
+The technical-bias card shows a disclosed directional score with an expandable weighted breakdown. The statistics section adds returns, trend, momentum, volatility, historical risk, volume/flow and mechanical price references, with definitions, warm-up states and CSV export. All calculations run in Python on the latest consecutive segment of the selected feed. Stale history has no current score. The score is not a recommendation or probability of profit. Chart zoom does not change its input. See [statistics, score rules and formulas](market-statistics.md).
 
 ## Correlations
 

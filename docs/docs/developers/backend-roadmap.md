@@ -109,7 +109,7 @@ Known orders now import native execution pages into the shared Account history l
 
 ### 5. Market-data infrastructure — partial
 
-The backend uses cached REST snapshots, source-specific catalogs/capabilities and provider-sized candle pages. Settings selects public exchanges, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys. Markets supports temporary overrides, exact pair analysis, timestamp/stale labels and quotes-only feeds. See [Market data](market-data.md).
+The backend uses cached REST snapshots, source-specific catalogs/capabilities and provider-sized candle pages. Settings selects public exchanges, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys. Markets supports temporary overrides, exact pair analysis, timestamp/stale labels and quotes-only feeds. Descriptive statistics, a versioned explainable technical-bias score and lightweight drag-region chart zoom are implemented; see [statistics scope and formulas](../guides/market-statistics.md). See [Market data](market-data.md).
 
 - [x] Persist exact-source OHLCV, reviewed resumable backfills, coverage gaps, manual retention and immutable research snapshots. See [candle history](candle-history.md).
 - [ ] Review historical pagination for the remaining providers and exercise authenticated provider acceptance.

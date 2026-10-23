@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Download, RotateCcw, ChartColumn, ZoomIn, ZoomOut } from 'lucide-react';
+import { Download, RotateCcw, ChartColumn, ZoomIn, ZoomOut, Scan, Move } from 'lucide-react';
 import type { Candle } from '../lib/types';
 import { exportCSV, number } from '../lib/api';
 
@@ -181,7 +181,18 @@ export function Candlesticks({
   const [selected, setSelected] = useState<number>();
   const [volume, setVolume] = useState(true);
   const [dragging, setDragging] = useState(false);
-  const drag = useRef<{ x: number; end: number; width: number; moved: boolean } | null>(null);
+  const [dragMode, setDragMode] = useState<'zoom' | 'pan'>('zoom');
+  const [selection, setSelection] = useState<[number, number] | null>(null);
+  const drag = useRef<{
+    x: number;
+    end: number;
+    width: number;
+    moved: boolean;
+    from: number;
+    first: number;
+    size: number;
+    mode: 'zoom' | 'pan';
+  } | null>(null);
   const pending = useRef<number | undefined>(undefined);
   const svg = useRef<SVGSVGElement>(null);
   const instructions = useId();
@@ -262,7 +273,18 @@ export function Candlesticks({
     setCount(Math.max(minCount, Math.min(maxCount, Math.round(size * factor))));
     setSelected(undefined);
   };
+  const cancelDrag = () => {
+    if (pending.current !== undefined) cancelAnimationFrame(pending.current);
+    drag.current = null;
+    setDragging(false);
+    setSelection(null);
+  };
+  const plotX = (clientX: number, element: SVGSVGElement) => {
+    const rect = element.getBoundingClientRect();
+    return Math.max(L, Math.min(W - R, ((clientX - rect.left) / rect.width) * W));
+  };
   const reset = () => {
+    cancelDrag();
     setCount(180);
     setEndStamp(null);
     setSelected(undefined);
@@ -298,6 +320,28 @@ export function Candlesticks({
           </button>
         </div>
         <div className="chart-toolbar-actions">
+          <div className="chart-drag-modes" role="group" aria-label="Chart drag behavior">
+            <button
+              type="button"
+              className={`icon-button ${dragMode === 'zoom' ? 'selected' : ''}`}
+              aria-label="Drag to select zoom region"
+              aria-pressed={dragMode === 'zoom'}
+              title="Select a region to zoom"
+              onClick={() => setDragMode('zoom')}
+            >
+              <Scan size={15} />
+            </button>
+            <button
+              type="button"
+              className={`icon-button ${dragMode === 'pan' ? 'selected' : ''}`}
+              aria-label="Drag to pan chart"
+              aria-pressed={dragMode === 'pan'}
+              title="Pan through loaded history"
+              onClick={() => setDragMode('pan')}
+            >
+              <Move size={15} />
+            </button>
+          </div>
           <button
             type="button"
             className="icon-button"
@@ -378,14 +422,19 @@ export function Candlesticks({
         tabIndex={0}
         aria-label={`${mode === 'line' ? 'Price line' : 'OHLC candlestick'} chart, ${visible.length} of ${data.length} closed candles`}
         aria-describedby={instructions}
-        className={dragging ? 'dragging' : ''}
+        className={`${dragMode === 'pan' ? 'pan-mode' : 'region-mode'} ${dragging ? 'dragging' : ''}`}
         onPointerDown={(event) => {
           if (event.button !== 0) return;
+          const from = plotX(event.clientX, event.currentTarget);
           drag.current = {
             x: event.clientX,
             end: last,
             width: event.currentTarget.getBoundingClientRect().width,
             moved: false,
+            from,
+            first,
+            size,
+            mode: event.shiftKey ? 'pan' : dragMode,
           };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
@@ -396,36 +445,66 @@ export function Candlesticks({
             const element = svg.current;
             if (!element) return;
             const current = drag.current;
-            if (current && Math.abs(clientX - current.x) > 5) {
+            if (current && (current.moved || Math.abs(clientX - current.x) > 5)) {
               current.moved = true;
               setDragging(true);
-              pan(
-                current.end -
-                  Math.round(((((clientX - current.x) / current.width) * W) / (W - L - R)) * size),
-              );
+              if (current.mode === 'pan') {
+                pan(
+                  current.end -
+                    Math.round(
+                      ((((clientX - current.x) / current.width) * W) / (W - L - R)) * current.size,
+                    ),
+                );
+              } else {
+                setSelection([current.from, plotX(clientX, element)]);
+              }
             } else if (!current?.moved) {
-              const rect = element.getBoundingClientRect();
               const next = Math.max(
                 0,
-                Math.min(
-                  visible.length - 1,
-                  Math.floor((((clientX - rect.left) / rect.width) * W - L) / step),
-                ),
+                Math.min(visible.length - 1, Math.floor((plotX(clientX, element) - L) / step)),
               );
               setSelected((previous) => (previous === next ? previous : next));
             }
           });
         }}
         onPointerUp={(event) => {
-          drag.current = null;
-          setDragging(false);
+          const current = drag.current;
+          // Read the final pointer directly: a quick release can precede the next animation frame.
+          if (current && Math.abs(event.clientX - current.x) > 5) {
+            if (current.mode === 'zoom') {
+              const to = plotX(event.clientX, event.currentTarget);
+              const startBar = Math.max(
+                0,
+                Math.floor(((Math.min(current.from, to) - L) / (W - L - R)) * current.size),
+              );
+              const endBar = Math.min(
+                current.size - 1,
+                Math.floor(((Math.max(current.from, to) - L) / (W - L - R)) * current.size),
+              );
+              const newSize = Math.max(minCount, endBar - startBar + 1);
+              const newLast = Math.min(
+                data.length - 1,
+                Math.max(current.first + endBar, current.first + startBar + newSize - 1),
+              );
+              setCount(newSize);
+              setEndStamp(newLast === data.length - 1 ? null : data[newLast].timestamp);
+              setSelected(undefined);
+            } else {
+              pan(
+                current.end -
+                  Math.round(
+                    ((((event.clientX - current.x) / current.width) * W) / (W - L - R)) *
+                      current.size,
+                  ),
+              );
+            }
+          }
+          cancelDrag();
           if (event.currentTarget.hasPointerCapture(event.pointerId))
             event.currentTarget.releasePointerCapture(event.pointerId);
         }}
-        onPointerCancel={() => {
-          drag.current = null;
-          setDragging(false);
-        }}
+        onPointerCancel={cancelDrag}
+        onLostPointerCapture={cancelDrag}
         onDoubleClick={reset}
         onKeyDown={(event) => {
           if (event.key === '+' || event.key === '=') {
@@ -444,6 +523,7 @@ export function Candlesticks({
             if (event.shiftKey) pan(event.key === 'Home' ? size - 1 : data.length - 1);
             else setSelected(event.key === 'Home' ? 0 : visible.length - 1);
           } else if (event.key === 'Escape') {
+            cancelDrag();
             setSelected(undefined);
           }
         }}
@@ -458,7 +538,26 @@ export function Candlesticks({
           bottom={bottom}
           interval={interval}
         />
-        <g pointerEvents="none">
+        {selection && (
+          <g pointerEvents="none" className="chart-region-selection">
+            <rect
+              x={Math.min(...selection)}
+              y={T}
+              width={Math.abs(selection[1] - selection[0])}
+              height={H - B - T}
+              rx="3"
+            />
+            <text
+              x={(selection[0] + selection[1]) / 2}
+              y={T + 18}
+              textAnchor="middle"
+              fontSize="11"
+            >
+              Release to zoom
+            </text>
+          </g>
+        )}
+        <g pointerEvents="none" opacity={selection ? 0.15 : 1}>
           <line
             x1={x}
             x2={x}
@@ -512,7 +611,10 @@ export function Candlesticks({
           {date(visible[0].timestamp)} — {date(visible[visible.length - 1].timestamp)} ·{' '}
           {visible.length} / {data.length} bars {endStamp === null ? '· latest' : ''}
         </span>
-        <span id={instructions}>Drag to pan · +/− zoom · arrows inspect · Shift+arrows pan</span>
+        <span id={instructions}>
+          {dragMode === 'zoom' ? 'Drag a region to zoom' : 'Drag to pan'} · Shift+drag pan ·
+          double-click reset · +/− zoom
+        </span>
       </div>
       <label className="candle-scrubber">
         Inspect candle

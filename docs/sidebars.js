@@ -14,6 +14,7 @@ module.exports = {
         'guides/exchanges',
         'guides/settings',
         'guides/markets',
+        'guides/market-statistics',
         'guides/market-history',
         'guides/alerts',
         'guides/trading',

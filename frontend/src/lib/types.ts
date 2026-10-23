@@ -107,14 +107,47 @@ export type Candle = {
   rsi: number | null;
 };
 export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '12h' | '1d' | '1w';
+export type MarketStatistics = {
+  price: number;
+  sample: {
+    loaded: number;
+    observations: number;
+    return_observations: number;
+    start: string;
+    end: string;
+    interval_seconds: number;
+    gap_count: number;
+    missing_intervals: number;
+    stale: boolean;
+    age_seconds: number;
+    warnings: string[];
+  };
+  assessment: {
+    version: string;
+    score: number | null;
+    label: string;
+    available_weight: number;
+    reason: string | null;
+    note: string;
+    components: { id: string; label: string; weight: number; value: number | null; rule: string }[];
+  };
+  returns: Record<string, number | null>;
+  trend: Record<string, number | null>;
+  momentum: Record<string, number | null>;
+  volatility: Record<string, number | null>;
+  risk: Record<string, number | null>;
+  volume: Record<string, number | null>;
+  levels: Record<string, number | null>;
+};
 export type Analysis = Source & {
   timeframe: Timeframe;
   symbol: string;
   candles: Candle[];
   price: number;
-  rsi: number;
+  statistics: MarketStatistics;
+  rsi: number | null;
   trend: string;
-  volatility: number;
+  volatility: number | null;
   high: number;
   low: number;
   period_return: number;

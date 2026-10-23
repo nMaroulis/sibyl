@@ -1,7 +1,11 @@
 """Transparent technical indicators and a statistical forecast baseline."""
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
+
+from sibyl.market_data.analysis import market_statistics, prepare_history
 
 
 def indicators(
@@ -72,12 +76,19 @@ def indicators(
     return frame
 
 
-def analyze(candles: list[dict], periods_per_year: float = 365) -> dict:
-    """Summarize closed candle history and return JSON-safe chart records."""
-    frame = indicators(candles)
-    returns = frame["close"].pct_change().dropna()
+def analyze(candles: list[dict], periods_per_year: float = 365, *, now: datetime | None = None) -> dict:
+    """Return chart records, descriptive statistics and a disclosed technical bias.
+
+    Indicator smoothing restarts at every interval break. Statistics use the
+    latest contiguous segment; no missing prices or volume are interpolated.
+    """
+    raw, breaks = prepare_history(candles, periods_per_year)
+    frame = pd.concat(
+        [indicators(group.to_dict("records")) for _, group in raw.groupby(breaks.cumsum())],
+        ignore_index=True,
+    )
+    statistics = market_statistics(frame, periods_per_year, breaks, now=now)
     last = frame.iloc[-1]
-    annual_volatility = float(returns.std() * np.sqrt(periods_per_year) * 100)
     records = (
         frame.replace([np.inf, -np.inf], np.nan)
         .astype(object)
@@ -87,12 +98,15 @@ def analyze(candles: list[dict], periods_per_year: float = 365) -> dict:
     return {
         "candles": records,
         "price": float(last["close"]),
-        "rsi": float(last["rsi"]),
-        "trend": "Bullish" if last["ema_fast"] > last["ema_slow"] else "Bearish",
-        "volatility": annual_volatility,
+        "rsi": statistics["momentum"]["rsi14"],
+        "trend": "Bullish"
+        if last["ema_fast"] > last["ema_slow"]
+        else ("Bearish" if last["ema_fast"] < last["ema_slow"] else "Neutral"),
+        "volatility": statistics["volatility"]["annualized_pct"],
         "high": float(frame["high"].max()),
         "low": float(frame["low"].min()),
         "period_return": float((last["close"] / frame.iloc[0]["close"] - 1) * 100),
+        "statistics": statistics,
     }
 
 

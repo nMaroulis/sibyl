@@ -148,3 +148,7 @@ Go to **Strategies → Monitor → Open monitor**. Each run has observed price/e
 ### Provider reliability and diagnostics
 
 Market-owned clients share read admission, conservative transport spacing, bounded concurrency and cooldowns. Interactive reads precede queued background work; identical market cache misses coalesce. **Settings → Market data → Source health** separates connectivity from quote freshness and shows safe errors, response times and queue counts without probing providers. Demo stays explicitly offline. Session counters reset on restart; bounded hourly read history, timings and sanitized errors persist locally, alongside import checkpoints. Expand a source to inspect 24-hour or 7-day history. These observations measure actual read traffic, not uptime or current credential validity. See [provider control and remaining scope](docs/docs/developers/provider-control.md).
+
+### Market statistics
+
+**Markets** now includes server-calculated returns/distributions, trend/momentum, volatility, sample drawdowns and tail risk, volume/flow and mechanical price references. An explainable technical-bias score exposes its votes and weights; it rates direction, not investment quality or profit probability. Gaps, stale samples and insufficient inputs are explicit. Charts support drag-to-select time-region zoom, pan, reset and CSV export with no new chart library. Statistics retain the full consecutive analysis sample when you zoom. See [metrics, formulas and score rules](docs/docs/guides/market-statistics.md).

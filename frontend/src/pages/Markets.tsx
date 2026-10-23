@@ -28,6 +28,7 @@ import { SourceHealthSummary } from '../components/provider-health';
 import { MarketHistoryPage } from './MarketHistory';
 import { frameSeconds } from '../lib/market-history';
 import { Candlesticks } from '../components/candlesticks';
+import { MarketStatistics, TechnicalAssessment } from '../components/markets/statistics';
 import { MarketSelector, TimeframeSelect, type SpotCatalog } from '../components/market-controls';
 import { MarketWatchlist } from '../components/market-watchlist';
 import { useWatchlist } from '../lib/watchlist';
@@ -317,7 +318,15 @@ function MarketsView({
                           {number(analysis.data.price, analysis.data.price < 1 ? 6 : 2)}
                         </strong>
                         <small>{symbol.split('/')[1]}</small>
-                        <Badge tone={analysis.data.trend === 'Bullish' ? 'lime' : 'rose'}>
+                        <Badge
+                          tone={
+                            analysis.data.trend === 'Bullish'
+                              ? 'lime'
+                              : analysis.data.trend === 'Bearish'
+                                ? 'rose'
+                                : 'neutral'
+                          }
+                        >
                           {analysis.data.trend} EMA
                         </Badge>
                       </div>
@@ -478,39 +487,7 @@ function MarketsView({
             </SectionPanel>
           </Panel>
           <div className="market-side-stack">
-            <Panel>
-              <PanelTitle
-                title="Technical snapshot"
-                subtitle={`${timeframe} · ${limit} observations requested`}
-              />
-              {analysis.data && (
-                <div className="stat-list">
-                  <div>
-                    <span>RSI · 14 periods</span>
-                    <strong>{analysis.data.rsi.toFixed(1)}</strong>
-                  </div>
-                  <div className="rsi-meter">
-                    <span style={{ left: `${analysis.data.rsi}%` }} />
-                  </div>
-                  <div>
-                    <span>Annualized volatility</span>
-                    <strong>{analysis.data.volatility.toFixed(1)}%</strong>
-                  </div>
-                  <div>
-                    <span>Sample high</span>
-                    <strong>{number(analysis.data.high, analysis.data.high < 1 ? 6 : 2)}</strong>
-                  </div>
-                  <div>
-                    <span>Sample low</span>
-                    <strong>{number(analysis.data.low, analysis.data.low < 1 ? 6 : 2)}</strong>
-                  </div>
-                  <div>
-                    <span>Sample return</span>
-                    <Change value={analysis.data.period_return} />
-                  </div>
-                </div>
-              )}
-            </Panel>
+            {!analysis.error && analysis.data && <TechnicalAssessment data={analysis.data} />}
             <div className="quiet-callout">
               <span className="four-point">✳</span>
               <h3>Keep the context.</h3>
@@ -522,6 +499,7 @@ function MarketsView({
           </div>
         </div>
       )}
+      {hasCandles && !analysis.error && analysis.data && <MarketStatistics data={analysis.data} />}
       <MarketWatchlist
         watchlist={watchlist}
         catalog={catalog.data}
