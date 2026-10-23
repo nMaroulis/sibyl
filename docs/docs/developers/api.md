@@ -11,12 +11,12 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/settings/llm`                 | Provider catalog, active model, saved metadata; keys are write-only                      |
 | POST       | `/settings/llm`                 | Save encrypted profile and activate for new requests                                     |
 | DELETE     | `/settings/llm/{provider}/key`  | Remove stored key; fall back to tool mode if active required key is unavailable          |
-| GET        | `/account/accounts`           | Per-account free/reserved/total and conversion rates                                     |
+| GET        | `/account/accounts`             | Per-account free/reserved/total and conversion rates                                     |
 | GET        | `/markets/symbols`              | Active spot catalog and available timeframes                                             |
 | GET        | `/markets/orderbook`            | Public snapshot: symbol, depth 5–50                                                      |
 | GET        | `/reports/trading`              | Combined records and matched paper FIFO P&L                                              |
 | POST       | `/exchange-orders/{id}/refresh` | Read a known exchange order status; never resubmit                                       |
-| GET        | `/account`                    | Priced balances, allocation, history, warnings                                           |
+| GET        | `/account`                      | Priced balances, allocation, history, warnings                                           |
 | GET        | `/markets`                      | Saved watchlist quotes, order and source labels                                          |
 | GET        | `/markets/analysis`             | `symbol`, `timeframe`, `limit` 60–720                                                    |
 | GET        | `/markets/correlation`          | 2–8 symbols, timeframe, limit, method, transform                                         |
@@ -40,7 +40,11 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | POST       | `/exchange-orders/{id}/confirm` | Submit once with typed confirmation                                                      |
 | GET        | `/strategies`                   | Algorithm catalog                                                                        |
 | POST       | `/strategies/backtest`          | Historical simulation and persisted result                                               |
-| GET / POST | `/strategies/jobs`              | List / start isolated paper jobs                                                         |
+| GET / POST | `/strategies/jobs`              | List paper/exchange runs / start isolated paper jobs                                      |
+| GET | `/strategies/exchange/options` | Actual automation support, account activation and execution flags |
+| GET | `/strategies/exchange/markets/{id}` | Exact account-exchange pairs/timeframes |
+| POST | `/strategies/exchange/preview` | Read-only account/budget review |
+| POST | `/strategies/exchange/reviews/{id}/start` | Approve a fixed scope; wait for the next closed candle |
 | POST       | `/strategies/jobs/{id}/pause`   | Stop evaluating a paper job                                                              |
 | POST       | `/strategies/jobs/{id}/resume`  | Resume evaluation                                                                        |
 | GET        | `/forecast`                     | `symbol`, `horizon` 1–30                                                                 |

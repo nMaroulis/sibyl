@@ -35,7 +35,7 @@ def test_binance_categories_do_not_hide_missing_features():
     assert groups["spot"]["summary"]["status"] == "partial"  # Stop/OCO is not implemented.
     assert groups["history"]["summary"]["status"] == "partial"  # Transfers are not imported.
     assert groups["market"]["summary"]["status"] == "partial"  # No WebSockets.
-    assert groups["limits"]["summary"]["status"] == "unsupported"
+    assert groups["limits"]["summary"] == {"status": "partial", "implemented": 1, "total": 3}
 
 
 def test_sdk_flags_cannot_enable_unreviewed_writes_or_imports():

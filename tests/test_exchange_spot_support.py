@@ -156,7 +156,22 @@ def test_support_matrix_is_app_scoped_and_lists_gaps():
     for provider in catalog["items"]:
         assert len(provider["support"]) == 5
         features = {f["id"]: f for group in provider["support"] for f in group["features"]}
-        assert features["automated"]["status"] == "pending"
+        assert features["automated"]["status"] == (
+            "available"
+            if provider["id"]
+            in {
+                "binance",
+                "binanceus",
+                "binance-testnet",
+                "coinbase",
+                "coinbase-sandbox",
+                "kraken",
+                "okx",
+                "bybit",
+                "kucoin",
+            }
+            else "pending"
+        )
         assert features["withdrawals"]["status"] == "unavailable"
         assert (
             features["limit_orders"]["status"] in {"available", "simulated"}

@@ -11,13 +11,13 @@ from pydantic import ValidationError
 
 from sibyl.models import BacktestRequest
 from sibyl.services.market import Market
-from sibyl.services.strategies import Strategies, strategy_indicators
+from sibyl.strategies import Strategies, strategy_indicators
 
 
 @pytest.fixture
 def engine(settings, store, monkeypatch):
     """A controllable market emits deterministic closed candles without any network."""
-    import sibyl.services.strategies as module
+    import sibyl.strategies.paper as module
 
     market = Market(settings, store)
     history = market.candles(limit=100)

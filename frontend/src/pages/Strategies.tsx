@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ChevronRight, FlaskConical, Play, Radio } from 'lucide-react';
+import { FlaskConical, Play, Radio } from 'lucide-react';
 import {
   Badge,
   Change,
@@ -16,15 +16,33 @@ import {
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { StrategyList, StrategyMonitor } from '../components/strategy-monitor';
 import { AgentButton } from '../components/agents';
+import { AccountContext, AccountSetup, useAccounts } from '../components/account-selection';
 import { MarketSelector, TimeframeSelect } from '../components/market-controls';
+import type { SpotCatalog } from '../components/market-controls';
+import { BacktestChart } from '../components/strategies/backtest-chart';
+import { ExchangeStrategySetup } from '../components/strategies/exchange-execution';
 import { ComingSoon } from '../components/coming-soon';
 import { ValueChart } from '../components/charts';
 import { downloadFile, exportCSV, number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { Dataset, DatasetList } from '../lib/market-history';
-import type { Backtest, Job, Run, Strategy, StrategyParams } from '../lib/types';
+import type { AccountSelection, Backtest, Job, Run, Strategy, StrategyParams } from '../lib/types';
 
+/** Share the same explicit account/Demo boundary as Account and Trade. */
 export function StrategiesPage() {
+  const accounts = useAccounts();
+  if (accounts.loading) return <Loading />;
+  if (accounts.error || !accounts.data)
+    return (
+      <ErrorState
+        message={accounts.error || 'Account selection unavailable.'}
+        retry={accounts.retry}
+      />
+    );
+  return <StrategyWorkspace key={accounts.data.signature} selection={accounts.data} />;
+}
+
+function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
   const [search, setSearch] = useSearchParams();
   const selectedView = search.get('view'),
     selectedJob = search.get('job');
@@ -58,6 +76,9 @@ export function StrategiesPage() {
     tsi_long_period: 25,
   });
   const datasetId = search.get('dataset') || '';
+  const demoInput = selection.mode === 'demo';
+  const demoCatalog = useResource<SpotCatalog>('/markets/symbols?source=demo', 0, demoInput);
+  const [compareId, setCompareId] = useState('');
   const datasets = useResource<DatasetList>('/market-history/datasets');
   const selectedDataset = useResource<Dataset>(
     `/market-history/datasets/${datasetId}/metadata`,
@@ -65,6 +86,7 @@ export function StrategiesPage() {
     !!datasetId,
   );
   const dataset = selectedDataset.data;
+  const datasetMatchesMode = !datasetId || (!!dataset && (dataset.source === 'demo') === demoInput);
   const params: StrategyParams =
     datasetId && dataset
       ? {
@@ -76,11 +98,21 @@ export function StrategiesPage() {
       : draftParams;
   const chooseDataset = (id: string) => {
     const next = new URLSearchParams(search);
+    next.delete('input');
     id ? next.set('dataset', id) : next.delete('dataset');
     setSearch(next);
     setResult(undefined);
     setError('');
   };
+  // Saved links cannot silently switch the active workspace into or out of Demo.
+  useEffect(() => {
+    if (search.has('input') || (dataset && !datasetMatchesMode)) {
+      const next = new URLSearchParams(search);
+      next.delete('input');
+      if (dataset && !datasetMatchesMode) next.delete('dataset');
+      setSearch(next, { replace: true });
+    }
+  }, [search, setSearch, dataset, datasetMatchesMode]);
   const [result, setResult] = useState<Backtest>();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -95,13 +127,20 @@ export function StrategiesPage() {
     try {
       if (kind === 'backtest') {
         const response = await post<Backtest>(
-          datasetId ? '/strategies/backtest/dataset' : '/strategies/backtest',
+          datasetId
+            ? '/strategies/backtest/dataset'
+            : demoInput
+              ? '/strategies/backtest/demo'
+              : '/strategies/backtest',
           datasetId ? { ...params, dataset_id: datasetId } : params,
         );
         setResult(response);
         toast('Backtest complete. Results saved to your workspace.');
       } else {
-        const job = await post<Job>('/strategies/jobs', params);
+        const job = await post<Job>(
+          demoInput ? '/strategies/jobs/demo' : '/strategies/jobs',
+          params,
+        );
         setSearch({ view: 'monitor', job: job.id });
         toast('Paper strategy started with isolated virtual capital.');
       }
@@ -112,10 +151,44 @@ export function StrategiesPage() {
       setBusy('');
     }
   };
-  const activeResult =
-    result ??
-    (history.data?.find((run) => !datasetId || (run.payload as Backtest).dataset?.id === datasetId)
-      ?.payload as Backtest | undefined);
+  const savedRuns = (history.data ?? [])
+    .map((run) => ({ ...(run.payload as Backtest), id: run.id }))
+    .filter((run) => (run.source === 'demo') === demoInput);
+  const savedDatasets = datasets.data?.items.filter((d) => (d.source === 'demo') === demoInput);
+  const accountContext = (
+    <AccountContext
+      selection={selection}
+      demoDescription={
+        selectedView === 'monitor'
+          ? 'The Demo account is active. Each saved run keeps its original data and execution mode.'
+          : 'Prices are synthetic and strategies use virtual funds. Activating an exchange account turns Demo off automatically.'
+      }
+    />
+  );
+  const activeResult = result;
+  const comparisons = activeResult?.dataset
+    ? savedRuns.filter(
+        (run) =>
+          run.id !== activeResult.id &&
+          run.dataset?.digest === activeResult.dataset?.digest &&
+          run.initial_capital === activeResult.initial_capital,
+      )
+    : [];
+  const comparison = comparisons.find((run) => run.id === compareId);
+  const rerun = async () => {
+    if (!activeResult) return;
+    setBusy('rerun');
+    setError('');
+    try {
+      setResult(await post<Backtest>(`/strategies/backtests/${activeResult.id}/rerun`, {}));
+      refresh();
+      toast('Recomputed from the original saved input and parameters.');
+    } catch (reason) {
+      setError((reason as Error).message);
+    } finally {
+      setBusy('');
+    }
+  };
   const view = selectedView === 'monitor' ? 'monitor' : 'build';
   const tabs = (
     <SectionTabs
@@ -139,10 +212,17 @@ export function StrategiesPage() {
       <>
         <PageTitle
           title="Strategy monitor"
-          description="Open a run. See its decisions, observed prices, and paper performance."
+          description="Open a run. See its decisions, orders, and recorded performance."
         />
+        {accountContext}
         {tabs}
         <SectionPanel id="strategies" value={view}>
+          {!selection.active_ids.length && (
+            <p className="inline-alert">
+              No accounts are active. Saved strategy runs remain available.{' '}
+              <Link to="/settings?tab=exchanges">Connect exchange accounts ↗</Link>
+            </p>
+          )}
           {search.get('job') ? (
             <StrategyMonitor
               key={search.get('job')!}
@@ -160,52 +240,65 @@ export function StrategiesPage() {
         </SectionPanel>
       </>
     );
+  if (!selection.active_ids.length)
+    return (
+      <>
+        <PageTitle
+          title="Strategy studio"
+          description="Build, test and understand your trading ideas."
+        />
+        {tabs}
+        <SectionPanel id="strategies" value={view}>
+          <AccountSetup
+            selection={selection}
+            page="strategy workspace"
+            description="Connect one or many exchange accounts to open your strategy workspace. Backtest with market data, monitor paper runs, and review supported exchange strategies before starting them."
+          />
+        </SectionPanel>
+      </>
+    );
   return (
     <>
       <PageTitle
         eyebrow="THOUGHTFUL BY DESIGN"
         title="Strategy studio"
-        description="A little space to try your next idea."
+        description="Build, test and understand your trading ideas."
         action={
           <AgentButton
             module="broker"
             context={
-              datasetId
-                ? { symbol: params.symbol, timeframe: params.timeframe }
-                : { parameters: params }
+              activeResult
+                ? {
+                    symbol: activeResult.symbol,
+                    timeframe: activeResult.timeframe,
+                    backtest_id: activeResult.id,
+                  }
+                : datasetId
+                  ? { symbol: params.symbol, timeframe: params.timeframe }
+                  : { parameters: params }
             }
           />
         }
       />
+      {accountContext}
       {tabs}
       <SectionPanel id="strategies" value={view}>
         {catalog.error && <ErrorState message={catalog.error} retry={catalog.retry} />}
-        <div className="strategy-catalog">
-          {catalog.data?.map((strategy, i) => (
-            <button
-              key={strategy.id}
-              className={`panel strategy-card ${params.strategy === strategy.id ? 'strategy-selected' : ''}`}
-              onClick={() => update('strategy', strategy.id)}
-            >
-              <div>
-                <span className="strategy-number">0{i + 1}</span>
-                <span className="strategy-glyph">{['⌁', '↗', '≋', '⋈', 'ϟ', '✳'][i]}</span>
-              </div>
-              <Badge tone={params.strategy === strategy.id ? 'lime' : 'neutral'}>
-                {strategy.tag}
-              </Badge>
-              <h3>{strategy.name}</h3>
-              <p>{strategy.description}</p>
-              <span className="strategy-card-bottom">
-                {strategy.risk} risk <ChevronRight size={15} />
-              </span>
-            </button>
-          ))}
+        <div className="strategy-studio-intro">
+          <div>
+            <Badge tone="blue">Historical research</Badge>
+            <h2>Start with a clear idea.</h2>
+            <p>
+              Choose an algorithm and data, test it, then inspect every decision. Expand the
+              settings when you need more control.
+            </p>
+          </div>
+          {demoInput && <Badge tone="sand">Demo preview</Badge>}
         </div>
         <div className="strategy-workspace">
           <Panel>
             <PanelTitle
-              title="Make it your own"
+              title="Configure your strategy"
               subtitle="Configurable closed candles · long only · spot simulation"
             />
             <form
@@ -218,11 +311,14 @@ export function StrategiesPage() {
               <label>
                 Research input
                 <select value={datasetId} onChange={(event) => chooseDataset(event.target.value)}>
-                  <option value="">Current feed · save exact input automatically</option>
-                  {datasetId && !datasets.data?.items.some((d) => d.id === datasetId) && (
+                  <option value="">
+                    {demoInput ? 'Synthetic preview data' : 'Current market feed'} · exact input
+                    saved
+                  </option>
+                  {datasetId && !savedDatasets?.some((d) => d.id === datasetId) && (
                     <option value={datasetId}>{dataset?.label || 'Loading saved dataset…'}</option>
                   )}
-                  {datasets.data?.items.map((d) => (
+                  {savedDatasets?.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.label} · {d.source_label} · {d.count.toLocaleString()} bars
                     </option>
@@ -262,6 +358,9 @@ export function StrategiesPage() {
                   ))}
                 </select>
               </label>
+              <p className="footnote">
+                {catalog.data?.find((strategy) => strategy.id === params.strategy)?.description}
+              </p>
               <div className="form-row">
                 {datasetId ? (
                   <label>
@@ -270,6 +369,7 @@ export function StrategiesPage() {
                   </label>
                 ) : (
                   <MarketSelector
+                    catalog={demoInput ? demoCatalog.data : undefined}
                     value={params.symbol}
                     onChange={(value) => update('symbol', value)}
                   />
@@ -304,6 +404,21 @@ export function StrategiesPage() {
                     <option value={720}>720 candles</option>
                   </select>
                 </label>
+              </div>
+              {datasetId ? (
+                <label>
+                  Saved timeframe
+                  <input value={params.timeframe} readOnly />
+                </label>
+              ) : (
+                <TimeframeSelect
+                  catalog={demoInput ? demoCatalog.data : undefined}
+                  value={params.timeframe ?? '1d'}
+                  onChange={(value) => update('timeframe', value)}
+                />
+              )}
+              <details className="advanced-options">
+                <summary>Indicator parameters</summary>{' '}
                 <label>
                   Bollinger / CMF window
                   <input
@@ -314,20 +429,6 @@ export function StrategiesPage() {
                     onChange={(event) => update('window', Number(event.target.value))}
                   />
                 </label>
-              </div>
-              {datasetId ? (
-                <label>
-                  Saved timeframe
-                  <input value={params.timeframe} readOnly />
-                </label>
-              ) : (
-                <TimeframeSelect
-                  value={params.timeframe ?? '1d'}
-                  onChange={(value) => update('timeframe', value)}
-                />
-              )}
-              <details className="advanced-options" open>
-                <summary>Indicator parameters</summary>
                 <div className="form-row">
                   {(['fast_period', 'slow_period', 'rsi_period'] as const).map((key) => (
                     <label key={key}>
@@ -520,7 +621,7 @@ export function StrategiesPage() {
               <button
                 className="button primary full-width"
                 type="submit"
-                disabled={!!busy || (!!datasetId && !dataset)}
+                disabled={!!busy || !datasetMatchesMode}
               >
                 <FlaskConical size={15} />
                 {busy === 'backtest' ? 'Testing your idea…' : 'Run backtest'}
@@ -535,13 +636,37 @@ export function StrategiesPage() {
                 {busy === 'jobs' ? 'Starting…' : 'Start paper strategy'}
               </button>
               <p className="footnote">
-                {datasetId && 'Choose current-feed input to start a paper strategy. '}
+                {datasetId && 'Choose the current feed to start a paper strategy. '}
                 Each paper strategy has its own virtual account. Evaluated every 30 seconds; trades
                 at most once per new closed candle.
               </p>
             </form>
+            {!demoInput && (
+              <ExchangeStrategySetup
+                parameters={params}
+                onStarted={(job) => setSearch({ view: 'monitor', job: job.id })}
+              />
+            )}
           </Panel>
           <Panel className="backtest-panel">
+            <div className="backtest-history-selector">
+              <label>
+                Saved experiments
+                <select
+                  aria-label="Open saved experiment"
+                  value={activeResult?.id ?? ''}
+                  onChange={(e) => setResult(savedRuns.find((run) => run.id === e.target.value))}
+                >
+                  <option value="">New experiment</option>
+                  {savedRuns.map((run) => (
+                    <option key={run.id} value={run.id}>
+                      {run.strategy} · {run.symbol} · {run.source === 'demo' ? 'Demo' : run.source}{' '}
+                      · {run.id.slice(0, 8)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <PanelTitle
               title="The idea, in numbers"
               subtitle={
@@ -589,8 +714,9 @@ export function StrategiesPage() {
                       Export input
                     </button>
                     <small>
-                      Recorded engine {activeResult.engine_version || 'unknown'}. Same input and
-                      settings can be rerun with the same engine.
+                      Recorded engine {activeResult.engine_version || 'unknown'} /{' '}
+                      {activeResult.engine_revision || 'legacy'}. Reruns reuse the exact input and
+                      settings with the current engine.
                     </small>
                   </div>
                 )}
@@ -614,7 +740,164 @@ export function StrategiesPage() {
                     <strong>{activeResult.trades}</strong>
                   </div>
                 </div>
-                <ValueChart data={activeResult.curve} height={250} currency={false} />
+                <div className="backtest-run-controls">
+                  <button
+                    className="button secondary tiny"
+                    disabled={!!busy || !activeResult.dataset}
+                    onClick={rerun}
+                  >
+                    <Play size={13} />
+                    {busy === 'rerun' ? 'Recomputing…' : 'Rerun exact input'}
+                  </button>
+                  <button
+                    className="button ghost tiny"
+                    onClick={() => {
+                      setParams(activeResult.parameters);
+                      chooseDataset(activeResult.dataset?.id ?? '');
+                    }}
+                  >
+                    Load settings
+                  </button>
+                  <label>
+                    Compare with
+                    <select value={compareId} onChange={(e) => setCompareId(e.target.value)}>
+                      <option value="">No comparison</option>
+                      {comparisons.map((run) => (
+                        <option key={run.id} value={run.id}>
+                          {run.strategy} · {run.id.slice(0, 8)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <BacktestChart
+                  key={activeResult.id}
+                  result={activeResult}
+                  comparison={comparison}
+                />
+                {comparison && (
+                  <div className="backtest-comparison">
+                    <strong>Same input & initial capital</strong>
+                    <span>
+                      Return {number(activeResult.return_pct - comparison.return_pct, 2)} percentage
+                      points
+                    </span>
+                    <span>
+                      Drawdown {number(activeResult.max_drawdown - comparison.max_drawdown, 2)}{' '}
+                      percentage points
+                    </span>
+                    <span>
+                      Round trips {activeResult.trades} vs {comparison.trades}
+                    </span>
+                  </div>
+                )}
+                {activeResult.summary && (
+                  <div className="extended-metrics">
+                    {[
+                      [
+                        'Net profit',
+                        `${number(activeResult.summary.net_profit, 2)} ${activeResult.symbol.split('/')[1]}`,
+                      ],
+                      ['Exposure', `${number(activeResult.summary.exposure_pct, 1)}%`],
+                      [
+                        'Profit factor · P&L',
+                        activeResult.summary.profit_factor == null
+                          ? '—'
+                          : number(activeResult.summary.profit_factor, 2),
+                      ],
+                      [
+                        'Expectancy / trade',
+                        activeResult.summary.expectancy == null
+                          ? '—'
+                          : `${number(activeResult.summary.expectancy, 2)} ${activeResult.symbol.split('/')[1]}`,
+                      ],
+                      ['Evaluated candles', String(activeResult.summary.evaluated_bars)],
+                      ['Warm-up candles', String(activeResult.summary.warmup_bars)],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <small>{label}</small>
+                        <strong>{value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {activeResult.round_trips && (
+                  <details className="fill-details">
+                    <summary>
+                      Trade-by-trade performance · {activeResult.round_trips.length} round trips
+                    </summary>
+                    {activeResult.round_trips.length > 200 && (
+                      <p className="footnote padded">
+                        Showing the latest 200 round trips. Export the complete trade record below.
+                      </p>
+                    )}
+                    <button
+                      className="text-button padded"
+                      onClick={() =>
+                        exportCSV('sibyl-backtest-round-trips.csv', [
+                          [
+                            'Entry',
+                            'Exit',
+                            'Quantity',
+                            'Entry price',
+                            'Exit price',
+                            'Net P&L',
+                            'Return (%)',
+                            'Holding seconds',
+                            'Exit reason',
+                          ],
+                          ...activeResult.round_trips!.map((t) => [
+                            t.entry_time,
+                            t.exit_time,
+                            t.quantity,
+                            t.entry_price,
+                            t.exit_price,
+                            t.pnl,
+                            t.return_pct,
+                            t.holding_seconds,
+                            t.reason,
+                          ]),
+                        ])
+                      }
+                    >
+                      Export all round trips
+                    </button>
+                    <div className="table-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Entry → Exit</th>
+                            <th>Entry / exit price</th>
+                            <th>Net P&L</th>
+                            <th>Return</th>
+                            <th>Exit reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {activeResult.round_trips.slice(-200).map((t) => (
+                            <tr key={t.id}>
+                              <td>
+                                {new Date(t.entry_time).toLocaleString()}
+                                <br />
+                                {new Date(t.exit_time).toLocaleString()}
+                              </td>
+                              <td>
+                                {number(t.entry_price, 4)} / {number(t.exit_price, 4)}
+                              </td>
+                              <td className={t.pnl >= 0 ? 'positive' : 'negative'}>
+                                {number(t.pnl, 4)}
+                              </td>
+                              <td>
+                                <Change value={t.return_pct} />
+                              </td>
+                              <td>{t.reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                )}
                 <div className="backtest-summary">
                   <span>
                     Final equity{' '}
@@ -643,31 +926,34 @@ export function StrategiesPage() {
                 </div>
                 {activeResult.metrics && (
                   <>
-                    <div className="extended-metrics">
-                      {(
-                        [
-                          'sortino',
-                          'calmar',
-                          'profit_factor',
-                          'average_win',
-                          'average_loss',
-                          'best_trade',
-                          'worst_trade',
-                        ] as const
-                      ).map((key) => (
-                        <div key={key}>
-                          <small>{key.replaceAll('_', ' ')}</small>
-                          <strong>
-                            {activeResult.metrics![key] == null
-                              ? '—'
-                              : number(activeResult.metrics![key]!, 2)}
-                            {key.includes('win') || key.includes('loss') || key.includes('trade')
-                              ? '%'
-                              : ''}
-                          </strong>
-                        </div>
-                      ))}
-                    </div>
+                    <details className="advanced-options result-advanced">
+                      <summary>More risk & trade metrics</summary>
+                      <div className="extended-metrics">
+                        {(
+                          [
+                            'sortino',
+                            'calmar',
+                            'profit_factor',
+                            'average_win',
+                            'average_loss',
+                            'best_trade',
+                            'worst_trade',
+                          ] as const
+                        ).map((key) => (
+                          <div key={key}>
+                            <small>{key.replaceAll('_', ' ')}</small>
+                            <strong>
+                              {activeResult.metrics![key] == null
+                                ? '—'
+                                : number(activeResult.metrics![key]!, 2)}
+                              {key.includes('win') || key.includes('loss') || key.includes('trade')
+                                ? '%'
+                                : ''}
+                            </strong>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                     <details className="fill-details">
                       <summary>Drawdown from peak · %</summary>
                       <ValueChart
@@ -759,16 +1045,12 @@ export function StrategiesPage() {
                     aria-label="View saved backtest"
                     value={activeResult.id}
                     onChange={(event) =>
-                      setResult(
-                        history.data?.find((run) => run.id === event.target.value)
-                          ?.payload as Backtest,
-                      )
+                      setResult(savedRuns.find((run) => run.id === event.target.value))
                     }
                   >
-                    {history.data?.map((run) => (
+                    {savedRuns.map((run) => (
                       <option value={run.id} key={run.id}>
-                        {(run.payload as Backtest).strategy} ·{' '}
-                        {new Date(run.created_at).toLocaleTimeString()}
+                        {run.strategy} · {run.symbol} · {run.id.slice(0, 8)}
                       </option>
                     ))}
                   </select>

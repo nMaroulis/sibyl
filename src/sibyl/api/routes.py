@@ -46,9 +46,9 @@ from sibyl.services.order_examples import order_examples
 from sibyl.services.performance import OpeningInventory
 from sibyl.services.reporting import trading_report
 from sibyl.services.roadmap import implementation_status
-from sibyl.services.strategies import CATALOG
 from sibyl.services.transfer_reconciliation import TransferConfirm, TransferPair
 from sibyl.services.watchlists import WatchlistItem, WatchlistOrder
+from sibyl.strategies import CATALOG
 
 router = APIRouter()
 
@@ -78,6 +78,7 @@ def system(s: S):
         "agent_engine": "ProtoLink",
         "agents": len(s.agents.network.cards),
         "allow_live_trading": s.settings.allow_live_trading,
+        "allow_strategy_execution": s.settings.allow_strategy_execution,
         "accounts": s.accounts.public(),
     }
 
@@ -677,7 +678,7 @@ def combined_order_monitor(
     response: Response,
     account_id: str = Query("", max_length=100),
     exchange: str = Query("", max_length=40),
-    origin: Literal["", "sibyl", "imported"] = "",
+    origin: Literal["", "sibyl", "strategy", "imported"] = "",
     status: Literal["", "active", "terminal"] = "",
     limit: int = Query(25, ge=1, le=50),
     offset: int = Query(0, ge=0, le=100000),
@@ -837,6 +838,9 @@ def strategy_events(
         "BUY",
         "SELL",
         "RECOVERED",
+        "ORDER_PLANNED",
+        "ORDER_SUBMITTED",
+        "FILL_CORRECTION",
     ] = "all",
 ):
     """Page the durable decision journal newest first, with optional action filtering."""
@@ -861,6 +865,9 @@ def strategy_events_export(
         "BUY",
         "SELL",
         "RECOVERED",
+        "ORDER_PLANNED",
+        "ORDER_SUBMITTED",
+        "FILL_CORRECTION",
     ] = "all",
 ):
     """Stream the complete matching journal in CSV without exposing credentials."""
@@ -1061,7 +1068,7 @@ async def ask_sibyl(body: SibylRequest, s: S):
 @router.get("/settings/messaging", tags=["Settings"])
 def messaging_settings(s: S):
     """Describe unavailable channels and their future setup requirements."""
-    return s.agents.network.messaging.public()
+    return s.messaging.public()
 
 
 @router.get("/agents", tags=["Oracle"])

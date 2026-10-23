@@ -2,10 +2,27 @@
 
 from sibyl import __version__
 from sibyl.market_data.archive import iso, milliseconds, step_ms
-from sibyl.services.strategies import backtest
+from sibyl.strategies import backtest
 
 
-def saved_backtest(archive, store, request):
+def rerun_backtest(archive, store, identity: str):
+    """Replay the saved immutable input and exact parameters, without provider reads."""
+    import json
+
+    from sibyl.market_data.backfills import DatasetBacktest
+
+    with store.db() as db:
+        row = db.execute("SELECT payload FROM runs WHERE id=? AND kind='backtest'", (identity,)).fetchone()
+    if row is None:
+        raise LookupError("Backtest not found.")
+    previous = json.loads(row[0])
+    if not previous.get("dataset"):
+        raise ValueError("This older run has no retained input. Choose a saved dataset to rerun it.")
+    request = DatasetBacktest(**{**previous["parameters"], "dataset_id": previous["dataset"]["id"]})
+    return saved_backtest(archive, store, request, rerun_of=identity)
+
+
+def saved_backtest(archive, store, request, *, rerun_of: str | None = None):
     """Use the entire saved dataset, without fetching any provider data."""
     document = archive.dataset(request.dataset_id)
     dataset, candles = document["dataset"], document["candles"]
@@ -25,6 +42,8 @@ def saved_backtest(archive, store, request):
         "engine_version": __version__,
         "input_kind": "saved_dataset",
     }
+    if rerun_of:
+        result["rerun_of"] = rerun_of
     record = store.record("backtest", result)
     return {**result, "id": record["id"]}
 

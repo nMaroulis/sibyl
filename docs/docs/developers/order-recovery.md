@@ -53,6 +53,6 @@ Recovery states are `available`, `searching`, `found`, `not_found`, `ambiguous`,
 
 ## Remaining work
 
-Actual authenticated sandbox/provider acceptance, broader recovery adapters, delisted markets, externally amended orders, all-account order discovery and private streams remain pending. A match proves identity within the inspected evidence, not final settlement, complete account history or final fee valuation. Strategies remain paper-only; agents cannot submit orders.
+Actual authenticated sandbox/provider acceptance, broader recovery adapters, delisted markets, externally amended orders, all-account order discovery and private streams remain pending. A match proves identity within the inspected evidence, not final settlement, complete account history or final fee valuation. Approved [exchange strategies](../guides/strategy-execution.md) reuse this recovery pipeline; agents cannot submit orders.
 
 Controlled tests cover lost acknowledgments, crash recovery, duplicate confirmations, concurrent lookups, pagination across restart, immutable-field rejection, ambiguous IDs, attribution collisions, transaction rollback, inactive accounts, paused fill tracking, bounded reads, sanitized failures and provider request contracts.

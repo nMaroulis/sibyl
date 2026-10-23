@@ -69,7 +69,7 @@ export function StrategyChart({
     <div
       className="strategy-live-chart"
       role="img"
-      aria-label={`${mode} chart for this paper strategy, ${rows.length} observed samples`}
+      aria-label={`${mode} chart for this strategy, ${rows.length} observed samples`}
     >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={points} margin={{ top: 30, right: 12, left: 4, bottom: 10 }}>

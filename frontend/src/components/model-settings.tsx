@@ -13,6 +13,7 @@ import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { ModelProvider, ModelWorkspace } from '../lib/types';
 import { Badge, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
+import { OllamaControls } from './ollama-controls';
 import { ProviderMark } from './provider-mark';
 
 type Draft = { model: string; custom: boolean; base_url: string; key: string };
@@ -318,6 +319,13 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
                   spellCheck={false}
                 />
               </label>
+            )}
+            {selected === 'ollama' && (
+              <OllamaControls
+                endpoint={draft.base_url}
+                model={draft.model}
+                onModel={(model) => update({ model, custom: !provider.models.includes(model) })}
+              />
             )}
             {!['mock', 'llama.cpp-local'].includes(selected) && (
               <div className="llm-key-field">

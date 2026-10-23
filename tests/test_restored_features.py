@@ -13,7 +13,7 @@ from sibyl.services.market import Market
 from sibyl.services.portfolio import Portfolio
 from sibyl.services.reporting import trading_report
 from sibyl.services.research import Research
-from sibyl.services.strategies import backtest
+from sibyl.strategies import backtest
 
 
 @pytest.mark.parametrize("timeframe,seconds", [("1m", 60), ("4h", 14400), ("1w", 604800)])
@@ -267,7 +267,7 @@ def test_optional_equity_fundamentals_fail_without_losing_history(settings, monk
 
 
 def test_paper_risk_uses_closed_price_but_fills_at_observed_quote(settings, store, monkeypatch):
-    import sibyl.services.strategies as module
+    import sibyl.strategies.paper as module
 
     market = Market(settings, store)
     history = market.candles(limit=90)

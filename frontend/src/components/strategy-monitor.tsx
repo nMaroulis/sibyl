@@ -27,6 +27,7 @@ import { SectionTabs, SectionPanel } from './section-tabs';
 import { AgentButton } from './agents';
 import { StrategyChart } from './strategy-chart';
 import { DecisionJournal } from './strategy-journal';
+import { ExchangeRunEvidence } from './strategies/exchange-evidence';
 import { exportCSV, number, post, refresh } from '../lib/api';
 import { date, formatted, monitorURL, runName, tone } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
@@ -72,10 +73,10 @@ export function StrategyMonitor({
       refresh();
       toast(
         action === 'stop'
-          ? 'Paper strategy stopped. Its position and history are retained.'
+          ? 'Strategy stopped. Existing orders and positions are retained.'
           : action === 'pause'
-            ? 'Paper strategy paused.'
-            : 'Paper strategy resumed.',
+            ? 'Strategy paused.'
+            : 'Strategy resumed.',
       );
     } catch (error) {
       toast((error as Error).message, true);
@@ -90,6 +91,7 @@ export function StrategyMonitor({
       <ErrorState message={monitor.error} retry={monitor.retry} />
     );
   const data = monitor.data;
+  const exchangeRun = job.mode === 'exchange';
   const quote = job.parameters.symbol.split('/')[1],
     base = job.parameters.symbol.split('/')[0];
   const precision = ['BTC', 'ETH'].includes(quote) ? 8 : 2;
@@ -135,7 +137,11 @@ export function StrategyMonitor({
               className={`monitor-status-dot ${job.status === 'running' && !stale ? 'active' : ''}`}
             />
             <Badge tone={tone(job.status)}>{job.status}</Badge>
-            <Badge>Paper execution</Badge>
+            <Badge tone={exchangeRun ? (job.environment === 'test' ? 'sand' : 'rose') : 'neutral'}>
+              {exchangeRun
+                ? `${job.environment === 'test' ? 'Test' : 'Real'} exchange funds`
+                : 'Paper execution'}
+            </Badge>
             <DataNote source={job.source} />
           </div>
           <h2>{runName(job, catalog)}</h2>
@@ -170,6 +176,7 @@ export function StrategyMonitor({
           )}
         </div>
       </Panel>
+      {exchangeRun && <ExchangeRunEvidence job={job} />}
       {monitor.error && (
         <div className="inline-alert" role="alert">
           Could not refresh: {monitor.error}. Showing the last received snapshot.
@@ -198,14 +205,16 @@ export function StrategyMonitor({
       )}
       {terminal && (
         <div className="monitor-notice">
-          This run is {job.status}. Its virtual position is retained and the valuation is frozen at
-          its final worker observation. Start a new run to evaluate again.
+          {exchangeRun
+            ? `This run is ${job.status}. New submissions are disabled. Native orders can still fill and imported executions continue updating allocated ownership. Manage orders and holdings in Trade.`
+            : `This run is ${job.status}. Its virtual position is retained and valuation is frozen at its final worker observation. Start a new run to evaluate again.`}
         </div>
       )}
       {job.status === 'paused' && (
         <div className="monitor-notice">
-          Evaluation and price sampling are paused. Your virtual position is retained; Resume
-          continues from the latest closed candle.
+          {exchangeRun
+            ? 'New submissions are paused. Native orders remain live and can fill. Resume requires resolved orders and complete fill/fee evidence, then waits for the next closed candle.'
+            : 'Evaluation and price sampling are paused. Your virtual position is retained; Resume continues from the latest closed candle.'}
         </div>
       )}
       {!job.statistics_complete && (
@@ -217,7 +226,9 @@ export function StrategyMonitor({
       )}
       <div className="monitor-summary-grid">
         <Panel>
-          <small>Paper equity · {quote}</small>
+          <small>
+            {exchangeRun ? 'Allocated equity' : 'Paper equity'} · {quote}
+          </small>
           <strong>{number(job.equity, precision)}</strong>
           <Change value={(job.equity / job.parameters.capital - 1) * 100} />
         </Panel>
@@ -302,7 +313,7 @@ export function StrategyMonitor({
                     <option value={2000}>Latest 2,000 samples</option>
                   </select>
                 </label>
-                {mode === 'price' && (
+                {mode === 'price' && !exchangeRun && (
                   <>
                     <label>
                       <input
@@ -330,7 +341,7 @@ export function StrategyMonitor({
                       [
                         'Timestamp',
                         'Reference price',
-                        'Paper equity',
+                        exchangeRun ? 'Allocated equity' : 'Paper equity',
                         'Cash',
                         'Position',
                         'Symbol',
@@ -343,6 +354,8 @@ export function StrategyMonitor({
                         row.equity,
                         row.cash,
                         row.position,
+                        job.parameters.symbol,
+                        quote,
                         job.source,
                       ]),
                     ])
@@ -374,8 +387,10 @@ export function StrategyMonitor({
               <p className="footnote padded">
                 The worker records quotes every 30 seconds and makes at most one decision per newly
                 closed {job.parameters.timeframe ?? '1d'} candle. Refreshing this page does not
-                execute the strategy. Slippage is simulated fill minus reference price: positive is
-                adverse for buys, negative is adverse for sells.
+                execute the strategy.{' '}
+                {exchangeRun
+                  ? 'Execution markers come from imported native fills. Quote valuation can be stale while paused or stopped; open venue orders remain live.'
+                  : 'Slippage is simulated fill minus reference price: positive is adverse for buys, negative is adverse for sells.'}
               </p>
             </Panel>
             <div className="monitor-insight-grid">
@@ -407,13 +422,22 @@ export function StrategyMonitor({
                   ))}
                 </div>
                 <p className="footnote padded">
-                  Risk ratios use up to 720 retained closed-candle equity observations. Profit
-                  factor uses round-trip percentage returns. Gaps and short samples affect these
-                  estimates.
+                  Risk ratios use up to 720 retained closed-candle equity observations.{' '}
+                  {exchangeRun
+                    ? 'Profit factor uses completed-exit percentage returns; a completed exit can be a partial position reduction.'
+                    : 'Profit factor uses round-trip percentage returns.'}{' '}
+                  Gaps and short samples affect these estimates.
                 </p>
               </Panel>
               <Panel>
-                <PanelTitle title="Execution details" subtitle="Your isolated virtual account" />
+                <PanelTitle
+                  title="Execution details"
+                  subtitle={
+                    exchangeRun
+                      ? 'Your allocated exchange position and native costs'
+                      : 'Your isolated virtual account'
+                  }
+                />
                 <div className="stat-list">
                   <div>
                     <span>Recorded realized P&L · {quote}</span>
@@ -428,13 +452,15 @@ export function StrategyMonitor({
                     </strong>
                   </div>
                   <div>
-                    <span>Total simulated fees · {quote}</span>
+                    <span>
+                      {exchangeRun ? 'Reported quote fees' : 'Total simulated fees'} · {quote}
+                    </span>
                     <strong>
                       {formatted(job.statistics_complete ? job.fees_paid : null, precision)}
                     </strong>
                   </div>
                   <div>
-                    <span>Completed round trips</span>
+                    <span>{exchangeRun ? 'Completed exit orders' : 'Completed round trips'}</span>
                     <strong>
                       {job.round_trips ?? returns.length} /{' '}
                       {job.parameters.max_trades ?? 'unlimited'}
@@ -467,6 +493,13 @@ export function StrategyMonitor({
                   <dd>{value == null ? 'Off / default' : String(value)}</dd>
                 </div>
               ))}
+              {exchangeRun &&
+                Object.entries(job.risk ?? {}).map(([key, value]) => (
+                  <div key={key}>
+                    <dt>{key.replaceAll('_', ' ')}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
               <div>
                 <dt>Source</dt>
                 <dd>{job.source}</dd>
@@ -533,18 +566,22 @@ export function StrategyMonitor({
         </Panel>
       )}
       {stop && (
-        <Modal title="Stop this paper strategy?" onClose={closeStop}>
+        <Modal
+          title={exchangeRun ? 'Stop this exchange strategy?' : 'Stop this paper strategy?'}
+          onClose={closeStop}
+        >
           <p className="monitor-stop-copy">
             This permanently stops evaluation for this run. Its {number(job.quantity, 8)} {base}{' '}
-            virtual position and history are retained. It does not sell the position, and its
-            displayed valuation will stop updating.
+            {exchangeRun
+              ? 'strategy-owned position and history are retained. Native orders are not canceled and can still fill. This does not sell the position. Manage remaining orders and holdings in Trade.'
+              : 'virtual position and history are retained. It does not sell the position, and its displayed valuation will stop updating.'}
           </p>
           <div className="modal-actions">
             <button className="button secondary" disabled={!!busy} onClick={() => setStop(false)}>
               Cancel
             </button>
             <button className="button primary" disabled={!!busy} onClick={() => control('stop')}>
-              {busy ? 'Stopping…' : 'Stop paper strategy'}
+              {busy ? 'Stopping…' : exchangeRun ? 'Stop exchange strategy' : 'Stop paper strategy'}
             </button>
           </div>
         </Modal>

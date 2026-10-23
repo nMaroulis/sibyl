@@ -13,7 +13,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
 | Alerts & local operations      | partial       | Portfolio-risk, strategy and connection-failure rules; operational diagnostics.                       |
-| Automated strategy execution   | paper-only    | Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.             |
+| Automated strategy execution   | partial       | Authenticated acceptance, automatic expiry/flattening, broader risk policies and fee valuation.         |
 | Strategy research              | partial       | Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.                   |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, per-agent models and explicit approval/audit contracts.               |
@@ -29,7 +29,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Public markets, candles, order-book snapshots, indicators, correlations and account balance reads.
 - Portfolio/account views, allocation, observed account-value snapshots and explicit unpriced holdings.
 - Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for Binance, Binance.US, Coinbase, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp and the two dedicated test clients; GTC limits and cancellation for Gemini. Settings shows app-level support and gaps per exchange.
-- Six rule-based strategies, historical backtests, durable paper jobs and their detailed monitor/journal.
+- Six rule-based strategies, cost-aware historical backtests, exact-input reruns, chart execution overlays, round-trip accounting, comparable saved runs and explicit Demo research/paper runs.
 - Sibyl orchestration and ten ProtoLink module agents with a startup runtime registry, client routing, contextual read-only tools, saved conversations and consultation evidence.
 - Live Sibyl consultation progress, request-specific cancellation and retained outcomes/evidence for completed, stopped, failed or interrupted requests. Startup marks unfinished requests interrupted without replaying them.
 - Encrypted LLM provider profiles, saved API keys and preset/custom model selection.
@@ -90,16 +90,19 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [ ] Exercise authenticated recovery on actual sandbox/provider accounts, including delayed indexing, external amendments, permissions and retention.
 
-### 4. Automated strategy execution — missing
+### 4. Automated strategy execution — partial
 
-The existing persistent strategy worker is paper-only.
+[Exchange strategy execution](../guides/strategy-execution.md) is implemented for nine provider/environment variants, alongside the isolated paper worker.
 
-- [ ] Bind a strategy run to a specific account, environment and execution broker.
-- [ ] Implement a deliberate execution mode progression: paper, exchange test environment, production.
-- [ ] Translate strategy decisions into reviewed execution intents and reconcile actual fills.
-- [ ] Persist outstanding orders and recover coherently after process crashes or connectivity loss.
-- [ ] Define stop/pause behavior for outstanding orders and existing positions.
-- [ ] Add position/exposure limits, daily-loss limits and a kill switch before production automation.
+- [x] Bind a run to a fixed account, environment, exact pair and allocated budget with expiring typed approval.
+- [x] Keep paper as the default; require both execution flags for exchange test/production runs.
+- [x] Submit price-capped GTC intents through the shared at-most-once order pipeline and derive ownership from native fills/fees.
+- [x] Persist plans/client IDs and pause on restart; reconcile existing orders without replaying old signals or uncertain writes.
+- [x] Define Pause/Stop: prevent future submissions, retain holdings and leave native orders live for reviewed management in Trade.
+- [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
+- [ ] Exercise authenticated sandbox/provider acceptance before deliberate production enablement.
+- [ ] Add automatic expiry/cancellation, reviewed flattening, global kill controls and portfolio-wide exposure/daily-loss policies.
+- [ ] Value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.
 
 ### 5. Market-data infrastructure — partial
 
@@ -139,9 +142,11 @@ Sibyl and the ten specialists start as native ProtoLink Agents with `.start()` a
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.
 - [x] Mark unfinished requests interrupted on startup; block late consultations/answers after Stop and preserve already committed answers.
 - [ ] Add scheduled investigations and resumable long-running work. Retained request history is an audit, not workflow resumption.
+- [x] Add Ollama installation/server/model detection and explicit local server Start/Stop ownership controls, with setup links.
 - [ ] Add per-agent model/provider selection if different modules need different models.
 - [ ] Add token-by-token answers, deeper internal tool traces, usage/cost reporting and evaluated routing/grounding. Current progress is lifecycle polling rather than token streaming.
-- [ ] Implement WhatsApp, Telegram, Discord, Slack, Signal and Email clients, authenticated sender binding, conversation mapping and reliable delivery/retries. Settings previews the required fields without accepting credentials; all channels remain unavailable.
+- [x] Implement direct-HTTP Telegram polling, private-user binding, encrypted credentials, conversation mapping and durable delivery outcomes. Explicit rate limits retry; ambiguous sends never auto-retry.
+- [ ] Validate Telegram with a real bot; add media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
 ### 8. Forecasting / Chronos — baseline only

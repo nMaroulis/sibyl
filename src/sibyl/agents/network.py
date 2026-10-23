@@ -16,7 +16,6 @@ from sibyl.agents.requests import SibylRequests, now
 from sibyl.agents.runtime import WorkspaceLLM
 from sibyl.agents.telemetry import ChatTelemetry
 from sibyl.models import AgentRequest
-from sibyl.services.messaging import MessagingSettings
 
 
 class ModelRequired(ValueError):
@@ -37,7 +36,6 @@ class AgentNetwork:
         }
         self.conversations = Conversations(owner.store)
         self.requests = SibylRequests(owner.store)
-        self.messaging = MessagingSettings()
         self.namespace = f"runtime://sibyl-{uuid4().hex}"
         self.registry = Registry(transport="runtime", url=f"{self.namespace}/registry", verbosity=0)
         self.client = AgentClient("runtime", url=f"{self.namespace}/client")

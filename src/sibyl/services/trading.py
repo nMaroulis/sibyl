@@ -24,7 +24,7 @@ class ExchangeTrading:
 
     Native execution is restricted to the reviewed provider allowlist and the
     server execution flag. Demo limit orders share the explicit Demo wallet.
-    Agents and automated strategies do not call this service.
+    Agents cannot call this service. Approved strategies use the same durable intents.
     """
 
     def __init__(self, market: Market, store: Store):
@@ -230,15 +230,17 @@ class ExchangeTrading:
             return self.preview(request)
         return intent
 
-    def execute(self, intent_id: str, confirmation: str) -> dict:
+    def execute(self, intent_id: str, confirmation: str, *, strategy_job_id: str | None = None) -> dict:
         """Persist submitting before one native write; duplicate confirmations never resend."""
         with self.lifecycle.lock(intent_id):
-            return self._execute(intent_id, confirmation)
+            return self._execute(intent_id, confirmation, strategy_job_id=strategy_job_id)
 
-    def _execute(self, intent_id: str, confirmation: str) -> dict:
+    def _execute(self, intent_id: str, confirmation: str, *, strategy_job_id: str | None = None) -> dict:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             intent = self.lifecycle.read(db, intent_id)
+            if intent.get("origin") == "strategy" and strategy_job_id != intent.get("strategy_job_id"):
+                raise ValueError("This order belongs to a strategy approval. Use the strategy controls.")
             if intent.get("origin") == "imported":
                 raise ValueError("Imported orders are read-only and cannot be submitted.")
             if confirmation != intent["confirmation"]:

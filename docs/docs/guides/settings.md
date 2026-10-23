@@ -58,7 +58,7 @@ Saved choices take precedence over environment defaults. This tab also describes
 
 Open `/settings?tab=workspace` for the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
 
-Manual exchange order permission is controlled separately by `SIBYL_ALLOW_LIVE_TRADING`. Paper strategy accounts always remain virtual. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
+Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated exchange strategies additionally require `SIBYL_ALLOW_STRATEGY_EXECUTION` and an explicit account/budget approval; see [exchange strategy execution](strategy-execution.md). Paper strategy accounts always remain virtual. Workspace displays both permission states. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
 
 ## Source health
 
@@ -66,7 +66,7 @@ Manual exchange order permission is controlled separately by `SIBYL_ALLOW_LIVE_T
 
 ## Messaging
 
-Once available, you’ll be able to talk to [Sibyl](./sibyl.md) through WhatsApp, Telegram, Discord, Slack, Signal or email. These integrations are **currently unavailable**. App icons and disabled setup fields show what will be needed; there are no save or connect actions.
+[Telegram](./telegram.md) is available: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. A configured AI model is required. Other channels below remain unavailable previews with disabled fields.
 
 | App      | Planned setup fields                                                                                                                                                    |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -77,8 +77,12 @@ Once available, you’ll be able to talk to [Sibyl](./sibyl.md) through WhatsApp
 | Signal   | Local signal-cli HTTP bridge URL, linked Signal account (phone number or ACI), and your allowed sender ACI                                                              |
 | Email    | Sibyl mailbox and allowed sender addresses; IMAP host/port, encryption, username, password/app password and folder; SMTP host/port, encryption and separate credentials |
 
-The personal sender IDs will identify who is allowed to speak to your Sibyl when clients are implemented. WhatsApp will also require a public HTTPS callback URL; the planned Telegram polling, Discord Gateway and Slack Socket Mode connections do not need a public webhook. The setup links on each card lead to the providers’ documentation. No credentials are collected or saved today.
+Telegram enforces your private user ID now; other sender fields describe planned integrations. WhatsApp will also require a public HTTPS callback URL; the planned Telegram polling, Discord Gateway and Slack Socket Mode connections do not need a public webhook. The setup links on each card lead to the providers’ documentation. Only Telegram accepts and encrypts credentials today.
 
 Signal's planned route uses the **unofficial [signal-cli](https://github.com/AsamK/signal-cli)** JSON-RPC HTTP daemon, linked separately; it does not use a Signal bot API key or collect a Signal PIN. The sender ACI is the stable UUID in received message envelopes. No bridge is started, account linked or Signal message read/sent by Sibyl.
 
 Email groups its previews into **Mailbox**, **Incoming · IMAP** and **Outgoing · SMTP**. Expand each group to inspect its fields. TLS and STARTTLS choices are shown without a plaintext option. This preview targets password/app-password IMAP/SMTP accounts; provider-specific OAuth sign-in remains future work. No mailbox is accessed or email sent. Server settings come from your mail provider; see [manual mail configuration](https://support.mozilla.org/en-US/kb/manual-account-configuration).
+
+## Ollama server controls
+
+When choosing Local → Ollama, inspect actual server status, installed and loaded models, and choose an installed model. You can start an installed local Ollama server and stop only a server started by Sibyl. Installation and model downloads remain separate, with instructions in the panel. See [Ollama setup](ollama.md).

@@ -29,6 +29,9 @@ EVENT_COLUMNS = (
     "position",
     "equity",
     "reason",
+    "order_id",
+    "native_fill_id",
+    "fees",
 )
 
 
@@ -85,7 +88,7 @@ class StrategyJournal:
         with self.store.db() as db:
             row = db.execute("SELECT payload FROM strategy_jobs WHERE id = ?", (job_id,)).fetchone()
         if row is None:
-            raise LookupError("Paper strategy not found.")
+            raise LookupError("Strategy not found.")
         return json.loads(row[0])
 
     def events(self, job_id: str, limit: int = 100, before: int | None = None, action: str = "all") -> dict:
@@ -161,6 +164,8 @@ class StrategyJournal:
                     values_row = []
                     for column in EVENT_COLUMNS:
                         value = event.get(column)
+                        if isinstance(value, (dict, list)):
+                            value = json.dumps(value, sort_keys=True)
                         if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
                             value = "'" + value
                         values_row.append(value)
@@ -177,7 +182,7 @@ class StrategyJournal:
             db.execute("BEGIN")
             row = db.execute("SELECT payload FROM strategy_jobs WHERE id = ?", (job_id,)).fetchone()
             if row is None:
-                raise LookupError("Paper strategy not found.")
+                raise LookupError("Strategy not found.")
             job = json.loads(row[0])
             samples = db.execute(
                 "SELECT payload FROM strategy_observations WHERE job_id = ? ORDER BY id DESC LIMIT ?",

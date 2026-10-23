@@ -19,7 +19,10 @@ module.exports = {
         'guides/trading',
         'guides/strategies',
         'guides/strategy-monitor',
+        'guides/strategy-execution',
         'guides/sibyl',
+        'guides/telegram',
+        'guides/ollama',
         'guides/oracle',
         'guides/research',
         'guides/security',
@@ -31,6 +34,7 @@ module.exports = {
       label: 'Developers',
       items: [
         'developers/architecture',
+        'developers/strategy-research',
         'developers/backend-roadmap',
         'developers/exchange-clients',
         'developers/account-sync',

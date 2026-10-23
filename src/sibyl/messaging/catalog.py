@@ -1,6 +1,6 @@
-"""Read-only setup requirements for unavailable messaging integrations.
+"""Setup requirements for supported and planned messaging integrations.
 
-The catalog describes planned provider authentication and private sender IDs.
+The catalog describes provider authentication and private sender IDs.
 It deliberately accepts no credentials and owns no clients or persistence.
 """
 
@@ -255,13 +255,3 @@ CHANNELS = [
         "setup_note": "Planned for mailboxes supporting IMAP and SMTP with a password or app password. Provider-specific OAuth sign-in is outside this preview. No mailbox is read and no email is sent.",
     },
 ]
-
-
-class MessagingSettings:
-    """Expose the future setup fields without collecting or storing credentials."""
-
-    def public(self) -> dict:
-        """Report every channel as unavailable; this is a configuration preview only."""
-        return {
-            "channels": [{**channel, "status": "unavailable", "connected": False} for channel in CHANNELS]
-        }

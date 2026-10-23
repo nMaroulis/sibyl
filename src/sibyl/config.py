@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     api_token: SecretStr = SecretStr("")
     allow_live_trading: bool = False
+    allow_strategy_execution: bool = False
     llm_provider: ProviderId = "none"
     llm_model: str = ""
     llm_base_url: str = "http://127.0.0.1:11434"

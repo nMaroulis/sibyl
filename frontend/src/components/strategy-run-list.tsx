@@ -21,7 +21,7 @@ export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy
     <Panel className="full-panel">
       <PanelTitle
         title="Your strategy runs"
-        subtitle="Open a run to inspect its live observations, decisions, and paper account"
+        subtitle="Inspect paper runs and approved exchange strategies"
         action={
           <Badge>
             {jobs.filter((j) => j.status === 'running').length} running · {jobs.length} total
@@ -64,7 +64,7 @@ export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy
                 <th>Strategy / market</th>
                 <th>Started</th>
                 <th>Status</th>
-                <th>Paper equity</th>
+                <th>Allocated equity</th>
                 <th>Return</th>
                 <th>Last worker check</th>
                 <th />
@@ -74,6 +74,26 @@ export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy
               {rows.map((job) => (
                 <tr key={job.id}>
                   <td>
+                    <Badge
+                      tone={
+                        job.mode === 'exchange'
+                          ? job.environment === 'test'
+                            ? 'sand'
+                            : 'rose'
+                          : job.source === 'demo'
+                            ? 'sand'
+                            : 'neutral'
+                      }
+                    >
+                      {job.mode === 'exchange'
+                        ? `${job.environment === 'test' ? 'Test' : 'Real'} exchange`
+                        : job.source === 'demo'
+                          ? 'Demo · Paper'
+                          : 'Paper'}
+                    </Badge>
+                    {job.mode === 'exchange' && (
+                      <small className="table-subline">{job.account}</small>
+                    )}
                     <Link className="monitor-run-name" to={monitorURL(job.id)}>
                       {runName(job, catalog)}
                       <small>
@@ -109,7 +129,7 @@ export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy
         <Empty title={jobs.length ? 'No matching runs' : 'Your first strategy starts here'}>
           {jobs.length
             ? 'Try another market, name, or status filter.'
-            : 'Build an idea, then start a paper strategy. Its monitor will open automatically.'}
+            : 'Build an idea, then start a paper run or review a connected exchange strategy. Its monitor opens automatically.'}
         </Empty>
       )}
     </Panel>

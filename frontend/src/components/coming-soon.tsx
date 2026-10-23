@@ -10,7 +10,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'sibyl',
       title: 'Sibyl beyond the dashboard',
-      text: 'WhatsApp, Telegram, Discord, Slack, Signal and Email channel clients. Settings → Messaging previews the required fields; the integrations are currently unavailable.',
+      text: 'WhatsApp, Discord, Slack, Signal and Email clients, plus richer Telegram media and delivery controls. Telegram private text chats are available now in Settings → Messaging.',
     },
     {
       module: 'sibyl',
@@ -29,8 +29,8 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     },
     {
       module: 'strategies',
-      title: 'Live strategy execution',
-      text: 'Automated exchange trading with strategy-level controls and monitoring. Current strategy jobs use isolated paper funds.',
+      title: 'More execution controls',
+      text: 'Automatic order expiry, reviewed position flattening, portfolio-wide risk limits and more providers. Account-bound exchange strategies with capped limits, native fills and restart pause are available now; private venue acceptance remains pending.',
     },
     {
       module: 'trade',
@@ -80,8 +80,8 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     },
     {
       module: 'settings',
-      title: 'Local model manager',
-      text: 'Download, quantize, and manage local model runtimes from the app. Existing model servers connect through ProtoLink configuration.',
+      title: 'More local model tools',
+      text: 'Model downloads, quantization and additional runtime managers are planned. Ollama status, installed models and local start/stop controls are available in AI models.',
     },
   ];
 

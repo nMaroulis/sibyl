@@ -11,6 +11,7 @@ export type System = {
   mode: 'demo' | 'live';
   execution: 'paper';
   allow_live_trading: boolean;
+  allow_strategy_execution: boolean;
   llm_provider: string;
   llm_model: string;
   agents: number;
@@ -198,6 +199,41 @@ export type Fill = {
   fee?: number;
 };
 export type Backtest = Source & {
+  price_series?: {
+    timestamp: string;
+    close: number;
+    open: number;
+    high: number;
+    low: number;
+    volume: number;
+  }[];
+  benchmark_curve?: Point[];
+  engine_revision?: string;
+  round_trips?: {
+    id: number;
+    entry_time: string;
+    exit_time: string;
+    entry_price: number;
+    exit_price: number;
+    quantity: number;
+    pnl: number;
+    return_pct: number;
+    holding_seconds: number;
+    reason: string;
+  }[];
+  summary?: {
+    net_profit: number;
+    profit_factor: number | null;
+    expectancy: number | null;
+    exposure_pct: number;
+    turnover: number;
+    annualized_return_pct: number | null;
+    average_holding_seconds: number | null;
+    evaluated_bars: number;
+    warmup_bars: number;
+    start: string;
+    end: string;
+  };
   dataset?: import('./market-history').Dataset;
   engine_version?: string;
   id: string;
@@ -220,6 +256,30 @@ export type Backtest = Source & {
   parameters: StrategyParams;
 };
 export type Job = Source & {
+  mode?: 'paper' | 'exchange';
+  account?: string;
+  exchange?: string;
+  connection_id?: string;
+  environment?: string;
+  execution_state?: string;
+  accounting_incomplete?: boolean;
+  dust_position?: boolean;
+  risk_locked?: boolean;
+  fee_assets?: Record<string, number>;
+  unvalued_fees?: Record<string, number>;
+  native_fill_count?: number;
+  risk?: Record<string, number>;
+  orders?: {
+    id: string;
+    status: string;
+    strategy_abandoned?: boolean;
+    exchange_order_id?: string;
+    client_order_id?: string;
+    filled?: number;
+    remaining?: number;
+    message?: string;
+    request: { side: string; quantity: number; symbol: string };
+  }[];
   created_at: string;
   monitoring_since?: string;
   updated_at?: string;
@@ -461,6 +521,7 @@ export type Run = {
 
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
+  backtest_id?: string;
   portfolio_scope?: string;
   performance_view?: boolean;
   performance_account_id?: string;

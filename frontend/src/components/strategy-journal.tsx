@@ -60,6 +60,9 @@ export function DecisionJournal({
           >
             <option value="all">All activity</option>
             <option value="fills">BUY / SELL fills</option>
+            <option value="ORDER_PLANNED">Exchange order plans</option>
+            <option value="ORDER_SUBMITTED">Exchange order submissions</option>
+            <option value="FILL_CORRECTION">Native fill corrections</option>
             <option value="HOLD">Hold decisions</option>
             <option value="SKIP_BUY">Skipped buys</option>
             <option value="SKIP_SELL">Skipped sells</option>

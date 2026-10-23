@@ -2,7 +2,7 @@
 
 **Trade → Order monitor → Executions** compares a local or read-only imported order's cumulative native observation with individual executions in the shared account ledger. The detail dialog shows native and imported base quantities, their difference, reported quote cost, execution IDs and native-currency fees. Opening it only reads SQLite. **Check executions** explicitly refreshes native status and imports one bounded fill page.
 
-This is execution-evidence reconciliation, not a guarantee of settlement, complete account history or exchange P&L. Strategies remain paper-only and agents remain read-only. Uncertain submissions without a confirmed order ID can now use bounded [client-ID recovery](order-recovery.md). A match joins this execution workflow; missing or ambiguous evidence still requires venue inspection. Neither feature retries a write.
+This is execution-evidence reconciliation, not a guarantee of settlement, complete account history or exchange P&L. Approved [exchange strategies](../guides/strategy-execution.md) attribute ownership from these native fills; agents remain read-only. Uncertain submissions without a confirmed order ID can now use bounded [client-ID recovery](order-recovery.md). A match joins this execution workflow; missing or ambiguous evidence still requires venue inspection. Neither feature retries a write.
 
 Demo's explicit Check executions action includes the existing managed-status check, which can match a virtual resting order before reading its fill. The execution-page method itself never advances the matcher. Native checks only read provider state.
 

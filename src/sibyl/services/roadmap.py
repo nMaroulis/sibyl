@@ -69,13 +69,13 @@ AREAS = [
     {
         "id": "strategies",
         "name": "Automated strategy execution",
-        "status": "paper-only",
+        "status": "partial",
         "priority": "later",
-        "working": "Persistent isolated paper runs, worker recovery, fills, journals, charts and lifecycle controls.",
+        "working": "Isolated paper runs plus explicitly approved exchange strategies for nine provider/environment variants. Account/pair budgets, capped GTC limits, shared native order/fill reconciliation, restart pause, loss/spread/order-count guards and real ownership/fee evidence.",
         "pending": [
-            "Bind strategies to exchange accounts and reconcile submitted orders/fills across restart.",
-            "Exposure/position limits, daily-loss controls, kill switch and explicit stop semantics.",
-            "Validate test-environment execution before deliberate production enablement.",
+            "Authenticated test-environment/provider acceptance before deliberate production enablement.",
+            "Automatic order expiry/cancellation, reviewed flattening, portfolio-wide exposure/daily-loss controls and a global kill switch.",
+            "Third-currency fee valuation, manual position reconciliation/adoption, settlement corrections and more execution providers.",
         ],
     },
     {
@@ -83,7 +83,7 @@ AREAS = [
         "name": "Strategy research",
         "status": "partial",
         "priority": "later",
-        "working": "Six configurable algorithms, fee/slippage-aware backtests, buy-and-hold comparison and immutable input snapshots with offline replay.",
+        "working": "Six configurable algorithms, progressive strategy setup, deterministic cost-aware backtests, price-chart executions, round-trip P&L, comparable saved experiments, exact-input reruns and explicit Demo research/paper runs.",
         "pending": [
             "Additional benchmarks, parameter optimization and walk-forward/out-of-sample tests.",
             "Custom strategy plugins, optional Freqtrade and multi-asset allocation.",
@@ -95,11 +95,11 @@ AREAS = [
         "name": "Sibyl & messaging",
         "status": "partial",
         "priority": "next",
-        "working": "Native ProtoLink automatic discovery/delegation (Sibyl only), saved chats, live consultation progress, request-specific Stop and durable completed/stopped/failed/interrupted request history.",
+        "working": "Native ProtoLink discovery/delegation, saved chats, live request progress/Stop/outcomes, and a direct-HTTP Telegram client with private-user binding, encrypted configuration and durable delivery outcomes.",
         "pending": [
             "Token-by-token answers, richer internal tool traces, usage/cost reporting and evaluated routing/grounding.",
             "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
-            "WhatsApp, Telegram, Discord, Slack, Signal and Email clients, authenticated sender binding, conversation mapping and reliable delivery; setup previews remain unavailable.",
+            "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: live bot acceptance testing, richer media and delivery review controls; ambiguous sends are never auto-retried.",
         ],
     },
     {
@@ -107,7 +107,7 @@ AREAS = [
         "name": "ProtoLink workflows",
         "status": "partial",
         "priority": "later",
-        "working": "Ten native specialists with per-agent files/prompts, ProtoLink start/discovery/client tasks, on-demand evidence tools, cached news reads, settings guides and isolated task contexts.",
+        "working": "Ten native specialists with scoped evidence tools and native ProtoLink start/discovery/client tasks; Broker reads saved experiments; Ollama settings detect models and can manage an explicitly started local server.",
         "pending": [
             "Deeper domain investigation tools as features expand, and per-agent model/provider selection.",
             "Evaluated tool/source selection, inspected internal traces and collaboration budgets.",
@@ -167,10 +167,10 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-10-22",
+        "reviewed_on": "2026-10-23",
         "scope": "Local single-user workspace",
         "areas": AREAS,
         "current_focus": "Durable market data and observed read history, account reconciliation and local operations. Multi-user support is deferred.",
-        "execution_note": "Strategies remain paper-only; agents remain read-only. Authenticated venue acceptance is outstanding.",
+        "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only; authenticated venue acceptance is outstanding.",
         "release_dates": None,
     }

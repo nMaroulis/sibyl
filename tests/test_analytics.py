@@ -8,7 +8,7 @@ import pytest
 from sibyl.models import BacktestRequest
 from sibyl.services.analytics import analyze, correlation, forecast, indicators
 from sibyl.services.market import Market
-from sibyl.services.strategies import CATALOG, Strategies, backtest, signals
+from sibyl.strategies import CATALOG, Strategies, backtest, signals
 
 
 def candles(prices):

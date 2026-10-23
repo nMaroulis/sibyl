@@ -69,6 +69,6 @@ All paths have `/api/v1` prefix.
 
 ## Still missing
 
-Cancel/replace, stop/trigger, OCO, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution/recovery, broader account order discovery, amendment handling and complete fill/fee/settlement reconciliation remain separate work. Authenticated acceptance remains outstanding. Strategies stay paper-only; agents stay read-only.
+Cancel/replace, stop/trigger, OCO, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution/recovery, broader account order discovery, amendment handling and complete fill/fee/settlement reconciliation remain separate work. Authenticated acceptance remains outstanding. Approved [exchange strategies](../guides/strategy-execution.md) reuse these order intents; agents stay read-only.
 
 Implementation is informed by the [CCXT manual](https://docs.ccxt.com/docs/manual), [Binance Spot API](https://developers.binance.com/en/docs/products/spot/rest-api), [Coinbase Advanced create-order reference](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/create-order), and Kraken's [add-order](https://docs.kraken.com/api-reference/trading/add-order) / [cancel-order](https://docs.kraken.com/api-reference/trading/cancel-order) references.

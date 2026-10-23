@@ -47,13 +47,11 @@ If the application restarts before a request finishes, the attempt is marked **I
 
 The gradient **Ask** buttons on module pages still open the corresponding specialist in place. An Analyst question goes directly to Analyst through the ProtoLink agent client; it does not pass through Sibyl. These specialists can still return factual tool snapshots without a configured model. The **More → Agents** directory remains available.
 
-## Messaging channels: coming soon
+## Messaging channels
 
-Once available, you’ll be able to talk to Sibyl through WhatsApp, Telegram, Discord, Slack, Signal or email.
+[Telegram](./telegram.md) is implemented. Configure your bot token and numeric private user ID in **Settings → Messaging**, check the bot and explicitly enable it. Messages use the same ProtoLink Sibyl coordinator and saved conversations as the dashboard. An AI model and running backend are required. Delivery outcomes and interruption limits are described in the guide.
 
-**Settings → Messaging** shows app icons, a clear **Unavailable** status, and disabled previews of the credentials and personal sender IDs each integration will need. There are no save buttons or draft storage. Channel clients, authentication, webhooks, message delivery and external chat access are not implemented yet; no credentials can be entered or saved.
-
-Email previews incoming IMAP and outgoing SMTP settings with separate credentials and TLS/STARTTLS options. Signal previews a separately linked account on the unofficial signal-cli bridge. See the [Messaging setup fields](./settings.md#messaging) for the requirements and limitations.
+WhatsApp, Discord, Slack, Signal and Email remain unavailable setup previews. Their disabled fields do not collect credentials. Signal uses a planned unofficial signal-cli bridge; Email previews IMAP/SMTP requirements.
 
 ## What your model receives
 

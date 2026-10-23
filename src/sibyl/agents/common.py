@@ -19,9 +19,9 @@ from sibyl.services.market import Market
 from sibyl.services.performance import AccountPerformance
 from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
-from sibyl.services.strategies import Strategies
 from sibyl.services.transfer_reconciliation import TransferReconciliation
 from sibyl.storage import Store
+from sibyl.strategies import Strategies
 
 COMMON_PROMPT = (
     "You are a specialist in Sibyl, a local crypto workspace. Use your tools when you need workspace facts; "

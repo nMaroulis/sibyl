@@ -17,8 +17,10 @@ from fastapi.staticfiles import StaticFiles
 from sibyl import __version__
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
+from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
+from sibyl.messaging.service import TelegramService
 from sibyl.services.account_sync import AccountSync
 from sibyl.services.accounts import Accounts
 from sibyl.services.alerts import AlertConflict, PriceAlerts
@@ -28,11 +30,11 @@ from sibyl.services.market import Market
 from sibyl.services.performance import AccountPerformance
 from sibyl.services.portfolio import Portfolio
 from sibyl.services.research import Research
-from sibyl.services.strategies import Strategies
 from sibyl.services.trading import ExchangeTrading
 from sibyl.services.transfer_reconciliation import TransferConflict, TransferReconciliation
 from sibyl.services.watchlists import Watchlists
 from sibyl.storage import Store
+from sibyl.strategies import Strategies
 
 
 @dataclass
@@ -56,6 +58,8 @@ class Services:
     transfers: TransferReconciliation
     alerts: PriceAlerts
     history: CandleHistory
+    messaging: TelegramService
+    ollama: OllamaService
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -89,7 +93,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             transfers,
         )
         await agents.network.start()
+        messaging = TelegramService(store, agents.network)
+        ollama = OllamaService(agents.models)
         trading = ExchangeTrading(market, store)
+        strategies.attach_execution(trading)
         alerts = PriceAlerts(market, store)
         history = CandleHistory(market, store)
         app.state.services = Services(
@@ -110,6 +117,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             transfers,
             alerts,
             history,
+            messaging,
+            ollama,
         )
 
         def background_call(method):
@@ -151,6 +160,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await asyncio.to_thread(background_call, history.tick)
                 await asyncio.sleep(1)
 
+        messaging_task = asyncio.create_task(messaging.run())
         task = asyncio.create_task(worker())
         news_task = asyncio.create_task(news_worker())
         account_task = asyncio.create_task(account_worker())
@@ -160,11 +170,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
-            for background in (task, news_task, account_task, order_task, alert_task, candle_task):
+            for background in (
+                task,
+                news_task,
+                account_task,
+                order_task,
+                alert_task,
+                candle_task,
+                messaging_task,
+            ):
                 background.cancel()
-            for background in (task, news_task, account_task, order_task, alert_task, candle_task):
+            for background in (
+                task,
+                news_task,
+                account_task,
+                order_task,
+                alert_task,
+                candle_task,
+                messaging_task,
+            ):
                 with suppress(asyncio.CancelledError):
                     await background
+            await messaging.close()
+            await asyncio.to_thread(ollama.close)
             await agents.network.close()
             await asyncio.to_thread(account_sync.close)
             await asyncio.to_thread(funding_sync.close)
@@ -251,6 +279,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.routes import router
 
     app.include_router(router, prefix="/api/v1")
+    from sibyl.api.strategy_research import router as strategy_research_router
+
+    app.include_router(strategy_research_router)
+    from sibyl.api.strategy_execution import router as strategy_execution_router
+
+    app.include_router(strategy_execution_router)
+    from sibyl.api.messaging import router as messaging_router
+
+    app.include_router(messaging_router)
+    from sibyl.api.local_models import router as local_models_router
+
+    app.include_router(local_models_router)
 
     @app.get("/health", tags=["System"])
     def health():

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Pause, Play, RefreshCw, X } from 'lucide-react';
 import { useResource } from '../lib/hooks';
 import { number, post, refresh } from '../lib/api';
@@ -24,7 +25,8 @@ export type ManagedOrder = {
   status: string;
   price: number | null;
   notional: number | null;
-  origin?: 'sibyl' | 'imported';
+  origin?: 'sibyl' | 'strategy' | 'imported';
+  strategy_job_id?: string;
   read_only?: boolean;
   time_in_force?: string | null;
   confirmation: string;
@@ -219,7 +221,8 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
               Origin
               <select value={origin} onChange={(event) => filter(setOrigin, event.target.value)}>
                 <option value="">All origins</option>
-                <option value="sibyl">Submitted in Sibyl</option>
+                <option value="sibyl">Manual Sibyl orders</option>
+                <option value="strategy">Automated strategies</option>
                 <option value="imported">Imported · read-only</option>
               </select>
             </label>
@@ -259,9 +262,20 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                     <strong>{order.account}</strong>
                     <small className="table-subline">
                       <Badge>
-                        {order.origin === 'imported' ? 'Imported · read-only' : 'Sibyl'}
+                        {order.origin === 'imported'
+                          ? 'Imported · read-only'
+                          : order.origin === 'strategy'
+                            ? 'Strategy'
+                            : 'Manual Sibyl'}
                       </Badge>
                     </small>
+                    {order.strategy_job_id && (
+                      <small className="table-subline">
+                        <Link to={`/strategies?view=monitor&job=${order.strategy_job_id}`}>
+                          Open strategy ↗
+                        </Link>
+                      </small>
+                    )}
                     <small className="table-subline">
                       {order.environment || (order.sandbox ? 'test' : 'production')} ·{' '}
                       {order.request.symbol}

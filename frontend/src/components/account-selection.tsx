@@ -14,9 +14,11 @@ export const useAccounts = () => useResource<AccountSelection>('/accounts', 3000
 export function AccountSetup({
   selection,
   page = 'account',
+  description,
 }: {
   selection: AccountSelection;
   page?: string;
+  description?: string;
 }) {
   const [busy, setBusy] = useState('');
   const toast = useToast();
@@ -42,8 +44,8 @@ export function AccountSetup({
       <Badge>No active accounts</Badge>
       <h2>Your exchanges. One connected view.</h2>
       <p>
-        Connect one or many exchange accounts to use your {page}. See balances across all exchanges
-        together, or focus on a single exchange or account.
+        {description ??
+          `Connect one or many exchange accounts to use your ${page}. See balances across all exchanges together, or focus on a single exchange or account.`}
       </p>
       <Link className="button primary" to="/settings?tab=exchanges">
         <Plus size={16} /> Connect exchange accounts
@@ -86,7 +88,13 @@ export function AccountSetup({
 }
 
 /** Keep sample/test funds unmistakable without labeling public market data as Demo. */
-export function AccountContext({ selection }: { selection: AccountSelection }) {
+export function AccountContext({
+  selection,
+  demoDescription = 'These are virtual balances. Activating an exchange account turns Demo off automatically.',
+}: {
+  selection: AccountSelection;
+  demoDescription?: string;
+}) {
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   if (selection.mode !== 'demo' && selection.mode !== 'test') return null;
@@ -101,7 +109,7 @@ export function AccountContext({ selection }: { selection: AccountSelection }) {
         </strong>
         <span>
           {selection.mode === 'demo'
-            ? 'These are virtual balances. Activating an exchange account turns Demo off automatically.'
+            ? demoDescription
             : 'These accounts contain test funds. They are never added to production totals.'}
         </span>
       </div>

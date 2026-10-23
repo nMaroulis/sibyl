@@ -236,7 +236,9 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
     assert response.status_code == 200
     channels = {item["id"]: item for item in response.json()["channels"]}
     assert set(channels) == {"whatsapp", "telegram", "discord", "slack", "signal", "email"}
-    assert all(not item["connected"] and item["status"] == "unavailable" for item in channels.values())
+    assert all(not item["connected"] for item in channels.values())
+    assert channels["telegram"]["status"] == "available"
+    assert all(item["status"] == "unavailable" for key, item in channels.items() if key != "telegram")
     assert "draft" not in response.text and "OLD-" not in response.text
     assert {f["id"] for f in channels["whatsapp"]["fields"]} == {
         "access_token",
@@ -285,7 +287,7 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
         assert not any("value" in field for field in channel["fields"])
 
 
-@pytest.mark.parametrize("channel", ["whatsapp", "telegram", "discord", "slack", "signal", "email"])
+@pytest.mark.parametrize("channel", ["whatsapp", "discord", "slack", "signal", "email"])
 def test_unavailable_channels_accept_no_credentials_or_draft_writes(client, channel):
     before = client.app.state.services.store.data_profile(f"messaging:{channel}")
     for method in (client.put, client.post, client.delete):

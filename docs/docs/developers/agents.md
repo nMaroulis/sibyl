@@ -6,26 +6,26 @@ The dependency is `protolink>=0.8.2,<0.9`. In this version, local in-process tra
 
 ## Files and responsibilities
 
-| File | Owns |
-| --- | --- |
-| `oracle.py` | Portfolio perspective and `portfolio_snapshot` |
-| `accountant.py` | Holdings and selected local performance, funding and transfer reports |
-| `analyst.py` | Market indicators and analysis-method help |
-| `broker.py` | Selected paper jobs/backtests and strategy rules |
-| `chronos.py` | Forecast observations and baseline-method explanation |
-| `reporter.py` | Cached news, selected articles, publisher attribution and cached Fear & Greed |
-| `technician.py` | Connection metadata, settings guides and provider-specific setup instructions |
-| `wiki.py` | Glossary, supported crypto IDs and sourced crypto profiles |
-| `explorer.py` | Recent Bitcoin blocks and blockchain help |
-| `stocks.py` | Equity quote/history and provider setup help |
-| `sibyl.py` | Native coordinator declaration and prompt; delegation enabled |
-| `telemetry.py` | Observe native task lifecycle for existing chat progress and saved evidence |
-| `common.py` | Service references, shared read-only instructions and request-local selections/observations |
-| `runtime.py` | Small request-scoped provider adapter; no agent orchestration |
-| `network.py` | Native startup/shutdown, client task submission and chat lifecycle |
-| `registry.py` | Module wiring, model configuration and HTTP response persistence |
-| `snapshots.py` | Deterministic tool selection/formatting when no model is configured |
-| `conversations.py`, `requests.py` | Durable chats and request outcome audit |
+| File                              | Owns                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------- |
+| `oracle.py`                       | Portfolio perspective and `portfolio_snapshot`                                              |
+| `accountant.py`                   | Holdings and selected local performance, funding and transfer reports                       |
+| `analyst.py`                      | Market indicators and analysis-method help                                                  |
+| `broker.py`                       | Selected paper jobs/backtests and strategy rules                                            |
+| `chronos.py`                      | Forecast observations and baseline-method explanation                                       |
+| `reporter.py`                     | Cached news, selected articles, publisher attribution and cached Fear & Greed               |
+| `technician.py`                   | Connection metadata, settings guides and provider-specific setup instructions               |
+| `wiki.py`                         | Glossary, supported crypto IDs and sourced crypto profiles                                  |
+| `explorer.py`                     | Recent Bitcoin blocks and blockchain help                                                   |
+| `stocks.py`                       | Equity quote/history and provider setup help                                                |
+| `sibyl.py`                        | Native coordinator declaration and prompt; delegation enabled                               |
+| `telemetry.py`                    | Observe native task lifecycle for existing chat progress and saved evidence                 |
+| `common.py`                       | Service references, shared read-only instructions and request-local selections/observations |
+| `runtime.py`                      | Small request-scoped provider adapter; no agent orchestration                               |
+| `network.py`                      | Native startup/shutdown, client task submission and chat lifecycle                          |
+| `registry.py`                     | Module wiring, model configuration and HTTP response persistence                            |
+| `snapshots.py`                    | Deterministic tool selection/formatting when no model is configured                         |
+| `conversations.py`, `requests.py` | Durable chats and request outcome audit                                                     |
 
 There is no `consult` gateway agent and no per-request Agent construction. The registered agents are the reasoning agents.
 
@@ -122,19 +122,19 @@ Only outer user requests acquire the shared two-request semaphore. Native delega
 
 ## Domain tools
 
-| Agent | Native tools |
-| --- | --- |
-| Oracle | `portfolio_snapshot` |
-| Accountant | `accountant_snapshot` |
-| Analyst | `market_analysis`, `analysis_help` |
-| Broker | `strategy_context`, `strategy_guide`, `exchange_support` |
-| Chronos | `price_forecast`, `forecast_method` |
-| Reporter | `news_briefing`, `read_article`, `news_sources`, `fear_and_greed` |
-| Technician | `connection_status`, `settings_guide`, `exchange_setup` |
-| Wiki | `search_knowledge`, `crypto_catalog` |
-| Explorer | `bitcoin_blocks`, `blockchain_help` |
-| Equity Analyst | `equity_quote`, `equity_help` |
-| Sibyl | No custom tools; ProtoLink supplies discovered agents and native `agent_call` |
+| Agent          | Native tools                                                                  |
+| -------------- | ----------------------------------------------------------------------------- |
+| Oracle         | `portfolio_snapshot`                                                          |
+| Accountant     | `accountant_snapshot`                                                         |
+| Analyst        | `market_analysis`, `analysis_help`                                            |
+| Broker         | `strategy_context`, `strategy_guide`, `exchange_support`                      |
+| Chronos        | `price_forecast`, `forecast_method`                                           |
+| Reporter       | `news_briefing`, `read_article`, `news_sources`, `fear_and_greed`             |
+| Technician     | `connection_status`, `settings_guide`, `exchange_setup`                       |
+| Wiki           | `search_knowledge`, `crypto_catalog`                                          |
+| Explorer       | `bitcoin_blocks`, `blockchain_help`                                           |
+| Equity Analyst | `equity_quote`, `equity_help`                                                 |
+| Sibyl          | No custom tools; ProtoLink supplies discovered agents and native `agent_call` |
 
 Reporter uses the same archive/filter service as News with `refresh=False`. Publisher collection stays with the News page/background worker. An empty live archive remains empty live evidence; it never silently becomes demo reporting. Article tools return retained publisher excerpts, not an invented full article. Fear & Greed reads its attributed cache without refreshing the external provider.
 
@@ -176,7 +176,7 @@ Delegated inference carries the question and exact market/account/source details
 
 Cancelling a client wait propagates to the native task and active specialist work. Completed consultation evidence is retained; cancelled worker results cannot become late observations or saved answers. A provider/network read already in a worker can finish and may incur provider charges. Startup marks unfinished requests interrupted without replaying them. These records are an audit, not resumable scheduling.
 
-Messaging settings remain unavailable previews for WhatsApp, Telegram, Discord, Slack, Signal and Email. No clients, credentials, receivers or delivery are implemented.
+Telegram now routes authorized private messages through the same native ProtoLink Sibyl client, with encrypted credentials, saved conversation mapping and durable delivery state. Other channels remain unavailable previews. See [Telegram](../guides/telegram.md).
 
 ## Keeping agents current
 

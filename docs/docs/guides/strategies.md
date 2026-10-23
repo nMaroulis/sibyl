@@ -1,6 +1,6 @@
 # Strategy studio
 
-The studio lets you choose an algorithm, change assumptions, run historical tests, inspect fills, and start a persistent paper job.
+The studio lets you choose an algorithm, change assumptions, run historical tests, inspect fills, and start an isolated paper job or an [approved exchange strategy](strategy-execution.md). Exchange execution has a separate collapsed setup and explicit account/budget approval.
 
 ## Six algorithms
 
@@ -68,8 +68,18 @@ The drawdown view shows negative percentage distance below the running equity pe
 
 Stop-loss and take-profit thresholds use the observed close relative to entry price. They fill at the next open in a backtest and at a current quote on a subsequent worker tick in a paper job. They do not guarantee intrabar stop prices. Reaching a round-trip limit prevents further entries; paper jobs become completed after their final exit. Pause retains the virtual position. Completed and stopped jobs cannot resume.
 
-Freqtrade, ML/RL strategies, and automatic live exchange strategies are marked **Coming soon**. Broker can inspect current parameters but cannot run or execute them.
+Freqtrade and ML/RL strategies are marked **Coming soon**. Supported exchange strategies have a separate [review and approval flow](strategy-execution.md). Broker can inspect current parameters but cannot run or execute them.
 
 ## Reuse exact research inputs
 
 The **Research input** selector switches between a current feed and saved immutable datasets. Current-feed backtests retain their exact contiguous input automatically. Saved inputs fix the pair, timeframe and count, accept up to 20,000 consecutive candles and run offline. Results show source provenance, fingerprint, recorded engine version and reuse/export controls. Choose current-feed input to launch a separate paper job. See [saved datasets](market-history.md#save-a-research-input).
+
+## Progressive setup, Demo and inspecting results
+
+With no active account, the studio shows the same connection screen as Account and Trade. Connect or activate one or many exchange accounts to open the workspace. The smaller **Just exploring? → Preview with Demo** option activates the shared Demo account. A **Demo preview is active** banner and badge identify synthetic prices and virtual funds; **Exit preview** deactivates it. Activating an exchange account also turns Demo off automatically. Existing strategy monitors remain accessible without an active account.
+
+The initial form shows data, strategy, pair, capital, timeframe and observation count. Expand indicator, risk or execution settings as needed. Demo is not a separate input mode in this form: preview uses synthetic prices with the actual simulator and paper evaluator, and hides exchange execution. Saved experiments and input choices follow the current real-data or Demo workspace. Saved runs remain in the Monitor, with Demo paper runs labeled. Preview never changes your configured market feed.
+
+Choose **Price & trades** to see historical prices and buy/sell markers. Click a marker for price, quantity, fee and exit reason; use the time brush to inspect an interval. **Equity & benchmark** compares strategy equity with cost-aware buy-and-hold; **Drawdown** shows decline from the peak. Expand risk metrics and trade-by-trade accounting for detail. Cash P&L profit factor and expectancy use actual simulated net quote-unit outcomes, separate from the older percentage-return profit factor. Undefined ratios remain a dash.
+
+Open a saved experiment and choose **Rerun exact input** to recompute its original immutable data and settings with the current engine. Old results stay saved. **Load settings** reuses that configuration for editing. Compare saved runs sharing the same input fingerprint and initial capital. At most 400 execution markers and 200 round trips are rendered; complete evidence is available through exports. Broker can explain the selected experiment through its native read-only tool. See [engine contracts and assumptions](../developers/strategy-research.md).

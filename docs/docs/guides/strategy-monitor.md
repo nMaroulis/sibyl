@@ -76,4 +76,4 @@ Job state, processed candle cursor, event, and observation commit atomically in 
 
 Existing runs remain inspectable. Earlier retained fills appear in their own table and CSV. Unknown reference prices, prior decisions, and unavailable lifetime totals remain blank rather than being reconstructed. A notice identifies when detailed monitoring began.
 
-This monitor currently runs **paper strategies**. Automatic exchange strategy execution remains a clearly labeled future feature; guarded manual exchange orders are a separate workflow.
+This monitor supports isolated paper runs and [approved exchange strategies](strategy-execution.md). Exchange runs show account/environment, native orders, fill-derived ownership and fee currencies. Pause/Stop never cancel exchange orders or sell positions. Retained native fills can still update a paused/stopped run; its price valuation may be stale.

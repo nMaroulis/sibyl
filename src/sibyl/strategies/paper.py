@@ -1,4 +1,4 @@
-"""Six transparent strategies, honest backtesting, and durable paper strategy jobs."""
+"""Persistent, isolated paper execution and lifecycle controls."""
 
 import json
 import threading
@@ -6,236 +6,20 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from uuid import uuid4
 
-import numpy as np
-import pandas as pd
-
+from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.models import BacktestRequest
-from sibyl.services.analytics import indicators, performance_metrics
-from sibyl.services.market import TIMEFRAMES, Market
-from sibyl.services.strategy_monitor import StrategyJournal
+from sibyl.services.analytics import performance_metrics
+from sibyl.services.market import Market
 from sibyl.storage import Store
-
-CATALOG = [
-    {
-        "id": "ema",
-        "name": "EMA Crossover",
-        "tag": "Trend following",
-        "description": "Follow the direction of configurable fast and slow exponential moving averages.",
-        "risk": "Moderate",
-    },
-    {
-        "id": "rsi",
-        "name": "RSI Reversion",
-        "tag": "Mean reversion",
-        "description": "Buy lower RSI readings and exit higher readings, with configurable Wilder RSI thresholds.",
-        "risk": "Moderate",
-    },
-    {
-        "id": "bollinger",
-        "name": "Bollinger Bands",
-        "tag": "Volatility",
-        "description": "Enter below the lower band and exit above the upper band.",
-        "risk": "Moderate",
-    },
-    {
-        "id": "bollinger-surge",
-        "name": "Bollinger Surge",
-        "tag": "Multi factor",
-        "description": "Combine band extremes, RSI, an EMA trend filter, and a configurable volume surge.",
-        "risk": "Elevated",
-    },
-    {
-        "id": "impulse-breakout",
-        "name": "Impulse Breakout",
-        "tag": "Momentum",
-        "description": "Confirm band and RSI reversals with EMA, MACD, ADX above 25, and volume.",
-        "risk": "Elevated",
-    },
-    {
-        "id": "quantum-momentum",
-        "name": "Quantum Momentum",
-        "tag": "Multi factor",
-        "description": "Confirm MACD direction with money flow, TSI momentum, and expanding ATR.",
-        "risk": "Elevated",
-    },
-]
-
-
-def signals(frame: pd.DataFrame, strategy: str, request: BacktestRequest | None = None) -> pd.Series:
-    """Return BUY=1, SELL=-1, HOLD=0 using only data at or before each row."""
-    lower = (
-        request.rsi_lower
-        if request and request.rsi_lower is not None
-        else (35 if strategy == "impulse-breakout" else 30)
-    )
-    upper = (
-        request.rsi_upper
-        if request and request.rsi_upper is not None
-        else (65 if strategy == "impulse-breakout" else 70)
-    )
-    buy, sell = frame["close"] < frame["lower"], frame["close"] > frame["upper"]
-    if strategy == "rsi":
-        buy, sell = frame["rsi"] < lower, frame["rsi"] > upper
-    elif strategy == "ema":
-        buy, sell = frame["ema_fast"] > frame["ema_slow"], frame["ema_fast"] < frame["ema_slow"]
-    elif strategy in {"bollinger-surge", "impulse-breakout"}:
-        buy &= frame["rsi"] < lower
-        sell &= frame["rsi"] > upper
-        buy &= (frame["ema_fast"] > frame["ema_slow"]) & frame["volume_surge"]
-        sell &= (frame["ema_fast"] < frame["ema_slow"]) & frame["volume_surge"]
-        if strategy == "impulse-breakout":
-            buy &= (frame["macd"] > frame["macd_signal"]) & (frame["adx"] > 25)
-            sell &= (frame["macd"] < frame["macd_signal"]) & (frame["adx"] > 25)
-    elif strategy == "quantum-momentum":
-        buy = (
-            (frame["macd"] > frame["macd_signal"])
-            & (frame["tsi"] > 20)
-            & (frame["cmf"] > 0)
-            & (frame["atr"] > frame["atr"].rolling(10).mean())
-        )
-        sell = (frame["macd"] < frame["macd_signal"]) & (frame["tsi"] < -20) & (frame["cmf"] < 0)
-    elif strategy != "bollinger":
-        raise ValueError("Unknown strategy.")
-    return pd.Series(np.select([buy, sell], [1, -1], default=0), index=frame.index)
-
-
-def strategy_indicators(candles: list[dict], request: BacktestRequest) -> pd.DataFrame:
-    """Apply the same configurable indicator parameters in backtests and paper jobs."""
-    return indicators(
-        candles,
-        request.window,
-        fast_period=request.fast_period,
-        slow_period=request.slow_period,
-        rsi_period=request.rsi_period,
-        band_std=request.band_std,
-        volume_multiplier=request.volume_multiplier,
-        macd_fast_period=request.macd_fast_period,
-        macd_slow_period=request.macd_slow_period,
-        macd_signal_period=request.macd_signal_period,
-        adx_period=request.adx_period,
-        atr_period=request.atr_period,
-        cmf_period=request.cmf_period,
-        tsi_short_period=request.tsi_short_period,
-        tsi_long_period=request.tsi_long_period,
-    )
-
-
-def exit_reason(price: float, entry: float, request: BacktestRequest) -> str | None:
-    """Check close-based risk exits, never claiming intrabar stop execution."""
-    change = (price / entry - 1) * 100 if entry else 0
-    if request.stop_loss_pct is not None and change <= -request.stop_loss_pct:
-        return "Stop loss at observed close"
-    if request.take_profit_pct is not None and change >= request.take_profit_pct:
-        return "Take profit at observed close"
-    return None
-
-
-def backtest(candles: list[dict], request: BacktestRequest) -> dict:
-    """Run a long-only simulation with previous-close signals and next-open fills.
-
-    Fee and slippage apply on both sides. The last position is liquidated at the
-    final close. Sharpe uses candle equity returns, timeframe annualization, and a zero risk-free
-    rate. Drawdown is reported as a nonnegative percentage from the running peak.
-    """
-    frame = strategy_indicators(candles, request)
-    signal = signals(frame, request.strategy, request)
-    cash, quantity = request.capital, 0.0
-    fee, slip = request.fee_bps / 10_000, request.slippage_bps / 10_000
-    fills, curve, completed_returns = [], [], []
-    entry_cost, entry_price = 0.0, 0.0
-    warmup = request.warmup
-    for i in range(warmup, len(frame)):
-        row = frame.iloc[i]
-        direction = int(signal.iloc[i - 1])
-        reason = exit_reason(float(frame.iloc[i - 1]["close"]), entry_price, request) if quantity else None
-        if reason:
-            direction = -1
-        if (
-            direction == 1
-            and quantity == 0
-            and (request.max_trades is None or len(completed_returns) < request.max_trades)
-        ):
-            price = float(row["open"]) * (1 + slip)
-            quantity = cash / (price * (1 + fee))
-            entry_cost, entry_price = cash, price
-            fills.append(
-                {
-                    "timestamp": row["timestamp"],
-                    "side": "buy",
-                    "price": price,
-                    "quantity": quantity,
-                    "fee": price * quantity * fee,
-                }
-            )
-            cash = 0.0
-        elif direction == -1 and quantity > 0:
-            price = float(row["open"]) * (1 - slip)
-            cash = quantity * price * (1 - fee)
-            completed_returns.append((cash / entry_cost - 1) * 100)
-            fills.append(
-                {
-                    "timestamp": row["timestamp"],
-                    "side": "sell",
-                    "price": price,
-                    "quantity": quantity,
-                    "fee": price * quantity * fee,
-                    "reason": reason or "Strategy signal",
-                }
-            )
-            quantity = 0.0
-        curve.append({"timestamp": row["timestamp"], "value": cash + quantity * float(row["close"])})
-    if not curve:
-        raise ValueError("Not enough candles after strategy warm-up.")
-    if quantity:
-        price = float(frame.iloc[-1]["close"]) * (1 - slip)
-        cash = quantity * price * (1 - fee)
-        fills.append(
-            {
-                "timestamp": frame.iloc[-1]["timestamp"],
-                "side": "sell",
-                "price": price,
-                "quantity": quantity,
-                "fee": price * quantity * fee,
-                "reason": "End of backtest",
-            }
-        )
-        completed_returns.append((cash / entry_cost - 1) * 100)
-        curve[-1]["value"] = cash
-    equity = pd.Series([request.capital, *[point["value"] for point in curve]])
-    metrics = performance_metrics(
-        equity.tolist(), completed_returns, 365 * 86400 / TIMEFRAMES[request.timeframe]
-    )
-    benchmark = request.capital / (float(frame.iloc[warmup]["open"]) * (1 + slip) * (1 + fee))
-    benchmark *= float(frame.iloc[-1]["close"]) * (1 - slip) * (1 - fee)
-    return {
-        "strategy": request.strategy,
-        "symbol": request.symbol,
-        "initial_capital": request.capital,
-        "final_equity": cash,
-        "return_pct": (cash / request.capital - 1) * 100,
-        "benchmark_pct": (benchmark / request.capital - 1) * 100,
-        "sharpe": metrics["sharpe"],
-        "max_drawdown": metrics["max_drawdown"],
-        "metrics": metrics,
-        "trade_returns": completed_returns,
-        "timeframe": request.timeframe,
-        "trades": len(completed_returns),
-        "win_rate": sum(r > 0 for r in completed_returns) / len(completed_returns) * 100
-        if completed_returns
-        else 0,
-        "fees": sum(fill["fee"] for fill in fills),
-        "curve": curve,
-        "fills": fills,
-        "parameters": request.model_dump(),
-        "execution": "Previous-close signals and close-based risk exits fill at next open; final liquidation at last close. No intrabar stop guarantee.",
-    }
+from sibyl.strategies.journal import StrategyJournal
+from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
 
 
 class Strategies:
     """Own persistent paper jobs, terminal lifecycle controls, and their event journals.
 
     One worker observes reference quotes every 30 seconds and evaluates each newly
-    closed candle once. No strategy submits exchange orders. Job state, decision
+    closed candle once. Exchange jobs delegate to the attached execution domain. Job state, decision
     events, and quote observations commit atomically; downtime is not replayed.
     """
 
@@ -247,6 +31,13 @@ class Strategies:
                 "CREATE TABLE IF NOT EXISTS strategy_jobs (id TEXT PRIMARY KEY, payload TEXT NOT NULL)"
             )
         self.journal = StrategyJournal(store)
+        self.execution = None
+
+    def attach_execution(self, trading):
+        """Attach account execution after the shared order pipeline is constructed."""
+        from sibyl.strategies.execution import ExchangeStrategies
+
+        self.execution = ExchangeStrategies(self, trading)
 
     def jobs(self) -> list[dict]:
         """List runs newest first, including stopped and completed runs."""
@@ -272,7 +63,7 @@ class Strategies:
             **details,
         }
 
-    def start(self, request: BacktestRequest) -> dict:
+    def start(self, request: BacktestRequest, *, source: str | None = None) -> dict:
         """Allocate isolated paper capital and persist the start event without trading."""
         with self._lock:
             if sum(job["status"] == "running" for job in self.jobs()) >= 10:
@@ -287,7 +78,8 @@ class Strategies:
                 "equity": request.capital,
                 "last_candle": None,
                 "fills": [],
-                "source": self.market.source,
+                "source": source or self.market.source,
+                "source_pinned": source is not None,
                 "created_at": now,
                 "monitoring_since": now,
                 "error": None,
@@ -310,6 +102,8 @@ class Strategies:
         """
         if state not in {"paused", "running", "stopped"}:
             raise ValueError("Choose pause, resume, or stop.")
+        if self.execution and self.journal.job(job_id).get("mode") == "exchange":
+            return self.execution.status(job_id, state)
         with self._lock:
             job = self.journal.job(job_id)
             if job["status"] == state:
@@ -319,7 +113,7 @@ class Strategies:
                     "A completed or stopped job cannot change state. Start a new paper strategy."
                 )
             if state == "running":
-                if job["source"] != self.market.source:
+                if not job.get("source_pinned") and job["source"] != self.market.source:
                     raise ValueError("Price source changed. Start a new strategy for the current source.")
                 if sum(run["status"] == "running" for run in self.jobs()) >= 10:
                     raise ValueError("Pause another strategy before resuming more than ten paper jobs.")
@@ -343,7 +137,7 @@ class Strategies:
         from that pending observation. Duplicate signals/candles never double-fill.
         """
         for snapshot in self.jobs():
-            if snapshot["status"] != "running":
+            if snapshot.get("mode") == "exchange" or snapshot["status"] != "running":
                 continue
             try:
                 with self._lock:
@@ -352,7 +146,7 @@ class Strategies:
                         continue
                 params = BacktestRequest(**snapshot["parameters"])
                 # Network I/O intentionally stays outside the lifecycle lock.
-                with self.market.snapshot():
+                with self.market.snapshot(snapshot["source"] if snapshot.get("source_pinned") else None):
                     candles = self.market.candles(params.symbol, params.candles, params.timeframe)
                     price = self.market.price(params.symbol)
                 self._observe(snapshot["id"], params, candles, price)
@@ -365,9 +159,13 @@ class Strategies:
                     event = self._event(job, "ERROR", message) if job.get("error") != message else None
                     job.update(error=message, checked_at=datetime.now(UTC).isoformat())
                     self.journal.save(job, event)
+        if self.execution:
+            self.execution.tick()
 
     def _pause_changed_source(self, job: dict) -> bool:
         """Pause incompatible runs while holding the lifecycle lock."""
+        if job.get("source_pinned"):
+            return False
         if job["source"] == self.market.source:
             return False
         job.update(status="paused", error="Price source changed. Start a new job for this source.")

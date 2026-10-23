@@ -14,7 +14,8 @@ Settings are validated by `pydantic-settings`. Environment variables override `.
 | `SIBYL_MARKET_EXCHANGE`    | `binance`                         | Default market feed, independent of account mode: any of the 20 exchange IDs in the [catalog](../developers/exchange-clients.md) |
 | `SIBYL_CORS_ORIGINS`       | localhost and 127.0.0.1 port 5173 | JSON array of permitted browser origins                                                       |
 | `SIBYL_API_TOKEN`          | empty                             | Bearer token for all versioned API routes                                                     |
-| `SIBYL_ALLOW_LIVE_TRADING` | `false`                           | Enable reviewed manual exchange market orders                                                 |
+| `SIBYL_ALLOW_LIVE_TRADING` | `false`                           | Enable reviewed exchange orders; also required for approved strategies                          |
+| `SIBYL_ALLOW_STRATEGY_EXECUTION` | `false`                     | Permit scoped exchange strategy approvals, including test environments; requires live-trading flag |
 | `SIBYL_LLM_PROVIDER`       | `none`                            | `none` or any provider in [Settings](../guides/settings.md)                                   |
 | `SIBYL_LLM_MODEL`          | empty                             | Model name; provider default is used if omitted                                               |
 | `SIBYL_LLM_BASE_URL`       | `http://127.0.0.1:11434`          | Model server URL for the environment-selected adapter                                         |

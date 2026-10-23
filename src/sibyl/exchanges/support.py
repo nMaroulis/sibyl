@@ -229,8 +229,12 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "automated",
                     "Automated exchange strategies",
-                    False,
-                    "Running strategies are paper-only; they cannot submit exchange orders.",
+                    not demo and spec.spot_trading and history in ORDER_FILL_KINDS,
+                    "Account-bound, approved price-capped GTC strategies with native fill accounting, restart pause and risk limits. Both execution flags are required; private venue acceptance is pending."
+                    if not demo and spec.spot_trading and history in ORDER_FILL_KINDS
+                    else "Demo uses isolated paper strategy runs."
+                    if demo
+                    else "Automated exchange strategies require implemented order submission and exact-order native fill imports.",
                 ),
                 feature(
                     "derivatives",

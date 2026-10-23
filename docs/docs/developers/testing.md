@@ -1,65 +1,37 @@
-# Architecture
+# Testing
 
-The design favors ordinary functions and a few small services. Business logic is independent of React and FastAPI; ProtoLink composes existing read-only functions rather than becoming a second application backend.
+Tests construct explicit temporary Settings/Store instances, replace network/process boundaries and never use the developer's exchange credentials. Run one API worker for the real app; isolated tests can construct their own applications.
 
-```text
-React pages + shared UI
-          │ same-origin /api/v1
-FastAPI routes + validated request models
-          │
-          ├── Market ── ExchangeClient ── public prices / private balances
-          ├── Portfolio ── Market + Store
-          ├── Analytics ── pure Pandas/NumPy functions
-          ├── Strategies ── backtests + persistent paper worker
-          ├── ExchangeTrading ── reviewed intents + CCXT create_order
-          ├── Research ── glossary / RSS / blocks / optional equities
-          └── AgentRegistry ── ProtoLink Agent + read-only tools
-                       │
-              Store: SQLite + Fernet vault
+```bash
+uv run pytest -q
+uv run ruff check src tests
+npm run typecheck
+npm run build
+npm run docs:build
 ```
 
-## Python package
+## Strategy research and monitoring
 
-| File/module                    | Responsibility                                                                                    |
-| ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `config.py`                    | Validated environment configuration, with no import-time network work                             |
-| `models.py`                    | Strict request models, enum-like IDs, canonical symbol validation                                 |
-| `storage.py`                   | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                     |
-| `services/market.py`           | Client ownership, closed candles, source labels and bounded cache                                 |
-| `services/portfolio.py`        | Aggregate account balances, valuation, history, incomplete-account reporting                      |
-| `services/analytics.py`        | Pure indicator, correlation, and baseline forecasting functions                                   |
-| `services/strategies.py`       | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
-| `services/strategy_monitor.py` | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
-| `services/trading.py`          | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
-| `services/research.py`         | Bounded source-labeled research reads                                                             |
-| `agents/registry.py`           | Roles, native tools, optional model composition, request limits, factual snapshots                |
-| `api/app.py`                   | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
-| `api/routes.py`                | Thin versioned HTTP routes                                                                        |
+`tests/test_strategy_research.py`, `tests/test_strategy_monitor.py`, `tests/test_analytics.py` and `tests/test_restored_features.py` cover causal indicator rules, next-open historical fills, costs, immutable input reruns, native chart evidence, paper-source pinning, durable journals, metric baselines, event paging/CSV and pause/stop behavior. Demo supplies explicitly synthetic input to the same simulation engine. Retained datasets let a test verify a replay without provider calls.
 
-`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts one paper worker, and cancels it during shutdown. Importing the package does not connect to an exchange or initialize a model.
+## Automated exchange strategies
 
-## Frontend
+`tests/test_strategy_execution.py` uses a fake venue whose order acknowledgments and native execution pages are separate. It covers typed expiring HTTP approvals, concurrent/idempotent start requests, crash recovery before review acknowledgment, no order on initial start/resume, deterministic per-candle order keys, capped sizing/precision, partial-fill gating, native base/quote fees, later corrections, unrelated account holdings, rolling order counts, loss latching, account/server/spread/data-gap guards and sanitized failures. Pause during preparation invalidates the plan; Stop retains native order reconciliation without another submission. A native timeout never retries a write. Fractional quote budgets and cross-pair allocations have explicit checks.
 
-`pages/` owns domain screens. `components/ui.tsx` defines shared controls and notifications; `charts.tsx` wraps chart rendering; `ExchangeExecution.tsx` isolates the actual-funds review flow. `lib/types.ts` documents response contracts, `lib/api.ts` sends authenticated JSON requests, and `useResource` owns fetching, refresh, stale-response handling, and optional polling.
+These tests establish application behavior, not real exchange permissions, endpoint retention, matching-engine behavior or authenticated sandbox acceptance. Use the separate [exchange execution workflow](../guides/strategy-execution.md) for deliberate acceptance testing. Nothing in the test suite enables production execution or submits a real exchange order.
 
-Routes are browser history routes. Vite proxies the API in development. The Python app serves a built `frontend/dist` with a history fallback in a source checkout/container. Production compilation separates feature bundles through lazy page imports.
+## Exchange transport and reconciliation
 
-## State and concurrency
+The exchange client, spot-support, order management, recovery, discovery and reconciliation tests replace provider transports. They check request shapes, spot/base-quantity semantics, client IDs, native pagination, cumulative quantities, execution identity/deduplication and fee corrections. Coverage badges follow implemented paths and explicit gaps; the installed SDK advertising a method cannot enable an unreviewed write or historical import.
 
-SQLite transactions serialize manual paper fills. One idempotency key maps to one order and immutable order details. Paper jobs use a service lock and persisted candle markers. Exchange intents atomically transition to submitting before network execution.
+## Messaging and local models
 
-This implementation assumes one API process and worker. It is not a distributed scheduler. Multiple backend workers could duplicate paper-job evaluation and should not be used without database-backed job claims.
+`tests/test_telegram.py` replaces Telegram HTTP and the native agent boundary. It covers encrypted configuration, private sender binding, webhook conflicts, durable inbound/outbound records, rate-limit ordering, uncertain delivery, startup recovery and pause races. Real-bot conversation acceptance requires separate credentials and remains a deployment check.
 
-## Source boundaries
+`tests/test_ollama.py` replaces native HTTP and process creation. It checks endpoint/model detection, credential destination isolation, fixed CLI arguments, loopback-only launch and process ownership. Automated tests never start an actual Ollama installation. Manual browser verification can exercise Start/Stop on an installed local server without downloading a model or changing the active AI profile.
 
-Demo prices come from an explicit DemoClient and research fixtures have their own demo boundary; live errors never trigger fixture substitution. A portfolio records incomplete accounts and unpriced assets. A model-backed answer and the initial native tool evidence have separate labels. Charts show observed or simulated values with the relevant assumptions.
+## Frontend and docs
 
-Strategy monitoring components are split into the run list, detail workspace, decision journal, and chart. The builder and monitor share the `/strategies` route with query selections. Run detail polling reads persisted observations; it never fetches provider quotes or executes paper fills. The worker saves each successful quote sample and commits new-candle decisions with the updated account/cursor in one SQLite transaction. Stop and pause use the same service lock as evaluation.
+The TypeScript check and Vite build validate frontend contracts and feature bundles. Docusaurus builds the documentation and checks internal links. Browser checks exercise saved experiment selection/reruns, price/equity modes, actual marker selection, the chart time brush, connection requirements and disabled execution states. Browser refresh only reads persisted strategy monitoring data; it does not execute a run.
 
-Monitor regression tests cover read-only polling, quote updates without duplicate decisions, restart persistence, skip/hold reasons, slippage signs and fee accounting, terminal/idempotent Stop, pause/source-change handling, rollback after an uncommitted fill, paged cursors, full CSV and its export boundary, retention, earlier-run honesty, concurrent worker calls, custom indicator periods, rolling metric baselines, and run-specific Broker context.
-
-Pause/Stop concurrency checks also hold a provider request open and confirm that accepted controls prevent any pending fill, without waiting for the request to finish.
-
-## News backend checks
-
-`uv run pytest tests/test_news.py` exercises RSS/Atom sanitization, publisher URL rules, input size limits, conditional requests, restart persistence, source failures without demo fallback, title/URL deduplication, retention, cooldown, overlapping collection, query validation, aggregate scope and Reporter selection. All HTTP is mocked; tests never contact publishers. See [News ingestion and sentiment](news.md).
+`npm run test:e2e` runs the repository's Playwright suite when its browser/runtime prerequisites are installed. New execution backend tests are independent of that environment. Do not use real account credentials in browser fixtures or infer private venue acceptance from a successful frontend build.

@@ -207,6 +207,14 @@ function WorkspaceSettings({ system }: { system?: System }) {
               <strong>ProtoLink · {system?.agents ?? '—'} agents</strong>
             </div>
             <div>
+              <span>Automated exchange strategies</span>
+              <Badge>
+                {system?.allow_live_trading && system?.allow_strategy_execution
+                  ? 'Scoped approvals enabled'
+                  : 'Disabled on this backend'}
+              </Badge>
+            </div>
+            <div>
               <span>Language model</span>
               <strong>
                 {system?.llm_provider === 'none'

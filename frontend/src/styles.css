@@ -1040,6 +1040,16 @@ textarea::placeholder {
   border-radius: 9px;
   color: #b04b60;
 }
+.strategy-exchange-setup {
+  margin: 0 22px 24px;
+}
+.exchange-setup-fields.form {
+  padding: 0;
+  gap: 14px;
+}
+.exchange-setup-fields .footnote {
+  margin-top: 0;
+}
 .advanced-options {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -8904,4 +8914,191 @@ details[open] > summary {
 .exchange-coverage-legend i.coverage-partial {
   background: linear-gradient(90deg, var(--coverage-color) 50%, white 50%);
   box-shadow: 0 0 0 0.5px var(--coverage-color);
+}
+
+/* Strategy research starts small; detailed controls and evidence expand in place. */
+.strategy-studio-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 6px 4px 24px;
+}
+.strategy-studio-intro h2 {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 12px 0 8px;
+  letter-spacing: -0.6px;
+}
+.strategy-studio-intro p {
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 560px;
+  line-height: 1.8;
+}
+.strategy-workspace {
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.7fr);
+  align-items: start;
+}
+.strategy-form > .footnote {
+  display: block;
+}
+.backtest-history-selector {
+  padding: 18px 22px 0;
+}
+.backtest-history-selector label,
+.backtest-run-controls label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.backtest-history-selector select {
+  flex: 1;
+  min-width: 0;
+}
+.backtest-run-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 22px 14px;
+}
+.backtest-run-controls select {
+  max-width: 210px;
+}
+.backtest-chart-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 18px;
+}
+.backtest-chart-toolbar .footnote {
+  flex-basis: 100%;
+  padding-top: 5px;
+}
+.backtest-execution-chart {
+  height: 340px;
+  padding: 0 8px;
+}
+.backtest-selected-fill,
+.backtest-comparison {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 12px 22px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 11px;
+}
+@media (max-width: 1050px) {
+  .strategy-workspace {
+    grid-template-columns: 1fr;
+  }
+  .strategy-studio-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .backtest-execution-chart {
+    height: 300px;
+  }
+}
+.telegram-live-card {
+  grid-column: 1/-1;
+  border-color: color-mix(in srgb, #409fce 30%, var(--border));
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, #d6eaf8 20%, var(--surface)),
+    var(--surface) 60%
+  );
+}
+.telegram-live-card .messaging-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.telegram-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+}
+.telegram-delivery-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 8px 0;
+}
+@media (max-width: 650px) {
+  .telegram-live-card .messaging-fields {
+    grid-template-columns: 1fr;
+  }
+}
+.ollama-controls {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  padding: 18px;
+  margin: 8px 0 16px;
+}
+.ollama-status-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ollama-status-heading strong {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+}
+.ollama-status-heading small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+  font-size: 10px;
+}
+.ollama-controls p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 12px 0;
+}
+.ollama-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+.ollama-controls details {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.ollama-controls summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+}
+.ollama-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  margin: 14px 0;
+}
+.ollama-controls code {
+  background: var(--surface-raised);
+  padding: 6px 9px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-top: 6px;
 }

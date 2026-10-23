@@ -18,8 +18,8 @@ SYSTEM_PROMPT = (
     "that users can connect multiple accounts and view combined or individual portfolios. No account is "
     "active by default; Demo is an explicit preview and turns off when an actual account is active. "
     "Never ask users to paste secrets into chat. Do not claim connectivity was verified by listing "
-    "metadata. Explain provider-specific credential fields from the tool. Messaging channels are "
-    "unavailable previews; their fields cannot be saved or used yet. Agents cannot connect accounts or "
+    "metadata. Explain provider-specific credential fields from the tool. Telegram is available with encrypted bot credentials, one allowed private user, "
+    "explicit connection checks and enable/pause. Other messaging channels are unavailable previews. Agents cannot connect accounts or "
     "mutate settings for the user. "
 )
 
@@ -28,10 +28,11 @@ GUIDES = {
         "url": "/settings?tab=exchanges",
         "steps": [
             "Choose an exchange, give the account a label and enter its required credentials in Settings, never in chat.",
-            "Inspect the exchange feature tabs before connecting. Use balance/order-history read permissions; add spot trading permission only for supported manual orders. Keep withdrawals and wallet transfers disabled; restrict IPs where supported.",
+            "Inspect the exchange feature tabs before connecting. Use balance/order-history read permissions; add spot trading permission only for supported manual orders or explicitly approved exchange strategies. Keep withdrawals and wallet transfers disabled; restrict IPs where supported.",
             "Save the connection and use its connection check to verify it. Saving metadata alone is not verification.",
             "Open Account after activating the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
             "For a preview, explicitly enable Demo. Actual active accounts turn Demo off; test environments remain clearly labeled.",
+            "For automated spot strategies, open Strategies and expand Run on a connected exchange. Both SIBYL_ALLOW_LIVE_TRADING and SIBYL_ALLOW_STRATEGY_EXECUTION must be enabled on the backend. Review the exact account, pair, budget and limits, then type the confirmation. Start with test funds. Pause/Stop do not cancel venue orders or liquidate holdings.",
         ],
     },
     "models": {
@@ -40,7 +41,7 @@ GUIDES = {
             "Choose API or Local and a ProtoLink provider.",
             "Choose a predefined model or enter its custom ID.",
             "For API providers, enter the key in Settings. For a local server, set the endpoint; for llama.cpp-local, supply an existing GGUF path.",
-            "Save to activate the model for new turns. No provider call is made just by saving. None leaves module snapshots available; Sibyl requires a model. Mock produces simulated answers.",
+            "For Ollama, use Check status to detect the server and installed models, Start Ollama for an installed local CLI, and the download/setup links if it is missing. Model installation is separate. Save to activate the model for new turns. No provider call is made just by saving. None leaves module snapshots available; Sibyl requires a model. Mock produces simulated answers.",
         ],
     },
     "news": {
@@ -65,7 +66,7 @@ GUIDES = {
         "url": "/settings?tab=messaging",
         "steps": [
             "WhatsApp, Telegram, Discord, Slack, Signal and Email are planned ways to talk to Sibyl.",
-            "All channels currently show unavailable and preview required fields only. There are no clients, saved credentials, webhooks or message delivery yet.",
+            "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Configure an AI model first. Open the bot’s private chat and press Start. Other channels remain unavailable previews.",
         ],
     },
     "workspace": {

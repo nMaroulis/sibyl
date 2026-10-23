@@ -38,7 +38,7 @@ Before contacting the exchange, Sibyl persists the intent as `submitting`. A rep
 
 The exchange receives a `clientOrderId` where supported by the adapter. Application-level duplicate protection remains the primary protection because exchange support differs.
 
-Only this reviewed manual endpoint can submit exchange orders. Oracle agents and paper strategies cannot call it.
+Manual orders use the reviewed endpoint. [Approved exchange strategies](strategy-execution.md) reuse its durable intent pipeline with a separate fixed-scope approval. Agents and isolated paper strategies cannot submit exchange orders.
 
 ## Public order book
 
