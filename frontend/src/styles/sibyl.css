@@ -1,0 +1,1128 @@
+/* Sibyl has its own restrained brand treatment; ordinary dock items stay unchanged. */
+.sibyl-mark {
+  color: #fff;
+  display: inline-grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  flex-shrink: 0;
+  border-radius: 26px;
+  background: linear-gradient(140deg, #558deb 5%, #9274d9 57%, #df9caa);
+  box-shadow:
+    inset 0 1px 1px #ffffff70,
+    0 12px 32px #8578c82b;
+}
+.sibyl-mark svg {
+  width: 55%;
+  height: 55%;
+}
+.sibyl-mark.small {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.dock-item.dock-sibyl {
+  color: #7963ba;
+}
+.dock-sibyl .sibyl-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 300ms,
+    box-shadow 300ms;
+}
+.dock-sibyl .sibyl-mark::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: linear-gradient(110deg, transparent 36%, #ffffff65 50%, transparent 64%);
+  transform: translateX(-80%) rotate(15deg);
+  animation: sibyl-shimmer 8s ease-in-out infinite;
+}
+.dock-sibyl:is(.active, :hover) .sibyl-mark {
+  transform: scale(1.08);
+  box-shadow: 0 3px 14px #9274d955;
+}
+.dock-sibyl:is(.active, :hover) > span:last-child {
+  background: linear-gradient(90deg, #427acb, #a260b3);
+  background-clip: text;
+  color: transparent;
+}
+@keyframes sibyl-shimmer {
+  0%,
+  68% {
+    transform: translateX(-80%) rotate(15deg);
+  }
+  86%,
+  100% {
+    transform: translateX(80%) rotate(15deg);
+  }
+}
+.sibyl-page {
+  --sibyl-ink: #30384e;
+  --sibyl-muted: #8290a6;
+  color: var(--sibyl-ink);
+}
+.sibyl-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.sibyl-wordmark {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.sibyl-wordmark .sibyl-mark {
+  width: 43px;
+  height: 43px;
+  border-radius: 15px;
+}
+.sibyl-wordmark h1 {
+  font-size: 27px;
+  letter-spacing: -1px;
+  margin: 0;
+}
+.sibyl-wordmark p {
+  font-size: 11px;
+  color: var(--sibyl-muted);
+  margin: 3px 0 0;
+}
+.sibyl-page-actions {
+  display: flex;
+  gap: 8px;
+}
+.sibyl-page-actions .button {
+  font-size: 11px;
+}
+.sibyl-room {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 236px;
+  border: 1px solid #e4e7f0;
+  border-radius: 26px;
+  overflow: hidden;
+  background: #fff;
+  min-height: 0;
+  height: max(500px, calc(100dvh - 225px));
+}
+.sibyl-conversation {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(ellipse at 18% 5%, #f2f2ff77, transparent 50%), #fff;
+  min-height: 0;
+}
+.sibyl-conversation-toolbar {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 15px 24px;
+  border-bottom: 1px solid #edf0f6;
+  font-size: 10px;
+  color: var(--sibyl-muted);
+}
+.sibyl-conversation-toolbar > span {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  white-space: nowrap;
+}
+.sibyl-presence,
+.sibyl-team-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c3c6d2;
+  flex-shrink: 0;
+}
+.sibyl-presence.ready,
+.sibyl-team-dot.online {
+  background: #7fac9e;
+}
+.sibyl-chat-picker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.sibyl-chat-picker select {
+  width: 145px;
+  max-width: 100%;
+  font-size: 10px;
+  color: #718097;
+  padding: 5px 18px 5px 5px;
+  border: 0;
+  background-color: transparent;
+  text-overflow: ellipsis;
+}
+.sibyl-chat-scroll {
+  flex: 1;
+  padding: 0 24px;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.sibyl-welcome {
+  text-align: center;
+  padding: 28px 0 22px;
+  max-width: 780px;
+  margin: auto;
+}
+.sibyl-halo {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+}
+.sibyl-halo::before {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 45%;
+  background: linear-gradient(140deg, #c8dcff70, #eed3e260);
+  filter: blur(17px);
+  animation: sibyl-breathe 7s ease-in-out infinite;
+}
+.sibyl-halo .sibyl-mark {
+  transform: rotate(-8deg);
+  position: relative;
+  width: 65px;
+  height: 65px;
+  border-radius: 22px;
+}
+@keyframes sibyl-breathe {
+  50% {
+    transform: scale(1.14) rotate(12deg);
+    opacity: 0.6;
+  }
+}
+.sibyl-eyebrow {
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 1.7px;
+  color: #9a91b1;
+  font-size: 8px;
+  font-weight: 600;
+}
+.sibyl-welcome h2 {
+  font-weight: 500;
+  font-size: clamp(28px, 2.8vw, 38px);
+  line-height: 1.22;
+  letter-spacing: -1.7px;
+  margin: 12px 0;
+}
+.sibyl-welcome h2 span {
+  background: linear-gradient(90deg, #778fc1, #ac86b2);
+  background-clip: text;
+  color: transparent;
+}
+.sibyl-welcome > p {
+  color: var(--sibyl-muted);
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+}
+.sibyl-starters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin: 24px auto 0;
+}
+.sibyl-starters button {
+  text-align: left;
+  padding: 14px 13px;
+  border: 1px solid #e9eaf3;
+  background: #ffffffa0;
+  border-radius: 14px;
+  transition:
+    transform 200ms,
+    border-color 200ms,
+    box-shadow 200ms;
+}
+.sibyl-starters button:not(:disabled):hover {
+  transform: translateY(-3px);
+  border-color: #c4bddf;
+  box-shadow: 0 6px 14px #8678b412;
+}
+.sibyl-starters span {
+  font-size: 8px;
+  color: #a09bb2;
+  display: block;
+  margin-bottom: 7px;
+}
+.sibyl-starters strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 500;
+  gap: 5px;
+}
+.sibyl-starters button:disabled {
+  opacity: 0.52;
+}
+.sibyl-compose-area {
+  padding: 15px 26px 12px;
+}
+.sibyl-composer {
+  border: 1px solid #deddec;
+  border-radius: 19px;
+  padding: 16px 16px 10px;
+  box-shadow: 0 4px 18px #68598208;
+  background: #fff;
+  transition:
+    border-color 200ms,
+    box-shadow 200ms;
+}
+.sibyl-composer:focus-within {
+  border-color: #b1a5d3;
+  box-shadow: 0 0 0 3px #ad9ddb0d;
+}
+.sibyl-composer textarea {
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+  width: 100%;
+  min-height: 48px;
+  max-height: 180px;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.sibyl-composer textarea:focus {
+  box-shadow: none;
+}
+.sibyl-composer textarea::placeholder {
+  color: #a0a8bb;
+}
+.sibyl-composer > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sibyl-composer > div > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a0a5b7;
+  font-size: 9px;
+}
+.sibyl-composer .sibyl-mark {
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  opacity: 0.7;
+}
+.sibyl-composer button {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #7e9ddb, #a387c7);
+  transition:
+    opacity 200ms,
+    transform 200ms;
+}
+.sibyl-composer button:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+.sibyl-composer button:disabled {
+  opacity: 0.35;
+}
+.sibyl-fineprint {
+  font-size: 8px;
+  color: #a1a8b9;
+  text-align: center;
+  margin: 10px 0 0;
+  line-height: 1.8;
+}
+.sibyl-setup-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f6f4fc;
+  border: 1px solid #e8e2f4;
+  border-radius: 13px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.sibyl-setup-note > div {
+  flex: 1;
+}
+.sibyl-setup-note strong {
+  font-size: 10px;
+  font-weight: 600;
+}
+.sibyl-setup-note p {
+  font-size: 10px;
+  color: #9590a8;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+.sibyl-setup-note .button {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.sibyl-model-note {
+  font-size: 10px;
+  color: #957b57;
+  background: #fff7e9;
+  border-radius: 10px;
+  padding: 10px;
+}
+.sibyl-team {
+  background: #f9fafe;
+  border-left: 1px solid #edf0f6;
+  padding: 25px 20px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.sibyl-team-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+.sibyl-team-title .badge {
+  font-size: 8px;
+  background: #efedf8;
+  color: #9b91b7;
+}
+.sibyl-team h3 {
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  font-size: 18px;
+  line-height: 1.4;
+  margin: 18px 0 10px;
+}
+.sibyl-team > p {
+  color: #98a0b2;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.sibyl-team-list {
+  display: grid;
+  gap: 13px;
+  margin: 26px 0 20px;
+}
+.sibyl-team-list > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sibyl-team-list > div > span:first-child {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: #edeff8;
+  font-size: 10px;
+  color: #9b92b4;
+}
+.sibyl-team-list > div:nth-child(3n + 2) > span:first-child {
+  background: #edf3f5;
+  color: #89a1a6;
+}
+.sibyl-team-list > div:nth-child(3n + 3) > span:first-child {
+  background: #f7eff0;
+  color: #bd9da3;
+}
+.sibyl-team-list > div > div {
+  flex: 1;
+  min-width: 0;
+}
+.sibyl-team-list strong {
+  font-size: 10px;
+  font-weight: 500;
+  display: block;
+}
+.sibyl-team-list small {
+  display: block;
+  font-size: 8px;
+  color: #a2a8b9;
+  margin-top: 3px;
+}
+.sibyl-team > .text-link {
+  font-size: 10px;
+}
+.sibyl-channel-note {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid #e5e8f1;
+  color: #9b92b4;
+}
+.sibyl-channel-note strong {
+  display: block;
+  font-weight: 500;
+  font-size: 11px;
+  color: #747d94;
+  margin-top: 12px;
+}
+.sibyl-channel-note p {
+  font-size: 10px;
+  color: #a0a8b7;
+  line-height: 1.7;
+}
+.sibyl-channel-note a {
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sibyl-messages {
+  padding: 26px 2px 6px;
+}
+.sibyl-turn + .sibyl-turn {
+  margin-top: 30px;
+}
+.sibyl-user-message {
+  margin-left: auto;
+  max-width: 85%;
+  width: fit-content;
+  background: #f1f1f9;
+  border: 1px solid #e9e8f2;
+  border-radius: 17px 17px 4px 17px;
+  padding: 12px 16px;
+}
+.sibyl-user-message > span {
+  font-size: 8px;
+  color: #aaa4bd;
+}
+.sibyl-user-message p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  margin: 5px 0 0;
+  line-height: 1.8;
+}
+.sibyl-answer {
+  margin-top: 24px;
+}
+.sibyl-answer-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sibyl-answer-label .sibyl-mark,
+.sibyl-thinking .sibyl-mark {
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+}
+.sibyl-answer-label strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.sibyl-answer-label > span:last-child {
+  color: #a3a9b9;
+  font-size: 9px;
+  margin-left: auto;
+}
+.sibyl-answer-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.95;
+  color: #5d677d;
+}
+.sibyl-live-progress {
+  border: 1px solid #e9e5f2;
+  border-radius: 16px;
+  background: linear-gradient(125deg, #f8f7fd, #f6f9fd);
+  padding: 14px 16px;
+  margin-top: 24px;
+  color: #83739e;
+  font-size: 11px;
+}
+.sibyl-progress-heading,
+.sibyl-progress-heading > span,
+.sibyl-progress-heading > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sibyl-progress-heading {
+  justify-content: space-between;
+}
+.sibyl-progress-heading > button {
+  color: #80748e;
+  background: #fff;
+  border: 1px solid #e7e2ee;
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 10px;
+  flex-shrink: 0;
+  transition:
+    background 150ms,
+    border-color 150ms;
+}
+.sibyl-progress-heading > button:hover:not(:disabled) {
+  background: #f1edf7;
+  border-color: #c9bedc;
+}
+.sibyl-progress-heading > button:disabled {
+  opacity: 0.5;
+}
+.sibyl-progress-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+.sibyl-progress-team > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9px;
+  padding: 7px 9px;
+  border: 1px solid #e5e0ef;
+  background: #ffffffb3;
+  font-size: 10px;
+}
+.sibyl-progress-team > span[data-status='completed'] {
+  color: #63877c;
+  border-color: #deebe6;
+}
+.sibyl-progress-team small {
+  font-size: 8px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+.sibyl-request-outcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #f7f6fb;
+  border-radius: 11px;
+  padding: 11px 13px;
+  margin-bottom: 10px;
+  color: #8c829d;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.sibyl-request-outcome > button {
+  color: #8a6eaf;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+}
+.modal.sibyl-history-dialog {
+  width: min(100%, 700px);
+}
+.sibyl-request-history {
+  font-size: 11px;
+  color: #69758a;
+}
+.sibyl-request-history > p {
+  font-size: 11px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+.sibyl-request-history > section {
+  border: 1px solid #e6e8f1;
+  border-radius: 13px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.sibyl-request-summary {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  padding: 15px;
+  align-items: center;
+  text-align: left;
+  background: #fafafe;
+}
+.sibyl-request-summary > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.sibyl-request-summary strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  color: #56617b;
+}
+.sibyl-request-summary small {
+  display: block;
+  color: #939bb0;
+  font-size: 9px;
+  margin-top: 4px;
+}
+.sibyl-request-summary > svg {
+  flex-shrink: 0;
+  transition: transform 150ms;
+}
+.sibyl-request-summary[aria-expanded='true'] > svg {
+  transform: rotate(180deg);
+}
+.sibyl-request-detail {
+  padding: 4px 16px 16px;
+  border-top: 1px solid #e6e8f1;
+}
+.sibyl-request-detail > div {
+  padding: 8px 0 12px;
+}
+.sibyl-request-detail > div + div {
+  border-top: 1px solid #edf0f6;
+}
+.sibyl-request-detail h4 {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 10px 0;
+}
+.sibyl-request-detail h4 .badge {
+  margin-left: auto;
+}
+.sibyl-request-detail p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.sibyl-request-detail pre {
+  font-size: 9px;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sibyl-request-detail > .button {
+  margin-top: 14px;
+  font-size: 10px;
+}
+.sibyl-thinking-dots {
+  animation: sibyl-breathe 1.5s infinite;
+}
+.sibyl-consultations {
+  border: 1px solid #e8e8f2;
+  border-radius: 13px;
+  margin-top: 18px;
+  font-size: 10px;
+  overflow: hidden;
+}
+.sibyl-consultations > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  color: #948baa;
+  cursor: pointer;
+}
+.sibyl-consultations > summary > svg {
+  margin-left: auto;
+}
+.sibyl-mini-avatars {
+  display: inline-flex;
+  padding-left: 4px;
+}
+.sibyl-mini-avatars span {
+  margin-left: -4px;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eae8f5;
+  color: #9186b3;
+  border: 2px solid white;
+  font-size: 8px;
+}
+.sibyl-consultations > div {
+  padding: 0 14px 14px;
+}
+.sibyl-consultations section {
+  padding-top: 12px;
+  border-top: 1px solid #ececf4;
+}
+.sibyl-consultations section + section {
+  margin-top: 14px;
+}
+.sibyl-consultations h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+}
+.sibyl-consultations h4 .badge {
+  margin-left: auto;
+  font-size: 8px;
+}
+.sibyl-consultations p {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.sibyl-consultations pre {
+  max-height: 220px;
+  overflow: auto;
+  font-size: 9px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.messaging-intro {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  padding: 20px 0;
+}
+.messaging-intro h2 {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+  margin: 0 0 7px;
+}
+.messaging-intro p {
+  color: #9299ad;
+  font-size: 12px;
+  margin: 0;
+}
+.messaging-intro > .badge {
+  margin-left: auto;
+}
+.messaging-intro-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: #f0edf9;
+  color: #9c89bb;
+  display: grid;
+  place-items: center;
+}
+.messaging-model-warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin: 8px 0 16px;
+  border: 1px solid #eee0bc;
+  border-radius: 14px;
+  background: #fff9ed;
+  color: #8a7042;
+}
+.messaging-model-warning > div {
+  flex: 1 1 240px;
+}
+.messaging-model-warning strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.messaging-model-warning p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.messaging-model-warning .text-link {
+  font-size: 11px;
+}
+.messaging-unavailable-note {
+  padding: 14px 18px;
+  background: #f8f9fc;
+  border: 1px solid #e8ebf3;
+  border-radius: 14px;
+  font-size: 11px;
+  line-height: 1.9;
+  color: #919aae;
+  margin: 10px 0 22px;
+}
+.messaging-unavailable-note strong {
+  color: #626c83;
+  font-weight: 500;
+}
+.messaging-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.messaging-card {
+  border: 1px solid #e4e8f0;
+  border-radius: 20px;
+  padding: 24px;
+  background: #fff;
+  min-width: 0;
+  align-self: start;
+}
+.messaging-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.messaging-card-heading h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  font-weight: 500;
+}
+.messaging-card-heading small {
+  font-size: 9px;
+  color: #a1a7b8;
+}
+.messaging-card-heading .badge {
+  margin-left: auto;
+  font-size: 8px;
+}
+.channel-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+.channel-whatsapp {
+  background: #edf7f0;
+  color: #70a682;
+}
+.channel-telegram {
+  background: #eaf4fd;
+  color: #75a8cf;
+}
+.channel-discord {
+  background: #efeffc;
+  color: #8a8cd0;
+}
+.channel-slack {
+  background: #f9eef4;
+  color: #b183a4;
+}
+.channel-signal {
+  background: #eef1ff;
+}
+.channel-email {
+  background: #f5f0e9;
+  color: #ad8962;
+}
+.messaging-field-group {
+  border-top: 1px solid #edf0f6;
+  margin-top: 15px;
+  padding: 12px 0 2px;
+}
+.messaging-field-group > summary {
+  color: #7a859e;
+  font-size: 11px;
+  cursor: pointer;
+}
+.messaging-card > p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #9a9fb1;
+  margin: 18px 0 22px;
+}
+.messaging-card label {
+  display: grid;
+  gap: 8px;
+  font-size: 10px;
+  color: #7a859e;
+  margin-top: 14px;
+}
+.messaging-card input,
+.messaging-card select {
+  font-size: 12px;
+}
+.messaging-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.messaging-fields input:disabled,
+.messaging-fields select:disabled {
+  color: #7a859e;
+  background: #f8f9fc;
+  opacity: 1;
+  cursor: not-allowed;
+}
+.messaging-fields input::placeholder {
+  color: #a1a8b8;
+  opacity: 1;
+}
+.messaging-fields label > small {
+  font-size: 9px;
+  color: #98a1b4;
+  line-height: 1.6;
+}
+.channel-icon img {
+  display: block;
+  object-fit: contain;
+}
+.messaging-card-footer {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid #edf0f6;
+}
+.messaging-card-footer p {
+  font-size: 10px;
+  line-height: 1.7;
+  color: #98a1b4;
+  margin: 0 0 9px;
+}
+.messaging-card-footer a {
+  font-size: 10px;
+}
+@media (max-width: 1100px) {
+  .sibyl-room {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sibyl-team {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .sibyl-wordmark p {
+    display: none;
+  }
+  .sibyl-wordmark .sibyl-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+  }
+  .sibyl-wordmark h1 {
+    font-size: 24px;
+  }
+  .sibyl-page-actions > button {
+    width: 32px;
+    height: 32px;
+    font-size: 0;
+    padding: 8px;
+    gap: 0;
+  }
+  .sibyl-page-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .sibyl-page-actions {
+    margin-left: auto;
+  }
+  .sibyl-page-actions .button {
+    padding: 8px;
+    font-size: 10px;
+  }
+  .sibyl-page-actions .button span {
+    display: none;
+  }
+  .sibyl-page-actions > button.button {
+    font-size: 0;
+  }
+
+  .sibyl-room {
+    border-radius: 18px;
+    height: max(440px, calc(100dvh - 195px));
+  }
+  .sibyl-conversation-toolbar {
+    padding: 12px;
+    flex-wrap: wrap;
+    font-size: 9px;
+  }
+  .sibyl-chat-scroll {
+    padding: 0 14px;
+    max-height: none;
+  }
+  .sibyl-welcome {
+    padding-top: 30px;
+  }
+  .sibyl-welcome h2 {
+    font-size: 28px;
+  }
+  .sibyl-starters {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 22px;
+    gap: 6px;
+  }
+  .sibyl-starters button {
+    padding: 10px 12px;
+  }
+  .sibyl-starters span {
+    margin-bottom: 4px;
+  }
+  .sibyl-compose-area {
+    padding: 12px;
+  }
+  .sibyl-setup-note {
+    flex-wrap: wrap;
+  }
+  .sibyl-setup-note .button {
+    margin-left: auto;
+  }
+  .sibyl-composer > div > span {
+    font-size: 8px;
+  }
+  .messaging-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .messaging-card {
+    padding: 18px;
+  }
+  .messaging-intro {
+    flex-wrap: wrap;
+  }
+  .messaging-intro h2 {
+    font-size: 20px;
+  }
+  .messaging-intro > div {
+    flex: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sibyl-halo::before,
+  .dock-sibyl .sibyl-mark::after,
+  .sibyl-thinking-dots {
+    animation: none;
+  }
+  .sibyl-starters button,
+  .dock-sibyl .sibyl-mark,
+  .sibyl-composer button {
+    transition: none;
+  }
+  .sibyl-chat-scroll {
+    scroll-behavior: auto;
+  }
+}
+.sibyl-consultations > summary::before {
+  content: none;
+}
+@media (max-height: 800px) {
+  .sibyl-halo,
+  .sibyl-welcome > .sibyl-eyebrow {
+    display: none;
+  }
+  .sibyl-welcome {
+    padding-top: 14px;
+  }
+  .sibyl-welcome h2 {
+    font-size: clamp(24px, 2.6vw, 32px);
+  }
+  .sibyl-starters {
+    margin-top: 18px;
+  }
+  .sibyl-model-note {
+    padding: 6px 10px;
+    font-size: 9px;
+  }
+}

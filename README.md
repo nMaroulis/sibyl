@@ -1,259 +1,162 @@
-
-<div align="center">
-
-[//]: # (  <img src="https://repository-images.githubusercontent.com/648387594/566640d6-e1c4-426d-b2f2-bed885d07e97">)
-  <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501">
-</div>
-
-[![Python](https://img.shields.io/badge/python-v3.12-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-v1.45-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-v0.115.12-blue)]()
-[![Llama-CPP](https://img.shields.io/badge/llama_cpp-v0.3.8-black)]()
-[![Tensorflow](https://img.shields.io/badge/tensorflow-v2.18.0-orange)]()
-[![PyTorch](https://img.shields.io/badge/pyTorch-v2.6.0-pink)]()
-[![Pandas](https://img.shields.io/badge/pandas-v2.2.3-lightgrey)]()
-[![Plotly](https://img.shields.io/badge/plotly-v6.0.1-green)]()
-[![Sklearn](https://img.shields.io/badge/Scikit_Learn-v1.6.1-purple)]()
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/nmaroulis/sibyl)
-
-
-# Sibyl - Your AI-Powered Crypto Trading Hub with a UI
-
-[//]: # (<hr>)
-
-[//]: # (<span style="color: red; font-size: 16px;">pre-alpha version</span>)
-
-[//]: # (<br>)
-
-Welcome to **Sibyl**! This application is your centralized hub for all things crypto. With Sibyl, you can connect multiple crypto exchange accounts, deploy smart trading strategies, and access a wide range of AI-powered tools, all within a secure, locally deployed environment.
-
-## Key Features
-
-### Interactive Dashboard UI
-The intuitive dashboard provides a comprehensive view of your crypto activities. Manage your trading strategies, analyze market trends, and keep an eye on the latest news, all in one place.
-
----
-
-### AI Agents & LLMs that power each Sibyl functionality - Oracle Module 🔥
-**Oracle** is the LLM-driven intelligence layer of *Sibyl*.
-Wherever you navigate in Sibyl, Oracle is there, ready to assist, explain, advise or spark new insights.
-With a single click, you activate a powerful AI agent that understands your context and delivers real-time intelligence, from market sentiment analysis to data explanations, crypto education, and strategy suggestions and more.
-
-- **Context-Aware Assistant**  
-  Oracle adapts to each section of Sibyl, whether you're analyzing a token, reading market news, launching a strategy or reviewing your trades.
-
-- **Natural Language Interaction**  
-  Ask questions, get summaries or explore crypto concepts with simple text, no jargon required.
-
-- **Real-Time Reasoning**  
-  Powered by **locally deployed** or **API** LLMs, Oracle can synthesize multiple sources of information, extract insights, and provide actionable suggestions.
-
-- **Intelligent Agent Hooks**  
-  Oracle can trigger deeper tools like analytics, visualizations or predictions via internal AI agents when appropriate.
-
----
-
-### Connected Crypto Exchange Overview - Wallet Module 💰
-
-This is the landing page of Sibyl.
-Get an overview of the status of connected Crypto Exchanges, including balances, positions, and recent trades.
-
-![wallet_ui](https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/gifs/wallet_ui.gif)
-
-
----
-
-### Strategy Planning - Broker Module 🎯
-Tune and deploy trading strategies and monitor their performance through a real-time UI:
-
-#### Option 1 - Sibyl Trading Engine
-
-A **`custom trading engine`** written in Python, supporting BUY, SELL orders and Backtesting.
-
-- Currently supported trading algorithms:
-  - Generic strategy algorithms: Bollinger Bands, RSI and EMA crossover
-  - Sibyl advanced custom strategy algorithms: **Bollinger Surge**, **Impulse Breakout** and **Quantum Momentum**.
-- Customize the parameters for each algorithm and choose the desired market you want to deploy it.
-- **Backtesting** for each strategy before it is deployed. Get strategy performance metrics and plots on historic data.
-- ```Strategy Console```: Monitor in real-time the performance of the algorithm
-  - Logs Table
-  - Evaluation metrics (profit ratio, sharpe ratio, drawdown, sortino and more..)
-  - Real-time Line plot where the actions of the algorithm are shown.
-
-Modules:
-- Strategies: All the classes that implement a strategy logic. Inherit the ```BaseStrategy``` class
-- ```Tactician```: Takes a Strategy as input and is responsible for running it. It is run in a loop, where the interval is based on the strategy interval. Uses the ```TacticianExchangeInterface``` to communicate with the Exchange API clients.
-- ```Evaluator```: Takes as inputs the strategy logs and calculates the Evaluation metrics.
-- ```Backtester```: Aggregates historical data and evaluates the strategies on them.
-
-TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
-
-#### Option 2 - Freqtrade Engine with custom API layer and UI
-
-TBD
-
----
-
-### SPOT Trading - Broker Module 💰
-Create and place a SPOT order through the sibyl UI. This order will be first sent as a test order, and if it is validated it will be placed on your Exchange API.
-The Spot order is then saved in the TradingHistory DB, to retrieve its status and get analytics.
-
----
-
-### Price Movement Prediction using ML - Chronos Module 🔮
-Chronos contains a suite of ML models for signal processing (non-LLM). Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to forecast and asset's price and make informed trading decisions. 
-- Chronos (Forecasting) tab in the UI: choose an asset and call the Chronos to get the price prediction.
-
-Currently Supported Models:
-- Custom Tensorflow LSTM model, features: [bitcoin_price, sp500_price, gold_price, usd_index, oil_price, volatility_index, interest_rate]
-
-
-TBD:
-- [Nixtla](https://github.com/Nixtla/nixtla) model
-- Custom model based on [CryptoMamba](https://github.com/MShahabSepehri/CryptoMamba/tree/main)
-
-TBA: 
-- Utilize Chronos models for AI-powered strategies.
-
----
-
-### Data Analysis & Visualization - Analyst Module 📈
-
-Sibyl offers powerful data analysis and visualization tools to support your trading decisions:
-
-- Line and Candle Plots with statistics (Bollinger Bands, RSI, EMA and more..)
-- Correlation Analysis
-- SHAP Feature Importance
-- Regression Analysis
-
-Visualize the data with custom plots and tables for clear insights.
-
-Track your profits and losses with detailed tables and plots, allowing you to measure the success of each trading order.
-
-![analytics_ui](https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/gifs/analytics_1_ui.gif)
-
----
-
-### Crypto News & Market Sentiment - Reporter Module 🕵🏻‍
-Stay informed with the Natural Language Processing (NLP) tools:
-
-- Web scraping for the latest crypto news
-- Text summarization for quick news highlights
-- Sentiment analysis using advanced language models to gauge market mood
-- **Oracle**: LLM-powered chatbot, to ask questions about the latest crypto news.
-
-![reporter_ui](https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/gifs/reporter_ui.gif)
-
----
-
-### Connect with Popular Exchanges - Technician Module 🛠️
-Sibyl supports API connections with major crypto exchanges. Currently supported:
-
-- Binance.com
-- Binance Testnet
-- Coinbase Sandbox
-
-Additional exchanges are planned for future releases.
-- Coinbase
-- Bybit
-- Kraken
-
----
-
-### Crypto Wiki Chatbot - Wiki Module 💬
-An interactive **chatbot** which is based on custom **AI agents** using **MCP server**, a **RAG system**, which includes thousands of crypto-related publications, books and articles,
-and Agent tools like **Web Search**, **Chat History Memory** and **Conversation Pipeline**.
-After you ask a crypto-related question, the Pipeline begins. First the user query is **classified** as *conversational* or *technical*. In case of *conversational*, the chatbot just uses an LLM to generate a response.
-If the user query is *technical*, then, the embeddings for your query are created and the most similar embeddings are found in the ***chromaDB*** Embeddings Database.
-The similarity method is a hybrid approach, using cosine similarity, BM25 keyword search matching and FAISS indexing similarity. In case no valid material is found on the Embeddings DB, then a **web search** is performed
-in order to find relevant information online. All the available material is given to the LLM in order to generate the response.
-
-In order to use this functionality, you have to:
-1. Setup an LLM through the UI Settings Tab.
->   i. Provide a valid HuggingFace or OpenAI **API key**, to be stored in the local encrypted Database *or*
->
->   ii. Choose an LLM to be deployed **locally**. This is done automatically by the backend.
-2. **Download the chromaDB Embeddings Database**, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
-
----
-
-### Evaluate Stock - Stock Analysis Module 📊
-Choose a Company from a list of available company stocks and:
-
-- Get Company's Information
-- Analysis if a stock is worth buying or not based on various indicators
-- Get insights about U.S. senators' stock portfolios
-- **Oracle**: LLM-powered stock evaluation
-- Future Release: Rating based on custom ML model
-
----
-
-## Security & Local Deployment
-Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.
-### Local Databases
-#### API Key Storage 
-> All **API keys** are stored ***locally*** on an **encrypted** SQlite Database, with a **unique encryption key** generated on your local file system. This Database uses SQLAlchemy for ORM. You may find the database and the encryption key at */database*
-
-> All **trades** made through Sibyl strategies are stored in a local SQlite DB without keeping any personal information.
-
-## Architecture
-
-<div align="center">
-
-[//]: # (  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">)
-  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">
-</div>
-
-
-## Deployment
-
-**1. Virtual Environment — Recommended for Apple silicon and ARM systems, so Pypi takes care of arm64 libraries.**
-
-Install Python 3.12 on your system:
-
-```sh
-# Linux (apt)
-$ sudo apt install python==3.12
-# macOS
-$ brew install python@3.12 
-
-$ cd sibyl
-
-$ python3.12 -m venv sibyl
-$ source sibyl/bin/activate
-
-Option 1 - uv Package manager (recommended)
-# Linux & macOS
-$ pip install uv
-# macOS
-$ brew install astral-sh/tap/uv
-
-$ uv sync --active
-
-Option 2 - Pip and requirements.txt
-$ pip install -r requirements.txt # poetry config file is also available
-
-# Run application (make sure the venv is activated)
-$ python main.py
+# Sibyl
+
+The design favors ordinary functions and a few small services. Business logic is independent of React and FastAPI; ProtoLink composes existing read-only functions rather than becoming a second application backend.
+
+```text
+React pages + shared UI
+          │ same-origin /api/v1
+FastAPI routes + validated request models
+          │
+          ├── Market ── ExchangeClient ── public prices / private balances
+          ├── Portfolio ── Market + Store
+          ├── Analytics ── pure Pandas/NumPy functions
+          ├── Strategies ── backtests + persistent paper worker
+          ├── PriceAlerts ── editable level/crossing rules + persistent local inbox
+          ├── ExchangeTrading ── reviewed intents + CCXT create_order
+          ├── Research ── glossary / RSS / blocks / optional equities
+          └── AgentRegistry ── ProtoLink runtime registry + agent clients
+                              ├── Sibyl ── discover & consult
+                              └── Ten specialists + read-only tools
+                       │
+              Store: SQLite + Fernet vault
 ```
 
-**2. Dockerfile - Recommended for x86 systems.**
+## Legacy Streamlit version
 
-```sh
-$ docker build -t sibyl_image .
-$ docker run -p 8501:8501 -p 8000:8000 -p 50051:50051 sibyl_image
-```
+The original Sibyl dashboard, built entirely in Python with Streamlit, is available at [nMaroulis/sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit). This repository contains the React frontend, Python API and AI agents powered by ProtoLink.
 
-Access the frontend from your browser at ```http://localhost:8501```
+Original branding files remain in `assets/`; the dashboard and docs serve copies of `logo_transparent.png` and `logo_brand.png` from their public directories.
 
+## Workspace navigation
 
-## Roadmap
-The development roadmap includes exciting new features:
+Account is the home screen. New workspaces start with no active accounts. Connect multiple exchange accounts to combine their holdings, then filter by exchange or individual account. Activation controls keep saved credentials separate from active accounts. Demo is a clearly labeled optional preview and switches off when an exchange activates. The floating dock opens **Sibyl**, Markets, Trade, Strategies, Forecasting, News, and Settings. **More** expands to Agents, Alerts, Research and Coming soon. Settings combines **Exchanges**, **AI models**, **News**, **Market data**, **Messaging**, and **Workspace** in a matching top tab bar. Form drafts remain in memory while switching Settings sections. AI models saves encrypted provider profiles, a workspace default and optional per-agent provider/model overrides. Preset/custom IDs apply to new ProtoLink requests, which freeze the team configuration through delegated consultations. Profiles can be saved without changing the default; keys/endpoints are shared per provider. See [model contracts](docs/docs/developers/agent-models.md). News saves collector choices and encrypted optional NewsAPI keys. Market data selects public exchange feeds, saved account environments, or CryptoCompare/CoinGecko APIs with encrypted keys, applied immediately. Markets can override the feed for its own charts and Analyst without changing the default. Its editable watchlists persist per feed, with add/remove/reorder controls and Quick look cards following the saved order. See [market sources](docs/docs/developers/market-data.md). See the [Settings guide](docs/docs/guides/settings.md).
 
-- A Reinforcement Learning Agent that automatically places buy/sell orders based on optimized strategies and timing.
+**Sibyl** is the lead ProtoLink agent: ProtoLink automatically exposes registered specialists and handles native delegation as Sibyl chooses whom to consult, combining their evidence in a dedicated chat with saved conversations and a consultation trail. Live progress shows the specialists at work; Stop cancels the exact request, and request history retains completed observations and stopped/failed/interrupted outcomes. Unfinished requests are marked interrupted after restart without automatic replay. All eleven native agents start with the app using ProtoLink `.start()`; module Ask buttons talk directly to their specialist through ProtoLink clients. Each agent has its own Python file, prompt and typed tools. Models fetch evidence on demand instead of receiving preloaded module snapshots. Reporter reads cached news and Technician provides practical settings/setup guides. Sibyl requires a configured API or local model and links to setup when one is missing. Mock responses are explicitly simulated. **Settings → Messaging** shows app icons and the required setup fields for WhatsApp, Telegram, Discord, Slack, Signal and Email. Telegram is implemented with encrypted bot configuration, private-user binding, polling and durable delivery. Other channels remain unavailable previews. See [Telegram setup](docs/docs/guides/telegram.md). See the [Sibyl guide](docs/docs/guides/sibyl.md) and [agent architecture](docs/docs/developers/agents.md).
 
----
+## Strategy execution
 
-If you have any questions or suggestions, please open an issue or submit a pull request. I'm excited to see how you use Sibyl to enhance your crypto trading experience!
+Strategies starts with historical research and isolated paper runs. Expand **Run on a connected exchange** for account/pair selection, native quote budgets, risk limits and an optional order lifetime. Nine provider/environment variants use price-capped GTC orders and the shared native order/fill pipeline. Both backend execution flags and a typed scoped approval are required; startup pauses new submissions while approved expiry continues. The monitor offers **Stop & cancel orders**, then a separately reviewed **Close position** sell once outstanding evidence is reconciled. Exits use only strategy-owned units, reserve base fees and retain any partial-fill/precision residual for a fresh approval. Uncertain writes are never automatically repeated. Agents remain read-only. A durable **Halt automation** control pauses all exchange runs, blocks new signal orders, invalidates unused reviews and retains an audit. Typed release keeps every run paused for individual review/Resume. Manual Trade, approved cancellation policies and separately reviewed position exits retain their existing permissions. Portfolio-wide exposure/daily-loss policies and authenticated venue acceptance remain pending. See the [exchange strategy guide](docs/docs/guides/strategy-execution.md).
 
+Expand **Validate on unseen data** for bounded parameter search on earlier candles and independent later-window tests. Saved immutable inputs support chronological holdouts and expanding walk-forward evaluation, fixed-settings and cost-aware buy-and-hold comparisons, test-chart executions, training rankings, exact-study reruns and JSON/CSV evidence. Research never changes or starts a trading strategy. See [validation setup and interpretation](docs/docs/guides/strategy-validation.md).
+
+## Portfolio valuation
+
+Portfolio prices actual held assets through exact direct, inverse or short conversion routes from the selected market feed. Stablecoins and fiat use observed rates; no parity is assumed. Holdings expose conversion evidence and coverage, and unavailable quantities stay visible. Complete account observations form the history. The Demo wallet exercises an extra coin, stablecoin and fiat through the same engine. See [portfolio valuation](docs/docs/developers/portfolio-valuation.md).
+
+## Funding history
+
+**Trade → Account history → Fills & imports** supports durable selected-market fills for eleven clients/environments, including OKX, Bybit UTA, KuCoin classic and Bitget classic. Incremental sync resumes checkpoints; **Rescan available history** checks older available fills for fee/data corrections while retaining local observations. Provider retention, retained execution ranges and per-pass corrections remain explicit. OKX, Bybit and KuCoin also support exact-order fill reconciliation. See [account imports](docs/docs/developers/account-sync.md).
+
+**Trade → Account history → Funding** adds read-only range imports for Binance crypto deposits/withdrawals, Kraken deposit/withdrawal/transfer ledger entries and Bybit master-UID on-chain withdrawals. Checkpoints, pause/resume, rescans and sanitized retries retain native IDs, statuses, amounts and fees. Summaries keep accounts, environments and assets separate. Demo has an actual empty funding history plus a standalone example. Ask Accountant reads the selected local observations through ProtoLink. Funding gaps flag affected market FIFO as provisional; unsupported transfer/funding cases and cash-flow-adjusted returns remain future work. See [funding contracts, provider limits and remaining work](docs/docs/developers/funding-history.md).
+
+## Transfer review
+
+**Funding → Reconcile transfers** suggests possible own-account pairs, exposes competing matches and supports manual search of older records. Explicit confirmation stores source-version snapshots and an audit trail. Corrections flag links for review; removal/restoration is reversible and a source record can belong to one active link. Funding rows show the classification without changing their amounts. ProtoLink Accountant reads the same local evidence. **Performance** now carries original acquisition lots across eligible current confirmed zero-fee pairs or explicit, balanced same-asset fee allocations. It shows carried cost, original dates and unapplied reasons, and includes a separate transfer example. Review amount conventions and missing-fee assertions in the same dialog. Fee units and their historical inventory cost stay separate; final net remains provisional without historical fee valuation. Split/merged transfers, other fee currencies/rebates, cross-market basis and account returns remain future work. See [fee allocation contracts](docs/docs/developers/transfer-fees.md). See [carryover rules](docs/docs/developers/transfer-cost-basis.md). See [transfer review and limits](docs/docs/developers/transfer-reconciliation.md).
+
+## Local alerts and pending work
+
+**More → Alerts** saves editable level/crossing rules for an exact pair/feed, with one-time or reset-based repetition, cooldowns, explicit Demo labeling, pause/rearm/archive/restore and a persistent in-app inbox. Edits save paused and retain past notification evidence; crossing rules require newer ordered quotes and do not infer moves across gaps. The bell counts unread notifications while retaining agent/backtest activity. The API must be running; stale/undated quotes do not trigger, failures back off, and missed offline crossings are not reconstructed. No trade or external message is sent. See the [user guide](docs/docs/guides/alerts.md) and [backend contracts](docs/docs/developers/alerts.md).
+
+**Coming soon → Implementation status** now lists what works and what remains across all 13 areas, including a dedicated **Sibyl & messaging** backlog, served by the backend’s audited inventory. **Multi-user support is deferred** and appears in Coming soon rather than the active implementation sequence. Candle history, reviewed resumable backfills, coverage gaps, retention and immutable backtest datasets are now implemented. Shared local read limits, cooldowns and observed source diagnostics are now implemented too. Next foundations include broader account reconciliation, authenticated order recovery/discovery validation, exact weighted quota policies and richer operational metrics. See the [complete refreshed checklist](docs/docs/developers/backend-roadmap.md).
+
+## News and sentiment
+
+**News** collects five public publisher feeds through the Python backend, with a persistent deduplicated archive, source health, search/asset/publisher/date filters, and VADER text polarity distributions and trends. Public news works while exchange accounts stay in demo mode. Ask Reporter reads the selected story or filters through ProtoLink. Publisher RSS needs no key; CryptoSlate web collection and encrypted optional NewsAPI access are also supported. Full articles open at the publisher. Alternative.me supplies the attributed Fear & Greed index. See the [News backend guide](docs/docs/developers/news.md).
+
+## Crypto research
+
+**Research → Crypto profiles** covers 20 familiar assets with backend-fetched project information, history excerpts, market/supply figures, contributors, and source links. CoinPaprika and Wikipedia public data work in either demo or live trading mode. Independent persistent caches and explicit stale/unavailable states keep provider failures visible. **Ask Wiki** reads the selected profile through ProtoLink. See the [Research guide](docs/docs/guides/research.md).
+
+## Exchange clients
+
+A shared `ExchangeClient` interface now backs **20 real spot providers plus an offline `DemoClient`**. Explicit CCXT subclasses normalize markets, quotes, candles, books, balances, order status, open orders and bounded fill history. The demo client is a normal saved connection with a Demo badge, a persistent paper wallet and simulated fills through the same interface. All fixtures and seed balances live in Python; Account reads the same backend APIs for demo and real accounts. Exchange logos are self-hosted app assets. Settings loads the searchable exchange catalog and credential requirements from the backend; OKX/KuCoin/Bitget passphrases and BitMart API memos are supported.
+
+Implemented adapters: Binance, Binance.US, Coinbase, Kraken, OKX, Bybit, KuCoin, Gate, Bitget, MEXC, HTX, Crypto.com Exchange, Bitstamp, Gemini, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit. Manual market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic and Bitstamp; Gemini supports GTC limits and cancellation only. Other production clients remain read-only. Click any provider in Settings for its account, spot, history, market-data and automation support, including explicit gaps. Authenticated accounts and real orders have not been acceptance-tested.
+
+See the [client reference, provider matrix and remaining implementation checklist](docs/docs/developers/exchange-clients.md). Missing work includes authenticated provider validation, new-provider execution, cancel/replace and conditional orders, broader fill imports and complete reconciliation, streaming, additional wallet/account variants and broader valuation. `GET /api/v1/exchanges` reports the installed SDK's capabilities and remaining unconfigured exchange IDs.
+
+Dedicated **Binance Testnet** and **Coinbase Sandbox** options are also available in Settings. They have separate credentials, forced sandbox routing and test-funds badges. Coinbase Sandbox uses the Coinbase Exchange API, separate from Advanced Trade. Test accounts are visible individually in Account balances and excluded from real portfolio totals. See the [test-environment setup guide](docs/docs/guides/exchanges.md#test-environments-and-orders).
+
+## Order management
+
+**Trade → Order monitor** now follows reviewed market and GTC limit orders, cumulative partial fills, cancellation requests and persisted status tracking. Native writes remain limited to Binance, Coinbase Advanced, Kraken and the dedicated test clients. Unknown writes are never automatically retried. **Recover order** now looks up uncertain submissions by saved client ID for these clients and Demo, with exact reviewed-detail checks, durable bounded pagination and explicit no-match/ambiguous states. A verified ID rejoins status/fill tracking without resubmitting. See [recovery contracts](docs/docs/developers/order-recovery.md). Demo supports resting GTC limits with atomic virtual-wallet reservations, matching and cancellation; its fills enter the same paper ledger. **View example** changes no account records. Stop/OCO and cancel/replace remain future work. See [order-management contracts and limits](docs/docs/developers/order-management.md).
+
+**Sync exchange orders** in **Trade → Executions** now discovers open/recent orders from Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo. The combined monitor filters by exchange, account, origin and status, with paginated read-only imported rows, saved sync progress and shared fill identities. Binance recent history uses explicitly selected pairs; native coverage/retention limits remain visible. See [discovery contracts](docs/docs/developers/order-discovery.md).
+
+Open an order's **Executions** evidence to compare native filled quantity with imported fill IDs, reported cost and native-currency fees. Exact-order imports share Account history's identities, commit each page with its restart checkpoint, and make three bounded terminal passes for delayed fee evidence. Checks never retry an order submission. Missing fills/fees remain visible, and a match is not a final-settlement guarantee. Demo and isolated examples use the same detail view. See [reconciliation contracts and remaining scope](docs/docs/developers/order-reconciliation.md).
+
+## Python package
+
+| File/module                                      | Responsibility                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `config.py`                                      | Validated environment configuration, with no import-time network work                             |
+| `models.py`                                      | Strict request models, enum-like IDs, canonical symbol validation                                 |
+| `storage.py`                                     | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                     |
+| `services/market.py`                             | Client ownership, closed candles, source labels and bounded cache                                 |
+| `services/portfolio.py`                          | Aggregate account balances, valuation, history, incomplete-account reporting                      |
+| `services/analytics.py`                          | Pure indicator, correlation, and baseline forecasting functions                                   |
+| `strategies/`                                    | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                        |
+| `strategies/journal.py`                          | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV |
+| `services/trading.py`                            | Exchange preview validation, intent expiry, at-most-once submission attempts                      |
+| `services/import_worker.py`                      | Shared one-page scheduling, transport failure handling and safe shutdown                          |
+| `services/transfer_reconciliation.py`            | Bounded suggestions, explicit transfer assertions, source-version checks, reservations and audit  |
+| `services/funding_sync.py`                       | Explicit-range funding jobs, rescans, active-account gating and isolated examples                 |
+| `services/funding_ledger.py`                     | Validated funding facts, atomic checkpoints and native completed-quantity summaries               |
+| `services/account_sync.py`                       | Durable selected-market imports, retries, pause/resume and progress                               |
+| `services/fifo.py`, `services/transfer_basis.py` | Shared decimal FIFO books, dependency replay and original-lot transfer carryover                  |
+| `services/performance.py`                        | Decimal market FIFO, audited opening inventory and opt-in reconciled reference marks              |
+| `services/ledger.py`                             | Normalized fills, native-currency fees and atomic import checkpoints                              |
+| `services/research.py`                           | Bounded source-labeled research reads                                                             |
+| `news/`                                          | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment      |
+| `agents/<module>.py`                             | Each native ProtoLink agent, its prompt and typed read-only tools                                 |
+| `agents/registry.py`, `agents/network.py`        | Wiring, native lifecycle/client tasks, request limits and persistence                             |
+| `api/app.py`                                     | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA       |
+| `api/routes.py`                                  | Thin versioned HTTP routes                                                                        |
+
+`create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, and owns separate paper-strategy, news and account-import workers. Shutdown waits for an in-flight account read before closing its transport. Importing the package does not connect to an exchange or initialize a model.
+
+Account history now has a persistent fill ledger and resumable selected-market imports for Demo, Binance/Binance.US/Testnet, Coinbase Advanced Trade/Sandbox and Kraken. Open **Trade → Account history** or its connected-account shortcut in Settings. Imports retain native IDs, fee currencies and rebates, with pause/resume, restart recovery and explicit coverage limits. Imports never place orders. The Performance view computes retained exact-market FIFO, with editable opening inventory, fee coverage, optional balance-checked current marks, CSV summaries and contextual Accountant assistance. Full cash-flow-adjusted account returns remain future work. See [account synchronization](docs/docs/developers/account-sync.md) and [account performance](docs/docs/developers/account-performance.md).
+
+## Frontend
+
+`pages/` owns domain screens. `components/ui.tsx` defines shared controls and notifications; `charts.tsx` wraps chart rendering; `ExchangeExecution.tsx` isolates the actual-funds review flow. `lib/types.ts` documents response contracts, `lib/api.ts` sends authenticated JSON requests, and `useResource` owns fetching, refresh, stale-response handling, and optional polling.
+
+Routes are browser history routes. Vite proxies the API in development. The Python app serves a built `frontend/dist` with a history fallback in a source checkout/container. Production compilation separates feature bundles through lazy page imports.
+
+## State and concurrency
+
+SQLite transactions serialize manual paper fills. One idempotency key maps to one order and immutable order details. Paper jobs use a service lock and persisted candle markers. Exchange intents atomically transition to submitting before network execution.
+
+This implementation assumes one API process and worker. It is not a distributed scheduler. Multiple backend workers could duplicate paper-job evaluation and should not be used without database-backed job claims.
+
+## Source boundaries
+
+Demo prices come from an explicit DemoClient and research fixtures have their own demo boundary; live errors never trigger fixture substitution. A portfolio records incomplete accounts and unpriced assets. A model-backed answer and the initial native tool evidence have separate labels. Charts show observed or simulated values with the relevant assumptions.
+
+Strategy monitoring components are split into the run list, detail workspace, decision journal, and chart. The builder and monitor share the `/strategies` route with query selections. Run detail polling reads persisted observations; it never fetches provider quotes or executes paper fills. The worker saves each successful quote sample and commits new-candle decisions with the updated account/cursor in one SQLite transaction. Stop and pause use the same service lock as evaluation.
+
+Monitor regression tests cover read-only polling, quote updates without duplicate decisions, restart persistence, skip/hold reasons, slippage signs and fee accounting, terminal/idempotent Stop, pause/source-change handling, rollback after an uncommitted fill, paged cursors, full CSV and its export boundary, retention, earlier-run honesty, concurrent worker calls, custom indicator periods, rolling metric baselines, and run-specific Broker context.
+
+### Open a running strategy
+
+Go to **Strategies → Monitor → Open monitor**. Each run has observed price/equity/drawdown charts, execution and skipped-signal markers, a durable filtered journal, full log export, account/performance details, immutable launch parameters, and its own Broker context. Pause/Resume retain the paper position; Stop is terminal and performs no liquidation. Browser refresh is five seconds, worker observations are every 30 seconds, and signals evaluate once per newly closed candle. See the [strategy monitor guide](docs/docs/guides/strategy-monitor.md).
+
+### Retained market history and interactive charts
+
+**Markets → History & datasets** inspects locally retained exact-source candles, imports reviewed historical ranges with pause/resume/restart checkpoints, reports gaps and supports deliberate retention. Complete ranges can be frozen into immutable datasets with content fingerprints and JSON export. Backtests now retain their exact input; saved-dataset runs work offline with up to 20,000 consecutive candles. Line/candlestick charts add zoom, drag-to-pan, OHLCV inspection, volume, a navigator and visible CSV export, with at most 600 candles rendered and no new charting dependency. See the [user guide](docs/docs/guides/market-history.md), [backend contracts](docs/docs/developers/candle-history.md) and [updated pending checklist](docs/docs/developers/backend-roadmap.md).
+
+### Provider reliability and diagnostics
+
+Market-owned clients share read admission, conservative transport spacing, bounded concurrency and cooldowns. Interactive reads precede queued background work; identical market cache misses coalesce. **Settings → Market data → Source health** separates connectivity from quote freshness and shows safe errors, response times and queue counts without probing providers. Demo stays explicitly offline. Session counters reset on restart; bounded hourly read history, timings and sanitized errors persist locally, alongside import checkpoints. Expand a source to inspect 24-hour or 7-day history. These observations measure actual read traffic, not uptime or current credential validity. See [provider control and remaining scope](docs/docs/developers/provider-control.md).
+
+### Market statistics
+
+**Markets** now includes server-calculated returns/distributions, trend/momentum, volatility, sample drawdowns and tail risk, volume/flow and mechanical price references. An explainable technical-bias score exposes its votes and weights; it rates direction, not investment quality or profit probability. Gaps, stale samples and insufficient inputs are explicit. Charts support drag-to-select time-region zoom, pan, reset and CSV export with no new chart library. Statistics retain the full consecutive analysis sample when you zoom. See [metrics, formulas and score rules](docs/docs/guides/market-statistics.md).
+
+### Strategy notifications
+
+**Alerts → Strategy alerts** watches future journal events from a selected paper or exchange run: pauses/errors/recovery, resumes/stops and completion. Rules have revision-checked edit/pause/resume/archive controls; armed cursors and notifications commit together for restart catch-up without duplicates. The shared inbox/bell retains original event evidence and links to the exact monitor, with Paper/Exchange and Demo/test attribution. **Run alerts** opens setup from a monitor. Alerts make no provider calls, change no execution controls and deliver only inside Sibyl. See [setup and limits](docs/docs/guides/alerts.md#strategy-alerts) and [backend contracts](docs/docs/developers/alerts.md#strategy-journal-subscriptions).
+
+**Alerts → Connections** watches consecutive recorded transport failures and successful reads of the same operation, without polling or activating sources. Configurable thresholds, revision-checked controls, bounded evidence and atomic cursor/inbox commits support restart catch-up. Notices share the bell/inbox and retain original observation times; they do not establish uptime, current credentials or data validity. Source health links to setup, and Technician can read the evidence through ProtoLink. See [setup and limits](docs/docs/guides/alerts.md#connection-read-failure-alerts) and [contracts](docs/docs/developers/alerts.md#connection-read-subscriptions).
+
+**Alerts → Account risk** watches fixed account groups for a value floor, asset concentration or drawdown from an observed value peak. Complete fresh spot valuation is required; missing coverage never triggers a partial-total notice. Recovery levels, cooldowns, revision-checked controls, retained snapshots and native read-only Accountant tools are implemented. **Risk alerts** opens setup from Account. These notices never control trading; observed-value drawdown includes cash movements and is not investment return. See [setup](docs/docs/guides/account-risk.md), [backend contracts](docs/docs/developers/account-risk.md) and the [updated pending checklist](docs/docs/developers/backend-roadmap.md).

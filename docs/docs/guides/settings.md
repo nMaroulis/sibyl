@@ -1,0 +1,100 @@
+# Settings
+
+Settings is the single home for exchange connections and workspace configuration. Open it from the floating dock. Its top tabs share the dock's rounded style, sliding selection, and subtle content reveal. On smaller screens, the rail scrolls horizontally.
+
+The selected tab is part of the URL, so you can bookmark a section and use browser Back/Forward. Arrow keys move between tabs; Home and End select the first and last. Animations respect reduced-motion preferences. Switching Settings tabs preserves unsaved drafts in memory. Leaving or reloading the page clears those drafts.
+
+## Exchanges
+
+Open `/settings?tab=exchanges` to search and add accounts from the 20-provider exchange catalog, verify read access, or disconnect a saved account. Multiple accounts per provider are supported. Credentials are encrypted in the local Python workspace, never included in agent context. See [Exchange connections](./exchanges.md) for permissions and credential formats.
+
+## AI models
+
+Open `/settings?tab=models` to select **API** or **Local**, then choose a provider by its icon. The workspace default is used by agents without a custom assignment. Sibyl and each specialist can select a different provider/model under **Agent models**. **Tool mode** works without an LLM.
+
+| API                                                                              | Local                                                                       |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| OpenAI, Anthropic, Google Gemini, DeepSeek, xAI, Hugging Face, OpenAI compatible | Ollama, LM Studio, vLLM, llama.cpp server, llama.cpp embedded, Mock runtime |
+
+Choose a model from the provider's presets or select **Custom model…** and enter an exact model ID. Presets are suggestions, not a fetched list of models available to your account. Local server presets must match a model already installed or loaded. The embedded llama.cpp adapter requires an existing `.gguf` file on the Python server; enter its file path. The Mock runtime is for testing and returns a labeled simulated answer.
+
+For an API provider, enter its API key. Local servers and custom endpoints can also save a key if authentication is required. Enter the server URL where shown. **Save as workspace default** encrypts the provider profile and selects it for agents following the default. **Save profile only** saves the key/model/endpoint for later assignment without changing that default. Both apply to subsequent requests without restarting the API. Saving does not send a test request or verify provider access. Install any optional dependency shown by the editor before asking the agents to use that adapter.
+
+Keys stay with their provider when you switch. Leaving the key field blank preserves its saved value; entering a new key replaces it. Saved keys are never returned by the API or placed in browser storage, prompts, or agent run records. The editor shows only whether a key is saved or supplied by the server environment. **Remove saved key** deletes the stored key; an independently configured environment key remains available. If the workspace default requires a key and none remains, that default returns to tool mode. Explicit overrides stay selected and show **Needs setup**; they never silently switch providers.
+
+**Use tool mode** sets the workspace default to tool mode while preserving provider profiles and agent overrides. Requests already queued or running keep their original team/provider/model/key/endpoint snapshot. Saved workspace selections take precedence over the environment after a restart. See [Module agents](./oracle.md) for setup and data boundaries. Downloading, quantizing, and deploying local models from the app is **Coming soon**.
+
+### Choose models per agent
+
+1. Save each provider's profile above, using **Save profile only** when you want to keep the existing workspace default. Keys and endpoints are shared by all agents assigned to that provider.
+2. Expand **Agent models → Customize agents**, then Configure Sibyl or a specialist. Choose a provider and one of its presets, or enter a custom model ID/GGUF path. Local models must already be available on the server. Save the assignment.
+3. **Default** means the agent follows future workspace-default changes. **Custom** fixes that agent's provider/model. Choose **Follow workspace default** in the dialog to remove an override.
+
+For example, Sibyl can use one configured API model while Reporter uses an installed local model. Direct module dialogs and Sibyl's consultations use the same specialist configuration. Each new request freezes the whole team's choices; edits during a conversation affect subsequent requests, not an answer already running. Reply and consultation history retain their original model attribution.
+
+**Configuration ready** means required local configuration is present, not that the provider/server has been tested or the model is available. **Needs setup** points to a missing key, dependency or embedded file. Preset availability is not verified. A tool-only specialist still exposes its read-only tools, but cannot complete reasoning consultations. Sibyl itself needs a model to chat; its override also determines Telegram's model readiness.
+
+Messages and evidence can be sent to the selected providers when Sibyl consults specialists. No agent gains new permissions. See [runtime and security contracts](../developers/agent-models.md).
+
+### Model catalogs
+
+Preset families were reviewed against provider documentation on October 19, 2026. Local server IDs are examples and may need to be replaced by the alias exposed by your runtime. Account access, retirement dates, and server model aliases can differ. The custom option remains available for new IDs.
+
+- [OpenAI](https://developers.openai.com/api/docs/models), [Anthropic](https://platform.claude.com/docs/en/models/overview), [Gemini](https://ai.google.dev/gemini-api/docs/models)
+- [DeepSeek](https://api-docs.deepseek.com), [xAI](https://docs.x.ai/developers/models), [Hugging Face](https://huggingface.co/inference/models)
+- [Ollama](https://ollama.com/library), [LM Studio](https://lmstudio.ai/docs), [vLLM](https://docs.vllm.ai), [llama.cpp](https://github.com/ggml-org/llama.cpp)
+
+## News
+
+Open `/settings?tab=news` to save the sources behind News, Reporter, and text sentiment. Click a source card to select it. Combine public publishers, or choose **Demo briefings** on its own. News can use real reporting while exchange accounts use demo data.
+
+Select CoinDesk, Cointelegraph, Decrypt, The Block, CryptoSlate, and optionally NewsAPI. The five publisher feeds need no key. CryptoSlate also offers a **Website collector** that checks robots.txt and extracts public homepage article cards. Switching collectors keeps article identities and the retained archive. Disabled providers stop collection and their stories leave the active feed; stored data remains available if re-enabled.
+
+**NewsAPI** has an encrypted, write-only key and a configurable crypto search query. A blank key preserves the saved credential. Removing it also requires disabling that provider. Access, delays, quotas and production use depend on your NewsAPI plan. The API supplies snippets and source links, not complete article bodies. Saved choices apply to new news reads immediately; background collection checks enabled sources while the API runs in public news mode. Saving a configuration does not test a paid API key.
+
+The Demo card has an **Exclusive** badge and a distinct selection color. Choosing it clears every public-source selection; choosing a public card exits Demo and selects that source. Selected cards have a check mark and a highlighted border, with local publisher logos. Source-specific options appear below when relevant. **Save news sources** applies the selection. Demo is a separate backend provider with sample briefings, full demo reading dialogs, and illustrative Fear & Greed values. Saved API credentials remain available for later use but their collectors are disabled in Demo. Public news uses the attributed Alternative.me index. See [Research](research.md) and the [News backend](../developers/news.md).
+
+## Market data
+
+Open `/settings?tab=market` and click a source card, then **Save market source**. The selection applies immediately to new reads. Each complete read keeps one source, even if settings change while it runs. Account mode and trading permissions are independent.
+
+Binance is the initial market feed, even when account mode is Demo. Saved source choices override it. The offline **Demo prices** card appears last; select it on its own for offline fixtures, choose one of 20 public exchange feeds without an API key, or select an existing account under **Connected exchanges**. Account cards retain the saved production/test environment. Public exchange cards do not need an account or saved trading credentials.
+
+**Market APIs** offers CryptoCompare (provider key), CoinGecko Demo API (free-plan key), and CoinGecko Pro API (separate paid-plan key). Enter the provider key and save. Leaving it blank preserves the saved credential; switching providers retains their separate keys. Keys are encrypted on the backend and never returned to the browser. Select another default before removing an active provider's required key. Saving does not test connectivity, plan access or quota.
+
+CoinGecko supplies quotes only in this adapter. CryptoCompare and exchange feeds provide supported candle intervals; exchange feeds also provide order-book snapshots. CoinGecko's Demo plan is live data, distinct from Sibyl's offline Demo card. The Markets page offers a temporary source switcher and links back here for setup.
+
+Saved choices take precedence over environment defaults. This tab also describes fixed research integrations for CoinPaprika, Wikipedia, mempool.space and optional yfinance. The old `/settings?tab=apis` bookmark opens Market data. See the [backend source contract](../developers/market-data.md).
+
+## Workspace
+
+Open `/settings?tab=workspace` for the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
+
+Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated exchange strategies additionally require `SIBYL_ALLOW_STRATEGY_EXECUTION` and an explicit account/budget approval; see [exchange strategy execution](strategy-execution.md). Paper strategy accounts always remain virtual. Workspace displays both permission states. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
+
+## Source health
+
+**Market data → Source health** shows observed connectivity, latest quote quality, response time, safe recent errors and queued work. Expand a source for details; use Show all sources to include unchecked providers. Refresh diagnostics reads local evidence without testing keys or contacting exchanges. Demo is explicitly offline, and a selectable feed is not marked healthy until a real read succeeds. Live counters reset on API restart; saved read history and import job counts persist. Each expanded source has 24-hour/7-day hourly charts, observed read success, mean/peak response time and saved errors. Gaps mean no observed traffic, not downtime; old history never marks a current connection healthy. Markets and populated Account views show the same compact feed status. See [request policies and boundaries](../developers/provider-control.md).
+
+## Messaging
+
+[Telegram](./telegram.md) is available: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
+
+| App      | Planned setup fields                                                                                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WhatsApp | Cloud API access token, business phone number ID, Meta app secret, webhook verification token, and your personal WhatsApp number                                        |
+| Telegram | Bot token from BotFather and your numeric Telegram user ID                                                                                                              |
+| Discord  | Bot token, application ID, and your numeric Discord user ID                                                                                                             |
+| Slack    | Bot user OAuth token, app-level token for Socket Mode, and your member ID                                                                                               |
+| Signal   | Local signal-cli HTTP bridge URL, linked Signal account (phone number or ACI), and your allowed sender ACI                                                              |
+| Email    | Sibyl mailbox and allowed sender addresses; IMAP host/port, encryption, username, password/app password and folder; SMTP host/port, encryption and separate credentials |
+
+Telegram enforces your private user ID now; other sender fields describe planned integrations. WhatsApp will also require a public HTTPS callback URL; the planned Telegram polling, Discord Gateway and Slack Socket Mode connections do not need a public webhook. The setup links on each card lead to the providers’ documentation. Only Telegram accepts and encrypts credentials today.
+
+Signal's planned route uses the **unofficial [signal-cli](https://github.com/AsamK/signal-cli)** JSON-RPC HTTP daemon, linked separately; it does not use a Signal bot API key or collect a Signal PIN. The sender ACI is the stable UUID in received message envelopes. No bridge is started, account linked or Signal message read/sent by Sibyl.
+
+Email groups its previews into **Mailbox**, **Incoming · IMAP** and **Outgoing · SMTP**. Expand each group to inspect its fields. TLS and STARTTLS choices are shown without a plaintext option. This preview targets password/app-password IMAP/SMTP accounts; provider-specific OAuth sign-in remains future work. No mailbox is accessed or email sent. Server settings come from your mail provider; see [manual mail configuration](https://support.mozilla.org/en-US/kb/manual-account-configuration).
+
+## Ollama server controls
+
+When choosing Local → Ollama, inspect actual server status, installed and loaded models, and choose an installed model. You can start an installed local Ollama server and stop only a server started by Sibyl. Installation and model downloads remain separate, with instructions in the panel. See [Ollama setup](ollama.md).

@@ -1,0 +1,41 @@
+{
+  "description": "Official publisher site icons. Marks belong to their respective owners.",
+  "icons": [
+    {
+      "id": "coindesk",
+      "path": "/news/coindesk.png",
+      "source": "https://www.coindesk.com/favicons/production/android-chrome-192x192.png",
+      "bytes": 8030
+    },
+    {
+      "id": "cointelegraph",
+      "path": "/news/cointelegraph.png",
+      "source": "https://cointelegraph.com/favicon-96x96.png",
+      "bytes": 8311
+    },
+    {
+      "id": "decrypt",
+      "path": "/news/decrypt.png",
+      "source": "https://cdn.decrypt.co/wp-content/themes/decrypt-media/assets/images/favicon-96x96.png",
+      "bytes": 2194
+    },
+    {
+      "id": "theblock",
+      "path": "/news/theblock.ico",
+      "source": "https://www.theblock.co/favicon.ico",
+      "bytes": 15086
+    },
+    {
+      "id": "cryptoslate",
+      "path": "/news/cryptoslate.png",
+      "source": "https://cryptoslate.com/wp-content/themes/cryptoslate-2020/icons/apple-icon-120x120.png",
+      "bytes": 3071
+    },
+    {
+      "id": "newsapi",
+      "path": "/news/newsapi.png",
+      "source": "https://newsapi.org/apple-touch-icon.png",
+      "bytes": 1307
+    }
+  ]
+}
