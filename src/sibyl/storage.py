@@ -135,15 +135,49 @@ class Store:
             return {"symbols": changed, "revision": revision, "updated_at": updated}
 
     def model_profiles(self) -> tuple[str | None, dict[str, dict]]:
-        """Read active selection and decrypt profiles for the model settings service only."""
+        """Read active selection and decrypted profiles for server-side configuration only."""
+        active, _, profiles, _ = self.model_snapshot()
+        return active, profiles
+
+    def model_snapshot(self) -> tuple[str | None, str | None, dict[str, dict], dict]:
+        """Read provider profiles and agent assignments from the same SQLite snapshot."""
         with self.db() as db:
             db.execute("BEGIN")
-            active = db.execute("SELECT value FROM workspace_settings WHERE key = 'llm_provider'").fetchone()
-            rows = db.execute("SELECT provider, config FROM model_profiles").fetchall()
+            active = db.execute("SELECT value FROM workspace_settings WHERE key='llm_provider'").fetchone()
+            model = db.execute(
+                "SELECT value FROM workspace_settings WHERE key='llm_default_model'"
+            ).fetchone()
+            rows = db.execute("SELECT provider,config FROM model_profiles").fetchall()
+            assignments = db.execute(
+                "SELECT value FROM workspace_settings WHERE key='data:agent-models'"
+            ).fetchone()
         return (
             active[0] if active else None,
+            json.loads(self.cipher.decrypt(model[0])) if model else None,
             {row["provider"]: json.loads(self.cipher.decrypt(row["config"])) for row in rows},
+            json.loads(self.cipher.decrypt(assignments[0])) if assignments else {"revision": 0, "agents": {}},
         )
+
+    def save_agent_model(self, agent: str, selection: dict | None, revision: int) -> bool:
+        """Merge one assignment with optimistic revision checks; encrypt all persisted metadata."""
+        with self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT value FROM workspace_settings WHERE key='data:agent-models'").fetchone()
+            saved = json.loads(self.cipher.decrypt(row[0])) if row else {"revision": 0, "agents": {}}
+            if saved["revision"] != revision:
+                return False
+            if selection is None:
+                saved["agents"].pop(agent, None)
+            else:
+                saved["agents"][agent] = selection
+            saved["revision"] += 1
+            value = self.cipher.encrypt(json.dumps(saved).encode())
+            db.execute(
+                "INSERT INTO workspace_settings VALUES('data:agent-models',?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (value,),
+            )
+        return True
 
     def data_profile(self, name: str) -> dict:
         """Decrypt one server-owned data-source profile, never exposed directly by routes."""
@@ -167,6 +201,23 @@ class Store:
         encrypted = self.cipher.encrypt(json.dumps(profile).encode())
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
+            if not activate and not fallback_to_tools:
+                # Pin the previous model for a pre-feature active selection before
+                # changing its profile. New environment defaults resolve independently.
+                active = db.execute(
+                    "SELECT value FROM workspace_settings WHERE key='llm_provider'"
+                ).fetchone()
+                if active and active[0] == provider:
+                    previous = db.execute(
+                        "SELECT config FROM model_profiles WHERE provider=?", (provider,)
+                    ).fetchone()
+                    old_model = (
+                        json.loads(self.cipher.decrypt(previous[0])).get("model", "") if previous else ""
+                    )
+                    db.execute(
+                        "INSERT OR IGNORE INTO workspace_settings VALUES('llm_default_model',?)",
+                        (self.cipher.encrypt(json.dumps(old_model).encode()),),
+                    )
             db.execute(
                 "INSERT INTO model_profiles VALUES (?, ?) ON CONFLICT(provider) "
                 "DO UPDATE SET config = excluded.config",
@@ -177,6 +228,12 @@ class Store:
                     "INSERT INTO workspace_settings VALUES ('llm_provider', ?) ON CONFLICT(key) "
                     "DO UPDATE SET value = excluded.value",
                     ("none" if fallback_to_tools else provider,),
+                )
+                model = "" if fallback_to_tools else profile.get("model", "")
+                db.execute(
+                    "INSERT INTO workspace_settings VALUES('llm_default_model',?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (self.cipher.encrypt(json.dumps(model).encode()),),
                 )
 
     def connections(self) -> list[Connection]:

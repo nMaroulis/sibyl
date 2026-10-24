@@ -361,6 +361,7 @@ export function Sibyl() {
                         <strong>Sibyl</strong>
                         <span>
                           {turn.provider}
+                          {turn.model ? ` · ${turn.model}` : ''}
                           {turn.mode === 'mock' ? ' · Simulated' : ''}
                         </span>
                       </div>
@@ -394,6 +395,12 @@ export function Sibyl() {
                                     {item.status === 'completed' ? 'Consulted' : 'Unavailable'}
                                   </Badge>
                                 </h4>
+                                <p className="footnote">
+                                  {item.mode === 'tools'
+                                    ? 'Direct tool call'
+                                    : [item.provider, item.model].filter(Boolean).join(' · ')}
+                                  {item.provider === 'mock' ? ' · Simulated' : ''}
+                                </p>
                                 <p className="muted">{item.question}</p>
                                 <p>{item.answer || item.error}</p>
                                 {item.evidence !== undefined && (

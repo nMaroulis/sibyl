@@ -15,6 +15,7 @@ import type { ModelProvider, ModelWorkspace } from '../lib/types';
 import { Badge, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
 import { OllamaControls } from './ollama-controls';
 import { ProviderMark } from './provider-mark';
+import { AgentModelSettings } from './agent-model-settings';
 
 type Draft = { model: string; custom: boolean; base_url: string; key: string };
 
@@ -80,17 +81,23 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
     refresh();
     toast(message);
   };
-  const save = async () => {
+  const save = async (activate = true) => {
     setBusy(true);
     setError('');
     try {
       const result = await post<ModelWorkspace>('/settings/llm', {
         provider: selected,
+        activate,
         model: draft.model.trim(),
         base_url: provider.base_url ? draft.base_url.trim() : '',
         ...(draft.key.trim() ? { api_key: draft.key.trim() } : {}),
       });
-      saved(result, `Saved. New agent requests will use ${provider.name}.`);
+      saved(
+        result,
+        activate
+          ? `Workspace default saved. Agents without overrides will use ${provider.name}.`
+          : `${provider.name} profile saved. Workspace default unchanged.`,
+      );
     } catch (reason) {
       setError((reason as Error).message);
     } finally {
@@ -103,7 +110,7 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
     try {
       saved(
         await post<ModelWorkspace>('/settings/llm', { provider: 'none' }),
-        'Tool mode enabled. Saved provider profiles are kept.',
+        'Workspace default set to tool mode. Agent overrides and provider profiles are kept.',
       );
     } catch (reason) {
       setError((reason as Error).message);
@@ -121,7 +128,7 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
       saved(
         result,
         result.active_provider === 'none' && workspace.active_provider === selected
-          ? 'Saved key removed. Agents returned to tool mode.'
+          ? 'Saved key removed. The workspace default returned to tool mode; affected overrides need setup.'
           : 'Saved key removed.',
       );
       setRemove(false);
@@ -138,15 +145,17 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
           <ProviderMark provider={active.id} />
         </span>
         <div>
-          <small>Current runtime</small>
+          <small>Workspace default</small>
           <strong>
             {active.name}
             {workspace.active_model && <span> / {workspace.active_model}</span>}
           </strong>
           <p>
             {active.id === 'none'
-              ? 'Your module tools are ready. Add a model for conversational reasoning.'
-              : 'Used by every module agent through ProtoLink.'}
+              ? workspace.agents.some((agent) => !agent.inherited)
+                ? 'Agents following this default use factual tool snapshots. Custom model assignments stay active.'
+                : 'Your module tools are ready. Add a model for conversational reasoning.'
+              : 'Used by agents without a custom model assignment.'}
           </p>
         </div>
         <Badge tone="lime">
@@ -162,6 +171,14 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
           </button>
         )}
       </Panel>
+      <AgentModelSettings
+        workspace={workspace}
+        onSaved={(result, message) => {
+          setWorkspace(result);
+          refresh();
+          toast(message);
+        }}
+      />
       <div className="llm-setup-layout">
         <Panel className="llm-provider-picker">
           <PanelTitle
@@ -208,7 +225,7 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
                     {p.name}
                     <small>
                       {p.id === workspace.active_provider
-                        ? 'Active'
+                        ? 'Default provider'
                         : workspace.profiles[p.id].saved
                           ? 'Saved'
                           : p.id === 'mock'
@@ -238,13 +255,13 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
               <h2>{provider.name}</h2>
               <p>{provider.description}</p>
             </div>
-            {selected === workspace.active_provider && <Badge>Active</Badge>}
+            {selected === workspace.active_provider && <Badge>Default provider</Badge>}
           </div>
           <form
             className="form"
             onSubmit={(event) => {
               event.preventDefault();
-              void save();
+              void save(true);
             }}
           >
             <label>
@@ -394,9 +411,20 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
             <div className="llm-save-row">
               <button className="button primary" type="submit" disabled={busy}>
                 {busy ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />}{' '}
-                {busy ? 'Saving…' : `Save & use ${provider.name}`}
+                {busy ? 'Saving…' : 'Save as workspace default'}
               </button>
-              <span>Applies to new agent requests</span>
+              <button
+                type="button"
+                className="button secondary"
+                disabled={
+                  busy ||
+                  !draft.model.trim() ||
+                  (provider.requires_key && !profile.has_api_key && !draft.key.trim())
+                }
+                onClick={() => void save(false)}
+              >
+                Save profile only
+              </button>
             </div>
             <p className="footnote">
               Keys are encrypted on your server and never returned to the browser. Saving does not
@@ -413,7 +441,8 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
           }}
         >
           <p className="muted">
-            The saved key will be removed from this workspace. Re-enter it to use this provider
+            The saved key will be removed from this workspace and all agents using this provider.
+            Overrides remain selected and need setup until you re-enter it to use this provider
             again. A separately configured environment key remains available.
           </p>
           <div className="modal-actions">

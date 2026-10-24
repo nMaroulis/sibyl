@@ -15,7 +15,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'sibyl',
       title: 'Deeper investigations',
-      text: 'Token-by-token answers, scheduled and resumable research, per-agent models and evaluated collaboration. Live consultation progress, Stop and retained request outcomes are available now.',
+      text: 'Token-by-token answers, scheduled and resumable research, and evaluated collaboration. Per-agent models, live consultation progress, Stop and retained request outcomes are available now.',
     },
     {
       module: 'markets',

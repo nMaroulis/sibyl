@@ -76,7 +76,7 @@ class OllamaService:
 
     def _headers(self, endpoint):
         """Use a saved credential only at its saved Ollama endpoint, never a draft override."""
-        active = self.models.resolve()
+        active = self.models.provider_config("ollama")
         if (
             active["provider"] == "ollama"
             and active["base_url"].rstrip("/") == endpoint

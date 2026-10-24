@@ -60,6 +60,7 @@ module.exports = {
         'developers/alerts',
         'developers/account-risk',
         'developers/agents',
+        'developers/agent-models',
         'developers/api',
         'developers/extending',
         'developers/testing',

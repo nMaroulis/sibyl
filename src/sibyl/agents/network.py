@@ -11,7 +11,7 @@ from protolink.discovery import Registry
 from sibyl.agents import sibyl
 from sibyl.agents.common import Turn, current_turn
 from sibyl.agents.conversations import Conversations, SibylRequest
-from sibyl.agents.providers import PROVIDERS
+from sibyl.agents.model_selection import readiness
 from sibyl.agents.requests import SibylRequests, now
 from sibyl.agents.runtime import WorkspaceLLM
 from sibyl.agents.telemetry import ChatTelemetry
@@ -56,7 +56,7 @@ class AgentNetwork:
             "transport": "runtime",
             "url": f"{self.namespace}/{module}",
             "registry": self.registry,
-            "llm": WorkspaceLLM(module, self.owner.make_model, self.owner.models.resolve),
+            "llm": WorkspaceLLM(module, self.owner.make_model, lambda: self.owner.models.for_turn(module)),
             "telemetry": ChatTelemetry(self),
             "verbosity": 0,
             "expose_chat": False,
@@ -119,30 +119,22 @@ class AgentNetwork:
 
     async def ask_module(self, request: AgentRequest) -> dict:
         """A page talks directly to its specialist, using the same registered agent and client."""
+        configuration = self.owner.models.for_turn(request.module)
         async with self.owner._semaphore:
             async with asyncio.timeout(95):
-                return await self.owner._answer(request, self.owner.models.resolve())
+                return await self.owner._answer(request, configuration)
 
     def status(self, configuration: dict | None = None) -> dict:
         """Return setup readiness without probing a provider or revealing credentials."""
-        configuration = configuration or self.owner.models.resolve()
-        provider = PROVIDERS[configuration["provider"]]
-        reason = ""
-        if provider.id == "none":
-            reason = "Choose an AI model to start talking with Sibyl."
-        elif provider.requires_key and (not configuration["api_key"]):
-            reason = f"Add an API key for {provider.name} in AI model settings."
-        elif provider.id != "mock" and (not configuration["model"]):
-            reason = "Choose a model in AI model settings."
-        elif not provider.public()["installed"]:
-            reason = f"Install the {provider.name} provider dependency shown in AI model settings."
+        configuration = configuration or self.owner.models.resolve("sibyl")
+        reason = readiness(configuration)
         return {
             "ready": self.ready and (not reason),
             "network_ready": self.ready,
             "reason": reason or ("The agent network is starting." if not self.ready else ""),
-            "provider": provider.id,
+            "provider": configuration["provider"],
             "model": configuration["model"],
-            "simulated": provider.id == "mock",
+            "simulated": configuration["provider"] == "mock",
             "engine": "ProtoLink",
             "transport": "runtime",
             "specialists": len(self.roles),
@@ -187,7 +179,7 @@ class AgentNetwork:
 
     async def ask(self, request: SibylRequest) -> dict:
         """Invoke Sibyl through the same client boundary, with bounded concurrent chats."""
-        configuration = self.owner.models.resolve()
+        configuration = self.owner.models.for_turn("sibyl")
         status = self.status(configuration)
         if not status["ready"]:
             raise ModelRequired(status["reason"])
@@ -288,6 +280,7 @@ class AgentNetwork:
                 "engine": "ProtoLink",
                 "provider": configuration["provider"],
                 "model": configuration["model"],
+                "model_selection": configuration.get("_selections", {}).get("sibyl", "default"),
                 "mode": "mock" if configuration["provider"] == "mock" else "llm",
                 "delegations": turn.trace,
             }

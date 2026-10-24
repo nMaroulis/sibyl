@@ -215,7 +215,7 @@ function WorkspaceSettings({ system }: { system?: System }) {
               </Badge>
             </div>
             <div>
-              <span>Language model</span>
+              <span>Workspace model default</span>
               <strong>
                 {system?.llm_provider === 'none'
                   ? 'Tool mode · no model'

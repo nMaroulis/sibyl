@@ -10076,3 +10076,104 @@ details[open] > summary {
     width: 100%;
   }
 }
+
+/* Optional per-agent model assignments share the app's quiet provider-card language. */
+.agent-model-panel {
+  margin-bottom: 22px;
+}
+.agent-model-intro {
+  margin: 16px 0;
+  max-width: 920px;
+}
+.agent-model-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.agent-model-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--surface);
+}
+.agent-model-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.agent-model-card-heading strong {
+  font-size: 13px;
+}
+.agent-model-card-heading .badge {
+  margin-left: auto;
+}
+.agent-model-card > p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.agent-model-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.agent-model-card-footer .needs-setup {
+  color: var(--rose);
+}
+.agent-model-card-footer .text-button {
+  font-size: 11px;
+}
+.agent-model-provider-note {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--surface-soft);
+  border-radius: 15px;
+  padding: 14px;
+}
+.agent-model-provider-note p {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.agent-model-provider-note small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+  font-size: 11px;
+}
+@media (max-width: 1050px) {
+  .agent-model-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .agent-model-grid {
+    grid-template-columns: 1fr;
+  }
+  .agent-model-panel .panel-title {
+    flex-wrap: wrap;
+  }
+}
+.agent-model-panel > .agent-model-intro {
+  margin-left: 22px;
+  margin-right: 22px;
+}
+.agent-model-panel > .agent-model-grid {
+  margin-left: 22px;
+  margin-right: 22px;
+}
+.agent-model-panel > .agent-model-grid + .agent-model-intro {
+  margin-bottom: 22px;
+}
+@media (max-width: 650px) {
+  .agent-model-panel > .agent-model-intro,
+  .agent-model-panel > .agent-model-grid {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}

@@ -42,10 +42,20 @@ export function Oracle() {
                 <span className="agent-avatar">
                   <Sparkles size={21} />
                 </span>
-                <Badge tone="purple">{agent.mode === 'llm' ? agent.provider : 'Tool mode'}</Badge>
+                <Badge tone="purple">
+                  {agent.mode === 'tools'
+                    ? 'Tool mode'
+                    : agent.model_ready === false
+                      ? 'Needs setup'
+                      : agent.provider}
+                </Badge>
               </div>
               <h2>{agent.name}</h2>
               <p>{agent.description}</p>
+              <small>
+                {agent.model || 'No reasoning model'} ·{' '}
+                {agent.model_selection === 'override' ? 'Custom assignment' : 'Workspace default'}
+              </small>
               <div className="agent-directory-tool">
                 <Braces size={13} />
                 <span>

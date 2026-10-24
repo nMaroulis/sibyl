@@ -6,7 +6,7 @@ Sibyl uses [ProtoLink](https://github.com/nMaroulis/protolink)’s automatic reg
 
 ## Connect a model first
 
-Open **Settings → AI models**, select an API or local provider, then **Save & use**. Sibyl shows a setup message and link until a model is configured. A missing required key, model ID, or installed provider dependency also shows a setup state. Configuration readiness does not verify that a remote model server is reachable or that your provider accepts the model.
+Open **Settings → AI models**, select an API or local provider, then **Save as workspace default**. Sibyl shows a setup message and link until a model is configured. A missing required key, model ID, or installed provider dependency also shows a setup state. Configuration readiness does not verify that a remote model server is reachable or that your provider accepts the model.
 
 The Mock runtime is available for interface testing and is explicitly labeled simulated. Its ordinary default response does not perform real reasoning or automatically consult specialists. Use an API or local model that supports tool calling for useful collaboration. Model settings apply immediately without restarting the agent network.
 
@@ -58,3 +58,5 @@ WhatsApp, Discord, Slack, Signal and Email remain unavailable setup previews. Th
 Your question, recent chat turns, and any consulted specialists' observations are sent to your selected model provider. Account consultations can include balances and other private account observations. Choose a local model to keep inference on your machine. The local conversation store is not encrypted; saved provider credentials use the workspace vault.
 
 Sibyl and its specialists have read-only tools. They cannot place trades, withdraw funds, change settings, start strategies or send external messages. Verify sources, dates and uncertainty before acting on an answer.
+
+Optional **Agent models** settings let Sibyl and each specialist use a different saved provider/model without changing the workspace default. See [per-agent setup](settings.md#choose-models-per-agent).

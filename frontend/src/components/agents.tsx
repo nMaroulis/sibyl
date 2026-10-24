@@ -251,8 +251,14 @@ function AgentDialog({
       </div>
       <div className="agent-toolbar">
         <div>
-          <Badge tone="purple">{agent?.mode === 'llm' ? agent.provider : 'Tool mode'}</Badge>
-          <span>ProtoLink · read-only</span>
+          <Badge tone="purple">
+            {agent?.mode === 'tools'
+              ? 'Tool mode'
+              : agent?.model_ready === false
+                ? 'Needs setup'
+                : (agent?.provider ?? 'Loading…')}
+          </Badge>
+          <span>ProtoLink · read-only{agent?.model ? ` · ${agent.model}` : ''}</span>
         </div>
         <button className="text-button" onClick={onReset} disabled={!!thread.pending}>
           <Plus size={13} />
@@ -409,7 +415,10 @@ function AgentDialog({
                   </pre>
                 </details>
               )}
-              <small>{new Date(reply.created_at).toLocaleTimeString()} · Saved locally</small>
+              <small>
+                {new Date(reply.created_at).toLocaleTimeString()} · Saved locally
+                {reply.mode !== 'tools' && reply.model ? ` · ${reply.model}` : ''}
+              </small>
             </div>
           </div>
         ))}
@@ -465,9 +474,11 @@ function AgentDialog({
         />
         <div>
           <span>
-            {agent?.mode === 'llm'
-              ? `Evidence and messages are sent to ${agent.provider}.`
-              : 'Tool mode returns factual snapshots. Configure a model for conversation.'}
+            {agent?.model_ready === false && agent.mode !== 'tools'
+              ? `${agent.model_reason} Open AI model settings to update this agent.`
+              : agent?.mode === 'llm'
+                ? `Evidence and messages are sent to ${agent.provider}.`
+                : 'Tool mode returns factual snapshots. Configure a model for conversation.'}
           </span>
           <button
             type="submit"

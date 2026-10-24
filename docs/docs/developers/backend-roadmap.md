@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — October 23, 2026
+## Audited snapshot — October 24, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -16,7 +16,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Automated strategy execution   | partial       | Authenticated acceptance, broader risk policies, residual exit handling and fee valuation.            |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
-| ProtoLink workflows            | partial       | Richer scoped specialist tools, per-agent models and explicit approval/audit contracts.               |
+| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.               |
 | Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                       |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
 | Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                            |
@@ -138,7 +138,7 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 
 ### 7. Sibyl and ProtoLink workflows — partial
 
-Sibyl and the ten specialists start as native ProtoLink Agents with `.start()` and registry discovery. Each has its own file and prompt. ProtoLink automatically supplies discovered agents and handles native delegation for Sibyl; direct module requests use their specialist client. The agents have page context and read-only domain tools. They are request-driven assistants. Models choose evidence tools on demand. Reporter has cached news/article/source/index tools; Technician has setup guides and provider-specific instructions; other specialists include relevant method and capability help. One active workspace model profile is selected for inference.
+Sibyl and the ten specialists start as native ProtoLink Agents with `.start()` and registry discovery. Each has its own file and prompt. ProtoLink automatically supplies discovered agents and handles native delegation for Sibyl; direct module requests use their specialist client. The agents have page context and read-only domain tools. They are request-driven assistants. Models choose evidence tools on demand. Reporter has cached news/article/source/index tools; Technician has setup guides and provider-specific instructions; other specialists include relevant method and capability help. Agents inherit a workspace model default or use an explicit per-agent provider/model override. Each request freezes the whole team’s configuration; profiles retain shared encrypted provider keys/endpoints.
 
 - [x] Split each agent into its own native declaration with prompt and typed tools; remove consult gateways and per-request Agent construction.
 - [x] Add on-demand evidence tools, cached Reporter reads and practical Technician setup guides.
@@ -148,7 +148,7 @@ Sibyl and the ten specialists start as native ProtoLink Agents with `.start()` a
 - [x] Mark unfinished requests interrupted on startup; block late consultations/answers after Stop and preserve already committed answers.
 - [ ] Add scheduled investigations and resumable long-running work. Retained request history is an audit, not workflow resumption.
 - [x] Add Ollama installation/server/model detection and explicit local server Start/Stop ownership controls, with setup links.
-- [ ] Add per-agent model/provider selection if different modules need different models.
+- [x] Add per-agent provider/model overrides with shared encrypted profiles, preset/custom IDs, revision-checked edits, frozen delegated request snapshots and accurate model attribution. See [contracts](agent-models.md).
 - [ ] Add token-by-token answers, deeper internal tool traces, usage/cost reporting and evaluated routing/grounding. Current progress is lifecycle polling rather than token streaming.
 - [x] Implement direct-HTTP Telegram polling, private-user binding, encrypted credentials, conversation mapping and durable delivery outcomes. Explicit rate limits retry; ambiguous sends never auto-retry.
 - [ ] Validate Telegram with a real bot; add media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
@@ -217,7 +217,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
 3. **Close the order loop:** authenticated acceptance of status/fill/recovery/discovery, broader adapters and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
 4. **Build on local alerts:** broader risk metrics, strategy-event policies and operational diagnostics, then explicit external delivery and backup/restore.
-5. **Sibyl and richer ProtoLink tools:** evaluated collaboration, scoped specialist tools, per-agent models and resumable investigations. Messaging clients remain a separately scoped future integration.
+5. **Sibyl and richer ProtoLink tools:** evaluated collaboration, scoped specialist tools and resumable investigations; per-agent models are implemented. Messaging clients remain a separately scoped future integration.
 6. **Test-environment strategies:** reconcile actual orders/fills and implement risk controls before any production automation.
 7. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.
 

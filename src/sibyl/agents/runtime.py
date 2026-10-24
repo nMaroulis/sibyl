@@ -49,7 +49,8 @@ class WorkspaceLLM(LLM):
         token = current_agent.set(self.module)
         try:
             if self.module not in turn.models:
-                turn.models[self.module] = self.make_model(turn.configuration)
+                configuration = turn.configuration.get("_agents", {}).get(self.module, turn.configuration)
+                turn.models[self.module] = self.make_model(configuration)
             return turn.models[self.module].call(history)
         finally:
             current_agent.reset(token)

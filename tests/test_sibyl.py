@@ -61,7 +61,7 @@ def test_sibyl_requires_model_without_creating_chat_or_calling_provider(client, 
 def test_missing_key_and_dependency_are_setup_states(client, monkeypatch):
     models = client.app.state.services.agents.models
     config = {"provider": "openai", "model": "test", "base_url": "", "api_key": ""}
-    monkeypatch.setattr(models, "resolve", lambda: config)
+    monkeypatch.setattr(models, "resolve", lambda agent=None: config)
     assert "API key" in client.get("/api/v1/sibyl").json()["reason"]
     config.update(provider="llama.cpp-local", model="/not/a/real/model.gguf")
     monkeypatch.setattr("sibyl.agents.providers.find_spec", lambda name: None)

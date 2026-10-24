@@ -49,6 +49,7 @@ def test_actual_protolink_tool_execution_for_every_module(client, module):
 def test_model_path_uses_protolink_with_mock_provider(client, monkeypatch):
     registry = client.app.state.services.agents
     registry.settings.llm_provider = "ollama"
+    registry.settings.llm_model = "fixture-model"
     monkeypatch.setattr(
         "sibyl.agents.registry.create_llm",
         lambda *a, **kw: create_llm("mock", default_response="A controlled model response."),

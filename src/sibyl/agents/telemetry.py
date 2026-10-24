@@ -19,6 +19,19 @@ class ChatTelemetry(Telemetry):
     def __init__(self, network):
         self.network = network
 
+    @staticmethod
+    def model_evidence(turn, module):
+        """Attribute an answer to that specialist's frozen configuration, never expose keys."""
+        configs = turn.configuration.get("_agents", {})
+        config = configs.get(module)
+        if config is None and module in {"sibyl", *turn.models}:
+            config = turn.configuration
+        return {
+            "provider": config["provider"] if config else "",
+            "model": config["model"] if config else "",
+            "model_selection": turn.configuration.get("_selections", {}).get(module, "external"),
+        }
+
     def progress(self, turn) -> None:
         """Update the UI's lightweight request progress without storing reasoning."""
         if turn.request_id:
@@ -89,7 +102,7 @@ class ChatTelemetry(Telemetry):
                 answer=answer if isinstance(answer, str) else json.dumps(answer),
                 evidence=evidence,
                 mode="llm" if task.messages[0].parts[0].type == "infer" else "tools",
-                provider=turn.configuration["provider"],
+                **self.model_evidence(turn, entry["agent_id"]),
             )
             record = {
                 **entry,
@@ -155,7 +168,7 @@ class ChatTelemetry(Telemetry):
                         status="completed",
                         answer=result if isinstance(result, str) else json.dumps(result),
                         evidence=result if event["action"] == "tool_call" else {},
-                        provider=turn.configuration["provider"],
+                        **self.model_evidence(turn, entry["agent_id"]),
                         mode="tools" if event["action"] == "tool_call" else "llm",
                         finished_at=now(),
                     )

@@ -19,6 +19,7 @@ from sibyl.agents import (
     wiki,
 )
 from sibyl.agents.common import Services, Turn, current_turn
+from sibyl.agents.model_selection import readiness
 from sibyl.agents.network import AgentNetwork
 from sibyl.agents.snapshots import snapshot_answer, tool_arguments
 from sibyl.models import AgentRequest
@@ -75,12 +76,15 @@ class AgentRegistry:
 
     def make_model(self, configuration: dict):
         """Construct a ProtoLink provider from this turn's frozen settings, off the API loop."""
+        reason = readiness(configuration)
+        if reason:
+            raise ValueError(reason)
         provider, kwargs = self.models.constructor(configuration)
         return create_llm(provider, **kwargs)
 
     def catalog(self) -> list[dict]:
         """Expose real native tool names and runtime URLs without provider credentials."""
-        configuration = self.models.resolve()
+        selection = self.models.for_turn("sibyl")
         return [
             {
                 "id": key,
@@ -91,8 +95,12 @@ class AgentRegistry:
                 "tool": next(iter(self.agents[key].tools)),
                 "tools": list(self.agents[key].tools),
                 "url": self.agents[key].card.url,
-                "mode": "tools" if configuration["provider"] == "none" else "llm",
-                "provider": configuration["provider"],
+                "mode": "tools" if selection["_agents"][key]["provider"] == "none" else "llm",
+                "provider": selection["_agents"][key]["provider"],
+                "model": selection["_agents"][key]["model"],
+                "model_selection": selection["_selections"][key],
+                "model_ready": not readiness(selection["_agents"][key]),
+                "model_reason": readiness(selection["_agents"][key]),
                 "registered": self.network.ready,
                 "transport": "runtime",
             }
@@ -146,6 +154,8 @@ class AgentRegistry:
             "engine": "ProtoLink",
             "mode": mode,
             "provider": configuration["provider"],
+            "model": configuration["model"],
+            "model_selection": configuration.get("_selections", {}).get(request.module, "default"),
             "tool": turn.observations[0]["tool"] if turn.observations else primary_tool,
             "evidence": evidence,
             "observations": turn.observations,

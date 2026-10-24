@@ -468,6 +468,7 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
 
     registry = client.app.state.services.agents
     registry.settings.llm_provider = "ollama"
+    registry.settings.llm_model = "fixture-model"
     monkeypatch.setattr(
         "sibyl.agents.registry.create_llm",
         lambda *a, **kw: create_llm(

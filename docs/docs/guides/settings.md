@@ -1,6 +1,6 @@
 # Settings
 
-Settings is the single home for exchange connections and workspace configuration. Open it from the floating dock. Its five top tabs share the dock's rounded style, sliding selection, and subtle content reveal. On smaller screens, the rail scrolls horizontally.
+Settings is the single home for exchange connections and workspace configuration. Open it from the floating dock. Its top tabs share the dock's rounded style, sliding selection, and subtle content reveal. On smaller screens, the rail scrolls horizontally.
 
 The selected tab is part of the URL, so you can bookmark a section and use browser Back/Forward. Arrow keys move between tabs; Home and End select the first and last. Animations respect reduced-motion preferences. Switching Settings tabs preserves unsaved drafts in memory. Leaving or reloading the page clears those drafts.
 
@@ -10,7 +10,7 @@ Open `/settings?tab=exchanges` to search and add accounts from the 20-provider e
 
 ## AI models
 
-Open `/settings?tab=models` to select **API** or **Local**, then choose a provider by its icon. One saved provider/model is shared by all ten module agents. **Tool mode** works without an LLM.
+Open `/settings?tab=models` to select **API** or **Local**, then choose a provider by its icon. The workspace default is used by agents without a custom assignment. Sibyl and each specialist can select a different provider/model under **Agent models**. **Tool mode** works without an LLM.
 
 | API                                                                              | Local                                                                       |
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -18,11 +18,23 @@ Open `/settings?tab=models` to select **API** or **Local**, then choose a provid
 
 Choose a model from the provider's presets or select **Custom model…** and enter an exact model ID. Presets are suggestions, not a fetched list of models available to your account. Local server presets must match a model already installed or loaded. The embedded llama.cpp adapter requires an existing `.gguf` file on the Python server; enter its file path. The Mock runtime is for testing and returns a labeled simulated answer.
 
-For an API provider, enter its API key. Local servers and custom endpoints can also save a key if authentication is required. Enter the server URL where shown. **Save & use** encrypts the provider profile in the local vault and makes it effective for new agent requests immediately, without restarting the API. Saving does not send a test request or verify provider access. Install any optional dependency shown by the editor before asking the agents to use that adapter.
+For an API provider, enter its API key. Local servers and custom endpoints can also save a key if authentication is required. Enter the server URL where shown. **Save as workspace default** encrypts the provider profile and selects it for agents following the default. **Save profile only** saves the key/model/endpoint for later assignment without changing that default. Both apply to subsequent requests without restarting the API. Saving does not send a test request or verify provider access. Install any optional dependency shown by the editor before asking the agents to use that adapter.
 
-Keys stay with their provider when you switch. Leaving the key field blank preserves its saved value; entering a new key replaces it. Saved keys are never returned by the API or placed in browser storage, prompts, or agent run records. The editor shows only whether a key is saved or supplied by the server environment. **Remove saved key** deletes the stored key; an independently configured environment key remains available. If the active provider requires a key and none remains, agents return to tool mode.
+Keys stay with their provider when you switch. Leaving the key field blank preserves its saved value; entering a new key replaces it. Saved keys are never returned by the API or placed in browser storage, prompts, or agent run records. The editor shows only whether a key is saved or supplied by the server environment. **Remove saved key** deletes the stored key; an independently configured environment key remains available. If the workspace default requires a key and none remains, that default returns to tool mode. Explicit overrides stay selected and show **Needs setup**; they never silently switch providers.
 
-**Use tool mode** disables model inference while keeping provider profiles. Requests already in progress keep their original provider/model/key snapshot. Saved workspace selections take precedence over the environment after a restart. See [Module agents](./oracle.md) for setup and data boundaries. Downloading, quantizing, and deploying local models from the app is **Coming soon**.
+**Use tool mode** sets the workspace default to tool mode while preserving provider profiles and agent overrides. Requests already queued or running keep their original team/provider/model/key/endpoint snapshot. Saved workspace selections take precedence over the environment after a restart. See [Module agents](./oracle.md) for setup and data boundaries. Downloading, quantizing, and deploying local models from the app is **Coming soon**.
+
+### Choose models per agent
+
+1. Save each provider's profile above, using **Save profile only** when you want to keep the existing workspace default. Keys and endpoints are shared by all agents assigned to that provider.
+2. Expand **Agent models → Customize agents**, then Configure Sibyl or a specialist. Choose a provider and one of its presets, or enter a custom model ID/GGUF path. Local models must already be available on the server. Save the assignment.
+3. **Default** means the agent follows future workspace-default changes. **Custom** fixes that agent's provider/model. Choose **Follow workspace default** in the dialog to remove an override.
+
+For example, Sibyl can use one configured API model while Reporter uses an installed local model. Direct module dialogs and Sibyl's consultations use the same specialist configuration. Each new request freezes the whole team's choices; edits during a conversation affect subsequent requests, not an answer already running. Reply and consultation history retain their original model attribution.
+
+**Configuration ready** means required local configuration is present, not that the provider/server has been tested or the model is available. **Needs setup** points to a missing key, dependency or embedded file. Preset availability is not verified. A tool-only specialist still exposes its read-only tools, but cannot complete reasoning consultations. Sibyl itself needs a model to chat; its override also determines Telegram's model readiness.
+
+Messages and evidence can be sent to the selected providers when Sibyl consults specialists. No agent gains new permissions. See [runtime and security contracts](../developers/agent-models.md).
 
 ### Model catalogs
 

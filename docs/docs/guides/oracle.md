@@ -35,7 +35,7 @@ Each response shows the provider and actual completed tool observations. Expand 
 
 ## Connect a provider
 
-Open **Settings → AI models**. Choose API or Local, select the provider, pick a preset or enter a custom model ID, add its key or server URL, then **Save & use**. No restart is needed. All providers in the installed ProtoLink factory are supported, including local servers, embedded GGUF inference, and a clearly labeled Mock runtime. See the [Settings guide](./settings.md).
+Open **Settings → AI models**. Choose API or Local, select the provider, pick a preset or enter a custom model ID, add its key or server URL, then **Save as workspace default**. No restart is needed. All providers in the installed ProtoLink factory are supported, including local servers, embedded GGUF inference, and a clearly labeled Mock runtime. See the [Settings guide](./settings.md).
 
 Install the optional SDK for hosted providers when needed:
 
@@ -64,3 +64,5 @@ Exchange API keys and secrets are not available to agents. Native agent tools do
 Two requests may run concurrently. ProtoLink inference has an eight-step budget with at most six tool calls; the page request waits at most 95 seconds. A provider thread already in progress may finish after the HTTP timeout. It has only read-only module tools and cannot execute trades.
 
 Requests and responses are stored locally, including questions, answers, and completed tool observations. **New conversation** resets the active module's session context without deleting saved run history.
+
+Optional **Agent models** settings let Sibyl and each specialist use a different saved provider/model without changing the workspace default. See [per-agent setup](settings.md#choose-models-per-agent).

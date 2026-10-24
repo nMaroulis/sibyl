@@ -574,6 +574,7 @@ def test_funding_model_cannot_change_fixed_report_selection(client, monkeypatch)
 
     registry = client.app.state.services.agents
     registry.settings.llm_provider = "ollama"
+    registry.settings.llm_model = "fixture-model"
     monkeypatch.setattr(
         "sibyl.agents.registry.create_llm",
         lambda *a, **kw: create_llm(

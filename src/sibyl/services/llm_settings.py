@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
+from sibyl.agents.model_selection import AGENT_NAMES, AgentModelRequest, ModelConflict, readiness
 from sibyl.agents.providers import PROVIDERS, ProviderId
 from sibyl.config import Settings
 from sibyl.storage import Store
@@ -17,6 +18,7 @@ class ModelSettingsRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     provider: ProviderId
+    activate: bool = Field(default=True, strict=True)
     model: str = Field(default="", max_length=500)
     base_url: str = Field(default="", max_length=2048)
     api_key: SecretStr | None = Field(default=None, min_length=1, max_length=8192)
@@ -71,7 +73,7 @@ class ModelSettingsRequest(BaseModel):
 
 
 class ModelSettings:
-    """Persist provider-specific secrets and activate changes without an API restart.
+    """Persist provider profiles, a workspace default and explicit per-agent overrides.
 
     Environment configuration remains the fallback until a profile is selected.
     Every agent request receives a single resolved snapshot; a concurrent settings
@@ -95,24 +97,107 @@ class ModelSettings:
                 base_url = self.settings.llm_base_url
         return {"model": model, "base_url": base_url}
 
-    def resolve(self) -> dict:
-        """Read one active configuration, decrypting its key only for internal use."""
+    def _provider(self, provider: str, profiles: dict) -> dict:
+        """Pair one provider's endpoint/model with only that provider's credential."""
+        profile = profiles.get(provider, self._fallback(provider))
+        return {
+            "provider": provider,
+            "model": profile.get("model", ""),
+            "base_url": profile.get("base_url") or PROVIDERS[provider].base_url,
+            "api_key": profile.get("api_key") or self._environment_key(provider),
+        }
+
+    def provider_config(self, provider: str) -> dict:
+        """Read one saved provider for explicit local-server status checks."""
         with self._lock:
-            active, profiles = self.store.model_profiles()
-            provider = active if active is not None else self.settings.llm_provider
-            profile = profiles.get(provider, self._fallback(provider))
+            _, _, profiles, _ = self.store.model_snapshot()
+            return self._provider(provider, profiles)
+
+    def _resolved(self, active, default_model, profiles, assignments) -> tuple[dict, dict]:
+        """Resolve every agent from one read, never mixing credentials across providers."""
+        default_provider = active if active is not None else self.settings.llm_provider
+        configs = {}
+        for provider in {default_provider, *(item["provider"] for item in assignments["agents"].values())}:
+            configs[provider] = self._provider(provider, profiles)
+        default = configs[default_provider].copy()
+        default["model"] = (
+            default_model
+            if default_model is not None
+            else self.settings.llm_model
+            if active is None
+            else default["model"]
+        )
+        agents = {}
+        for agent in AGENT_NAMES:
+            override = assignments["agents"].get(agent)
+            agents[agent] = (
+                {**configs[override["provider"]], "model": override["model"]} if override else default.copy()
+            )
+        return default, agents
+
+    def resolve(self, agent: str | None = None) -> dict:
+        """Decrypt one effective configuration; omitting agent returns the workspace default."""
+        with self._lock:
+            default, agents = self._resolved(*self.store.model_snapshot())
+            return agents[agent] if agent else default
+
+    def for_turn(self, agent: str) -> dict:
+        """Freeze all agent/provider choices before queueing a native inference request.
+
+        The private map travels only in ContextVar state, never task metadata,
+        prompts or serialized history. Delegated agents share this exact snapshot.
+        """
+        with self._lock:
+            active, default_model, profiles, assignments = self.store.model_snapshot()
+            _, agents = self._resolved(active, default_model, profiles, assignments)
             return {
-                "provider": provider,
-                "model": profile.get("model", ""),
-                "base_url": profile.get("base_url") or PROVIDERS[provider].base_url,
-                "api_key": profile.get("api_key") or self._environment_key(provider),
+                **agents[agent],
+                "_agents": agents,
+                "_selections": {
+                    key: "override" if key in assignments["agents"] else "default" for key in agents
+                },
             }
+
+    def assign(self, agent: str, body: AgentModelRequest) -> dict:
+        """Save one model override, preserving the default and provider credentials."""
+        if agent not in AGENT_NAMES:
+            raise ValueError("Choose a registered Sibyl agent.")
+        with self._lock:
+            active, default_model, profiles, assignments = self.store.model_snapshot()
+            selection = None
+            if body.provider is not None:
+                selection = {"provider": body.provider, "model": body.model}
+                provider = PROVIDERS[body.provider]
+                if (
+                    body.provider not in {"none", "mock"}
+                    and body.provider not in profiles
+                    and body.provider != self.settings.llm_provider
+                ):
+                    raise ValueError(
+                        "Save this provider profile first; its endpoint and key are shared with this agent."
+                    )
+                candidate = {
+                    **profiles.get(body.provider, self._fallback(body.provider)),
+                    "provider": body.provider,
+                    "model": body.model,
+                }
+                candidate["api_key"] = candidate.get("api_key") or self._environment_key(body.provider)
+                if provider.requires_key and not candidate["api_key"]:
+                    raise ValueError("Add this provider's API key before assigning it to an agent.")
+                if body.provider == "llama.cpp-local":
+                    path = Path(body.model).expanduser()
+                    if path.suffix.lower() != ".gguf" or not path.is_file():
+                        raise ValueError("Choose an existing GGUF file on the Python server.")
+                    selection["model"] = str(path.resolve())
+            if not self.store.save_agent_model(agent, selection, body.revision):
+                raise ModelConflict("Agent models changed. Refresh before saving this assignment.")
+            return self.public()
 
     def public(self) -> dict:
         """Return provider profiles, key presence, and runtime metadata, never key values."""
         with self._lock:
-            active, profiles = self.store.model_profiles()
-            current = self.resolve()
+            active, default_model, profiles, assignments = self.store.model_snapshot()
+            current, agents = self._resolved(active, default_model, profiles, assignments)
             safe_profiles = {}
             for provider, definition in PROVIDERS.items():
                 saved = profiles.get(provider)
@@ -135,10 +220,25 @@ class ModelSettings:
                 "source": "workspace" if active is not None else "environment",
                 "profiles": safe_profiles,
                 "providers": [p.public() for p in PROVIDERS.values()],
+                "agent_revision": assignments["revision"],
+                "agents": [
+                    {
+                        "id": key,
+                        "name": name,
+                        "selection": assignments["agents"].get(key),
+                        "provider": agents[key]["provider"],
+                        "model": agents[key]["model"],
+                        "inherited": key not in assignments["agents"],
+                        "ready": not readiness(agents[key]),
+                        "reason": readiness(agents[key]),
+                        "simulated": agents[key]["provider"] == "mock",
+                    }
+                    for key, name in AGENT_NAMES.items()
+                ],
             }
 
     def save(self, body: ModelSettingsRequest) -> dict:
-        """Encrypt a profile and make it effective for subsequent agent requests."""
+        """Encrypt a provider profile; optionally select it as the workspace default."""
         with self._lock:
             _, profiles = self.store.model_profiles()
             existing = profiles.get(body.provider, {})
@@ -160,6 +260,7 @@ class ModelSettings:
                     "base_url": body.base_url or definition.base_url,
                     "api_key": key,
                 },
+                activate=body.activate,
             )
             return self.public()
 
@@ -171,7 +272,7 @@ class ModelSettings:
             if profile:
                 profile["api_key"] = ""
                 fallback = (
-                    active == provider
+                    (active if active is not None else self.settings.llm_provider) == provider
                     and PROVIDERS[provider].requires_key
                     and not self._environment_key(provider)
                 )

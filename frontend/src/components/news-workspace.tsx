@@ -30,7 +30,7 @@ import { SectionPanel, SectionTabs } from './section-tabs';
 import { Badge, Empty, ErrorState, Loading, Modal, PageTitle, Panel, PanelTitle } from './ui';
 import { post, shortDate } from '../lib/api';
 import { useResource } from '../lib/hooks';
-import type { AgentContext, Article, NewsFeed, System } from '../lib/types';
+import type { Agent, AgentContext, Article, NewsFeed } from '../lib/types';
 
 const tabs = [
   { id: 'headlines', label: 'Headlines', icon: Newspaper },
@@ -93,8 +93,9 @@ export function NewsWorkspace() {
     limit: '18',
   });
   const news = useResource<NewsFeed>(`/news?${request}`, 60000);
-  const system = useResource<System>('/system', 60000);
-  const provider = system.error ? undefined : system.data?.llm_provider;
+  const agents = useResource<Agent[]>('/agents', 60000);
+  const reporter = agents.error ? undefined : agents.data?.find((agent) => agent.id === 'reporter');
+  const provider = reporter?.provider;
   const data = news.data;
   const context: AgentContext = {
     news_mode: data?.mode,
@@ -144,11 +145,17 @@ export function NewsWorkspace() {
         value={tab}
         onChange={(value) => change({ tab: value }, false)}
       />
-      {(provider === 'none' || provider === 'mock') && (
+      {(provider === 'none' || provider === 'mock' || reporter?.model_ready === false) && (
         <aside className="news-ai-note" aria-label="Reporter AI availability">
           <Sparkles size={16} aria-hidden="true" />
           <p>
-            <strong>{provider === 'mock' ? 'Mock AI is active.' : 'No AI model connected.'}</strong>{' '}
+            <strong>
+              {provider === 'mock'
+                ? 'Mock AI is active.'
+                : provider === 'none'
+                  ? 'No AI model connected.'
+                  : 'Reporter model needs setup.'}
+            </strong>{' '}
             {provider === 'mock'
               ? 'Reporter’s AI responses are simulated.'
               : 'Reporter can retrieve source excerpts; AI explanations need a model.'}{' '}

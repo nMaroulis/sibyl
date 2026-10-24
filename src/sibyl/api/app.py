@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from sibyl import __version__
+from sibyl.agents.model_selection import ModelConflict
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
 from sibyl.local_models.ollama import OllamaService
@@ -285,6 +286,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(TransferConflict)
     async def stale_transfer_review(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=409)
+
+    @app.exception_handler(ModelConflict)
+    async def stale_agent_models(_request, exc):
+        return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
 
     @app.exception_handler(ControlConflict)
     async def stale_strategy_control(_request, exc):

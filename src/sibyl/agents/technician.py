@@ -51,9 +51,10 @@ GUIDES = {
         "url": "/settings?tab=models",
         "steps": [
             "Choose API or Local and a ProtoLink provider.",
-            "Choose a predefined model or enter its custom ID.",
+            "Choose a predefined model or enter its custom ID. Save as workspace default applies to agents without an override; Save profile only keeps the default unchanged.",
+            "Expand Agent models to choose a provider and preset/custom model for Sibyl or any specialist. An override reuses its provider profile key/endpoint. Follow workspace default removes it; tool mode applies only to that selected agent.",
             "For API providers, enter the key in Settings. For a local server, set the endpoint; for llama.cpp-local, supply an existing GGUF path.",
-            "For Ollama, use Check status to detect the server and installed models, Start Ollama for an installed local CLI, and the download/setup links if it is missing. Model installation is separate. Save to activate the model for new turns. No provider call is made just by saving. None leaves module snapshots available; Sibyl requires a model. Mock produces simulated answers.",
+            "For Ollama, use Check status to detect the server and installed models, Start Ollama for an installed local CLI, and the download/setup links if it is missing. Model installation is separate. Save to apply configuration to new turns; already queued/running requests keep their frozen team choices. No provider call is made just by saving. None leaves module snapshots available; Sibyl requires a model. Mock produces simulated answers.",
         ],
     },
     "news": {

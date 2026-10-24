@@ -8,8 +8,9 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | ---------- | ----------------------------------------- | ---------------------------------------------------------------------------------------- |
 | GET        | `/health` (unversioned)                   | Process readiness and package version                                                    |
 | GET        | `/system`                                 | Safe workspace configuration                                                             |
-| GET        | `/settings/llm`                           | Provider catalog, active model, saved metadata; keys are write-only                      |
-| POST       | `/settings/llm`                           | Save encrypted profile and activate for new requests                                     |
+| GET        | `/settings/llm`                           | Provider catalog, workspace default, effective agent models/revision; keys are write-only                      |
+| POST       | `/settings/llm`                           | Save encrypted profile; `activate=false` preserves the workspace default                                     |
+| POST       | `/settings/llm/agents/{agent}`             | Revision-checked provider/model override; null provider restores inheritance             |
 | DELETE     | `/settings/llm/{provider}/key`            | Remove stored key; fall back to tool mode if active required key is unavailable          |
 | GET        | `/account/accounts`                       | Per-account free/reserved/total and conversion rates                                     |
 | GET        | `/markets/symbols`                        | Active spot catalog and available timeframes                                             |
@@ -260,3 +261,5 @@ Channels: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `email`. Every c
 `GET/POST /connection-alerts`, `POST /connection-alerts/{id}/edit` and `/action` manage passive read-failure/recovery subscriptions. Strict thresholds, revisions and lifecycle controls operate only on local evidence. `GET /connection-alerts/example` is isolated. The shared inbox accepts `kind: connection` alongside price and strategy notices. See [connection read contracts](alerts.md#connection-read-subscriptions).
 
 `GET/POST /risk-alerts`, `POST /risk-alerts/{id}/edit`, `/action` and `/check` manage opt-in fixed-account risk watches. `/evidence` reads retained complete snapshots without provider calls; `/example` is isolated. Risk notices share the inbox with `kind: risk`. See [account-risk contracts](account-risk.md).
+
+Agent-model assignment bodies accept `revision`, `provider` and `model` only. `/system` reports the workspace default; `/sibyl` reports the coordinator’s actual selection. The agents catalog and model-backed replies/consultations include provider/model attribution. See [per-agent model contracts](agent-models.md).

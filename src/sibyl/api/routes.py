@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from sibyl import __version__
 from sibyl.agents.conversations import SibylRequest
+from sibyl.agents.model_selection import AgentId, AgentModelRequest
 from sibyl.agents.network import ModelRequired
 from sibyl.agents.providers import ProviderId
 from sibyl.agents.requests import CancelSibylRequest
@@ -95,6 +96,13 @@ def save_model_settings(body: ModelSettingsRequest, s: S, response: Response):
     """Encrypt a provider key and activate its model for subsequent requests."""
     response.headers["Cache-Control"] = "no-store"
     return s.agents.models.save(body)
+
+
+@router.post("/settings/llm/agents/{agent}", tags=["Settings"])
+def assign_agent_model(agent: AgentId, body: AgentModelRequest, s: S, response: Response):
+    """Set or clear one model override; reuse its provider's encrypted endpoint/key."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.agents.models.assign(agent, body)
 
 
 @router.delete("/settings/llm/{provider}/key", tags=["Settings"])

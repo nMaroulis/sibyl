@@ -393,6 +393,10 @@ export type Agent = {
   url: string;
   mode: string;
   provider: string;
+  model?: string;
+  model_selection?: string;
+  model_ready?: boolean;
+  model_reason?: string;
 };
 export type AgentReply = {
   context?: AgentContext;
@@ -404,6 +408,8 @@ export type AgentReply = {
   engine: string;
   mode: string;
   provider: string;
+  model?: string;
+  model_selection?: string;
   tool: string;
   evidence: unknown;
   observations?: { tool: string; arguments: Record<string, unknown>; evidence: unknown }[];
@@ -689,12 +695,25 @@ export type ModelProfile = {
   key_source: 'saved' | 'environment' | 'none';
   saved: boolean;
 };
+export type AgentModelSelection = {
+  id: string;
+  name: string;
+  selection: { provider: string; model: string } | null;
+  provider: string;
+  model: string;
+  inherited: boolean;
+  ready: boolean;
+  reason: string;
+  simulated: boolean;
+};
 export type ModelWorkspace = {
   active_provider: string;
   active_model: string;
   source: 'workspace' | 'environment';
   profiles: Record<string, ModelProfile>;
   providers: ModelProvider[];
+  agent_revision: number;
+  agents: AgentModelSelection[];
 };
 
 export type CryptoAsset = {

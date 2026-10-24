@@ -1,6 +1,6 @@
 # Ollama in Sibyl
 
-Choose **Settings → AI models → Local → Ollama**. Sibyl checks the endpoint shown in the form and lists installed models and models currently loaded in memory. Choose an installed model, then **Save & use Ollama**. Presets and custom IDs remain available; a preset is not proof that a model has been downloaded.
+Choose **Settings → AI models → Local → Ollama**. Sibyl checks the endpoint shown in the form and lists installed models and models currently loaded in memory. Choose an installed model, then **Save as workspace default**. Presets and custom IDs remain available; a preset is not proof that a model has been downloaded.
 
 **Check status** probes the native version, model catalog and loaded-model endpoints without running inference. A reachable server with an installed model may still have insufficient resources or unsuitable tool-calling behavior; these checks do not evaluate model answers.
 
@@ -13,3 +13,5 @@ Install Ollama on the **Python backend machine**, which may differ from your bro
 Model installation is separate. The panel displays a command such as `ollama pull qwen3:8b` for the selected model; run it yourself in a terminal on the Ollama machine. Sibyl does not install software, download models or silently change the selected AI profile when starting a server. See the [Ollama CLI](https://docs.ollama.com/cli).
 
 Implementation lives in `src/sibyl/local_models/ollama.py`. `POST /api/v1/settings/ollama/check`, `/start` and `/stop` accept only `base_url` and `model`, under the normal workspace access controls. Saved credentials are used only at their saved endpoint. Native contracts: [version](https://github.com/ollama/ollama/blob/main/docs/api.md#version), [model catalog](https://docs.ollama.com/api/tags), [loaded models](https://docs.ollama.com/api/ps). Tests use fake HTTP and process boundaries; they never start the developer's Ollama installation.
+
+Optional **Agent models** settings let Sibyl and each specialist use a different saved provider/model without changing the workspace default. See [per-agent setup](settings.md#choose-models-per-agent).

@@ -6,6 +6,10 @@ import { useResource } from '../lib/hooks';
 export type Consultation = {
   agent_id: string;
   name: string;
+  provider?: string;
+  model?: string;
+  model_selection?: string;
+  mode?: string;
   question: string;
   answer?: string;
   status: string;
@@ -172,6 +176,12 @@ export function SibylRequestHistory({
                           {entry.name}
                           <Badge>{entry.status}</Badge>
                         </h4>
+                        <p className="footnote">
+                          {entry.mode === 'tools'
+                            ? 'Direct tool call'
+                            : [entry.provider, entry.model].filter(Boolean).join(' · ')}
+                          {entry.provider === 'mock' ? ' · Simulated' : ''}
+                        </p>
                         <p className="muted">{entry.question}</p>
                         {entry.answer && <p>{entry.answer}</p>}
                         {entry.error && <p>{entry.error}</p>}
