@@ -204,7 +204,7 @@ STRATEGIES = {
         "/strategies?view=monitor",
         (
             "Inspect the selected run and its outstanding orders before using Pause or Stop; neither alone liquidates holdings.",
-            "If separately approved, Stop & cancel requests cancellation. Verify native status and completed fill follow-ups.",
+            "If separately approved, Stop & cancel requests cancellation. Wait for reconciled fills/fees and three matching native status checks; later execution or fee changes restart these checks. New automatic signal orders also wait.",
             "Close position is a new typed, one-order sell review for a stopped/completed exchange run after reconciliation. Inspect blockers and any residual units.",
         ),
         (

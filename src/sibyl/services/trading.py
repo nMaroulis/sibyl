@@ -17,6 +17,7 @@ from sibyl.services.order_lifecycle import OrderLifecycle
 from sibyl.services.order_reconciliation import OrderReconciliation
 from sibyl.services.order_recovery import OrderRecovery
 from sibyl.storage import Store
+from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.controls import require_submissions
 
@@ -322,6 +323,10 @@ class ExchangeTrading:
                     or job["sandbox"] != connection.sandbox
                 ):
                     raise ExecutionGuard("Strategy account, market or environment changed. Review it again.")
+                if pending_evidence(db, job["id"], ignore=intent["id"]):
+                    raise ExecutionGuard(
+                        "Wait for three matching late native status checks after cancellation or changed execution evidence."
+                    )
                 refusal = self.strategy_limits.admit(db, intent)
             if refusal is None and before_submit is not None:
                 # Internal domain guard reads ownership in this same write

@@ -188,6 +188,7 @@ class OrderReconciliation:
             db.execute("BEGIN")
             intent = self.trading.lifecycle.read(db, identity)
             job = self._read(db, identity)
+            fill_revision = AccountLedger.order_revision(db, intent)
             intent["recovery"] = self.trading.recovery.summary(db, intent)
             rows = db.execute(
                 "SELECT payload FROM account_fills WHERE account_id=? AND symbol=? "
@@ -203,6 +204,7 @@ class OrderReconciliation:
         summary = summarize(intent, fills, job)
         return {
             "order": intent,
+            "fill_revision": fill_revision,
             "reconciliation": summary,
             "fills": fills[:200],
             "has_more": len(fills) > 200,

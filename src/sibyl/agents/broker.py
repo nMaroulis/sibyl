@@ -44,6 +44,8 @@ SYSTEM_PROMPT = (
     "Stop & cancel requests cancellation without selling holdings. "
     "Inspect order cancellation state: requested/unknown is not a confirmed cancellation, and terminal status "
     "still needs native fill reconciliation. Uncertain cancellation writes are never automatically retried. "
+    "After cancellation, new strategy signals and position exits wait for three matching native status checks. "
+    "Later fills, fee corrections or changed native totals restart those checks; identical reimports do not. "
     "Close position is a separate typed one-order sell approval for a stopped/completed exchange run. "
     "Use exit_readiness to explain local blockers. It requires reconciled fills/fees and completed "
     "cancellation follow-ups, then fresh book/funds checks. Fee reserves, precision/native caps and "

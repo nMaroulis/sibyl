@@ -159,7 +159,7 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
                           Checked{' '}
                           {new Date(order.strategy_cancellation.checked_at).toLocaleString()}
                           {order.strategy_cancellation.terminal_checks != null &&
-                            ` · ${order.strategy_cancellation.terminal_checks}/3 late status checks`}
+                            ` · ${order.strategy_cancellation.terminal_checks}/3 matching status checks`}
                         </small>
                       </>
                     ) : order.strategy_abandoned ||

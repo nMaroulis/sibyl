@@ -44,6 +44,10 @@ Checkpoint, enabled state and next attempt survive restart. Failures retain the 
 
 ## Evidence states
 
+The ledger maintains an order execution revision keyed by account, exact pair and native order ID. New or changed fills advance that revision in the same transaction as the execution upsert. Identical reimports do not advance it; a rolled-back import changes neither data nor revision. Both account-history and exact-order imports use this writer. The retained detail response includes `fill_revision`, read in the same SQLite snapshot as its fills and native observation.
+
+Strategy cancellation follow-ups compare this revision and the native status/quantity/cost with the evidence they checked. A later imported execution or fee correction reopens completed follow-ups and blocks another strategy signal/position exit immediately, before the strategy worker refreshes its saved monitor. Three matching native checks against unchanged evidence are required again; mismatches never exhaust the follow-up counter. This does not create an unlimited settlement scanner or remove executions omitted from later pages.
+
 | State                        | Meaning                                                                                                                                                                                     |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `matched`                    | Retained gross quantity matches native filled quantity within tolerance, available native quote costs agree, fee fields are known, and the order is terminal. This is not final settlement. |
@@ -63,7 +67,7 @@ All paths start with `/api/v1`.
 | Method | Path                                           | Effect                                                                                  |
 | ------ | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
 | GET    | `/exchange-orders`                             | Latest 100 intents, enriched with local reconciliation summaries. No remote reads.      |
-| GET    | `/exchange-orders/{id}/reconciliation`         | Coherent `{order, reconciliation, fills, has_more}` retained snapshot; no new jobs.     |
+| GET    | `/exchange-orders/{id}/reconciliation`         | Coherent `{order, fill_revision, reconciliation, fills, has_more}` retained snapshot; no new jobs. |
 | POST   | `/exchange-orders/{id}/reconcile`              | Native status check and one exact-order execution page.                                 |
 | POST   | `/exchange-orders/{id}/refresh`                | Existing status-check response, now with one execution page and reconciliation summary. |
 | POST   | `/exchange-orders/{id}/reconcile/tracking`     | `{enabled: boolean}` changes only persisted execution-read scheduling.                  |
@@ -71,6 +75,6 @@ All paths start with `/api/v1`.
 
 ## Remaining work
 
-Broader recovery adapters, all-account order discovery, private streams, additional provider adapters, execution bust/removal handling, fee-currency valuation, unlimited historical imports and definitive settlement reconciliation remain separate work. Automatic scans upsert returned facts; they do not delete a retained execution merely because a later page omits it. Authenticated venue/test-account acceptance is outstanding. Controlled tests cover identity rejection, pagination, restart, transaction rollback, duplicate imports, partial cancellation, late fee corrections, inactive accounts, bounded follow-ups and isolated Demo/example contracts.
+Broader recovery adapters, private streams, additional provider adapters, execution bust/removal handling, fee-currency valuation, unlimited historical imports and definitive settlement reconciliation remain separate work. Automatic scans upsert returned facts; they do not delete a retained execution merely because a later page omits it. Initial Binance Testnet native workflows have [scoped acceptance results](exchange-acceptance.md); authenticated partial-fill/cancellation-race, late-correction and broader venue acceptance remain pending. Controlled tests cover identity rejection, pagination, restart, transaction rollback, duplicate imports, partial cancellation, late fee corrections, inactive accounts, renewed matching follow-ups, final-submission evidence changes and isolated Demo/example contracts.
 
 [Account order discovery](order-discovery.md) links native IDs to this same evidence without creating duplicate executions. Imported orders are read-only, including when checked from this dialog.

@@ -71,7 +71,7 @@ AREAS = [
         "name": "Automated strategy execution",
         "status": "partial",
         "priority": "later",
-        "working": "Paper runs and approved exchange strategies for nine provider/environment variants. Scoped budgets, capped GTC limits, durable expiry, Stop & cancel and separate reviewed position exits; native fills/fees, restart pause, per-run guards, a durable global submission halt and opt-in shared capital/exposure/observed UTC daily-loss limits with dated conversions, native-write admission and later-day lock release/audit. Real Binance Testnet strategy entry/exit, restart, shared allocation rejection and controlled lost-response recovery have passed initial acceptance. Uncertain writes are never replayed.",
+        "working": "Paper runs and approved exchange strategies for nine provider/environment variants. Scoped budgets, capped GTC limits, durable expiry, Stop & cancel and separate reviewed position exits; native fills/fees, restart pause, per-run guards, a durable global submission halt and opt-in shared capital/exposure/observed UTC daily-loss limits with dated conversions, native-write admission and later-day lock release/audit. Real Binance Testnet strategy entry/exit, restart, shared allocation rejection and controlled lost-response recovery have passed initial acceptance. Changed native totals or imported fills/fees reopen three matching cancellation checks, block new signals/exits and invalidate prepared submissions; identical reimports stay idempotent. Uncertain writes are never replayed.",
         "pending": [
             "Extend authenticated acceptance to partial fills, cancellation races, late corrections, real connectivity failures and other venues before deliberate production enablement. Initial Binance Testnet checks use actual signals, native orders and controlled entry-response loss.",
             "Broader concentration/risk-sizing/loss-window policies, archived accounting beyond current bounds and distributed coordination. Shared strategy capital/exposure/daily-loss controls and global halt are implemented; residual exits need fresh approvals; no automatic liquidation.",
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-27",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Initial manual and automated-strategy Binance Testnet acceptance is recorded, including controlled lost-response recovery. Next foundations: partial-fill/cancellation-race acceptance, broader account reconciliation and additional venues. Market analytics and local alerts are implemented. Multi-user support is deferred.",
+        "current_focus": "Initial manual and automated-strategy Binance Testnet acceptance is recorded, including controlled lost-response recovery. Partial-fill/cancellation-race application tests now enforce renewed matching evidence after late corrections. Next foundations: authenticated race acceptance, broader account reconciliation and additional venues. Market analytics and local alerts are implemented. Multi-user support is deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

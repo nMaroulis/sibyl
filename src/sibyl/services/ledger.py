@@ -111,6 +111,11 @@ class AccountLedger:
                 CREATE INDEX IF NOT EXISTS account_fills_order ON account_fills(
                     account_id, symbol, json_extract(payload,'$.order_id')
                 );
+                CREATE TABLE IF NOT EXISTS account_order_revisions (
+                    account_id TEXT NOT NULL, symbol TEXT NOT NULL, order_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    PRIMARY KEY(account_id, symbol, order_id)
+                );
                 CREATE TABLE IF NOT EXISTS account_sync (
                     account_id TEXT NOT NULL, symbol TEXT NOT NULL, status TEXT NOT NULL,
                     next_attempt REAL NOT NULL, last_attempt REAL NOT NULL, payload TEXT NOT NULL,
@@ -185,13 +190,22 @@ class AccountLedger:
 
     @staticmethod
     def upsert_fills(db, fills: list[dict], seen: str) -> tuple[int, int]:
-        """Share native execution identities across history imports and order reconciliation."""
+        """Share native fills and invalidate dated order evidence in the same transaction.
+
+        Only a new or changed execution advances its order's revision. Identical
+        history/reconciliation pages do not restart downstream follow-up checks.
+        """
         inserted, updated = 0, 0
+        affected = set()
         for fill in fills:
             payload = json.dumps(fill, sort_keys=True, allow_nan=False)
             previous = db.execute("SELECT payload FROM account_fills WHERE id=?", (fill["id"],)).fetchone()
             inserted += previous is None
             updated += previous is not None and previous[0] != payload
+            if previous is None or previous[0] != payload:
+                for value in (fill, json.loads(previous[0]) if previous else {}):
+                    if value.get("order_id"):
+                        affected.add((value["account_id"], value["symbol"], value["order_id"]))
             db.execute(
                 "INSERT INTO account_fills VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
                 "payload=excluded.payload,last_seen_at=excluded.last_seen_at,timestamp_ms=excluded.timestamp_ms",
@@ -206,7 +220,25 @@ class AccountLedger:
                     seen,
                 ),
             )
+        db.executemany(
+            "INSERT INTO account_order_revisions VALUES(?,?,?,1) "
+            "ON CONFLICT(account_id,symbol,order_id) DO UPDATE SET revision=revision+1",
+            sorted(affected),
+        )
         return inserted, updated
+
+    @staticmethod
+    def order_revision(db, intent: dict) -> int:
+        """Read the execution revision within the same snapshot as an order's fills."""
+        row = db.execute(
+            "SELECT revision FROM account_order_revisions WHERE account_id=? AND symbol=? AND order_id=?",
+            (
+                intent["request"]["connection_id"],
+                intent["request"]["symbol"],
+                intent.get("exchange_order_id"),
+            ),
+        ).fetchone()
+        return row[0] if row else 0
 
     def commit_page(self, job: dict, page: TradePage) -> None:
         """Atomically upsert a validated page, preserving concurrent pause/disconnect."""

@@ -342,6 +342,9 @@ class ExchangeStrategies:
             if job["unresolved_orders"]:
                 job.update(execution_state="waiting_order", error=None)
                 return self._sample(job, observed)
+            if self.cancellations.pending(identity):
+                job.update(error=None)
+                return self._sample(job, observed, state="waiting_cancellation")
             job["pending"] = None
             candle = observed["candles"][-1]
             if candle["timestamp"] == job["last_candle"]:
@@ -459,8 +462,8 @@ class ExchangeStrategies:
             else:
                 self._sample(current, observed)
 
-    def _sample(self, job, observed):
-        job["execution_state"] = "waiting_order" if job.get("pending") else "waiting_candle"
+    def _sample(self, job, observed, *, state=None):
+        job["execution_state"] = state or ("waiting_order" if job.get("pending") else "waiting_candle")
         candle_timestamp = observed["candles"][-1]["timestamp"]
         if candle_timestamp != job.get("metric_candle"):
             job["metric_candle"] = candle_timestamp

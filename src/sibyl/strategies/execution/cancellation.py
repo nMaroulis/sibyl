@@ -12,6 +12,43 @@ from datetime import UTC, datetime
 from sibyl.services.order_lifecycle import TERMINAL
 from sibyl.strategies.execution.contracts import ExecutionGuard
 
+# Both cancellation scheduling and exit readiness use this predicate. A ledger
+# correction reopens a completed check before the strategy worker next runs.
+PENDING_EVIDENCE = (
+    "json_extract(o.payload,'$.strategy_cancellation') IS NOT NULL AND ("
+    "json_extract(o.payload,'$.strategy_cancellation.state')!='reconciled' "
+    "OR COALESCE(json_extract(o.payload,'$.strategy_cancellation.terminal_checks'),0)<3 "
+    "OR COALESCE(json_extract(o.payload,'$.strategy_cancellation.fill_revision'),-1)"
+    "!=COALESCE(v.revision,0) "
+    "OR json_extract(o.payload,'$.strategy_cancellation.terminal_observation[0]') "
+    "IS NOT json_extract(o.payload,'$.status') "
+    "OR json_extract(o.payload,'$.strategy_cancellation.terminal_observation[1]') "
+    "IS NOT json_extract(o.payload,'$.filled') "
+    "OR json_extract(o.payload,'$.strategy_cancellation.terminal_observation[2]') "
+    "IS NOT json_extract(o.payload,'$.cost'))"
+)
+EVIDENCE_JOIN = (
+    "LEFT JOIN account_order_revisions v "
+    "ON v.account_id=json_extract(o.payload,'$.request.connection_id') "
+    "AND v.symbol=json_extract(o.payload,'$.request.symbol') "
+    "AND v.order_id=json_extract(o.payload,'$.exchange_order_id') "
+)
+
+
+def pending_evidence(db, identity, *, ignore=None):
+    """Check dated cancellation evidence in the caller's ledger/submission snapshot."""
+    return (
+        db.execute(
+            "SELECT 1 FROM exchange_orders o "
+            + EVIDENCE_JOIN
+            + "WHERE json_extract(o.payload,'$.strategy_job_id')=? "
+            "AND o.id!=? AND COALESCE(json_extract(o.payload,'$.strategy_abandoned'),0)=0 "
+            f"AND ({PENDING_EVIDENCE}) LIMIT 1",
+            (identity, ignore or ""),
+        ).fetchone()
+        is not None
+    )
+
 
 def now():
     return datetime.now(UTC).isoformat()
@@ -28,13 +65,12 @@ class StrategyCancellations:
         """Read outstanding local orders and unfinished cancellation observations."""
         with self.store.db() as db:
             rows = db.execute(
-                "SELECT payload FROM exchange_orders WHERE json_extract(payload,'$.strategy_job_id')=? "
-                "AND COALESCE(json_extract(payload,'$.strategy_abandoned'),0)=0 "
-                "AND (json_extract(payload,'$.status') NOT IN ('closed','canceled','expired','rejected') "
-                "OR (json_extract(payload,'$.strategy_cancellation') IS NOT NULL "
-                "AND (json_extract(payload,'$.strategy_cancellation.state')!='reconciled' "
-                "OR COALESCE(json_extract(payload,'$.strategy_cancellation.terminal_checks'),0)<3))) "
-                "ORDER BY rowid LIMIT 100",
+                "SELECT o.payload FROM exchange_orders o "
+                + EVIDENCE_JOIN
+                + "WHERE json_extract(o.payload,'$.strategy_job_id')=? "
+                "AND COALESCE(json_extract(o.payload,'$.strategy_abandoned'),0)=0 "
+                "AND (json_extract(o.payload,'$.status') NOT IN ('closed','canceled','expired','rejected') "
+                f"OR ({PENDING_EVIDENCE})) ORDER BY o.rowid LIMIT 100",
                 (identity,),
             ).fetchall()
         return [json.loads(row[0]) for row in rows]
@@ -53,6 +89,11 @@ class StrategyCancellations:
         if (connection.exchange, connection.sandbox) != (job["exchange"], job["sandbox"]):
             raise ExecutionGuard("Execution account environment changed; manage the order in Trade.")
         return connection
+
+    def pending(self, identity):
+        """Read whether this run still needs matching cancellation follow-up checks."""
+        with self.store.db() as db:
+            return pending_evidence(db, identity)
 
     def _save(self, job, intent, state, message, **details):
         """Commit progress with its journal event, retaining the shared write evidence."""
@@ -78,26 +119,37 @@ class StrategyCancellations:
                 )
         return intent
 
-    def _observed(self, job, intent):
-        """Separate a native terminal state from the later fill/fee reconciliation."""
+    def _observed(self, job, intent, *, native_check=False):
+        """Require three matching native checks against unchanged fill/fee evidence."""
         if intent["status"] in TERMINAL:
-            evidence = self.trading.reconciliation.detail(intent["id"])["reconciliation"]
+            detail = self.trading.reconciliation.detail(intent["id"])
+            evidence, revision = detail["reconciliation"], detail["fill_revision"]
             matched = evidence["status"] == "matched"
+            previous = intent.get("strategy_cancellation", {})
+            observation = [intent.get(key) for key in ("status", "filled", "cost")]
+            changed = observation != previous.get("terminal_observation") or revision != previous.get(
+                "fill_revision"
+            )
+            checks = 0 if changed or not matched else previous.get("terminal_checks", 0)
+            checks = min(3, checks + int(native_check and matched))
+            complete = matched and checks == 3
             return self._save(
                 job,
                 intent,
-                "reconciled" if matched else "reconciling",
+                "reconciled" if complete else "reconciling",
                 f"Native order is {intent['status']}. "
                 + (
-                    "Retained fills currently match; late corrections can still update ownership."
+                    "Three native status checks match the retained fills and fees; later corrections reopen these checks."
+                    if complete
+                    else "Retained fills match; waiting for three matching native status checks after the last execution change."
                     if matched
                     else "Waiting for native fill/fee evidence; no further strategy order is allowed."
                 ),
                 outcome=intent["status"],
-                next_check=time.time()
-                + {0: 0, 1: 60, 2: 240}.get(
-                    intent.get("strategy_cancellation", {}).get("terminal_checks", 0), 30
-                ),
+                terminal_checks=checks,
+                terminal_observation=observation,
+                fill_revision=revision,
+                next_check=time.time() + {0: 0, 1: 60, 2: 240}.get(checks, 30),
             )
         uncertain = intent.get("cancel_state") in {"unknown", "submitting"}
         return self._save(
@@ -166,11 +218,8 @@ class StrategyCancellations:
                     try:
                         self._readable(job)
                         if intent["status"] in TERMINAL:
-                            checks = intent["strategy_cancellation"].get("terminal_checks", 0)
-                            if checks < 3:
-                                intent = self.trading.lifecycle.refresh(intent["id"])
-                                intent["strategy_cancellation"]["terminal_checks"] = checks + 1
-                            self._observed(job, intent)
+                            intent = self.trading.lifecycle.refresh(intent["id"])
+                            self._observed(job, intent, native_check=True)
                             return
                         if intent.get("cancel_requested_at"):
                             # Shared manual/automatic attempts, including 'submitting'

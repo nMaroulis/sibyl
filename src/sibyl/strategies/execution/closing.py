@@ -14,6 +14,7 @@ from uuid import uuid4
 from sibyl.models import ExchangeOrderRequest
 from sibyl.services.order_lifecycle import TERMINAL
 from sibyl.strategies.execution.accounting import project
+from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ClosePositionRequest, ExecutionGuard
 from sibyl.strategies.execution.venue import is_dust, order_book, order_size
 
@@ -96,15 +97,7 @@ class ClosePositions:
             )
         if job["quantity"] <= 1e-12:
             raise ExecutionGuard("This strategy has no retained position to close.")
-        unfinished = db.execute(
-            "SELECT 1 FROM exchange_orders WHERE json_extract(payload,'$.strategy_job_id')=? "
-            "AND id!=? AND COALESCE(json_extract(payload,'$.strategy_abandoned'),0)=0 "
-            "AND json_extract(payload,'$.strategy_cancellation') IS NOT NULL "
-            "AND (json_extract(payload,'$.strategy_cancellation.state')!='reconciled' "
-            "OR COALESCE(json_extract(payload,'$.strategy_cancellation.terminal_checks'),0)<3) LIMIT 1",
-            (job["id"], ignore or ""),
-        ).fetchone()
-        if unfinished:
+        if pending_evidence(db, job["id"], ignore=ignore):
             raise ExecutionGuard(
                 "Wait for cancellation reconciliation and all three late native status checks in the monitor."
             )
