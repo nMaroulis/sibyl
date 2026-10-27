@@ -14,7 +14,7 @@ AREAS = [
         "pending": [
             "Import pagination and funding support for remaining providers; fiat, staking and subaccounts.",
             "Scheduled refresh of old/pending events, execution bust/removal handling, versioned correction audits and complete order/fill/funding/balance reconciliation.",
-            "Broader authenticated read/import acceptance. Initial Binance/Coinbase balance reads and the manual Binance Testnet lifecycle have been checked.",
+            "Broader authenticated read/import acceptance. Initial Binance/Coinbase balance reads and manual/strategy Binance Testnet lifecycles have been checked.",
         ],
     },
     {
@@ -38,7 +38,7 @@ AREAS = [
         "pending": [
             "Broader discovery/recovery adapters, external amendment handling and definitive fee/settlement reconciliation.",
             "Cancel/replace, stop/OCO, trailing, post-only, iceberg and other time-in-force choices.",
-            "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; broader authenticated venue acceptance beyond the initial manual Binance Testnet lifecycle.",
+            "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; broader authenticated venue acceptance beyond the initial Binance Testnet lifecycles.",
             "Detailed fill reconciliation and resumable imports for Bitstamp/Gemini; client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
         ],
     },
@@ -71,9 +71,9 @@ AREAS = [
         "name": "Automated strategy execution",
         "status": "partial",
         "priority": "later",
-        "working": "Paper runs and approved exchange strategies for nine provider/environment variants. Scoped budgets, capped GTC limits, durable expiry, Stop & cancel and separate reviewed position exits; native fills/fees, restart pause, per-run guards, a durable global submission halt and opt-in shared capital/exposure/observed UTC daily-loss limits with dated conversions, native-write admission and later-day lock release/audit. Uncertain writes are never replayed.",
+        "working": "Paper runs and approved exchange strategies for nine provider/environment variants. Scoped budgets, capped GTC limits, durable expiry, Stop & cancel and separate reviewed position exits; native fills/fees, restart pause, per-run guards, a durable global submission halt and opt-in shared capital/exposure/observed UTC daily-loss limits with dated conversions, native-write admission and later-day lock release/audit. Real Binance Testnet strategy entry/exit, restart, shared allocation rejection and controlled lost-response recovery have passed initial acceptance. Uncertain writes are never replayed.",
         "pending": [
-            "Authenticated test-environment/provider acceptance before deliberate production enablement.",
+            "Extend authenticated acceptance to partial fills, cancellation races, late corrections, real connectivity failures and other venues before deliberate production enablement. Initial Binance Testnet checks use actual signals, native orders and controlled entry-response loss.",
             "Broader concentration/risk-sizing/loss-window policies, archived accounting beyond current bounds and distributed coordination. Shared strategy capital/exposure/daily-loss controls and global halt are implemented; residual exits need fresh approvals; no automatic liquidation.",
             "Reviewed residual/dust ownership handoff to new runs, third-currency fee valuation, manual position reconciliation/adoption, settlement corrections and more execution providers.",
         ],
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-27",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Initial manual Binance Testnet acceptance is recorded. Next foundations: automated-strategy test-environment acceptance, broader account reconciliation and venue acceptance. Market analytics and local alerts are implemented. Multi-user support is deferred.",
-        "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial manual Binance Testnet acceptance is recorded; automated-strategy and broader venue acceptance remain outstanding.",
+        "current_focus": "Initial manual and automated-strategy Binance Testnet acceptance is recorded, including controlled lost-response recovery. Next foundations: partial-fill/cancellation-race acceptance, broader account reconciliation and additional venues. Market analytics and local alerts are implemented. Multi-user support is deferred.",
+        "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

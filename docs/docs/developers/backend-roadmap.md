@@ -13,7 +13,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
 | Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and external delivery.  |
-| Automated strategy execution   | partial       | Authenticated acceptance, broader risk policies, residual exit handling and fee valuation.            |
+| Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.       |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
@@ -36,7 +36,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Durable editable source-pinned level/crossing alerts, strategy journal subscriptions and per-operation connection read-failure/recovery watches; a shared persistent unread in-app inbox and bounded sanitized evidence.
 - Multi-publisher news ingestion, a persistent archive and filtered text sentiment, fetched crypto profiles/history, a glossary, recent Bitcoin blocks and optional equity research.
 
-A paper strategy can consume live prices while still using virtual funds. Its running monitor does **not** mean it places exchange orders. Initial authenticated balance reads and the manual Binance Testnet lifecycle are recorded in [exchange acceptance](exchange-acceptance.md). Broader venue and automated-strategy acceptance remain outstanding.
+A paper strategy can consume live prices while still using virtual funds. Its running monitor does **not** mean it places exchange orders. Initial authenticated balance reads, manual Binance Testnet orders and automated strategy entry/exit/restart with controlled lost-response recovery are recorded in [exchange acceptance](exchange-acceptance.md). Partial-fill/cancellation-race acceptance, broader venues and production execution acceptance remain outstanding.
 
 ## Core data and trading work
 
@@ -88,7 +88,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
 - [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
-- [ ] Exercise authenticated recovery on actual sandbox/provider accounts, including delayed indexing, external amendments, permissions and retention.
+- [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.
+- [ ] Extend authenticated recovery to delayed indexing, external amendments, permissions, retention and additional providers.
 
 ### 4. Automated strategy execution — partial
 
@@ -104,7 +105,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Partial fills and native caps never cause automatic replacement sells.
 - [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
 - [x] Exercise the manual Binance Spot Testnet limit/cancel and market buy/sell lifecycle, native fills/fees, client-ID lookup, duplicate confirmations and retained state after restart; verify read access on one Binance and Coinbase production account.
-- [ ] Extend authenticated acceptance to strategy execution, partial-fill/network-failure cases and other venues before deliberate production enablement.
+- [x] Exercise real Binance Testnet strategy signals and capped orders, duplicate approvals, owned fill/fee accounting, paused restart, shared capital rejection, global halt and a separately reviewed owned-position exit; recover a deliberately discarded entry response by exact native client ID without resubmission.
+- [ ] Extend authenticated acceptance to observed partial fills, cancellation/fill races, late corrections, real connectivity failures and other venues before deliberate production enablement. Controlled response loss does not establish general outage behavior.
 - [x] Add a durable global strategy submission halt: atomically pause exchange runs, invalidate old reviews/unsent signal plans, enforce the shared write boundary, retain audit history and require revision-bound typed release. Release never resumes runs; approved cancellations/manual orders/separately reviewed exits remain available.
 - [x] Add opt-in shared allocated-capital, gross-exposure and observed UTC daily-loss policies across accounts, separately for production/test funds; fresh actual conversion paths, retained/pending exposure, native-write transaction admission, persisted daily baselines/locks, deliberate later-day release, bounded audit and read-only Broker evidence. See [portfolio limits](portfolio-limits.md).
 - [ ] Add broader policy options (asset/account concentration, configurable loss windows and risk sizing), archived-run accounting beyond current bounds, and distributed coordination. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
