@@ -282,19 +282,21 @@ kbd {
   left: max(36px, calc((100vw - 1680px) / 2 + 36px));
   width: 88px;
   transform: translateY(-50%);
-  padding: 8px;
+  padding: 13px 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   border: 1px solid #dfe6f0;
-  border-radius: 26px;
-  background: #fff;
+  border-radius: 44px;
+  background: linear-gradient(160deg, #ffffff, #f8fafd);
   box-shadow:
+    inset 0 1px 1px #ffffff,
     0 12px 30px #334b7610,
     0 2px 5px #334b7606;
   z-index: 3;
 }
 .dock-item {
+  --dock-center-shift: 7.5px;
   width: 100%;
   height: var(--dock-item-size);
   flex: 0 0 var(--dock-item-size);
@@ -307,15 +309,103 @@ kbd {
   font-weight: 500;
   color: #718097;
   border: 1px solid transparent;
-  border-radius: 17px;
+  border-radius: 21px;
   position: relative;
   z-index: 1;
+  transition: color 220ms;
+}
+/* One soft blue face sits directly in the dock, without a separate rim. */
+.dock-item::before,
+.dock-more-link::before,
+.dock-item::after,
+.dock-more-link::after {
+  content: '';
+  position: absolute;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: min(calc(var(--dock-item-size) - 6px), calc(100% - 14px));
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0;
+  border: 0;
+}
+.dock-item::before,
+.dock-more-link::before {
+  background: #edf3fc;
   transition:
-    color 220ms,
-    background 220ms;
+    opacity 220ms ease,
+    box-shadow 220ms ease;
+}
+.dock-item::after,
+.dock-more-link::after {
+  background:
+    radial-gradient(ellipse at 72% 86%, #edf5ff70, transparent 65%),
+    linear-gradient(145deg, #9fb8e3, #bed1f1 48%, #dce9fb);
+  box-shadow:
+    inset 1.5px 2px 4px #4269a72e,
+    inset -1px -1px 3px #ffffff59;
+  transition:
+    opacity 240ms ease,
+    scale 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms ease;
+  scale: 0.84;
+}
+.dock-item:is(:hover, :focus-visible)::before,
+.dock-more-link:is(:hover, :focus-visible)::before {
+  opacity: 1;
+}
+.dock-item.active::after,
+.dock-more-trigger[aria-expanded='true']::after,
+.dock-more-link.active::after {
+  opacity: 1;
+  scale: 1;
+}
+.dock-item:active::after,
+.dock-more-link:active::after {
+  opacity: 1;
+  scale: 0.92;
+  box-shadow:
+    inset 3px 4px 6px #4269a745,
+    inset -1px -1px 2px #ffffff40;
+}
+/* Soft directional colour, with a little reflected light and no separate rim. */
+.dock-item:not(.dock-more-trigger)::after {
+  scale: 1;
+  background:
+    radial-gradient(ellipse at 82% 12%, #dbedff66, transparent 60%),
+    linear-gradient(145deg, #9fb9e7, #bdd0f0 52%, #d9e8f9);
+  transition:
+    opacity 180ms ease,
+    box-shadow 180ms ease;
+}
+.dock-item.active:not(.dock-more-trigger)::after {
+  box-shadow:
+    inset 1px 1.5px 3px #4774a627,
+    inset -1px -1px 2px #ffffff4d;
+}
+.dock-item.dock-sibyl::after {
+  background:
+    radial-gradient(ellipse at 82% 12%, #d9e8ff59, transparent 62%),
+    linear-gradient(145deg, #9bb7e7, #c2bbed 55%, #e2cedf);
+}
+.side-dock .dock-item.active:not(.dock-more-trigger) .dock-icon {
+  transform: translateY(var(--dock-center-shift)) scale(0.98);
+}
+.dock-item:focus-visible,
+.dock-more-link:focus-visible {
+  outline: none;
+}
+.dock-item:focus-visible::before,
+.dock-more-link:focus-visible::before {
+  box-shadow: 0 0 9px 3px #4273d650;
 }
 .dock-icon {
   display: grid;
+  grid-template-areas: 'icon';
   place-items: center;
   height: 30px;
   width: 34px;
@@ -327,7 +417,6 @@ kbd {
 }
 .dock-item:hover {
   color: var(--accent);
-  background: #f2f6fc;
 }
 /* A shared selection and fine page marker keep the two surfaces visually separate. */
 .dock-selection {
@@ -336,9 +425,8 @@ kbd {
   left: var(--selection-x);
   width: var(--selection-width);
   height: var(--selection-height);
-  background: #edf3fe;
-  border: 1px solid #dde7f8;
-  border-radius: 17px;
+  background: transparent;
+  border-radius: 21px;
   transform: translateY(var(--selection-y));
   opacity: 0;
   pointer-events: none;
@@ -397,25 +485,83 @@ kbd {
   color: var(--accent);
   background: transparent;
 }
-.dock-item.active .dock-icon,
-.dock-more-trigger[aria-expanded='true'] .dock-icon {
-  color: #3654b9;
-  transform: scale(1.06);
-  filter: drop-shadow(0 0 3px #4273d645);
+.dock-icon > svg {
+  grid-area: icon;
 }
-.dock-item:is(:hover, :focus-visible) .dock-icon {
-  color: #304ca7;
-  transform: scale(1.09);
-  filter: drop-shadow(0 0 5px #426bd65c);
+.dock-icon-outline,
+.dock-icon-solid {
+  transition:
+    opacity 180ms ease,
+    transform 260ms ease;
+}
+.dock-icon-solid {
+  opacity: 0;
+  transform: scale(0.82);
+}
+.dock-item.active .dock-icon,
+.dock-more-trigger[aria-expanded='true'] .dock-icon,
+.dock-more-link.active .dock-icon {
+  color: #3c63ac;
+  transform: translateY(var(--dock-center-shift));
+  filter: none;
+}
+.dock-item:is(:hover, :focus-visible) .dock-icon,
+.dock-more-link:is(:hover, :focus-visible) .dock-icon {
+  color: #3a61a7;
+  transform: translateY(0.5px) scale(1.02);
+  filter: none;
 }
 .dock-item.active:is(:hover, :focus-visible) .dock-icon,
-.dock-more-trigger[aria-expanded='true']:is(:hover, :focus-visible) .dock-icon {
-  color: #293f9e;
-  transform: scale(1.12);
-  filter: drop-shadow(0 0 6px #426bd670);
+.dock-more-trigger[aria-expanded='true']:is(:hover, :focus-visible) .dock-icon,
+.dock-more-link.active:is(:hover, :focus-visible) .dock-icon {
+  color: #315a9f;
+  transform: translateY(var(--dock-center-shift)) scale(1.04);
+  filter: none;
 }
-.dock-item:active .dock-icon {
-  transform: scale(0.98);
+.dock-item:active .dock-icon,
+.dock-more-link:active .dock-icon {
+  color: #315a9f;
+  transform: translateY(calc(var(--dock-center-shift) + 1px)) scale(0.96);
+}
+.dock-item.active .dock-icon-solid,
+.dock-more-trigger[aria-expanded='true'] .dock-icon-solid,
+.dock-more-link.active .dock-icon-solid {
+  opacity: 1;
+  transform: scale(1);
+}
+.dock-item.active .dock-icon-outline,
+.dock-more-trigger[aria-expanded='true'] .dock-icon-outline,
+.dock-more-link.active .dock-icon-outline {
+  opacity: 0;
+  transform: scale(0.85);
+}
+.dock-label {
+  line-height: 1;
+  transition:
+    opacity 180ms ease,
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dock-item.active .dock-label,
+.dock-more-trigger[aria-expanded='true'] .dock-label,
+.dock-more-link.active .dock-label,
+.dock-item:active .dock-label,
+.dock-more-link:active .dock-label {
+  opacity: 0;
+  transform: translateY(7px) scale(0.85);
+}
+.side-dock .dock-sibyl.active .sibyl-mark {
+  color: #615ca4;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  overflow: visible;
+}
+.side-dock .dock-sibyl.active .sibyl-mark::after {
+  display: none;
+}
+.side-dock .dock-sibyl.active .sibyl-mark svg {
+  width: 85%;
+  height: 85%;
 }
 .workspace-surface {
   grid-column: 2;
@@ -2832,8 +2978,8 @@ details[open] > summary {
   .side-dock {
     left: 22px;
     width: 78px;
-    padding: 7px;
-    border-radius: 23px;
+    padding: 12px 7px;
+    border-radius: 39px;
   }
   .page-title {
     align-items: flex-start;
@@ -2927,12 +3073,13 @@ details[open] > summary {
     --dock-item-size: clamp(32px, calc((100dvh - 200px) / 10), 54px);
     left: 12px;
     width: 64px;
-    padding: 5px;
+    padding: 10px 5px;
     gap: 5px;
-    border-radius: 20px;
+    border-radius: 32px;
     box-shadow: 0 8px 20px #334b7610;
   }
   .dock-item {
+    --dock-center-shift: 5.5px;
     font-size: 8px;
     gap: 3px;
     border-radius: 13px;
@@ -3245,6 +3392,7 @@ details[open] > summary {
     gap: 3px;
   }
   .dock-item {
+    --dock-center-shift: 4.5px;
     gap: 1px;
     font-size: 8px;
   }
@@ -3258,6 +3406,9 @@ details[open] > summary {
   }
 }
 @media (max-height: 450px) {
+  .dock-item {
+    --dock-center-shift: 0px;
+  }
   .dock-item > span:last-child {
     display: none;
   }
@@ -5099,7 +5250,7 @@ details[open] > summary {
 /* More unfolds as a second, horizontal dock beside its trigger. */
 .dock-more-trigger[aria-expanded='true'] {
   color: var(--accent);
-  background: #f2f6fc;
+  background: transparent;
 }
 .dock-more-panel {
   position: absolute;
@@ -5143,6 +5294,10 @@ details[open] > summary {
     visibility 0s;
 }
 .dock-more-link {
+  --dock-item-size: 56px;
+  --dock-center-shift: 9px;
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5176,29 +5331,9 @@ details[open] > summary {
 }
 .dock-more-link:hover {
   color: var(--accent);
-  background: #f3f6fc;
 }
 .dock-more-link.active {
   color: var(--accent);
-  background: #edf3fe;
-}
-.dock-more-link.active > span:first-child {
-  color: #3654b9;
-  transform: scale(1.06);
-  filter: drop-shadow(0 0 3px #4273d645);
-}
-.dock-more-link:is(:hover, :focus-visible) > span:first-child {
-  color: #304ca7;
-  transform: scale(1.09);
-  filter: drop-shadow(0 0 5px #426bd65c);
-}
-.dock-more-link.active:is(:hover, :focus-visible) > span:first-child {
-  color: #293f9e;
-  transform: scale(1.12);
-  filter: drop-shadow(0 0 6px #426bd670);
-}
-.dock-more-link:active > span:first-child {
-  transform: scale(0.98);
 }
 .dock-more-panel[data-open='true'] .dock-more-link {
   opacity: 1;

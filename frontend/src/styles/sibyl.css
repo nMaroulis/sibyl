@@ -26,6 +26,7 @@
   color: #7963ba;
 }
 .dock-sibyl .sibyl-mark {
+  background: linear-gradient(140deg, #5d87d1, #9c89d9 58%, #d8b3d5);
   width: 28px;
   height: 28px;
   border-radius: 10px;

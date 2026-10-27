@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { SibylMark } from './sibyl-mark';
+import { NavigationIcon } from './navigation-icon';
 import { LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -21,6 +21,45 @@ export function NavigationDock({
   const morePanel = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const [expanded, setExpanded] = useState(false);
+  const presses = useRef(new Map<HTMLElement, Animation>());
+
+  /** A small press-and-release without overshoot; More retains its existing motion. */
+  const press = (button: HTMLElement, routeButton = false) => {
+    if (!button.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const current = getComputedStyle(button);
+    const start = {
+      scale: current.scale === 'none' ? '1' : current.scale,
+      translate: current.translate === 'none' ? '0 0' : current.translate,
+    };
+    presses.current.get(button)?.cancel();
+    const animation = button.animate(
+      routeButton
+        ? [
+            start,
+            { scale: '.95', translate: '0 1px', offset: 0.36 },
+            { scale: '1', translate: '0 0', offset: 1 },
+          ]
+        : [
+            { scale: '1', translate: '0 0', offset: 0 },
+            { scale: '.88', translate: '0 2px', offset: 0.22 },
+            { scale: '1.025', translate: '0 -.3px', offset: 0.66 },
+            { scale: '1', translate: '0 0', offset: 1 },
+          ],
+      { duration: routeButton ? 280 : 520, easing: 'cubic-bezier(.2,.7,.2,1)' },
+    );
+    presses.current.set(button, animation);
+    const clear = () => {
+      if (presses.current.get(button) === animation) presses.current.delete(button);
+    };
+    animation.finished.then(clear, clear);
+  };
+  useEffect(() => {
+    const animations = presses.current;
+    return () => {
+      animations.forEach((animation) => animation.cancel());
+      animations.clear();
+    };
+  }, []);
 
   useEffect(() => {
     setExpanded(false);
@@ -100,15 +139,22 @@ export function NavigationDock({
           end={item.path === '/'}
           key={item.path}
           to={item.path}
+          onClick={(event) => {
+            if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey)
+              press(event.currentTarget, true);
+          }}
           aria-label={item.name}
+          title={item.name}
           className={({ isActive }) =>
             `dock-item ${item.path === '/sibyl' ? 'dock-sibyl' : ''} ${isActive ? 'active' : ''}`
           }
         >
           <span className="dock-icon">
-            {item.path === '/sibyl' ? <SibylMark small /> : <item.icon size={21} />}
+            <NavigationIcon path={item.path} icon={item.icon} />
           </span>
-          <span>{item.name}</span>
+          <span className="dock-label" aria-hidden="true">
+            {item.name}
+          </span>
         </NavLink>
       ))}
       <button
@@ -116,9 +162,11 @@ export function NavigationDock({
         ref={moreButton}
         data-current={moreActive}
         aria-label="More tools"
+        title="More tools"
         aria-expanded={expanded}
         aria-controls={panelId}
         onClick={(event) => {
+          press(event.currentTarget);
           const opening = !expanded;
           setExpanded(opening);
           if (opening && event.detail === 0) {
@@ -142,9 +190,11 @@ export function NavigationDock({
         }}
       >
         <span className="dock-icon">
-          <LayoutGrid size={21} />
+          <NavigationIcon path="more" icon={LayoutGrid} />
         </span>
-        <span>More</span>
+        <span className="dock-label" aria-hidden="true">
+          More
+        </span>
       </button>
       <div
         ref={morePanel}
@@ -188,15 +238,22 @@ export function NavigationDock({
           <NavLink
             key={item.path}
             to={item.path}
+            aria-label={item.name}
+            title={item.name}
             style={{ '--more-index': index } as CSSProperties}
-            onClick={() => {
+            onClick={(event) => {
+              press(event.currentTarget);
               setExpanded(false);
               moreButton.current?.focus({ preventScroll: true });
             }}
             className={({ isActive }) => `dock-more-link ${isActive ? 'active' : ''}`}
           >
-            <span>{item.path === '/sibyl' ? <SibylMark small /> : <item.icon size={21} />}</span>
-            <span>{item.name}</span>
+            <span className="dock-icon">
+              <NavigationIcon path={item.path} icon={item.icon} />
+            </span>
+            <span className="dock-label" aria-hidden="true">
+              {item.name}
+            </span>
           </NavLink>
         ))}
       </div>
