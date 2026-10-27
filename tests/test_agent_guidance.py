@@ -48,6 +48,7 @@ def forbid_reads(client, monkeypatch):
         ("analyst", "page_help", "chart", "/markets", "Shift+drag"),
         ("broker", "trade_help", "history", "/trade?tab=history", "Fills & imports"),
         ("broker", "strategy_help", "results", "/strategies", "Price & trades"),
+        ("broker", "strategy_help", "limits", "/strategies", "SAVE STRATEGY LIMITS"),
         ("chronos", "page_help", "models", "/forecast", "not trained"),
         ("reporter", "page_help", "articles", "/news", "Read full article"),
         ("wiki", "page_help", "profiles", "/research?tab=crypto", "Ask Wiki"),

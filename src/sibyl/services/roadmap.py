@@ -61,7 +61,7 @@ AREAS = [
         "priority": "next",
         "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations.",
         "pending": [
-            "Broader risk metrics, optional fill/order policies and silent-worker outage detection; operational diagnostics. Alerting does not enforce strategy exposure/daily-loss limits.",
+            "Broader risk metrics, optional fill/order policies and silent-worker outage detection; operational diagnostics. Shared strategy capital/exposure/daily-loss enforcement is a separate implemented policy; alerts never change it.",
             "Optional external delivery with retries and delivery state.",
             "General durable task scheduling, metrics/diagnostics and managed backup/restore.",
         ],
@@ -71,10 +71,10 @@ AREAS = [
         "name": "Automated strategy execution",
         "status": "partial",
         "priority": "later",
-        "working": "Paper runs and approved exchange strategies for nine provider/environment variants. Scoped budgets, capped GTC limits, durable expiry, Stop & cancel and separate reviewed position exits; native fills/fees, restart pause, per-run guards and a durable global submission halt with explicit release/audit. Uncertain writes are never replayed.",
+        "working": "Paper runs and approved exchange strategies for nine provider/environment variants. Scoped budgets, capped GTC limits, durable expiry, Stop & cancel and separate reviewed position exits; native fills/fees, restart pause, per-run guards, a durable global submission halt and opt-in shared capital/exposure/observed UTC daily-loss limits with dated conversions, native-write admission and later-day lock release/audit. Uncertain writes are never replayed.",
         "pending": [
             "Authenticated test-environment/provider acceptance before deliberate production enablement.",
-            "Portfolio-wide exposure/daily-loss controls. The global submission halt is implemented; residual closing units require fresh approvals; no automatic multi-order liquidation.",
+            "Broader concentration/risk-sizing/loss-window policies, archived accounting beyond current bounds and distributed coordination. Shared strategy capital/exposure/daily-loss controls and global halt are implemented; residual exits need fresh approvals; no automatic liquidation.",
             "Reviewed residual/dust ownership handoff to new runs, third-currency fee valuation, manual position reconciliation/adoption, settlement corrections and more execution providers.",
         ],
     },
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-27",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Initial manual Binance Testnet acceptance is recorded. Next foundations: portfolio-wide strategy exposure/daily-loss controls, broader account reconciliation and venue acceptance. Market analytics and local alerts are implemented. Multi-user support is deferred.",
+        "current_focus": "Initial manual Binance Testnet acceptance is recorded. Next foundations: automated-strategy test-environment acceptance, broader account reconciliation and venue acceptance. Market analytics and local alerts are implemented. Multi-user support is deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial manual Binance Testnet acceptance is recorded; automated-strategy and broader venue acceptance remain outstanding.",
         "release_dates": None,
     }

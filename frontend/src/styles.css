@@ -10078,6 +10078,96 @@ details[open] > summary {
 }
 
 /* Optional per-agent model assignments share the app's quiet provider-card language. */
+.limit-environments {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+.limit-environments button {
+  flex: 1;
+  padding: 10px 16px;
+}
+.limit-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.limit-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.limit-metrics > div {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.limit-metrics span,
+.limit-metrics small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.limit-metrics strong {
+  font-size: 21px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.limit-metrics meter {
+  width: 100%;
+  height: 6px;
+  accent-color: #839d8d;
+}
+.limit-metrics .at-limit {
+  background: #fcf3f0;
+  border-color: #e9c6c2;
+}
+.limit-lock {
+  padding: 16px;
+  border: 1px solid #e9c6c2;
+  border-radius: 16px;
+  background: #fcf3f0;
+}
+.limit-lock p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.limit-run-table {
+  font-size: 12px;
+}
+.limit-run-table td small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.limit-price-list {
+  list-style: none;
+  padding: 0;
+}
+.limit-price-list li {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.limit-price-list small {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+@media (max-width: 480px) {
+  .limit-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
 .agent-model-panel {
   margin-bottom: 22px;
 }

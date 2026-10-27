@@ -35,7 +35,7 @@ Release requires the displayed revision and exact `RELEASE STRATEGY HALT` confir
 | Manual Trade orders | Existing per-order approval and permissions apply |
 | Paper jobs and historical research | Unaffected |
 
-The halt is neither an exchange-wide order-writing ban nor liquidation. Portfolio-wide exposure/daily-loss policies, automatic multi-order liquidation and authenticated venue acceptance remain pending. Ordinary account-risk alerts are notifications and never activate the halt.
+The halt is neither an exchange-wide order-writing ban nor liquidation. Separate [portfolio strategy limits](portfolio-limits.md) now implement shared capital/exposure and observed UTC daily-loss policies for each funds environment. Automatic multi-order liquidation and broader authenticated venue acceptance remain pending. Ordinary account-risk alerts are notifications and never activate the halt.
 
 ## HTTP and agent contracts
 

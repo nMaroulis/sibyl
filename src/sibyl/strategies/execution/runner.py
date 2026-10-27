@@ -14,6 +14,7 @@ from sibyl.strategies.execution.cancellation import StrategyCancellations
 from sibyl.strategies.execution.closing import ClosePositions
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, ExecutionGuard, ExecutionParameters
 from sibyl.strategies.execution.controls import StrategyControls
+from sibyl.strategies.execution.risk import PortfolioLimits
 from sibyl.strategies.execution.stop_reviews import StopCancellationReviews
 from sibyl.strategies.execution.venue import is_dust, observation, order_size, supported
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
@@ -40,6 +41,8 @@ class ExchangeStrategies:
                 "CREATE INDEX IF NOT EXISTS exchange_orders_strategy ON exchange_orders(json_extract(payload,'$.strategy_job_id'))"
             )
         self.controls = StrategyControls(self)
+        self.portfolio_limits = PortfolioLimits(self)
+        trading.strategy_limits = self.portfolio_limits
         self.approvals = StrategyApprovals(self)
         self.cancellations = StrategyCancellations(self)
         self.stop_reviews = StopCancellationReviews(self)
@@ -87,6 +90,7 @@ class ExchangeStrategies:
             "server_enabled": self.market.settings.allow_live_trading
             and self.market.settings.allow_strategy_execution,
             "controls": controls,
+            "portfolio_limits": self.portfolio_limits.state(),
             "required_flags": ["SIBYL_ALLOW_LIVE_TRADING", "SIBYL_ALLOW_STRATEGY_EXECUTION"],
             "providers": [
                 {"id": spec.id, "name": spec.name} for spec in CATALOG.values() if supported(spec.id)
@@ -167,6 +171,9 @@ class ExchangeStrategies:
                 )
             if state == "running":
                 self.enabled()
+                self.portfolio_limits.require(job["environment"])
+                self.portfolio_limits.check(job["environment"])
+                self.portfolio_limits.require(job["environment"])
                 self.account(job["connection_id"])
                 if job.get("risk_locked"):
                     raise ExecutionGuard(
@@ -259,6 +266,12 @@ class ExchangeStrategies:
 
     def tick(self):
         """Reconcile all retained runs locally; evaluate running jobs once per fresh close."""
+        for environment in ("production", "test"):
+            try:
+                self.portfolio_limits.check(environment)
+            except ExecutionGuard:
+                # The assessment records a safe error and pauses affected runs.
+                pass
         for snapshot in self.jobs():
             try:
                 self._step(snapshot["id"])
@@ -293,6 +306,7 @@ class ExchangeStrategies:
                 return
             self.enabled()
             control_revision = self.controls.require()["revision"]
+            risk_revision = self.portfolio_limits.require(job["environment"])["revision"]
             connection = self.account(job["connection_id"])
             if (connection.exchange, connection.sandbox) != (job["exchange"], job["sandbox"]):
                 raise ExecutionGuard("Execution account environment changed.")
@@ -316,6 +330,7 @@ class ExchangeStrategies:
                 return
             self.enabled()
             self.controls.require(control_revision)
+            self.portfolio_limits.require(job["environment"], risk_revision)
             self.account(job["connection_id"])
             job.update(
                 reference_price=observed["price"],
@@ -405,7 +420,10 @@ class ExchangeStrategies:
             with self.store.db() as db:
                 intent = self.trading.lifecycle.read(db, intent["id"])
                 intent.update(
-                    origin="strategy", strategy_job_id=job["id"], strategy_control_revision=control_revision
+                    origin="strategy",
+                    strategy_job_id=job["id"],
+                    strategy_control_revision=control_revision,
+                    strategy_risk_revision=risk_revision,
                 )
                 intent["strategy_expiry_seconds"] = job["risk"].get("order_lifetime_seconds")
                 self.trading.lifecycle.write(db, intent)

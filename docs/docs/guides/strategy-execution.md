@@ -20,7 +20,7 @@ Wait for the active-halt confirmation. A request can wait for an already admitte
 
 Open **Review & release** to inspect the control history and type `RELEASE STRATEGY HALT`. Releasing leaves every run paused. Review each run's orders, fills and current ownership, then Resume individually. The normal account, loss, reconciliation and fresh-candle checks still apply. Old unused Start reviews and unsent signal orders remain invalid; create a fresh review when starting a new run.
 
-**Controls** shows the newest 20 changes, their notes, exact paused-run links and timestamps. The backend retains the newest 200 changes, and each affected run keeps its own journal pause event. Agents can explain this state but cannot change it. This is a manual submission control; portfolio-wide automatic exposure/daily-loss policies remain pending. See the [developer contract](../developers/strategy-controls.md).
+**Controls** shows the newest 20 changes, their notes, exact paused-run links and timestamps. The backend retains the newest 200 changes, and each affected run keeps its own journal pause event. Agents can explain this state but cannot change it. This manual submission control is independent of the opt-in [portfolio limits](portfolio-limits.md), which enforce shared capital/exposure and observed daily-loss policies separately for production/test funds. See the [developer contract](../developers/strategy-controls.md).
 
 ## Execution and risk controls
 
@@ -75,7 +75,7 @@ Readiness and a current reconciliation match do not establish final settlement. 
 
 ## Pending
 
-Authenticated sandbox/production acceptance, automatic multi-order liquidation, adoption/reconciliation of manually changed positions, third-currency fee valuation, full settlement/bust handling, portfolio-wide exposure/daily-loss policies and additional providers remain on the [implementation checklist](../developers/backend-roadmap.md). Current residual exits require fresh approvals. Do not interpret a supported adapter badge as successful private-account verification.
+Authenticated sandbox/production acceptance, automatic multi-order liquidation, adoption/reconciliation of manually changed positions, third-currency fee valuation, full settlement/bust handling, broader shared risk-policy options and additional providers remain on the [implementation checklist](../developers/backend-roadmap.md). Current residual exits require fresh approvals. Do not interpret a supported adapter badge as successful private-account verification.
 
 The code is in `src/sibyl/strategies/execution/`: `contracts.py`, `approvals.py`, `venue.py`, `accounting.py`, `cancellation.py`, `stop_reviews.py`, `closing.py` and `runner.py`. Cancellation progress lives on each owned order intent; the persisted stop policy and deadlines reconstruct work after restart. Closing reviews persist separately; their deterministic request keys and linked intents protect duplicate confirmations. A domain guard compares a coherent ownership digest within the shared submission transaction. Host locks precede per-intent locks, matching the submission pipeline. Equal native fill timestamps use local order creation order as the causal tiebreaker for this serialized strategy. It reuses `ExchangeTrading`, order recovery and native fill reconciliation rather than introducing another exchange client. Native limit-order reference: [Binance Spot trading API](https://developers.binance.com/docs/binance-spot-api-docs/rest-api/trading-endpoints).
 

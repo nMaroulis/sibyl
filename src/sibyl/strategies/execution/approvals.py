@@ -63,9 +63,17 @@ class StrategyApprovals:
         """Validate account, candles, funds and policy; never create an exchange order."""
         with self.lock:
             connection, observed = self._validate(request)
+            risk_revision = self.runner.portfolio_limits.review(connection, request.parameters)
+            limits = next(
+                state
+                for state in self.runner.portfolio_limits.state()["policies"]
+                if state["environment"] == ("test" if connection.sandbox else "production")
+            )
             review = {
                 "id": uuid4().hex,
                 "control_revision": self.runner.controls.require()["revision"],
+                "risk_revision": risk_revision,
+                "shared_limits": {"currency": "USDT", **limits["policy"]},
                 "request": request.model_dump(),
                 "account": connection.label,
                 "exchange": connection.exchange,
@@ -103,6 +111,9 @@ class StrategyApprovals:
             self.runner.controls.require(review.get("control_revision", 0))
             request = ExchangeStrategyRequest(**review["request"])
             connection, observed = self._validate(request)
+            self.runner.portfolio_limits.review(
+                connection, request.parameters, review.get("risk_revision", 0)
+            )
             if (connection.exchange, connection.sandbox) != (review["exchange"], review["sandbox"]):
                 raise ExecutionGuard("Execution account environment changed. Review it again.")
             identity = review_id  # Recover a crash between saving the job and acknowledging the review.

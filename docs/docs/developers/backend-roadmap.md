@@ -106,7 +106,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Exercise the manual Binance Spot Testnet limit/cancel and market buy/sell lifecycle, native fills/fees, client-ID lookup, duplicate confirmations and retained state after restart; verify read access on one Binance and Coinbase production account.
 - [ ] Extend authenticated acceptance to strategy execution, partial-fill/network-failure cases and other venues before deliberate production enablement.
 - [x] Add a durable global strategy submission halt: atomically pause exchange runs, invalidate old reviews/unsent signal plans, enforce the shared write boundary, retain audit history and require revision-bound typed release. Release never resumes runs; approved cancellations/manual orders/separately reviewed exits remain available.
-- [ ] Add portfolio-wide exposure/daily-loss policies. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
+- [x] Add opt-in shared allocated-capital, gross-exposure and observed UTC daily-loss policies across accounts, separately for production/test funds; fresh actual conversion paths, retained/pending exposure, native-write transaction admission, persisted daily baselines/locks, deliberate later-day release, bounded audit and read-only Broker evidence. See [portfolio limits](portfolio-limits.md).
+- [ ] Add broader policy options (asset/account concentration, configurable loss windows and risk sizing), archived-run accounting beyond current bounds, and distributed coordination. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
 - [ ] Add reviewed residual/dust ownership handoff to new runs; value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.
 
 ### 5. Market-data infrastructure — partial
@@ -200,7 +201,7 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add per-run journal subscriptions for pauses/errors/recovery and lifecycle changes, atomic cursors/notifications, restart catch-up, revision-checked controls and monitor links. See [strategy alerts](alerts.md#strategy-journal-subscriptions).
 - [x] Add connection read-failure/recovery rules per operation, bounded credential-free evidence, atomic cursor/inbox commits, restart catch-up and revision-checked controls. No polling/uptime claim; see [connection alerts](alerts.md#connection-read-subscriptions).
 - [x] Add fixed-account-set value floors, asset concentration and observed-value drawdown watches with complete fresh valuation, recovery/cooldown, atomic evidence/inbox commits and read-only Accountant tools. See [account risk](account-risk.md).
-- [ ] Add broader risk metrics, silent-worker outage detection and optional fill/order notification policies. Execution exposure/daily-loss enforcement remains separate work.
+- [ ] Add broader risk metrics, silent-worker outage detection and optional fill/order notification policies. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
 - [ ] Add optional external delivery integrations with explicit recipients, delivery attempts and retries.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [ ] Add structured application/provider metrics, tracing and operational diagnostics beyond basic health/log output.

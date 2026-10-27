@@ -9,6 +9,7 @@ from sibyl.strategies.execution.contracts import (
     StrategyApproval,
 )
 from sibyl.strategies.execution.controls import ControlAction
+from sibyl.strategies.execution.risk.contracts import Environment, ReleaseLossLock, SaveLimits
 
 router = APIRouter(prefix="/api/v1/strategies/exchange", tags=["Broker"])
 
@@ -31,6 +32,36 @@ def change_controls(body: ControlAction, s: S, response: Response):
     """Pause exchange runs or explicitly release admission without resuming any run."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.controls.change(body)
+
+
+@router.get("/limits")
+def portfolio_limits(s: S, response: Response):
+    """Read shared policy, dated assessment and audit without contacting an exchange."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.portfolio_limits.state()
+
+
+@router.post("/limits/{environment}")
+def save_limits(environment: Environment, body: SaveLimits, s: S, response: Response):
+    """Save explicitly confirmed shared limits and pause affected exchange runs."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.portfolio_limits.save(environment, body)
+
+
+@router.post("/limits/{environment}/check")
+def check_limits(environment: Environment, s: S, response: Response):
+    """Refresh bounded public reference prices; never place or cancel an order."""
+    response.headers["Cache-Control"] = "no-store"
+    limits = s.strategies.execution.portfolio_limits
+    limits.check(environment)
+    return limits.state()
+
+
+@router.post("/limits/{environment}/release")
+def release_loss(environment: Environment, body: ReleaseLossLock, s: S, response: Response):
+    """Release a prior UTC day's loss lock after assessment, leaving all runs paused."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.portfolio_limits.release(environment, body)
 
 
 @router.get("/markets/{connection_id}")

@@ -8,7 +8,7 @@ TradeTopic = Literal[
     "overview", "accounts", "orders", "history", "executions", "tracking", "cancel", "recovery"
 ]
 StrategyTopic = Literal[
-    "overview", "backtest", "results", "validation", "paper", "exchange", "monitor", "stop", "halt"
+    "overview", "backtest", "results", "validation", "paper", "exchange", "monitor", "stop", "halt", "limits"
 ]
 
 TRADE = {
@@ -106,6 +106,20 @@ TRADE = {
 }
 
 STRATEGIES = {
+    "limits": Guide(
+        "Set shared strategy limits",
+        "/strategies",
+        (
+            "Open Portfolio limits beside Exchange automation. Choose Production or Exchange test funds; their budgets and loss periods are separate.",
+            "Enable the policy, choose a live reference feed and set maximum allocated capital, gross exposure and daily loss in reference USDT. Type SAVE STRATEGY LIMITS. Saving pauses affected runs; assess and Resume each deliberately.",
+            "Refresh assessment to see all strategy contributions, retained holdings, outstanding buys and reference prices. Stale/incomplete evidence blocks new automatic orders.",
+            "A daily-loss breach locks and pauses that environment. A previous day's lock can be released after a fresh assessment on a later UTC day by typing RELEASE DAILY LOSS LOCK; no run resumes automatically.",
+        ),
+        (
+            "Daily loss is the net decline in observed strategy P&L, including unrealized positions and known native fees. The first assessment establishes the initial baseline; later UTC days carry the last observed P&L, not an exact midnight price. New run allocations are not profits.",
+            "Exposure includes outstanding buys and stopped holdings; pending sells do not reduce it. Existing orders can fill. Manual Trade, separately approved Close position, cancellation and paper runs retain their own permissions. No maximum loss or automatic liquidation is guaranteed.",
+        ),
+    ),
     "overview": Guide(
         "Build and inspect a strategy",
         "/strategies",

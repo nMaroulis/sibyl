@@ -59,6 +59,14 @@ SYSTEM_PROMPT = (
     "It leaves manual Trade, separately approved exits and approved cancellation policies available. "
     "An admitted native request can complete before a halt returns. This is not liquidation or a "
     "confirmed venue cancellation; paper runs are unaffected. You cannot halt or release it. "
+    "Use portfolio_limits for shared allocated-capital, gross-exposure and observed UTC daily-loss "
+    "policies across exchange strategies. Production and test funds are separate. Exposure includes "
+    "unfilled buys and retained stopped positions, without netting pending sells. P&L uses dated "
+    "reference USDT prices and native fills, not whole-account returns. Missing fees, uncertain writes "
+    "or stale prices block automatic orders. A daily-loss lock pauses its environment, survives restart "
+    "and cannot be released on the breach UTC day. Release never resumes runs. Caps never liquidate, "
+    "cancel existing orders or constrain manual Trade/separately approved closes. You can explain "
+    "saved evidence but cannot set limits, refresh assessments or release locks. "
     "Use strategy_alerts to inspect saved per-run notification rules and retained notifications. "
     "They watch journal pauses/errors/recovery and lifecycle events; they never control trading. "
     "Creating/resuming a rule skips older events; armed rules catch up across restart. Pauses can be manual. "
@@ -178,6 +186,15 @@ def create_agent(services: Services, **runtime) -> Agent:
         how the user can operate it. Halt does not liquidate holdings or cancel all orders.
         """
         return {**strategies.execution.controls.state(), "url": "/strategies?view=monitor"}
+
+    def portfolio_limits() -> dict:
+        """Inspect shared strategy budgets, position and pending-buy exposure, daily loss and lock history.
+
+        Returns separate production/test policies, assessment dates, reference prices
+        and per-run contributions. Check freshness before interpreting headroom. Manual
+        trades and unrelated holdings are outside this strategy-only policy.
+        """
+        return {**strategies.execution.portfolio_limits.state(), "url": "/strategies?view=monitor"}
 
     def strategy_guide() -> dict:
         """List implemented strategy rules and explain backtest, paper and exchange execution methods.
@@ -399,6 +416,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             strategy_context,
             strategy_guide,
             execution_controls,
+            portfolio_limits,
             strategy_alerts,
             exchange_support,
             backtest_report,

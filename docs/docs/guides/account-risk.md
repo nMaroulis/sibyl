@@ -14,7 +14,7 @@ Starting a watch authorizes background **read-only spot balance and price reques
 
 A value floor or allocation limit can notify on its first complete check. Drawdown first needs a positive observed value to establish its peak. Peaks grow only from complete fresh checks while the rule is armed; there is no historical backfill. An unheld asset has 0% allocation; a zero-value wallet has no allocation percentage. A zero-value wallet after a positive peak is a 100% observed-value drawdown.
 
-**Drawdown measures account value, not investment return.** Deposits, withdrawals, fees, trades and currency rates can all change it. It is not adjusted for cash flows, and missed offline peaks are not reconstructed. Portfolio-wide strategy exposure controls, cash-flow-aware returns and automatic loss protection remain separate pending work.
+**Drawdown measures account value, not investment return.** Deposits, withdrawals, fees, trades and currency rates can all change it. It is not adjusted for cash flows, and missed offline peaks are not reconstructed. Separate [portfolio strategy limits](portfolio-limits.md) now enforce shared capital/exposure and observed daily-loss policies for exchange strategies; these account alerts never change execution. Broader cash-flow-aware returns and automatic liquidation remain pending.
 
 USD, fiat and stablecoins require observed conversion rates. Only USDT itself needs no conversion. Reference valuations are indicative and are not executable liquidation quotes.
 

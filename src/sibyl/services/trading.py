@@ -17,6 +17,7 @@ from sibyl.services.order_lifecycle import OrderLifecycle
 from sibyl.services.order_reconciliation import OrderReconciliation
 from sibyl.services.order_recovery import OrderRecovery
 from sibyl.storage import Store
+from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.controls import require_submissions
 
 
@@ -31,6 +32,7 @@ class ExchangeTrading:
 
     def __init__(self, market: Market, store: Store):
         self.market, self.store = market, store
+        self.strategy_limits = None
         with store.db() as db:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS exchange_orders ("
@@ -279,6 +281,7 @@ class ExchangeTrading:
         strategy_job_id: str | None = None,
         before_submit=None,
     ) -> dict:
+        refusal = None
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             intent = self.lifecycle.read(db, intent_id)
@@ -308,19 +311,38 @@ class ExchangeTrading:
                 ).fetchone()
                 if not row or json.loads(row[0])["status"] != "running" or intent.get("strategy_abandoned"):
                     raise ValueError("This strategy is paused or its unsent order was abandoned.")
-            if before_submit is not None:
+                if self.strategy_limits is None:
+                    raise ExecutionGuard("Shared strategy admission controls are unavailable.")
+                job = json.loads(row[0])
+                if (
+                    job["connection_id"] != connection.id
+                    or job["parameters"]["symbol"] != intent["request"]["symbol"]
+                    or job["environment"] != intent["environment"]
+                    or job["exchange"] != connection.exchange
+                    or job["sandbox"] != connection.sandbox
+                ):
+                    raise ExecutionGuard("Strategy account, market or environment changed. Review it again.")
+                refusal = self.strategy_limits.admit(db, intent)
+            if refusal is None and before_submit is not None:
                 # Internal domain guard reads ownership in this same write
                 # transaction, immediately before committing the native write boundary.
                 before_submit(db, intent)
-            intent.update(
-                status="submitting", tracking=True, next_check=0, submitted_at=datetime.now(UTC).isoformat()
-            )
-            if strategy_job_id and intent.get("strategy_expiry_seconds") is not None:
-                intent["strategy_expires_at"] = (
-                    datetime.fromisoformat(intent["submitted_at"])
-                    + timedelta(seconds=intent["strategy_expiry_seconds"])
-                ).isoformat()
-            self.lifecycle.write(db, intent)
+            if refusal is None:
+                intent.update(
+                    status="submitting",
+                    tracking=True,
+                    next_check=0,
+                    submitted_at=datetime.now(UTC).isoformat(),
+                )
+                if strategy_job_id and intent.get("strategy_expiry_seconds") is not None:
+                    intent["strategy_expires_at"] = (
+                        datetime.fromisoformat(intent["submitted_at"])
+                        + timedelta(seconds=intent["strategy_expiry_seconds"])
+                    ).isoformat()
+                self.lifecycle.write(db, intent)
+        if refusal is not None:
+            # A loss trip and its pauses must commit even though this order is refused.
+            raise ExecutionGuard(refusal)
         request = ExchangeOrderRequest(**intent["request"])
         try:
             with self.market.adapter(connection, write=True) as client:

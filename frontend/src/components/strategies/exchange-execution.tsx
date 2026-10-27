@@ -5,6 +5,7 @@ import { Badge, Modal } from '../ui';
 import { useResource } from '../../lib/hooks';
 import { number, post, refresh } from '../../lib/api';
 import type { Connection, Job, StrategyParams } from '../../lib/types';
+import type { LimitPolicy } from '../../lib/portfolio-limits';
 
 type Risk = {
   max_order_quote: number;
@@ -31,6 +32,7 @@ type Review = {
   expires_at: string;
   execution: string;
   request: { parameters: StrategyParams; risk: Risk };
+  shared_limits: LimitPolicy;
 };
 
 /** A collapsed execution setup keeps research simple and requires a separate scoped approval. */
@@ -367,6 +369,12 @@ export function ExchangeStrategySetup({
                 completed exit orders, including partial reductions. Residual holdings remain owned.
               </p>
             )}
+            <p className="footnote">
+              {review.shared_limits.enabled
+                ? `Shared limits across this funds environment: ${number(review.shared_limits.max_allocated ?? 0, 2)} USDT allocated capital, ${number(review.shared_limits.max_exposure ?? 0, 2)} USDT gross exposure and ${number(review.shared_limits.max_daily_loss ?? 0, 2)} USDT observed daily loss.`
+                : 'Shared portfolio limits are off for this funds environment. Configure them using Portfolio limits above the workspace.'}{' '}
+              Per-run limits still apply. Changing shared policy invalidates this unused review.
+            </p>
             <p className="footnote">
               Review expires {new Date(review.expires_at).toLocaleTimeString()}. Manage open orders
               and holdings in Trade. Keep other bots/manual activity separate from this allocated

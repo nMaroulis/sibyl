@@ -5,6 +5,7 @@ import { Badge, Modal, useToast } from '../ui';
 import { post, refresh } from '../../lib/api';
 import { useResource } from '../../lib/hooks';
 import type { StrategyControl } from '../../lib/strategy-controls';
+import { PortfolioLimitsButton } from './portfolio-limits';
 
 /** A workspace-wide pause with durable history and a deliberate, separate release. */
 export function ExecutionControls() {
@@ -68,6 +69,7 @@ export function ExecutionControls() {
         </div>
       </div>
       <div className="strategy-control-actions">
+        <PortfolioLimitsButton />
         <Badge tone={state?.halted ? 'rose' : 'neutral'}>
           {!state
             ? 'Checking…'
