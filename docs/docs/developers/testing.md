@@ -36,6 +36,10 @@ The exchange client, spot-support, order management, recovery, discovery and rec
 
 `tests/test_ollama.py` replaces native HTTP and process creation. It checks endpoint/model detection, credential destination isolation, fixed CLI arguments, loopback-only launch and process ownership. Automated tests never start an actual Ollama installation. Manual browser verification can exercise Start/Stop on an installed local server without downloading a model or changing the active AI profile.
 
+## Real local-model acceptance
+
+Run the separate opt-in [agent acceptance checks](agent-acceptance.md) against an already running Ollama service. They preserve real answers and native receipts from an isolated Demo workspace; ordinary tests do not contact it.
+
 ## Frontend and docs
 
 The TypeScript check and Vite build validate frontend contracts and feature bundles. Docusaurus builds the documentation and checks internal links. Browser checks exercise saved experiment selection/reruns, price/equity modes, actual marker selection, the chart time brush, connection requirements and disabled execution states. Browser refresh only reads persisted strategy monitoring data; it does not execute a run.

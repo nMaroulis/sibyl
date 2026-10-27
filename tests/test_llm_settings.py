@@ -163,6 +163,8 @@ def test_configuration_matches_actual_protolink_constructor_signature(client, tm
     resolved = client.app.state.services.agents.models.resolve()
     selected, kwargs = ModelSettings.constructor(resolved)
     assert selected == provider
+    if provider == "ollama":
+        assert kwargs["tool_calling"] == "auto"
     inspect.signature(LLMFactory._resolve_client(selected)).bind(**kwargs)
     if provider in {"ollama", "llama.cpp-server"}:
         assert kwargs["headers"] == {"Authorization": "Bearer constructor-test-key"}
@@ -231,3 +233,59 @@ def test_malformed_url_does_not_echo_credentials(client):
     response = save(client, "ollama", model="local", base_url="https://secret-sentinel＠host")
     assert response.status_code == 422
     assert "secret-sentinel" not in response.text
+
+
+def test_ollama_context_is_persisted_and_shared_with_native_budget(client, settings, monkeypatch):
+    state = save(client, "ollama", model="local-model", context_window=24576).json()
+    assert state["profiles"]["ollama"]["context_window"] == 24576
+    created, arguments = [], []
+
+    def factory(provider, **kwargs):
+        arguments.append((provider, kwargs))
+        model = create_llm("mock", default_response="A real native runtime with scripted inference.")
+        created.append(model)
+        return model
+
+    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    response = client.post("/api/v1/agents/ask", json={"module": "wiki", "message": "Hello"})
+    assert response.status_code == 200
+    assert arguments[0][0] == "ollama"
+    assert arguments[0][1]["tool_calling"] == "auto"
+    assert arguments[0][1]["model_params"] == {"num_ctx": 24576, "num_predict": 2048}
+    assert created[0].metrics_profile.context_window == 24576
+    # Older clients omitting the field preserve a deliberate saved value.
+    assert (
+        save(client, "ollama", model="renamed-model").json()["profiles"]["ollama"]["context_window"] == 24576
+    )
+    with TestClient(create_app(settings)) as restarted:
+        assert restarted.app.state.services.agents.models.resolve()["context_window"] == 24576
+
+
+def test_small_ollama_context_rejects_coordinator_before_model_call(client, monkeypatch):
+    save(client, "ollama", model="small-window", context_window=4096)
+
+    def factory(*_a, **_kw):
+        return create_llm(
+            "mock", response_callback=lambda *_: pytest.fail("Oversized input reached the model")
+        )
+
+    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    response = client.post("/api/v1/sibyl/ask", json={"message": "How do I see account history?"})
+    assert response.status_code == 409, response.text
+    assert "context window" in response.json()["detail"]
+    assert (
+        client.app.state.services.agents.network.conversations.get(
+            client.app.state.services.agents.network.conversations.list()[0]["id"]
+        )["turns"]
+        == []
+    )
+
+
+@pytest.mark.parametrize("value", [True, 4095, 131073, "32768", 3.5])
+def test_ollama_context_rejects_invalid_limits(client, value):
+    assert save(client, "ollama", context_window=value).status_code == 422
+
+
+@pytest.mark.parametrize("value", [32768, None])
+def test_other_providers_do_not_accept_ollama_context_option(client, value):
+    assert save(client, "mock", context_window=value).status_code == 422

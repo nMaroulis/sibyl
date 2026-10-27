@@ -97,7 +97,7 @@ AREAS = [
         "priority": "next",
         "working": "Native ProtoLink discovery/delegation, saved chats, streamed tool/consultation activity, Stop/outcomes and on-demand native run details with available token/cost metrics, and a direct-HTTP Telegram client with private-user binding, encrypted configuration and durable delivery outcomes.",
         "pending": [
-            "User-facing token streaming, evaluated routing/grounding and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3).",
+            "User-facing token streaming, broader repeated/model-specific routing and grounding evaluation and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3).",
             "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
             "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: live bot acceptance testing, richer media and delivery review controls; ambiguous sends are never auto-retried.",
         ],
@@ -107,7 +107,7 @@ AREAS = [
         "name": "ProtoLink workflows",
         "status": "partial",
         "priority": "later",
-        "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent provider/model selection, encrypted shared profiles and frozen delegated request snapshots; Broker reads saved experiments and bounded retained order/fill evidence. Ollama settings detect models and can manage an explicitly started local server.",
+        "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent provider/model selection, encrypted shared profiles and frozen delegated request snapshots; Broker reads saved experiments and bounded retained order/fill evidence. Ollama settings detect models, configure a shared context window aligned with native input budgets, and can manage an explicitly started local server. Initial real Gemma acceptance covers evidence, coordinator tool/inference consultations, memory, cancellation and persistence; broader reliability remains unproven.",
         "pending": [
             "Deeper domain investigation tools as features expand.",
             "Evaluated tool/source selection, inspected internal traces and collaboration budgets.",

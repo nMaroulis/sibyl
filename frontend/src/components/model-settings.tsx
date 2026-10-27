@@ -17,7 +17,13 @@ import { OllamaControls } from './ollama-controls';
 import { ProviderMark } from './provider-mark';
 import { AgentModelSettings } from './agent-model-settings';
 
-type Draft = { model: string; custom: boolean; base_url: string; key: string };
+type Draft = {
+  model: string;
+  custom: boolean;
+  base_url: string;
+  key: string;
+  context_window: number;
+};
 
 /** Configure the real ProtoLink runtime; provider secrets stay in the server vault. */
 export function ModelSettings() {
@@ -60,6 +66,7 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
     custom: !provider.models.includes(fallbackModel),
     base_url: profile.base_url || provider.base_url,
     key: '',
+    context_window: profile.context_window ?? 32768,
   };
   const active = workspace.providers.find((p) => p.id === workspace.active_provider)!;
   const update = (patch: Partial<Draft>) =>
@@ -90,6 +97,7 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
         activate,
         model: draft.model.trim(),
         base_url: provider.base_url ? draft.base_url.trim() : '',
+        ...(selected === 'ollama' ? { context_window: draft.context_window } : {}),
         ...(draft.key.trim() ? { api_key: draft.key.trim() } : {}),
       });
       saved(
@@ -343,6 +351,29 @@ function ModelEditor({ data }: { data: ModelWorkspace }) {
                 model={draft.model}
                 onModel={(model) => update({ model, custom: !provider.models.includes(model) })}
               />
+            )}
+            {selected === 'ollama' && (
+              <details>
+                <summary>Advanced model settings</summary>
+                <label>
+                  Context window · tokens
+                  <input
+                    type="number"
+                    min={4096}
+                    max={131072}
+                    step={1}
+                    required
+                    disabled={busy}
+                    value={draft.context_window}
+                    onChange={(event) => update({ context_window: Number(event.target.value) })}
+                  />
+                </label>
+                <p className="footnote">
+                  Includes instructions, tools, conversation and reply. Sibyl's specialist directory
+                  needs a larger window than a simple chat. Start with 32,768 if your model supports
+                  it; larger windows use more memory. Small windows may prevent consultations.
+                </p>
+              </details>
             )}
             {!['mock', 'llama.cpp-local'].includes(selected) && (
               <div className="llm-key-field">

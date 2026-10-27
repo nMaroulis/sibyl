@@ -200,14 +200,16 @@ def create_agent(services: Services, **runtime) -> Agent:
             fields.append("passphrase")
         if spec.uid:
             fields.append("uid (API memo)")
+        catalog = provider_catalog()
         return {
-            "exchange": next(item for item in provider_catalog()["items"] if item["id"] == exchange),
-            "key_storage": provider_catalog()["key_storage"],
-            "manual_execution_enabled": services.settings.allow_live_trading,
-            "required_fields": ["label", *fields],
+            # Put setup guidance before the matrix so native context previews retain it.
             **GUIDES["exchanges"],
+            "required_fields": ["label", *fields],
+            "key_storage": catalog["key_storage"],
+            "manual_execution_enabled": services.settings.allow_live_trading,
             "note": "Demo accepts no credentials." if spec.simulated else spec.note,
             "test_environment": spec.test_environment,
+            "exchange": next(item for item in catalog["items"] if item["id"] == exchange),
         }
 
     agent = Agent(

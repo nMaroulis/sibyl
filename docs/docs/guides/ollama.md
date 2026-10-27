@@ -6,6 +6,12 @@ Choose **Settings → AI models → Local → Ollama**. Sibyl checks the endpoin
 
 If Ollama is installed locally but stopped, **Start Ollama** launches its installed CLI using `ollama serve`. Only a plain loopback HTTP endpoint on the machine hosting Sibyl's Python backend can be started. The browser cannot supply commands, executable paths or extra process arguments. Startup may take a moment; the panel checks a starting process automatically. **Stop local server** appears only for a process started by this Sibyl instance. Existing desktop/system Ollama processes are reused and must be stopped in Ollama itself. Sibyl stops its own child when the backend shuts down.
 
+## Context window
+
+Expand **Advanced model settings** to set the context window in tokens. It holds instructions, the specialist directory, tool results, conversation and reply. The default is **32,768**; choose a value supported by the model and available memory. Larger windows use more memory. Sibyl's full specialist directory needs more room than a basic chat, so small windows can prevent coordinator requests. An input that cannot fit produces setup guidance. Save the profile to apply the value to new requests; running turns keep their previous configuration.
+
+Sibyl uses ProtoLink's capability-based native tool selection for Ollama. Model tool-following and answer quality still vary. See [acceptance observations](../developers/agent-acceptance.md) for the actual local-model checks.
+
 ## Installation and models
 
 Install Ollama on the **Python backend machine**, which may differ from your browser's computer. Use the official [download page](https://ollama.com/download) and [quickstart](https://docs.ollama.com/quickstart). Open Ollama after installing, then check status again. Remote servers can be checked, but cannot be started from Sibyl.

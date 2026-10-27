@@ -62,6 +62,7 @@ module.exports = {
         'developers/agents',
         'developers/protolink-metrics',
         'developers/agent-models',
+        'developers/agent-acceptance',
         'developers/api',
         'developers/extending',
         'developers/testing',

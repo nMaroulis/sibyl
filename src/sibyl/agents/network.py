@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from protolink import (
     AgentGroup,
+    ContextLimitError,
     ContextPolicy,
     RedactionPolicy,
     RunBudget,
@@ -169,11 +170,17 @@ class AgentNetwork:
         if result.status == "canceled":
             raise asyncio.CancelledError()
         if result.status != "completed":
-            failures = []
+            failures = [result.error.get("code")] if isinstance(result.error, dict) else []
             for event in result.report.events:
                 error = event.payload.get("error") or event.payload.get("metadata", {}).get("error")
                 if isinstance(error, dict):
                     failures.append(error.get("code"))
+            if "ContextLimitError" in failures:
+                raise ContextLimitError(
+                    "The configured model context window cannot fit this request. "
+                    "Choose a model with more room in Settings → AI models; for Ollama, "
+                    "increase its context window within the model and memory limits."
+                )
             if "LookupError" in failures:
                 raise LookupError("Record not found.")
             if "TimeoutError" in failures:

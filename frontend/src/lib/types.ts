@@ -702,6 +702,7 @@ export type ModelProvider = {
   docs_url: string;
 };
 export type ModelProfile = {
+  context_window?: number;
   model: string;
   base_url: string;
   has_api_key: boolean;

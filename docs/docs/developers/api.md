@@ -178,7 +178,7 @@ The profile service fetches CoinPaprika metadata/tickers and MediaWiki extracts 
 
 ## Model configuration
 
-`POST /settings/llm` accepts `provider`, `model`, `base_url`, and an optional `api_key`. Omit the key or send null to preserve its saved value. Credentials are never echoed. Only local/server adapters expose an endpoint field. URLs must use HTTP(S) and cannot embed credentials, a query, or a fragment. Embedded llama.cpp requires an existing GGUF path as its model. All model routes use the workspace token/origin controls. Metadata includes `has_api_key`, `key_source` (`saved`, `environment`, or `none`), installed dependency status, preset IDs, and provider guide URLs. Saves do not perform model inference or verify credentials.
+`POST /settings/llm` accepts `provider`, `model`, `base_url`, and an optional `api_key`. Ollama also accepts `context_window`, a strict integer from 4,096 to 131,072; omitted/null preserves a saved value or defaults to 32,768. Other providers reject that field. See [context contracts](agent-models.md#ollama-context-and-tool-protocol). Omit the key or send null to preserve its saved value. Credentials are never echoed. Only local/server adapters expose an endpoint field. URLs must use HTTP(S) and cannot embed credentials, a query, or a fragment. Embedded llama.cpp requires an existing GGUF path as its model. All model routes use the workspace token/origin controls. Metadata includes `has_api_key`, `key_source` (`saved`, `environment`, or `none`), installed dependency status, preset IDs, and provider guide URLs. Saves do not perform model inference or verify credentials.
 
 ## News queries
 

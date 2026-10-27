@@ -253,3 +253,27 @@ def test_native_tool_rejection_allows_model_to_correct_an_unknown_order_id(clien
     assert len(observations) == 1
     assert observations[0]["arguments"] == {"account_id": "", "status": "", "order_id": ""}
     assert observations[0]["evidence"]["items"] == []
+
+
+def test_exchange_setup_keeps_actionable_guidance_in_native_bounded_context(client, monkeypatch):
+    client.post("/api/v1/settings/llm", json={"provider": "mock"})
+    step = []
+
+    def respond(history, _prompt):
+        step.append(True)
+        if len(step) == 1:
+            return {"type": "tool_call", "tool": "exchange_setup", "args": {"exchange": "binance"}}
+        visible = json.dumps(history.messages)
+        assert "context_artifact" in visible
+        assert "/settings?tab=exchanges" in visible
+        assert "Save the connection" in visible
+        return "Use the supplied Exchanges settings link."
+
+    monkeypatch.setattr(
+        "sibyl.agents.registry.create_llm",
+        lambda *_a, **_kw: create_llm("mock", response_callback=respond),
+    )
+    response = client.post("/api/v1/agents/ask", json={"module": "technician", "message": "Connect Binance"})
+    assert response.status_code == 200, response.text
+    assert len(step) == 2
+    assert response.json()["evidence"]["exchange"]["support"]  # Full receipt survives the preview.

@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
+from protolink import ContextLimitError
 
 from sibyl import __version__
 from sibyl.agents.conversations import SibylRequest
@@ -1085,7 +1086,7 @@ async def ask_sibyl(body: SibylRequest, s: S):
     """Ask the lead ProtoLink agent; it chooses specialist consultations itself."""
     try:
         return await s.agents.network.ask(body)
-    except ModelRequired as exc:
+    except (ModelRequired, ContextLimitError) as exc:
         raise HTTPException(409, str(exc)) from exc
     except TimeoutError as exc:
         raise HTTPException(
@@ -1130,6 +1131,8 @@ async def ask_agent(body: AgentRequest, s: S):
     """Run a module's ProtoLink tool and optionally perform model inference."""
     try:
         return await s.agents.ask(body)
+    except ContextLimitError as exc:
+        raise HTTPException(409, str(exc)) from exc
     except TimeoutError as exc:
         raise HTTPException(
             504, "The model request timed out. Try a shorter question or check your provider."

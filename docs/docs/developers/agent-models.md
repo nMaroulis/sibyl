@@ -22,13 +22,21 @@ The assignment document contains a revision and a map from agent ID to `{provide
 
 Use `provider: null` and `model: ""` to inherit again, or `provider: "none"` with an empty model for tool mode. Unknown agents/providers/fields, noninteger revisions, control characters and IDs over 500 characters are rejected. Endpoint/key fields are prohibited in this contract. Nontrivial providers must have a saved profile or be the server's configured environment provider. Required keys and existing `.gguf` paths are checked when saving an override; missing optional dependencies remain visible setup states. No provider is contacted during save or passive metadata reads. Settings success/conflict responses use `Cache-Control: no-store` and the existing workspace token/origin checks.
 
+## Ollama context and tool protocol
+
+Ollama profiles additionally accept optional strict integer `context_window` (4,096–131,072 tokens). The effective default for new and older profiles is 32,768; omitting/null preserves an existing saved value. This field is rejected for other providers. The public Ollama profile includes its effective value, and all agents assigned to that provider share it. A save is local only and does not verify model capacity or memory.
+
+The request-local factory passes native `tool_calling="auto"` and `model_params={"num_ctx": window, "num_predict": 2048}` to ProtoLink, then calls the new model's public `configure_metrics(context_window=window)`. This aligns the native context policy's ceiling with the actual requested Ollama window and reserves 2,048 tokens for generation. It does not mutate a shared agent model. A native `ContextLimitError` returns safe setup guidance rather than being mistaken for provider failure. The provider can still reject an oversized allocation; choose a window supported by the model and host.
+
+See the [real-model acceptance findings](agent-acceptance.md) for the observed 8K versus coordinator-context mismatch and current limits.
+
 ## Frozen native requests
 
 `ModelSettings.for_turn(agent)` reads the effective configuration of **the whole team** before an application request queues. The caller recursively freezes nested mappings and binds them with native `request_context`, explicitly inheriting `models`/`page` to owned local specialists. This private map contains keys and must never be serialized.
 
 `Agent(llm_factory=...)` reads this agent's configuration through `current_request_context()` and lazily returns its real ProtoLink provider. There is no `WorkspaceLLM` subclass and no mutation of shared `agent.llm`. Native provider protocols, worker admission and session history remain intact. Application requests use `AgentGroup` handles; the registered agents and discovery URLs remain unchanged. Independent `AgentClient` requests cross a private-context boundary and resolve current settings in the receiving application. External peers never inherit caller credentials.
 
-A profile, key or assignment edit during an answer affects the **next** request. Queued/running requests retain their original model/key/endpoint. A key removal therefore does not recall a request already queued with that key. No frozen keys or assignment maps are put into native task payloads, prompts, consultation records or history.
+A profile, key or assignment edit during an answer affects the **next** request. Queued/running requests retain their original model/key/endpoint/context window. A key removal therefore does not recall a request already queued with that key. No frozen keys or assignment maps are put into native task payloads, prompts, consultation records or history.
 
 Sibyl's actual effective model determines its `/sibyl` readiness and Telegram's model-ready status. `/system` continues to describe the workspace default. The agents catalog, module replies and completed consultation records expose the relevant provider/model and default/override attribution. Externally discovered peers whose configuration Sibyl does not own are not attributed to the coordinator's model. Recorded attribution describes the selected adapter/model ID, not the provider's hidden routing, exact model revision or measured quality.
 

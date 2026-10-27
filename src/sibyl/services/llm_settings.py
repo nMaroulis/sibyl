@@ -12,6 +12,8 @@ from sibyl.agents.providers import PROVIDERS, ProviderId
 from sibyl.config import Settings
 from sibyl.storage import Store
 
+OLLAMA_CONTEXT_WINDOW = 32768
+
 
 class ModelSettingsRequest(BaseModel):
     """Save and activate a provider; omitting a key preserves its saved credential."""
@@ -22,6 +24,7 @@ class ModelSettingsRequest(BaseModel):
     model: str = Field(default="", max_length=500)
     base_url: str = Field(default="", max_length=2048)
     api_key: SecretStr | None = Field(default=None, min_length=1, max_length=8192)
+    context_window: int | None = Field(default=None, ge=4096, le=131072, strict=True)
 
     @field_validator("model", "base_url")
     @classmethod
@@ -44,8 +47,10 @@ class ModelSettingsRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_provider_fields(self):
-        """Accept endpoint overrides only for adapters that expose an endpoint field."""
+        """Validate provider-specific endpoint and context fields before saving."""
         provider = PROVIDERS[self.provider]
+        if "context_window" in self.model_fields_set and self.provider != "ollama":
+            raise ValueError("Context window configuration is currently available for Ollama only.")
         if self.base_url:
             try:
                 url = urlsplit(self.base_url)
@@ -105,6 +110,11 @@ class ModelSettings:
             "model": profile.get("model", ""),
             "base_url": profile.get("base_url") or PROVIDERS[provider].base_url,
             "api_key": profile.get("api_key") or self._environment_key(provider),
+            **(
+                {"context_window": profile.get("context_window", OLLAMA_CONTEXT_WINDOW)}
+                if provider == "ollama"
+                else {}
+            ),
         }
 
     def provider_config(self, provider: str) -> dict:
@@ -214,6 +224,11 @@ class ModelSettings:
                     "has_api_key": key_source != "none",
                     "key_source": key_source,
                     "saved": saved is not None,
+                    **(
+                        {"context_window": config.get("context_window", OLLAMA_CONTEXT_WINDOW)}
+                        if provider == "ollama"
+                        else {}
+                    ),
                 }
             return {
                 "active_provider": current["provider"],
@@ -260,6 +275,14 @@ class ModelSettings:
                     "model": model,
                     "base_url": body.base_url or definition.base_url,
                     "api_key": key,
+                    **(
+                        {
+                            "context_window": body.context_window
+                            or existing.get("context_window", OLLAMA_CONTEXT_WINDOW)
+                        }
+                        if body.provider == "ollama"
+                        else {}
+                    ),
                 },
                 activate=body.activate,
             )
@@ -293,6 +316,13 @@ class ModelSettings:
                 kwargs["headers"] = {"Authorization": f"Bearer {key}"}
             else:
                 kwargs["api_key"] = key
+        if provider == "ollama":
+            # Let ProtoLink discover native tools; unknown models keep its JSON fallback.
+            kwargs["tool_calling"] = "auto"
+            kwargs["model_params"] = {
+                "num_ctx": config.get("context_window", OLLAMA_CONTEXT_WINDOW),
+                "num_predict": 2048,
+            }
         if provider == "mock":
             kwargs["default_response"] = "Mock runtime: this is a simulated model response, not analysis."
         return provider, kwargs

@@ -63,6 +63,7 @@ def test_override_reuses_correct_encrypted_profile_and_does_not_activate_default
         "model": "reporter-model",
         "base_url": "http://localhost:11500",
         "api_key": "OLLAMA-PRIVATE",
+        "context_window": 32768,
     }
     assert all(row["provider"] == "none" for row in state["agents"] if row["id"] != "reporter")
     assert "OLLAMA-PRIVATE" not in json.dumps(state)

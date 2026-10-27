@@ -75,12 +75,15 @@ class AgentRegistry:
         self.agents = {key: self.network.agents[key] for key in MODULES}
 
     def make_model(self, configuration: dict):
-        """Construct a ProtoLink provider from this turn's frozen settings, off the API loop."""
+        """Construct a native provider with this turn's frozen settings and input budget."""
         reason = readiness(configuration)
         if reason:
             raise ValueError(reason)
         provider, kwargs = self.models.constructor(configuration)
-        return create_llm(provider, **kwargs)
+        model = create_llm(provider, **kwargs)
+        if provider == "ollama":
+            model.configure_metrics(context_window=kwargs["model_params"]["num_ctx"])
+        return model
 
     def model_for(self, module: str):
         """Native lazy factory: choose this agent's model from the accepted team snapshot.
