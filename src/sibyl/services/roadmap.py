@@ -14,7 +14,7 @@ AREAS = [
         "pending": [
             "Import pagination and funding support for remaining providers; fiat, staking and subaccounts.",
             "Scheduled refresh of old/pending events, execution bust/removal handling, versioned correction audits and complete order/fill/funding/balance reconciliation.",
-            "Authenticated read and sandbox lifecycle acceptance tests.",
+            "Broader authenticated read/import acceptance. Initial Binance/Coinbase balance reads and the manual Binance Testnet lifecycle have been checked.",
         ],
     },
     {
@@ -38,7 +38,7 @@ AREAS = [
         "pending": [
             "Broader discovery/recovery adapters, external amendment handling and definitive fee/settlement reconciliation.",
             "Cancel/replace, stop/OCO, trailing, post-only, iceberg and other time-in-force choices.",
-            "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; authenticated venue acceptance for all providers.",
+            "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; broader authenticated venue acceptance beyond the initial manual Binance Testnet lifecycle.",
             "Detailed fill reconciliation and resumable imports for Bitstamp/Gemini; client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
         ],
     },
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-27",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Market statistics and price/strategy/connection/account-risk alerts are implemented. Next foundations: broader account reconciliation, order lifecycle controls, broader risk metrics and local operations. Multi-user support is deferred.",
-        "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only; authenticated venue acceptance is outstanding.",
+        "current_focus": "Initial manual Binance Testnet acceptance is recorded. Next foundations: portfolio-wide strategy exposure/daily-loss controls, broader account reconciliation and venue acceptance. Market analytics and local alerts are implemented. Multi-user support is deferred.",
+        "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial manual Binance Testnet acceptance is recorded; automated-strategy and broader venue acceptance remain outstanding.",
         "release_dates": None,
     }

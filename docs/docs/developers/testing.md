@@ -30,6 +30,10 @@ These tests establish application behavior, not real exchange permissions, endpo
 
 The exchange client, spot-support, order management, recovery, discovery and reconciliation tests replace provider transports. They check request shapes, spot/base-quantity semantics, client IDs, native pagination, cumulative quantities, execution identity/deduplication and fee corrections. Coverage badges follow implemented paths and explicit gaps; the installed SDK advertising a method cannot enable an unreviewed write or historical import.
 
+## Authenticated exchange acceptance
+
+The ordinary tests remain offline. The separate opt-in [Binance Testnet acceptance runner](exchange-acceptance.md) can exercise actual virtual-fund orders with a dedicated saved Testnet account, transport host pinning and isolated retained state. Never substitute production credentials or infer broader venue acceptance from one successful run.
+
 ## Messaging and local models
 
 `tests/test_telegram.py` replaces Telegram HTTP and the native agent boundary. It covers encrypted configuration, private sender binding, webhook conflicts, durable inbound/outbound records, rate-limit ordering, uncertain delivery, startup recovery and pause races. Real-bot conversation acceptance requires separate credentials and remains a deployment check.

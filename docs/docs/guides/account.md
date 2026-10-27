@@ -54,6 +54,10 @@ Use the floating dock on the left to switch between Account, Markets, Trade, Str
 
 Multi-section pages use a matching floating tab bar at the top. Its selected pill slides between sections and the content gently reveals. Arrow keys, Home, and End switch tabs; reduced-motion preferences disable the animations. [Settings](./settings.md) brings exchange accounts, AI models, other APIs, and workspace access into one destination.
 
+## Long asset lists
+
+Allocation, Holdings, unpriced assets in Valuation notes, and Account balances initially show ten rows. **Show more** reveals up to ten more at a time; **Show less** restores the compact view. A counter shows the visible and total rows. Hover/focus highlights the controls, and reduced-motion settings suppress animated movement. Sorting or changing balance filters starts a fresh compact view. Portfolio totals, allocation calculations and CSV exports still cover the entire selected dataset.
+
 ## Separate account balances
 
 Open **Account → Account balances** for each account's available (`free`), reserved (`used`), and total spot quantity. This panel follows the Account view selection. You can further choose an account and filter assets. A missing provider balance component displays a dash, rather than an invented zero. Account read errors are marked explicitly.

@@ -41,6 +41,7 @@ module.exports = {
         'developers/strategy-controls',
         'developers/backend-roadmap',
         'developers/exchange-clients',
+        'developers/exchange-acceptance',
         'developers/account-sync',
         'developers/order-management',
         'developers/order-reconciliation',

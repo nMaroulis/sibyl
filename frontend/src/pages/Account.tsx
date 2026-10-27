@@ -25,6 +25,7 @@ import {
   PanelTitle,
 } from '../components/ui';
 import { SourceHealthSummary } from '../components/provider-health';
+import { ExpandableRows } from '../components/expandable-rows';
 import { AccountBalances } from '../components/account-balances';
 import { ExchangeMark } from '../components/exchange-mark';
 import { AgentButton } from '../components/agents';
@@ -306,17 +307,21 @@ function PortfolioWorkspace({
               />
             ))}
           </div>
-          <div className="allocation-list">
-            {data.holdings.map((holding, i) => (
-              <div key={holding.asset}>
-                <span>
-                  <i style={{ background: colors[i % colors.length] }} />
-                  {holding.name}
-                </span>
-                <strong>{holding.allocation.toFixed(1)}%</strong>
+          <ExpandableRows total={data.holdings.length} label="assets">
+            {(visible) => (
+              <div className="allocation-list">
+                {data.holdings.slice(0, visible).map((holding, i) => (
+                  <div key={holding.asset}>
+                    <span>
+                      <i style={{ background: colors[i % colors.length] }} />
+                      {holding.name}
+                    </span>
+                    <strong>{holding.allocation.toFixed(1)}%</strong>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </ExpandableRows>
         </Panel>
       </div>
       <div className="dashboard-lower-grid">
@@ -337,90 +342,94 @@ function PortfolioWorkspace({
             }
           />
           {holdings.length ? (
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Asset</th>
-                    <th>Price · {data.currency}</th>
-                    <th>Daily change</th>
-                    <th className="spark-column">30 days</th>
-                    <th className="align-right">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {holdings.map((holding, i) => (
-                    <tr key={holding.asset}>
-                      <td>
-                        <Link
-                          className="asset-name"
-                          to={
-                            holding.route.length
-                              ? `/markets?symbol=${encodeURIComponent(holding.route[0].symbol)}&source=${encodeURIComponent(data.source)}`
-                              : '/trade'
-                          }
-                        >
-                          <AssetIcon asset={holding.asset} color={colors[i % colors.length]} />
-                          <span>
-                            <strong>{holding.name}</strong>
-                            <small>{holding.asset}</small>
-                          </span>
-                        </Link>
-                        <details className="holding-contributors">
-                          <summary>
-                            {holding.accounts.length}{' '}
-                            {holding.accounts.length === 1 ? 'account' : 'accounts'}
-                          </summary>
-                          <div>
-                            {holding.accounts.map((account) => (
-                              <span key={account.account_id}>
-                                <ExchangeMark exchange={account.exchange} size={14} />{' '}
-                                {account.account}:{' '}
-                                <b className="monetary">
-                                  {number(account.quantity, 8)} {holding.asset}
-                                </b>
+            <ExpandableRows key={sort} total={holdings.length} label="holdings">
+              {(visible) => (
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Asset</th>
+                        <th>Price · {data.currency}</th>
+                        <th>Daily change</th>
+                        <th className="spark-column">30 days</th>
+                        <th className="align-right">Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {holdings.slice(0, visible).map((holding, i) => (
+                        <tr key={holding.asset}>
+                          <td>
+                            <Link
+                              className="asset-name"
+                              to={
+                                holding.route.length
+                                  ? `/markets?symbol=${encodeURIComponent(holding.route[0].symbol)}&source=${encodeURIComponent(data.source)}`
+                                  : '/trade'
+                              }
+                            >
+                              <AssetIcon asset={holding.asset} color={colors[i % colors.length]} />
+                              <span>
+                                <strong>{holding.name}</strong>
+                                <small>{holding.asset}</small>
                               </span>
-                            ))}
-                          </div>
-                        </details>
-                      </td>
-                      <td>
-                        <span className="monetary">
-                          {number(holding.price, holding.price < 10 ? 8 : 2)}
-                        </span>
-                        {holding.status === 'undated' && <Badge tone="sand">Undated</Badge>}
-                        <ValuationDetails
-                          quote={holding}
-                          source={data.source_label || data.source}
-                        />
-                      </td>
-                      <td>
-                        <Change value={holding.change} />
-                      </td>
-                      <td className="spark-column">
-                        {holding.sparkline.length > 1 ? (
-                          <Sparkline
-                            data={holding.sparkline}
-                            color={(holding.change ?? 0) >= 0 ? '#6c9f90' : '#c4878a'}
-                            width={85}
-                          />
-                        ) : (
-                          <span className="muted">—</span>
-                        )}
-                      </td>
-                      <td className="align-right">
-                        <strong className="monetary">
-                          {number(holding.value)} <small>{data.currency}</small>
-                        </strong>
-                        <small className="holding-quantity monetary">
-                          {number(holding.quantity, 6)} {holding.asset}
-                        </small>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                            </Link>
+                            <details className="holding-contributors">
+                              <summary>
+                                {holding.accounts.length}{' '}
+                                {holding.accounts.length === 1 ? 'account' : 'accounts'}
+                              </summary>
+                              <div>
+                                {holding.accounts.map((account) => (
+                                  <span key={account.account_id}>
+                                    <ExchangeMark exchange={account.exchange} size={14} />{' '}
+                                    {account.account}:{' '}
+                                    <b className="monetary">
+                                      {number(account.quantity, 8)} {holding.asset}
+                                    </b>
+                                  </span>
+                                ))}
+                              </div>
+                            </details>
+                          </td>
+                          <td>
+                            <span className="monetary">
+                              {number(holding.price, holding.price < 10 ? 8 : 2)}
+                            </span>
+                            {holding.status === 'undated' && <Badge tone="sand">Undated</Badge>}
+                            <ValuationDetails
+                              quote={holding}
+                              source={data.source_label || data.source}
+                            />
+                          </td>
+                          <td>
+                            <Change value={holding.change} />
+                          </td>
+                          <td className="spark-column">
+                            {holding.sparkline.length > 1 ? (
+                              <Sparkline
+                                data={holding.sparkline}
+                                color={(holding.change ?? 0) >= 0 ? '#6c9f90' : '#c4878a'}
+                                width={85}
+                              />
+                            ) : (
+                              <span className="muted">—</span>
+                            )}
+                          </td>
+                          <td className="align-right">
+                            <strong className="monetary">
+                              {number(holding.value)} <small>{data.currency}</small>
+                            </strong>
+                            <small className="holding-quantity monetary">
+                              {number(holding.quantity, 6)} {holding.asset}
+                            </small>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </ExpandableRows>
           ) : (
             <Empty title="No priced assets">
               Connect an account in Settings to view its holdings.
@@ -505,28 +514,32 @@ function PortfolioWorkspace({
           </Link>
         </div>
         {data.unpriced.length > 0 && (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Unpriced asset</th>
-                  <th>Quantity</th>
-                  <th>Reason · excluded from total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.unpriced.map((asset) => (
-                  <tr key={asset.asset}>
-                    <td>
-                      <strong>{asset.asset}</strong>
-                    </td>
-                    <td className="monetary">{number(asset.quantity, 8)}</td>
-                    <td>{asset.reason}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ExpandableRows total={data.unpriced.length} label="unpriced assets">
+            {(visible) => (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Unpriced asset</th>
+                      <th>Quantity</th>
+                      <th>Reason · excluded from total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.unpriced.slice(0, visible).map((asset) => (
+                      <tr key={asset.asset}>
+                        <td>
+                          <strong>{asset.asset}</strong>
+                        </td>
+                        <td className="monetary">{number(asset.quantity, 8)}</td>
+                        <td>{asset.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ExpandableRows>
         )}
       </Panel>
       <AccountBalances scope={scope} />

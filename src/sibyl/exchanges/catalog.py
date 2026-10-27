@@ -69,7 +69,7 @@ class ExchangeSpec:
         return {
             **asdict(self),
             "ccxt_id": self.ccxt_id or self.id,
-            "verification": "adapter-tested; private account not acceptance-tested",
+            "verification": "Adapter-tested; verify this account separately with Check access.",
             "limit_orders": self.spot_trading,
             "cancel_orders": self.spot_trading,
         }
@@ -142,8 +142,8 @@ TEST_ENVIRONMENTS = (
     ),
     ExchangeSpec(
         "coinbase-sandbox",
-        "Coinbase Sandbox",
-        "Exchange sandbox key + secret + passphrase",
+        "Coinbase Exchange Sandbox",
+        "Exchange Sandbox key + secret + passphrase; CDP Portal sandbox keys use a different API",
         passphrase=True,
         sandbox=True,
         market_orders=True,

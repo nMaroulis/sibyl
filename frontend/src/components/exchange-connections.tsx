@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { SecretField } from './secret-field';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -23,7 +24,13 @@ import { ExchangeMark } from './exchange-mark';
 import { AccountContext, useAccounts } from './account-selection';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
 
-function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close: () => void }) {
+function ConnectionForm({
+  provider,
+  onSaved,
+}: {
+  provider: ExchangeProvider;
+  onSaved: (connection: Connection) => void;
+}) {
   const exchange = provider.id;
   const [label, setLabel] = useState(`${provider.name} account`);
   const [apiKey, setApiKey] = useState('');
@@ -38,7 +45,7 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
     setBusy(true);
     setError('');
     try {
-      await post('/connections', {
+      const connection = await post<Connection>('/connections', {
         exchange,
         label,
         api_key: apiKey.trim(),
@@ -55,9 +62,9 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
       toast(
         provider.simulated
           ? 'Demo account connected.'
-          : 'Connection saved. Use Check access to verify credentials.',
+          : `${label} saved securely. Check access next.`,
       );
-      close();
+      onSaved(connection);
     } catch (reason) {
       setError((reason as Error).message);
     } finally {
@@ -96,28 +103,17 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
       </label>
       {provider.credentials_required && (
         <>
-          <label>
-            {exchange === 'coinbase' ? 'CDP API key name' : 'API key'}
-            <input
-              required
-              type="password"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
-          <label>
-            {exchange === 'coinbase' ? 'Private key (PEM)' : 'API secret'}
-            <textarea
-              required
-              rows={exchange === 'coinbase' ? 4 : 2}
-              value={secret}
-              onChange={(event) => setSecret(event.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
+          <SecretField
+            label={exchange === 'coinbase' ? 'CDP API key name' : 'API key'}
+            value={apiKey}
+            onChange={setApiKey}
+          />
+          <SecretField
+            label={exchange === 'coinbase' ? 'Private key (PEM)' : 'API secret'}
+            value={secret}
+            onChange={setSecret}
+            multiline={exchange === 'coinbase'}
+          />
         </>
       )}
       {provider.passphrase && (
@@ -157,7 +153,7 @@ function ConnectionForm({ provider, close }: { provider: ExchangeProvider; close
       <p className="footnote">
         {provider.account}. {provider.note}.
         {provider.id === 'coinbase-sandbox' &&
-          ' Use Coinbase Exchange sandbox credentials, rather than Advanced Trade CDP keys.'}
+          ' Requires a key, secret and passphrase from Coinbase Exchange Sandbox. CDP Portal sandbox keys are for a different API and will not work here.'}
       </p>
       {provider.id === 'bybit' && (
         <p className="footnote">
@@ -202,12 +198,12 @@ function ExchangeDetails({
   provider,
   keyStorage,
   initialSection,
-  close,
+  onSaved,
 }: {
   provider: ExchangeProvider;
   keyStorage: string;
   initialSection: string;
-  close: () => void;
+  onSaved: (connection: Connection) => void;
 }) {
   const [section, setSection] = useState(initialSection);
   const [connecting, setConnecting] = useState(false);
@@ -231,13 +227,14 @@ function ExchangeDetails({
           <button className="text-link" onClick={() => setConnecting(false)}>
             ← Back to supported features
           </button>
-          <ConnectionForm provider={provider} close={close} />
+          <ConnectionForm provider={provider} onSaved={onSaved} />
         </>
       ) : (
         <>
           <p className="footnote">
             Support describes what Sibyl implements. Access still depends on your account, region
-            and API permissions. Private accounts and real orders have not been acceptance-tested.
+            and API permissions. Check access verifies balance reads; order permissions require
+            separate testing.
           </p>
           <SectionTabs
             id="exchange-support"
@@ -333,6 +330,26 @@ export function ExchangeConnections() {
   };
   const [removing, setRemoving] = useState<Connection>();
   const [busy, setBusy] = useState('');
+  const [handoff, setHandoff] = useState<{ id: string }>();
+  const accountArrived = Boolean(
+    handoff && connections.data?.some((item) => item.id === handoff.id),
+  );
+  useEffect(() => {
+    if (!handoff || !accountArrived) return;
+    const row = document.getElementById(`saved-account-${handoff.id}`);
+    const frame = requestAnimationFrame(() => {
+      row?.scrollIntoView({
+        block: 'center',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+      row?.querySelector<HTMLButtonElement>('[data-check-access]')?.focus({ preventScroll: true });
+    });
+    const timer = window.setTimeout(() => setHandoff(undefined), 8000);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [handoff, accountArrived]);
   const [checks, setChecks] = useState<
     Record<string, { status: string; message?: string; assets?: number }>
   >({});
@@ -356,6 +373,7 @@ export function ExchangeConnections() {
     }
   };
   const check = async (id: string) => {
+    setHandoff(undefined);
     setBusy(id);
     try {
       const result = await post<{
@@ -482,7 +500,11 @@ export function ExchangeConnections() {
           <ErrorState message={connections.error} retry={connections.retry} />
         ) : connections.data?.length ? (
           connections.data.map((connection) => (
-            <div className="connection-account" key={connection.id}>
+            <div
+              className={`connection-account ${handoff?.id === connection.id ? 'connection-arrival' : ''}`}
+              id={`saved-account-${connection.id}`}
+              key={connection.id}
+            >
               <span
                 className={`provider-logo small-logo ${connection.exchange === 'demo' ? 'demo-exchange-mark' : ''}`}
               >
@@ -496,6 +518,11 @@ export function ExchangeConnections() {
                     : `${exchanges.find((provider) => provider.id === connection.exchange)?.name ?? connection.exchange} · ${connection.sandbox ? 'test funds' : 'production'}`}{' '}
                   · saved {new Date(connection.created_at).toLocaleDateString()}
                 </small>
+                {handoff?.id === connection.id && (
+                  <small className="connection-next-step" role="status">
+                    Saved securely · check access next
+                  </small>
+                )}
                 {checks[connection.id]?.message && (
                   <small className="negative">{checks[connection.id].message}</small>
                 )}
@@ -543,7 +570,8 @@ export function ExchangeConnections() {
                 )}
               </Badge>
               <button
-                className="button secondary tiny"
+                className="button secondary tiny check-access-button"
+                data-check-access
                 disabled={!!busy}
                 onClick={() => check(connection.id)}
               >
@@ -651,7 +679,11 @@ export function ExchangeConnections() {
             initialSection={selectedSection}
             keyStorage={catalog.data?.key_storage ?? ''}
             provider={exchanges.find((provider) => provider.id === selected)!}
-            close={() => setSelected(undefined)}
+            onSaved={(connection) => {
+              setSelected(undefined);
+              connections.retry();
+              setHandoff({ id: connection.id });
+            }}
           />
         </Modal>
       )}

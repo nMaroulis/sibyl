@@ -10269,3 +10269,165 @@ details[open] > summary {
   font-weight: 400;
   text-transform: none;
 }
+
+/* Credential confirmation and the saved-account handoff. */
+.credential-field {
+  display: grid;
+  gap: 8px;
+}
+.credential-field > label {
+  font-weight: 500;
+}
+.credential-entry {
+  position: relative;
+}
+.credential-entry input,
+.credential-entry textarea {
+  width: 100%;
+  padding-right: 46px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.credential-entry.has-preview input,
+.credential-entry.hidden-multiline textarea {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.credential-entry.has-preview input {
+  caret-color: transparent;
+}
+.credential-entry.hidden-multiline textarea {
+  caret-color: transparent;
+}
+.credential-preview {
+  position: absolute;
+  inset: 0 46px 0 14px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  font:
+    12px ui-monospace,
+    SFMono-Regular,
+    monospace;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.credential-visibility {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+.credential-visibility:hover,
+.credential-visibility:focus-visible {
+  background: #edf0fb;
+  color: #5264b1;
+}
+.credential-receipt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.connection-account {
+  scroll-margin-block: 110px;
+  transition:
+    background 0.4s,
+    box-shadow 0.4s;
+}
+.connection-account.connection-arrival {
+  border-radius: 16px;
+  background: linear-gradient(110deg, #f3f5fd, #f8f7fd 65%, #fff);
+  box-shadow: 0 0 0 1px #dfe4f6;
+}
+.connection-next-step {
+  color: #6373b1 !important;
+}
+.connection-arrival .check-access-button {
+  position: relative;
+  border-color: #a5b3e3;
+  color: #455ca2;
+  animation: check-access-arrival 2s ease-in-out 3;
+}
+@keyframes check-access-arrival {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 #889bd800;
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px #b0bbed24,
+      0 0 20px #7b91d32e;
+  }
+}
+.expandable-row-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 8px 6px;
+  margin-top: 5px;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, #f8f9fc00, #f8f9fc70);
+}
+.expandable-row-controls > small {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.reveal-more,
+.reveal-less {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #e1e5f1;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6373a9;
+  background: #f8f9ff;
+  transition:
+    box-shadow 0.25s,
+    color 0.25s,
+    border-color 0.25s,
+    background 0.25s;
+}
+.reveal-less {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.reveal-more:hover,
+.reveal-more:focus-visible,
+.reveal-less:hover,
+.reveal-less:focus-visible {
+  color: #495fa7;
+  border-color: #c5cfee;
+  background: #f1f4ff;
+  box-shadow:
+    0 0 0 3px #b9c5ef1f,
+    0 3px 18px #8196d524;
+}
+@media (prefers-reduced-motion: reduce) {
+  .connection-arrival .check-access-button {
+    animation: none;
+    box-shadow: 0 0 0 3px #b0bbed24;
+  }
+  .connection-account,
+  .reveal-more,
+  .reveal-less {
+    transition: none;
+  }
+}

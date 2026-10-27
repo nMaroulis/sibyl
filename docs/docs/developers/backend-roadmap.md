@@ -36,7 +36,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Durable editable source-pinned level/crossing alerts, strategy journal subscriptions and per-operation connection read-failure/recovery watches; a shared persistent unread in-app inbox and bounded sanitized evidence.
 - Multi-publisher news ingestion, a persistent archive and filtered text sentiment, fetched crypto profiles/history, a glossary, recent Bitcoin blocks and optional equity research.
 
-A paper strategy can consume live prices while still using virtual funds. Its running monitor does **not** mean it places exchange orders. Authenticated exchange acceptance testing remains outstanding despite implemented adapters and automated contract tests.
+A paper strategy can consume live prices while still using virtual funds. Its running monitor does **not** mean it places exchange orders. Initial authenticated balance reads and the manual Binance Testnet lifecycle are recorded in [exchange acceptance](exchange-acceptance.md). Broader venue and automated-strategy acceptance remain outstanding.
 
 ## Core data and trading work
 
@@ -45,7 +45,7 @@ A paper strategy can consume live prices while still using virtual funds. Its ru
 There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports for eleven clients/environments, with provider retention shown in the UI. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
 
 - [x] Persist normalized fills, native order references, fee currencies and rebates in a shared ledger.
-- [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic.
+- [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Exchange Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic.
 - [ ] Review durable import pagination for the remaining exchange providers.
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
@@ -103,7 +103,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add separate typed Stop & cancel approval, durable restart recovery, bounded late native status checks, monitor evidence and journal/CSV events.
 - [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Partial fills and native caps never cause automatic replacement sells.
 - [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
-- [ ] Exercise authenticated sandbox/provider acceptance before deliberate production enablement.
+- [x] Exercise the manual Binance Spot Testnet limit/cancel and market buy/sell lifecycle, native fills/fees, client-ID lookup, duplicate confirmations and retained state after restart; verify read access on one Binance and Coinbase production account.
+- [ ] Extend authenticated acceptance to strategy execution, partial-fill/network-failure cases and other venues before deliberate production enablement.
 - [x] Add a durable global strategy submission halt: atomically pause exchange runs, invalidate old reviews/unsent signal plans, enforce the shared write boundary, retain audit history and require revision-bound typed release. Release never resumes runs; approved cancellations/manual orders/separately reviewed exits remain available.
 - [ ] Add portfolio-wide exposure/daily-loss policies. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
 - [ ] Add reviewed residual/dust ownership handoff to new runs; value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.

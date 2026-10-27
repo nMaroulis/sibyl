@@ -10,7 +10,9 @@ Supported providers: Binance, Binance.US, Coinbase, Kraken, OKX, Bybit, KuCoin, 
 2. Find your provider in **Settings → Exchanges**, review its feature tabs, then select **Connect** and enter an account label, key and secret.
 3. OKX, KuCoin and Bitget also require an API passphrase. BitMart requires the API memo. Coinbase uses the supported CDP key name and PEM private key, rather than an ordinary secret string.
 4. Where offered, select sandbox/testnet and use credentials created for that environment.
-5. Save, then select **Check access** to make an actual read-only balance request.
+5. Save. A confirmation toast appears, the form closes and Sibyl scrolls to the new saved account. **Check access** receives keyboard focus and a brief ambient glow. Select it to make an actual read-only balance request.
+
+Long pasted keys/secrets show their first and last four characters with the middle hidden. Short credentials remain fully masked. Typing uses a password field; **Show** explicitly reveals the value for review. PEM private keys retain their line breaks. This preview applies only while entering credentials; saved credential values never return from the API.
 
 Saving is not verification. Accounts display **Saved · unverified** until checked. Verification display lasts for the current page session; each check reads the exchange again. Failed checks do not substitute demo data. Geographic restrictions, account variants, IP allowlists, server time and provider outages can affect access.
 
@@ -32,14 +34,14 @@ Most clients read the spot trading wallet, excluding funding/earn/margin wallets
 
 ## Test environments and orders
 
-**Binance Testnet** and **Coinbase Sandbox** have dedicated provider cards in Settings, with their own badges and setup links. They use external test services with account-specific virtual funds. They are distinct from the offline Demo wallet. Saving either dedicated provider always enables test routing on the server, even if a request supplies `sandbox: false`.
+**Binance Testnet** and **Coinbase Exchange Sandbox** have dedicated provider cards in Settings, with their own badges and setup links. They use external test services with account-specific virtual funds. They are distinct from the offline Demo wallet. Saving either dedicated provider always enables test routing on the server, even if a request supplies `sandbox: false`.
 
-| Option           | API credentials                                     | Create keys / fund the test account                                        |
-| ---------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| Binance Testnet  | Spot testnet API key + secret                       | [Binance Spot Test Network](https://testnet.binance.vision/)               |
-| Coinbase Sandbox | Coinbase Exchange sandbox key + secret + passphrase | [Coinbase Exchange Sandbox](https://public.sandbox.exchange.coinbase.com/) |
+| Option                    | API credentials                                     | Create keys / fund the test account                                        |
+| ------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| Binance Testnet           | Spot testnet API key + secret                       | [Binance Spot Test Network](https://testnet.binance.vision/)               |
+| Coinbase Exchange Sandbox | Coinbase Exchange sandbox key + secret + passphrase | [Coinbase Exchange Sandbox](https://public.sandbox.exchange.coinbase.com/) |
 
-Coinbase Sandbox here uses the **Coinbase Exchange API**, with separate sandbox credentials. The production Coinbase card uses **Advanced Trade**, whose CDP keys are different. The [Advanced Trade sandbox](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/sandbox) returns predefined mock accounts/orders; it is not the account-based Exchange sandbox integrated here. See [Coinbase's Exchange sandbox guide](https://docs.cdp.coinbase.com/exchange/introduction/sandbox).
+Coinbase Exchange Sandbox here uses the **Coinbase Exchange API**, with separate sandbox credentials. The production Coinbase card uses **Advanced Trade**, whose CDP keys are different. The [Advanced Trade sandbox](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/sandbox) returns predefined mock accounts/orders; it is not the account-based Exchange sandbox integrated here. See [Coinbase's Exchange sandbox guide](https://docs.cdp.coinbase.com/exchange/introduction/sandbox).
 
 After saving, use **Check access** to read the test account. Test accounts appear individually in Account's **Account balances**, with a sandbox/test-funds label. Their quantities are excluded from live portfolio totals. Valuation uses the selected public quote mode, not a guaranteed execution price on the test service.
 
@@ -78,3 +80,5 @@ Each exchange card has five category icons: account overview, spot trading, hist
 The Python backend calculates these counts from the same feature rows displayed in the dialog. Missing features remain in the denominator. Read-only order/status methods belong to History, so they cannot make an exchange with no submission implementation appear to support trading. Icons describe implementation coverage, not credentials, server execution enablement or authenticated exchange acceptance. Demo remains explicitly simulated.
 
 Exchange cards use faint brand tints inspired by their bundled logos. Card tints are decorative; only the category icons indicate implementation coverage. Test environments share their parent exchange’s palette and retain their Testnet/Sandbox labels.
+
+CDP Portal Sandbox API keys do not authenticate the Coinbase Exchange Sandbox adapter. Create the key, secret and passphrase in the [Exchange Sandbox interface](https://public.sandbox.exchange.coinbase.com/) described by [Coinbase](https://docs.cdp.coinbase.com/exchange/introduction/sandbox). CDP sandbox/wallet APIs are a separate integration.

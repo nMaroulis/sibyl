@@ -1,3 +1,4 @@
+import { ExpandableRows } from './expandable-rows';
 import { ExchangeMark } from './exchange-mark';
 import { useState } from 'react';
 import { Download } from 'lucide-react';
@@ -164,40 +165,48 @@ export function AccountBalances({ scope = 'all' }: { scope?: string }) {
             ))}
           </div>
           {rows.length ? (
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th>Asset</th>
-                    <th>Available</th>
-                    <th>Reserved</th>
-                    <th>Total</th>
-                    <th>Value · {effectiveQuote}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={`${r.accountId}:${r.asset}`}>
-                      <td>{r.account}</td>
-                      <td>
-                        <strong>{r.asset}</strong>
-                      </td>
-                      <td>{r.free === null ? '—' : number(r.free, 8)}</td>
-                      <td>{r.used === null ? '—' : number(r.used, 8)}</td>
-                      <td>{number(r.total, 8)}</td>
-                      <td>
-                        {value(r.value)}
-                        <ValuationDetails
-                          quote={r}
-                          source={result.data?.source_label || result.data?.source || ''}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ExpandableRows
+              key={`${scope}:${account}:${query}`}
+              total={rows.length}
+              label="balances"
+            >
+              {(visible) => (
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Account</th>
+                        <th>Asset</th>
+                        <th>Available</th>
+                        <th>Reserved</th>
+                        <th>Total</th>
+                        <th>Value · {effectiveQuote}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.slice(0, visible).map((r) => (
+                        <tr key={`${r.accountId}:${r.asset}`}>
+                          <td>{r.account}</td>
+                          <td>
+                            <strong>{r.asset}</strong>
+                          </td>
+                          <td>{r.free === null ? '—' : number(r.free, 8)}</td>
+                          <td>{r.used === null ? '—' : number(r.used, 8)}</td>
+                          <td>{number(r.total, 8)}</td>
+                          <td>
+                            {value(r.value)}
+                            <ValuationDetails
+                              quote={r}
+                              source={result.data?.source_label || result.data?.source || ''}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </ExpandableRows>
           ) : (
             <Empty title="No balances to display">
               Connect an account or choose another asset filter.
