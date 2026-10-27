@@ -144,7 +144,6 @@ export function NavigationDock({
               press(event.currentTarget, true);
           }}
           aria-label={item.name}
-          title={item.name}
           className={({ isActive }) =>
             `dock-item ${item.path === '/sibyl' ? 'dock-sibyl' : ''} ${isActive ? 'active' : ''}`
           }
@@ -162,7 +161,6 @@ export function NavigationDock({
         ref={moreButton}
         data-current={moreActive}
         aria-label="More tools"
-        title="More tools"
         aria-expanded={expanded}
         aria-controls={panelId}
         onClick={(event) => {
@@ -239,7 +237,6 @@ export function NavigationDock({
             key={item.path}
             to={item.path}
             aria-label={item.name}
-            title={item.name}
             style={{ '--more-index': index } as CSSProperties}
             onClick={(event) => {
               press(event.currentTarget);
