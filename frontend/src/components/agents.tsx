@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowUp, ArrowUpRight, Braces, History, LoaderCircle, Plus, Sparkles } from 'lucide-react';
+import { ArrowUp, ArrowUpRight, Braces, History, Plus, Sparkles, Square } from 'lucide-react';
 import { Badge, ErrorState, Modal } from './ui';
-import { post } from '../lib/api';
+import { postStream } from '../lib/api';
+import { AgentActivityTrail, AgentRunDetails, mergeActivity } from './agent-run';
 import { useResource } from '../lib/hooks';
-import type { Agent, AgentContext, AgentReply, ModuleId, Run } from '../lib/types';
+import type { Agent, AgentActivity, AgentContext, AgentReply, ModuleId, Run } from '../lib/types';
 
 type Selection = { module: ModuleId; context: AgentContext };
 type Thread = {
@@ -13,6 +14,7 @@ type Thread = {
   sessionId?: string;
   pending?: string;
   error?: string;
+  activity?: AgentActivity[];
 };
 const emptyThread = (): Thread => ({ replies: [], draft: '' });
 const names: Record<ModuleId, string> = {
@@ -110,6 +112,13 @@ export function AgentProvider({ children }: { children: ReactNode }) {
   const threadsRef = useRef(threads);
   threadsRef.current = threads;
   const pending = useRef(new Set<string>());
+  const controllers = useRef(new Map<string, AbortController>());
+  useEffect(
+    () => () => {
+      controllers.current.forEach((controller) => controller.abort());
+    },
+    [],
+  );
   const open = useCallback(
     (module: ModuleId, context: AgentContext = {}) => setActive({ module, context }),
     [],
@@ -124,14 +133,28 @@ export function AgentProvider({ children }: { children: ReactNode }) {
     const selection = active,
       target = key;
     pending.current.add(target);
-    update(target, { pending: message, draft: '', error: '' });
+    const controller = new AbortController();
+    controllers.current.set(target, controller);
+    update(target, { pending: message, draft: '', error: '', activity: [] });
     try {
-      const reply = await post<AgentReply>('/agents/ask', {
-        module: selection.module,
-        context: selection.context,
-        message,
-        session_id: threadsRef.current[target]?.sessionId,
-      });
+      const reply = await postStream<AgentReply>(
+        '/agents/ask/stream',
+        {
+          module: selection.module,
+          context: selection.context,
+          message,
+          session_id: threadsRef.current[target]?.sessionId,
+        },
+        (event) =>
+          setThreads((old) => ({
+            ...old,
+            [target]: {
+              ...(old[target] ?? emptyThread()),
+              activity: mergeActivity(old[target]?.activity ?? [], event),
+            },
+          })),
+        controller.signal,
+      );
       setThreads((old) => ({
         ...old,
         [target]: {
@@ -144,9 +167,17 @@ export function AgentProvider({ children }: { children: ReactNode }) {
       }));
       runs.retry();
     } catch (reason) {
-      update(target, { pending: undefined, draft: message, error: (reason as Error).message });
+      update(target, {
+        pending: undefined,
+        draft: message,
+        error: controller.signal.aborted
+          ? 'Stopped waiting. Any completed answer remains in recent conversations.'
+          : (reason as Error).message,
+      });
+      runs.retry();
     } finally {
       pending.current.delete(target);
+      controllers.current.delete(target);
     }
   };
   const restore = (reply: AgentReply) => {
@@ -183,6 +214,7 @@ export function AgentProvider({ children }: { children: ReactNode }) {
             .slice(0, 5)}
           onClose={close}
           onSend={send}
+          onStop={() => controllers.current.get(key)?.abort()}
           onDraft={(draft) => update(key, { draft })}
           onReset={() => {
             if (!pending.current.has(key)) setThreads((old) => ({ ...old, [key]: emptyThread() }));
@@ -206,6 +238,7 @@ function AgentDialog({
   onDraft,
   onReset,
   onRestore,
+  onStop,
 }: {
   selection: Selection;
   agent?: Agent;
@@ -218,6 +251,7 @@ function AgentDialog({
   onDraft: (value: string) => void;
   onReset: () => void;
   onRestore: (reply: AgentReply) => void;
+  onStop: () => void;
 }) {
   const body = useRef<HTMLDivElement>(null);
   const name = agent?.name ?? names[selection.module];
@@ -419,6 +453,7 @@ function AgentDialog({
                 {new Date(reply.created_at).toLocaleTimeString()} · Saved locally
                 {reply.mode !== 'tools' && reply.model ? ` · ${reply.model}` : ''}
               </small>
+              <AgentRunDetails runId={reply.run_id} />
             </div>
           </div>
         ))}
@@ -426,8 +461,10 @@ function AgentDialog({
           <div className="agent-dialog-turn">
             <div className="agent-question">{thread.pending}</div>
             <div className="agent-thinking" role="status">
-              <LoaderCircle size={17} className="spin" />
-              {name} is reading module tools…
+              <AgentActivityTrail items={thread.activity ?? []} />
+              <button className="button" onClick={onStop}>
+                <Square size={12} /> Stop
+              </button>
             </div>
           </div>
         )}

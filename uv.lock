@@ -2129,6 +2129,7 @@ name = "sibyl"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "anyio" },
     { name = "ccxt" },
     { name = "cryptography" },
     { name = "fastapi" },
@@ -2174,6 +2175,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.54,<1" },
+    { name = "anyio", specifier = ">=4,<5" },
     { name = "ccxt", specifier = ">=4.5,<5" },
     { name = "cryptography", specifier = ">=45,<49" },
     { name = "fastapi", specifier = ">=0.115.12,<1" },

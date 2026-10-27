@@ -6,17 +6,17 @@ The migration follows the published [application-runtime guide](https://github.c
 
 ## Files and responsibilities
 
-| File | Responsibility |
-| --- | --- |
-| `<module>.py` | Specialist declaration, prompt and typed read-only functions |
-| `sibyl.py` | Coordinator prompt; native delegation enabled |
-| `guides/` | Curated page instructions retrieved through help tools |
-| `common.py` | Domain service references, immutable snapshots and private page defaults |
-| `registry.py` | Domain wiring, lazy model factory and UI reply projection |
-| `network.py` | `AgentGroup`, admission, private scope, native handles and UI chat coordination |
-| `presentation.py` | Format native events and `ToolEvidence` into consultation cards |
-| `snapshots.py` | Deterministic factual formatting when no model is selected |
-| `conversations.py`, `requests.py` | UI chat cards, queued-request IDs, progress and durable outcomes |
+| File                              | Responsibility                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------- |
+| `<module>.py`                     | Specialist declaration, prompt and typed read-only functions                    |
+| `sibyl.py`                        | Coordinator prompt; native delegation enabled                                   |
+| `guides/`                         | Curated page instructions retrieved through help tools                          |
+| `common.py`                       | Domain service references, immutable snapshots and private page defaults        |
+| `registry.py`                     | Domain wiring, lazy model factory and UI reply projection                       |
+| `network.py`                      | `AgentGroup`, admission, private scope, native handles and UI chat coordination |
+| `presentation.py`                 | Format native events and `ToolEvidence` into consultation cards                 |
+| `snapshots.py`                    | Deterministic factual formatting when no model is selected                      |
+| `conversations.py`, `requests.py` | UI chat cards, queued-request IDs, progress and durable outcomes                |
 
 `background_tool`, `WorkspaceLLM`, the custom `Turn`/`ContextVar` and `ChatTelemetry` have been removed. UI records do not supply model conversation history or collect tool execution receipts.
 
@@ -109,9 +109,11 @@ The handle/store use a request-specific `RedactionPolicy` including known config
 
 Native evidence retains the actual JSON-safe return before history hooks or context truncation. No function wrapper records evidence. Consultation envelopes are not counted as tool executions, and native deduplication prevents a forwarded live event plus final receipt becoming two observations.
 
-The UI displays the root final answer, never raw `llm_chunk` fragments, which can contain action JSON. Its existing progress polling remains; this migration does not add token-by-token browser answers. Native reports make provider metrics available, but a usage/cost UI and real-model grounding evaluations remain pending.
+The browser consumes `POST /agents/ask/stream` and `POST /sibyl/ask/stream` as NDJSON. `streaming.py` projects the existing handle events into bounded tool/consultation labels and outcomes; it does not execute tools or reconstruct runs. Arguments, results, provider errors and raw `llm_chunk` fragments never enter activity frames. A terminal reply contains the same committed response as the existing JSON endpoint. The UI displays the root final answer; raw chunks can contain internal action JSON and are never shown as answer text. Reopened Sibyl chats retain their one-second activity polling for recovery.
 
-An explicit UI Stop cancels the exact outer request; native `RunHandle.cancel()` propagates cancellation and the group owns drain/shutdown. Queued requests can stop before calling a provider. Completed consultation evidence remains visible on later failure or cancellation. UI answer commit and request completion remain one application transaction, preventing a late reply after Stop.
+**Run details** reads `GET /agents/runs/{run_id}/summary` on demand. `reporting.py` projects native tool outcomes/durations and completed model-call metrics without prompts, raw chunks, tool arguments or results. Reported tokens, estimates and unavailable values stay distinct; totals identify partial coverage. Costs appear per call and currency only when the SDK supplies them, with estimates labeled. No application pricing table or token estimator fills missing values. ProtoLink 0.8.3 currently omits usage metrics on its owned-subagent execution path; see the [verified reproducer](./protolink-metrics.md). Real-model routing/grounding evaluation and user-facing token streaming remain pending.
+
+An explicit Sibyl Stop cancels the exact outer request; specialist Stop aborts its stream, and disconnect cancellation drains the producer and its native handle. Closing a module dialog preserves its ongoing request. Navigating away from the Sibyl page aborts its stream. In each case, native `RunHandle.cancel()` propagates cancellation and the group owns drain/shutdown. Queued requests can stop before calling a provider. Completed consultation evidence remains visible on later failure or cancellation. UI answer commit and request completion remain one application transaction, preventing a late reply after Stop.
 
 A running synchronous Python thread cannot be killed. Its native worker slot remains occupied until it returns, while canceled awaits finish promptly and late results are discarded. This does not undo side effects; all current tools are read-only. Only outer requests acquire application admission; child consultations use ProtoLink's native budget/supervision. Specialist tasks allow eight model steps/calls, six tool calls and 80 seconds; page requests wait up to 95 seconds. Sibyl's root budget allows twelve steps, ten model/tool calls and 140 seconds, within a 150-second outer request timeout.
 
@@ -119,19 +121,19 @@ A running synchronous Python thread cannot be killed. Its native worker slot rem
 
 The SDK additionally advertises `read_context_artifact` for bounded model context.
 
-| Agent | Sibyl-defined tools |
-| --- | --- |
-| Oracle | `portfolio_snapshot`, `page_help` |
-| Accountant | `accountant_snapshot`, `account_history`, `risk_alerts`, `page_help` |
-| Analyst | `market_analysis`, `analysis_help`, `page_help` |
-| Broker | `strategy_context`, `strategy_guide`, `execution_controls`, `strategy_alerts`, `exchange_support`, `backtest_report`, `validation_report`, `exit_readiness`, `recorded_orders`, `trade_help`, `strategy_help` |
-| Chronos | `price_forecast`, `forecast_method`, `page_help` |
-| Reporter | `news_briefing`, `read_article`, `news_sources`, `fear_and_greed`, `page_help` |
-| Technician | `connection_status`, `connection_alerts`, `settings_guide`, `exchange_setup` |
-| Wiki | `search_knowledge`, `crypto_catalog`, `page_help` |
-| Explorer | `bitcoin_blocks`, `blockchain_help`, `page_help` |
-| Equity Analyst | `equity_quote`, `equity_help`, `page_help` |
-| Sibyl | No custom tools; native discovery/delegation and SDK context retrieval |
+| Agent          | Sibyl-defined tools                                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Oracle         | `portfolio_snapshot`, `page_help`                                                                                                                                                                             |
+| Accountant     | `accountant_snapshot`, `account_history`, `risk_alerts`, `page_help`                                                                                                                                          |
+| Analyst        | `market_analysis`, `analysis_help`, `page_help`                                                                                                                                                               |
+| Broker         | `strategy_context`, `strategy_guide`, `execution_controls`, `strategy_alerts`, `exchange_support`, `backtest_report`, `validation_report`, `exit_readiness`, `recorded_orders`, `trade_help`, `strategy_help` |
+| Chronos        | `price_forecast`, `forecast_method`, `page_help`                                                                                                                                                              |
+| Reporter       | `news_briefing`, `read_article`, `news_sources`, `fear_and_greed`, `page_help`                                                                                                                                |
+| Technician     | `connection_status`, `connection_alerts`, `settings_guide`, `exchange_setup`                                                                                                                                  |
+| Wiki           | `search_knowledge`, `crypto_catalog`, `page_help`                                                                                                                                                             |
+| Explorer       | `bitcoin_blocks`, `blockchain_help`, `page_help`                                                                                                                                                              |
+| Equity Analyst | `equity_quote`, `equity_help`, `page_help`                                                                                                                                                                    |
+| Sibyl          | No custom tools; native discovery/delegation and SDK context retrieval                                                                                                                                        |
 
 Reporter reads the retained News archive and attributed index; publisher collection remains with News/background ingestion. Empty live sources stay empty. Broker's `recorded_orders` applies filters before its ten-order limit and returns at most ten fills for a selected record, retaining comparison totals and truncation flags. It never refreshes providers or changes tracking. Unknown/mismatched IDs use native `ToolRejectedError` for bounded correction.
 
@@ -145,4 +147,6 @@ Tool docstrings should lead with the question answered and information returned,
 
 `tests/test_application_runtime.py` exercises native lazy factories, immutable/transport-isolated context, frozen queued choices, correlated and untruncated reports, four-worker admission after cancellation, no late success, group shutdown, credential redaction, session restart and deletion. Existing agent/model/Stop tests keep the real native runtime and script only provider I/O.
 
-No paid provider, actual exchange order or external message is used for these checks. Real-provider/sandbox acceptance, real-model routing/grounding evaluation, browser token streaming and usage/cost presentation remain separate work. Scheduled or resumable investigations are not enabled by this migration; saved request history is still an audit, not a scheduler.
+`tests/test_agent_streaming.py` additionally checks native activity and correlated summaries, early progress during a blocked tool, disconnect cancellation without late success, sanitized failures, missing/estimated usage, partial coverage and per-currency costs. Browser fixtures cover NDJSON parsing and uncertain connection outcomes without automatic retries.
+
+No paid provider, actual exchange order or external message is used for these checks. Real-provider/sandbox acceptance, real-model routing/grounding evaluation and browser token streaming remain separate work. Scheduled or resumable investigations are not enabled by this migration; saved request history is still an audit, not a scheduler.

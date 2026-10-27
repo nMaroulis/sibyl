@@ -27,7 +27,9 @@ The model decides whether to use a specialist. The interface never invents consu
 
 ## Follow or stop a request
 
-While Sibyl works, the chat shows its current stage and the specialists actually being consulted, with working/completed states. Progress refreshes about once a second; the final answer appears when complete. It does not show private model reasoning or stream answer tokens.
+While Sibyl works, the chat receives live tool and specialist consultation activity with working/completed states. Reopened running chats check progress about once a second. The final answer appears when complete; private model reasoning and internal action JSON are never displayed as answer text.
+
+Expand **Run details** under an answer for recorded tool outcomes, timing and model calls. Token counts are labeled reported or estimated; missing usage and costs say unavailable. Partial token totals identify how many calls reported usage. These figures are not a billing record. Some coordinator runs currently have unavailable usage because of a ProtoLink 0.8.3 limitation.
 
 Use **Stop** to cancel this specific request, including one waiting for an available slot. Completed consultations remain available, and a stopped request does not add a pretend answer to the conversation. An already committed answer is retained if it completes just before Stop reaches the server. A provider call already in flight may still finish or incur charges; Stop prevents further consultations and a late answer from that request.
 
@@ -45,7 +47,7 @@ If the application restarts before a request finishes, the attempt is marked **I
 
 ## Talk directly to a specialist
 
-The gradient **Ask** buttons on module pages still open the corresponding specialist in place. An Analyst question goes directly to Analyst through the ProtoLink agent client; it does not pass through Sibyl. These specialists can still return factual tool snapshots without a configured model. The **More → Agents** directory remains available.
+The gradient **Ask** buttons on module pages still open the corresponding specialist in place. An Analyst question goes directly to Analyst through a native ProtoLink run handle; it does not pass through Sibyl. These specialists can still return factual tool snapshots without a configured model. The **More → Agents** directory remains available.
 
 ## Messaging channels
 

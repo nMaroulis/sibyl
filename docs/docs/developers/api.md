@@ -4,70 +4,84 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 
 ## Endpoints
 
-| Method     | Path                                      | Purpose                                                                                  |
-| ---------- | ----------------------------------------- | ---------------------------------------------------------------------------------------- |
-| GET        | `/health` (unversioned)                   | Process readiness and package version                                                    |
-| GET        | `/system`                                 | Safe workspace configuration                                                             |
-| GET        | `/settings/llm`                           | Provider catalog, workspace default, effective agent models/revision; keys are write-only                      |
-| POST       | `/settings/llm`                           | Save encrypted profile; `activate=false` preserves the workspace default                                     |
-| POST       | `/settings/llm/agents/{agent}`             | Revision-checked provider/model override; null provider restores inheritance             |
-| DELETE     | `/settings/llm/{provider}/key`            | Remove stored key; fall back to tool mode if active required key is unavailable          |
-| GET        | `/account/accounts`                       | Per-account free/reserved/total and conversion rates                                     |
-| GET        | `/markets/symbols`                        | Active spot catalog and available timeframes                                             |
-| GET        | `/markets/orderbook`                      | Public snapshot: symbol, depth 5–50                                                      |
-| GET        | `/reports/trading`                        | Combined records and matched paper FIFO P&L                                              |
-| POST       | `/exchange-orders/{id}/refresh`           | Read a known exchange order status; never resubmit                                       |
-| GET        | `/account`                                | Priced balances, allocation, history, warnings                                           |
-| GET        | `/markets`                                | Saved watchlist quotes, order and source labels                                          |
-| GET        | `/markets/analysis`                       | `symbol`, `timeframe`, `limit` 60–720                                                    |
-| GET        | `/markets/correlation`                    | 2–8 symbols, timeframe, limit, method, transform                                         |
-| GET        | `/exchanges`                              | Provider catalog, credential fields, capabilities, execution policy and unconfigured IDs |
-| GET        | `/connections/{id}/balances`              | One account's normalized balances                                                        |
-| GET        | `/connections/{id}/open-orders`           | One exact market's open orders (`symbol`)                                                |
-| GET        | `/connections/{id}/trades`                | Bounded fill page (`symbol`, `since` milliseconds, `limit` 1–500)                        |
-| GET        | `/connections/{id}/markets`               | Saved account's exact spot symbols and environment                                       |
-| GET        | `/account-sync`                           | Import support/progress without provider calls                                           |
-| POST       | `/connections/{id}/sync`                  | Queue/resume fill imports (`symbols`, 1–12); returns 202                                 |
-| POST       | `/connections/{id}/sync/pause`            | Pause one `symbol`, or all account imports                                               |
-| GET        | `/account-ledger/fills`                   | Retained normalized fills, native-currency fees, filters and bounded pagination          |
-| GET / POST | `/connections`                            | List metadata / save encrypted credentials                                               |
-| DELETE     | `/connections/{id}`                       | Remove a connection                                                                      |
-| POST       | `/connections/{id}/check`                 | Read-only credential verification                                                        |
-| GET        | `/paper/balances`                         | Separate manual paper ledger                                                             |
-| GET / POST | `/orders`                                 | Paper fill history / execute paper order                                                 |
-| POST       | `/orders/preview`                         | Paper reference quote, fee, estimated debit/credit                                       |
-| GET        | `/exchange-orders`                        | Exchange intents and submission snapshots                                                |
-| POST       | `/exchange-orders/preview`                | Validate and create a 60-second exchange intent                                          |
-| POST       | `/exchange-orders/{id}/confirm`           | Submit once with typed confirmation                                                      |
-| GET        | `/strategies`                             | Algorithm catalog                                                                        |
-| POST       | `/strategies/backtest`                    | Historical simulation and persisted result                                               |
-| GET / POST | `/strategies/jobs`                        | List paper/exchange runs / start isolated paper jobs                                     |
-| GET        | `/strategies/exchange/options`            | Actual automation support, account activation and execution flags                        |
-| GET / POST | `/strategies/exchange/controls`            | Passive global halt/history or revision-bound Halt / typed Release; resumes no runs     |
-| GET        | `/strategies/exchange/markets/{id}`       | Exact account-exchange pairs/timeframes                                                  |
-| POST       | `/strategies/exchange/preview`            | Read-only account/budget review                                                          |
-| POST       | `/strategies/exchange/reviews/{id}/start` | Approve a fixed scope; wait for the next closed candle                                   |
-| POST       | `/strategies/exchange/jobs/{id}/stop-cancel-review` | Read local fixed-run cancellation scope; no native call or mutation             |
-| POST       | `/strategies/exchange/stop-reviews/{id}/confirm` | Typed approval; stop submissions and queue owned-order cancellation                |
-| GET        | `/strategies/exchange/jobs/{id}/close-position` | Local closing eligibility, reason, owned units and retained exit state             |
-| POST       | `/strategies/exchange/jobs/{id}/close-preview` | Fresh native book/funds and fixed 60-second sell review; no native write             |
-| POST       | `/strategies/exchange/close-reviews/{id}/confirm` | Typed one-order exit approval; repeated confirmations only return progress        |
-| POST       | `/strategies/jobs/{id}/pause`             | Stop evaluating a paper job                                                              |
-| POST       | `/strategies/jobs/{id}/resume`            | Resume evaluation                                                                        |
-| GET        | `/forecast`                               | `symbol`, `horizon` 1–30                                                                 |
-| GET        | `/news`                                   | Filtered retained publisher excerpts / samples, pagination, VADER aggregates             |
-| GET        | `/news/sources`                           | Publisher collection health, no network refresh                                          |
-| POST       | `/news/refresh`                           | Public feed collection with a 60-second per-source cooldown                              |
-| GET        | `/news/{article_id}`                      | Retained story lookup independent of paging; optional mode                               |
-| GET        | `/knowledge`                              | Glossary; optional `q` keyword query                                                     |
-| GET        | `/research/crypto`                        | Curated 20-asset catalog                                                                 |
-| GET        | `/research/crypto/{asset_id}`             | Fetched metadata, history, market snapshot, and source status                            |
-| GET        | `/blocks`                                 | Recent Bitcoin blocks, count 1–100                                                       |
-| GET        | `/stocks/{symbol}`                        | Quote, adjusted history, statistics, profile                                             |
-| GET        | `/agents`                                 | Agent catalog and tool/provider metadata                                                 |
-| GET        | `/agents/runs/{run_id}`                    | Persisted native ProtoLink report; no model call, missing report returns 404              |
-| POST       | `/agents/ask`                             | Run module tool and optional inference                                                   |
-| GET        | `/runs`                                   | Latest persisted runs; optional `kind=agent` or `backtest`                               |
+| Method     | Path                                                | Purpose                                                                                    |
+| ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| GET        | `/health` (unversioned)                             | Process readiness and package version                                                      |
+| GET        | `/system`                                           | Safe workspace configuration                                                               |
+| GET        | `/settings/llm`                                     | Provider catalog, workspace default, effective agent models/revision; keys are write-only  |
+| POST       | `/settings/llm`                                     | Save encrypted profile; `activate=false` preserves the workspace default                   |
+| POST       | `/settings/llm/agents/{agent}`                      | Revision-checked provider/model override; null provider restores inheritance               |
+| DELETE     | `/settings/llm/{provider}/key`                      | Remove stored key; fall back to tool mode if active required key is unavailable            |
+| GET        | `/account/accounts`                                 | Per-account free/reserved/total and conversion rates                                       |
+| GET        | `/markets/symbols`                                  | Active spot catalog and available timeframes                                               |
+| GET        | `/markets/orderbook`                                | Public snapshot: symbol, depth 5–50                                                        |
+| GET        | `/reports/trading`                                  | Combined records and matched paper FIFO P&L                                                |
+| POST       | `/exchange-orders/{id}/refresh`                     | Read a known exchange order status; never resubmit                                         |
+| GET        | `/account`                                          | Priced balances, allocation, history, warnings                                             |
+| GET        | `/markets`                                          | Saved watchlist quotes, order and source labels                                            |
+| GET        | `/markets/analysis`                                 | `symbol`, `timeframe`, `limit` 60–720                                                      |
+| GET        | `/markets/correlation`                              | 2–8 symbols, timeframe, limit, method, transform                                           |
+| GET        | `/exchanges`                                        | Provider catalog, credential fields, capabilities, execution policy and unconfigured IDs   |
+| GET        | `/connections/{id}/balances`                        | One account's normalized balances                                                          |
+| GET        | `/connections/{id}/open-orders`                     | One exact market's open orders (`symbol`)                                                  |
+| GET        | `/connections/{id}/trades`                          | Bounded fill page (`symbol`, `since` milliseconds, `limit` 1–500)                          |
+| GET        | `/connections/{id}/markets`                         | Saved account's exact spot symbols and environment                                         |
+| GET        | `/account-sync`                                     | Import support/progress without provider calls                                             |
+| POST       | `/connections/{id}/sync`                            | Queue/resume fill imports (`symbols`, 1–12); returns 202                                   |
+| POST       | `/connections/{id}/sync/pause`                      | Pause one `symbol`, or all account imports                                                 |
+| GET        | `/account-ledger/fills`                             | Retained normalized fills, native-currency fees, filters and bounded pagination            |
+| GET / POST | `/connections`                                      | List metadata / save encrypted credentials                                                 |
+| DELETE     | `/connections/{id}`                                 | Remove a connection                                                                        |
+| POST       | `/connections/{id}/check`                           | Read-only credential verification                                                          |
+| GET        | `/paper/balances`                                   | Separate manual paper ledger                                                               |
+| GET / POST | `/orders`                                           | Paper fill history / execute paper order                                                   |
+| POST       | `/orders/preview`                                   | Paper reference quote, fee, estimated debit/credit                                         |
+| GET        | `/exchange-orders`                                  | Exchange intents and submission snapshots                                                  |
+| POST       | `/exchange-orders/preview`                          | Validate and create a 60-second exchange intent                                            |
+| POST       | `/exchange-orders/{id}/confirm`                     | Submit once with typed confirmation                                                        |
+| GET        | `/strategies`                                       | Algorithm catalog                                                                          |
+| POST       | `/strategies/backtest`                              | Historical simulation and persisted result                                                 |
+| GET / POST | `/strategies/jobs`                                  | List paper/exchange runs / start isolated paper jobs                                       |
+| GET        | `/strategies/exchange/options`                      | Actual automation support, account activation and execution flags                          |
+| GET / POST | `/strategies/exchange/controls`                     | Passive global halt/history or revision-bound Halt / typed Release; resumes no runs        |
+| GET        | `/strategies/exchange/markets/{id}`                 | Exact account-exchange pairs/timeframes                                                    |
+| POST       | `/strategies/exchange/preview`                      | Read-only account/budget review                                                            |
+| POST       | `/strategies/exchange/reviews/{id}/start`           | Approve a fixed scope; wait for the next closed candle                                     |
+| POST       | `/strategies/exchange/jobs/{id}/stop-cancel-review` | Read local fixed-run cancellation scope; no native call or mutation                        |
+| POST       | `/strategies/exchange/stop-reviews/{id}/confirm`    | Typed approval; stop submissions and queue owned-order cancellation                        |
+| GET        | `/strategies/exchange/jobs/{id}/close-position`     | Local closing eligibility, reason, owned units and retained exit state                     |
+| POST       | `/strategies/exchange/jobs/{id}/close-preview`      | Fresh native book/funds and fixed 60-second sell review; no native write                   |
+| POST       | `/strategies/exchange/close-reviews/{id}/confirm`   | Typed one-order exit approval; repeated confirmations only return progress                 |
+| POST       | `/strategies/jobs/{id}/pause`                       | Stop evaluating a paper job                                                                |
+| POST       | `/strategies/jobs/{id}/resume`                      | Resume evaluation                                                                          |
+| GET        | `/forecast`                                         | `symbol`, `horizon` 1–30                                                                   |
+| GET        | `/news`                                             | Filtered retained publisher excerpts / samples, pagination, VADER aggregates               |
+| GET        | `/news/sources`                                     | Publisher collection health, no network refresh                                            |
+| POST       | `/news/refresh`                                     | Public feed collection with a 60-second per-source cooldown                                |
+| GET        | `/news/{article_id}`                                | Retained story lookup independent of paging; optional mode                                 |
+| GET        | `/knowledge`                                        | Glossary; optional `q` keyword query                                                       |
+| GET        | `/research/crypto`                                  | Curated 20-asset catalog                                                                   |
+| GET        | `/research/crypto/{asset_id}`                       | Fetched metadata, history, market snapshot, and source status                              |
+| GET        | `/blocks`                                           | Recent Bitcoin blocks, count 1–100                                                         |
+| GET        | `/stocks/{symbol}`                                  | Quote, adjusted history, statistics, profile                                               |
+| GET        | `/agents`                                           | Agent catalog and tool/provider metadata                                                   |
+| GET        | `/agents/runs/{run_id}/summary`                     | Safe native tool outcomes/timing and available per-call metrics; no raw prompts or results |
+| POST       | `/agents/ask/stream`                                | Same module operation as `/agents/ask`, with safe native activity as NDJSON                |
+| GET        | `/agents/runs/{run_id}`                             | Persisted native ProtoLink report; no model call, missing report returns 404               |
+| POST       | `/agents/ask`                                       | Run module tool and optional inference                                                     |
+| GET        | `/runs`                                             | Latest persisted runs; optional `kind=agent` or `backtest`                                 |
+
+## Agent streaming and run summaries
+
+The two Ask stream routes accept exactly the same bodies and workspace authentication as their JSON counterparts. They run the same operation once, with `Content-Type: application/x-ndjson`, `Cache-Control: no-store` and proxy buffering disabled. Each line is one JSON object:
+
+- `{"type":"status","status":"queued"}` while accepting the request.
+- `{"type":"activity",...}` with native action ID, run/task ID, agent, `kind` (`tool` or `consultation`), label and lifecycle status. No prompts, raw model chunks, tool arguments/results or provider exception text.
+- `{"type":"reply","reply":{...}}` with the original committed result, or `{"type":"error","status":502,"message":"..."}` with a sanitized failure. These are terminal frames.
+
+Authentication and body validation use normal HTTP errors before streaming. Failures after streaming starts use an error frame; clients must inspect that frame rather than treating HTTP 200 as success. Disconnect cancels/drains the producer and its native handle. Running synchronous work may finish after cancellation; its late return is discarded. Clients do not automatically replay an interrupted model request. Sibyl's existing chat activity/history reads remain available for reopening a request.
+
+`GET /agents/runs/{run_id}/summary` is an authenticated, no-store read of the persisted native report (404 when missing). `tools` contains names, outcomes and durations; `calls` contains provider/model, latency, native token usage and optional per-call cost/currency. Missing values stay null, estimates retain labels, and `tokens.known_calls` discloses aggregate coverage. Costs are never summed across currencies. Owned-agent usage is currently unavailable because of the [verified ProtoLink 0.8.3 gap](protolink-metrics.md).
 
 ## Strategy monitor routes
 
@@ -245,6 +259,7 @@ All paths below use the `/api/v1` prefix and existing workspace access controls.
 | Method     | Path                                                      | Purpose                                                                                                                       |
 | ---------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | GET        | `/sibyl`                                                  | Runtime and model configuration readiness; safe setup reason and settings link                                                |
+| POST       | `/sibyl/ask/stream`                                       | Same Sibyl request, streamed native activity and one terminal reply/error as NDJSON                                           |
 | POST       | `/sibyl/ask`                                              | `message` (1–4,000 nonblank characters), optional `session_id` and unique `request_id`; model-driven specialist collaboration |
 | GET / POST | `/sibyl/conversations`                                    | Latest 100 local chats / create an empty chat                                                                                 |
 | GET        | `/sibyl/conversations/{session_id}`                       | Latest 100 completed turns and actual consultation evidence                                                                   |
@@ -253,11 +268,11 @@ All paths below use the `/api/v1` prefix and existing workspace access controls.
 | GET        | `/sibyl/conversations/{session_id}/requests`              | Latest 20 request summaries including stopped/failed/interrupted attempts                                                     |
 | GET        | `/sibyl/conversations/{session_id}/requests/{request_id}` | Exact request and retained consultation evidence within its owning chat                                                       |
 | POST       | `/sibyl/conversations/{session_id}/cancel`                | Required `request_id`; accepts exact queued/running request, returns 202                                                      |
-| GET        | `/settings/messaging`                                     | Unavailable channel catalog, planned setup fields, and official setup links                                                   |
+| GET        | `/settings/messaging`                                     | Channel capabilities, connection status, setup fields and official setup links                                                |
 
 Successful Ask results include `request_id` and `status: completed`. If stopped, the original Ask returns 200 with `{status: cancelled, session_id, request_id}`, without saving a chat answer. Cancellation is idempotent for an already stopped request; completed/non-running requests return 409 and unknown/foreign request IDs return 404. Session and request IDs are 32 lowercase hexadecimal characters; repeated request IDs return 409 without another model call. Startup marks unfinished requests interrupted without replaying them. History retains completed consultation evidence; frequent activity reads omit answer/evidence payloads. These request reads use `Cache-Control: no-store`.
 
-Channels: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `email`. Every channel reports `unavailable` and `connected: false`; no clients, credential collection, draft saving or delivery exist. Sibyl setup/duplicate-turn failures return 409, unknown chat IDs 404, provider failures a sanitized 502, and outer timeouts 504. The backend limits one pending turn per chat and two outer requests globally; native ProtoLink run budgets bound delegation/model/tool work. See [agent contracts](./agents.md).
+Channels: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `email`. Telegram is implemented with explicit connection controls; the remaining channels are unavailable previews with disabled fields. See the [Telegram guide](../guides/telegram.md) for setup and delivery limits. Sibyl setup/duplicate-turn failures return 409, unknown chat IDs 404, provider failures a sanitized 502, and outer timeouts 504. The backend limits one pending turn per chat and two outer requests globally; native ProtoLink run budgets bound delegation/model/tool work. See [agent contracts](./agents.md).
 
 `GET/POST /connection-alerts`, `POST /connection-alerts/{id}/edit` and `/action` manage passive read-failure/recovery subscriptions. Strict thresholds, revisions and lifecycle controls operate only on local evidence. `GET /connection-alerts/example` is isolated. The shared inbox accepts `kind: connection` alongside price and strategy notices. See [connection read contracts](alerts.md#connection-read-subscriptions).
 

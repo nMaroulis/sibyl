@@ -95,9 +95,9 @@ AREAS = [
         "name": "Sibyl & messaging",
         "status": "partial",
         "priority": "next",
-        "working": "Native ProtoLink discovery/delegation, saved chats, live request progress/Stop/outcomes, and a direct-HTTP Telegram client with private-user binding, encrypted configuration and durable delivery outcomes.",
+        "working": "Native ProtoLink discovery/delegation, saved chats, streamed tool/consultation activity, Stop/outcomes and on-demand native run details with available token/cost metrics, and a direct-HTTP Telegram client with private-user binding, encrypted configuration and durable delivery outcomes.",
         "pending": [
-            "Token-by-token answers, richer internal tool traces, usage/cost reporting and evaluated routing/grounding.",
+            "User-facing token streaming, evaluated routing/grounding and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3).",
             "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
             "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: live bot acceptance testing, richer media and delivery review controls; ambiguous sends are never auto-retried.",
         ],

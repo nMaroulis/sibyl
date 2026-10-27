@@ -17,6 +17,10 @@ The gradient **Ask** button opens a floating dialog over the current module. Clo
 
 Drafts and conversations remain available after closing and reopening the dialog during the current browser session. Different modules and page selections use separate sessions. **Recent conversations in this context** restores a saved session; the server retains recent turns for model inference. **New conversation** clears the current draft and starts a fresh session without deleting saved history. Browser reloads clear unsent drafts.
 
+During an answer, the dialog shows live tool activity. **Stop** cancels waiting and the backend request; a provider call or synchronous tool already executing can finish, but canceled work cannot add a late success. Closing the dialog keeps its request available when reopened. A connection failure does not automatically retry a potentially chargeable request; inspect **Recent conversations** before sending again.
+
+Expand **Run details** under a saved answer for tool outcomes, durations and native model-call metrics. Reported and estimated tokens are labeled separately, partial totals disclose coverage, and missing usage or costs show unavailable. Costs are per call and currency when supplied by the provider; estimates are not billing records.
+
 The **More → Agents** dock entry is a directory of specialists and their native tools. It provides another way to open an agent dialog; it is not required for asking a module agent.
 
 ## Two useful modes

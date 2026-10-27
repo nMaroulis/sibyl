@@ -15,10 +15,11 @@ import {
 import { SibylProgress, SibylRequestHistory, activeRequest } from '../components/sibyl-activity';
 import type { SibylActivity, Consultation } from '../components/sibyl-activity';
 import { SibylMark } from '../components/sibyl-mark';
+import { AgentActivityTrail, AgentRunDetails, mergeActivity } from '../components/agent-run';
 import { Badge, ErrorState, Loading, Modal } from '../components/ui';
-import { api, post } from '../lib/api';
+import { api, post, postStream } from '../lib/api';
 import { useResource } from '../lib/hooks';
-import type { Agent } from '../lib/types';
+import type { Agent, AgentActivity } from '../lib/types';
 
 type Status = {
   ready: boolean;
@@ -30,6 +31,7 @@ type Status = {
   specialists: number;
 };
 type Reply = {
+  run_id?: string;
   id: string;
   session_id: string;
   question: string;
@@ -75,9 +77,12 @@ export function Sibyl() {
   const [following, setFollowing] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [requestId, setRequestId] = useState('');
+  const [live, setLive] = useState<{ session: string; items: AgentActivity[] }>();
+  const controller = useRef<AbortController | undefined>(undefined);
+  useEffect(() => () => controller.current?.abort(), []);
   const activity = useResource<SibylActivity | null>(
     `/sibyl/conversations/${session}/activity`,
-    following || pending ? 1000 : 0,
+    following && !pending ? 1000 : 0,
     Boolean(session),
   );
   const currentActivity = activity.data?.session_id === session ? activity.data : undefined;
@@ -121,6 +126,8 @@ export function Sibyl() {
     setError('');
     const nextRequest = crypto.randomUUID().replaceAll('-', '');
     setRequestId(nextRequest);
+    const stream = new AbortController();
+    controller.current = stream;
     try {
       let target = session;
       if (!target) {
@@ -128,13 +135,24 @@ export function Sibyl() {
         target = chat.id;
         setParams({ chat: target });
       }
-      const reply = await post<
+      setLive({ session: target, items: [] });
+      const reply = await postStream<
         Reply | { status: 'cancelled'; request_id: string; session_id: string }
-      >('/sibyl/ask', {
-        message: message.trim(),
-        session_id: target,
-        request_id: nextRequest,
-      });
+      >(
+        '/sibyl/ask/stream',
+        {
+          message: message.trim(),
+          session_id: target,
+          request_id: nextRequest,
+        },
+        (event) => {
+          setLive((old) => ({
+            session: target,
+            items: mergeActivity(old?.session === target ? old.items : [], event),
+          }));
+        },
+        stream.signal,
+      );
       if ('status' in reply && reply.status === 'cancelled') setDraft(message);
       else setLatest(reply as Reply);
       conversation.retry();
@@ -146,12 +164,13 @@ export function Sibyl() {
       busy.current = false;
       setPending('');
       setStopping(false);
+      controller.current = undefined;
       activity.retry();
       conversation.retry();
     }
   };
   const stop = async () => {
-    const id = stoppableId;
+    const id = stoppableId || (pending ? requestId : undefined);
     if (!session || !id || stopping) return;
     setStopping(true);
     try {
@@ -366,6 +385,7 @@ export function Sibyl() {
                         </span>
                       </div>
                       <div className="sibyl-answer-text">{turn.answer}</div>
+                      <AgentRunDetails runId={turn.run_id} />
                       {turn.delegations.length > 0 && (
                         <details className="sibyl-consultations">
                           <summary>
@@ -428,8 +448,15 @@ export function Sibyl() {
                     <SibylProgress
                       activity={visibleActivity}
                       stopping={stopping}
-                      stop={session && stoppableId ? () => void stop() : undefined}
+                      stop={
+                        session && (stoppableId || (pending && requestId))
+                          ? () => void stop()
+                          : undefined
+                      }
                     />
+                    {pending && live?.session === session && (
+                      <AgentActivityTrail items={live.items} />
+                    )}
                   </div>
                 )}
               </div>

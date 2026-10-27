@@ -37,6 +37,67 @@ export const post = <T>(path: string, body?: unknown) =>
     method: 'POST',
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+
+/** Read one authenticated NDJSON request. Never retry an uncertain model request. */
+export async function postStream<T>(
+  path: string,
+  body: unknown,
+  onEvent: (event: import('./types').AgentActivity) => void,
+  signal?: AbortSignal,
+): Promise<T> {
+  const response = await fetch(`/api/v1${path}`, {
+    method: 'POST',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(
+      typeof data.detail === 'string' ? data.detail : `Request failed (${response.status}).`,
+    );
+  }
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Streaming is unavailable in this browser.');
+  const decoder = new TextDecoder();
+  let buffer = '',
+    received = false,
+    reply: T | undefined;
+  const readLine = (line: string) => {
+    if (!line.trim() || received) return;
+    const event = JSON.parse(line);
+    if (event.type === 'error') throw new Error(event.message);
+    if (event.type === 'reply') {
+      reply = event.reply as T;
+      received = true;
+    } else if (event.type === 'activity' || event.type === 'status') onEvent(event);
+  };
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+      if (buffer.length > 4_000_000) throw new Error('The response exceeded the stream limit.');
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      lines.forEach(readLine);
+      if (done) {
+        readLine(buffer);
+        break;
+      }
+    }
+    if (!received)
+      throw new Error(
+        'Connection ended before a final reply. Check request history before trying again.',
+      );
+    return reply as T;
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
 export const refresh = () => window.dispatchEvent(new Event('sibyl-refresh'));
 export const money = (value: number, digits = 2) =>
   new Intl.NumberFormat('en-US', {

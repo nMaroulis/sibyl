@@ -12,11 +12,11 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
-| Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and external delivery.                       |
+| Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and external delivery.  |
 | Automated strategy execution   | partial       | Authenticated acceptance, broader risk policies, residual exit handling and fee valuation.            |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
-| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.               |
+| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
 | Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                       |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
 | Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                            |
@@ -152,7 +152,8 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [ ] Add scheduled investigations and resumable long-running work. Retained request history is an audit, not workflow resumption.
 - [x] Add Ollama installation/server/model detection and explicit local server Start/Stop ownership controls, with setup links.
 - [x] Add per-agent provider/model overrides with shared encrypted profiles, preset/custom IDs, revision-checked edits, frozen delegated request snapshots and accurate model attribution. See [contracts](agent-models.md).
-- [ ] Add token-by-token answers, deeper internal tool traces, usage/cost reporting and evaluated routing/grounding. Current progress is lifecycle polling rather than token streaming.
+- [x] Stream native tool/consultation lifecycle activity into browser chats; retain polling for reopened Sibyl requests and cancel native work on stream disconnect. Show safe on-demand run summaries with tool timing/outcomes and available per-call token/cost metrics, labeled estimated, partial or unavailable.
+- [ ] Add user-facing token streaming, evaluated routing/grounding and fix the [upstream owned-subagent metrics gap](protolink-metrics.md). Activity streaming does not expose raw model chunks or internal action JSON.
 - [x] Implement direct-HTTP Telegram polling, private-user binding, encrypted credentials, conversation mapping and durable delivery outcomes. Explicit rate limits retry; ambiguous sends never auto-retry.
 - [ ] Validate Telegram with a real bot; add media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.

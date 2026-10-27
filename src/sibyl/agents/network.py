@@ -137,6 +137,7 @@ class AgentNetwork:
         in the receiving application, without inheriting caller credentials.
         """
         configuration = current_request_context().get("models", {})
+        progress = current_request_context().get("progress")
         secrets = frozenset(
             row["api_key"] for row in configuration.get("_agents", {}).values() if row.get("api_key")
         )
@@ -148,10 +149,14 @@ class AgentNetwork:
             redaction_policy=policy,
         )
         view = RunPresentation(self, handle, configuration, request) if request else None
+        if request:
+            self.requests.update(request.request_id, run_id=handle.context.run_id)
         try:
             async for event in handle.events():
                 if view:
                     view.consume(event)
+                if progress:
+                    await progress(event)
             result = await handle.result()
         except BaseException:
             await handle.cancel("Caller stopped waiting")
@@ -317,7 +322,10 @@ class AgentNetwork:
 
     async def _answer_sibyl(self, request: SibylRequest, configuration: dict) -> dict:
         """Use native session history, events and reports; retain only the UI chat projection."""
-        with request_context({"models": configuration, "page": freeze({})}, inherit=("models", "page")):
+        with request_context(
+            {**current_request_context(), "models": configuration, "page": freeze({})},
+            inherit=("models", "page"),
+        ):
             execution = await self.send(
                 "sibyl",
                 Task.create_infer(

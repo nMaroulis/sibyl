@@ -398,7 +398,20 @@ export type Agent = {
   model_ready?: boolean;
   model_reason?: string;
 };
+export type AgentActivity =
+  | { type: 'status'; status: 'queued' }
+  | {
+      type: 'activity';
+      id: string;
+      run_id: string;
+      task_id: string;
+      agent: string;
+      kind: 'tool' | 'consultation';
+      label: string;
+      status: 'running' | 'completed' | 'failed' | 'rejected' | 'cancelled';
+    };
 export type AgentReply = {
+  run_id?: string;
   context?: AgentContext;
   id: string;
   module: string;

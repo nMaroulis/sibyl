@@ -11,7 +11,9 @@ from sibyl.agents.conversations import SibylRequest
 from sibyl.agents.model_selection import AgentId, AgentModelRequest
 from sibyl.agents.network import ModelRequired
 from sibyl.agents.providers import ProviderId
+from sibyl.agents.reporting import run_details
 from sibyl.agents.requests import CancelSibylRequest
+from sibyl.agents.streaming import stream_reply
 from sibyl.api.app import Services
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.market_data.backfills import (
@@ -1107,6 +1109,16 @@ def messaging_settings(s: S):
     return s.messaging.public()
 
 
+@router.post("/sibyl/ask/stream", tags=["Sibyl"])
+async def stream_sibyl(body: SibylRequest, s: S):
+    """Stream safe native activity and one committed reply; disconnect cancels work."""
+    return StreamingResponse(
+        stream_reply(lambda: ask_sibyl(body, s)),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
+
+
 @router.get("/agents", tags=["Oracle"])
 def agents(s: S):
     """Describe all embedded ProtoLink agents and their available module tools."""
@@ -1140,6 +1152,26 @@ def agent_run_report(run_id: str, s: S, response: Response):
         raise LookupError("Agent run report not found.")
     response.headers["Cache-Control"] = "no-store"
     return report.to_dict()
+
+
+@router.get("/agents/runs/{run_id}/summary", tags=["Oracle"])
+def agent_run_summary(run_id: str, s: S, response: Response):
+    """Read tools/timing and provider metrics without raw model, prompt or tool data."""
+    report = s.agents.network.run_store.get_report(run_id)
+    if report is None:
+        raise LookupError("Agent run report not found.")
+    response.headers["Cache-Control"] = "no-store"
+    return run_details(report)
+
+
+@router.post("/agents/ask/stream", tags=["Oracle"])
+async def stream_agent(body: AgentRequest, s: S):
+    """Stream safe native specialist activity and one committed module reply."""
+    return StreamingResponse(
+        stream_reply(lambda: ask_agent(body, s)),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/runs", tags=["System"])

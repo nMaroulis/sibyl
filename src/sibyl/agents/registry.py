@@ -127,7 +127,10 @@ class AgentRegistry:
         session_id = request.session_id or uuid4().hex
         context = request.context.model_dump(exclude_none=True, exclude_unset=True)
         primary_tool = next(iter(self.agents[request.module].tools))
-        with request_context({"models": configuration, "page": freeze(context)}, inherit=("models", "page")):
+        with request_context(
+            {**current_request_context(), "models": configuration, "page": freeze(context)},
+            inherit=("models", "page"),
+        ):
             if configuration["provider"] == "none":
                 task = Task.create_tool_call(primary_tool, tool_arguments(request), session_id=session_id)
                 mode = "tools"
