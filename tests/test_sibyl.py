@@ -68,15 +68,15 @@ def test_missing_key_and_dependency_are_setup_states(client, monkeypatch):
     assert "dependency" in client.get("/api/v1/sibyl").json()["reason"]
 
 
-def test_direct_ask_uses_agent_client_without_routing_through_sibyl(client, monkeypatch):
+def test_direct_ask_uses_native_group_handle_without_routing_through_sibyl(client, monkeypatch):
     network = client.app.state.services.agents.network
-    calls, send = ([], network.client.send_task)
+    calls, run = ([], network.group.run)
 
-    async def capture(url, task, **kwargs):
-        calls.append(url)
-        return await send(url, task, **kwargs)
+    def capture(agent, task, **kwargs):
+        calls.append(agent.card.url)
+        return run(agent, task, **kwargs)
 
-    monkeypatch.setattr(network.client, "send_task", capture)
+    monkeypatch.setattr(network.group, "run", capture)
     response = client.post(
         "/api/v1/agents/ask",
         json={
@@ -90,7 +90,7 @@ def test_direct_ask_uses_agent_client_without_routing_through_sibyl(client, monk
     assert calls == [network.cards["analyst"].url]
 
 
-def test_sibyl_discovers_and_consults_multiple_agents_over_real_clients(client, monkeypatch):
+def test_sibyl_discovers_and_consults_multiple_agents_through_native_delegation(client, monkeypatch):
     model(client)
     script(
         monkeypatch,
@@ -103,13 +103,13 @@ def test_sibyl_discovers_and_consults_multiple_agents_over_real_clients(client, 
         ],
     )
     network = client.app.state.services.agents.network
-    calls, send = ([], network.client.send_task)
+    calls, run = ([], network.group.run)
 
-    async def capture(url, task, **kwargs):
-        calls.append(url)
-        return await send(url, task, **kwargs)
+    def capture(agent, task, **kwargs):
+        calls.append(agent.card.url)
+        return run(agent, task, **kwargs)
 
-    monkeypatch.setattr(network.client, "send_task", capture)
+    monkeypatch.setattr(network.group, "run", capture)
     response = client.post("/api/v1/sibyl/ask", json={"message": "Explain ETH and my strategies"})
     assert response.status_code == 200, response.text
     result = response.json()
@@ -374,7 +374,7 @@ def test_native_failed_specialist_retains_prior_completed_consultations(client, 
 def test_native_agent_call_is_sibyls_only_delegation_path(client, monkeypatch):
     model(client)
     network = client.app.state.services.agents.network
-    assert network.agents["sibyl"].tools == {}
+    assert set(network.agents["sibyl"].tools) == {"read_context_artifact"}
     assert network.cards["sibyl"].capabilities.delegation
     assert all(not network.cards[key].capabilities.delegation for key in ROLES)
     script(monkeypatch, [delegate("wiki", "RSI"), "Wiki explained RSI."])

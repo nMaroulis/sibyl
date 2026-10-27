@@ -24,6 +24,8 @@ An embedding retriever, document corpus, or web search provider can be added as 
 
 Compose `Agent` with an explicit role and typed tool functions, using the existing domain services. Do not expose credentials, arbitrary shell execution, withdrawal APIs, or exchange order submission to a general-purpose research agent. If adding operational agents later, design authorization and auditable action contracts before granting mutation capabilities.
 
+ProtoLink reads a function's docstring as its tool description. Explain the tool's purpose, useful inputs, selection defaults and returned evidence; keep cache/transport mechanics in implementation documentation. Add or update the specialist's typed page-help topic in `agents/guides/` whenever a module workflow changes, with exact UI labels, a valid in-app link and current limitations. Help should not read accounts just to explain navigation. See [agent contracts and examples](agents.md#help-and-tool-description-contracts).
+
 ## UI
 
 Add a typed response to `lib/types.ts`, use the shared API client, and include a loading state, actionable error state, and empty state. Prefer reusable panels and form controls. Preserve source labels, keyboard access, reduced-motion behavior, and mobile layouts.

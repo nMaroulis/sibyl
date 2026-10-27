@@ -25,7 +25,8 @@ class ExchangeTrading:
 
     Native execution is restricted to the reviewed provider allowlist and the
     server execution flag. Demo limit orders share the explicit Demo wallet.
-    Agents cannot call this service. Approved strategies use the same durable intents.
+    Agent tools may read retained monitor/reconciliation evidence, but never expose
+    submission, cancellation or tracking controls. Approved strategies use the same durable intents.
     """
 
     def __init__(self, market: Market, store: Store):

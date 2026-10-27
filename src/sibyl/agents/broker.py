@@ -1,16 +1,29 @@
-"""Broker: its prompt, read-only tools and native ProtoLink Agent."""
+"""Broker explains Trade and Strategies using native ProtoLink tools.
 
-from protolink import Agent
+Recorded-order/strategy tools supply evidence; trade_help and strategy_help
+retrieve focused UI instructions. No tool grants order or strategy control.
+"""
 
-from sibyl.agents.common import COMMON_PROMPT, Services, background_tool, selected
+from typing import Literal
+
+from protolink import Agent, ToolRejectedError
+
+from sibyl.agents.common import COMMON_PROMPT, Services, selected
+from sibyl.agents.guides import read_guide
+from sibyl.agents.guides.broker import STRATEGIES, TRADE, StrategyTopic, TradeTopic
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.models import BacktestRequest
 from sibyl.strategies import CATALOG
 
 NAME = "Broker"
 TAGLINE = "Build with discipline"
-DESCRIPTION = "Explain strategy rules, simulation assumptions, and execution risk. Never execute trades."
+DESCRIPTION = "Explain Trade and Strategies: recorded orders/fills, backtests, monitored runs, execution support and practical page help."
 SYSTEM_PROMPT = (
+    "For how-to questions choose trade_help or strategy_help with the matching topic; "
+    "instructions alone do not require reading account/order records. Use recorded_orders for "
+    "the user's saved order status and reconciliation evidence. Its order_id is Sibyl's record ID, "
+    "not a venue ID; ask or list records if unclear. This tool reads retained observations, not current "
+    "exchange state. Never suggest an uncertain order is safe to resubmit. "
     "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. Call "
     "strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
     "supported rules and assumptions. Call backtest_report for a saved or selected historical run: "
@@ -61,9 +74,12 @@ def create_agent(services: Services, **runtime) -> Agent:
     def strategy_context(
         symbol: str | None = None, parameters: dict | None = None, job_id: str | None = None
     ) -> dict:
-        """Read validated simulation selections, paper jobs, recent fills, and backtests.
+        """Inspect a strategy run's parameters, status, observations, events and execution evidence.
 
-        This tool only describes parameters and recorded results. It never starts or executes a strategy.
+        Use a known job_id or omit it to follow the selected monitor. Without a selected
+        job, returns the configured simulation parameters, strategy catalog and recent
+        saved experiments/jobs. symbol is an exact BASE/QUOTE pair; parameters contains
+        the requested backtest settings. This is evidence, not an instruction to run a strategy.
         """
         job_id = selected("job_id", job_id, "")
         symbol = selected("symbol", symbol, "BTC/USDT")
@@ -92,6 +108,9 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "account",
                         "exchange",
                         "environment",
+                        "mode",
+                        "sandbox",
+                        "read_only",
                         "risk",
                         "risk_locked",
                         "stop_cancellation",
@@ -123,7 +142,12 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def strategy_alerts(job_id: str | None = None) -> dict:
-        """Read this run's saved alert rules and recent notifications without evaluating them."""
+        """Explain a strategy's saved notification rules and its latest journal-related notices.
+
+        Use a known job_id or the selected run; omit both for all strategy rules/notices.
+        Returns at most ten notices and the Strategy alerts link. Notifications do not
+        prove an order was canceled or a position closed.
+        """
         job_id = selected("job_id", job_id, "")
         if job_id:
             strategies.journal.job(job_id)
@@ -148,11 +172,19 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def execution_controls() -> dict:
-        """Read the durable global strategy halt and control history without changing it."""
+        """Check whether automatic strategy submissions are halted and inspect the control history.
+
+        Use for the workspace's actual halt state; strategy_help(topic='halt') explains
+        how the user can operate it. Halt does not liquidate holdings or cancel all orders.
+        """
         return {**strategies.execution.controls.state(), "url": "/strategies?view=monitor"}
 
     def strategy_guide() -> dict:
-        """List implemented strategies and the simulator's execution assumptions."""
+        """List implemented strategy rules and explain backtest, paper and exchange execution methods.
+
+        Use to compare supported algorithms or understand fill/cost assumptions and
+        validation methodology. strategy_help provides practical workspace steps.
+        """
         return {
             "catalog": CATALOG,
             "execution": "Paper runs use isolated virtual capital. Approved exchange runs use account-bound price-capped GTC limits and native fills; both backend execution flags are required. This agent cannot approve, start or submit orders.",
@@ -162,7 +194,11 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def backtest_report(run_id: str = "") -> dict:
-        """Read a retained experiment and ten round trips without rerunning or fetching prices."""
+        """Inspect a saved backtest's metrics, costs, input provenance and ten recent round trips.
+
+        Supply a known run_id or omit it for the selected experiment. Use to explain
+        actual historical simulation results; strategy_help covers running or rerunning one.
+        """
         import json
 
         run_id = selected("backtest_id", run_id or None, "")
@@ -183,7 +219,12 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def exchange_support(exchange: str = "binance") -> dict:
-        """Read manual spot trading support and gaps; never inspect keys or execute an order."""
+        """Check implemented spot-trading capabilities and gaps for an exchange catalog ID.
+
+        Use exchange='binance', 'kraken' or another supported ID. Returns the provider's
+        actual support matrix, permission guidance and whether manual execution is
+        enabled on this server. Support does not verify the user's account credentials.
+        """
         provider = next((item for item in provider_catalog()["items"] if item["id"] == exchange), None)
         return {
             "provider": provider,
@@ -194,7 +235,12 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def validation_report(validation_id: str = "", window: int = 1) -> dict:
-        """Read retained walk-forward evidence without running a search or accessing an exchange."""
+        """Inspect a saved validation study's training rankings and independent test-window evidence.
+
+        Supply a known validation_id or omit it for the selected study. window is the
+        one-based test-window number. Returns retained settings, comparisons, metrics
+        and up to ten round trips, rather than running a new parameter search.
+        """
         validation_id = selected("validation_id", validation_id or None, "")
         if not validation_id:
             return {"note": "Choose a saved walk-forward study first.", "url": "/strategies"}
@@ -229,24 +275,138 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def exit_readiness(job_id: str | None = None) -> dict:
-        """Read a selected exchange run's closing blockers; never prepare or submit an exit."""
+        """Explain why an exchange strategy position is or is not ready for a reviewed close.
+
+        Use a known job_id or the selected monitor. Returns retained position ownership,
+        reconciliation requirements and closing blockers; it does not approve a sell.
+        """
         job_id = selected("job_id", job_id, "")
         if not job_id:
             return {"ready": False, "reason": "Open a specific exchange strategy monitor first."}
         return strategies.execution.closing.context(job_id)
 
+    def recorded_orders(
+        account_id: str = "",
+        status: Literal["", "active", "terminal"] = "",
+        order_id: str = "",
+    ) -> dict:
+        """Inspect retained exchange/Demo order status, partial fills, fees and reconciliation gaps.
+
+        List up to ten submitted records, optionally filtered by account_id and active
+        or terminal status. To inspect one order and ten retained fills, pass its Sibyl
+        record order_id from this list (not the exchange's native order ID).
+        Returns observation dates, account/environment labels and evidence limitations.
+        These are saved observations; use Trade's Check exchange/Check executions for new checks.
+        """
+        execution = strategies.execution
+        if execution is None:
+            return {"items": [], "note": "Order monitoring is unavailable.", "url": "/trade?tab=executions"}
+        trading = execution.trading
+
+        def summary(order):
+            return {
+                **{
+                    key: order.get(key)
+                    for key in (
+                        "id",
+                        "exchange_order_id",
+                        "account",
+                        "exchange",
+                        "environment",
+                        "origin",
+                        "status",
+                        "filled",
+                        "remaining",
+                        "average",
+                        "cost",
+                        "created_at",
+                        "submitted_at",
+                        "refreshed_at",
+                        "tracking",
+                        "recovery",
+                        "cancel_state",
+                        "cancel_message",
+                        "cancel_requested_at",
+                        "message",
+                    )
+                },
+                "request": {
+                    key: order["request"].get(key)
+                    for key in (
+                        "connection_id",
+                        "symbol",
+                        "side",
+                        "quantity",
+                        "order_type",
+                        "limit_price",
+                    )
+                },
+            }
+
+        result = {
+            "url": "/trade?tab=executions",
+            "scope": "Retained order observations, not a fresh exchange check.",
+        }
+        if order_id:
+            try:
+                detail = trading.reconciliation.detail(order_id)
+            except LookupError as exc:
+                raise ToolRejectedError(
+                    "Unknown Sibyl order record ID. List recorded_orders first or ask the user to select a record."
+                ) from exc
+            if account_id and detail["order"]["request"]["connection_id"] != account_id:
+                raise ToolRejectedError(
+                    "The order does not belong to the selected account. Use that account's recorded order ID."
+                )
+            return {
+                **result,
+                "order": summary(detail["order"]),
+                "reconciliation": detail["reconciliation"],
+                "fills": detail["fills"][:10],
+                "has_more_fills": detail["has_more"] or len(detail["fills"]) > 10,
+                "evidence_fill_limit": 10,
+            }
+        monitor = trading.monitor(account_id=account_id, status=status, limit=10)
+        return {
+            **result,
+            "items": [{**summary(row), "reconciliation": row["reconciliation"]} for row in monitor["items"]],
+            "total": monitor["total"],
+            "has_more": monitor["has_more"],
+            "evidence_order_limit": 10,
+        }
+
+    def trade_help(topic: TradeTopic = "overview") -> dict:
+        """Explain Trade workflows: accounts, spot orders, account history, executions, tracking, cancellation or recovery.
+
+        Choose history for 'How can I see my account history?' or another topic for
+        concrete UI steps and a destination link. overview lists the available topics.
+        This tool provides instructions, not the user's order or balance evidence.
+        """
+        return read_guide(TRADE, topic)
+
+    def strategy_help(topic: StrategyTopic = "overview") -> dict:
+        """Explain Strategies workflows: backtesting, results/trade markers, validation, paper/exchange runs, monitoring, stopping or halt.
+
+        Choose a topic for concrete steps and relevant limitations, or overview for
+        orientation. Use the report/run tools when asked about a saved result's actual numbers.
+        """
+        return read_guide(STRATEGIES, topic)
+
     agent = Agent(
         name="sibyl-broker",
         description=DESCRIPTION,
         tools=[
-            background_tool(strategy_context),
-            background_tool(strategy_guide),
-            background_tool(execution_controls),
-            background_tool(strategy_alerts),
-            background_tool(exchange_support),
-            background_tool(backtest_report),
-            background_tool(validation_report),
-            background_tool(exit_readiness),
+            strategy_context,
+            strategy_guide,
+            execution_controls,
+            strategy_alerts,
+            exchange_support,
+            backtest_report,
+            validation_report,
+            exit_readiness,
+            recorded_orders,
+            trade_help,
+            strategy_help,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

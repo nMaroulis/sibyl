@@ -1,20 +1,26 @@
-"""Technician: connection status and practical help for every settings section."""
+"""Technician explains setup, supported connections and recorded diagnostics.
+
+ProtoLink exposes these typed functions and their docstrings directly. Guides
+provide instructions; status tools report saved metadata, not verified credentials.
+"""
 
 import json
+from typing import Literal
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT, Services, background_tool
+from sibyl.agents.common import COMMON_PROMPT, Services
 from sibyl.exchanges.catalog import CATALOG, exchange_spec
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.services.llm_settings import ModelSettings
 
 NAME = "Technician"
 TAGLINE = "Keep everything connected"
-DESCRIPTION = "Explain account connectivity, settings and read-only API permissions. Never request secrets."
+DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging and alerts; explain saved diagnostics."
 SYSTEM_PROMPT = (
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
-    "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace. For a particular "
+    "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace; "
+    "overview lists the available sections. For a particular "
     "exchange, call exchange_setup with its catalog ID, e.g. binance. Use connection_status only when "
     "actual saved setup matters. Give numbered, practical instructions and a settings link. Explain "
     "that users can connect multiple accounts and view combined or individual portfolios. No account is "
@@ -27,6 +33,14 @@ SYSTEM_PROMPT = (
 )
 
 GUIDES = {
+    "overview": {
+        "url": "/settings",
+        "steps": [
+            "Settings has Exchanges, AI models, News, Market data, Messaging and Workspace sections.",
+            "Choose a section for its setup instructions. Alerts and Strategies have dedicated workspaces and help here too.",
+            "Enter credentials only in the appropriate settings form, never in an assistant chat. Exchange/API keys are stored locally and encrypted on the Python backend machine.",
+        ],
+    },
     "strategies": {
         "url": "/strategies?view=monitor",
         "steps": [
@@ -78,7 +92,7 @@ GUIDES = {
     "messaging": {
         "url": "/settings?tab=messaging",
         "steps": [
-            "WhatsApp, Telegram, Discord, Slack, Signal and Email are planned ways to talk to Sibyl.",
+            "Messaging lets you talk to Sibyl through another app. Telegram is implemented; WhatsApp, Discord, Slack, Signal and Email are unavailable previews.",
             "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. Other channels remain unavailable previews.",
         ],
     },
@@ -111,7 +125,12 @@ def create_agent(services: Services, **runtime) -> Agent:
     """Define Technician's read-only diagnostic and setup tools."""
 
     def connection_status() -> dict:
-        """List saved account metadata, active flags and import status, without credentials or private reads."""
+        """Inspect configured accounts, active/Demo flags, model setup and history-import progress.
+
+        Use to understand the workspace's saved setup or missing configuration. This
+        metadata does not verify exchange connectivity or model-provider availability.
+        settings_guide and exchange_setup provide instructions without needing account details.
+        """
         return {
             "connections": [item.model_dump(mode="json") for item in services.store.connections()],
             "mode": services.settings.mode,
@@ -124,7 +143,11 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def connection_alerts() -> dict:
-        """Read saved connection-alert rules and the last ten transport notices; never probe, evaluate or change them."""
+        """Explain configured connection alerts and the last ten recorded read-failure/recovery notices.
+
+        Returns saved rules, observed transport notices and the Connections alerts link.
+        These observations do not establish continuous uptime or current credential validity.
+        """
         with services.store.db() as db:
             rows = db.execute(
                 "SELECT payload,created_at FROM alert_notifications "
@@ -140,14 +163,35 @@ def create_agent(services: Services, **runtime) -> Agent:
             "scope": "Recorded transport reads only; no continuous uptime, credential verification or external delivery.",
         }
 
-    def settings_guide(section: str = "exchanges") -> dict:
-        """Get actionable Sibyl setup instructions: exchanges, models, news, market, messaging, alerts, strategies or workspace."""
-        if section not in GUIDES:
-            return {"sections": list(GUIDES), "note": "Choose a listed settings section."}
-        return {"section": section, **GUIDES[section]}
+    def settings_guide(
+        section: Literal[
+            "overview",
+            "exchanges",
+            "models",
+            "news",
+            "market",
+            "messaging",
+            "alerts",
+            "strategies",
+            "workspace",
+        ] = "overview",
+    ) -> dict:
+        """Get step-by-step setup instructions and links for a Sibyl settings or operations section.
+
+        Choose models for API/Local providers, per-agent models or Ollama; exchanges
+        for account activation; news/market for data sources; messaging for Telegram;
+        alerts or strategies for their controls; workspace for local access settings.
+        overview lists the settings sections. This tool explains setup without changing it.
+        """
+        return {"section": section, **GUIDES[section], "sections": list(GUIDES)}
 
     def exchange_setup(exchange: str = "binance") -> dict:
-        """Read supported credential fields and practical connection steps for a catalog exchange ID."""
+        """Explain how to connect a particular exchange and which features Sibyl implements for it.
+
+        Supply the catalog exchange ID, such as binance, kraken, okx or demo. Returns
+        required form fields, the implemented support matrix, local key-storage details,
+        environment labels and steps to connect/activate accounts. Never paste credentials in chat.
+        """
         if exchange not in CATALOG:
             return {"error": "Choose a supported exchange.", "exchanges": list(CATALOG)}
         spec = exchange_spec(exchange)
@@ -170,10 +214,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         name="sibyl-technician",
         description=DESCRIPTION,
         tools=[
-            background_tool(connection_status),
-            background_tool(connection_alerts),
-            background_tool(settings_guide),
-            background_tool(exchange_setup),
+            connection_status,
+            connection_alerts,
+            settings_guide,
+            exchange_setup,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

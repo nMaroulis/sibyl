@@ -40,7 +40,7 @@ FastAPI routes + validated request models
 | `services/llm_settings.py`                | Encrypted provider profiles, active selection, request-scoped adapter configuration                 |
 | `news/`                                   | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment        |
 | `agents/<module>.py`                      | Native Agent declarations, module prompts and typed read-only tools                                 |
-| `agents/registry.py`, `agents/network.py` | Wiring, native lifecycle, client tasks and request persistence                                      |
+| `agents/registry.py`, `agents/network.py` | Wiring, AgentGroup lifecycle, native run handles and UI request persistence                                      |
 | `api/app.py`                              | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA         |
 | `api/routes.py`                           | Thin versioned HTTP routes                                                                          |
 
@@ -73,3 +73,5 @@ Strategy monitoring components are split into the run list, detail workspace, de
 Model profiles store encrypted JSON in `model_profiles`; the active ID is committed in the same transaction in `workspace_settings`. The model settings service owns key resolution and sanitized metadata. Provider keys are constructor arguments or authorization headers only, never process-wide environment mutations. Registry requests resolve a configuration once before fetching evidence and keep it throughout inference, including its response provider label.
 
 `services/crypto_library.py` owns the fixed asset selection, normalized CoinPaprika/Wikipedia reads, bounded HTTP responses, per-source single-flight locks, and atomic public JSON cache files. Research creates it without fetching data on startup. Only the requested asset is fetched; trading/demo settings do not alter public educational sources. Wiki's native tool can resolve a validated `crypto_id` to the same profile.
+
+Native ProtoLink 0.8.3 owns threaded tool/provider execution, private `request_context`, owned local delegation, SQLite sessions and correlated run reports. `agents/presentation.py` formats its events/evidence for the existing UI. See [runtime contracts](agents.md).

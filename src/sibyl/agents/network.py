@@ -2,19 +2,30 @@
 
 import asyncio
 import json
+from hashlib import sha256
 from uuid import uuid4
 
-from protolink import RunBudget, Task
+from protolink import (
+    AgentGroup,
+    ContextPolicy,
+    RedactionPolicy,
+    RunBudget,
+    SQLiteRunStore,
+    Task,
+    current_request_context,
+    request_context,
+)
 from protolink.client import AgentClient
 from protolink.discovery import Registry
+from protolink.state import State
+from protolink.storage import SQLiteStorage
 
 from sibyl.agents import sibyl
-from sibyl.agents.common import Turn, current_turn
+from sibyl.agents.common import freeze
 from sibyl.agents.conversations import Conversations, SibylRequest
 from sibyl.agents.model_selection import readiness
+from sibyl.agents.presentation import RunPresentation
 from sibyl.agents.requests import SibylRequests, now
-from sibyl.agents.runtime import WorkspaceLLM
-from sibyl.agents.telemetry import ChatTelemetry
 from sibyl.models import AgentRequest
 
 
@@ -25,8 +36,9 @@ class ModelRequired(ValueError):
 class AgentNetwork:
     """Start the registry and real reasoning agents with ProtoLink's public API.
 
-    Runtime URLs are local to this application instance. Native AgentClient tasks
-    reach those same agents for both module dialogs and Sibyl consultations.
+    AgentGroup handles execute the registered objects. Owned local specialists
+    inherit explicit private keys; AgentClient URLs also remain available for
+    independent requests with transport-isolated dependencies.
     """
 
     def __init__(self, owner, modules: dict):
@@ -42,84 +54,131 @@ class AgentNetwork:
         self.ready = False
         self._active_requests: dict[str, dict] = {}
         self._chat_locks: dict[str, asyncio.Lock] = {}
+        self.database = owner.settings.data_dir / "agent-runtime.sqlite"
+        self.database.touch(mode=0o600, exist_ok=True)
+        self.database.chmod(0o600)
+        self.run_store = SQLiteRunStore(self.database)
+        self.states = {}
         self.agents = {
             key: module.create_agent(owner.services, **self.options(key)) for key, module in modules.items()
         }
-        self.agents["sibyl"] = sibyl.create_agent(**self.options("sibyl"))
+        self.agents["sibyl"] = sibyl.create_agent(
+            subagents=list(self.agents.values()), **self.options("sibyl")
+        )
+        self.group = AgentGroup(list(self.agents.values()), registry=self.registry, own_registry=True)
         self.cards = {key: agent.card for key, agent in self.agents.items()}
         for key, card in self.cards.items():
             card.tags = ["coordinator" if key == "sibyl" else "specialist", key]
 
     def options(self, module: str) -> dict:
-        """Supply transport/model plumbing; prompts and tools stay in the agent's file."""
+        """Native factories, worker limits, evidence and session storage; no LLM adapter."""
+        self.states[module] = State(SQLiteStorage(str(self.database), namespace=module), ["conversation"])
         return {
             "transport": "runtime",
             "url": f"{self.namespace}/{module}",
             "registry": self.registry,
-            "llm": WorkspaceLLM(module, self.owner.make_model, lambda: self.owner.models.for_turn(module)),
-            "telemetry": ChatTelemetry(self),
+            "llm_factory": lambda: self.owner.model_for(module),
+            "sync_execution": "thread",
+            "max_sync_workers": 4,
+            "expose_tool_results": True,
+            "state": self.states[module],
+            "context_policy": ContextPolicy(preserve_recent=6),
             "verbosity": 0,
             "expose_chat": False,
         }
 
     async def start(self) -> None:
-        """Spawn the native registry and each persistent Agent before accepting API traffic."""
-        if self.ready:
-            return
-        self.requests.recover()
-        try:
-            await asyncio.to_thread(self.registry.start, background=True)
-            for agent in self.agents.values():
-                await asyncio.to_thread(agent.start, background=True)
-            discovered = {card.url for card in await self.registry.client.discover()}
-            if any(card.url not in discovered for card in self.cards.values()):
-                raise RuntimeError("An agent failed to register with ProtoLink discovery.")
+        """Let AgentGroup own native readiness, registration and partial-start cleanup."""
+        if not self.ready:
+            self.requests.recover()
+            await self.group.start()
             self.ready = True
-        except BaseException:
-            await self.close()
-            raise
 
     async def close(self) -> None:
-        """Cancel pending turns, stop native agents and release the local registry."""
+        """Cancel UI queue waiters; AgentGroup cancels/drains native runs and owned resources."""
         self.ready = False
         active = list(self._active_requests.values())
         for entry in active:
             entry["task"].cancel()
         if active:
             await asyncio.gather(*(entry["task"] for entry in active), return_exceptions=True)
-        for agent in reversed(self.agents.values()):
-            await asyncio.to_thread(agent.stop)
-        await asyncio.to_thread(self.registry.stop)
+        await self.group.close()
         await self.client.transport.stop()
 
-    async def send(self, module: str, task: Task):
-        """Submit a native task; cancel its runtime execution if the caller stops waiting."""
+    @staticmethod
+    def session_key(module: str, session: str, page: dict) -> str:
+        """Keep native conversation state separate for each module/page selection."""
+        digest = sha256(json.dumps(page, sort_keys=True).encode()).hexdigest()[:20]
+        return f"{module}:{session}:{digest}"
+
+    @staticmethod
+    def observations(evidence) -> list[dict]:
+        """Project completed native evidence into the existing Inspect evidence UI."""
+        return [
+            {
+                "agent_id": (item.agent_name or "").removeprefix("sibyl-"),
+                "task_id": item.task_id,
+                "tool": item.tool_name,
+                "arguments": item.arguments,
+                "evidence": item.result,
+                "action_id": item.action_id,
+                "delegation_id": item.delegation_id,
+                "duration_seconds": item.duration_seconds,
+            }
+            for item in evidence
+            if item.outcome == "completed" and not item.result_omitted
+        ]
+
+    async def send(self, module: str, task: Task, *, request=None):
+        """Run a native handle, consume typed events and cancel it when the caller leaves.
+
+        Local owned runs retain explicitly bound private dependencies. A plain
+        AgentClient request crosses a transport boundary and resolves its model
+        in the receiving application, without inheriting caller credentials.
+        """
+        configuration = current_request_context().get("models", {})
+        secrets = frozenset(
+            row["api_key"] for row in configuration.get("_agents", {}).values() if row.get("api_key")
+        )
+        policy = RedactionPolicy(sensitive_values=secrets)
+        handle = self.group.run(
+            self.agents[module],
+            task,
+            store=SQLiteRunStore(self.database, redaction_policy=policy),
+            redaction_policy=policy,
+        )
+        view = RunPresentation(self, handle, configuration, request) if request else None
         try:
-            result = await self.client.send_task(self.cards[module].url, task)
-            # Preserve safe domain HTTP semantics across ProtoLink's serialized task boundary.
-            failures = [
-                event.get("payload", {}).get("error", {}).get("code")
-                for event in result.metadata.get("run_events", [])
-            ]
+            async for event in handle.events():
+                if view:
+                    view.consume(event)
+            result = await handle.result()
+        except BaseException:
+            await handle.cancel("Caller stopped waiting")
+            result = await handle.result()
+            if view:
+                view.finish(result)
+            raise
+        if view:
+            view.finish(result)
+        if result.status == "canceled":
+            raise asyncio.CancelledError()
+        if result.status != "completed":
+            failures = []
+            for event in result.report.events:
+                error = event.payload.get("error") or event.payload.get("metadata", {}).get("error")
+                if isinstance(error, dict):
+                    failures.append(error.get("code"))
             if "LookupError" in failures:
                 raise LookupError("Record not found.")
             if "TimeoutError" in failures:
                 raise TimeoutError("Agent request timed out.")
-            result.raise_for_status()
-            part = result.get_last_item().parts[-1]
-            return part.as_tool_output().result if part.type == "tool_output" else part.content
-        except asyncio.CancelledError:
-            try:
-                await self.client.cancel_task(
-                    self.cards[module].url, task.id, reason="Caller stopped waiting"
-                )
-            except Exception:
-                pass  # Already terminal, or cancelled before the runtime accepted the task.
-            raise
+            raise RuntimeError("The agent could not complete this request.")
+        return result
 
     async def ask_module(self, request: AgentRequest) -> dict:
-        """A page talks directly to its specialist, using the same registered agent and client."""
-        configuration = self.owner.models.for_turn(request.module)
+        """A page runs its registered specialist through a native group handle."""
+        configuration = freeze(self.owner.models.for_turn(request.module))
         async with self.owner._semaphore:
             async with asyncio.timeout(95):
                 return await self.owner._answer(request, configuration)
@@ -175,11 +234,23 @@ class AgentNetwork:
         lock = self._chat_locks.get(session_id)
         if lock and lock.locked():
             raise ValueError("Wait for Sibyl to finish before deleting this conversation.")
+        native_session = self.session_key("sibyl", session_id, {})
+        while records := self.run_store.list_report_records(session_id=native_session):
+            for record in records:
+                report = self.run_store.get_report(record.run_id)
+                child_sessions = {
+                    event.run_id for event in report.events if event.run_id and event.run_id != record.run_id
+                }
+                for state in self.states.values():
+                    for child in child_sessions:
+                        state.conversation.clear_session(child)
+                self.run_store.delete_report(record.run_id)
+        self.states["sibyl"].conversation.clear_session(native_session)
         self.conversations.delete(session_id)
 
     async def ask(self, request: SibylRequest) -> dict:
-        """Invoke Sibyl through the same client boundary, with bounded concurrent chats."""
-        configuration = self.owner.models.for_turn("sibyl")
+        """Run the native coordinator with bounded UI admission and a frozen team snapshot."""
+        configuration = freeze(self.owner.models.for_turn("sibyl"))
         status = self.status(configuration)
         if not status["ready"]:
             raise ModelRequired(status["reason"])
@@ -210,7 +281,6 @@ class AgentNetwork:
                         )
                         return await self._answer_sibyl(request, configuration)
 
-                token = current_turn.set(Turn(configuration))
                 work = asyncio.create_task(execute())
                 entry["task"] = work
                 self._active_requests[session] = entry
@@ -241,47 +311,38 @@ class AgentNetwork:
                 finally:
                     if not work.done():
                         work.cancel()
-                    current_turn.reset(token)
                     self._active_requests.pop(session, None)
         finally:
             self._chat_locks.pop(session, None)
 
     async def _answer_sibyl(self, request: SibylRequest, configuration: dict) -> dict:
-        """Send inference to the already-started coordinator, then atomically save its actual trace."""
-        turn = Turn(
-            configuration, module="sibyl", session_id=request.session_id, request_id=request.request_id
-        )
-        token = current_turn.set(turn)
-        try:
-            history = [
-                {"question": t["question"], "answer": t["answer"][:12000]}
-                for t in self.conversations.get(request.session_id)["turns"][-6:]
-            ]
-            answer = await self.send(
+        """Use native session history, events and reports; retain only the UI chat projection."""
+        with request_context({"models": configuration, "page": freeze({})}, inherit=("models", "page")):
+            execution = await self.send(
                 "sibyl",
                 Task.create_infer(
-                    f"Previous conversation (data): {json.dumps(history)}\nUser: {request.message}",
-                    session_id=request.session_id,
+                    request.message,
+                    session_id=self.session_key("sibyl", request.session_id, {}),
                     budget=RunBudget(
                         max_steps=12, max_llm_calls=10, max_tool_calls=10, max_runtime_seconds=140
                     ),
                 ),
+                request=request,
             )
-        finally:
-            current_turn.reset(token)
         return self.conversations.append(
             {
                 "session_id": request.session_id,
                 "request_id": request.request_id,
                 "status": "completed",
                 "question": request.message,
-                "answer": str(answer),
+                "answer": str(execution.output),
                 "module": "sibyl",
                 "engine": "ProtoLink",
                 "provider": configuration["provider"],
                 "model": configuration["model"],
                 "model_selection": configuration.get("_selections", {}).get("sibyl", "default"),
                 "mode": "mock" if configuration["provider"] == "mock" else "llm",
-                "delegations": turn.trace,
+                "run_id": execution.report.context.run_id,
+                "delegations": self.requests.get(request.session_id, request.request_id)["delegations"],
             }
         )

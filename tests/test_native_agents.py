@@ -6,9 +6,8 @@ from uuid import uuid4
 
 import pytest
 from agent_helpers import coordinator_factory, delegate
-from protolink import Task, create_llm
+from protolink import Task, create_llm, current_request_context
 
-from sibyl.agents.common import current_turn
 from sibyl.agents.conversations import SibylRequest
 from sibyl.models import AgentRequest
 
@@ -35,12 +34,15 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
         "read_article",
         "news_sources",
         "fear_and_greed",
+        "page_help",
+        "read_context_artifact",
     }
     assert set(owner.agents["technician"].tools) == {
         "connection_status",
         "connection_alerts",
         "settings_guide",
         "exchange_setup",
+        "read_context_artifact",
     }
     use_model(client, monkeypatch, ["A general explanation without account reads."])
     monkeypatch.setattr(
@@ -282,8 +284,8 @@ def test_concurrent_requests_to_same_agent_keep_history_and_page_defaults_isolat
     barrier = threading.Barrier(2)
 
     def factory(*args, **kwargs):
-        turn = current_turn.get()
-        other = "SOL/USDT" if turn.context["symbol"] == "ETH/USDT" else "ETH/USDT"
+        page = current_request_context()["page"]
+        other = "SOL/USDT" if page["symbol"] == "ETH/USDT" else "ETH/USDT"
         steps = 0
 
         def respond(history, prompt):
@@ -293,8 +295,8 @@ def test_concurrent_requests_to_same_agent_keep_history_and_page_defaults_isolat
             if steps == 1:
                 barrier.wait(timeout=3)
                 return action("market_analysis")
-            assert turn.context["symbol"] in json.dumps(history.messages)
-            return f"Observed {turn.context['symbol']} using its own selection."
+            assert page["symbol"] in json.dumps(history.messages)
+            return f"Observed {page['symbol']} using its own selection."
 
         return create_llm("mock", response_callback=respond)
 
@@ -422,7 +424,7 @@ def test_sibyl_automatically_sees_new_registry_agent_and_calls_its_advertised_to
         response = client.post("/api/v1/sibyl/ask", json={"message": "Read the new specialist's fact"})
         assert response.status_code == 200, response.text
         assert "[MOCK ERROR]" not in response.text
-        assert seen and network.agents["sibyl"].tools == {}
+        assert seen and set(network.agents["sibyl"].tools) == {"read_context_artifact"}
         assert response.json()["delegations"][0]["evidence"] == {"fact": "native-registry-evidence"}
     finally:
         extra.stop()

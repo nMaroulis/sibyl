@@ -144,8 +144,9 @@ class ModelSettings:
     def for_turn(self, agent: str) -> dict:
         """Freeze all agent/provider choices before queueing a native inference request.
 
-        The private map travels only in ContextVar state, never task metadata,
-        prompts or serialized history. Delegated agents share this exact snapshot.
+        The caller freezes this map in ProtoLink's private request_context, never
+        task metadata, prompts or history. Owned local specialists inherit it;
+        private dependencies never cross transport boundaries.
         """
         with self._lock:
             active, default_model, profiles, assignments = self.store.model_snapshot()

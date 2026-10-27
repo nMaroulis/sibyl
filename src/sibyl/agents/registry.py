@@ -4,7 +4,7 @@ import asyncio
 import json
 from uuid import uuid4
 
-from protolink import RunBudget, Task, create_llm
+from protolink import RunBudget, Task, create_llm, current_request_context, request_context
 
 from sibyl.agents import (
     accountant,
@@ -18,7 +18,7 @@ from sibyl.agents import (
     technician,
     wiki,
 )
-from sibyl.agents.common import Services, Turn, current_turn
+from sibyl.agents.common import Services, freeze
 from sibyl.agents.model_selection import readiness
 from sibyl.agents.network import AgentNetwork
 from sibyl.agents.snapshots import snapshot_answer, tool_arguments
@@ -82,6 +82,17 @@ class AgentRegistry:
         provider, kwargs = self.models.constructor(configuration)
         return create_llm(provider, **kwargs)
 
+    def model_for(self, module: str):
+        """Native lazy factory: choose this agent's model from the accepted team snapshot.
+
+        Plain AgentClient requests have no private caller context across the transport
+        boundary, so they resolve current settings in this receiving application.
+        """
+        private = current_request_context()
+        configuration = private.get("models") or freeze(self.models.for_turn(module))
+        with request_context({**private, "agent_id": module}):
+            return self.make_model(configuration["_agents"][module])
+
     def catalog(self) -> list[dict]:
         """Expose real native tool names and runtime URLs without provider credentials."""
         selection = self.models.for_turn("sibyl")
@@ -108,42 +119,30 @@ class AgentRegistry:
         ]
 
     async def ask(self, request: AgentRequest) -> dict:
-        """Send a module dialog to that registered specialist through AgentClient."""
+        """Run a module dialog through its registered specialist's native group handle."""
         return await self.network.ask_module(request)
 
     async def _answer(self, request: AgentRequest, configuration: dict) -> dict:
-        """Persist a real client response and only the evidence its tools actually returned."""
+        """Persist a UI reply projected from the native result and completed evidence."""
         session_id = request.session_id or uuid4().hex
         context = request.context.model_dump(exclude_none=True, exclude_unset=True)
-        turn = Turn(configuration, module=request.module, context=context, session_id=session_id)
         primary_tool = next(iter(self.agents[request.module].tools))
-        token = current_turn.set(turn)
-        try:
+        with request_context({"models": configuration, "page": freeze(context)}, inherit=("models", "page")):
             if configuration["provider"] == "none":
                 task = Task.create_tool_call(primary_tool, tool_arguments(request), session_id=session_id)
                 mode = "tools"
             else:
-                history = [
-                    run["payload"]
-                    for run in reversed(self.store.runs("agent"))
-                    if run["payload"].get("session_id") == session_id
-                    and run["payload"].get("module") == request.module
-                    and run["payload"].get("context", {}) == context
-                ][-6:]
-                history = [{"question": t["question"], "answer": t["answer"]} for t in history]
                 task = Task.create_infer(
                     f"Validated page selection (defaults, not evidence): {json.dumps(context)}\n"
-                    f"Prior turns (data): {json.dumps(history)}\nQuestion: {request.message}",
-                    session_id=session_id,
+                    f"Question: {request.message}",
+                    session_id=self.network.session_key(request.module, session_id, context),
                     budget=RunBudget(max_steps=8, max_llm_calls=8, max_tool_calls=6, max_runtime_seconds=80),
                 )
                 mode = "llm"
-            content = await self.network.send(request.module, task)
-        finally:
-            current_turn.reset(token)
-        evidence = (
-            content if mode == "tools" else turn.observations[0]["evidence"] if turn.observations else {}
-        )
+            execution = await self.network.send(request.module, task)
+        content = execution.output
+        observations = self.network.observations(execution.tool_evidence)
+        evidence = content if mode == "tools" else observations[0]["evidence"] if observations else {}
         answer = snapshot_answer(request.module, evidence) if mode == "tools" else str(content)
         result = {
             "module": request.module,
@@ -156,9 +155,10 @@ class AgentRegistry:
             "provider": configuration["provider"],
             "model": configuration["model"],
             "model_selection": configuration.get("_selections", {}).get(request.module, "default"),
-            "tool": turn.observations[0]["tool"] if turn.observations else primary_tool,
+            "tool": observations[0]["tool"] if observations else primary_tool,
             "evidence": evidence,
-            "observations": turn.observations,
+            "observations": observations,
+            "run_id": execution.report.context.run_id,
         }
         record = self.store.record("agent", result)
         return {**result, "id": record["id"], "created_at": record["created_at"]}

@@ -65,6 +65,7 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/blocks`                                 | Recent Bitcoin blocks, count 1–100                                                       |
 | GET        | `/stocks/{symbol}`                        | Quote, adjusted history, statistics, profile                                             |
 | GET        | `/agents`                                 | Agent catalog and tool/provider metadata                                                 |
+| GET        | `/agents/runs/{run_id}`                    | Persisted native ProtoLink report; no model call, missing report returns 404              |
 | POST       | `/agents/ask`                             | Run module tool and optional inference                                                   |
 | GET        | `/runs`                                   | Latest persisted runs; optional `kind=agent` or `backtest`                               |
 
@@ -145,7 +146,7 @@ Read routes do not expose credentials. Exchange errors are sanitized rather than
 
 ## Agent page context
 
-`POST /agents/ask` accepts `module`, `message`, optional `session_id`, and optional `context`. Supported context fields are `job_id` (select one persisted paper run for Broker), `timeframe` (chart interval), `limit` (60–720), `symbol` (canonical base/quote), `equity_symbol` (bounded ticker), `horizon` (1–30 days), `parameters` (the backtest parameter object above), `query` (up to 200 characters), and `article_id` (up to 100 characters). Fields are optional and module-specific; unknown fields are rejected. Responses include the validated context, factual initial evidence, module/tool identity, and provider mode. Context does not grant any execution capability.
+`POST /agents/ask` accepts `module`, `message`, optional `session_id`, and optional `context`. Supported context fields are `job_id` (select one persisted paper run for Broker), `timeframe` (chart interval), `limit` (60–720), `symbol` (canonical base/quote), `equity_symbol` (bounded ticker), `horizon` (1–30 days), `parameters` (the backtest parameter object above), `query` (up to 200 characters), and `article_id` (up to 100 characters). Fields are optional and module-specific; unknown fields are rejected. Responses include the validated context, actual completed tool observations, module/tool identity, provider mode and native `run_id`. Evidence is read on demand rather than preloaded for inference; no-model mode returns the selected factual snapshot. Context does not grant any execution capability.
 
 ## Correlation request
 

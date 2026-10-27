@@ -1132,6 +1132,16 @@ async def ask_agent(body: AgentRequest, s: S):
         ) from exc
 
 
+@router.get("/agents/runs/{run_id}", tags=["Oracle"])
+def agent_run_report(run_id: str, s: S, response: Response):
+    """Read a persisted native ProtoLink report without invoking an agent or provider."""
+    report = s.agents.network.run_store.get_report(run_id)
+    if report is None:
+        raise LookupError("Agent run report not found.")
+    response.headers["Cache-Control"] = "no-store"
+    return report.to_dict()
+
+
 @router.get("/runs", tags=["System"])
 def runs(s: S, kind: Literal["agent", "backtest"] | None = None):
     """Inspect the 50 latest persisted agent runs or historical backtests."""

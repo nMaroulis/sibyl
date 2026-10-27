@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — October 24, 2026
+## Audited snapshot — October 27, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -138,10 +138,13 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 
 ### 7. Sibyl and ProtoLink workflows — partial
 
-Sibyl and the ten specialists start as native ProtoLink Agents with `.start()` and registry discovery. Each has its own file and prompt. ProtoLink automatically supplies discovered agents and handles native delegation for Sibyl; direct module requests use their specialist client. The agents have page context and read-only domain tools. They are request-driven assistants. Models choose evidence tools on demand. Reporter has cached news/article/source/index tools; Technician has setup guides and provider-specific instructions; other specialists include relevant method and capability help. Agents inherit a workspace model default or use an explicit per-agent provider/model override. Each request freezes the whole team’s configuration; profiles retain shared encrypted provider keys/endpoints.
+Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with registry discovery. Each has its own file and prompt. ProtoLink automatically supplies discovered agents and handles native delegation for Sibyl; module requests use native group handles for their registered specialist; owned local consultations inherit explicit private context. The agents have page context and read-only domain tools. They are request-driven assistants. Models choose evidence tools on demand. Every specialist has topic-based page help; Broker can also inspect retained order/fill reconciliation evidence. Tool descriptions explain purpose, arguments and returned information. Agents inherit a workspace model default or use an explicit per-agent provider/model override. Each request freezes the whole team’s configuration; profiles retain shared encrypted provider keys/endpoints.
 
+- [x] Adopt ProtoLink 0.8.3 native thread execution, lazy model factories, private request context, group lifecycle, SQLite conversations and correlated report/evidence APIs. Remove application tool wrappers, LLM adapter and telemetry reconstruction; keep UI projections only.
 - [x] Split each agent into its own native declaration with prompt and typed tools; remove consult gateways and per-request Agent construction.
 - [x] Add on-demand evidence tools, cached Reporter reads and practical Technician setup guides.
+- [x] Review model-facing tool docstrings; add typed, focused help/FAQ tools for every specialist, including Trade history, backtesting, chart controls and source setup. Keep instructions separate from observations and update guides with module changes.
+- [x] Let Broker inspect bounded, filtered retained order/fill evidence, with native ProtoLink correction for invalid record selections and no provider refresh or mutation.
 - [ ] Expand investigations with deeper source-specific tools as domain features become available.
 - [x] Sibyl uses native ProtoLink discovery/delegation, with delegation disabled for specialists; saved chats include collaboration evidence.
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.

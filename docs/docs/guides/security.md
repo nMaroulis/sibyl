@@ -20,7 +20,7 @@ These checks do not establish separate users, roles, or account permissions. Eve
 
 All agent tools are read-only. They cannot retrieve exchange credentials or submit exchange orders. Model inference sends module observations and conversation context to the configured provider. Local model hosting keeps those model requests on your chosen host; hosted providers process them according to their own terms.
 
-Agent history can contain portfolio values and personal messages. It is persisted in the local database and is not field-encrypted. Backtests, paper activity, and order intents also persist. Protect and back up the entire workspace accordingly.
+Agent history and native execution reports can contain portfolio values, messages, tool returns and internal action JSON. UI records live in the local database; ProtoLink histories/reports live in `agent-runtime.sqlite`. These records are not field-encrypted. Private model settings never enter task metadata; native reports additionally mask known provider keys. Backtests, paper activity, and order intents also persist. Protect and back up the entire workspace accordingly.
 
 ## Browser privacy
 

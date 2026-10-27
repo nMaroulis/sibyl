@@ -1,16 +1,26 @@
-"""Analyst: its prompt, read-only tools and native ProtoLink Agent."""
+"""Analyst combines computed market evidence with practical Markets guidance.
+
+ProtoLink derives tool descriptions and argument schemas from these functions;
+page instructions are retrieved separately from prices and statistical evidence.
+"""
+
+from typing import Annotated
 
 from protolink import Agent
+from pydantic import Field
 
-from sibyl.agents.common import COMMON_PROMPT, Services, background_tool, selected
+from sibyl.agents.common import COMMON_PROMPT, Services, selected
+from sibyl.agents.guides import read_guide
+from sibyl.agents.guides.analyst import GUIDES, Topic
 from sibyl.services.analytics import analyze
 from sibyl.services.market import TIMEFRAMES
 
 NAME = "Analyst"
 TAGLINE = "Find the signal"
-DESCRIPTION = "Interpret technical indicators and correlations without overstating predictive power."
+DESCRIPTION = "Interpret market prices, technical statistics and directional scores; explain Markets controls and indicator limitations."
 SYSTEM_PROMPT = (
-    "Interpret market prices, trend, momentum, drawdowns, volatility, volume, levels and correlations. Call market_analysis for "
+    "Use page_help for Markets navigation, chart controls, source/pair selection, watchlists and history. "
+    "Interpret market prices, trend, momentum, drawdowns, volatility, volume and levels. Call market_analysis for "
     "the requested symbol, timeframe and source. An omitted selection uses the current page; a "
     "different coin named by the user requires its explicit BASE/QUOTE symbol. Explain indicator "
     "limitations with analysis_help. market_analysis includes statistics and a technical-bias score with weighted votes. Explain the score as bullish/bearish direction, never a buy/sell recommendation, investment quality, safety or probability of profit. Report source, timeframe, actual sample, gaps, stale data and missing inputs. Statistics use the latest contiguous segment and do not follow browser chart zoom. Never present technical indicators as certain forecasts. "
@@ -24,10 +34,18 @@ def create_agent(services: Services, **runtime) -> Agent:
     def market_analysis(
         symbol: str | None = None,
         timeframe: str | None = None,
-        limit: int | None = None,
+        limit: Annotated[int | None, Field(ge=60, le=720)] = None,
         source: str | None = None,
     ) -> dict:
-        """Read exact page-selected quotes or indicators from one frozen source."""
+        """Analyze a spot market's price, trend, momentum, volatility, risk, volume and technical bias.
+
+        Use for questions about actual market conditions. Omitted arguments follow the
+        selected pair, timeframe, observation count and source on Markets; otherwise
+        defaults are BTC/USDT, 1d and 180 candles. Specify an exact BASE/QUOTE symbol
+        when the user asks for another market. Returns calculated statistics, score votes,
+        sample coverage and source labels; quotes-only providers return a quote instead.
+        Chart zoom does not change this calculation's sample.
+        """
         symbol = selected("symbol", symbol, "BTC/USDT")
         timeframe = selected("timeframe", timeframe, "1d")
         limit = selected("limit", limit, 180)
@@ -53,7 +71,11 @@ def create_agent(services: Services, **runtime) -> Agent:
             }
 
     def analysis_help() -> dict:
-        """Explain implemented indicators, source selection and their limits."""
+        """Explain the available technical indicators and the directional score's weighting and limits.
+
+        Use for definitions or methodology, rather than current market values. Includes
+        the statistics-methodology link; page_help covers chart and source controls.
+        """
         return {
             "indicators": [
                 "SMA 20/50/200 and EMA 9/21",
@@ -77,10 +99,18 @@ def create_agent(services: Services, **runtime) -> Agent:
             "note": "Indicators describe past observations, not guaranteed future returns. Quotes-only sources cannot supply candle indicators.",
         }
 
+    def page_help(topic: Topic = "overview") -> dict:
+        """Explain Markets controls: sources, any supported pair, watchlist, chart zoom, statistics, correlations or history.
+
+        Choose a topic for practical steps and a destination link. Use overview for
+        orientation; market_analysis provides actual quotes and computed statistics.
+        """
+        return read_guide(GUIDES, topic)
+
     agent = Agent(
         name="sibyl-analyst",
         description=DESCRIPTION,
-        tools=[background_tool(market_analysis), background_tool(analysis_help)],
+        tools=[market_analysis, analysis_help, page_help],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

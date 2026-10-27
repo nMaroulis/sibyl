@@ -1,15 +1,22 @@
-"""Accountant: its prompt, read-only tools and native ProtoLink Agent."""
+"""Accountant explains holdings, retained accounting evidence and Account workflows.
+
+Typed evidence tools use existing accounting services. The separate page_help
+tool retrieves user instructions without accessing funds or changing records.
+"""
 
 import json
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT, Services, background_tool, page_context, selected
+from sibyl.agents.common import COMMON_PROMPT, Services, page_context, selected
+from sibyl.agents.guides import read_guide
+from sibyl.agents.guides.accountant import GUIDES, Topic
 
 NAME = "Accountant"
 TAGLINE = "Know what you own"
-DESCRIPTION = "Explain allocations, concentration, and the difference between paper and connected funds."
+DESCRIPTION = "Explain account holdings, valuation, retained fills, FIFO performance, funding and transfers; guide Account workflows."
 SYSTEM_PROMPT = (
+    "For how-to or navigation questions call page_help; instructions do not require reading balances. "
     "Read holdings and accounting reports through accountant_snapshot. Page-selected funding, "
     "performance and transfer reports are fixed selections; do not switch to balances or another view. "
     "Ask for missing account or market details. Value holdings in the supplied currency using the "
@@ -49,7 +56,12 @@ def create_agent(services: Services, **runtime) -> Agent:
         return {key: value for key, value in result.items() if key != "history"}
 
     def risk_alerts(rule_id: str = "") -> dict:
-        """Read saved risk rules, the last ten notices and optional retained evidence; never check balances or change a watch."""
+        """Inspect account-risk rules and recent notices to explain what a saved watch observed.
+
+        Supply a known rule_id for its retained valuation evidence and matching notices;
+        omit it to list rules and the latest ten notices. This is recorded alert evidence,
+        not a current account valuation or a newly created watch.
+        """
         with services.store.db() as db:
             rows = db.execute(
                 "SELECT payload,created_at FROM alert_notifications "
@@ -68,7 +80,13 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:
-        """Read ten retained spot fills and saved import/retention evidence; never queue reads."""
+        """Inspect imported spot fills, fees and history-import coverage for an account or market.
+
+        Filter by account_id and an exact symbol such as ETH/USDT, or omit either for
+        a broader selection. Returns up to ten fills plus import progress and provider
+        retention limits. A selected accounting report keeps its own report scope.
+        Use page_help(topic='history') for instructions on starting an import.
+        """
         if any(page_context().get(view) for view in ("transfer_view", "funding_view", "performance_view")):
             return accountant_snapshot()
         sync = services.account_sync
@@ -107,7 +125,15 @@ def create_agent(services: Services, **runtime) -> Agent:
         kind: str = "",
         status: str = "",
     ) -> dict:
-        """Read portfolio evidence or local market FIFO; never fetch private balances for FIFO."""
+        """Explain the selected Account holdings or retained accounting report from its evidence.
+
+        Defaults to the page's report and filters. Holdings use scope='all', an exchange
+        scope or account scope. For explicit report requests choose performance_view,
+        funding_view or transfer_view with account_id, exact symbol or asset and environment.
+        Returns valuation coverage or retained FIFO/funding/transfer evidence and limitations.
+        Selected report/example views cannot be switched to balances or another report.
+        example and the example variants are only for explicitly requested illustrative data.
+        """
         selection = page_context()
         # Offline report selections cannot turn into private balance reads, even if a model asks.
         if selection.get("transfer_view"):
@@ -235,13 +261,22 @@ def create_agent(services: Services, **runtime) -> Agent:
             "evidence_lot_limit": 5,
         }
 
+    def page_help(topic: Topic = "overview") -> dict:
+        """Explain Account workflows: combined accounts, valuation, history, FIFO, funding, transfers or risk alerts.
+
+        Choose a topic for concrete UI steps, limitations and a destination link.
+        Use overview for orientation; use the evidence tools for the user's actual figures.
+        """
+        return read_guide(GUIDES, topic)
+
     agent = Agent(
         name="sibyl-accountant",
         description=DESCRIPTION,
         tools=[
-            background_tool(accountant_snapshot),
-            background_tool(account_history),
-            background_tool(risk_alerts),
+            accountant_snapshot,
+            account_history,
+            risk_alerts,
+            page_help,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

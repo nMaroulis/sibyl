@@ -1,6 +1,6 @@
 # Module agents
 
-Each workspace module has its own embedded [ProtoLink](https://github.com/nMaroulis/protolink) agent. Each specialist has its own role, instructions, and native read-only tools. All agents start with the app and register with the in-process ProtoLink registry. Module Ask requests reach their specialist directly through a ProtoLink client. [Sibyl](./sibyl.md) is a separate lead agent that can discover and consult these specialists. There is no separate gRPC inference service or mandatory model download.
+Each workspace module has its own embedded [ProtoLink](https://github.com/nMaroulis/protolink) agent. Each specialist has its own role, instructions, and native read-only tools. All agents start with the app and register with the in-process ProtoLink registry. Module Ask requests reach their specialist directly through native ProtoLink run handles. [Sibyl](./sibyl.md) is a separate lead agent that can discover and consult these specialists. There is no separate gRPC inference service or mandatory model download.
 
 ## Ask without leaving the page
 
@@ -9,7 +9,7 @@ The gradient **Ask** button opens a floating dialog over the current module. Clo
 - **Account → Accountant:** allocation, concentration, and balances.
 - **Markets → Analyst:** the selected market, chart timeframe, and sample window.
 - **Strategies → Broker:** the currently selected strategy and validated simulation parameters. Asking does not run a backtest or start a paper strategy.
-- **Trading → Broker:** the selected market and execution assumptions.
+- **Trade → Broker:** the selected market, retained order/fill evidence, execution support and practical Trade instructions.
 - **Forecasting → Chronos:** the selected market and forecast horizon.
 - **News → Reporter:** the feed, or a specific story when opened from its card.
 - **Settings → Technician:** practical setup guides, provider-specific connection instructions and saved metadata, excluding credentials.
@@ -23,15 +23,21 @@ The **More → Agents** dock entry is a directory of specialists and their nativ
 
 ### Tool mode: works immediately
 
-`SIBYL_LLM_PROVIDER=none` sends a native tool task through `AgentClient` to the selected specialist. The response is a deterministic factual summary of actual tool output. It is labeled **Tool snapshot** and is not a language-model response.
+`SIBYL_LLM_PROVIDER=none` sends a native tool task through a native ProtoLink handle to the selected specialist. The response is a deterministic factual summary of actual tool output. It is labeled **Tool snapshot** and is not a language-model response.
 
 This mode does not interpret an arbitrary question like a model. The question selects glossary matches for Wiki; other specialists return the selected module context snapshot. Page selections supply the market, horizon, strategy parameters, or equity ticker. Without page context, Analyst and Chronos default to BTC/USDT and Equity Analyst defaults to AAPL.
 
 ### Model mode: conversational reasoning
 
-Select and save a model in **Settings → AI models** to let ProtoLink interpret the question, inspect module evidence, and call its read-only tool with supported arguments. The same agent stays available throughout the app lifetime; ProtoLink isolates each task’s model history. Evidence is read only when the agent calls a tool, rather than preloaded into its prompt. Up to six recent turns from the same session and module are supplied explicitly; model state is not shared across unrelated conversations.
+Select and save a model in **Settings → AI models** to let ProtoLink interpret the question, inspect module evidence, and call its read-only tool with supported arguments. The same agent stays available throughout the app lifetime; ProtoLink isolates each task’s model history. Evidence is read only when the agent calls a tool, rather than preloaded into its prompt. ProtoLink persists bounded conversation context for the same module, session and page selection; unrelated conversations stay separate. Recent turns are preserved within the model context budget.
 
 Each response shows the provider and actual completed tool observations. Expand **Inspect evidence** to see returned data; multiple tool reads can be inspected together. An answer without workspace reads says so. This is evidence, not hidden model reasoning. Reporter can read the existing news archive, article excerpts, publisher health and cached Fear & Greed index. Technician can explain how to connect Binance or configure any Settings tab without reading credentials.
+
+## Help with the page
+
+With a model configured, each specialist can retrieve focused instructions for its own page. Try “How can I see my account history?” with Broker, “How do I zoom into a chart?” with Analyst, or “Where can I read the full article?” with Reporter. Answers can include concrete steps and links to the correct workspace. Accountant covers valuation, FIFO, funding, transfer review and risk alerts; the Research and Forecasting specialists explain their controls, sources and current limitations. Technician covers all settings sections, including agent models, Ollama and Telegram.
+
+Instructions do not read your balances or claim a feature is configured. Ask for actual records when you need evidence: Broker can inspect up to ten retained orders or a selected order's fills and reconciliation gaps. These are saved observations; use **Check exchange** or **Check executions** in Trade for a new provider check. Assistants cannot place or cancel orders, start imports or change settings.
 
 ## Connect a provider
 

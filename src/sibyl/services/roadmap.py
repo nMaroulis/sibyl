@@ -107,7 +107,7 @@ AREAS = [
         "name": "ProtoLink workflows",
         "status": "partial",
         "priority": "later",
-        "working": "Ten native specialists with scoped evidence tools and native ProtoLink start/discovery/client tasks; Per-agent provider/model selection, encrypted shared profiles and frozen delegated request snapshots; Broker reads saved experiments; Ollama settings detect models and can manage an explicitly started local server.",
+        "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent provider/model selection, encrypted shared profiles and frozen delegated request snapshots; Broker reads saved experiments and bounded retained order/fill evidence. Ollama settings detect models and can manage an explicitly started local server.",
         "pending": [
             "Deeper domain investigation tools as features expand.",
             "Evaluated tool/source selection, inspected internal traces and collaboration budgets.",
@@ -167,7 +167,7 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-10-24",
+        "reviewed_on": "2026-10-27",
         "scope": "Local single-user workspace",
         "areas": AREAS,
         "current_focus": "Market statistics and price/strategy/connection/account-risk alerts are implemented. Next foundations: broader account reconciliation, order lifecycle controls, broader risk metrics and local operations. Multi-user support is deferred.",

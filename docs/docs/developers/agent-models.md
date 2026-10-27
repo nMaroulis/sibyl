@@ -24,9 +24,9 @@ Use `provider: null` and `model: ""` to inherit again, or `provider: "none"` wit
 
 ## Frozen native requests
 
-`ModelSettings.for_turn(agent)` freezes the effective configuration of **the whole team** before an application request queues for its semaphore slot. The private map contains keys and must never be serialized. It lives only in the request `ContextVar` alongside provider adapters and completed observations.
+`ModelSettings.for_turn(agent)` reads the effective configuration of **the whole team** before an application request queues. The caller recursively freezes nested mappings and binds them with native `request_context`, explicitly inheriting `models`/`page` to owned local specialists. This private map contains keys and must never be serialized.
 
-`WorkspaceLLM.call()` selects this agent's entry from the frozen map and lazily constructs its ProtoLink provider through `create_llm()`. The same mechanism covers direct page dialogs, Sibyl, delegated native child inference and top-level `AgentClient` inference. A native client request without an existing application turn creates its own private team snapshot. Delegation remains entirely owned by ProtoLink.
+`Agent(llm_factory=...)` reads this agent's configuration through `current_request_context()` and lazily returns its real ProtoLink provider. There is no `WorkspaceLLM` subclass and no mutation of shared `agent.llm`. Native provider protocols, worker admission and session history remain intact. Application requests use `AgentGroup` handles; the registered agents and discovery URLs remain unchanged. Independent `AgentClient` requests cross a private-context boundary and resolve current settings in the receiving application. External peers never inherit caller credentials.
 
 A profile, key or assignment edit during an answer affects the **next** request. Queued/running requests retain their original model/key/endpoint. A key removal therefore does not recall a request already queued with that key. No frozen keys or assignment maps are put into native task payloads, prompts, consultation records or history.
 

@@ -7,11 +7,10 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from agent_helpers import delegate
 from fastapi.testclient import TestClient
-from protolink import Task, create_llm
+from protolink import Task, create_llm, current_request_context
 
 from sibyl.agents.model_selection import AGENT_NAMES, AgentModelRequest, ModelConflict
 from sibyl.agents.providers import PROVIDERS
-from sibyl.agents.runtime import current_agent
 from sibyl.api.app import create_app
 from sibyl.services.llm_settings import ModelSettingsRequest
 
@@ -193,7 +192,7 @@ def test_direct_module_request_and_native_client_use_same_override(client, monke
     calls = []
 
     def factory(provider, **kwargs):
-        calls.append((current_agent.get(), provider, kwargs))
+        calls.append((current_request_context().get("agent_id", ""), provider, kwargs))
         return create_llm("mock", default_response="Controlled answer")
 
     monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
@@ -253,7 +252,7 @@ def test_native_delegation_uses_each_specialist_frozen_provider_model_and_key(cl
     calls = []
 
     def factory(provider, **kwargs):
-        module = current_agent.get()
+        module = current_request_context().get("agent_id", "")
         calls.append((module, provider, kwargs))
         if module == "sibyl":
             steps = [delegate("reporter", "News", {"news_mode": "demo"}), "A summary from Reporter."]
@@ -311,14 +310,16 @@ def test_assignments_do_not_leak_into_native_task_payloads(client, monkeypatch):
     owner = client.app.state.services.agents
     profile(client, api_key="TRANSPORT-SECRET-SENTINEL")
     assign(client)
-    send = owner.network.client.send_task
+    run = owner.network.group.run
+    inspected = []
 
-    async def inspect_task(url, task, **kwargs):
+    def inspect_task(agent, task, **kwargs):
+        inspected.append(task.id)
         assert "TRANSPORT-SECRET-SENTINEL" not in json.dumps(task.to_dict())
         assert "_agents" not in json.dumps(task.to_dict())
-        return await send(url, task, **kwargs)
+        return run(agent, task, **kwargs)
 
-    monkeypatch.setattr(owner.network.client, "send_task", inspect_task)
+    monkeypatch.setattr(owner.network.group, "run", inspect_task)
     monkeypatch.setattr(
         "sibyl.agents.registry.create_llm",
         lambda *a, **kw: create_llm("mock", default_response="Safe response"),
@@ -326,6 +327,7 @@ def test_assignments_do_not_leak_into_native_task_payloads(client, monkeypatch):
     assert (
         client.post("/api/v1/agents/ask", json={"module": "reporter", "message": "Hello"}).status_code == 200
     )
+    assert len(inspected) == 1
 
 
 def test_passive_metadata_and_registered_catalog_names_match(client, monkeypatch):

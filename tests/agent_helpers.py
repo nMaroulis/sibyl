@@ -2,9 +2,7 @@
 
 import json
 
-from protolink import create_llm
-
-from sibyl.agents.runtime import current_agent
+from protolink import create_llm, current_request_context
 
 PRIMARY = {
     "oracle": "portfolio_snapshot",
@@ -35,7 +33,7 @@ def coordinator_factory(monkeypatch, factory):
     """Script Sibyl; specialists ask for real tools using selections in the delegated prompt."""
 
     def build(*args, **kwargs):
-        module = current_agent.get()
+        module = current_request_context().get("agent_id", "")
         if module == "sibyl":
             return factory(*args, **kwargs)
 

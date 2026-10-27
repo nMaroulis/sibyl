@@ -35,7 +35,7 @@ Open **Request history** beside the conversation picker to inspect the latest 20
 
 ## Saved conversations
 
-Choose a chat from **Saved conversations** or use **New chat** for a fresh context. Completed answers and consultation evidence persist locally across application restarts. A conversation displays its latest 100 completed turns; the model receives the latest six. The picker lists the most recent 100 chats. Unsent drafts are not saved across page reloads. Reopening a running conversation shows its pending state and refreshes completed answers automatically.
+Choose a chat from **Saved conversations** or use **New chat** for a fresh context. Completed answers and consultation evidence persist locally across application restarts. A conversation displays its latest 100 completed turns; ProtoLink retains bounded native conversation context, preserving recent turns within its input budget. The picker lists the most recent 100 chats. Unsent drafts are not saved across page reloads. Reopening a running conversation shows its pending state and refreshes completed answers automatically.
 
 One turn may run at a time in a conversation. Different chats and direct module questions share a two-request limit. Native ProtoLink run budgets bound delegation, model calls and tool reads. A turn waits at most 150 seconds including queue time. Sibyl is request-driven; starting the app makes the agents available without running inference or creating background research tasks.
 
@@ -60,3 +60,5 @@ Your question, recent chat turns, and any consulted specialists' observations ar
 Sibyl and its specialists have read-only tools. They cannot place trades, withdraw funds, change settings, start strategies or send external messages. Verify sources, dates and uncertainty before acting on an answer.
 
 Optional **Agent models** settings let Sibyl and each specialist use a different saved provider/model without changing the workspace default. See [per-agent setup](settings.md#choose-models-per-agent).
+
+Sibyl can also use each specialist's page-help tools. Ask “How do I import account history?” or “How do I change news sources?” for steps and a workspace link. These instructions are separate from observed account or market evidence and do not perform the action. See [module help](oracle.md#help-with-the-page).

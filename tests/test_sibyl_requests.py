@@ -80,13 +80,13 @@ def test_failed_request_is_retained_without_private_adapter_error(client, monkey
 def test_stop_returns_while_provider_is_blocked_and_prevents_late_consultation(client, monkeypatch):
     network, session = prepare(client)
     started, release, finished = (threading.Event(), threading.Event(), threading.Event())
-    calls, send = ([], network.client.send_task)
+    calls, run = ([], network.group.run)
 
-    async def capture(url, task, **kwargs):
-        calls.append(url)
-        return await send(url, task, **kwargs)
+    def capture(agent, task, **kwargs):
+        calls.append(agent.card.url)
+        return run(agent, task, **kwargs)
 
-    monkeypatch.setattr(network.client, "send_task", capture)
+    monkeypatch.setattr(network.group, "run", capture)
 
     def factory(*args, **kwargs):
 

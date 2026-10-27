@@ -60,7 +60,7 @@ def tool_arguments(request: AgentRequest) -> dict:
     if request.module == "reporter":
         return {
             "article_id": context.article_id or "",
-            "mode": context.news_mode or "",
+            "mode": context.news_mode,
             "publisher": context.news_publisher or "",
             "asset": context.news_asset or "",
             "sentiment": context.news_sentiment or "",

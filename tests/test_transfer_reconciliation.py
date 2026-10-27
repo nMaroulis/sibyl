@@ -497,5 +497,7 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
         "accountant_snapshot",
         "account_history",
         "risk_alerts",
+        "page_help",
+        "read_context_artifact",
     }
     assert client.app.state.services.transfers.report()["total"] == 0
