@@ -4,6 +4,7 @@ const config = {
   favicon: 'img/brand/logo_brand.png',
   url: 'https://nmaroulis.github.io',
   baseUrl: '/sibyl/',
+  trailingSlash: true,
   organizationName: 'nMaroulis',
   projectName: 'sibyl',
   onBrokenLinks: 'throw',
