@@ -2,11 +2,11 @@
   <img src="assets/logo_transparent.png" alt="Sibyl" width="280" />
 </p>
 
-# Sibyl — Your connected crypto workspace
+# Sibyl · Your connected crypto workspace
 
 **All your exchanges. Your research. An AI team that understands the context.**
 
-Sibyl brings your crypto accounts, market analysis, trading and strategy research into one workspace you run on your own machine. Connect multiple exchanges, see your holdings together, explore a market, test an idea and follow it through to execution — with specialist AI agents beside you at every step.
+Sibyl brings your crypto accounts, market analysis, trading and strategy research into one workspace you run on your own machine. Connect multiple exchanges, see your holdings together, explore a market, test an idea and follow it through to execution, having specialist AI agents beside you at every step.
 
 The legacy Python/Streamlit application is available at [sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit).
 

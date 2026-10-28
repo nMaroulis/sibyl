@@ -22,7 +22,7 @@ STORIES = [
         "A sample risk note on position sizing and how correlations can change during periods of stress.",
     ),
     (
-        "What a backtest can — and cannot — tell you",
+        "What a backtest can, and cannot, tell you",
         "Strategies",
         "A sample guide to fees, realistic execution, and evaluating a strategy outside its training period.",
     ),

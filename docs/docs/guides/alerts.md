@@ -65,7 +65,7 @@ Armed rules keep their position across an API restart. Events committed after th
 
 Notifications appear in the shared **Inbox** and top-bar bell with the exact run, source, Paper/Exchange mode, Demo/test attribution, original journal reason and event time. Receipt time and journal time are distinct. The bell's strategy entries and **Open strategy monitor** link lead back to that run; opening them does not acknowledge unread state. Use **Mark read** or **Mark all read** for acknowledgment.
 
-Only recorded journal changes are monitored. An `ERROR` notice does not imply the run stopped, a manual pause is not necessarily a failure, and a Stop & cancel notice reports the request—not successful native cancellation. A completion notice does not prove an exchange position is flat. Inspect the monitor's orders, fills and holdings. Notifications cannot control execution, cancel orders or liquidate. Silent worker outages, every-fill/order policies, portfolio-risk and connection-failure alerts remain pending. Delivery stays in-app; Telegram chat does not automatically receive these notices.
+Only recorded journal changes are monitored. An `ERROR` notice does not imply the run stopped, a manual pause is not necessarily a failure, and a Stop & cancel notice reports the request, not successful native cancellation. A completion notice does not prove an exchange position is flat. Inspect the monitor's orders, fills and holdings. Notifications cannot control execution, cancel orders or liquidate. Silent worker outages, every-fill/order policies, portfolio-risk and connection-failure alerts remain pending. Delivery stays in-app; Telegram chat does not automatically receive these notices.
 
 ## Connection read-failure alerts
 

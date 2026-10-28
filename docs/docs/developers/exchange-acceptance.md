@@ -80,6 +80,6 @@ The strict native balance reader and the checkpoint/compare HTTP routes were exe
 
 The isolated workspace deliberately had no history imports configured, so its comparison correctly reported missing evidence rather than claiming that balances were reconciled. This verifies the authenticated read and local report lifecycle, not full history coverage, production account acceptance or a complete ledger match. Provider update timestamps are retained as hints rather than treated as the time of the balance read. See [balance-check semantics](balance-checks.md).
 
-## Recent funding sync — October 28, 2026
+## Recent funding sync - October 28, 2026
 
 A single authenticated Binance production deposit-history pass over a 24-hour creation-time window completed in an isolated local workspace. The transport allowed only GET requests to Binance deposit history and server time; exactly one deposit-history request was made, with no writes. Pagination was exhausted for that window. Controls were disabled after the check, and the main workspace was not reconfigured. The local summary is `.sibyl/acceptance/recent-funding-20261028T091020Z/acceptance.json`; credentials and native financial records were not printed. This verifies that bounded read, not live correction transitions or complete funding history. Kraken/Bybit authenticated rolling reads and native correction scenarios remain unverified.

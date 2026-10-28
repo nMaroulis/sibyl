@@ -85,7 +85,7 @@ Strategy payloads retain rule revision/name, job ID, algorithm/pair/interval, so
 | POST | `/strategy-alerts/{id}/action` | `action: pause/arm/archive/restore`, reviewed `revision`; never a strategy control |
 | GET | `/strategy-alerts/example` | Isolated sample rule/notification, no persistence |
 
-Paths use `/api/v1`, existing workspace access controls and `Cache-Control: no-store`. Schemas reject unknown execution/delivery fields. This remains one local API worker, in-app delivery and retained journal catch-up—not a distributed scheduler, worker liveness alarm, order settlement guarantee or external notification system.
+Paths use `/api/v1`, existing workspace access controls and `Cache-Control: no-store`. Schemas reject unknown execution/delivery fields. This remains one local API worker, in-app delivery and retained journal catch-up, not a distributed scheduler, worker liveness alarm, order settlement guarantee or external notification system.
 
 ## Connection read subscriptions
 

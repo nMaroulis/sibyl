@@ -78,7 +78,7 @@ All routes are under `/api/v1/account-ledger/transfers`, use the existing worksp
 | POST   | `/{link_id}/review` | Reconfirm or restore the original pair after reviewing current sources                                                            |
 | DELETE | `/{link_id}`        | Soft-remove classification and release reservations                                                                               |
 
-Source IDs and fingerprints are 64-character lowercase SHA-256 strings returned by the backend; link IDs are server-generated. Preview returns `valid`, issues, warnings, reported difference, note requirements and current fingerprints. Confirmation accepts only source IDs, expected fingerprints and a review note—not caller-supplied amounts, accounts or fees.
+Source IDs and fingerprints are 64-character lowercase SHA-256 strings returned by the backend; link IDs are server-generated. Preview returns `valid`, issues, warnings, reported difference, note requirements and current fingerprints. Confirmation accepts only source IDs, expected fingerprints and a review note, not caller-supplied amounts, accounts or fees.
 
 ```json
 {
