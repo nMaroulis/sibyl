@@ -122,13 +122,34 @@ function TelegramSetup({
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const toast = useToast();
+  const userId = Number(user.trim());
+  const validUser =
+    /^\d+$/.test(user.trim()) && Number.isSafeInteger(userId) && userId > 0 && userId <= 2 ** 52;
+  const validToken = /^\d{5,20}:[A-Za-z0-9_-]{20,200}$/.test(token.trim());
+  const unsaved = !!token.trim() || user.trim() !== String(channel.allowed_user_id ?? '');
+  const userHelp =
+    user.trim() && !validUser
+      ? 'Enter your personal numeric ID, not a bot link, username, phone number or bot token.'
+      : 'Your personal account ID. The number before the colon in a bot token belongs to the bot.';
   const action = async (kind: string) => {
+    if (kind === 'save') {
+      if ((!token.trim() && !channel.has_token) || (token.trim() && !validToken)) {
+        setError(
+          'Enter the complete bot token from BotFather, including the colon. Do not enter the t.me link.',
+        );
+        return;
+      }
+      if (!validUser) {
+        setError('Enter your own numeric Telegram user ID before saving this connection.');
+        return;
+      }
+    }
     setBusy(kind);
     setError('');
     try {
       if (kind === 'save')
         await post('/settings/messaging/telegram', {
-          allowed_user_id: Number(user),
+          allowed_user_id: userId,
           ...(token.trim() ? { bot_token: token.trim() } : {}),
         });
       else if (kind === 'disconnect')
@@ -165,75 +186,120 @@ function TelegramSetup({
         </Badge>
       </div>
       <p>{channel.setup_note}</p>
-      <div className="messaging-fields">
-        <label>
-          Bot token
-          <input
-            type="password"
-            autoComplete="off"
-            placeholder={
-              channel.has_token ? 'Saved locally · leave blank to keep' : 'Token from @BotFather'
-            }
-            value={token}
-            disabled={channel.enabled || !!busy}
-            onChange={(e) => setToken(e.target.value)}
-          />
-        </label>
-        <label>
-          Your numeric Telegram user ID
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="Your ID, not a username"
-            value={user}
-            disabled={channel.enabled || !!busy}
-            onChange={(e) => setUser(e.target.value)}
-          />
-          <small>
-            Only messages from this ID in its private chat are accepted. Groups, forwarded messages
-            and other users are ignored.
-          </small>
-        </label>
-      </div>
-      {(error || channel.error) && (
-        <p className="form-error" role="alert">
-          {error || channel.error}
-        </p>
-      )}
-      <div className="telegram-actions">
-        <button
-          className="button primary"
-          disabled={
-            !!busy || channel.enabled || !/^\d+$/.test(user) || (!token && !channel.has_token)
-          }
-          onClick={() => action('save')}
-        >
-          Save connection
-        </button>
-        <button
-          className="button secondary"
-          disabled={!!busy || !channel.has_token}
-          onClick={() => action('check')}
-        >
-          {busy === 'check' ? 'Checking…' : 'Check bot'}
-        </button>
-        <button
-          className="button secondary"
-          disabled={!!busy || !channel.has_token}
-          onClick={() => action(channel.enabled ? 'pause' : 'enable')}
-        >
-          {channel.enabled ? 'Pause Telegram' : 'Enable Telegram'}
-        </button>
-        {channel.has_token && (
-          <button
-            className="text-button negative"
-            disabled={!!busy}
-            onClick={() => action('disconnect')}
-          >
-            Disconnect
-          </button>
+      <form
+        aria-label="Telegram connection"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void action('save');
+        }}
+        noValidate
+      >
+        <div className="messaging-fields">
+          <label>
+            Bot token
+            <input
+              type="password"
+              autoComplete="off"
+              aria-describedby="telegram-token-help"
+              placeholder={
+                channel.has_token ? 'Saved locally · leave blank to keep' : 'Token from @BotFather'
+              }
+              value={token}
+              disabled={channel.enabled || !!busy}
+              onChange={(e) => setToken(e.target.value)}
+            />
+            <small id="telegram-token-help">
+              Paste the full token from BotFather. Your bot’s t.me link is only used to open its
+              chat.
+            </small>
+          </label>
+          <label>
+            Your numeric Telegram user ID
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              aria-describedby="telegram-user-help"
+              aria-invalid={!!user.trim() && !validUser}
+              placeholder="Your ID, not a username"
+              value={user}
+              disabled={channel.enabled || !!busy}
+              onChange={(e) => setUser(e.target.value)}
+            />
+            <small id="telegram-user-help">{userHelp}</small>
+          </label>
+        </div>
+        <details className="telegram-id-help">
+          <summary>Where do I find my personal user ID?</summary>
+          <p>
+            In Telegram, open{' '}
+            <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer">
+              @userinfobot
+            </a>{' '}
+            (an optional third-party lookup), press Start and copy the numeric Id it reports. Only
+            your personal ID goes here; do not send that bot your BotFather token.
+          </p>
+          <p>
+            You can also read <code>message.from.id</code> from a private message to your own bot
+            using Telegram’s{' '}
+            <a
+              href="https://core.telegram.org/bots/api#getupdates"
+              target="_blank"
+              rel="noreferrer"
+            >
+              getUpdates API
+            </a>{' '}
+            before enabling Sibyl.
+          </p>
+        </details>
+        {(error || channel.error) && (
+          <p className="form-error" role="alert">
+            {error || channel.error}
+          </p>
         )}
-      </div>
+        <div className="telegram-actions">
+          <button className="button primary" type="submit" disabled={!!busy || channel.enabled}>
+            {busy === 'save' ? 'Saving…' : 'Save connection'}
+          </button>
+          <button
+            className="button secondary"
+            type="button"
+            disabled={!!busy || !channel.has_token || (!channel.enabled && unsaved)}
+            aria-describedby="telegram-action-help"
+            onClick={() => action('check')}
+          >
+            {busy === 'check' ? 'Checking…' : 'Check bot'}
+          </button>
+          <button
+            className="button secondary"
+            type="button"
+            disabled={!!busy || !channel.has_token || (!channel.enabled && unsaved)}
+            aria-describedby="telegram-action-help"
+            onClick={() => action(channel.enabled ? 'pause' : 'enable')}
+          >
+            {channel.enabled ? 'Pause Telegram' : 'Enable Telegram'}
+          </button>
+          {channel.has_token && (
+            <button
+              className="text-button negative"
+              type="button"
+              disabled={!!busy}
+              onClick={() => action('disconnect')}
+            >
+              Disconnect
+            </button>
+          )}
+        </div>
+        <p className="telegram-action-help" id="telegram-action-help">
+          {channel.enabled
+            ? 'Pause Telegram to edit the connection. Only your configured user’s private messages are accepted.'
+            : !channel.has_token
+              ? 'Save your token and personal user ID to unlock Check bot and Enable Telegram.'
+              : unsaved
+                ? 'Save your changes before checking or enabling this connection.'
+                : 'Connection saved. Check the bot, then enable Telegram and press Start in its private chat.'}
+        </p>
+      </form>
       {health && (
         <div className="telegram-delivery-status">
           <span>{health.delivery.sent ?? 0} reply chunks sent</span>

@@ -375,7 +375,13 @@ def test_missing_embedded_file_marks_saved_override_unavailable(client, tmp_path
     assert not row["ready"] and "GGUF file is missing" in row["reason"]
 
 
-def test_environment_provider_can_be_assigned_and_key_fallback_is_provider_specific(client, monkeypatch):
+@pytest.mark.parametrize("dependency_available", [True, False])
+def test_environment_provider_can_be_assigned_and_key_fallback_is_provider_specific(
+    client, monkeypatch, dependency_available
+):
+    monkeypatch.setattr(
+        "sibyl.agents.providers.find_spec", lambda _: object() if dependency_available else None
+    )
     owner = client.app.state.services.agents
     owner.settings.llm_provider = "openai"
     owner.settings.llm_model = "environment-default"
@@ -385,7 +391,9 @@ def test_environment_provider_can_be_assigned_and_key_fallback_is_provider_speci
     assert owner.models.resolve("reporter")["api_key"] == "OPENAI-ENV-PRIVATE"
     profile(client, "openai", api_key="SAVED-PRIVATE")
     state = client.delete("/api/v1/settings/llm/openai/key").json()
-    assert agent_row(state)["ready"]
+    assert agent_row(state)["ready"] is dependency_available
+    if not dependency_available:
+        assert "dependency" in agent_row(state)["reason"]
     assert owner.models.resolve("reporter")["api_key"] == "OPENAI-ENV-PRIVATE"
     assert "ENV-PRIVATE" not in json.dumps(state)
 

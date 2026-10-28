@@ -78,6 +78,8 @@ def test_provider_switch_and_model_edits_preserve_the_correct_key(client):
 
 
 def test_save_does_not_contact_a_provider_and_agent_uses_saved_credentials(client, monkeypatch):
+    # This tests native MockLLM wiring, independently of optional SDK installation.
+    monkeypatch.setattr("sibyl.agents.providers.find_spec", lambda _: object())
     calls = []
 
     def factory(provider, **kwargs):
@@ -98,6 +100,8 @@ def test_save_does_not_contact_a_provider_and_agent_uses_saved_credentials(clien
 
 
 def test_inflight_agent_keeps_its_provider_snapshot_when_settings_change(client, monkeypatch):
+    # The provider factory below is scripted; CI need not install hosted SDKs.
+    monkeypatch.setattr("sibyl.agents.providers.find_spec", lambda _: object())
     save(client, api_key="first-key")
     calls = []
 

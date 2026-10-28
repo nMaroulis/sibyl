@@ -9431,6 +9431,34 @@ details[open] > summary {
   color: var(--muted);
   padding: 8px 0;
 }
+.telegram-action-help {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.telegram-live-card input[aria-invalid='true'] {
+  border-color: #c86565;
+}
+.telegram-id-help {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.telegram-id-help summary {
+  cursor: pointer;
+  color: var(--accent);
+  padding: 5px 0;
+}
+.telegram-id-help p {
+  max-width: 780px;
+  line-height: 1.7;
+}
+.telegram-id-help a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 @media (max-width: 650px) {
   .telegram-live-card .messaging-fields {
     grid-template-columns: 1fr;

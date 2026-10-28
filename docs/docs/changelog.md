@@ -133,6 +133,11 @@ This release establishes the current product baseline, with explicit provider co
 - Treat Demo as an explicit optional preview, with source and environment labels across account, market, trading and research workflows.
 - Derive exchange capability indicators from implemented features and document authenticated acceptance separately from adapter support.
 
+### Fixed
+
+- Explain Telegram's bot-token and personal-user-ID fields, validate incomplete setup without silently disabling Save, and show why Check/Enable require a saved connection.
+- Keep scripted model-configuration tests independent of optional provider SDK installation, while verifying that missing SDKs still report an unavailable setup.
+
 ### Security
 
 - Store exchange, model and messaging credentials encrypted in the backend's local Fernet vault; never return them through public APIs or agent tools.
