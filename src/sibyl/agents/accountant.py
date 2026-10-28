@@ -264,6 +264,27 @@ def create_agent(services: Services, **runtime) -> Agent:
                 ]
                 if funding and (not example)
                 else [],
+                "pending_updates": [
+                    {
+                        key: row[key]
+                        for key in (
+                            "account_id",
+                            "stream",
+                            "enabled",
+                            "interval_minutes",
+                            "status",
+                            "last_checked_at",
+                            "error",
+                        )
+                    }
+                    for row in funding.refresh.ledger.snapshot()
+                    if (not account_id or row["account_id"] == account_id)
+                    and (not kind or row["stream"] == kind)
+                    and (not environment or row["environment"] == environment)
+                ][:10]
+                if funding and not example
+                else [],
+                "pending_update_policy_limit": 10,
             }
         if not performance_view:
             return portfolio_snapshot(scope)

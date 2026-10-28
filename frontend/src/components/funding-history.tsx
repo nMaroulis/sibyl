@@ -21,12 +21,15 @@ import type { AgentContext } from '../lib/types';
 import { TransferReconciliation } from './transfer-reconciliation';
 import { FundingEffectCell } from './funding-effect';
 import type { FundingEffect } from './funding-effect';
+import { FundingPendingUpdates } from './funding-pending-updates';
+import type { FundingUpdatePolicy } from './funding-pending-updates';
 
 type Stream = 'deposit' | 'withdrawal' | 'transfer';
 type FundingAccount = Connection & {
   environment: string;
   funding_streams: Stream[];
   funding_note: string;
+  pending_update_streams: Stream[];
 };
 type FundingJob = {
   account_id: string;
@@ -44,7 +47,13 @@ type FundingJob = {
   retry_at?: string | null;
   caught_up_at?: string | null;
 };
-type Sync = { accounts: FundingAccount[]; jobs: FundingJob[]; scope: string; demo_note: string };
+type Sync = {
+  accounts: FundingAccount[];
+  jobs: FundingJob[];
+  pending_updates: FundingUpdatePolicy[];
+  scope: string;
+  demo_note: string;
+};
 type Movement = {
   id: string;
   native_id: string;
@@ -302,6 +311,13 @@ export function FundingHistory({ active }: { active: boolean }) {
           </>
         )}
       </Panel>
+      {!example && selected && (
+        <FundingPendingUpdates
+          account={selected}
+          policies={sync.data?.pending_updates || []}
+          inspect={(asset, status) => change({ fund_asset: asset, fund_status: status })}
+        />
+      )}
       {!example && !!jobs.length && (
         <Panel className="full-panel">
           <PanelTitle

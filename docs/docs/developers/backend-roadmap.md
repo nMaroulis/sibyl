@@ -52,7 +52,8 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
 - [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals, Kraken deposit/withdrawal/transfer entries and Bybit master-UID on-chain withdrawals, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
-- [ ] Extend funding adapters to remaining exchanges, Bybit deposits/off-chain transfers, fiat, earn/staking and subaccounts; schedule refresh of late/pending events.
+- [x] Add opt-in, durable pending-record updates for Binance crypto deposits/withdrawals and Bybit on-chain withdrawals, independent of manual import ranges; bounded pagination/retries, missing-source review, control/account revision guards and read-only Accountant status. See [pending updates](funding-pending-updates.md).
+- [ ] Extend funding adapters to remaining exchanges, Bybit deposits/off-chain transfers, fiat, earn/staking and subaccounts; discover newly appearing late records and periodically revisit completed corrections.
 - [x] Add bounded transfer suggestions, manual pairing, audited user confirmation, stale-source review and reversible link removal/restoration. See [transfer review](transfer-reconciliation.md).
 - [x] Carry original acquisition lots/cost basis for current confirmed equal-amount, explicitly zero-fee transfers in one unambiguous exact market. See [carryover scope](transfer-cost-basis.md).
 - [x] Add explicit balanced same-asset fee allocations, missing-fee assertions, distinct-charge acknowledgment and separate fee-unit inventory cost. See [transfer fees](transfer-fees.md).

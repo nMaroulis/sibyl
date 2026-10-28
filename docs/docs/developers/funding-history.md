@@ -31,7 +31,7 @@ The shared `ImportWorker` supplies scheduling, a per-service work lock, sanitize
 
 Funding pages contain at most 50 records. A 2,000-page budget stops an overly large import with an explicit error; choose a smaller date range. Repeated cursors and repeated record pages fail instead of looping. A rejected page cannot advance the cursor or partially insert records.
 
-**Range fetched** only means the selected provider pagination ended. Late records, old pending statuses and provider retention can leave gaps. A new date range does not refresh pending records created in an older range; rescan that older range. No automatic periodic account scan is enabled.
+**Range fetched** only means the selected provider pagination ended. Late records, old pending statuses and provider retention can leave gaps. A new manual date range does not itself refresh older pending records. Optional [pending updates](funding-pending-updates.md) revisit retained unfinished Binance/Bybit records independently of manual ranges. They default off. Newly appearing or completed corrections still require an explicit range rescan.
 
 ## Observation contract
 

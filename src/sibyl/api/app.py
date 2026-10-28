@@ -30,6 +30,7 @@ from sibyl.services.account_sync import AccountSync
 from sibyl.services.accounts import Accounts
 from sibyl.services.alerts import AlertConflict, PriceAlerts
 from sibyl.services.data_settings import DataSettings
+from sibyl.services.funding.contracts import FundingRefreshConflict
 from sibyl.services.funding_sync import FundingSync
 from sibyl.services.market import Market
 from sibyl.services.performance import AccountPerformance
@@ -297,6 +298,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def stale_funding_review(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
 
+    @app.exception_handler(FundingRefreshConflict)
+    async def stale_funding_controls(_request, exc):
+        return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
+
     @app.exception_handler(ModelConflict)
     async def stale_agent_models(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
@@ -363,6 +368,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.funding_reviews import router as funding_reviews_router
 
     app.include_router(funding_reviews_router)
+    from sibyl.api.funding_refresh import router as funding_refresh_router
+
+    app.include_router(funding_refresh_router)
 
     @app.get("/health", tags=["System"])
     def health():

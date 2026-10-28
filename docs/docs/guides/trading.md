@@ -98,6 +98,8 @@ Open **Trade → Account history → Funding**. Select an active supported accou
 
 Filter by account, asset, movement, status or environment. Completed summaries include all matching pages and keep currencies and directions separate. Pending, restricted and failed observations are absent from completed totals. Original amounts and fees stay separate. **Wallet balance effect** identifies documented provider rules, your local review or unresolved conventions. Use **Review balance effect** to verify an ambiguous record against your statement; local decisions can be withdrawn and do not move funds. See [review limits](../developers/funding-effects.md). An internal-at-venue marker does not prove an own-account transfer. **Export this page** downloads displayed records; **Ask about funding** uses the same selection through ProtoLink.
 
+For supported Binance/Bybit streams, **Pending updates** can recheck already imported unfinished records every 5 minutes, 15 minutes or 1 hour. They default off. **Check now** explicitly retries missing records; **Turn off**, pausing an import or deactivating the account stops updates. Five exhausted misses are flagged for review and never treated as completion/cancellation. New funding and completed corrections still need a range rescan. See [pending update support and limits](../developers/funding-pending-updates.md).
+
 Funding observations flag affected FIFO coverage; they do not supply cost basis or investment returns. No funding control deposits, withdraws or transfers money. See [funding support, permissions and limits](../developers/funding-history.md).
 
 ## Review transfers between your accounts

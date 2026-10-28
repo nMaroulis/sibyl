@@ -83,6 +83,52 @@ def funding_event(row: dict, job: dict) -> dict:
     }
 
 
+def validated_page(job: dict, page: FundingPage, max_pages: int = MAX_PAGES):
+    """Validate one bounded native page before any source or cursor is committed."""
+    signature = hashlib.sha256(json.dumps(page.cursor, sort_keys=True).encode()).hexdigest()
+    if job["pages"] >= max_pages:
+        raise ImportLimitError("Funding page budget reached; choose a smaller date range.")
+    if len(page.items) > 50 or (
+        not page.caught_up and (page.cursor == job["cursor"] or signature in job.get("seen_cursors", []))
+    ):
+        raise ValueError("Funding cursor did not advance.")
+    events = [funding_event(row, job) for row in page.items]
+    if len({row["id"] for row in events}) != len(events):
+        raise ValueError("Duplicate funding identities in one page.")
+    # Detect offset endpoints ignoring pagination, even when their synthetic offset advances.
+    page_signature = (
+        hashlib.sha256(json.dumps(sorted(row["id"] for row in events)).encode()).hexdigest()
+        if events
+        else None
+    )
+    if page_signature and page_signature in job.get("seen_pages", []):
+        raise ValueError("Funding page repeated without progress.")
+    return events, signature, page_signature
+
+
+def write_event(db, row, seen):
+    """Upsert one normalized observation while retaining its first-seen time."""
+    payload = json.dumps(row, sort_keys=True, allow_nan=False)
+    previous = db.execute("SELECT payload FROM funding_events WHERE id=?", (row["id"],)).fetchone()
+    db.execute(
+        "INSERT INTO funding_events VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
+        "asset=excluded.asset,timestamp_ms=excluded.timestamp_ms,status=excluded.status,payload=excluded.payload,last_seen_at=excluded.last_seen_at",
+        (
+            row["id"],
+            row["account_id"],
+            row["kind"],
+            row["native_id"],
+            row["asset"],
+            row["timestamp_ms"],
+            row["status"],
+            payload,
+            seen,
+            seen,
+        ),
+    )
+    return previous is None, previous is not None and previous[0] != payload
+
+
 class FundingLedger:
     """Keep funding observations distinct from fills, virtual balances and user cost basis."""
 
@@ -156,24 +202,7 @@ class FundingLedger:
 
     def commit_page(self, job: dict, page: FundingPage) -> None:
         """Commit observations and checkpoint together; a new range invalidates an old in-flight read."""
-        signature = hashlib.sha256(json.dumps(page.cursor, sort_keys=True).encode()).hexdigest()
-        if job["pages"] >= MAX_PAGES:
-            raise ImportLimitError("Funding page budget reached; choose a smaller date range.")
-        if len(page.items) > 50 or (
-            not page.caught_up and (page.cursor == job["cursor"] or signature in job.get("seen_cursors", []))
-        ):
-            raise ValueError("Funding cursor did not advance.")
-        events = [funding_event(row, job) for row in page.items]
-        if len({row["id"] for row in events}) != len(events):
-            raise ValueError("Duplicate funding identities in one page.")
-        # Detect offset endpoints ignoring pagination, even when their synthetic offset advances.
-        page_signature = (
-            hashlib.sha256(json.dumps(sorted(row["id"] for row in events)).encode()).hexdigest()
-            if events
-            else None
-        )
-        if page_signature and page_signature in job.get("seen_pages", []):
-            raise ValueError("Funding page repeated without progress.")
+        events, signature, page_signature = validated_page(job, page)
         seen = now_iso()
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -182,28 +211,9 @@ class FundingLedger:
                 return
             inserted, updated = 0, 0
             for row in events:
-                payload = json.dumps(row, sort_keys=True, allow_nan=False)
-                previous = db.execute(
-                    "SELECT payload FROM funding_events WHERE id=?", (row["id"],)
-                ).fetchone()
-                inserted += previous is None
-                updated += previous is not None and previous[0] != payload
-                db.execute(
-                    "INSERT INTO funding_events VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
-                    "asset=excluded.asset,timestamp_ms=excluded.timestamp_ms,status=excluded.status,payload=excluded.payload,last_seen_at=excluded.last_seen_at",
-                    (
-                        row["id"],
-                        row["account_id"],
-                        row["kind"],
-                        row["native_id"],
-                        row["asset"],
-                        row["timestamp_ms"],
-                        row["status"],
-                        payload,
-                        seen,
-                        seen,
-                    ),
-                )
+                new, changed = write_event(db, row, seen)
+                inserted += new
+                updated += changed
             current.update(
                 cursor=page.cursor,
                 pages=current["pages"] + 1,

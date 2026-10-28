@@ -53,6 +53,7 @@ module.exports = {
         'developers/order-recovery',
         'developers/order-discovery',
         'developers/funding-history',
+        'developers/funding-pending-updates',
         'developers/transfer-reconciliation',
         'developers/transfer-cost-basis',
         'developers/transfer-fees',

@@ -86,6 +86,8 @@ class ImportWorker:
             message = "This provider does not support the reviewed history operation."
         elif isinstance(error, ccxt.BadSymbol):
             message = "This exact spot market is unavailable. Check the selected pair."
+        elif isinstance(error, ProviderDeferred):
+            message = "This history read is waiting for provider capacity or cooldown. Its checkpoint is retained."
         elif transient:
             message = (
                 "The provider is temporarily unavailable or rate limited. The saved checkpoint is retained."

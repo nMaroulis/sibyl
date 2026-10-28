@@ -11,6 +11,8 @@ from sibyl.accounting.funding import balance_effect
 from sibyl.exchanges.funding import DAY, funding_streams
 from sibyl.models import Connection, Request
 from sibyl.services.account_sync import environment
+from sibyl.services.funding import FundingRefresh
+from sibyl.services.funding.contracts import refresh_streams
 from sibyl.services.funding_ledger import MAX_PAGES, NOTE, FundingLedger, funding_event
 from sibyl.services.import_worker import ImportLimitError, ImportWorker
 from sibyl.services.ledger import now_iso
@@ -47,6 +49,17 @@ class FundingSync(ImportWorker):
 
     def __init__(self, market, store):
         super().__init__(market, store, FundingLedger(store))
+        self.refresh = FundingRefresh(market, store)
+
+    def tick(self):
+        """Advance explicit imports and separately opted-in pending updates."""
+        super().tick()
+        self.refresh.tick()
+
+    def close(self):
+        """Drain both finite read workers before their shared exchange transports close."""
+        super().close()
+        self.refresh.close()
 
     def snapshot(self) -> dict:
         """Read saved support, retained account labels and progress without provider calls."""
@@ -56,12 +69,13 @@ class FundingSync(ImportWorker):
                     **row.model_dump(mode="json"),
                     "environment": environment(row),
                     "funding_streams": supported(row),
+                    "pending_update_streams": refresh_streams(row),
                     "funding_note": (
                         "Binance Spot Test Network does not expose the production capital-history endpoints."
                         if row.exchange == "binance-testnet" or (row.exchange == "binance" and row.sandbox)
                         else "Kraken imports posted ledger entries for the default wallet. Pending funding requests are outside this source."
                         if row.exchange == "kraken"
-                        else "Bybit master-UID on-chain withdrawals only, read in 29-day windows. Deposits, off-chain transfers, sub-UID history and extra tax charges are not imported. Rescan a saved range to refresh pending statuses and fees."
+                        else "Bybit master-UID on-chain withdrawals only, read in 29-day windows. Deposits, off-chain transfers, sub-UID history and extra tax charges are not imported. Optional pending updates revisit retained unfinished records."
                         if row.exchange == "bybit" and supported(row)
                         else "Funding import is coming soon for this exchange/environment."
                         if not supported(row)
@@ -71,6 +85,7 @@ class FundingSync(ImportWorker):
                 for row in self.store.connections()
             ],
             "jobs": self.ledger.jobs(),
+            "pending_updates": self.refresh.ledger.snapshot(),
             "scope": NOTE,
             "demo_note": "Demo has no funding transactions. Its virtual seed balances are opening inventory, not fabricated deposits. View the isolated example to explore funding history.",
         }
@@ -135,6 +150,7 @@ class FundingSync(ImportWorker):
                     continue
                 job["status"] = "disconnected" if disconnected else "paused"
                 self.ledger.write_job(db, job)
+        self.refresh.pause(account_id, stream, disconnected=disconnected)
         return self.snapshot()
 
     def read_page(self, client, job):

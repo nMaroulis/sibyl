@@ -94,9 +94,11 @@ GUIDES = {
             "Filter retained movements by account, asset, type, status or environment; inspect amounts and fees in their native currencies.",
             "In Wallet balance effect, distinguish Provider rule from Your review. Use Review balance effect for ambiguous records, verify the affected wallet and amount convention against your statement, then save an evidence note. You can withdraw a review; native records stay unchanged.",
             "Pause/resume preserves progress. Rescan range revisits available records for corrections; Export this page downloads displayed rows.",
+            "For Binance deposits/withdrawals or Bybit on-chain withdrawals, select the account and enable Pending updates per stream. Choose 5 minutes, 15 minutes or 1 hour. Check now explicitly retries missing records; Turn off stops future checks.",
         ),
         (
             "Completed totals exclude pending, restricted and failed observations. Funding records do not establish investment returns or acquisition cost.",
+            "Pending updates only revisit existing unfinished records. Five exhausted misses require review, not a completion/cancellation assumption. Pausing imports or deactivating the account disables updates. Kraken's source contains posted entries, not pending requests. Completed corrections and new funding still require a range rescan.",
             "Kraken posted ledger effects subtract the same-asset fee from the signed amount. Other fee conventions require explicit review. Changed source facts invalidate a local review. Reviews affect new Balance checks, not transfer ownership or FIFO basis.",
         ),
     ),

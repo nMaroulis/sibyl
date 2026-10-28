@@ -10878,3 +10878,82 @@ details[open] > summary {
   white-space: normal;
   line-height: 1.5;
 }
+
+/* Explicit, quiet controls for read-only funding status updates. */
+.funding-pending-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+  gap: 16px;
+  padding: 0 24px 10px;
+}
+.funding-pending-option {
+  border: 1px solid var(--border, #e7ebf2);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fbfcfe;
+  min-width: 0;
+}
+.funding-pending-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.funding-pending-heading > div {
+  flex: 1;
+}
+.funding-pending-heading small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.funding-pending-symbol {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: var(--accent);
+  background: #eef2fc;
+}
+.funding-pending-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.funding-pending-controls label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.funding-pending-controls select {
+  flex-basis: 100%;
+  min-width: 120px;
+  font-size: 12px;
+}
+.funding-pending-state {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+.funding-pending-attention {
+  margin-top: 14px;
+  font-size: 12px;
+}
+.funding-pending-attention summary {
+  cursor: pointer;
+}
+.funding-pending-attention p {
+  line-height: 1.7;
+}
+.funding-pending-attention .text-link {
+  display: flex;
+  margin: 8px 0;
+}
