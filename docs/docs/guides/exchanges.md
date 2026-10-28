@@ -59,7 +59,7 @@ Saving a connection activates it. Use its Active/Inactive control to include or 
 
 ## Verification and missing work
 
-Contract tests exercise every client using controlled transports, and installed CCXT configuration is checked without account access. Authenticated exchange accounts and real orders have not been acceptance-tested. The [exchange client reference and checklist](../developers/exchange-clients.md#remaining-implementation-checklist) distinguish implemented adapters from missing execution, imports, streaming, account variants and additional venues.
+Contract tests exercise every client using controlled transports, and installed CCXT configuration is checked without account access. Scoped acceptance includes Binance/Coinbase account reads and Binance Testnet order/strategy lifecycles; broader venue and production execution acceptance remains pending. The [acceptance record](../developers/exchange-acceptance.md) retains the exact tested scope. The [exchange client reference and checklist](../developers/exchange-clients.md#remaining-implementation-checklist) distinguish implemented adapters from missing execution, imports, streaming, account variants and additional venues.
 
 Public reference prices can resolve a missing USDT pair through USD or USDC at approximate parity. Actual order symbols always remain exact. Account uses a separate exact-pair conversion engine for actual holdings, with observed stablecoin/fiat rates and explicit unpriced coverage.
 
@@ -71,7 +71,7 @@ Spot trading additionally shows whether execution is enabled on your server. Man
 
 **API keys are stored locally and encrypted on the machine running Sibyl's Python backend** (the `.sibyl` workspace by default). A separate local vault key unlocks them. They are not returned by the API or passed to AI agents. The backend uses the credentials to authenticate requests to the exchange. Saving or checking a connection never places an order.
 
-Use a Bybit Unified Trading Account (UTA) or KuCoin classic spot trading account; other account variants are not configured. Gemini has no native market-order flow through the installed adapter; choose a GTC limit. Bybit status reads cover the last 500 orders. Native authenticated account and order acceptance remains pending.
+Use a Bybit Unified Trading Account (UTA) or KuCoin classic spot trading account; other account variants are not configured. Gemini has no native market-order flow through the installed adapter; choose a GTC limit. Bybit status reads cover the last 500 orders. Authenticated acceptance for these providers remains pending.
 
 ## Card indicators
 

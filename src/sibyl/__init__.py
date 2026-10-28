@@ -1,3 +1,3 @@
-"""Sibyl: exchange data, analysis, paper execution, and embedded ProtoLink agents."""
+"""Sibyl: connected crypto accounts, research, trading and native ProtoLink agents."""
 
-__version__ = "0.2.0"
+__version__ = "2.0.0"

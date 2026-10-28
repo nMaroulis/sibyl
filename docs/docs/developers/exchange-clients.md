@@ -72,7 +72,7 @@ These connection IDs are deliberately excluded from `SIBYL_MARKET_EXCHANGE`, whi
 
 The shared account, order-status and fill-page APIs work for the test clients. `Portfolio.overview()` excludes all sandbox balances from actual-funds totals; `Portfolio.accounts()` shows them individually with `sandbox=true` for inspection. The dedicated clients also support the guarded manual market-order flow. Coinbase Exchange uses native base `size` and UUID `client_oid`; it does not use Advanced Trade's CDP key or order configuration.
 
-The Advanced Trade static sandbox is a different API and is not substituted for the Exchange test service. Provider outages and authentication errors propagate without production or offline-demo fallback. Public test-market checks fetched markets, tickers and books successfully on 2026-10-20. Authenticated sandbox accounts and sandbox fills still need acceptance testing.
+The Advanced Trade static sandbox is a different API and is not substituted for the Exchange test service. Provider outages and authentication errors propagate without production or offline-demo fallback. Public test-market checks fetched markets, tickers and books successfully on 2026-10-20. Scoped authenticated Binance Testnet order/strategy acceptance is recorded in the [acceptance results](exchange-acceptance.md); authenticated Coinbase Exchange Sandbox accounts/fills remain unverified.
 
 ## Verification snapshot
 

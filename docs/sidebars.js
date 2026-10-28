@@ -1,6 +1,7 @@
 module.exports = {
   guide: [
     'intro',
+    'changelog',
     {
       type: 'category',
       label: 'Getting started',

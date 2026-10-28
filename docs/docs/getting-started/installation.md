@@ -7,7 +7,7 @@ Use Python 3.12 or newer, uv, and Node.js 22.12 or newer. Development uses three
 From the repository root:
 
 ```bash
-uv sync --group dev
+uv sync --frozen --group dev
 npm ci
 cp .env.example .env
 ```
@@ -30,7 +30,7 @@ In a separate terminal:
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. Vite proxies `/api` requests to the Python process. The workspace starts with illustrative market fixtures and a persistent paper wallet. You do not need exchange credentials or a model.
+Open `http://127.0.0.1:5173`. Vite proxies `/api` requests to the Python process. New workspaces have no active accounts. Connect one or several exchanges in Settings, or choose **Preview with Demo** from Account, Trade or Strategies. Public market prices default to Binance; select Demo prices in Market data for offline charts. News and other research sources have independent settings. A model is optional for these workspaces and required for the Sibyl coordinator chat.
 
 ## Start documentation
 

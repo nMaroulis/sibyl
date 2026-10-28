@@ -5,7 +5,7 @@ export default function BrandHero() {
   return (
     <div className="sibyl-doc-home">
       <div className="sibyl-doc-hero">
-        <span className="doc-welcome-badge">THE WORKSPACE GUIDE</span>
+        <span className="doc-welcome-badge">SIBYL v2.0.0 · THE WORKSPACE GUIDE</span>
         <h1>Sibyl, explained.</h1>
         <p>
           Your accounts, your research, your AI team.
@@ -19,11 +19,11 @@ export default function BrandHero() {
       <div className="sibyl-doc-paths">
         <Link to="/guides/account">
           <span className="doc-card-index">01</span>
-          <strong>Your portfolio</strong>
+          <strong>Your accounts</strong>
           <p>Connected accounts, balances, and a clear view of your assets.</p>
           <b>↗</b>
         </Link>
-        <Link to="/guides/oracle">
+        <Link to="/guides/sibyl">
           <span className="doc-card-index">02</span>
           <strong>Your AI team</strong>
           <p>Module specialists and read-only tools, powered by ProtoLink.</p>

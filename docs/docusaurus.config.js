@@ -35,6 +35,12 @@ const config = {
           position: 'left',
         },
         {
+          type: 'doc',
+          docId: 'changelog',
+          label: 'Changelog',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/nMaroulis/sibyl',
           label: 'GitHub',
           position: 'right',

@@ -1,22 +1,12 @@
 # Architecture
 
-The design favors ordinary functions and a few small services. Business logic is independent of React and FastAPI; ProtoLink composes existing read-only functions rather than becoming a second application backend.
+The design favors ordinary functions and focused domain modules. React renders the workspace, FastAPI validates requests, and Python owns calculations, persistence and execution. ProtoLink agents use the same domain evidence through typed read-only tools.
 
-```text
-React pages + shared UI
-          │ same-origin /api/v1
-FastAPI routes + validated request models
-          │
-          ├── Market ── ExchangeClient ── public prices / private balances
-          ├── Portfolio ── Market + Store
-          ├── Analytics ── pure Pandas/NumPy functions
-          ├── Strategies ── backtests + paper worker + approved exchange execution
-          ├── ExchangeTrading ── reviewed intents + CCXT create_order
-          ├── Research ── glossary / RSS / blocks / optional equities
-          └── AgentRegistry ── ProtoLink Agent + read-only tools
-                       │
-              Store: SQLite + Fernet vault
-```
+![Sibyl v2.0.0 architecture: application entry points, Python domain modules, the native ProtoLink team, data sources, local storage and configured language models.](/img/architecture.svg)
+
+The dashboard and optional Telegram client enter the Python application. Sibyl discovers and consults the ten specialists through ProtoLink; specialists do not delegate or submit orders. Exchange writes use the separately reviewed trading pipeline. Domain services and the agent runtime retain their own state in the local workspace.
+
+The [editable diagram topology](/img/architecture.mmd) accompanies the SVG used here and in the repository README.
 
 ## Python package
 
@@ -63,8 +53,6 @@ SQLite transactions serialize manual paper fills. One idempotency key maps to on
 This implementation assumes one API process and worker. It is not a distributed scheduler. Multiple backend workers could duplicate paper-job evaluation and should not be used without database-backed job claims.
 
 ## Source boundaries
-
-The original Streamlit runtime lives in the separate [sibyl-streamlit repository](https://github.com/nMaroulis/sibyl-streamlit); it is not a dependency of this application.
 
 Demo prices come from an explicit DemoClient and research fixtures have their own demo boundary; live errors never trigger fixture substitution. A portfolio records incomplete accounts and unpriced assets. A model-backed answer and the initial native tool evidence have separate labels. Charts show observed or simulated values with the relevant assumptions.
 
