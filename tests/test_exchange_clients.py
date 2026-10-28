@@ -245,6 +245,20 @@ def test_public_clients_do_not_attempt_private_requests(monkeypatch):
         client.fetch_my_trades("BTC/USDT")
 
 
+def test_strict_balance_observations_preserve_unknowns_without_raw_private_metadata(monkeypatch):
+    client = fake_client(monkeypatch)
+    snapshot = client.fetch_balance_snapshot()
+    assert snapshot["total"] == {"BTC": 2, "BAD": None}
+    assert snapshot["timestamp"] is None
+    assert "PRIVATE" not in json.dumps(snapshot, allow_nan=False)
+
+
+def test_strict_balance_reads_do_not_turn_a_boolean_into_an_asset_quantity(monkeypatch):
+    client = fake_client(monkeypatch)
+    monkeypatch.setattr(client._exchange, "fetch_balance", lambda **_: {"total": {"BTC": True}})
+    assert client.fetch_balance_snapshot()["total"]["BTC"] is None
+
+
 def test_unsupported_operations_and_bad_symbols_do_not_submit(monkeypatch):
     client = fake_client(monkeypatch)
     with pytest.raises(ccxt.BadSymbol):

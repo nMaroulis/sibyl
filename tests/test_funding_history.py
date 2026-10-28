@@ -401,6 +401,8 @@ def test_kraken_native_cursor_not_offset_preserves_units_and_reference(monkeypat
     assert first.items[0]["asset"] == "BTC" and first.items[0]["quantity"] == 0.1
     assert first.items[0]["direction"] == "out" and first.items[0]["reference"] == "paired-ref"
     assert first.items[0]["internal"] and first.items[0]["amount_basis"] == "ledger_amount"
+    assert first.items[0]["wallet_scope"] == "configured"
+    assert first.items[0]["posted_ms"] == START + DAY
     assert observed[0]["with_cursor"] and "ofs" not in observed[0]
     assert observed[1]["cursor"] == "opaque" and observed[0]["end"] == observed[1]["end"]
     assert last.caught_up

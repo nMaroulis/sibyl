@@ -279,3 +279,10 @@ Channels: `whatsapp`, `telegram`, `discord`, `slack`, `signal`, `email`. Telegra
 `GET/POST /risk-alerts`, `POST /risk-alerts/{id}/edit`, `/action` and `/check` manage opt-in fixed-account risk watches. `/evidence` reads retained complete snapshots without provider calls; `/example` is isolated. Risk notices share the inbox with `kind: risk`. See [account-risk contracts](account-risk.md).
 
 Agent-model assignment bodies accept `revision`, `provider` and `model` only. `/system` reports the workspace default; `/sibyl` reports the coordinator’s actual selection. The agents catalog and model-backed replies/consultations include provider/model attribution. See [per-agent model contracts](agent-models.md).
+
+
+## Observed balance checks
+
+`GET /account/balance-checks?scope=all` lists active accounts in the page scope. `GET /account/balance-checks/{id}` reads checkpoint metadata, the latest saved comparison and twenty report summaries. `POST /account/balance-checks/{id}/checkpoint` accepts `{replace_id: null or the viewed checkpoint ID}` and explicitly reads starting balances. `POST /account/balance-checks/{id}/compare` requires `{checkpoint_id: the viewed ID}` and saves a new comparison. `GET /account/balance-checks/{id}/reports/{report_id}` reads one retained report scoped to its account. All responses use `Cache-Control: no-store`. Saved reads never contact a provider; capture/compare never write to the exchange. See [balance-check contracts and numeric limits](balance-checks.md).
+
+Funding balance conventions have local GET/POST review and POST withdrawal endpoints at `/api/v1/account-ledger/funding/{event_id}/review` (withdrawal appends `/withdraw`). Both writes require source/review revisions; no native exchange call is made. See [request fields and limits](funding-effects.md).

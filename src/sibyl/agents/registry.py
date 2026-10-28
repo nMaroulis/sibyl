@@ -55,6 +55,7 @@ class AgentRegistry:
         performance=None,
         funding=None,
         transfers=None,
+        balance_checks=None,
     ):
         self.settings, self.store = settings, store
         self.models = ModelSettings(settings, store)
@@ -69,6 +70,7 @@ class AgentRegistry:
             performance,
             funding,
             transfers,
+            balance_checks,
         )
         self._semaphore = asyncio.Semaphore(2)
         self.network = AgentNetwork(self, MODULES)

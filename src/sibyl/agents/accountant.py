@@ -26,7 +26,10 @@ SYSTEM_PROMPT = (
     "from account returns. Disclose excluded unknown-cost sales, unconverted fees, timestamp ambiguity "
     "and cross-market gaps. Never describe provisional figures as final net P&L. Opening inventory is a "
     "user assertion. Keep accounts, environments and quote currencies distinct. Funding observations "
-    "are reported native quantities, not returns. Never infer fee inclusion, own-account transfers, "
+    "are reported native quantities, not returns. Use returned balance_effect provenance to distinguish "
+    "documented provider rules from user-reviewed fee/wallet conventions; never present a local review "
+    "as a provider fact or create/withdraw reviews. Unknown wallet scopes or fee conventions stay unknown. "
+    "Never infer fee inclusion, own-account transfers, "
     "complete history or cost basis from a deposit. Pending/restricted/unknown movements are not "
     "completed totals. Transfer suggestions are heuristics. Confirmed links are user assertions, and "
     "changed sources need review. Unlinked observations are unreviewed, not established external cash "
@@ -37,6 +40,10 @@ SYSTEM_PROMPT = (
     "dates. For imported execution history, corrections or sync coverage, call account_history. "
     "A completed pass or rescan only exhausts available provider pages, not complete account history. "
     "Missing records are not deleted by rescans, and provider retention can hide old corrections. "
+    "For saved balance checkpoints or unexplained quantity changes call balance_check_report. "
+    "This compares observed native quantities with retained activity, not investment returns or complete reconciliation. "
+    "Missing history, timing boundaries, historical corrections and funding fee inclusion can leave expected balances unknown. "
+    "Never repair a difference, replace a checkpoint or claim a saved check is a live balance read. "
     "For saved account risk rules, notices and retained valuation samples call risk_alerts. It is passive; "
     "never imply you created a watch or continuously monitor. Explain value floors, asset concentration "
     "and drawdown from an observed account-value peak. Deposits and withdrawals affect that peak; this is "
@@ -108,6 +115,53 @@ def create_agent(services: Services, **runtime) -> Agent:
             ][:24],
             "evidence_record_limit": 10,
             "url": "/trade?tab=history",
+        }
+
+    def balance_check_report(account_id: str = "", asset: str = "") -> dict:
+        """Explain saved balance comparisons, per-asset differences and missing accounting evidence.
+
+        Use a saved account ID, or the page's individual account selection. Without
+        one, list available accounts so the user can choose. Returns the latest
+        saved comparison with at most forty asset rows. Supply an exact native
+        asset code to inspect that asset, including one beyond those first rows.
+        It does not read current
+        balances, import history, replace checkpoints or alter exchange funds.
+        """
+        if any(page_context().get(view) for view in ("transfer_view", "funding_view", "performance_view")):
+            return accountant_snapshot()
+        checks = services.balance_checks
+        if checks is None:
+            return {"note": "Balance checks are unavailable.", "url": "/account"}
+        scope = page_context().get("portfolio_scope") or "all"
+        if not account_id and scope.startswith("account:"):
+            account_id = scope[8:]
+        if not account_id:
+            return {
+                **checks.accounts(scope),
+                "note": "Choose one account for its saved balance check.",
+                "url": "/account",
+            }
+        state = checks.journal.state(account_id)
+        report = state["latest"]
+        matching = [row for row in report["rows"] if not asset or row["asset"] == asset] if report else []
+        return {
+            "view": "balance_check",
+            "checkpoint": state["checkpoint"],
+            "configuration_changed": state["configuration_changed"],
+            "report": {
+                **report,
+                "rows": matching[:40],
+                "funding_evidence": [
+                    item for item in report.get("funding_evidence", []) if not asset or item["asset"] == asset
+                ][:40],
+            }
+            if report
+            else None,
+            "selected_asset": asset or None,
+            "total_rows": len(report["rows"]) if report else 0,
+            "matching_rows": len(matching),
+            "evidence_row_limit": 40,
+            "url": f"/account?scope=account%3A{account_id}",
         }
 
     def accountant_snapshot(
@@ -274,6 +328,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         description=DESCRIPTION,
         tools=[
             accountant_snapshot,
+            balance_check_report,
             account_history,
             risk_alerts,
             page_help,

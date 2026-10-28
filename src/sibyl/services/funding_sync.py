@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from pydantic import AwareDatetime, Field, model_validator
 
+from sibyl.accounting.funding import balance_effect
 from sibyl.exchanges.funding import DAY, funding_streams
 from sibyl.models import Connection, Request
 from sibyl.services.account_sync import environment
@@ -169,12 +170,14 @@ class FundingSync(ImportWorker):
                         "reference": None,
                         "asset": asset,
                         "timestamp_ms": 1_704_153_600_000 + index * DAY,
+                        "posted_ms": 1_704_153_600_000 + index * DAY if status == "completed" else None,
                         "kind": stream,
                         "direction": "in" if stream == "deposit" else "out",
                         "quantity": quantity,
                         "status": status,
                         "internal": stream == "transfer",
                         "amount_basis": "provider_reported",
+                        "wallet_scope": "configured",
                         "fee": {"currency": asset if fee is not None else None, "cost": fee},
                     },
                     {**scope, "stream": stream},
@@ -182,7 +185,7 @@ class FundingSync(ImportWorker):
             )
         return {
             "example": True,
-            "items": list(reversed(events)),
+            "items": [{**row, "balance_effect": balance_effect(row)} for row in reversed(events)],
             "total": len(events),
             "offset": 0,
             "limit": 50,

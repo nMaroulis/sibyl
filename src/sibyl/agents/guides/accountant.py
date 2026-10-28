@@ -4,8 +4,30 @@ from typing import Literal
 
 from sibyl.agents.guides import Guide
 
-Topic = Literal["overview", "accounts", "valuation", "history", "performance", "funding", "transfers", "risk"]
+Topic = Literal[
+    "overview",
+    "accounts",
+    "valuation",
+    "history",
+    "performance",
+    "funding",
+    "transfers",
+    "risk",
+    "balance_checks",
+]
 GUIDES = {
+    "balance_checks": Guide(
+        "Compare balances with imported activity",
+        "/account",
+        (
+            "In Account, open Balance checks below Account balances and choose one account.",
+            "Capture starting balances, import subsequent trade/funding activity in Trade → Account history, then compare with current balances.",
+            "Review per-asset differences and missing evidence. Capture a new starting checkpoint only after reviewing gaps; earlier reports remain saved.",
+        ),
+        (
+            "Checks compare native asset quantities, not P&L. Partial history, uncertain funding fees and activity near balance observations can prevent a comparison. Demo/test/production accounts stay separate.",
+        ),
+    ),
     "overview": Guide(
         "Understand your Account",
         "/account",
@@ -70,10 +92,12 @@ GUIDES = {
         (
             "Open Account history → Funding, select an active supported account, offered streams and a range shorter than 90 days, then Import range.",
             "Filter retained movements by account, asset, type, status or environment; inspect amounts and fees in their native currencies.",
+            "In Wallet balance effect, distinguish Provider rule from Your review. Use Review balance effect for ambiguous records, verify the affected wallet and amount convention against your statement, then save an evidence note. You can withdraw a review; native records stay unchanged.",
             "Pause/resume preserves progress. Rescan range revisits available records for corrections; Export this page downloads displayed rows.",
         ),
         (
             "Completed totals exclude pending, restricted and failed observations. Funding records do not establish investment returns or acquisition cost.",
+            "Kraken posted ledger effects subtract the same-asset fee from the signed amount. Other fee conventions require explicit review. Changed source facts invalidate a local review. Reviews affect new Balance checks, not transfer ownership or FIFO basis.",
         ),
     ),
     "transfers": Guide(

@@ -13,6 +13,7 @@ from types import MappingProxyType
 
 from protolink import current_request_context
 
+from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.config import Settings
 from sibyl.services.account_sync import AccountSync
 from sibyl.services.funding_sync import FundingSync
@@ -55,6 +56,7 @@ class Services:
     performance: AccountPerformance | None = None
     funding: FundingSync | None = None
     transfers: TransferReconciliation | None = None
+    balance_checks: BalanceChecks | None = None
 
 
 def freeze(value):

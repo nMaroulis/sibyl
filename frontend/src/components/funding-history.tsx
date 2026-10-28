@@ -19,6 +19,8 @@ import { ExchangeMark } from './exchange-mark';
 import { AgentButton } from './agents';
 import type { AgentContext } from '../lib/types';
 import { TransferReconciliation } from './transfer-reconciliation';
+import { FundingEffectCell } from './funding-effect';
+import type { FundingEffect } from './funding-effect';
 
 type Stream = 'deposit' | 'withdrawal' | 'transfer';
 type FundingAccount = Connection & {
@@ -56,11 +58,13 @@ type Movement = {
   direction: string;
   quantity: number;
   created_at: string;
+  posted_ms?: number | null;
   status: string;
   internal: boolean;
   amount_basis: string;
   fee: { currency: string | null; cost: number | null };
   fee_known: boolean;
+  balance_effect?: FundingEffect;
   first_seen_at?: string;
   last_seen_at?: string;
   reconciliation?: { status: string; link_id: string; counterpart_account: string } | null;
@@ -291,7 +295,8 @@ export function FundingHistory({ active }: { active: boolean }) {
               <p className="footnote padded">
                 Choose an active account to import an explicit range. Binance supports crypto
                 deposits/withdrawals; Kraken supports deposit, withdrawal and transfer ledger
-                entries. Other providers are coming soon.
+                entries; Bybit supports master-UID on-chain withdrawals. Other providers are coming
+                soon.
               </p>
             )}
           </>
@@ -382,6 +387,7 @@ export function FundingHistory({ active }: { active: boolean }) {
                   exportCSV(example ? 'sibyl-funding-example.csv' : 'sibyl-funding-page.csv', [
                     [
                       'Time',
+                      'Balance posting time',
                       'Account',
                       'Exchange',
                       'Environment',
@@ -397,10 +403,16 @@ export function FundingHistory({ active }: { active: boolean }) {
                       'Amount basis',
                       'Native ID',
                       'Reference',
+                      'Wallet balance change',
+                      'Balance effect provenance',
+                      'Balance effect rule',
+                      'Wallet scope',
+                      'Review status',
                       'Scope',
                     ],
                     ...(data.data?.items ?? []).map((row) => [
                       row.created_at,
+                      row.posted_ms ? new Date(row.posted_ms).toISOString() : '',
                       row.account,
                       row.exchange,
                       row.environment,
@@ -416,6 +428,11 @@ export function FundingHistory({ active }: { active: boolean }) {
                       row.amount_basis,
                       row.native_id,
                       row.reference ?? '',
+                      row.balance_effect?.quantity ?? '',
+                      row.balance_effect?.provenance ?? '',
+                      row.balance_effect?.rule ?? '',
+                      row.balance_effect?.wallet_scope ?? 'unknown',
+                      row.balance_effect?.review_status ?? '',
                       data.data!.note,
                     ]),
                   ])
@@ -537,6 +554,7 @@ export function FundingHistory({ active }: { active: boolean }) {
                         <th>Reported amount</th>
                         <th>Status</th>
                         <th>Reported fee</th>
+                        <th>Wallet balance effect</th>
                         <th>Source record</th>
                       </tr>
                     </thead>
@@ -600,6 +618,14 @@ export function FundingHistory({ active }: { active: boolean }) {
                           </td>
                           <td>{fee(row)}</td>
                           <td>
+                            <FundingEffectCell
+                              id={row.id}
+                              asset={row.asset}
+                              effect={row.balance_effect}
+                              example={example}
+                            />
+                          </td>
+                          <td>
                             <details>
                               <summary>
                                 {row.native_id.length > 18
@@ -611,8 +637,15 @@ export function FundingHistory({ active }: { active: boolean }) {
                               <p>Amount basis: {row.amount_basis.replaceAll('_', ' ')}</p>
                               {row.last_seen_at && <p>Last observed: {time(row.last_seen_at)}</p>}
                               <p>
-                                Fee inclusion in the amount is not inferred. Internal-at-venue does
-                                not establish that both accounts belong to you.
+                                Balance posting time:{' '}
+                                {row.posted_ms
+                                  ? time(row.posted_ms)
+                                  : 'Unavailable; Balance checks cannot place this movement in time.'}
+                              </p>
+                              <p>
+                                Balance effects keep provider rules and local reviews distinct.
+                                Internal-at-venue does not establish that both accounts belong to
+                                you.
                               </p>
                             </details>
                           </td>

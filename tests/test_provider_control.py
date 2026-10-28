@@ -56,6 +56,10 @@ class Adapter:
         with self.lock:
             return self._exchange.fetch(symbol)
 
+    def fetch_balance_snapshot(self):
+        with self.lock:
+            return self._exchange.fetch("balance-check")
+
     def create_order(self, *args, **kwargs):
         with self.lock:
             return self._exchange.fetch("mutate", method="POST")
@@ -73,6 +77,17 @@ def bind(control, meta=None):
 def read_status(control, meta=None):
     meta = meta or source()
     return control.snapshot([meta], meta["id"])["items"][0]
+
+
+def test_balance_check_observations_use_provider_read_admission_and_sanitized_health():
+    control = ProviderControl(min_interval=0)
+    adapter = bind(control, source("connection:balance-check"))
+    adapter._exchange.callback = lambda *a, **k: (_ for _ in ()).throw(ccxt.AuthenticationError("PRIVATE"))
+    with pytest.raises(ccxt.AuthenticationError):
+        adapter.fetch_balance_snapshot()
+    status = read_status(control, source("connection:balance-check"))
+    assert status["status"] == "degraded"
+    assert "PRIVATE" not in json.dumps(status)
 
 
 @pytest.mark.parametrize(

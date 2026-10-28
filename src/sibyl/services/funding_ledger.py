@@ -5,6 +5,7 @@ import json
 import re
 from datetime import UTC, datetime
 
+from sibyl.accounting.funding import FundingReviews
 from sibyl.exchanges.base import number
 from sibyl.exchanges.funding import FundingPage
 from sibyl.services.import_worker import ImportLimitError
@@ -13,7 +14,8 @@ from sibyl.storage import Store
 
 NOTE = (
     "Reported native-asset movements, not investment returns or reconciled cash flows. "
-    "Amounts and fees are shown separately; fee inclusion in the reported amount is not inferred. "
+    "Original amounts and fees stay separate. Balance effects use documented provider rules or "
+    "explicit local reviews; unresolved fee inclusion or wallet scope remains unknown. "
     "Internal records are not automatically paired across accounts. Pending/failed/unknown records "
     "are excluded from completed totals. Provider retention and late updates can limit coverage."
 )
@@ -25,6 +27,7 @@ def funding_event(row: dict, job: dict) -> dict:
     identity = _identity(row.get("native_id"))
     asset = row.get("asset")
     stamp, quantity = number(row.get("timestamp_ms")), number(row.get("quantity"))
+    posted = number(row.get("posted_ms"))
     fee = row.get("fee") or {}
     currency, cost = fee.get("currency"), number(fee.get("cost"))
     if (
@@ -47,6 +50,16 @@ def funding_event(row: dict, job: dict) -> dict:
         or (quantity == 0 and not cost)
         or row.get("amount_basis") not in {"provider_reported", "ledger_amount"}
         or not isinstance(row.get("internal"), bool)
+        or row.get("wallet_scope", "unknown") not in {"configured", "outside", "unknown"}
+        or (
+            row.get("posted_ms") is not None
+            and (
+                posted is None
+                or posted <= 0
+                or posted < stamp
+                or posted > datetime.now(UTC).timestamp() * 1000 + 300_000
+            )
+        )
     ):
         raise ValueError("Invalid funding event.")
     return {
@@ -57,6 +70,7 @@ def funding_event(row: dict, job: dict) -> dict:
         "kind": job["stream"],
         "asset": asset,
         "timestamp_ms": stamp,
+        "posted_ms": posted,
         "created_at": datetime.fromtimestamp(stamp / 1000, UTC).isoformat(),
         "direction": row["direction"],
         "quantity": quantity,
@@ -65,6 +79,7 @@ def funding_event(row: dict, job: dict) -> dict:
         "fee_known": currency is not None and cost is not None,
         "internal": row["internal"],
         "amount_basis": row["amount_basis"],
+        "wallet_scope": row.get("wallet_scope", "unknown"),
     }
 
 
@@ -73,6 +88,7 @@ class FundingLedger:
 
     def __init__(self, store: Store):
         self.store = store
+        self.reviews = FundingReviews(store)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS funding_events (
@@ -259,15 +275,16 @@ class FundingLedger:
             from sibyl.services.transfer_reconciliation import memberships
 
             reconciliation = memberships(db, [json.loads(row[0])["id"] for row in items])
+            enriched = self.reviews.enrich(db, [json.loads(row[0]) for row in items])
         return {
             "items": [
                 {
-                    **json.loads(row[0]),
+                    **event,
                     "first_seen_at": row[1],
                     "last_seen_at": row[2],
-                    "reconciliation": reconciliation.get(json.loads(row[0])["id"]),
+                    "reconciliation": reconciliation.get(event["id"]),
                 }
-                for row in items
+                for row, event in zip(items, enriched, strict=True)
             ],
             "total": total,
             "offset": offset,

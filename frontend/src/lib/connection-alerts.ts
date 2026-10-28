@@ -48,6 +48,7 @@ export const operationLabel = (operation: string) =>
     fetch_candle_page: 'Candle imports',
     fetch_order_book: 'Order book',
     fetch_balance: 'Account balances',
+    fetch_balance_snapshot: 'Balance check observations',
     fetch_open_orders: 'Open orders',
     fetch_my_trades: 'Recent fills',
     fetch_trade_page: 'Fill imports',

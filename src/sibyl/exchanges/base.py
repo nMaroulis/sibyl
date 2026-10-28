@@ -78,6 +78,10 @@ class ExchangeClient(ABC):
     def fetch_balance(self) -> dict:
         """Read finite total/free/used maps in native asset quantities."""
 
+    def fetch_balance_snapshot(self) -> dict:
+        """Read balances for comparison, retaining unknown quantities for strict validation."""
+        return self.fetch_balance()
+
     @abstractmethod
     def amount_to_precision(self, symbol: str, amount: float) -> str:
         """Format a base quantity with the provider's market-specific precision."""

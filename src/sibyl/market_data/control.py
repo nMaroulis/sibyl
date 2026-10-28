@@ -25,6 +25,7 @@ READS = {
     "fetch_candle_page",
     "fetch_order_book",
     "fetch_balance",
+    "fetch_balance_snapshot",
     "fetch_open_orders",
     "fetch_my_trades",
     "fetch_trade_page",

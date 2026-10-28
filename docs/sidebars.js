@@ -11,6 +11,7 @@ module.exports = {
       label: 'User guide',
       items: [
         'guides/account',
+        'guides/balance-checks',
         'guides/exchanges',
         'guides/settings',
         'guides/markets',
@@ -45,6 +46,8 @@ module.exports = {
         'developers/exchange-clients',
         'developers/exchange-acceptance',
         'developers/account-sync',
+        'developers/balance-checks',
+        'developers/funding-effects',
         'developers/order-management',
         'developers/order-reconciliation',
         'developers/order-recovery',

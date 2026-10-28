@@ -27,6 +27,7 @@ import {
 import { SourceHealthSummary } from '../components/provider-health';
 import { ExpandableRows } from '../components/expandable-rows';
 import { AccountBalances } from '../components/account-balances';
+import { BalanceChecks } from '../components/balance-checks';
 import { ExchangeMark } from '../components/exchange-mark';
 import { AgentButton } from '../components/agents';
 import { ValuationDetails } from '../components/valuation-details';
@@ -543,6 +544,7 @@ function PortfolioWorkspace({
         )}
       </Panel>
       <AccountBalances scope={scope} />
+      <BalanceChecks scope={scope} />
     </>
   );
 }

@@ -58,11 +58,21 @@ def _binance_row(row: dict, stream: str) -> dict:
             6: "completed",
         }.get(row.get("status"), "unknown")
         fee = {"currency": row.get("coin"), "cost": row.get("transactionFee")}
+    completed = number(row.get("completeTime"))
+    if completed is None and isinstance(row.get("completeTime"), str):
+        try:
+            completed = (
+                datetime.strptime(row["completeTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC).timestamp()
+                * 1000
+            )
+        except ValueError:
+            pass
     return {
         "native_id": row.get("id"),
         "reference": None,
         "asset": row.get("coin"),
         "timestamp_ms": timestamp,
+        "posted_ms": completed,
         "kind": stream,
         "direction": "in" if stream == "deposit" else "out",
         "quantity": row.get("amount"),
@@ -70,6 +80,10 @@ def _binance_row(row: dict, stream: str) -> dict:
         "status": status,
         "internal": row.get("transferType") == 1,
         "amount_basis": "provider_reported",
+        # Never interpret a missing walletType as Spot. Sibyl reads Spot balances.
+        "wallet_scope": {0: "configured", 1: "outside"}.get(row.get("walletType"), "unknown")
+        if type(row.get("walletType")) is int
+        else "unknown",
     }
 
 
@@ -199,6 +213,8 @@ def fetch_funding_page(exchange, provider: str, stream: str, cursor: dict, limit
                 "status": "completed",
                 "internal": stream == "transfer",
                 "amount_basis": "ledger_amount",
+                "wallet_scope": "configured",
+                "posted_ms": number(row.get("time")) * 1000 if number(row.get("time")) is not None else None,
             }
         )
     # Native integer-second bounds include surrounding milliseconds. Trim only this

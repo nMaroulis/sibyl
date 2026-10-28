@@ -17,6 +17,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from sibyl import __version__
+from sibyl.accounting.balance_checks import BalanceChecks
+from sibyl.accounting.funding.reviews import FundingReviewConflict
 from sibyl.agents.model_selection import ModelConflict
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
@@ -64,6 +66,7 @@ class Services:
     history: CandleHistory
     messaging: TelegramService
     ollama: OllamaService
+    balance_checks: BalanceChecks
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -84,6 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         funding_sync = FundingSync(market, store)
         transfers = TransferReconciliation(store)
         performance = AccountPerformance(market, store)
+        balance_checks = BalanceChecks(market, store)
         agents = AgentRegistry(
             config,
             store,
@@ -95,6 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             performance,
             funding_sync,
             transfers,
+            balance_checks,
         )
         await agents.network.start()
         messaging = TelegramService(store, agents.network)
@@ -123,6 +128,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             history,
             messaging,
             ollama,
+            balance_checks,
         )
 
         def background_call(method):
@@ -287,6 +293,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def stale_transfer_review(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=409)
 
+    @app.exception_handler(FundingReviewConflict)
+    async def stale_funding_review(_request, exc):
+        return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
+
     @app.exception_handler(ModelConflict)
     async def stale_agent_models(_request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=409, headers={"Cache-Control": "no-store"})
@@ -347,6 +357,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.risk_alerts import router as risk_alerts_router
 
     app.include_router(risk_alerts_router)
+    from sibyl.api.balance_checks import router as balance_checks_router
+
+    app.include_router(balance_checks_router)
+    from sibyl.api.funding_reviews import router as funding_reviews_router
+
+    app.include_router(funding_reviews_router)
 
     @app.get("/health", tags=["System"])
     def health():

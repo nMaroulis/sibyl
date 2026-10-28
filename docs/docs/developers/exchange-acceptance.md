@@ -72,3 +72,10 @@ The initial closed-candle EMA direction chooses either the short-period EMA stra
 Add `--lose-entry-response` in a **new** workspace to discard the actual successful entry response deliberately. The expected path is an uncertain submission, strategy pause, exact client-ID recovery by native reads, fill reconciliation and no second buy. This is controlled response-loss injection around a real order, not a claim that a genuine network outage occurred. Do not delete retained state or start another check before inspecting any unresolved orders.
 
 Sanitized outcomes are retained in `acceptance.json`; encrypted credentials and the order/fill ledger remain beside it. Protect the directory like the main workspace. The main workspace's flags, orders, agents and messaging configuration are not copied or changed. Partial fills, cancellation races, true connectivity failures, resets, third-currency fees and broader authenticated venue acceptance remain pending. See [Binance's Testnet environment and restrictions](https://github.com/binance/binance-spot-api-docs/blob/master/testnet/general-info.md).
+
+
+## October 28 balance-check observations
+
+The strict native balance reader and the checkpoint/compare HTTP routes were exercised against the saved dedicated Binance Spot Testnet account in a new isolated encrypted workspace. Two native account balance GETs completed, including Unicode asset identifiers. The saved-report GET made no additional provider request. The transport rejected every non-GET method and every production destination; zero exchange orders were created and both execution flags were disabled.
+
+The isolated workspace deliberately had no history imports configured, so its comparison correctly reported missing evidence rather than claiming that balances were reconciled. This verifies the authenticated read and local report lifecycle, not full history coverage, production account acceptance or a complete ledger match. Provider update timestamps are retained as hints rather than treated as the time of the balance read. See [balance-check semantics](balance-checks.md).

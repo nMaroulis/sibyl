@@ -24,6 +24,26 @@ def tool_call(client, module, tool, **args):
     return result.get_last_item().parts[-1].as_tool_output().result
 
 
+def test_accountant_explains_saved_balance_checks_without_live_reads_or_mutations(client, monkeypatch):
+    checks = client.app.state.services.balance_checks
+    checkpoint = checks.capture("demo")["checkpoint"]["id"]
+    saved = checks.check("demo", checkpoint)
+    forbid_reads(client, monkeypatch)
+    monkeypatch.setattr(checks, "capture", lambda *_: pytest.fail("Agent replaced a checkpoint"))
+    monkeypatch.setattr(checks, "check", lambda *_: pytest.fail("Agent read live balances"))
+    evidence = tool_call(client, "accountant", "balance_check_report", account_id="demo")
+    assert evidence["report"]["id"] == saved["latest"]["id"]
+    assert evidence["view"] == "balance_check"
+    assert not evidence["report"]["coverage_complete"]
+    asset = saved["latest"]["rows"][0]["asset"]
+    selected = tool_call(client, "accountant", "balance_check_report", account_id="demo", asset=asset)
+    assert selected["matching_rows"] == 1 and selected["report"]["rows"][0]["asset"] == asset
+    missing = tool_call(client, "accountant", "balance_check_report", account_id="demo", asset="NOT_PRESENT")
+    assert missing["report"]["rows"] == [] and missing["matching_rows"] == 0
+    help = tool_call(client, "accountant", "page_help", topic="balance_checks")
+    assert help["url"] == "/account"
+
+
 def forbid_reads(client, monkeypatch):
     services = client.app.state.services
 

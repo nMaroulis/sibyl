@@ -10677,3 +10677,204 @@ details[open] > summary {
     transition: none;
   }
 }
+
+/* Saved quantity comparisons stay folded into the Account workspace. */
+.balance-checks-panel {
+  margin-top: 20px;
+  padding: 0;
+}
+.balance-checks-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 21px 24px;
+  cursor: pointer;
+  list-style: none;
+}
+.balance-checks-summary::-webkit-details-marker {
+  display: none;
+}
+.balance-checks-summary strong {
+  display: block;
+  font-size: 15px;
+}
+.balance-checks-summary small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.balance-checks-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  color: #4b73bc;
+  background: #f0f4fc;
+}
+.balance-checks-chevron {
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 220ms ease;
+}
+.balance-checks-panel details[open] > summary .balance-checks-chevron {
+  transform: rotate(180deg);
+}
+.balance-checks-body {
+  padding: 0 24px 22px;
+  border-top: 1px solid var(--border);
+}
+.balance-checks-body > .workspace-controls {
+  padding-top: 20px;
+  align-items: end;
+}
+.balance-checks-toolbar,
+.balance-checks-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+.balance-checks-toolbar .button-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.balance-checks-notice {
+  padding: 10px 14px;
+  background: #f1f7f5;
+  border-radius: 12px;
+  color: #397468;
+  font-size: 13px;
+}
+.balance-checks-history {
+  display: grid;
+  gap: 6px;
+  max-width: 440px;
+  margin: 18px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.balance-checks-result small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.balance-checks-body .table-subline {
+  max-width: 290px;
+  white-space: normal;
+  font-size: 11px;
+}
+.balance-checks-body .table-scroll {
+  margin: 12px -8px;
+}
+@media (max-width: 700px) {
+  .balance-checks-summary {
+    padding: 18px;
+  }
+  .balance-checks-body {
+    padding: 0 16px 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balance-checks-chevron {
+    transition: none;
+  }
+}
+
+/* Funding reviews use the same restrained surfaces as the accounting workspace. */
+.funding-review-link {
+  margin-top: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.funding-review-modal {
+  width: min(100%, 630px);
+  white-space: normal;
+  font-size: 13px;
+}
+.funding-review-content {
+  display: grid;
+  gap: 16px;
+}
+.funding-review-content > p {
+  margin: 0;
+  line-height: 1.65;
+}
+.funding-review-evidence {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--blue-light, #edf3fc);
+}
+.funding-review-evidence > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--blue, #5f7ed8);
+}
+.funding-review-evidence p {
+  margin: 5px 0 0;
+  line-height: 1.6;
+}
+.funding-review-form {
+  display: grid;
+  gap: 16px;
+}
+.funding-review-form label {
+  display: grid;
+  gap: 7px;
+}
+.funding-review-form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+.funding-review-form p {
+  margin: 0;
+}
+.funding-review-form small {
+  line-height: 1.5;
+}
+.funding-review-form .button {
+  justify-self: start;
+}
+.funding-review-audit summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+.funding-review-audit article {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.funding-review-audit article p {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.funding-review-content,
+.funding-review-form {
+  min-width: 0;
+}
+.funding-review-content > .button {
+  justify-self: start;
+}
+.funding-review-form input,
+.funding-review-form select,
+.funding-review-form textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+.funding-effect-reason {
+  max-width: 235px;
+  white-space: normal;
+  line-height: 1.5;
+}

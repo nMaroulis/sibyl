@@ -463,7 +463,14 @@ def test_accountant_transfer_evidence_is_read_only_and_scoped(client, monkeypatc
     assert service.transfers.report()["total"] == 0
 
 
-def test_transfer_inference_cannot_change_selection_or_confirm_links(client, monkeypatch):
+@pytest.mark.parametrize(
+    "tool,arguments",
+    [
+        ("accountant_snapshot", {"transfer_view": False, "account_id": "another-account", "example": False}),
+        ("balance_check_report", {"account_id": "another-account"}),
+    ],
+)
+def test_transfer_inference_cannot_change_selection_or_confirm_links(client, monkeypatch, tool, arguments):
     from protolink import create_llm
 
     registry = client.app.state.services.agents
@@ -476,8 +483,8 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
             sequential_responses=[
                 {
                     "type": "tool_call",
-                    "tool": "accountant_snapshot",
-                    "args": {"transfer_view": False, "account_id": "another-account", "example": False},
+                    "tool": tool,
+                    "args": arguments,
                 },
                 "The review remains an explicit user action.",
             ],
@@ -496,6 +503,7 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
     assert set(registry.agents["accountant"].tools) == {
         "accountant_snapshot",
         "account_history",
+        "balance_check_report",
         "risk_alerts",
         "page_help",
         "read_context_artifact",

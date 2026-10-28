@@ -211,17 +211,30 @@ class CCXTClient(ExchangeClient):
 
     def fetch_balance(self) -> dict:
         """Read the configured wallet and strip raw account/credential metadata."""
+        return self._balance_snapshot(strict=False)
+
+    def fetch_balance_snapshot(self) -> dict:
+        """Preserve unknown values and the provider's update-time hint for strict balance checks."""
+        return self._balance_snapshot(strict=True)
+
+    def _balance_snapshot(self, *, strict):
         with self.lock:
             self._require("fetchBalance", private=True)
             row = self._exchange.fetch_balance(params=deepcopy(self.balance_params))
-            return {
+            result = {
                 kind: {
-                    asset: number(value)
+                    asset: None if strict and isinstance(value, bool) else number(value)
                     for asset, value in (row.get(kind) or {}).items()
-                    if isinstance(asset, str) and number(value) is not None
+                    if isinstance(asset, str) and (strict or number(value) is not None)
                 }
                 for kind in ("total", "free", "used")
             }
+            if strict:
+                stamp = row.get("timestamp")
+                if stamp is not None and number(stamp) is None:
+                    raise ccxt.ExchangeError("Invalid native balance observation time.")
+                result["timestamp"] = number(stamp) if stamp else None
+            return result
 
     def amount_to_precision(self, symbol: str, amount: float) -> str:
         """Use CCXT's actual precision mode, rather than assuming decimal places."""
