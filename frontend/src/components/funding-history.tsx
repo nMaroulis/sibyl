@@ -23,6 +23,9 @@ import { FundingEffectCell } from './funding-effect';
 import type { FundingEffect } from './funding-effect';
 import { FundingPendingUpdates } from './funding-pending-updates';
 import type { FundingUpdatePolicy } from './funding-pending-updates';
+import { FundingRecentSync } from './funding-recent-sync';
+import type { RecentFundingPolicy } from './funding-recent-sync';
+import { FundingVersionsButton } from './funding-versions';
 
 type Stream = 'deposit' | 'withdrawal' | 'transfer';
 type FundingAccount = Connection & {
@@ -30,6 +33,7 @@ type FundingAccount = Connection & {
   funding_streams: Stream[];
   funding_note: string;
   pending_update_streams: Stream[];
+  recent_sync_streams: Stream[];
 };
 type FundingJob = {
   account_id: string;
@@ -51,6 +55,7 @@ type Sync = {
   accounts: FundingAccount[];
   jobs: FundingJob[];
   pending_updates: FundingUpdatePolicy[];
+  recent_sync: RecentFundingPolicy[];
   scope: string;
   demo_note: string;
 };
@@ -73,6 +78,8 @@ type Movement = {
   amount_basis: string;
   fee: { currency: string | null; cost: number | null };
   fee_known: boolean;
+  observed_version_count?: number;
+  last_observed_change?: { observed_at: string; origin: string } | null;
   balance_effect?: FundingEffect;
   first_seen_at?: string;
   last_seen_at?: string;
@@ -312,6 +319,9 @@ export function FundingHistory({ active }: { active: boolean }) {
         )}
       </Panel>
       {!example && selected && (
+        <FundingRecentSync account={selected} policies={sync.data?.recent_sync || []} />
+      )}
+      {!example && selected && (
         <FundingPendingUpdates
           account={selected}
           policies={sync.data?.pending_updates || []}
@@ -419,6 +429,9 @@ export function FundingHistory({ active }: { active: boolean }) {
                       'Amount basis',
                       'Native ID',
                       'Reference',
+                      'Observed local versions',
+                      'Last source change observed',
+                      'Source change origin',
                       'Wallet balance change',
                       'Balance effect provenance',
                       'Balance effect rule',
@@ -444,6 +457,9 @@ export function FundingHistory({ active }: { active: boolean }) {
                       row.amount_basis,
                       row.native_id,
                       row.reference ?? '',
+                      row.observed_version_count ?? '',
+                      row.last_observed_change?.observed_at ?? '',
+                      row.last_observed_change?.origin ?? '',
                       row.balance_effect?.quantity ?? '',
                       row.balance_effect?.provenance ?? '',
                       row.balance_effect?.rule ?? '',
@@ -651,6 +667,12 @@ export function FundingHistory({ active }: { active: boolean }) {
                               <p>ID: {row.native_id}</p>
                               {row.reference && <p>Reference: {row.reference}</p>}
                               <p>Amount basis: {row.amount_basis.replaceAll('_', ' ')}</p>
+                              {!example && (
+                                <FundingVersionsButton
+                                  id={row.id}
+                                  count={row.observed_version_count}
+                                />
+                              )}
                               {row.last_seen_at && <p>Last observed: {time(row.last_seen_at)}</p>}
                               <p>
                                 Balance posting time:{' '}

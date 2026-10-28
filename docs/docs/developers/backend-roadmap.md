@@ -53,14 +53,15 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
 - [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals, Kraken deposit/withdrawal/transfer entries and Bybit master-UID on-chain withdrawals, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
 - [x] Add opt-in, durable pending-record updates for Binance crypto deposits/withdrawals and Bybit on-chain withdrawals, independent of manual import ranges; bounded pagination/retries, missing-source review, control/account revision guards and read-only Accountant status. See [pending updates](funding-pending-updates.md).
-- [ ] Extend funding adapters to remaining exchanges, Bybit deposits/off-chain transfers, fiat, earn/staking and subaccounts; discover newly appearing late records and periodically revisit completed corrections.
+- [x] Add opt-in rolling recent funding sync for implemented Binance/Kraken/Bybit streams, completed-record corrections, persistent fetched-window gaps, concurrent-source guards, lazy pass reports and append-only observed funding revisions across all imports. See [recent sync](funding-recent-sync.md). A bounded authenticated Binance deposit-history read is recorded; live correction behavior and other venues still need acceptance.
+- [ ] Extend funding adapters to remaining exchanges, Bybit deposits/off-chain transfers, fiat, earn/staking and subaccounts; discover older arrivals/corrections outside selected lookbacks and implement native removal/bust semantics.
 - [x] Add bounded transfer suggestions, manual pairing, audited user confirmation, stale-source review and reversible link removal/restoration. See [transfer review](transfer-reconciliation.md).
 - [x] Carry original acquisition lots/cost basis for current confirmed equal-amount, explicitly zero-fee transfers in one unambiguous exact market. See [carryover scope](transfer-cost-basis.md).
 - [x] Add explicit balanced same-asset fee allocations, missing-fee assertions, distinct-charge acknowledgment and separate fee-unit inventory cost. See [transfer fees](transfer-fees.md).
 - [ ] Add historical fee valuation, other fee currencies/rebates, split/merged transfers, cross-market basis and reviewed external-funding classifications.
 - [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
 - [x] Add available-history rescans, revision guards for stale in-flight responses, repeated-page protection, correction counts and retained execution ranges.
-- [ ] Add complete cash-event coverage, account-wide balance reconciliation, execution bust/removal handling and versioned correction audits.
+- [ ] Add complete cash-event coverage, account-wide balance reconciliation, execution bust/removal handling and versioned fill/order correction audits beyond observed funding revisions.
 - [x] Match discovered native IDs to local submissions and resume saved discovery pages after restart; uncertain client IDs stay on the reviewed recovery path.
 - [ ] Exercise authenticated reads and sandbox order lifecycles against actual test accounts.
 

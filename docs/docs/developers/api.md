@@ -288,3 +288,5 @@ Agent-model assignment bodies accept `revision`, `provider` and `model` only. `/
 Funding balance conventions have local GET/POST review and POST withdrawal endpoints at `/api/v1/account-ledger/funding/{event_id}/review` (withdrawal appends `/withdraw`). Both writes require source/review revisions; no native exchange call is made. See [request fields and limits](funding-effects.md).
 
 Pending status controls: `POST /connections/{account_id}/funding-refresh/{stream}` saves version-checked opt-in settings or queues a check of retained unfinished records. `GET /funding-sync` includes actual support and public pending-update progress. See [request fields, support and budgets](funding-pending-updates.md).
+
+Recent funding sync: version-checked opt-in controls at `POST /connections/{account_id}/funding-scans/{stream}`, lazy pass history at `GET /connections/{account_id}/funding-scans/{stream}/reports`, and observed source history at `GET /account-ledger/funding/{event_id}/versions`. See [controls, budgets and coverage semantics](funding-recent-sync.md).

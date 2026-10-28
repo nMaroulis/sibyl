@@ -95,10 +95,12 @@ GUIDES = {
             "In Wallet balance effect, distinguish Provider rule from Your review. Use Review balance effect for ambiguous records, verify the affected wallet and amount convention against your statement, then save an evidence note. You can withdraw a review; native records stay unchanged.",
             "Pause/resume preserves progress. Rescan range revisits available records for corrections; Export this page downloads displayed rows.",
             "For Binance deposits/withdrawals or Bybit on-chain withdrawals, select the account and enable Pending updates per stream. Choose 5 minutes, 15 minutes or 1 hour. Check now explicitly retries missing records; Turn off stops future checks.",
+            "Expand Recent history sync to choose a 24-hour, 7-day or 30-day lookback and enable scans for an implemented Binance/Kraken/Bybit stream. Scan now queues a fresh window. Use a record's Source record → Observed versions to inspect locally observed changes.",
         ),
         (
             "Completed totals exclude pending, restricted and failed observations. Funding records do not establish investment returns or acquisition cost.",
-            "Pending updates only revisit existing unfinished records. Five exhausted misses require review, not a completion/cancellation assumption. Pausing imports or deactivating the account disables updates. Kraken's source contains posted entries, not pending requests. Completed corrections and new funding still require a range rescan.",
+            "Pending updates only revisit existing unfinished records. Five exhausted misses require review, not a completion/cancellation assumption. Pausing imports or deactivating the account disables updates. Kraken's source contains posted entries, not pending requests. Recent history sync or manual range imports handle completed corrections and new funding separately.",
+            "Recent sync can find new funding and completed corrections inside its chosen window. Older/late-outside-window records and provider retention remain gaps. Missing records are retained, and observed revisions are not a complete native correction history. Unfetched intervals remain flagged until a completed import/scan covers them; this is not settlement verification.",
             "Kraken posted ledger effects subtract the same-asset fee from the signed amount. Other fee conventions require explicit review. Changed source facts invalidate a local review. Reviews affect new Balance checks, not transfer ownership or FIFO basis.",
         ),
     ),

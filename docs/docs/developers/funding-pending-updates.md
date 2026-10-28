@@ -60,6 +60,6 @@ Accountant's native ProtoLink tools can explain up to ten relevant stream polici
 
 ## Remaining work
 
-Completed-record fee corrections, newly appearing/late funding records, full account discovery and terminal execution bust/removal handling still require explicit rescans or future infrastructure. A pending update does not supply missing wallet/fee conventions, completion timestamps, cost basis or investment returns. An exhausted pass is not complete history or final settlement proof.
+Optional [recent history sync](funding-recent-sync.md) discovers new arrivals and completed corrections inside a chosen window. Funding outside that window, full account discovery and terminal execution bust/removal handling still require explicit imports or future infrastructure. A pending update does not supply missing wallet/fee conventions, completion timestamps, cost basis or investment returns. An exhausted pass is not complete history or final settlement proof.
 
 Offline tests cover pagination/restart, rate limiting, bounded retries, missing targets, source/control races, credential changes, unsupported venues, batch limits, API privacy and native AgentClient evidence. No authenticated Binance/Bybit pending-transition acceptance was performed for this batch.

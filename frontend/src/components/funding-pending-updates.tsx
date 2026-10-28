@@ -71,8 +71,8 @@ export function FundingPendingUpdates({
       <p className="footnote padded">
         Only existing pending, restricted or unknown records are revisited. Unreturned records keep
         their original status; after five exhausted checks they need review. Pausing an import or
-        deactivating the account turns these updates off. Completed records and new transactions
-        still require a range rescan.
+        deactivating the account turns these updates off. Use recent history sync or manual range
+        imports for completed corrections and new funding.
       </p>
     </Panel>
   );
@@ -126,7 +126,7 @@ function PendingStream({
           <strong>{names[stream]}</strong>
           <small>
             {policy
-              ? `${policy.pending_count} unfinished · ${policy.updated} source updates retained`
+              ? `${policy.pending_count} unfinished · ${policy.updated} source ${policy.updated === 1 ? 'update' : 'updates'} retained`
               : 'Off until you enable it'}
           </small>
         </div>

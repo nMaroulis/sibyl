@@ -11,8 +11,9 @@ from sibyl.accounting.funding import balance_effect
 from sibyl.exchanges.funding import DAY, funding_streams
 from sibyl.models import Connection, Request
 from sibyl.services.account_sync import environment
-from sibyl.services.funding import FundingRefresh
-from sibyl.services.funding.contracts import refresh_streams
+from sibyl.services.funding.contracts import refresh_streams, scan_streams
+from sibyl.services.funding.refresh import FundingRefresh
+from sibyl.services.funding.scans import FundingScans
 from sibyl.services.funding_ledger import MAX_PAGES, NOTE, FundingLedger, funding_event
 from sibyl.services.import_worker import ImportLimitError, ImportWorker
 from sibyl.services.ledger import now_iso
@@ -50,16 +51,19 @@ class FundingSync(ImportWorker):
     def __init__(self, market, store):
         super().__init__(market, store, FundingLedger(store))
         self.refresh = FundingRefresh(market, store)
+        self.scans = FundingScans(market, store)
 
     def tick(self):
         """Advance explicit imports and separately opted-in pending updates."""
         super().tick()
         self.refresh.tick()
+        self.scans.tick()
 
     def close(self):
         """Drain both finite read workers before their shared exchange transports close."""
         super().close()
         self.refresh.close()
+        self.scans.close()
 
     def snapshot(self) -> dict:
         """Read saved support, retained account labels and progress without provider calls."""
@@ -70,6 +74,7 @@ class FundingSync(ImportWorker):
                     "environment": environment(row),
                     "funding_streams": supported(row),
                     "pending_update_streams": refresh_streams(row),
+                    "recent_sync_streams": scan_streams(row),
                     "funding_note": (
                         "Binance Spot Test Network does not expose the production capital-history endpoints."
                         if row.exchange == "binance-testnet" or (row.exchange == "binance" and row.sandbox)
@@ -86,6 +91,7 @@ class FundingSync(ImportWorker):
             ],
             "jobs": self.ledger.jobs(),
             "pending_updates": self.refresh.ledger.snapshot(),
+            "recent_sync": self.scans.ledger.snapshot(),
             "scope": NOTE,
             "demo_note": "Demo has no funding transactions. Its virtual seed balances are opening inventory, not fabricated deposits. View the isolated example to explore funding history.",
         }
@@ -151,6 +157,7 @@ class FundingSync(ImportWorker):
                 job["status"] = "disconnected" if disconnected else "paused"
                 self.ledger.write_job(db, job)
         self.refresh.pause(account_id, stream, disconnected=disconnected)
+        self.scans.pause(account_id, stream, disconnected=disconnected)
         return self.snapshot()
 
     def read_page(self, client, job):

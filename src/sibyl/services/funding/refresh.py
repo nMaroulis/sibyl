@@ -1,16 +1,15 @@
 """Opt-in polling of retained pending funding; no new history or native writes."""
 
-import json
-import time
 from uuid import uuid4
 
 from sibyl.services.account_sync import environment
-from sibyl.services.funding.contracts import PAGE_LIMIT, READ_GAP, FundingRefreshConflict, refresh_streams
-from sibyl.services.funding.journal import RefreshJournal, account_version
-from sibyl.services.import_worker import ImportLimitError, ImportWorker
+from sibyl.services.funding.contracts import FundingRefreshConflict, refresh_streams
+from sibyl.services.funding.journal import RefreshJournal
+from sibyl.services.funding.state import account_version
+from sibyl.services.funding.worker import AutoFundingWorker
 
 
-class FundingRefresh(ImportWorker):
+class FundingRefresh(AutoFundingWorker):
     """Revisit pending records fairly, one bounded page per read slot.
 
     Controls default off. Enabling explicitly authorizes status reads for retained
@@ -75,68 +74,3 @@ class FundingRefresh(ImportWorker):
                 )
             self.ledger.write_job(db, job)
         return self.ledger.snapshot()
-
-    def tick(self):
-        """Keep the global background read floor across restarts and reuse provider admission/backoff."""
-        if self._closed:
-            return
-        with self.store.db() as db:
-            latest = db.execute("SELECT MAX(last_attempt) FROM funding_refresh").fetchone()[0]
-        if latest and time.time() < latest + READ_GAP:
-            return
-        self.ledger.schedule(time.time())
-        super().tick()
-
-    def read_page(self, client, job):
-        """Read the same reviewed native funding endpoint as a manual import; never submit a movement."""
-        if job["pages"] >= PAGE_LIMIT:
-            raise ImportLimitError(self.limit_message)
-        with self.store.db() as db:
-            current = self.ledger.read_job(db, job["account_id"], job["stream"])
-            changed = account_version(db, job["account_id"]) != job["account_version"]
-        if changed or not current or not current["enabled"] or current["revision"] != job["revision"]:
-            if changed:
-                self.pause(job["account_id"])
-            raise ValueError("The pending-update configuration changed before the native read.")
-        return client.fetch_funding_page(job["stream"], job["cursor"], 50)
-
-    def _failure(self, job, error):
-        """Discard stale failures and stop a changed account before applying ordinary retry policy."""
-        with self.store.db() as db:
-            db.execute("BEGIN IMMEDIATE")
-            current = self.ledger.read_job(db, job["account_id"], job["stream"])
-            if not current or current["revision"] != job["revision"]:
-                return
-            scope = account_version(db, job["account_id"])
-            active = db.execute(
-                "SELECT 1 FROM active_accounts WHERE account_id=?", (job["account_id"],)
-            ).fetchone()
-            if scope != current["account_version"] or not active:
-                current.update(
-                    enabled=False,
-                    status="paused" if scope else "disconnected",
-                    revision=uuid4().hex,
-                    error="Account configuration or activation changed; the failed read was discarded.",
-                )
-                self.ledger.write_job(db, current)
-                return
-        super()._failure(job, error)
-
-    def pause(self, account_id, stream=None, *, disconnected=False):
-        """Disable and invalidate in-flight checks without changing retained funding facts."""
-        with self.store.db() as db:
-            db.execute("BEGIN IMMEDIATE")
-            rows = db.execute(
-                "SELECT payload FROM funding_refresh WHERE account_id=?"
-                + (" AND stream=?" if stream else ""),
-                (account_id, stream) if stream else (account_id,),
-            ).fetchall()
-            for row in rows:
-                job = json.loads(row[0])
-                job.update(
-                    enabled=False,
-                    status="disconnected" if disconnected else "paused",
-                    revision=uuid4().hex,
-                    next_attempt=0,
-                )
-                self.ledger.write_job(db, job)

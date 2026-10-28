@@ -10957,3 +10957,92 @@ details[open] > summary {
   display: flex;
   margin: 8px 0;
 }
+
+/* Optional recent-history controls and observed source corrections. */
+.funding-recent-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 20px 24px;
+}
+.funding-recent-toggle > span:nth-child(2) {
+  flex: 1;
+}
+.funding-recent-toggle small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.funding-recent-toggle > svg {
+  transition: transform 180ms ease;
+}
+.funding-recent-toggle > svg.is-open {
+  transform: rotate(180deg);
+}
+.funding-recent-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 18px 0 14px;
+}
+.funding-recent-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.funding-recent-fields select {
+  min-width: 0;
+  font-size: 12px;
+}
+.funding-scan-history {
+  padding-left: 16px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.funding-versions-modal {
+  width: min(100%, 760px);
+  white-space: normal;
+}
+.funding-versions-content {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.funding-versions-content header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+.funding-versions-content article > small {
+  color: var(--muted);
+}
+.funding-versions-content table {
+  white-space: normal;
+  table-layout: fixed;
+  margin-top: 14px;
+}
+.funding-versions-content :is(th, td) {
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+}
+@media (max-width: 640px) {
+  .funding-recent-toggle {
+    padding: 18px;
+    gap: 9px;
+  }
+  .funding-recent-toggle > .badge {
+    max-width: 90px;
+  }
+}
+.funding-pending-attention code {
+  overflow-wrap: anywhere;
+}
+.funding-initial-snapshot { margin-top: 14px; font-size: 12px; }
+.funding-initial-snapshot summary { cursor: pointer; color: var(--muted); }

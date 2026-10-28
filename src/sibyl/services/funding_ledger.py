@@ -6,8 +6,10 @@ import re
 from datetime import UTC, datetime
 
 from sibyl.accounting.funding import FundingReviews
+from sibyl.accounting.funding.versions import FundingVersions, record_version
 from sibyl.exchanges.base import number
 from sibyl.exchanges.funding import FundingPage
+from sibyl.services.funding.coverage import cover_gaps
 from sibyl.services.import_worker import ImportLimitError
 from sibyl.services.ledger import _identity, now_iso
 from sibyl.storage import Store
@@ -106,10 +108,11 @@ def validated_page(job: dict, page: FundingPage, max_pages: int = MAX_PAGES):
     return events, signature, page_signature
 
 
-def write_event(db, row, seen):
+def write_event(db, row, seen, origin="history_import"):
     """Upsert one normalized observation while retaining its first-seen time."""
     payload = json.dumps(row, sort_keys=True, allow_nan=False)
     previous = db.execute("SELECT payload FROM funding_events WHERE id=?", (row["id"],)).fetchone()
+    record_version(db, row, json.loads(previous[0]) if previous else None, seen, origin)
     db.execute(
         "INSERT INTO funding_events VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET "
         "asset=excluded.asset,timestamp_ms=excluded.timestamp_ms,status=excluded.status,payload=excluded.payload,last_seen_at=excluded.last_seen_at",
@@ -144,6 +147,15 @@ class FundingLedger:
                     UNIQUE(account_id,stream,native_id)
                 );
                 CREATE INDEX IF NOT EXISTS funding_events_scope ON funding_events(account_id,asset,timestamp_ms);
+                CREATE TABLE IF NOT EXISTS funding_versions (
+                    id TEXT PRIMARY KEY, event_id TEXT NOT NULL, observed_at TEXT NOT NULL, origin TEXT NOT NULL,
+                    before_payload TEXT, after_payload TEXT NOT NULL, source_version TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS funding_version_event ON funding_versions(event_id);
+                CREATE TABLE IF NOT EXISTS funding_coverage_gaps (
+                    account_id TEXT NOT NULL, stream TEXT NOT NULL, start_ms REAL NOT NULL, end_ms REAL NOT NULL,
+                    PRIMARY KEY(account_id,stream,start_ms,end_ms)
+                );
                 CREATE TABLE IF NOT EXISTS funding_sync (
                     account_id TEXT NOT NULL, stream TEXT NOT NULL, status TEXT NOT NULL,
                     next_attempt REAL NOT NULL, last_attempt REAL NOT NULL, payload TEXT NOT NULL,
@@ -231,6 +243,7 @@ class FundingLedger:
                 current["status"] = "caught_up" if page.caught_up else "queued"
             if page.caught_up:
                 current["caught_up_at"] = seen
+                cover_gaps(db, job["account_id"], job["stream"], job["start_ms"], job["end_ms"])
             saved = db.execute("SELECT 1 FROM connections WHERE id=?", (job["account_id"],)).fetchone()
             active = db.execute(
                 "SELECT 1 FROM active_accounts WHERE account_id=?", (job["account_id"],)
@@ -286,6 +299,7 @@ class FundingLedger:
 
             reconciliation = memberships(db, [json.loads(row[0])["id"] for row in items])
             enriched = self.reviews.enrich(db, [json.loads(row[0]) for row in items])
+            enriched = FundingVersions.enrich(db, enriched)
         return {
             "items": [
                 {

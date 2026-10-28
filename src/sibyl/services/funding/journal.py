@@ -5,28 +5,22 @@ targets. Pages may update only those unchanged targets. Missing records remain
 observations, not cancellations; five exhausted misses request human review.
 """
 
-import hashlib
 import json
 import time
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sibyl.accounting.funding.rules import fingerprint
+from sibyl.accounting.funding.versions import source_version as fingerprint
 from sibyl.services.funding.contracts import MISSING_LIMIT, PAGE_LIMIT, READ_GAP, TARGET_LIMIT
+from sibyl.services.funding.state import FundingJobs, account_version
 from sibyl.services.funding_ledger import validated_page, write_event
 from sibyl.services.ledger import now_iso
 
 
-def account_version(db, account_id):
-    """Bind an in-flight read to encrypted account configuration without decrypting it."""
-    row = db.execute(
-        "SELECT exchange,sandbox,credentials FROM connections WHERE id=?", (account_id,)
-    ).fetchone()
-    return hashlib.sha256(json.dumps([row[0], row[1], row[2].hex()]).encode()).hexdigest() if row else None
-
-
-class RefreshJournal:
+class RefreshJournal(FundingJobs):
     """Persist controls, native cursors and per-record outcomes in the workspace SQLite database."""
+
+    table = "funding_refresh"
 
     def __init__(self, store):
         self.store = store
@@ -48,28 +42,6 @@ class RefreshJournal:
                 job = json.loads(row[0])
                 job.update(status="queued", next_attempt=0)
                 self.write_job(db, job)
-
-    @staticmethod
-    def read_job(db, account_id, stream):
-        row = db.execute(
-            "SELECT payload FROM funding_refresh WHERE account_id=? AND stream=?", (account_id, stream)
-        ).fetchone()
-        return json.loads(row[0]) if row else None
-
-    @staticmethod
-    def write_job(db, job):
-        db.execute(
-            "INSERT INTO funding_refresh VALUES(?,?,?,?,?,?) ON CONFLICT(account_id,stream) DO UPDATE SET "
-            "status=excluded.status,next_attempt=excluded.next_attempt,last_attempt=excluded.last_attempt,payload=excluded.payload",
-            (
-                job["account_id"],
-                job["stream"],
-                job["status"],
-                job["next_attempt"],
-                job["last_attempt"],
-                json.dumps(job, allow_nan=False),
-            ),
-        )
 
     @staticmethod
     def pending(db, account_id, stream, *, due=None):
@@ -174,7 +146,7 @@ class RefreshJournal:
                 if not saved or fingerprint(json.loads(saved[0])) != current["targets"][event["id"]]:
                     current["outcomes"][event["id"]] = "source_changed"
                     continue
-                _, changed = write_event(db, event, seen)
+                _, changed = write_event(db, event, seen, origin="pending_update")
                 updated += changed
                 current["outcomes"][event["id"]] = "found"
             current.update(

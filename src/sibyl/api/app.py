@@ -371,6 +371,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.funding_refresh import router as funding_refresh_router
 
     app.include_router(funding_refresh_router)
+    from sibyl.api.funding_scans import router as funding_scans_router
+
+    app.include_router(funding_scans_router)
 
     @app.get("/health", tags=["System"])
     def health():

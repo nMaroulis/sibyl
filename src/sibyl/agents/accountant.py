@@ -38,6 +38,8 @@ SYSTEM_PROMPT = (
     "inventory cost is separate from trading P&L, not an expense valuation or tax conclusion. Use only "
     "its applied/unapplied status and lot provenance; unknown costs or dates are not zero or receipt "
     "dates. For imported execution history, corrections or sync coverage, call account_history. "
+    "Recent funding sync covers only its selected rolling window. Explain local observed changes as "
+    "observations, not a provider's complete revision log; missing records are not cancellation proof. "
     "A completed pass or rescan only exhausts available provider pages, not complete account history. "
     "Missing records are not deleted by rescans, and provider retention can hide old corrections. "
     "For saved balance checkpoints or unexplained quantity changes call balance_check_report. "
@@ -285,6 +287,31 @@ def create_agent(services: Services, **runtime) -> Agent:
                 if funding and not example
                 else [],
                 "pending_update_policy_limit": 10,
+                "recent_sync": [
+                    {
+                        key: row[key]
+                        for key in (
+                            "account_id",
+                            "stream",
+                            "enabled",
+                            "interval_minutes",
+                            "lookback_days",
+                            "status",
+                            "last_checked_at",
+                            "inserted",
+                            "updated",
+                            "uncovered_gap_count",
+                            "error",
+                        )
+                    }
+                    for row in funding.scans.ledger.snapshot()
+                    if (not account_id or row["account_id"] == account_id)
+                    and (not kind or row["stream"] == kind)
+                    and (not environment or row["environment"] == environment)
+                ][:10]
+                if funding and not example
+                else [],
+                "recent_sync_policy_limit": 10,
             }
         if not performance_view:
             return portfolio_snapshot(scope)
