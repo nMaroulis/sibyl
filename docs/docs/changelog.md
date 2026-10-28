@@ -136,6 +136,7 @@ This release establishes the current product baseline, with explicit provider co
 ### Fixed
 
 - Explain Telegram's bot-token and personal-user-ID fields, validate incomplete setup without silently disabling Save, and show why Check/Enable require a saved connection.
+- Fold saved Telegram credentials behind Edit, distinguish listening/paused/setup states with ambient activity, clarify Enable/Pause/Resume and separate complete replies from sent message parts.
 - Keep scripted model-configuration tests independent of optional provider SDK installation, while verifying that missing SDKs still report an unavailable setup.
 
 ### Security

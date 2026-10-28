@@ -161,14 +161,15 @@ def test_saved_source_is_independent_of_new_default(setup):
         {"timestamp": 0},
         {"timestamp": float("inf")},
         {"timestamp": True},
-        {"timestamp": (time.time() - 301) * 1000},
-        {"timestamp": (time.time() + 120) * 1000},
+        {"timestamp": lambda: (time.time() - 301) * 1000},
+        {"timestamp": lambda: (time.time() + 120) * 1000},
     ],
 )
 def test_stale_undated_invalid_or_future_quotes_never_trigger(setup, change):
+    """Build relative timestamps at execution, independently of collection delay."""
     alerts, feed = setup
     for key, value in change.items():
-        setattr(feed, key, value)
+        setattr(feed, key, value() if callable(value) else value)
     rule = alerts.create(request())
     result = alerts.check(rule["id"])
     assert result["status"] == "armed" and result["error"]

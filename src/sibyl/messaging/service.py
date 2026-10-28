@@ -71,6 +71,7 @@ class TelegramService:
         result = self.settings.public()
         profile = self.settings.profile()
         with self.store.db() as db:
+            db.execute("BEGIN")
             rows = db.execute(
                 "SELECT state,COUNT(*) FROM telegram_updates WHERE revision=? GROUP BY state",
                 (profile.get("revision", ""),),
@@ -79,10 +80,23 @@ class TelegramService:
                 "SELECT state,COUNT(*) FROM telegram_outbox WHERE revision=? GROUP BY state",
                 (profile.get("revision", ""),),
             ).fetchall()
+            replies = db.execute(
+                """SELECT COALESCE(SUM(delivered),0),COALESCE(SUM(waiting),0) FROM (
+                    SELECT MIN(state='sent') AS delivered,
+                           MAX(state IN ('pending','sending')) AS waiting
+                    FROM telegram_outbox WHERE revision=? GROUP BY update_id
+                )""",
+                (profile.get("revision", ""),),
+            ).fetchone()
         result["telegram"] = {
             "updates": dict(rows),
             "delivery": dict(outbox),
             "llm_ready": self.network.status()["ready"],
+            "summary": {
+                "messages_received": sum(count for state, count in rows if state != "ignored"),
+                "replies_delivered": replies[0],
+                "replies_waiting": replies[1],
+            },
         }
         return result
 

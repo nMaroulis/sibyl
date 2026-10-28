@@ -116,6 +116,51 @@ async def test_unbound_users_groups_forwarded_and_old_messages_never_reach_sibyl
     assert service.settings.profile()["offset"] == 5
 
 
+async def test_activity_counts_complete_replies_separately_from_message_parts(service):
+    await service.enable()
+    profile = service.settings.profile()
+    service.ingest(profile, [message(), message(2, user=444)])
+    with service.store.db() as db:
+        service._complete(db, profile["revision"], 1, USER, "a" * 5000)
+    assert service.public()["telegram"]["summary"] == {
+        "messages_received": 1,
+        "replies_delivered": 0,
+        "replies_waiting": 1,
+    }
+    await service.deliver(profile)
+    midway = service.public()["telegram"]
+    assert midway["delivery"]["sent"] == 1
+    assert midway["summary"]["replies_delivered"] == 0
+    assert midway["summary"]["replies_waiting"] == 1
+    await service.deliver(profile)
+    final = service.public()["telegram"]
+    assert final["delivery"]["sent"] == 2
+    assert final["summary"] == {
+        "messages_received": 1,
+        "replies_delivered": 1,
+        "replies_waiting": 0,
+    }
+
+
+async def test_public_lifecycle_keeps_saved_credentials_and_last_poll_after_pause(service):
+    def channel():
+        return next(item for item in service.public()["channels"] if item["id"] == "telegram")
+
+    initial = channel()
+    assert initial["has_token"] and not initial["has_started"]
+    assert initial["last_poll_at"] is None
+    await service.enable()
+    service.ingest(service.settings.profile(), [])
+    running = channel()
+    assert running["enabled"] and running["has_started"]
+    assert running["last_poll_at"] > 0
+    service.pause()
+    paused = channel()
+    assert not paused["enabled"] and paused["has_started"] and paused["has_token"]
+    assert paused["last_poll_at"] == running["last_poll_at"]
+    assert TOKEN not in json.dumps(service.public())
+
+
 async def test_setup_enable_and_commands_work_without_model_then_ai_answers_without_reconnecting(
     service, monkeypatch
 ):
