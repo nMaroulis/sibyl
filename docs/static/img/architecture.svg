@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="952" viewBox="0 0 1080 952" role="img" aria-labelledby="title description">
+  <title id="title">Sibyl application architecture</title>
+  <desc id="description">The React dashboard and optional Telegram client enter the Python application. FastAPI routes compose domain services and a native ProtoLink team. Sibyl discovers and consults ten specialists whose typed tools read domain evidence. Domain services connect to exchange and research sources. The application persists local state in SQLite and encrypts credentials with Fernet. Agents use configured API or local language models. Exchange writes use a separate reviewed pipeline.</desc>
+  <defs>
+    <linearGradient id="canvas" x2="1" y2="1">
+      <stop stop-color="#f5f8ff"/>
+      <stop offset="1" stop-color="#faf8ff"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="m 0 1 8 4 -8 4" fill="none" stroke="#8b9bb9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #25324a; }
+      .eyebrow { fill: #65758f; font-size: 13px; font-weight: 600; letter-spacing: 2px; }
+      .heading { font-size: 23px; font-weight: 600; letter-spacing: -.4px; }
+      .body { font-size: 17px; fill: #596980; }
+      .small { font-size: 14px; fill: #65758f; }
+      .line { fill: none; stroke: #8b9bb9; stroke-width: 1.7; stroke-linejoin: round; marker-end: url(#arrow); }
+      .card { fill: #fff; stroke: #dfe6f0; }
+    </style>
+  </defs>
+  <rect width="1080" height="952" rx="30" fill="url(#canvas)"/>
+  <text x="32" y="43" class="eyebrow">SIBYL / ARCHITECTURE</text>
+  <text x="1048" y="43" class="small" text-anchor="end">v2.0.0</text>
+
+  <g class="line">
+    <path d="M364 186V244"/>
+    <path d="M888 186V244" stroke-dasharray="5 5"/>
+    <path d="M272 336V408"/>
+    <path d="M808 336V408"/>
+    <path d="M568 538H512"/>
+    <path d="M184 662V770"/>
+    <path d="M360 662V708H540V770"/>
+    <path d="M660 662V738H540"/>
+    <path d="M896 662V770"/>
+  </g>
+  <text x="382" y="220" class="small">JSON API · activity streams</text>
+  <text x="290" y="381" class="small">domain requests</text>
+  <text x="826" y="381" class="small">agent requests</text>
+
+  <rect x="32" y="82" width="664" height="104" rx="20" class="card"/>
+  <circle cx="65" cy="114" r="5" fill="#6297ee"/>
+  <text x="84" y="122" class="heading">React dashboard</text>
+  <text x="58" y="155" class="body">Accounts · Markets · Trade · Strategies · Research · AI</text>
+  <rect x="728" y="82" width="320" height="104" rx="20" class="card"/>
+  <text x="754" y="122" class="heading">Telegram</text>
+  <text x="754" y="155" class="body">Optional messaging client</text>
+
+  <rect x="32" y="244" width="1016" height="92" rx="20" fill="#eaf1ff" stroke="#ccdcf8"/>
+  <text x="58" y="282" class="heading">Python application · FastAPI</text>
+  <text x="58" y="312" class="body">Validated routes · service composition · access controls · lifecycle</text>
+
+  <rect x="32" y="408" width="480" height="254" rx="22" class="card"/>
+  <text x="58" y="448" class="heading">Domain modules</text>
+  <text x="58" y="485" class="body">Accounts · Valuation · Accounting</text>
+  <text x="58" y="516" class="body">Markets · Candle history · News</text>
+  <text x="58" y="547" class="body">Backtests · Paper &amp; exchange strategies</text>
+  <text x="58" y="578" class="body">Reviewed orders · Alerts · Workers</text>
+  <path d="M58 600H486" stroke="#e4eaf3"/>
+  <text x="58" y="631" class="small">ExchangeClient subclasses · source adapters</text>
+
+  <rect x="568" y="408" width="480" height="254" rx="22" fill="#f4f0ff" stroke="#ded6f1"/>
+  <text x="594" y="448" class="heading">Native ProtoLink team</text>
+  <text x="594" y="485" class="body">Sibyl → discovery &amp; delegation</text>
+  <text x="594" y="516" class="body">10 specialists · prompts · typed tools</text>
+  <text x="594" y="547" class="body">Read-only tools → domain evidence</text>
+  <text x="594" y="578" class="body">AgentGroup · sessions · run reports</text>
+  <path d="M594 600H1022" stroke="#ded6f1"/>
+  <text x="594" y="631" class="small">Lazy models · frozen private request context</text>
+
+  <rect x="32" y="770" width="304" height="112" rx="18" class="card"/>
+  <text x="56" y="806" class="heading">Data sources</text>
+  <text x="56" y="836" class="body">Exchanges · Market APIs</text>
+  <text x="56" y="862" class="body">Publishers · Research APIs</text>
+  <rect x="388" y="770" width="304" height="112" rx="18" class="card"/>
+  <text x="412" y="806" class="heading">Local persistence</text>
+  <text x="412" y="836" class="body">SQLite · retained datasets</text>
+  <text x="412" y="862" class="body">Encrypted Fernet vault</text>
+  <rect x="744" y="770" width="304" height="112" rx="18" class="card"/>
+  <text x="768" y="806" class="heading">Language models</text>
+  <text x="768" y="836" class="body">Configured API providers</text>
+  <text x="768" y="862" class="body">Ollama &amp; other local models</text>
+  <text x="540" y="923" class="small" text-anchor="middle">One user · One API worker · Explicit Demo preview · AI is optional</text>
+</svg>

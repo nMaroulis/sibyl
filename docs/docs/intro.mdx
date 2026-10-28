@@ -1,0 +1,48 @@
+---
+slug: /
+title: Welcome to Sibyl
+description: Connect your exchanges, research markets, test strategies and work with a native ProtoLink AI team.
+---
+
+import BrandHero from '@site/src/components/BrandHero';
+
+<BrandHero />
+
+Sibyl brings your exchange accounts, market analysis, trading, strategy research and AI specialists into one workspace you can run locally. A React interface connects to a modular Python API, while [ProtoLink](https://github.com/nMaroulis/protolink) powers Sibyl and its specialist team.
+
+These guides describe the **v2.0.0 application baseline**. Read the [changelog](changelog.md), start with [installation](getting-started/installation.md), or explore the [architecture](developers/architecture.md).
+
+## Find your workspace
+
+| Workspace | What you can do |
+| --- | --- |
+| [Account](guides/account.md) | Combine multiple exchanges, inspect balances and allocations, review valuation and compare native-asset balance checkpoints. |
+| [Markets](guides/markets.md) | Search spot pairs, manage watchlists, inspect interactive charts and statistics, and retain reusable candle datasets. |
+| [Trade](guides/trading.md) | Review supported spot orders, follow order/fill evidence, import account history and inspect funding, transfers and retained FIFO performance. |
+| [Strategies](guides/strategies.md) | Backtest six algorithms, validate parameters on unseen windows and monitor paper or separately approved exchange runs. |
+| [Sibyl](guides/sibyl.md) | Ask the coordinator to consult registered specialists and bring their evidence into one conversation. |
+| [News](guides/research.md#reporter-news-and-insights) | Follow source-linked reporting, search retained excerpts and inspect text sentiment and Fear & Greed. |
+| [Forecast](guides/research.md#chronos-forecast-baseline) | Explore Chronos's explicitly untrained statistical baseline and theoretical bands. |
+| [Research](guides/research.md) | Browse crypto profiles and concepts, recent Bitcoin blocks and optional equity information. |
+| [Alerts](guides/alerts.md) | Create price, strategy, connection and account-risk watches with a persistent local inbox. |
+| [Settings](guides/settings.md) | Manage exchange accounts, AI models, news, market sources, messaging and workspace preferences. |
+| [Agents](guides/oracle.md) | Inspect the specialist roster and open a direct contextual conversation. |
+| [Coming soon](developers/backend-roadmap.md) | Review implemented foundations, remaining work and deferred multi-user support. |
+
+## Start with your accounts, or take a look around
+
+New workspaces have **no active accounts**. Connect one or many exchanges in Settings, then view them together or individually in Account. The smaller **Preview with Demo** option activates a labeled virtual account; activating an exchange turns Demo off. Public market and research sources have independent settings, so you can explore them without activating an account.
+
+## An AI team alongside the tools
+
+Sibyl discovers ten module specialists through ProtoLink and consults them as needed. Page-level **Ask** dialogs speak directly with the relevant specialist. Agents use typed read-only domain tools, saved conversations and native execution evidence.
+
+Configure an API or local model in [AI models](guides/settings.md) to enable reasoning and the Sibyl coordinator. Specialists also offer factual tool mode without a model. The [Telegram client](guides/telegram.md) can connect a configured private user to Sibyl; the other messaging channels are clearly unavailable setup previews.
+
+## Know the source and the scope
+
+Demo, paper, test environments and production observations are labeled separately. Provider failures remain visible. Exchange capabilities vary by adapter and are shown in Settings; code support and [authenticated acceptance](developers/exchange-acceptance.md) are documented separately.
+
+Manual exchange orders and automated strategies require their applicable server flags, permissions and scoped approvals. Agent tools remain read-only. Forecasts are untrained baselines, sentiment describes supplied text, and technical scores expose their mechanical rules.
+
+Sibyl currently runs as **one user and one API worker**. The [feature overview](guides/feature-coverage.md), [security guide](guides/security.md) and [pending checklist](developers/backend-roadmap.md) explain the current boundaries and planned extensions.

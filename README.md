@@ -1,259 +1,219 @@
+<p align="center">
+  <img src="assets/logo_transparent.png" alt="Sibyl" width="280" />
+</p>
 
-<div align="center">
+# Sibyl · Your connected crypto workspace
 
-[//]: # (  <img src="https://repository-images.githubusercontent.com/648387594/566640d6-e1c4-426d-b2f2-bed885d07e97">)
-  <img src="https://repository-images.githubusercontent.com/648387594/3557377e-1c09-45a9-a759-b0d27cf3c501">
-</div>
+**All your exchanges. Your research. An AI team that understands the context.**
 
-[![Python](https://img.shields.io/badge/python-v3.12-yellow)]()
-[![Streamlit](https://img.shields.io/badge/streamlit-v1.45-red)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-v0.115.12-blue)]()
-[![Llama-CPP](https://img.shields.io/badge/llama_cpp-v0.3.8-black)]()
-[![Tensorflow](https://img.shields.io/badge/tensorflow-v2.18.0-orange)]()
-[![PyTorch](https://img.shields.io/badge/pyTorch-v2.6.0-pink)]()
-[![Pandas](https://img.shields.io/badge/pandas-v2.2.3-lightgrey)]()
-[![Plotly](https://img.shields.io/badge/plotly-v6.0.1-green)]()
-[![Sklearn](https://img.shields.io/badge/Scikit_Learn-v1.6.1-purple)]()
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/nmaroulis/sibyl)
+Sibyl brings your crypto accounts, market analysis, trading and strategy research into one workspace you run on your own machine. Connect multiple exchanges, see your holdings together, explore a market, test an idea and follow it through to execution, having specialist AI agents beside you at every step.
 
+The legacy Python/Streamlit application is available at [sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit).
 
-# Sibyl - Your AI-Powered Crypto Trading Hub with a UI
+[![Version](https://img.shields.io/badge/version-2.0.0-4273d6)](https://nmaroulis.github.io/sibyl/changelog)
+[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
+[![ProtoLink](https://img.shields.io/badge/AI_agents-ProtoLink-8B5CF6)](https://github.com/nMaroulis/protolink)
+[![License](https://img.shields.io/badge/license-Apache_2.0-64748B)](LICENSE)
 
-[//]: # (<hr>)
+[Documentation](https://nmaroulis.github.io/sibyl/) · [Getting started](docs/docs/getting-started/installation.md) · [Changelog](docs/docs/changelog.md) · [Implementation checklist](docs/docs/developers/backend-roadmap.md)
 
-[//]: # (<span style="color: red; font-size: 16px;">pre-alpha version</span>)
+## One workspace, from understanding to action
 
-[//]: # (<br>)
+- **See the whole picture.** Combine accounts across exchanges, or focus on one exchange, account or asset.
+- **Research before you trade.** Inspect prices, statistics, news and historical strategy results in the same place.
+- **Ask a specialist.** Open a contextual conversation on a page, or let Sibyl consult the team for you.
+- **Keep control.** Credentials are encrypted locally. Exchange execution needs explicit setup and approval; AI tools are read-only.
+- **Explore at your own pace.** Start without credentials, connect your accounts when ready, or use the clearly labeled Demo preview.
 
-Welcome to **Sibyl**! This application is your centralized hub for all things crypto. With Sibyl, you can connect multiple crypto exchange accounts, deploy smart trading strategies, and access a wide range of AI-powered tools, all within a secure, locally deployed environment.
+The interface pairs a floating navigation dock with focused workspaces, interactive charts and expandable advanced controls. React handles the experience; a modular Python backend owns the data, calculations and execution.
 
-## Key Features
+## Explore the modules
 
-### Interactive Dashboard UI
-The intuitive dashboard provides a comprehensive view of your crypto activities. Manage your trading strategies, analyze market trends, and keep an eye on the latest news, all in one place.
+### Account · Know what you own
 
----
+Bring multiple exchange accounts into a combined portfolio and switch between exchange and individual-account views. Inspect allocations, free and reserved balances, valuation history and conversion evidence, with filters and CSV exports.
 
-### AI Agents & LLMs that power each Sibyl functionality - Oracle Module 🔥
-**Oracle** is the LLM-driven intelligence layer of *Sibyl*.
-Wherever you navigate in Sibyl, Oracle is there, ready to assist, explain, advise or spark new insights.
-With a single click, you activate a powerful AI agent that understands your context and delivers real-time intelligence, from market sentiment analysis to data explanations, crypto education, and strategy suggestions and more.
+Balance checks compare saved starting quantities with retained trades, fees and eligible funding. Missing prices and incomplete history stay visible. Production holdings, test funds and Demo are kept distinct.
 
-- **Context-Aware Assistant**  
-  Oracle adapts to each section of Sibyl, whether you're analyzing a token, reading market news, launching a strategy or reviewing your trades.
+[Account guide](docs/docs/guides/account.md) · [Balance checks](docs/docs/guides/balance-checks.md)
 
-- **Natural Language Interaction**  
-  Ask questions, get summaries or explore crypto concepts with simple text, no jargon required.
+### Markets · Look beyond the price
 
-- **Real-Time Reasoning**  
-  Powered by **locally deployed** or **API** LLMs, Oracle can synthesize multiple sources of information, extract insights, and provide actionable suggestions.
+Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports.
 
-- **Intelligent Agent Hooks**  
-  Oracle can trigger deeper tools like analytics, visualizations or predictions via internal AI agents when appropriate.
+Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics and correlations. An explainable technical-bias score shows its inputs and votes. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
 
----
+[Markets guide](docs/docs/guides/markets.md) · [Statistics and score](docs/docs/guides/market-statistics.md) · [History and datasets](docs/docs/guides/market-history.md)
 
-### Connected Crypto Exchange Overview - Wallet Module 💰
+### Trade · Follow an order through
 
-This is the landing page of Sibyl.
-Get an overview of the status of connected Crypto Exchanges, including balances, positions, and recent trades.
+Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Monitor orders, partial fills and cancellation evidence; recover uncertain submissions by client ID without blindly submitting again.
 
-![wallet_ui](https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/gifs/wallet_ui.gif)
+Account history brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
 
+Execution, imports and recovery vary by provider. Each exchange card in Settings shows the capabilities actually implemented for that provider and environment.
 
----
+[Trading guide](docs/docs/guides/trading.md) · [Exchange support](docs/docs/developers/exchange-clients.md)
 
-### Strategy Planning - Broker Module 🎯
-Tune and deploy trading strategies and monitor their performance through a real-time UI:
+### Strategies · Test, compare, monitor
 
-#### Option 1 - Sibyl Trading Engine
+Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Bollinger Surge, Impulse Breakout and Quantum Momentum**. Start with a simple configuration, then expand indicator, risk and execution settings.
 
-A **`custom trading engine`** written in Python, supporting BUY, SELL orders and Backtesting.
+- **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against buy-and-hold, drawdowns and trade-level metrics.
+- **Validate:** run bounded parameter searches, chronological holdouts and expanding walk-forward tests. Save inputs, compare compatible experiments and rerun exact datasets.
+- **Monitor:** follow paper or separately approved exchange runs through charts, execution markers and a persistent decision journal.
+- **Control:** use account-bound budgets, order limits, a global strategy halt and optional shared exposure and observed daily-loss controls.
 
-- Currently supported trading algorithms:
-  - Generic strategy algorithms: Bollinger Bands, RSI and EMA crossover
-  - Sibyl advanced custom strategy algorithms: **Bollinger Surge**, **Impulse Breakout** and **Quantum Momentum**.
-- Customize the parameters for each algorithm and choose the desired market you want to deploy it.
-- **Backtesting** for each strategy before it is deployed. Get strategy performance metrics and plots on historic data.
-- ```Strategy Console```: Monitor in real-time the performance of the algorithm
-  - Logs Table
-  - Evaluation metrics (profit ratio, sharpe ratio, drawdown, sortino and more..)
-  - Real-time Line plot where the actions of the algorithm are shown.
+[Strategy studio](docs/docs/guides/strategies.md) · [Validation](docs/docs/guides/strategy-validation.md) · [Exchange execution](docs/docs/guides/strategy-execution.md)
 
-Modules:
-- Strategies: All the classes that implement a strategy logic. Inherit the ```BaseStrategy``` class
-- ```Tactician```: Takes a Strategy as input and is responsible for running it. It is run in a loop, where the interval is based on the strategy interval. Uses the ```TacticianExchangeInterface``` to communicate with the Exchange API clients.
-- ```Evaluator```: Takes as inputs the strategy logs and calculates the Evaluation metrics.
-- ```Backtester```: Aggregates historical data and evaluates the strategies on them.
+### Sibyl & Agents · A team you can talk to
 
-TBA: AI-based strategy algorithm, LLM Assistant on Strategy planning.
+Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Saved conversations, live activity, consultation trails and run details make the work inspectable.
 
-#### Option 2 - Freqtrade Engine with custom API layer and UI
+Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
 
-TBD
+| Agent | Focus |
+| --- | --- |
+| **Sibyl** | Coordinate the team and combine specialist findings |
+| **Accountant** | Holdings, valuation, retained history and accounting evidence |
+| **Analyst** | Markets, technical statistics and correlations |
+| **Broker** | Trade, order evidence, backtests and strategy monitors |
+| **Chronos** | Forecast baseline and its assumptions |
+| **Reporter** | Source-linked news, article excerpts and text sentiment |
+| **Technician** | Connections, settings, model setup and diagnostics |
+| **Wiki** | Crypto concepts and project profiles |
+| **Explorer** | Recent Bitcoin blocks and network context |
+| **Equity Analyst** | Equity prices, company information and statistics |
+| **Oracle** | Portfolio context and an overview of the workspace |
 
----
+Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot. WhatsApp, Discord, Slack, Signal and Email setup previews are marked unavailable.
 
-### SPOT Trading - Broker Module 💰
-Create and place a SPOT order through the sibyl UI. This order will be first sent as a test order, and if it is validated it will be placed on your Exchange API.
-The Spot order is then saved in the TradingHistory DB, to retrieve its status and get analytics.
+[Sibyl guide](docs/docs/guides/sibyl.md) · [Model setup](docs/docs/guides/settings.md) · [Telegram](docs/docs/guides/telegram.md)
 
----
+### News · Read with context
 
-### Price Movement Prediction using ML - Chronos Module 🔮
-Chronos contains a suite of ML models for signal processing (non-LLM). Leverage custom TensorFlow Bi-Directional LSTMs, Gated Transformer Units (GTUs), and ARIMA models to forecast and asset's price and make informed trading decisions. 
-- Chronos (Forecasting) tab in the UI: choose an asset and call the Chronos to get the price prediction.
+Follow CoinDesk, Cointelegraph, Decrypt, The Block and CryptoSlate through public collectors, with optional NewsAPI access. Search a retained, deduplicated archive; filter by publisher, asset, date and text polarity; open full reporting at its original source.
 
-Currently Supported Models:
-- Custom Tensorflow LSTM model, features: [bitcoin_price, sp500_price, gold_price, usd_index, oil_price, volatility_index, interest_rate]
+Tone and trend views describe the wording of headlines and excerpts. The separately attributed Alternative.me Fear & Greed index adds broader market context. Reporter can explain the selected stories and their sources.
 
+[News and sentiment](docs/docs/guides/research.md#reporter-news-and-insights)
 
-TBD:
-- [Nixtla](https://github.com/Nixtla/nixtla) model
-- Custom model based on [CryptoMamba](https://github.com/MShahabSepehri/CryptoMamba/tree/main)
+### Forecast · Explore a statistical baseline
 
-TBA: 
-- Utilize Chronos models for AI-powered strategies.
+Chronos visualizes a log-return price baseline and theoretical uncertainty bands for a chosen horizon. Its assumptions are explicit: this is an **untrained statistical baseline**, with trained models and calibration tracked as future work.
 
----
+[Forecast method](docs/docs/guides/research.md#chronos-forecast-baseline)
 
-### Data Analysis & Visualization - Analyst Module 📈
+### Research · Understand the wider picture
 
-Sibyl offers powerful data analysis and visualization tools to support your trading decisions:
+Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect recent Bitcoin blocks, or explore optional equity quotes, adjusted history and company information.
 
-- Line and Candle Plots with statistics (Bollinger Bands, RSI, EMA and more..)
-- Correlation Analysis
-- SHAP Feature Importance
-- Regression Analysis
+Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
-Visualize the data with custom plots and tables for clear insights.
+[Research guide](docs/docs/guides/research.md)
 
-Track your profits and losses with detailed tables and plots, allowing you to measure the success of each trading order.
+### Alerts · Keep useful signals close
 
-![analytics_ui](https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/gifs/analytics_1_ui.gif)
+Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. A persistent local inbox retains the triggering evidence and unread state.
 
----
+[Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 
-### Crypto News & Market Sentiment - Reporter Module 🕵🏻‍
-Stay informed with the Natural Language Processing (NLP) tools:
+### Settings & Coming soon · Make it yours
 
-- Web scraping for the latest crypto news
-- Text summarization for quick news highlights
-- Sentiment analysis using advanced language models to gauge market mood
-- **Oracle**: LLM-powered chatbot, to ask questions about the latest crypto news.
+Manage **Exchanges, AI models, News, Market data, Messaging and Workspace** in one place. Exchange cards expose implementation coverage; source diagnostics distinguish observed connectivity from quote freshness. Ollama setup can detect the server and installed models, with explicit controls for a server started by Sibyl.
 
-![reporter_ui](https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/gifs/reporter_ui.gif)
+**More → Coming soon** lists available foundations and pending work. Multi-user hosting is deferred; the current deployment is one user and one API worker.
 
----
+[Settings guide](docs/docs/guides/settings.md) · [Ollama](docs/docs/guides/ollama.md) · [Feature coverage](docs/docs/guides/feature-coverage.md)
 
-### Connect with Popular Exchanges - Technician Module 🛠️
-Sibyl supports API connections with major crypto exchanges. Currently supported:
+## Exchange connections
 
-- Binance.com
-- Binance Testnet
-- Coinbase Sandbox
+Sibyl includes adapters for **20 production exchanges**, dedicated **Binance Spot Testnet** and **Coinbase Exchange Sandbox** clients, and an offline **DemoClient**:
 
-Additional exchanges are planned for future releases.
-- Coinbase
-- Bybit
-- Kraken
+Binance, Binance.US, Coinbase, Kraken, OKX, Bybit, KuCoin, Gate, Bitget, MEXC, HTX, Crypto.com Exchange, Bitstamp, Gemini, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit.
 
----
-
-### Crypto Wiki Chatbot - Wiki Module 💬
-An interactive **chatbot** which is based on custom **AI agents** using **MCP server**, a **RAG system**, which includes thousands of crypto-related publications, books and articles,
-and Agent tools like **Web Search**, **Chat History Memory** and **Conversation Pipeline**.
-After you ask a crypto-related question, the Pipeline begins. First the user query is **classified** as *conversational* or *technical*. In case of *conversational*, the chatbot just uses an LLM to generate a response.
-If the user query is *technical*, then, the embeddings for your query are created and the most similar embeddings are found in the ***chromaDB*** Embeddings Database.
-The similarity method is a hybrid approach, using cosine similarity, BM25 keyword search matching and FAISS indexing similarity. In case no valid material is found on the Embeddings DB, then a **web search** is performed
-in order to find relevant information online. All the available material is given to the LLM in order to generate the response.
-
-In order to use this functionality, you have to:
-1. Setup an LLM through the UI Settings Tab.
->   i. Provide a valid HuggingFace or OpenAI **API key**, to be stored in the local encrypted Database *or*
->
->   ii. Choose an LLM to be deployed **locally**. This is done automatically by the backend.
-2. **Download the chromaDB Embeddings Database**, which is not by default provided in the implementation. The download is available through the UI, or adding manually the following file https://drive.google.com/file/d/15Vrxs6sbPnlZZURGr5DopZHlcwEtvaou/view?usp=share_link in the *database/wiki_rag* directory.
-
----
-
-### Evaluate Stock - Stock Analysis Module 📊
-Choose a Company from a list of available company stocks and:
-
-- Get Company's Information
-- Analysis if a stock is worth buying or not based on various indicators
-- Get insights about U.S. senators' stock portfolios
-- **Oracle**: LLM-powered stock evaluation
-- Future Release: Rating based on custom ML model
-
----
-
-## Security & Local Deployment
-Sibyl is designed for local deployment, ensuring your data stays secure. You have complete control over your trading activities and account connections. No sensitive information is stored on external servers, giving you peace of mind.
-### Local Databases
-#### API Key Storage 
-> All **API keys** are stored ***locally*** on an **encrypted** SQlite Database, with a **unique encryption key** generated on your local file system. This Database uses SQLAlchemy for ORM. You may find the database and the encryption key at */database*
-
-> All **trades** made through Sibyl strategies are stored in a local SQlite DB without keeping any personal information.
+Adapters share an `ExchangeClient` contract and explicit provider subclasses over CCXT. Available account, market-data, order and history methods depend on the provider. Implemented capability and authenticated acceptance are documented separately in the [support matrix](docs/docs/developers/exchange-clients.md) and [acceptance results](docs/docs/developers/exchange-acceptance.md).
 
 ## Architecture
 
-<div align="center">
+![Sibyl architecture: React connects to FastAPI; Python domains and the ProtoLink agent team share local persistence and connect to exchanges, research sources and configured models.](docs/static/img/architecture.svg)
 
-[//]: # (  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">)
-  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">
-</div>
+The Python application owns the dashboard API and the optional Telegram worker. Domain modules own calculations and state; native ProtoLink agents call their read-only functions. Sibyl uses registry discovery and native delegation to consult specialists. Exchange writes go through the separate reviewed trading pipeline.
 
+SQLite retains accounts, ledgers, research inputs, runs, conversations and alerts. A local Fernet vault encrypts credentials. Ordinary typed Python tools, lazy model factories, private request context and native run reports keep the AI layer close to ProtoLink's API.
 
-## Deployment
+| Directory | Responsibility |
+| --- | --- |
+| `frontend/src/` | React pages, charts, contextual chat and shared controls |
+| `src/sibyl/api/` | FastAPI routes, validation and application lifecycle |
+| `src/sibyl/exchanges/` | Shared client interface, provider adapters and Demo |
+| `src/sibyl/accounting/` | Funding, transfers, balance checks and accounting rules |
+| `src/sibyl/strategies/` | Signals, backtests, validation, paper and exchange runs |
+| `src/sibyl/market_data/`, `src/sibyl/news/` | Candle history, datasets and news collection |
+| `src/sibyl/agents/` | Agent declarations, prompts, tools and native runtime integration |
+| `src/sibyl/alerts/`, `src/sibyl/messaging/` | Alert rules, the local inbox and messaging clients |
+| `src/sibyl/services/` | Domain coordination and focused funding-sync workers |
+| `docs/` | Docusaurus user guides, API contracts and implementation checklist |
 
-**1. Virtual Environment — Recommended for Apple silicon and ARM systems, so Pypi takes care of arm64 libraries.**
+[Architecture guide](docs/docs/developers/architecture.md) · [Diagram source](docs/static/img/architecture.mmd) · [API reference](docs/docs/developers/api.md)
 
-Install Python 3.12 on your system:
+## Run Sibyl
 
-```sh
-# Linux (apt)
-$ sudo apt install python==3.12
-# macOS
-$ brew install python@3.12 
+You need **Python 3.12+**, [uv](https://docs.astral.sh/uv/) and **Node.js 22.12+**.
 
-$ cd sibyl
-
-$ python3.12 -m venv sibyl
-$ source sibyl/bin/activate
-
-Option 1 - uv Package manager (recommended)
-# Linux & macOS
-$ pip install uv
-# macOS
-$ brew install astral-sh/tap/uv
-
-$ uv sync --active
-
-Option 2 - Pip and requirements.txt
-$ pip install -r requirements.txt # poetry config file is also available
-
-# Run application (make sure the venv is activated)
-$ python main.py
+```bash
+git clone https://github.com/nMaroulis/sibyl.git
+cd sibyl
+uv sync --frozen --group dev
+npm ci
+cp .env.example .env
 ```
 
-**2. Dockerfile - Recommended for x86 systems.**
+Start the Python backend:
 
-```sh
-$ docker build -t sibyl_image .
-$ docker run -p 8501:8501 -p 8000:8000 -p 50051:50051 sibyl_image
+```bash
+uv run sibyl
 ```
 
-Access the frontend from your browser at ```http://localhost:8501```
+In another terminal, start the dashboard:
 
+```bash
+npm run dev
+```
 
-## Roadmap
-The development roadmap includes exciting new features:
+Open **http://127.0.0.1:5173**. A new workspace has no active accounts: connect one or several in Settings, or choose the smaller **Preview with Demo** option. Public market prices default to Binance; choose Demo prices for offline charts. News and other research sources have their own settings.
 
-- A Reinforcement Learning Agent that automatically places buy/sell orders based on optimized strategies and timing.
+AI is optional for the data and trading workspaces. Configure a model in **Settings → AI models** to enable model-backed conversations and Sibyl. For SDK-based providers, install the corresponding optional extra, for example:
 
----
+```bash
+uv sync --frozen --group dev --extra openai
+```
 
-If you have any questions or suggestions, please open an issue or submit a pull request. I'm excited to see how you use Sibyl to enhance your crypto trading experience!
+Ollama and supported OpenAI-compatible HTTP servers do not need a hosted-provider SDK. Follow the [installation guide](docs/docs/getting-started/installation.md) for other extras and local-model setup.
 
+### Serve a built dashboard
+
+```bash
+npm run build
+uv run sibyl
+```
+
+FastAPI serves the built dashboard at **http://127.0.0.1:8000**, alongside `/docs` for OpenAPI and `/health` for process health. A [Docker Compose setup](docs/docs/developers/deployment.md) is also included.
+
+Credentials stay encrypted on the machine running the backend and are never returned to the UI or agent tools. Preserve the database and vault key together. Remote access requires a workspace API token; use the [deployment guide](docs/docs/developers/deployment.md) when hosting. Exchange and automated strategy execution are disabled by default and require separate server flags and reviewed approvals.
+
+## Documentation & development
+
+```bash
+npm run docs:dev       # http://localhost:3000/sibyl/
+npm run docs:build     # Static documentation in docs/build
+uv run pytest
+uv run ruff check src tests
+npm run typecheck
+npm run build
+```
+
+Start with the [user guides](https://nmaroulis.github.io/sibyl/), explore the [Python architecture](docs/docs/developers/architecture.md), or use the [extension guide](docs/docs/developers/extending.md) to add a client, strategy or agent tool. The [pending checklist](docs/docs/developers/backend-roadmap.md) tracks work beyond the v2.0.0 baseline.
+
+Sibyl is released under the [Apache License 2.0](LICENSE).

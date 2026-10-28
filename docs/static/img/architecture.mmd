@@ -1,0 +1,20 @@
+%% Editable topology for architecture.svg. Keep both files aligned.
+flowchart TB
+    dashboard[React dashboard]
+    telegram[Optional Telegram client]
+    app[Python application / FastAPI]
+    domains["Domain modules<br/>Accounts / Markets / Accounting / Strategies / Orders / News / Alerts"]
+    team["Native ProtoLink team<br/>Sibyl + 10 specialists / discovery / delegation / typed tools"]
+    sources[Exchanges / Market APIs / Publishers / Research APIs]
+    state[SQLite / Retained datasets / Encrypted Fernet vault]
+    models[Configured API and local language models]
+
+    dashboard -->|JSON API and activity streams| app
+    telegram -.->|Application messaging service| app
+    app --> domains
+    app --> team
+    team -->|Read-only domain tools| domains
+    domains -->|ExchangeClient and source adapters| sources
+    domains --> state
+    team --> state
+    team -->|Lazy request-local models| models
