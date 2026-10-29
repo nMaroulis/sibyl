@@ -1,0 +1,835 @@
+/* The front door is a full-width page; the guides retain their reading layout. */
+.sibyl-home {
+  background: linear-gradient(180deg, #f8faff 0, #fff 780px);
+  overflow: hidden;
+}
+.sibyl-home-width {
+  width: calc(100% - 112px);
+  max-width: 1240px;
+  margin-inline: auto;
+}
+.sibyl-home-hero {
+  position: relative;
+  padding-top: 28px;
+}
+.sibyl-hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 30px;
+  align-items: center;
+  min-height: 620px;
+}
+.sibyl-hero-copy {
+  padding-block: 35px 45px;
+  position: relative;
+  z-index: 2;
+}
+a.doc-welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 11px 6px 9px;
+  background: #edf2fc;
+  border: 1px solid #e1e8f7;
+  border-radius: 99px;
+  color: #5876b2;
+  font-size: 11px;
+  text-decoration: none;
+}
+.doc-release-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #7898d4;
+  box-shadow: 0 0 0 3px #dce6f8;
+  margin-inline: 3px;
+}
+.doc-welcome-badge > span:last-child {
+  color: #8ca0c5;
+  margin-left: 8px;
+}
+.sibyl-hero-copy h1 {
+  font-size: clamp(52px, 4.8vw, 72px);
+  line-height: 1.09;
+  letter-spacing: -0.055em;
+  font-weight: 500;
+  color: var(--sibyl-ink);
+  margin: 27px 0 22px;
+}
+.sibyl-hero-copy h1 > span {
+  display: block;
+}
+.sibyl-hero-accent {
+  color: #6381ba;
+  background: linear-gradient(110deg, #456bb2 4%, #6988ba 75%, #7c87b7);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.sibyl-hero-copy > p {
+  font-size: 16px;
+  line-height: 1.85;
+  color: #65738a;
+  margin: 0 0 28px;
+  letter-spacing: -0.15px;
+}
+.sibyl-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+a.sibyl-doc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  padding: 14px 19px;
+  background: linear-gradient(130deg, #4c70b8, #3e62aa);
+  box-shadow:
+    0 5px 15px #4e73bc20,
+    inset 0 1px 0 #ffffff20;
+  border: 1px solid #4c70bc;
+  border-radius: 11px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    transform 200ms,
+    box-shadow 200ms;
+}
+a.sibyl-doc-button:hover {
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 9px 22px #4e73bc2c;
+}
+.sibyl-doc-button svg {
+  width: 18px;
+  height: 18px;
+}
+a.sibyl-doc-secondary,
+a.sibyl-subtle-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #5b6c85;
+  font-size: 12px;
+  text-decoration: none;
+}
+a.sibyl-doc-secondary:hover,
+a.sibyl-subtle-link:hover {
+  color: #426ab5;
+}
+.sibyl-subtle-link svg {
+  width: 17px;
+  height: 17px;
+}
+.sibyl-hero-principles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 33px;
+}
+.sibyl-hero-principles > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #66758c;
+  font-size: 10px;
+}
+.sibyl-hero-principles svg {
+  width: 13px;
+  height: 13px;
+  color: #8c9db6;
+}
+.sibyl-hero-copy > * {
+  animation: sibyl-rise-in 700ms ease both;
+}
+.sibyl-hero-copy > :nth-child(2) {
+  animation-delay: 70ms;
+}
+.sibyl-hero-copy > :nth-child(3) {
+  animation-delay: 140ms;
+}
+.sibyl-hero-copy > :nth-child(4) {
+  animation-delay: 210ms;
+}
+.sibyl-hero-copy > :nth-child(5) {
+  animation-delay: 280ms;
+}
+
+/* No canvas, external animation library or per-frame React updates. */
+.crystal-scene {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 1;
+  --orbit-radius: 225px;
+}
+.crystal-art {
+  position: absolute;
+  inset: 0;
+}
+.crystal-halo {
+  position: absolute;
+  inset: 5% 4% 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 56% 48%, #e4eafa99, #edf1fc55 43%, #f9faff00 70%);
+}
+.crystal-orbit-ring {
+  position: absolute;
+  border: 1px solid #e1e8f4;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.crystal-orbit-ring-one {
+  inset: 9%;
+}
+.crystal-orbit-ring-two {
+  inset: 10% 1%;
+  transform: rotate(-28deg) scaleY(0.49);
+  border-color: #dce5f28a;
+}
+.crystal-ball {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.crystal-float {
+  animation: crystal-breathe 9s ease-in-out infinite;
+}
+.crystal-orbiter {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: crystal-orbit 76s linear infinite;
+  will-change: transform;
+}
+.crystal-provider {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: #ffffffed;
+  border: 1px solid #fff;
+  border-radius: 17px;
+  color: #35465b;
+  box-shadow:
+    0 7px 26px #4e6c9c12,
+    0 1px 5px #49689a08;
+}
+.crystal-provider img {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+.crystal-provider-anthropic {
+  color: #bc8a75;
+}
+.crystal-provider-name {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.025em;
+  color: #8290a6;
+  margin-top: 8px;
+}
+.crystal-speck {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  background: #b9cceb;
+}
+.crystal-speck-one {
+  top: 16%;
+  right: 16%;
+}
+.crystal-speck-two {
+  bottom: 22%;
+  left: 12%;
+  background: #e6c7b5;
+  width: 4px;
+  height: 4px;
+}
+.crystal-scene-footer {
+  position: absolute;
+  bottom: 0;
+  left: 28px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 9px;
+  color: #8b98ad;
+}
+.crystal-scene-footer > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.crystal-scene-footer i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #97b3cf;
+}
+.crystal-scene-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 7px;
+  padding: 6px 7px;
+  background: transparent;
+  color: #8392aa;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+  transition:
+    color 180ms,
+    background 180ms;
+}
+.crystal-scene-footer button:hover {
+  background: #eaf0fb;
+  color: #5576b4;
+}
+.crystal-scene-footer button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.crystal-scene[data-paused='true'] .crystal-float,
+.crystal-scene[data-paused='true'] .crystal-orbiter {
+  animation-play-state: paused;
+}
+
+.sibyl-integrations {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 18px 28px;
+  align-items: center;
+  padding: 30px 0 26px;
+  border-top: 1px solid var(--sibyl-line);
+  border-bottom: 1px solid var(--sibyl-line);
+}
+.sibyl-integration-heading > span,
+.sibyl-section-kicker {
+  display: block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: #6a7890;
+}
+.sibyl-integration-heading p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #60718c;
+  margin: 9px 0 0;
+}
+.sibyl-integration-marks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 22px;
+}
+.sibyl-integration-marks > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: #61718b;
+}
+.sibyl-integration-marks svg,
+.sibyl-integration-marks img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.sibyl-integration-note {
+  grid-column: 2;
+  margin: 0;
+  color: #66758c;
+  font-size: 10px;
+}
+.sibyl-integration-note a {
+  color: #4f70aa;
+  text-underline-offset: 3px;
+}
+.sibyl-start-section {
+  padding-top: 90px;
+}
+.sibyl-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 30px;
+}
+.sibyl-section-heading h2 {
+  margin: 10px 0 0;
+  color: var(--sibyl-ink);
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: -1.2px;
+}
+.sibyl-section-heading > p {
+  font-size: 12px;
+  color: #66758c;
+  line-height: 1.8;
+  margin: 0;
+}
+.sibyl-doc-paths {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+a.sibyl-path-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+  padding: 27px 27px 23px;
+  border: 1px solid #e6ebf4;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #f8faff, #fff);
+  text-decoration: none;
+  color: #5d6c83;
+  transition:
+    transform 240ms,
+    border-color 240ms,
+    box-shadow 240ms;
+}
+a.sibyl-path-02 {
+  background: linear-gradient(145deg, #f7f6fc, #fff);
+}
+a.sibyl-path-03 {
+  background: linear-gradient(145deg, #fbf8f5, #fff);
+}
+a.sibyl-path-card:hover {
+  transform: translateY(-4px);
+  border-color: #cbd8ef;
+  box-shadow: 0 12px 35px #49689a09;
+}
+.sibyl-path-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 31px;
+  color: #8c9fbf;
+}
+.doc-card-index {
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: #6a7890;
+}
+.sibyl-path-top > svg {
+  width: 24px;
+  height: 24px;
+}
+.sibyl-path-card h3 {
+  color: #364a69;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+  margin: 0 0 12px;
+}
+.sibyl-path-card > p {
+  font-size: 12px;
+  line-height: 1.85;
+  color: #65738a;
+  margin-bottom: 22px;
+}
+.sibyl-card-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  color: #607fb4;
+  font-size: 11px;
+}
+.sibyl-card-link svg {
+  width: 16px;
+  height: 16px;
+}
+.sibyl-workspaces-section {
+  padding-top: 84px;
+}
+.sibyl-workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+a.sibyl-workspace-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 23px 19px;
+  border: 1px solid #e8edf5;
+  border-radius: 16px;
+  text-decoration: none;
+  transition:
+    background 200ms,
+    border-color 200ms;
+}
+a.sibyl-workspace-card:hover {
+  background: #fafcff;
+  border-color: #cbd9f1;
+}
+.sibyl-workspace-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.sibyl-workspace-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.sibyl-workspace-icon.blue {
+  background: #edf2ff;
+  color: #7691cd;
+}
+.sibyl-workspace-icon.peach {
+  background: #fcf0e9;
+  color: #c79779;
+}
+.sibyl-workspace-icon.mint {
+  background: #eaf5f2;
+  color: #7da99a;
+}
+.sibyl-workspace-icon.sand {
+  background: #f8f3e8;
+  color: #b5a076;
+}
+.sibyl-workspace-icon.lilac {
+  background: #f0edf9;
+  color: #a093c1;
+}
+.sibyl-workspace-icon.sky {
+  background: #ebf4fa;
+  color: #82a6bd;
+}
+.sibyl-workspace-card h3 {
+  margin: 2px 0 8px;
+  color: #3c506e;
+  font-size: 14px;
+  font-weight: 500;
+}
+.sibyl-workspace-card p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.85;
+  color: #66758c;
+}
+.sibyl-workspace-arrow {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: #acb9cf;
+  margin-top: 3px;
+}
+.sibyl-home-outro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 40px;
+  margin-block: 85px 70px;
+  padding: 40px 44px;
+  border: 1px solid #e6edf6;
+  border-radius: 22px;
+  background: radial-gradient(ellipse at 100% 0, #e7edfa99, transparent 65%), #f8fafe;
+}
+.sibyl-home-outro h2 {
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -1.1px;
+  color: #415775;
+  line-height: 1.2;
+  margin: 14px 0;
+}
+.sibyl-home-outro p {
+  font-size: 12px;
+  color: #66758c;
+  line-height: 1.8;
+  margin: 0;
+}
+.sibyl-outro-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 21px;
+}
+
+@keyframes crystal-orbit {
+  from {
+    transform: rotate(var(--angle)) translateX(var(--orbit-radius)) rotate(var(--counter-angle));
+  }
+  to {
+    transform: rotate(calc(var(--angle) + 360deg)) translateX(var(--orbit-radius))
+      rotate(calc(var(--counter-angle) - 360deg));
+  }
+}
+@keyframes crystal-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes sibyl-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (min-width: 997px) {
+  .theme-doc-sidebar-container {
+    --doc-sidebar-width: 272px;
+  }
+}
+@media (max-width: 1250px) {
+  .sibyl-home-width {
+    width: calc(100% - 80px);
+  }
+  .sibyl-hero-grid {
+    min-height: 570px;
+    gap: 18px;
+  }
+  .crystal-scene {
+    --orbit-radius: 185px;
+  }
+  .sibyl-integration-marks {
+    gap: 17px;
+  }
+  .sibyl-integration-marks > div {
+    font-size: 11px;
+  }
+}
+@media (max-width: 996px) {
+  .sibyl-home-width {
+    width: calc(100% - 64px);
+  }
+  .sibyl-hero-grid {
+    grid-template-columns: 1fr 1fr;
+    min-height: 550px;
+    gap: 10px;
+  }
+  .sibyl-hero-copy h1 {
+    font-size: 48px;
+  }
+  .sibyl-hero-copy > p {
+    font-size: 13px;
+  }
+  .sibyl-hero-principles {
+    gap: 12px;
+  }
+  .crystal-scene {
+    --orbit-radius: 148px;
+  }
+  .crystal-provider {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+  .crystal-provider img,
+  .crystal-provider svg {
+    width: 25px;
+    height: 25px;
+  }
+  .crystal-scene-footer {
+    left: 5px;
+    right: 0;
+    font-size: 8px;
+  }
+  .crystal-scene-footer > span {
+    max-width: 120px;
+  }
+  .sibyl-integrations {
+    grid-template-columns: 1fr;
+  }
+  .sibyl-integration-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sibyl-integration-heading p {
+    font-size: 12px;
+    margin: 0;
+  }
+  .sibyl-integration-heading br {
+    display: none;
+  }
+  .sibyl-integration-note {
+    grid-column: 1;
+  }
+  .sibyl-integration-marks {
+    justify-content: flex-start;
+    gap: 24px;
+  }
+  .sibyl-section-heading h2 {
+    font-size: 30px;
+  }
+  .sibyl-doc-paths {
+    gap: 12px;
+  }
+  a.sibyl-path-card {
+    padding: 22px;
+  }
+  .sibyl-path-card h3 {
+    font-size: 18px;
+  }
+  .sibyl-workspace-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .sibyl-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .sibyl-hero-copy {
+    padding-block: 28px 12px;
+  }
+  .sibyl-hero-copy h1 {
+    max-width: 530px;
+    font-size: clamp(43px, 8vw, 59px);
+    margin-top: 23px;
+  }
+  .sibyl-hero-copy > p {
+    font-size: 14px;
+  }
+  .crystal-scene {
+    max-width: 450px;
+    --orbit-radius: 178px;
+    margin-top: 10px;
+    margin-bottom: 24px;
+  }
+  .crystal-scene-footer {
+    left: 18px;
+    right: 10px;
+    font-size: 9px;
+  }
+  .crystal-scene-footer > span {
+    max-width: none;
+  }
+  .sibyl-doc-paths {
+    grid-template-columns: 1fr;
+  }
+  a.sibyl-path-card {
+    min-height: 220px;
+    padding: 25px;
+  }
+  .sibyl-path-top {
+    margin-bottom: 22px;
+  }
+  .sibyl-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .sibyl-section-heading > p br {
+    display: none;
+  }
+  .sibyl-start-section {
+    padding-top: 60px;
+  }
+  .sibyl-workspaces-section {
+    padding-top: 60px;
+  }
+  .sibyl-home-outro {
+    padding: 32px;
+    margin-block: 60px 44px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 26px;
+  }
+  .sibyl-outro-actions {
+    align-items: flex-start;
+    gap: 17px;
+  }
+}
+@media (max-width: 480px) {
+  .sibyl-home-width {
+    width: calc(100% - 40px);
+  }
+  .sibyl-home-hero {
+    padding-top: 15px;
+  }
+  .sibyl-hero-copy h1 {
+    font-size: 43px;
+    letter-spacing: -2.1px;
+  }
+  .sibyl-hero-actions {
+    gap: 17px;
+  }
+  .sibyl-doc-button {
+    gap: 23px !important;
+  }
+  .sibyl-hero-principles {
+    gap: 17px;
+  }
+  .crystal-scene {
+    min-height: 360px;
+    --orbit-radius: 140px;
+    margin-top: 0;
+  }
+  .crystal-provider-name {
+    display: none;
+  }
+  .sibyl-integration-marks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 10px;
+  }
+  .sibyl-integration-marks > div {
+    font-size: 10px;
+    gap: 7px;
+  }
+  .sibyl-integration-marks svg,
+  .sibyl-integration-marks img {
+    width: 20px;
+    height: 20px;
+  }
+  .sibyl-integration-note {
+    line-height: 1.8;
+  }
+  .sibyl-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .sibyl-home-outro h2 {
+    font-size: 29px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sibyl-home *,
+  .sibyl-home *::before,
+  .sibyl-home *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .crystal-orbiter {
+    transform: rotate(var(--angle)) translateX(var(--orbit-radius)) rotate(var(--counter-angle));
+    will-change: auto;
+  }
+}

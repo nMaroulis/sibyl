@@ -1,6 +1,6 @@
 const config = {
   title: 'Sibyl',
-  tagline: 'Your connected crypto workspace.',
+  tagline: 'Read the signals. See the bigger picture.',
   favicon: 'img/brand/logo_brand.png',
   url: 'https://nmaroulis.github.io',
   baseUrl: '/sibyl/',
