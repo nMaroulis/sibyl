@@ -32,6 +32,7 @@ import {
 import { AgentButton } from '../components/agents';
 import { NewsWorkspace } from '../components/news-workspace';
 import { ForecastWorkspace } from '../components/forecast-workspace';
+import { BitcoinInspector } from '../components/bitcoin-inspector';
 import { CryptoLibraryView } from '../components/crypto-library';
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { ComingSoon } from '../components/coming-soon';
@@ -306,7 +307,7 @@ function ExplorerView() {
     rows.reduce((sum, row) => sum + row[key], 0) / Math.max(1, rows.length);
   return (
     <>
-      {' '}
+      <BitcoinInspector />
       <Panel>
         <PanelTitle
           title="Bitcoin block explorer"
@@ -427,7 +428,11 @@ function ExplorerView() {
             </div>
             <div className="chart-footnote">
               <DataNote source={blocks.data?.source} />
-              <span>Bitcoin mainnet · latest provider observations</span>
+              <span>
+                {blocks.data?.source === 'demo'
+                  ? 'Synthetic sample blocks'
+                  : 'Bitcoin mainnet · provider observations'}
+              </span>
             </div>
           </>
         )}
@@ -588,7 +593,7 @@ export function ResearchPage() {
       <PageTitle
         eyebrow="FOLLOW YOUR CURIOSITY"
         title="Research"
-        description="Crypto concepts, project profiles, Bitcoin blocks, and equity research."
+        description="Crypto concepts, project profiles, Bitcoin activity and equity research."
       />
       <SectionTabs
         id="research"

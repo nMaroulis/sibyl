@@ -32,8 +32,10 @@ SYSTEM_PROMPT = (
     "Use validation_report for a selected walk-forward study: distinguish training selection from "
     "later independent test windows, fixed-parameter and buy-and-hold comparisons. Explain that "
     "test returns reset virtual capital rather than forming a continuous account, later training "
-    "includes earlier test windows, and repeated searches can overfit. Never call the best training "
-    "score an out-of-sample result or imply that this proves future performance. "
+    "includes earlier test windows, and repeated searches can overfit. "
+    "Inspect the recorded search method, finite space, sampled candidates, seed and coverage. Random "
+    "search evaluates only its recorded sample, not all possible combinations; seeds are not quality scores. "
+    "Never call the best training score an out-of-sample result or imply that this proves future performance. "
     "Call exchange_support for manual spot order support, permissions "
     "and provider-specific history/recovery limits. Inspect mode and environment: paper runs use virtual capital; "
     "approved exchange runs use actual/test exchange funds and native fills. Explain paused/uncertain orders, "
@@ -87,7 +89,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Inspect a strategy run's parameters, status, observations, events and execution evidence.
 
         Use a known job_id or omit it to follow the selected monitor. Without a selected
-        job, returns the configured simulation parameters, strategy catalog and recent
+        job, reads a selected validation study when present, otherwise the simulation parameters and recent
         saved experiments/jobs. symbol is an exact BASE/QUOTE pair; parameters contains
         the requested backtest settings. This is evidence, not an instruction to run a strategy.
         """
@@ -135,6 +137,9 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "recent_events": strategies.journal.events(job_id, 20)["items"],
                 "alert_rules": strategies.alerts.rules(job_id=job_id),
             }
+        validation_id = selected("validation_id", None, "")
+        if validation_id and parameters is None:
+            return {"selected_validation": validation_report(validation_id)}
         simulation = BacktestRequest(**({"symbol": symbol} | (parameters or {})))
         return {
             "selected_parameters": simulation.model_dump(),
@@ -208,7 +213,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "catalog": CATALOG,
             "execution": "Paper runs use isolated virtual capital. Approved exchange runs use account-bound price-capped GTC limits and native fills; both backend execution flags are required. This agent cannot approve, start or submit orders.",
             "backtests": "Next-open fills, configured fees and slippage; no look-ahead signal fills.",
-            "validation": "Bounded two-axis grid search on expanding training prefixes, followed by disjoint test windows. Tests start in cash; fixed parameters and cost-aware buy-and-hold are compared. Settings are never applied to live or paper jobs automatically.",
+            "validation": "Fixed settings, a small exhaustive grid, or seeded random sampling of explicit finite parameter choices on expanding training prefixes, followed by disjoint test windows. Candidate plans, coverage and training rankings are retained. Tests start in cash; fixed settings and cost-aware buy-and-hold are compared. Settings are never applied to jobs automatically.",
             "url": "/strategies",
         }
 
@@ -258,7 +263,8 @@ def create_agent(services: Services, **runtime) -> Agent:
 
         Supply a known validation_id or omit it for the selected study. window is the
         one-based test-window number. Returns retained settings, comparisons, metrics
-        and up to ten round trips, rather than running a new parameter search.
+        and up to ten round trips. New studies also expose the candidate plan, seed,
+        search-space coverage and fingerprints. This never runs a parameter search.
         """
         validation_id = selected("validation_id", validation_id or None, "")
         if not validation_id:
@@ -268,6 +274,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             return {"note": "Choose one of the study's recorded test windows."}
         fold = result["folds"][window - 1]
         return {
+            "search": result.get("search"),
             **{
                 key: result[key]
                 for key in ("id", "dataset", "method", "engine_revision", "request", "summary", "assumptions")

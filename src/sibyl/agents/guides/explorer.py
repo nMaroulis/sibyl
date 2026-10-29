@@ -10,7 +10,7 @@ GUIDES = {
         "Explore Bitcoin blocks",
         "/research?tab=explorer",
         (
-            "Open Research → Block explorer to view recent Bitcoin block heights, dates, transaction counts and sizes.",
+            "Open Research → Block explorer. Paste a Bitcoin mainnet transaction ID or address into the lookup, or inspect recent blocks below.",
             "Inspect source labels: live summaries come from mempool.space and Demo observations are labeled samples.",
         ),
     ),
@@ -27,8 +27,9 @@ GUIDES = {
         "Find transaction and address details",
         "/research?tab=explorer",
         (
-            "Use the linked public explorer for an arbitrary Bitcoin transaction or address.",
-            "Sibyl's built-in view currently provides recent block summaries, not address balances, transaction inspection or additional chains.",
+            "Paste a complete transaction ID or checksummed mainnet address and choose Inspect. Lookups are sent to mempool.space; private keys and seed phrases are never needed.",
+            "Inspect confirmations, fees in satoshis and sat/vB, and paged inputs/outputs. An address shows confirmed balance, pending change and confirmed activity; load older pages or separately inspect pending transactions.",
+            "Use the small Demo links for synthetic examples. Ask Explorer includes the current reference; an address is not a complete wallet or proof of ownership.",
         ),
     ),
 }

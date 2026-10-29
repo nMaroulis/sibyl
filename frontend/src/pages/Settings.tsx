@@ -90,7 +90,7 @@ export function SettingsPage({ system }: { system?: System }) {
               {
                 title: 'mempool.space',
                 type: 'Public API',
-                copy: 'Bitcoin blocks and network activity in Research. No API key required.',
+                copy: 'Bitcoin transactions, address activity and blocks in Research. No API key required.',
               },
               {
                 title: 'CoinPaprika',

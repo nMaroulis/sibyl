@@ -238,6 +238,9 @@ class AgentContext(Request):
     horizon: int | None = Field(default=None, ge=1, le=30)
     forecast_model_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     forecast_run_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    bitcoin_txid: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    bitcoin_address: str | None = Field(default=None, min_length=14, max_length=90)
+    bitcoin_demo: bool | None = None
     parameters: BacktestRequest | None = None
     job_id: str | None = Field(default=None, min_length=1, max_length=100)
     backtest_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
@@ -255,6 +258,19 @@ class AgentContext(Request):
     def valid_symbol(cls, value: str | None) -> str | None:
         """Apply the same canonical market validation used by trading and backtests."""
         return OrderRequest.valid_symbol(value) if value is not None else None
+
+    @field_validator("bitcoin_address")
+    @classmethod
+    def valid_bitcoin_address(cls, value):
+        from sibyl.blockchain.identifiers import address
+
+        return address(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def bitcoin_selection(self):
+        if self.bitcoin_txid and self.bitcoin_address:
+            raise ValueError("Choose one Bitcoin transaction or address per page context.")
+        return self
 
 
 class AgentRequest(Request):

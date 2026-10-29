@@ -83,9 +83,9 @@ AREAS = [
         "name": "Strategy research",
         "status": "partial",
         "priority": "later",
-        "working": "Six configurable algorithms, cost-aware backtests and paper runs; bounded grid search, chronological holdout/expanding walk-forward tests, fixed-setting/buy-and-hold comparisons, saved rankings/test executions, exact-study replay and read-only Broker evidence.",
+        "working": "Six configurable algorithms, cost-aware backtests and paper runs; bounded grid or seeded finite random search with explicit budgets, recorded plans/coverage/fingerprints, chronological holdout/expanding walk-forward tests, fixed-setting/buy-and-hold comparisons, saved rankings/test executions, checked exact-study replay and read-only Broker evidence.",
         "pending": [
-            "Additional benchmarks, continuous rebalanced deployment simulation, nested validation and broader optimization methods.",
+            "Additional benchmarks, continuous rebalanced deployment simulation, nested validation and Bayesian/distribution-based optimization.",
             "Custom strategy plugins, optional Freqtrade and multi-asset allocation.",
             "Separate ML/RL training and evaluation pipelines.",
         ],
@@ -140,11 +140,11 @@ AREAS = [
     {
         "id": "explorer",
         "name": "Explorer, equities & analytics",
-        "status": "basic",
+        "status": "partial",
         "priority": "later",
-        "working": "Recent Bitcoin blocks, optional equity quotes/history/statistics and Pearson/Spearman correlations.",
+        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman correlations.",
         "pending": [
-            "Transaction/address inspection, historical datasets and additional chains.",
+            "Historical chain datasets, additional chains, wallet aggregation, output-spend tracking and local chain verification.",
             "Public-official disclosure archives and advanced portfolio analytics.",
             "Distance/MIC/Granger/regression/SHAP with evaluated assumptions.",
         ],
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-10-29",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.1.0 adds reproducible trained Chronos ridge models, immutable versions, chronological evaluation, empirical calibration and model-backed forecasts with native read-only tools. Next work includes broader accounting/provider reconciliation, authenticated venue acceptance, rolling forecast evaluation and richer research workflows. Multi-user support stays deferred.",
+        "current_focus": "v2.1.0 adds trained Chronos models, Bitcoin transaction/address inspection and seeded finite random strategy search with recorded candidate plans and chronological evaluation. Native agents read the same evidence. Next work includes broader accounting/provider reconciliation, authenticated venue acceptance, rolling forecast evaluation and richer research workflows. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

@@ -72,7 +72,7 @@ def forbid_reads(client, monkeypatch):
         ("chronos", "page_help", "models", "/forecast?tab=models", "new numbered version"),
         ("reporter", "page_help", "articles", "/news", "Read full article"),
         ("wiki", "page_help", "profiles", "/research?tab=crypto", "Ask Wiki"),
-        ("explorer", "page_help", "transactions", "/research?tab=explorer", "not address"),
+        ("explorer", "page_help", "transactions", "/research?tab=explorer", "Inspect confirmations"),
         ("stocks", "page_help", "setup", "/research?tab=stocks", "uv sync --extra stocks"),
     ],
 )

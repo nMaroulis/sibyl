@@ -11245,3 +11245,67 @@ details[open] > summary {
   .forecast-training-grid { grid-template-columns: 1fr; }
   .forecast-workspace-actions { align-items: stretch; flex-direction: column; }
 }
+
+/* Explicit on-chain lookups: bounded evidence and no wallet ownership assumptions. */
+.bitcoin-inspector { margin-bottom: 22px; }
+.bitcoin-content { padding: 0 22px 23px; }
+.bitcoin-search label { display: block; margin-bottom: 9px; font-size: 12px; color: var(--muted); }
+.bitcoin-search > div { display: flex; align-items: center; gap: 11px; }
+.bitcoin-search > div > svg { flex-shrink: 0; color: var(--subtle); }
+.bitcoin-search input { flex: 1; min-width: 0; }
+.bitcoin-source-note { margin: 12px 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+.bitcoin-source-note a { color: var(--accent); }
+.bitcoin-demo-links { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 11px; color: var(--subtle); }
+.bitcoin-demo-links .text-button { font-size: 11px; }
+.bitcoin-result { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+.bitcoin-result-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; font-size: 10px; color: var(--muted); }
+.bitcoin-result-toolbar .text-button, .bitcoin-result-toolbar .text-link { display: inline-flex; gap: 5px; align-items: center; font-size: 11px; }
+.bitcoin-result-id { display: block; margin: 18px 0; padding: 13px 15px; border: 1px solid var(--border); border-radius: 12px; background: #f9fafe; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.bitcoin-inclusion { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; font-size: 11px; color: var(--muted); }
+.bitcoin-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.bitcoin-metrics > div { display: flex; flex-direction: column; gap: 9px; padding: 17px; border: 1px solid var(--border); border-radius: 14px; background: #f9faff; }
+.bitcoin-metrics small { font-size: 11px; color: var(--muted); }
+.bitcoin-metrics strong { font-size: clamp(14px, 1.5vw, 21px); font-weight: 500; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.bitcoin-metrics span { font-size: 10px; color: var(--subtle); line-height: 1.7; }
+.bitcoin-io-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 22px 0; }
+.bitcoin-io-grid > section { min-width: 0; padding: 17px; border: 1px solid var(--border); border-radius: 14px; }
+.bitcoin-io-grid h3, .bitcoin-history-controls h3 { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.bitcoin-io-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.bitcoin-io-row:last-child { border-bottom: 0; }
+.bitcoin-io-row small { font-size: 10px; color: var(--subtle); }
+.bitcoin-io-row strong { font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.bitcoin-reference { max-width: 100%; text-align: left; overflow-wrap: anywhere; font-size: 11px; line-height: 1.7; }
+.bitcoin-io-row .muted, .bitcoin-outpoint { font-size: 10px; }
+.bitcoin-io-grid section > .text-button { font-size: 11px; margin: 12px 12px 0 0; }
+.bitcoin-details { margin: 15px 0; padding: 13px 15px; border: 1px solid var(--border); border-radius: 12px; }
+.bitcoin-details summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+.bitcoin-details p { font-size: 11px; line-height: 1.8; color: var(--muted); margin-top: 11px; }
+.bitcoin-history-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+.bitcoin-history-controls h3 { margin-right: auto; }
+.bitcoin-history-controls > span { font-size: 10px; color: var(--muted); }
+.bitcoin-history-controls .button { padding: 8px 12px; font-size: 11px; }
+.bitcoin-activity { max-height: 450px; overflow: auto; margin: 15px 0; }
+.bitcoin-activity thead { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.bitcoin-tx-link { font-size: 11px; white-space: nowrap; }
+.bitcoin-method-note { margin-top: 20px; padding: 13px 15px; border-radius: 12px; background: #f3f5fb; font-size: 11px; line-height: 1.8; color: var(--muted); }
+.bitcoin-warning { margin: 12px 0; padding: 10px 13px; border-radius: 10px; background: #fff7e9; color: #946b2e; font-size: 11px; line-height: 1.8; }
+@media (max-width: 800px) {
+  .bitcoin-metrics { grid-template-columns: 1fr; }
+  .bitcoin-io-grid { grid-template-columns: 1fr; }
+  .bitcoin-metrics strong { font-size: 20px; }
+}
+@media (max-width: 500px) {
+  .bitcoin-content { padding-inline: 16px; }
+  .bitcoin-search > div { flex-wrap: wrap; }
+  .bitcoin-search .button { width: 100%; justify-content: center; }
+}
+
+/* Finite randomized research keeps scope and reproducibility visible before running. */
+.validation-random-panel { padding: 18px; border: 1px solid #e0e7f8; border-radius: 14px; background: linear-gradient(120deg, #f5f7ff, #fbfcff); }
+.validation-random-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.validation-random-heading strong { color: var(--text); font-size: 13px; font-weight: 500; }
+.validation-random-heading p { color: var(--muted); font-size: 11px; margin-top: 6px; }
+.validation-random-heading .text-button { font-size: 12px; }
+.validation-random-panel .footnote { margin: 14px 0 0; }
+.validation-search-evidence { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 13px 15px; margin: 16px 0; border-radius: 12px; background: #f4f6fc; font-size: 11px; color: var(--muted); }
+.validation-search-evidence code { margin-left: auto; font-size: 10px; }

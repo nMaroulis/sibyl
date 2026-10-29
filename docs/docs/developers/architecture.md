@@ -26,6 +26,7 @@ The [editable diagram topology](/img/architecture.mmd) accompanies the SVG used 
 | `services/account_sync.py`                | Durable selected-market fill imports, native cursors, bounded retries, pause/resume and progress    |
 | `services/ledger.py`                      | Normalized fill storage, native-currency fees, atomic page/checkpoint commits and ledger queries    |
 | `services/research.py`                    | Bounded source-labeled research reads                                                               |
+| `blockchain/`                            | Fixed-source Bitcoin reads, identifier checks, amount normalization, bounded paging and explicit Demo |
 | `agents/providers.py`                     | ProtoLink provider capabilities, model presets, dependency metadata                                 |
 | `services/llm_settings.py`                | Encrypted provider profiles, active selection, request-scoped adapter configuration                 |
 | `news/`                                   | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment        |

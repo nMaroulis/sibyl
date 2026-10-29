@@ -32,6 +32,7 @@ module.exports = {
         'guides/ollama',
         'guides/oracle',
         'guides/research',
+        'guides/bitcoin-explorer',
         'guides/security',
         'guides/feature-coverage',
       ],
@@ -42,6 +43,7 @@ module.exports = {
       items: [
         'developers/architecture',
         'developers/forecasting',
+        'developers/bitcoin-explorer',
         'developers/strategy-research',
         'developers/strategy-controls',
         'developers/portfolio-limits',

@@ -51,7 +51,7 @@ docker compose up --build
 
 :::note[Release summary]
 
-Chronos gains its first trained forecasting workflow: reproducible daily inputs, versioned numerical models, chronological evaluation and saved forecasts. The interface keeps trained research results separate from the untrained statistical baseline, with source attribution and explicit calibration limits throughout.
+Chronos gains its first trained forecasting workflow: reproducible daily inputs, versioned numerical models, chronological evaluation and saved forecasts. Explorer adds public Bitcoin transaction and address inspection. Strategy research adds reproducible seeded random search with recorded candidate plans and chronological evaluation. These workflows keep source attribution, optional Demo input and implementation limits visible.
 
 :::
 
@@ -67,6 +67,13 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 - A Trained models workspace with progressive model settings, source/environment badges, partition summaries, held-out price charts, metrics, forecast charts and model/evidence exports.
 - Native typed Chronos tools for finding model versions, inspecting evaluation and reading selected saved forecasts. Page Ask dialogs and Sibyl consultations use the same registry and evidence; training and persistence remain explicit application actions.
 - User/developer forecasting guides and refreshed implementation coverage, with remaining model families, rolling evaluation and calibrated drift monitoring kept on the pending checklist.
+- Bitcoin mainnet transaction/address lookup through a dedicated read-only backend package and the public mempool.space indexer. Checksummed mainnet identifiers are validated before requests; no API key or exchange connection is required.
+- Transaction inclusion/confirmation observations, exact satoshi fees and sat/vB, available previous-output evidence, coinbase handling and paged inputs/outputs. Address reports separate confirmed totals from pending changes and offer cursor-based confirmed history plus bounded pending activity.
+- An in-page Bitcoin lookup with source/time labels, explicit synthetic Demo examples, linked reference navigation, JSON observation exports and contextual Explorer conversations. Native typed ProtoLink tools expose the same lookup and activity evidence to Explorer and Sibyl.
+- Bitcoin user/developer guides covering public-query privacy, non-atomic chain observations, missing evidence, pagination/response bounds and the distinction between an address and an owner's complete wallet.
+- Seeded finite random search for strategy validation: up to four indicator parameters and eight explicit values each, sampling at most sixteen distinct candidates from up to 4,096 combinations. The existing chronological train/test and 60,000-bar work limits remain in force.
+- Price-independent, versioned candidate plans with seed, sampled space indices, coverage, recipe/plan fingerprints and complete-space parameter validation. A mismatched saved plan refuses exact-study replay instead of silently changing candidates.
+- Progressive random-search controls, evaluated-candidate tables and sampling evidence in saved studies/exports and Broker's existing native ProtoLink report tool. Grid and fixed-setting workflows remain available; Bayesian/distribution-based optimization and nested validation remain pending.
 
 ### Changed
 
@@ -75,7 +82,7 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 
 ### Scope
 
-This is the initial trained model family, not LSTM/ARIMA or pretrained Chronos weights. Independent historical test results do not establish profitable trading or future calibration. Automatic recalibration, monitored drift, richer model families and larger model lifecycle management remain pending. No exchange-execution or agent mutation permissions are added.
+This is the initial trained model family, not LSTM/ARIMA or pretrained Chronos weights. Independent historical test results do not establish profitable trading or future calibration. Automatic recalibration, monitored drift, richer model families and larger model lifecycle management remain pending. Bitcoin research trusts a public indexer; it does not aggregate complete wallets, verify spendability/chain proofs or broadcast transactions. No exchange-execution or agent mutation permissions are added.
 
 ## [2.0.0] - 2026-10-28
 

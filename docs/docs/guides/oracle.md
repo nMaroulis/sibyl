@@ -13,7 +13,7 @@ The gradient **Ask** button opens a floating dialog over the current module. Clo
 - **Forecasting → Chronos:** the selected market and forecast horizon.
 - **News → Reporter:** the feed, or a specific story when opened from its card.
 - **Settings → Technician:** practical setup guides, provider-specific connection instructions and saved metadata, excluding credentials.
-- **Research → Wiki / Explorer / Equity Analyst:** the glossary search, Bitcoin blocks, or selected equity ticker.
+- **Research → Wiki / Explorer / Equity Analyst:** the glossary search, selected Bitcoin transaction/address or recent blocks, or selected equity ticker.
 
 Drafts and conversations remain available after closing and reopening the dialog during the current browser session. Different modules and page selections use separate sessions. **Recent conversations in this context** restores a saved session; the server retains recent turns for model inference. **New conversation** clears the current draft and starts a fresh session without deleting saved history. Browser reloads clear unsent drafts.
 

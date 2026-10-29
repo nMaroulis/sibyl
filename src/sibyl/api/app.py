@@ -384,6 +384,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(forecasting_router)
 
+    from sibyl.api.bitcoin import router as bitcoin_router
+
+    app.include_router(bitcoin_router)
+
     @app.get("/health", tags=["System"])
     def health():
         """Report process readiness without exposing account or provider configuration."""

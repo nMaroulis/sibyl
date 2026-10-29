@@ -57,6 +57,25 @@ export function ValidationResults({
         </div>
         <AgentButton module="broker" context={{ validation_id: report.id }} />
       </div>
+      {report.search && (
+        <div className="validation-search-evidence">
+          <Badge tone="blue">
+            {report.search.method === 'random'
+              ? 'Random search'
+              : report.search.method === 'fixed'
+                ? 'Fixed settings'
+                : 'Grid search'}
+          </Badge>
+          <span>
+            {report.search.evaluated_candidates} of {number(report.search.space_size, 0)}{' '}
+            combinations evaluated · {number(report.search.coverage_pct, 1)}% coverage
+          </span>
+          {report.search.seed != null && <span>Seed {report.search.seed}</span>}
+          <code title={report.search.plan_fingerprint}>
+            {report.search.plan_fingerprint.slice(0, 12)}…
+          </code>
+        </div>
+      )}
       <div className="validation-summary">
         <div>
           <small>Mean test return</small>
@@ -188,6 +207,45 @@ export function ValidationResults({
             </tbody>
           </table>
         </div>
+      </details>
+      <details className="advanced-options">
+        <summary>Evaluated candidate plan</summary>
+        <p>
+          The same plan was fixed before any scoring and reused in every chronological window.
+          Untested combinations were not ranked.
+        </p>
+        {report.search ? (
+          <>
+            <p>
+              {report.search.sampler} · space fingerprint {report.search.space_fingerprint}
+            </p>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Candidate</th>
+                    <th>Space index</th>
+                    <th>Parameters</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.search.candidates.map((candidate) => (
+                    <tr key={candidate.id}>
+                      <td>#{candidate.id}</td>
+                      <td>#{candidate.space_index}</td>
+                      <td>{choices(candidate.overrides)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <p>
+            This earlier study retains its grid and training rankings; it has no separate
+            candidate-plan artifact.
+          </p>
+        )}
       </details>
       <details className="advanced-options">
         <summary>Method &amp; input evidence</summary>

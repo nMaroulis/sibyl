@@ -13,7 +13,7 @@ PRIMARY = {
     "reporter": "news_briefing",
     "technician": "connection_status",
     "wiki": "search_knowledge",
-    "explorer": "bitcoin_blocks",
+    "explorer": "bitcoin_lookup",
     "stocks": "equity_quote",
 }
 
