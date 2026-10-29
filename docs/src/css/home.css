@@ -111,6 +111,7 @@ a.sibyl-doc-button:hover {
 a.sibyl-doc-secondary,
 a.sibyl-subtle-link {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   gap: 12px;
   color: #5b6c85;
@@ -273,7 +274,7 @@ a.sibyl-subtle-link:hover {
   justify-content: space-between;
   gap: 12px;
   font-size: 9px;
-  color: #8b98ad;
+  color: #66758c;
 }
 .crystal-scene-footer > span {
   display: inline-flex;
@@ -288,15 +289,16 @@ a.sibyl-subtle-link:hover {
 }
 .crystal-scene-footer button {
   display: inline-flex;
+  min-height: 36px;
   align-items: center;
   gap: 5px;
   border: 0;
   border-radius: 7px;
   padding: 6px 7px;
   background: transparent;
-  color: #8392aa;
+  color: #66758c;
   font: inherit;
-  font-size: 9px;
+  font-size: 10px;
   cursor: pointer;
   transition:
     color 180ms,

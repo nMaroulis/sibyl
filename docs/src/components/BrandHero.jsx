@@ -94,10 +94,10 @@ export default function BrandHero() {
               <br className="hero-desktop-break" /> One connected workspace. A little more clarity.
             </p>
             <div className="sibyl-hero-actions">
-              <Link className="sibyl-doc-button" to="/getting-started/installation">
+              <Link className="sibyl-doc-button" to="/welcome">
                 Get started <GuideIcon name="arrow" />
               </Link>
-              <Link className="sibyl-doc-secondary" to="/welcome">
+              <Link className="sibyl-doc-secondary" to="/guides">
                 Explore the guides <span aria-hidden="true">↗</span>
               </Link>
             </div>
@@ -123,8 +123,7 @@ export default function BrandHero() {
         <div className="sibyl-integration-heading">
           <span>YOUR WORLD, CONNECTED</span>
           <p>
-            Familiar names.
-            <br />
+            Familiar names. <br />
             Your choice of AI.
           </p>
         </div>
@@ -184,7 +183,7 @@ export default function BrandHero() {
             <span className="sibyl-section-kicker">ROOM TO EXPLORE</span>
             <h2 id="workspace-heading">Follow your curiosity.</h2>
           </div>
-          <Link className="sibyl-subtle-link" to="/welcome">
+          <Link className="sibyl-subtle-link" to="/guides">
             All workspace guides <GuideIcon name="arrow" />
           </Link>
         </div>

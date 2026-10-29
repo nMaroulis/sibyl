@@ -18,7 +18,7 @@
   --ifm-heading-color: #24344e;
   --ifm-background-color: #fff;
   --ifm-background-surface-color: #f7f9fd;
-  --ifm-color-content-secondary: #768399;
+  --ifm-color-content-secondary: #66758c;
   --ifm-menu-color: #66748a;
   --ifm-code-font-size: 86%;
   --ifm-code-background: #f0f3fa;
@@ -29,7 +29,7 @@
   --ifm-toc-border-color: #e7ebf3;
   --ifm-table-border-color: #e5eaf3;
   --ifm-footer-background-color: #f8fafd;
-  --ifm-footer-color: #7a869a;
+  --ifm-footer-color: #66758c;
   --sibyl-ink: #24344e;
   --sibyl-muted: #66758c;
   --sibyl-line: #e7ebf3;
@@ -127,6 +127,63 @@ button:focus-visible {
   border-left: 1px solid #e8edf5;
   margin-left: 11px;
 }
+.doc-section-sidebar > .menu__list-item-collapsible {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+.doc-section-sidebar > .menu__list-item-collapsible > .menu__link {
+  color: var(--sibyl-ink);
+  font-size: 14px;
+  letter-spacing: -0.2px;
+  background: transparent;
+}
+.doc-section-sidebar > .menu__list {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+.doc-section-sidebar .menu__list-item-collapsible:not(:has(a[href])) {
+  background: transparent;
+}
+.doc-section-sidebar .menu__list-item-collapsible > a:not([href]) {
+  cursor: default;
+  background: transparent;
+  color: #66758c;
+}
+.theme-doc-card-container {
+  height: 100%;
+  border: 1px solid var(--sibyl-line) !important;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8faff, #fff);
+  box-shadow: none !important;
+}
+.theme-doc-card-container:hover {
+  border-color: #b9cbee !important;
+  background: #f6f9ff;
+}
+.theme-doc-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 17px;
+  letter-spacing: -0.35px;
+}
+.theme-doc-card-icon {
+  display: none;
+}
+.theme-doc-card-heading::after {
+  content: '↗';
+  color: #7890bc;
+  font-size: 18px;
+  font-weight: 400;
+}
+.theme-doc-card-description {
+  white-space: normal;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #66758c;
+}
 .main-wrapper > .container {
   padding-top: 34px !important;
   padding-bottom: 48px !important;
@@ -138,7 +195,8 @@ button:focus-visible {
   font-size: 15px;
   line-height: 1.85;
 }
-.markdown > h1 {
+.markdown > h1,
+main:has(.theme-doc-card-container) h1 {
   font-size: 38px;
   line-height: 1.2;
   letter-spacing: -1.4px;
@@ -276,7 +334,8 @@ button:focus-visible {
   .markdown {
     font-size: 14px;
   }
-  .markdown > h1 {
+  .markdown > h1,
+  main:has(.theme-doc-card-container) h1 {
     font-size: 31px;
   }
   .markdown h2 {
