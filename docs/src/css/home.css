@@ -60,6 +60,9 @@ a.doc-welcome-badge {
   display: block;
 }
 .sibyl-hero-accent {
+  /* Give gradient-painted text room for descenders, including both g glyphs. */
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
   color: #6381ba;
   background: linear-gradient(110deg, #456bb2 4%, #6988ba 75%, #7c87b7);
   background-clip: text;
@@ -472,58 +475,12 @@ a.sibyl-subtle-link:hover {
   animation-play-state: paused;
 }
 
-.sibyl-integrations {
-  display: grid;
-  grid-template-columns: 190px 1fr;
-  gap: 18px 28px;
-  align-items: center;
-  padding: 30px 0 26px;
-  border-top: 1px solid var(--sibyl-line);
-  border-bottom: 1px solid var(--sibyl-line);
-}
-.sibyl-integration-heading > span,
 .sibyl-section-kicker {
   display: block;
   font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.14em;
   color: #6a7890;
-}
-.sibyl-integration-heading p {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #60718c;
-  margin: 9px 0 0;
-}
-.sibyl-integration-marks {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 22px;
-}
-.sibyl-integration-marks > div {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 12px;
-  color: #61718b;
-}
-.sibyl-integration-marks svg,
-.sibyl-integration-marks img {
-  width: 23px;
-  height: 23px;
-  object-fit: contain;
-  border-radius: 6px;
-}
-.sibyl-integration-note {
-  grid-column: 2;
-  margin: 0;
-  color: #66758c;
-  font-size: 10px;
-}
-.sibyl-integration-note a {
-  color: #4f70aa;
-  text-underline-offset: 3px;
 }
 .sibyl-start-section {
   padding-top: 90px;
@@ -828,12 +785,6 @@ a.sibyl-workspace-card:hover {
   .crystal-scene {
     --orbit-radius: 185px;
   }
-  .sibyl-integration-marks {
-    gap: 17px;
-  }
-  .sibyl-integration-marks > div {
-    font-size: 11px;
-  }
 }
 @media (max-width: 996px) {
   .sibyl-home-width {
@@ -868,28 +819,6 @@ a.sibyl-workspace-card:hover {
   }
   .crystal-scene-footer > span {
     max-width: 120px;
-  }
-  .sibyl-integrations {
-    grid-template-columns: 1fr;
-  }
-  .sibyl-integration-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .sibyl-integration-heading p {
-    font-size: 12px;
-    margin: 0;
-  }
-  .sibyl-integration-heading br {
-    display: none;
-  }
-  .sibyl-integration-note {
-    grid-column: 1;
-  }
-  .sibyl-integration-marks {
-    justify-content: flex-start;
-    gap: 24px;
   }
   .sibyl-section-heading h2 {
     font-size: 30px;
@@ -997,23 +926,6 @@ a.sibyl-workspace-card:hover {
     min-height: 360px;
     --orbit-radius: 140px;
     margin-top: 0;
-  }
-  .sibyl-integration-marks {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px 10px;
-  }
-  .sibyl-integration-marks > div {
-    font-size: 10px;
-    gap: 7px;
-  }
-  .sibyl-integration-marks svg,
-  .sibyl-integration-marks img {
-    width: 20px;
-    height: 20px;
-  }
-  .sibyl-integration-note {
-    line-height: 1.8;
   }
   .sibyl-workspace-grid {
     grid-template-columns: 1fr;

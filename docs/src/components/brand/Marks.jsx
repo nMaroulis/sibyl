@@ -58,6 +58,37 @@ export function ProviderMark({ name }) {
         />
       </svg>
     );
+  if (name === 'xAI')
+    return (
+      <svg {...props} stroke="currentColor" strokeWidth="2.4">
+        <path d="m6 5 20 22M24 4 6 27M15 17l-6-7M21 21l5 6M26 3v10" />
+      </svg>
+    );
+  if (name === 'Hugging Face')
+    return (
+      <span className="sibyl-provider-emoji" aria-hidden="true">
+        🤗
+      </span>
+    );
+  if (name === 'LM Studio')
+    return (
+      <svg
+        {...props}
+        stroke="#8e75cf"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 8v16h9M16 24V8l6 9 7-9v16" />
+      </svg>
+    );
+  if (name === 'vLLM')
+    return (
+      <svg {...props} fill="#5e78bf">
+        <path d="M2 8h6l6 15L24 8h6L15 29h-5L2 8Z" />
+        <path d="m18 3-5 7h5l5-7h-5Z" fill="#eab773" />
+      </svg>
+    );
   return (
     <svg
       {...props}
@@ -83,6 +114,10 @@ const paths = {
   forecast: 'M3 18c4 0 3-12 7-12s2 9 6 9 3-6 5-6M3 21h18',
   research: 'M10 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 6 6M7 11h6m-3-3v6',
   shield: 'm12 3 8 3v6c0 4-5 7-8 9-3-2-8-5-8-9V6l8-3Zm-4 9 3 3 5-6',
+  message: 'M21 11a8 8 0 0 1-8 8H8l-5 3V11a9 9 0 0 1 18 0ZM7 10h10M7 14h6',
+  mail: 'M3 5h18v14H3V5Zm0 1 9 7 9-7',
+  server: 'M4 3h16v7H4V3Zm0 11h16v7H4v-7ZM7 6.5h.01M7 17.5h.01M11 6.5h6M11 17.5h6',
+  chip: 'M7 7h10v10H7V7Zm3 3h4v4h-4v-4M9 3v4m6-4v4M9 17v4m6-4v4M3 9h4m-4 6h4m10-6h4m-4 6h4',
 };
 
 export function GuideIcon({ name, className = '' }) {

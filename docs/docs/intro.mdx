@@ -1,29 +1,59 @@
 ---
 slug: /welcome
 title: Welcome to Sibyl
+hide_title: true
 description: Connect your exchanges, research markets, test strategies and work with a native ProtoLink AI team.
 ---
 
+import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+
+<DocHero title="Welcome to Sibyl" eyebrow="Getting started" icon="spark" facts={['Your exchanges', 'Your AI team', 'One local workspace']}>
+
 Sibyl brings your exchange accounts, market analysis, trading, strategy research and AI specialists into one workspace you can run locally. A React interface connects to a modular Python API, while [ProtoLink](https://github.com/nMaroulis/protolink) powers Sibyl and its specialist team.
+
+</DocHero>
 
 These guides describe **v2.1.0**, building on the v2.0.0 application baseline. Read the [changelog](changelog.md), start with [installation](getting-started/installation.md), or explore the [architecture](developers/architecture.md).
 
+<DocCards
+  items={[
+    {
+      title: 'Set up Sibyl',
+      text: 'Choose a source checkout or Docker Compose.',
+      icon: 'code',
+      to: '/getting-started/installation',
+    },
+    {
+      title: 'Find a workflow',
+      text: 'Connect an account, research a market or test an idea.',
+      icon: 'markets',
+      to: '/guides',
+    },
+    {
+      title: 'Explore the design',
+      text: 'See how Python, React and ProtoLink fit together.',
+      icon: 'spark',
+      to: '/developers/architecture',
+    },
+  ]}
+/>
+
 ## Find your workspace
 
-| Workspace | What you can do |
-| --- | --- |
-| [Account](guides/account.md) | Combine multiple exchanges, inspect balances and allocations, review valuation and compare native-asset balance checkpoints. |
-| [Markets](guides/markets.md) | Search spot pairs, manage watchlists, inspect interactive charts and statistics, and retain reusable candle datasets. |
-| [Trade](guides/trading.md) | Review supported spot orders, follow order/fill evidence, import account history and inspect funding, transfers and retained FIFO performance. |
-| [Strategies](guides/strategies.md) | Backtest six algorithms, validate parameters on unseen windows and monitor paper or separately approved exchange runs. |
-| [Sibyl](guides/sibyl.md) | Ask the coordinator to consult registered specialists and bring their evidence into one conversation. |
-| [News](guides/research.md#reporter-news-and-insights) | Follow source-linked reporting, search retained excerpts and inspect text sentiment and Fear & Greed. |
-| [Forecast](guides/forecasting.md) | Fit versioned daily models, inspect held-out evidence and empirical bands, or explore the separate statistical baseline. |
-| [Research](guides/research.md) | Browse crypto profiles/concepts, inspect Bitcoin transactions and address activity, and explore optional equities. |
-| [Alerts](guides/alerts.md) | Create price, strategy, connection and account-risk watches with a persistent local inbox. |
-| [Settings](guides/settings.md) | Manage exchange accounts, AI models, news, market sources, messaging and workspace preferences. |
-| [Agents](guides/oracle.md) | Inspect the specialist roster and open a direct contextual conversation. |
-| [Coming soon](developers/backend-roadmap.md) | Review implemented foundations, remaining work and deferred multi-user support. |
+| Workspace                                             | What you can do                                                                                                                                |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Account](guides/account.md)                          | Combine multiple exchanges, inspect balances and allocations, review valuation and compare native-asset balance checkpoints.                   |
+| [Markets](guides/markets.md)                          | Search spot pairs, manage watchlists, inspect interactive charts and statistics, and retain reusable candle datasets.                          |
+| [Trade](guides/trading.md)                            | Review supported spot orders, follow order/fill evidence, import account history and inspect funding, transfers and retained FIFO performance. |
+| [Strategies](guides/strategies.md)                    | Backtest six algorithms, validate parameters on unseen windows and monitor paper or separately approved exchange runs.                         |
+| [Sibyl](guides/sibyl.md)                              | Ask the coordinator to consult registered specialists and bring their evidence into one conversation.                                          |
+| [News](guides/research.md#reporter-news-and-insights) | Follow source-linked reporting, search retained excerpts and inspect text sentiment and Fear & Greed.                                          |
+| [Forecast](guides/forecasting.md)                     | Fit versioned daily models, inspect held-out evidence and empirical bands, or explore the separate statistical baseline.                       |
+| [Research](guides/research.md)                        | Browse crypto profiles/concepts, inspect Bitcoin transactions and address activity, and explore optional equities.                             |
+| [Alerts](guides/alerts.md)                            | Create price, strategy, connection and account-risk watches with a persistent local inbox.                                                     |
+| [Settings](guides/settings.md)                        | Manage exchange accounts, AI models, news, market sources, messaging and workspace preferences.                                                |
+| [Agents](guides/oracle.md)                            | Inspect the specialist roster and open a direct contextual conversation.                                                                       |
+| [Coming soon](developers/backend-roadmap.md)          | Review implemented foundations, remaining work and deferred multi-user support.                                                                |
 
 ## Start with your accounts, or take a look around
 

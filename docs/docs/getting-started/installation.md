@@ -1,8 +1,47 @@
-# Installation
+---
+title: Installation
+hide_title: true
+---
 
-Use Python 3.12 or newer, uv, and Node.js 22.12 or newer. Development uses three independent processes: the Python API, React dashboard, and optional documentation server.
+import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+
+<DocHero title="Installation" eyebrow="Getting started" icon="code" facts={["Source checkout", "Docker Compose", "Local workspace"]}>
+
+Run Sibyl on your own machine, with a source checkout or Docker Compose. The dashboard, Python API and your encrypted workspace stay under your control.
+
+</DocHero>
+
+<DocCards
+  items={[
+    {
+      title: 'Develop locally',
+      text: 'Run the API and dashboard separately, with live reload.',
+      icon: 'code',
+      to: '#install-dependencies',
+    },
+    {
+      title: 'One application',
+      text: 'Build React once and serve it from the Python process.',
+      icon: 'server',
+      to: '#one-process-source-build',
+    },
+    {
+      title: 'Use Docker',
+      text: 'Build the complete app in a container with persistent storage.',
+      icon: 'shield',
+      to: '#docker-compose',
+    },
+  ]}
+/>
 
 ## Install dependencies
+
+For local development, install **Python 3.12 or newer**, **uv**, and **Node.js 22.12 or newer**. Start with a checkout:
+
+```bash
+git clone https://github.com/nMaroulis/sibyl.git
+cd sibyl
+```
 
 From the repository root:
 
@@ -31,6 +70,39 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:5173`. Vite proxies `/api` requests to the Python process. New workspaces have no active accounts. Connect one or several exchanges in Settings, or choose **Preview with Demo** from Account, Trade or Strategies. Public market prices default to Binance; select Demo prices in Market data for offline charts. News and other research sources have independent settings. A model is optional for these workspaces and required for the Sibyl coordinator chat.
+
+## One-process source build
+
+For normal use without frontend live reload, build the dashboard after installing dependencies:
+
+```bash
+npm run build
+uv run sibyl
+```
+
+Open `http://127.0.0.1:8000`. FastAPI serves both the built interface and the API. Keep the repository checkout: the current Python wheel does not include the dashboard assets.
+
+## Docker Compose
+
+With Docker and its Compose plugin installed, the repository can build the complete application without installing Python or Node.js on your host:
+
+```bash
+git clone https://github.com/nMaroulis/sibyl.git
+cd sibyl
+cp .env.example .env
+```
+
+Set a private `SIBYL_API_TOKEN` in `.env`, then run:
+
+```bash
+docker compose up --build
+```
+
+Open `http://127.0.0.1:8000` and enter the workspace token in Settings. Compose publishes the port on loopback, stores the workspace in the `sibyl-data` volume and runs the application as a non-root user. Preserve the database and vault key together when backing up that volume. See [deployment](../developers/deployment.md#one-origin-container) for optional packages and model-server networking.
+
+:::note[Additional installers]
+Homebrew, an all-in-one Python package and prebuilt container images are [proposed distribution work](../developers/distribution.md). They are not published installation options yet.
+:::
 
 ## Start documentation
 

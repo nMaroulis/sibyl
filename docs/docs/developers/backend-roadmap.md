@@ -202,6 +202,16 @@ Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity q
 
 ## Cross-cutting and optional expansion
 
+### Distribution — proposed for 2.1
+
+Source checkout and locally built Docker Compose installations are available. The [installation roadmap](distribution.md) proposes these additional delivery methods; none is published yet.
+
+- [ ] Bundle the React interface in the Python wheel and add installed-package resource lookup, a stable workspace location and launcher options.
+- [ ] Test and publish the complete application for isolated uv/pipx installation.
+- [ ] Publish versioned multi-platform GHCR images and a pull-based Compose example.
+- [ ] Add a project Homebrew tap with isolated, checksummed dependencies and an installed-app smoke test.
+- [ ] Consider signed desktop installers after the shared packaging foundation.
+
 ### 11. Alerts and operational jobs — partial
 
 Basic [price, strategy and connection alerts](alerts.md), [account-risk watches](account-risk.md) and the local inbox are implemented. Their worker is a bounded domain loop, not a general-purpose job scheduler.

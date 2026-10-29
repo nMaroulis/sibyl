@@ -1,6 +1,38 @@
-# Architecture
+---
+title: Architecture
+hide_title: true
+---
+
+import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+
+<DocHero title="Architecture" eyebrow="Developers · Foundations" icon="code" facts={["React + FastAPI", "Python domain modules", "Native ProtoLink"]}>
 
 The design favors ordinary functions and focused domain modules. React renders the workspace, FastAPI validates requests, and Python owns calculations, persistence and execution. ProtoLink agents use the same domain evidence through typed read-only tools.
+
+</DocHero>
+
+<DocCards
+  items={[
+    {
+      title: 'Python domains',
+      text: 'Focused modules own calculations and state.',
+      icon: 'server',
+      to: '#python-package',
+    },
+    {
+      title: 'API contracts',
+      text: 'Explore validated requests and response boundaries.',
+      icon: 'code',
+      to: '/developers/api',
+    },
+    {
+      title: 'Native agents',
+      text: 'Specialists use the same evidence through typed tools.',
+      icon: 'spark',
+      to: '/developers/agents',
+    },
+  ]}
+/>
 
 ![Sibyl v2.1.0 architecture: application entry points, Python domain modules, the native ProtoLink team, data sources, local storage and configured language models.](/img/architecture.svg)
 
@@ -10,30 +42,30 @@ The [editable diagram topology](/img/architecture.mmd) accompanies the SVG used 
 
 ## Python package
 
-| File/module                               | Responsibility                                                                                      |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `config.py`                               | Validated environment configuration, with no import-time network work                               |
-| `models.py`                               | Strict request models, enum-like IDs, canonical symbol validation                                   |
-| `storage.py`                              | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                       |
-| `services/market.py`                      | Client ownership, closed candles, source labels and bounded cache                                   |
-| `services/accounts.py`                    | Saved versus active accounts, exclusive Demo preview and combined/exchange/account scopes           |
-| `services/valuation.py`                   | Exact direct/inverse/bridge routes, quote freshness, bounded reads and aligned conversion histories |
-| `services/portfolio.py`                   | Aggregate account balances, valuation, history, incomplete-account reporting                        |
-| `services/analytics.py`                   | Pure indicator, correlation, and baseline forecasting functions                                     |
-| `strategies/`                             | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                          |
-| `strategies/journal.py`                   | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV   |
-| `services/trading.py`                     | Exchange preview validation, intent expiry, at-most-once submission attempts                        |
-| `services/account_sync.py`                | Durable selected-market fill imports, native cursors, bounded retries, pause/resume and progress    |
-| `services/ledger.py`                      | Normalized fill storage, native-currency fees, atomic page/checkpoint commits and ledger queries    |
-| `services/research.py`                    | Bounded source-labeled research reads                                                               |
-| `blockchain/`                            | Fixed-source Bitcoin reads, identifier checks, amount normalization, bounded paging and explicit Demo |
-| `agents/providers.py`                     | ProtoLink provider capabilities, model presets, dependency metadata                                 |
-| `services/llm_settings.py`                | Encrypted provider profiles, active selection, request-scoped adapter configuration                 |
-| `news/`                                   | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment        |
-| `agents/<module>.py`                      | Native Agent declarations, module prompts and typed read-only tools                                 |
-| `agents/registry.py`, `agents/network.py` | Wiring, AgentGroup lifecycle, native run handles and UI request persistence                                      |
-| `api/app.py`                              | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA         |
-| `api/routes.py`                           | Thin versioned HTTP routes                                                                          |
+| File/module                               | Responsibility                                                                                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `config.py`                               | Validated environment configuration, with no import-time network work                                 |
+| `models.py`                               | Strict request models, enum-like IDs, canonical symbol validation                                     |
+| `storage.py`                              | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                         |
+| `services/market.py`                      | Client ownership, closed candles, source labels and bounded cache                                     |
+| `services/accounts.py`                    | Saved versus active accounts, exclusive Demo preview and combined/exchange/account scopes             |
+| `services/valuation.py`                   | Exact direct/inverse/bridge routes, quote freshness, bounded reads and aligned conversion histories   |
+| `services/portfolio.py`                   | Aggregate account balances, valuation, history, incomplete-account reporting                          |
+| `services/analytics.py`                   | Pure indicator, correlation, and baseline forecasting functions                                       |
+| `strategies/`                             | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                            |
+| `strategies/journal.py`                   | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV     |
+| `services/trading.py`                     | Exchange preview validation, intent expiry, at-most-once submission attempts                          |
+| `services/account_sync.py`                | Durable selected-market fill imports, native cursors, bounded retries, pause/resume and progress      |
+| `services/ledger.py`                      | Normalized fill storage, native-currency fees, atomic page/checkpoint commits and ledger queries      |
+| `services/research.py`                    | Bounded source-labeled research reads                                                                 |
+| `blockchain/`                             | Fixed-source Bitcoin reads, identifier checks, amount normalization, bounded paging and explicit Demo |
+| `agents/providers.py`                     | ProtoLink provider capabilities, model presets, dependency metadata                                   |
+| `services/llm_settings.py`                | Encrypted provider profiles, active selection, request-scoped adapter configuration                   |
+| `news/`                                   | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment          |
+| `agents/<module>.py`                      | Native Agent declarations, module prompts and typed read-only tools                                   |
+| `agents/registry.py`, `agents/network.py` | Wiring, AgentGroup lifecycle, native run handles and UI request persistence                           |
+| `api/app.py`                              | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA           |
+| `api/routes.py`                           | Thin versioned HTTP routes                                                                            |
 
 `create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts the domain workers and the in-process ProtoLink agent network, and stops them during shutdown. The network starts Sibyl and ten persistent native specialist Agents using ProtoLink `.start()`. Each agent has its own file, prompt and tools. Native client tasks and task-local history isolate requests; tools fetch evidence on demand. See [agent lifecycle and collaboration](./agents.md). Importing the package does not connect to an exchange or initialize a model.
 

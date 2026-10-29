@@ -1,0 +1,311 @@
+.sibyl-connect-section {
+  padding-top: 20px;
+}
+.sibyl-connect-panel {
+  border: 1px solid #e4eaf5;
+  border-radius: 24px;
+  background: linear-gradient(150deg, #fff, #f9fbff);
+  padding: 25px 28px;
+}
+.sibyl-connect-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.sibyl-connect-panel-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.sibyl-connect-panel-heading h3 {
+  font-size: 17px;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+.sibyl-connect-panel-heading h3 > span {
+  font-size: 11px;
+  vertical-align: middle;
+  border: 1px solid #e2e9f6;
+  border-radius: 7px;
+  padding: 3px 6px;
+  margin-left: 5px;
+  color: #6c7e9a;
+}
+.sibyl-connect-panel-heading > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #617aa9;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.sibyl-connect-panel-heading > a svg {
+  width: 14px;
+  height: 14px;
+}
+.sibyl-connect-icon {
+  display: grid;
+  place-items: center;
+  background: #eaf0fd;
+  color: #6082c2;
+  width: 35px;
+  height: 35px;
+  border-radius: 12px;
+}
+.sibyl-connect-icon.lilac {
+  background: #f0edfb;
+  color: #8a7bbc;
+}
+.sibyl-connect-icon.mint {
+  background: #eaf4f2;
+  color: #608e88;
+}
+.sibyl-connect-icon svg {
+  width: 19px;
+  height: 19px;
+}
+.sibyl-exchange-list,
+.sibyl-model-list,
+.sibyl-channel-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+}
+.sibyl-exchange-list {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+.sibyl-exchange-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border-radius: 11px;
+  padding: 8px;
+  font-size: 12px;
+  color: #45536c;
+  transition: background 220ms;
+}
+.sibyl-exchange-list li:hover {
+  background: #edf2fc;
+}
+.sibyl-exchange-list img {
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.sibyl-connect-footnote {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #6d7d93;
+  margin: 18px 0 0;
+}
+.sibyl-exchange-panel .sibyl-connect-footnote {
+  border-top: 1px solid #e9edf5;
+  padding-top: 15px;
+}
+.sibyl-connect-footnote a {
+  color: #5875a7;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #c6d4ec;
+}
+.sibyl-connect-columns {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+.sibyl-connect-panel h4 {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #7b88a0;
+  margin: 0 0 11px;
+}
+.sibyl-model-group + .sibyl-model-group {
+  border-top: 1px solid #e9edf5;
+  padding-top: 18px;
+  margin-top: 17px;
+}
+.sibyl-model-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px 9px;
+}
+.sibyl-model-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #495b77;
+}
+.sibyl-model-list img,
+.sibyl-model-list svg,
+.sibyl-provider-emoji {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.sibyl-provider-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+.sibyl-connect-description {
+  font-size: 12px;
+  line-height: 1.85;
+  color: #6a7a91;
+  margin: 0 0 20px;
+  max-width: 330px;
+}
+.sibyl-telegram-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #e0eaf7;
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(120deg, #edf5ff, #f6faff);
+  transition:
+    border-color 220ms,
+    box-shadow 220ms;
+}
+.sibyl-telegram-link:hover {
+  text-decoration: none;
+  border-color: #bccfec;
+  box-shadow: 0 8px 24px #7795c112;
+}
+.sibyl-telegram-link > span:nth-child(2) {
+  flex: 1;
+}
+.sibyl-telegram-link strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #405b84;
+}
+.sibyl-telegram-link > span > span {
+  display: block;
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 3px;
+  color: #75869e;
+}
+.sibyl-telegram-link > svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.sibyl-available-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: #4e8074;
+  white-space: nowrap;
+}
+.sibyl-available-badge i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #69a896;
+  box-shadow: 0 0 0 3px #69a89612;
+}
+.sibyl-connect-panel .sibyl-planned-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 25px;
+}
+.sibyl-planned-heading > span {
+  text-transform: none;
+  letter-spacing: 0;
+  color: #998a77;
+  background: #f5f0e9;
+  padding: 4px 7px;
+  border-radius: 6px;
+  font-size: 9px;
+}
+.sibyl-channel-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px 10px;
+}
+.sibyl-channel-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #69778c;
+}
+.sibyl-channel-list img {
+  object-fit: contain;
+}
+.sibyl-channel-list svg {
+  color: #8795ab;
+}
+@media (max-width: 996px) {
+  .sibyl-exchange-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .sibyl-connect-columns {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .sibyl-connect-section .sibyl-section-heading {
+    display: block;
+  }
+  .sibyl-connect-section .sibyl-section-heading > p {
+    margin-top: 15px;
+  }
+  .sibyl-connect-panel {
+    padding: 21px 17px;
+    border-radius: 20px;
+  }
+  .sibyl-connect-panel-heading {
+    gap: 9px;
+  }
+  .sibyl-connect-panel-heading h3 {
+    font-size: 15px;
+  }
+  .sibyl-connect-panel-heading > a {
+    font-size: 10px;
+  }
+  .sibyl-connect-panel-heading > div {
+    gap: 8px;
+  }
+  .sibyl-exchange-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 5px;
+  }
+  .sibyl-exchange-list li {
+    font-size: 11px;
+    padding: 6px 2px;
+  }
+  .sibyl-model-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sibyl-channel-list {
+    gap: 17px 6px;
+  }
+  .sibyl-telegram-link {
+    gap: 9px;
+    padding: 13px 10px;
+    flex-wrap: wrap;
+  }
+  .sibyl-telegram-link > img {
+    width: 30px;
+    height: 30px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sibyl-exchange-list li,
+  .sibyl-telegram-link {
+    transition: none;
+  }
+}

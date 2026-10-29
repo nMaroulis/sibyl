@@ -1,6 +1,38 @@
-# ProtoLink agents
+---
+title: ProtoLink agents
+hide_title: true
+---
+
+import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+
+<DocHero title="ProtoLink agents" eyebrow="Developers · ProtoLink" icon="spark" facts={["One file per agent", "Typed tools", "Request-local models"]}>
 
 Sibyl uses `protolink[http]>=0.8.3,<0.9`, locked to 0.8.3. Every specialist has its own file, system prompt and ordinary typed tool functions. ProtoLink owns tool execution, request-local model instances, native delegation, session history, event correlation and run reports. There is no application tool wrapper or LLM subclass.
+
+</DocHero>
+
+<DocCards
+  items={[
+    {
+      title: 'Agent definitions',
+      text: 'Prompts and tools stay with each specialist.',
+      icon: 'code',
+      to: '#ordinary-tool-declarations',
+    },
+    {
+      title: 'Model choices',
+      text: 'Workspace defaults and per-agent overrides.',
+      icon: 'spark',
+      to: '/developers/agent-models',
+    },
+    {
+      title: 'Acceptance checks',
+      text: 'Inspect evaluated runtime behavior and limits.',
+      icon: 'shield',
+      to: '/developers/agent-acceptance',
+    },
+  ]}
+/>
 
 The migration follows the published [application-runtime guide](https://github.com/nMaroulis/protolink/blob/v0.8.3/docs/content/application-runtime.md) and [FastAPI example](https://github.com/nMaroulis/protolink/blob/v0.8.3/examples/application_runtime.py), checked against the installed PyPI package. The HTTP extra supplies the dependencies used by its HTTP model adapters, including `httpx2`.
 

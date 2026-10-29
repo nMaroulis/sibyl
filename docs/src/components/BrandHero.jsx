@@ -1,7 +1,8 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
 import CrystalScene from './brand/CrystalScene';
-import { GuideIcon, ProviderMark } from './brand/Marks';
+import { GuideIcon } from './brand/Marks';
+import IntegrationShowcase from './brand/IntegrationShowcase';
 
 const paths = [
   {
@@ -116,31 +117,7 @@ export default function BrandHero() {
           <CrystalScene />
         </div>
       </section>
-      <section
-        className="sibyl-integrations sibyl-home-width"
-        aria-label="Exchange and AI integrations"
-      >
-        <div className="sibyl-integration-heading">
-          <span>YOUR WORLD, CONNECTED</span>
-          <p>
-            Familiar names. <br />
-            Your choice of AI.
-          </p>
-        </div>
-        <div className="sibyl-integration-marks">
-          {['Binance', 'Coinbase', 'Kraken', 'OpenAI', 'Anthropic', 'Ollama'].map((name) => (
-            <div key={name}>
-              <ProviderMark name={name} />
-              <span>{name}</span>
-            </div>
-          ))}
-        </div>
-        <p className="sibyl-integration-note">
-          Explore <Link to="/guides/exchanges">exchange coverage</Link> and{' '}
-          <Link to="/guides/settings#ai-models">AI providers</Link>. Capabilities vary by
-          integration.
-        </p>
-      </section>
+      <IntegrationShowcase />
       <section className="sibyl-start-section sibyl-home-width" aria-labelledby="start-heading">
         <div className="sibyl-section-heading">
           <div>

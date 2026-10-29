@@ -2,6 +2,8 @@
 @import '@fontsource/dm-sans/latin-500.css';
 @import '@fontsource/dm-sans/latin-600.css';
 @import './home.css';
+@import './integrations.css';
+@import './guides.css';
 
 :root {
   --ifm-color-primary: #4d70be;

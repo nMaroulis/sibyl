@@ -80,6 +80,7 @@ module.exports = {
             'developers/extending',
             'developers/testing',
             'developers/deployment',
+            'developers/distribution',
             'developers/backend-roadmap',
           ],
         ),
