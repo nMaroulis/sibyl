@@ -47,6 +47,54 @@ docker compose up --build
 
 ## Release notes
 
+## [2.1.0] - 2026-10-29
+
+:::note[Release summary]
+
+Chronos gains its first trained forecasting workflow: reproducible daily inputs, versioned numerical models, chronological evaluation and saved forecasts. Explorer adds public Bitcoin transaction and address inspection. Strategy research adds reproducible seeded random search with recorded candidate plans and chronological evaluation. These workflows keep source attribution, optional Demo input and implementation limits visible.
+
+:::
+
+### Added
+
+- A modular Python `forecasting/` engine for direct autoregressive ridge models. It fits daily log-return lags with NumPy, without new ML dependencies or startup model downloads.
+- Current-feed training from 360–720 closed daily candles and offline training from immutable daily datasets with up to 5,000 observations. The smaller Demo action uses synthetic input through the same numerical pipeline without changing account or source settings.
+- Chronological 60/20/20 training, calibration and test partitions, with targets crossing a boundary excluded. Feature scaling, coefficients and benchmark drift use training data only; empirical band widths are fixed before independent testing.
+- Per-horizon MAE, RMSE, MAPE, naïve/drift comparisons, MAE skill and observed band coverage. Negative skill remains visible, and overlapping multi-day targets are disclosed.
+- Nominal 90% empirical bands from calibration log errors and descriptive counts of lag features outside training ranges. Neither provides a guaranteed future coverage rate or calibrated regime-change detection.
+- A bounded JSON model registry with numbered versions, engine/NumPy provenance, source/input/artifact fingerprints and exact-input reruns that preserve previous versions.
+- Explicit forecasts from saved input or the original matching market feed, with observation dates, stale-input labels and the latest twenty saved outputs per model. Retained observation windows and result fingerprints support offline inspection and JSON export.
+- A Trained models workspace with progressive model settings, source/environment badges, partition summaries, held-out price charts, metrics, forecast charts and model/evidence exports.
+- Native typed Chronos tools for finding model versions, inspecting evaluation and reading selected saved forecasts. Page Ask dialogs and Sibyl consultations use the same registry and evidence; training and persistence remain explicit application actions.
+- User/developer forecasting guides and refreshed implementation coverage, with remaining model families, rolling evaluation and calibrated drift monitoring kept on the pending checklist.
+- Bitcoin mainnet transaction/address lookup through a dedicated read-only backend package and the public mempool.space indexer. Checksummed mainnet identifiers are validated before requests; no API key or exchange connection is required.
+- Transaction inclusion/confirmation observations, exact satoshi fees and sat/vB, available previous-output evidence, coinbase handling and paged inputs/outputs. Address reports separate confirmed totals from pending changes and offer cursor-based confirmed history plus bounded pending activity.
+- An in-page Bitcoin lookup with source/time labels, explicit synthetic Demo examples, linked reference navigation, JSON observation exports and contextual Explorer conversations. Native typed ProtoLink tools expose the same lookup and activity evidence to Explorer and Sibyl.
+- Bitcoin user/developer guides covering public-query privacy, non-atomic chain observations, missing evidence, pagination/response bounds and the distinction between an address and an owner's complete wallet.
+- Seeded finite random search for strategy validation: up to four indicator parameters and eight explicit values each, sampling at most sixteen distinct candidates from up to 4,096 combinations. The existing chronological train/test and 60,000-bar work limits remain in force.
+- Price-independent, versioned candidate plans with seed, sampled space indices, coverage, recipe/plan fingerprints and complete-space parameter validation. A mismatched saved plan refuses exact-study replay instead of silently changing candidates.
+- Progressive random-search controls, evaluated-candidate tables and sampling evidence in saved studies/exports and Broker's existing native ProtoLink report tool. Grid and fixed-setting workflows remain available; Bayesian/distribution-based optimization and nested validation remain pending.
+
+### Changed
+
+- Give the documentation a full-width landing page with an animated crystal ball, exchange and AI-provider marks, and direct paths into the guides. Refresh guide typography, navigation, tables and reading layouts; illustration motion can be paused and respects reduced-motion preferences. Fonts and integration artwork are served locally.
+- Refine the crystal-ball illustration with intersecting perspective orbits, compact tiles for nine integrations including Gemini, DeepSeek and Bybit, provider marks that pass in front of and behind the glass, fading provider-colored trails, moving reflections, soft depth shading and opal edge lighting. Motion stays lightweight and shares the existing pause and reduced-motion controls.
+- Split documentation navigation into Getting started, User guide and Developers, with dedicated sidebars and guide/developer overview pages. Welcome belongs to Getting started; chapter links stay visible without category dropdowns.
+
+- Show the complete exchange catalog, hosted/local AI choices and messaging availability on the documentation homepage. Add illustrated introductions and reading paths to Getting started and key user/developer guides, plus a visual explanation of technical-bias weights. Clarify current source/Docker installation paths and record proposed distribution methods separately.
+- Forecasting now opens the trained-model workspace; the existing untrained log-return projection remains available under Statistical baseline with its original API contract.
+- Align application, Python/npm package metadata and documentation branding at v2.1.0.
+
+### Fixed
+
+- Give the homepage gradient heading enough space for its descenders so “See the bigger picture.” renders without cropped letters.
+
+- Replace the approximate DeepSeek marks in the documentation and dashboard with the official whale SVG, served locally with its original proportions and source attribution.
+
+### Scope
+
+This is the initial trained model family, not LSTM/ARIMA or pretrained Chronos weights. Independent historical test results do not establish profitable trading or future calibration. Automatic recalibration, monitored drift, richer model families and larger model lifecycle management remain pending. Bitcoin research trusts a public indexer; it does not aggregate complete wallets, verify spendability/chain proofs or broadcast transactions. No exchange-execution or agent mutation permissions are added.
+
 ## [2.0.0] - 2026-10-28
 
 :::note[Release summary]

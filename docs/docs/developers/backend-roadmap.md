@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — October 28, 2026
+## Audited snapshot — October 29, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -17,9 +17,9 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
-| Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                       |
+| Forecasting                    | partial       | Rolling evaluation, more model families, automatic recalibration and calibrated drift monitoring.   |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
-| Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                            |
+| Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.              |
 | Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                      |
 
 ## Working foundations
@@ -34,7 +34,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Live Sibyl consultation progress, request-specific cancellation and retained outcomes/evidence for completed, stopped, failed or interrupted requests. Startup marks unfinished requests interrupted without replaying them.
 - Encrypted LLM provider profiles, saved API keys and preset/custom model selection.
 - Durable editable source-pinned level/crossing alerts, strategy journal subscriptions and per-operation connection read-failure/recovery watches; a shared persistent unread in-app inbox and bounded sanitized evidence.
-- Multi-publisher news ingestion, a persistent archive and filtered text sentiment, fetched crypto profiles/history, a glossary, recent Bitcoin blocks and optional equity research.
+- Multi-publisher news ingestion, a persistent archive and filtered text sentiment, fetched crypto profiles/history, a glossary, Bitcoin transaction/address inspection and recent blocks, plus optional equity research.
 
 A paper strategy can consume live prices while still using virtual funds. Its running monitor does **not** mean it places exchange orders. Initial authenticated balance reads, manual Binance Testnet orders and automated strategy entry/exit/restart with controlled lost-response recovery are recorded in [exchange acceptance](exchange-acceptance.md). Partial-fill/cancellation-race acceptance, broader venues and production execution acceptance remain outstanding.
 
@@ -136,7 +136,8 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 Six configurable strategies, fee/slippage-aware backtests, performance metrics and a paper monitor are implemented.
 
 - [x] Add bounded grid search, chronological holdout/expanding walk-forward evaluation, fixed-settings comparisons, recorded training rankings/test executions, exact-study reruns and Broker evidence tools. See [validation](../guides/strategy-validation.md).
-- [ ] Add nested validation, continuous rebalanced deployment simulations and broader random/Bayesian optimization; repeated user experiments can still overfit.
+- [x] Add reproducible seeded finite random search with an explicit candidate budget, full-space validation, coverage/fingerprints, saved plans, exact-study replay checks and native Broker evidence.
+- [ ] Add nested validation, continuous rebalanced deployment simulations and Bayesian/distribution-based optimization; repeated user experiments can still overfit.
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
 - [ ] Add additional explicit benchmarks and strategy-version comparisons.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
@@ -168,14 +169,17 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [ ] Validate Telegram with a real bot; add media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
-### 8. Forecasting / Chronos — baseline only
+### 8. Forecasting / Chronos — partial
 
-The current forecast is an untrained log-return statistical baseline. It does not load or run the old TensorFlow models.
+v2.1.0 adds direct autoregressive ridge models over immutable daily input, alongside the separate untrained baseline. See the [user workflow](../guides/forecasting.md) and [engine contracts](forecasting.md).
 
-- [ ] Implement reproducible dataset preparation and model training.
-- [ ] Add trained-model inference, model artifacts/versioning and a registry.
-- [ ] Add out-of-sample comparisons, forecast calibration and drift monitoring.
-- [ ] Connect the UI to actual model results and make baseline/model distinctions explicit.
+- [x] Implement reproducible daily dataset preparation and real numerical model fitting, with explicit synthetic Demo input through the same engine.
+- [x] Add JSON coefficients/scalers, source and engine fingerprints, numbered model versions, exact-input reruns, current/saved-input inference and retained forecast observations.
+- [x] Add chronological 60/20/20 training/calibration/test partitions, purged boundary-crossing targets, naive/drift comparisons and independent test metrics/empirical band coverage.
+- [x] Connect the UI to trained results, explicit baseline/model tabs, test/forecast charts, exports and native read-only Chronos registry/report tools.
+- [x] Expose descriptive lag-feature departures from training ranges without claiming a calibrated drift detector.
+- [ ] Add rolling/repeated forward evaluation, calibrated drift monitoring, automated recalibration and managed archive/import beyond the initial bounded registry.
+- [ ] Add neural/ARIMA and other model families, richer features and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 
@@ -187,15 +191,26 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 - [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.
 - [ ] Add configurable external research API credentials/endpoints where integrations need them.
 
-### 10. Explorer, equities and advanced analytics — basic implementations
+### 10. Explorer, equities and advanced analytics — partial
 
-Recent Bitcoin blocks, optional equity quotes/history/statistics and Pearson/Spearman correlation exist.
+Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman correlation exist.
 
-- [ ] Add transaction/address inspection, historical chain datasets and additional chains.
+- [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
+- [ ] Add historical chain datasets, additional chains, wallet aggregation, output-spend tracking and local chain verification.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
 - [ ] Add distance correlation, MIC, Granger causality, regression and SHAP only with clear statistical assumptions.
 
 ## Cross-cutting and optional expansion
+
+### Distribution — proposed for 2.1
+
+Source checkout and locally built Docker Compose installations are available. The [installation roadmap](distribution.md) proposes these additional delivery methods; none is published yet.
+
+- [ ] Bundle the React interface in the Python wheel and add installed-package resource lookup, a stable workspace location and launcher options.
+- [ ] Test and publish the complete application for isolated uv/pipx installation.
+- [ ] Publish versioned multi-platform GHCR images and a pull-based Compose example.
+- [ ] Add a project Homebrew tap with isolated, checksummed dependencies and an installed-app smoke test.
+- [ ] Consider signed desktop installers after the shared packaging foundation.
 
 ### 11. Alerts and operational jobs — partial
 

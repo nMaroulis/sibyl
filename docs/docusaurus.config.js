@@ -1,6 +1,6 @@
 const config = {
   title: 'Sibyl',
-  tagline: 'Your connected crypto workspace.',
+  tagline: 'Read the signals. See the bigger picture.',
   favicon: 'img/brand/logo_brand.png',
   url: 'https://nmaroulis.github.io',
   baseUrl: '/sibyl/',
@@ -31,13 +31,24 @@ const config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'guide',
-          label: 'Documentation',
+          sidebarId: 'gettingStarted',
+          label: 'Getting started',
           position: 'left',
         },
         {
-          type: 'doc',
-          docId: 'changelog',
+          type: 'docSidebar',
+          sidebarId: 'userGuide',
+          label: 'User guide',
+          position: 'left',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'developers',
+          label: 'Developers',
+          position: 'left',
+        },
+        {
+          to: '/changelog',
           label: 'Changelog',
           position: 'right',
         },

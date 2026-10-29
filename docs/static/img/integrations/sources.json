@@ -1,0 +1,29 @@
+{
+  "note": "Exchange artwork from the existing Sibyl assets, originally sourced from CoinGecko's public exchange directory. Marks belong to their respective owners.",
+  "icons": {
+    "binance": {
+      "file": "binance.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/52/small/binance.jpg?1706864274"
+    },
+    "coinbase": {
+      "file": "coinbase.png",
+      "source": "https://coin-images.coingecko.com/markets/images/23/small/Coinbase_Coin_Primary.png?1706864258"
+    },
+    "kraken": {
+      "file": "kraken.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/29/small/kraken.jpg?1706864265"
+    },
+    "bybit": {
+      "file": "bybit.png",
+      "source": "https://coin-images.coingecko.com/markets/images/698/small/bybit_spot.png?1706864649"
+    },
+    "deepseek": {
+      "file": "deepseek.svg",
+      "source": "https://github.com/deepseek-ai/awesome-deepseek-integration/blob/main/docs/_logo%20svg/ICON.svg",
+      "guidelines": "https://github.com/deepseek-ai/awesome-deepseek-integration/blob/main/docs/_logo%20svg/guidelines.md",
+      "sha256": "b15083e3cbb398bd35619b758c43adc0a632efccc7e2d69f2481a860862910fe",
+      "note": "Unmodified official DeepSeek icon. Marks belong to their respective owners."
+    }
+  },
+  "ai_marks": "DeepSeek uses its official SVG. Other AI marks are simplified inline marks consistent with the existing Sibyl dashboard. Marks identify integrations, not endorsement."
+}

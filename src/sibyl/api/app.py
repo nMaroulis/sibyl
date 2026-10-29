@@ -22,6 +22,7 @@ from sibyl.accounting.funding.reviews import FundingReviewConflict
 from sibyl.agents.model_selection import ModelConflict
 from sibyl.agents.registry import AgentRegistry
 from sibyl.config import Settings
+from sibyl.forecasting.service import ForecastModels
 from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
@@ -68,6 +69,7 @@ class Services:
     messaging: TelegramService
     ollama: OllamaService
     balance_checks: BalanceChecks
+    forecasts: ForecastModels
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -89,6 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         transfers = TransferReconciliation(store)
         performance = AccountPerformance(market, store)
         balance_checks = BalanceChecks(market, store)
+        forecasts = ForecastModels(market, store)
         agents = AgentRegistry(
             config,
             store,
@@ -101,6 +104,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             funding_sync,
             transfers,
             balance_checks,
+            forecasts,
         )
         await agents.network.start()
         messaging = TelegramService(store, agents.network)
@@ -130,6 +134,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             messaging,
             ollama,
             balance_checks,
+            forecasts,
         )
 
         def background_call(method):
@@ -374,6 +379,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.funding_scans import router as funding_scans_router
 
     app.include_router(funding_scans_router)
+
+    from sibyl.api.forecasting import router as forecasting_router
+
+    app.include_router(forecasting_router)
+
+    from sibyl.api.bitcoin import router as bitcoin_router
+
+    app.include_router(bitcoin_router)
 
     @app.get("/health", tags=["System"])
     def health():

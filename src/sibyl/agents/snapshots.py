@@ -153,7 +153,32 @@ def snapshot_answer(module: str, evidence) -> str:
         )
     if module == "chronos":
         point = evidence["points"][-1]
+        if evidence.get("trained"):
+            return (
+                f"Trained research model v{evidence['model_version']} on {evidence['symbol']}: "
+                f"the {evidence['horizon']}-day estimate is {point['value']:,.4f}, with a nominal 90% "
+                f"empirical band of {point['lower']:,.4f}–{point['upper']:,.4f}. "
+                f"Observation origin: {evidence['origin']}. Source: {evidence['source']}. "
+                "Inspect the model's held-out test results; future coverage and profitable trades are not guaranteed."
+            )
         return f"The {evidence['horizon']} day log-return baseline ends at {point['value']:,.2f}, with an approximate interval of {point['lower']:,.2f}–{point['upper']:,.2f}. Source: {evidence['source']}. This is an uncalibrated statistical baseline, not a trained model."
+    if module == "broker" and evidence.get("selected_validation"):
+        study = evidence["selected_validation"]
+        plan = study.get("search")
+        selection = (
+            (
+                f"{plan['method']} search, {plan['evaluated_candidates']} of {plan['space_size']} configurations evaluated"
+                + (f", seed {plan['seed']}" if plan["seed"] is not None else "")
+            )
+            if plan
+            else "recorded parameter search"
+        )
+        return (
+            ("Demo study. " if study["dataset"]["source"] == "demo" else "")
+            + f"{selection}. Mean later-window return: {study['summary']['mean_return_pct']:+.2f}%. "
+            "These windows reset virtual cash; the mean is not a compounded account return. "
+            "Inspect training rankings and untested combinations; repeated experiments can overfit."
+        )
     if module == "broker" and evidence.get("selected_run"):
         run = evidence["selected_run"]
         selected = evidence["selected_parameters"]
@@ -176,5 +201,23 @@ def snapshot_answer(module: str, evidence) -> str:
     if module == "technician":
         return f"{len(evidence['connections'])} connections saved. Market mode: {evidence['mode']}. {evidence['permissions']} Use the connection check to verify saved credentials."
     if module == "explorer":
+        if evidence.get("kind") == "transaction":
+            item = evidence["transaction"]
+            confirmations = item["status"]["confirmations"]
+            return (
+                f"{'Demo transaction. ' if evidence['source'] == 'demo' else ''}"
+                f"{item['txid']}: {confirmations if confirmations is not None else 'Unknown'} observed confirmations; "
+                f"fee {item['fee_sats']:,} sat ({item['fee_rate_sat_vb']:.2f} sat/vB). "
+                f"{item['input_count']} inputs and {item['output_count']} outputs. Source: {evidence['source']}. "
+                + evidence["note"]
+            )
+        if evidence.get("kind") == "address":
+            item = evidence["address"]
+            return (
+                f"{'Demo address. ' if evidence['source'] == 'demo' else ''}"
+                f"Confirmed balance: {item['confirmed_balance_sats']:,} sat; pending change: {item['pending_delta_sats']:+,} sat. "
+                f"{item['chain_stats']['tx_count']} indexed confirmed transactions; {len(evidence['history']['items'])} shown. "
+                f"Source: {evidence['source']}. " + evidence["note"]
+            )
         return f"{len(evidence['items'])} recent Bitcoin blocks available. Latest displayed height: {evidence['items'][0]['height']:,}. Source: {evidence['source']}."
     return f"{evidence['name']} ({evidence['symbol']}): {evidence['price']:,.2f} {evidence['currency']}. Source: {evidence['source']}."

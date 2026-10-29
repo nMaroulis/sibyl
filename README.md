@@ -10,7 +10,7 @@ Sibyl brings your crypto accounts, market analysis, trading and strategy researc
 
 The legacy Python/Streamlit application is available at [sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit).
 
-[![Version](https://img.shields.io/badge/version-2.0.0-4273d6)](https://nmaroulis.github.io/sibyl/changelog)
+[![Version](https://img.shields.io/badge/version-2.1.0-4273d6)](https://nmaroulis.github.io/sibyl/changelog)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
 [![ProtoLink](https://img.shields.io/badge/AI_agents-ProtoLink-8B5CF6)](https://github.com/nMaroulis/protolink)
@@ -20,13 +20,13 @@ The legacy Python/Streamlit application is available at [sibyl-streamlit](https:
 
 ## One workspace, from understanding to action
 
-- **See the whole picture.** Combine accounts across exchanges, or focus on one exchange, account or asset.
+- **See the whole picture.** Combine accounts across exchanges or focus on one exchange, account or asset.
 - **Research before you trade.** Inspect prices, statistics, news and historical strategy results in the same place.
-- **Ask a specialist.** Open a contextual conversation on a page, or let Sibyl consult the team for you.
-- **Keep control.** Credentials are encrypted locally. Exchange execution needs explicit setup and approval; AI tools are read-only.
-- **Explore at your own pace.** Start without credentials, connect your accounts when ready, or use the clearly labeled Demo preview.
+- **Ask a specialist.** Open a contextual conversation on a page or let Sibyl consult the team for you.
+- **Keep control.** Credentials are encrypted locally. Exchange execution needs explicit setup and approval. AI tools are read-only.
+- **Explore at your own pace.** Start without credentials, connect your accounts when ready or use the clearly labeled Demo preview.
 
-The interface pairs a floating navigation dock with focused workspaces, interactive charts and expandable advanced controls. React handles the experience; a modular Python backend owns the data, calculations and execution.
+The interface pairs a floating navigation dock with focused workspaces, interactive charts and expandable advanced controls. React handles the experience a modular Python backend owns the data, calculations and execution.
 
 ## Explore the modules
 
@@ -48,7 +48,7 @@ Python calculates returns, trend and momentum, volatility, drawdowns, volume sta
 
 ### Trade · Follow an order through
 
-Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Monitor orders, partial fills and cancellation evidence; recover uncertain submissions by client ID without blindly submitting again.
+Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Monitor orders, partial fills and cancellation evidence. Recover uncertain submissions by client ID without blindly submitting again.
 
 Account history brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
 
@@ -61,7 +61,7 @@ Execution, imports and recovery vary by provider. Each exchange card in Settings
 Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Bollinger Surge, Impulse Breakout and Quantum Momentum**. Start with a simple configuration, then expand indicator, risk and execution settings.
 
 - **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against buy-and-hold, drawdowns and trade-level metrics.
-- **Validate:** run bounded parameter searches, chronological holdouts and expanding walk-forward tests. Save inputs, compare compatible experiments and rerun exact datasets.
+- **Validate:** compare a small grid or sample a larger parameter space with a reproducible seed, then run chronological holdouts and expanding walk-forward tests. Inspect candidate coverage, save inputs and rerun exact studies.
 - **Monitor:** follow paper or separately approved exchange runs through charts, execution markers and a persistent decision journal.
 - **Control:** use account-bound budgets, order limits, a global strategy halt and optional shared exposure and observed daily-loss controls.
 
@@ -79,11 +79,11 @@ Each specialist has its own prompt, typed tools and page guidance. The **Ask** b
 | **Accountant** | Holdings, valuation, retained history and accounting evidence |
 | **Analyst** | Markets, technical statistics and correlations |
 | **Broker** | Trade, order evidence, backtests and strategy monitors |
-| **Chronos** | Forecast baseline and its assumptions |
+| **Chronos** | Trained forecasts, held-out evaluation and baseline assumptions |
 | **Reporter** | Source-linked news, article excerpts and text sentiment |
 | **Technician** | Connections, settings, model setup and diagnostics |
 | **Wiki** | Crypto concepts and project profiles |
-| **Explorer** | Recent Bitcoin blocks and network context |
+| **Explorer** | Bitcoin transactions, address activity, fees, confirmations and recent blocks |
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
@@ -99,15 +99,17 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 
 [News and sentiment](docs/docs/guides/research.md#reporter-news-and-insights)
 
-### Forecast · Explore a statistical baseline
+### Forecast · Train, evaluate, inspect
 
-Chronos visualizes a log-return price baseline and theoretical uncertainty bands for a chosen horizon. Its assumptions are explicit: this is an **untrained statistical baseline**, with trained models and calibration tracked as future work.
+Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
 
-[Forecast method](docs/docs/guides/research.md#chronos-forecast-baseline)
+Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families, rolling evaluation and automated recalibration are pending.
+
+[Forecasting guide](docs/docs/guides/forecasting.md) · [Engine contracts](docs/docs/developers/forecasting.md)
 
 ### Research · Understand the wider picture
 
-Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect recent Bitcoin blocks, or explore optional equity quotes, adjusted history and company information.
+Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
 
 Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
@@ -149,6 +151,7 @@ SQLite retains accounts, ledgers, research inputs, runs, conversations and alert
 | `src/sibyl/api/` | FastAPI routes, validation and application lifecycle |
 | `src/sibyl/exchanges/` | Shared client interface, provider adapters and Demo |
 | `src/sibyl/accounting/` | Funding, transfers, balance checks and accounting rules |
+| `src/sibyl/forecasting/` | Training, evaluation, JSON model registry and retained forecasts |
 | `src/sibyl/strategies/` | Signals, backtests, validation, paper and exchange runs |
 | `src/sibyl/market_data/`, `src/sibyl/news/` | Candle history, datasets and news collection |
 | `src/sibyl/agents/` | Agent declarations, prompts, tools and native runtime integration |

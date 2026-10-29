@@ -10,7 +10,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ArrowUpRight, BookOpen, Box, ExternalLink, Search, TrendingUp } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BookOpen,
+  Box,
+  ExternalLink,
+  FlaskConical,
+  Search,
+  TrendingUp,
+} from 'lucide-react';
 import {
   Badge,
   DataNote,
@@ -23,6 +31,8 @@ import {
 } from '../components/ui';
 import { AgentButton } from '../components/agents';
 import { NewsWorkspace } from '../components/news-workspace';
+import { ForecastWorkspace } from '../components/forecast-workspace';
+import { BitcoinInspector } from '../components/bitcoin-inspector';
 import { CryptoLibraryView } from '../components/crypto-library';
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { ComingSoon } from '../components/coming-soon';
@@ -32,6 +42,38 @@ import { useResource } from '../lib/hooks';
 import type { Analysis, Block, Forecast, Knowledge, Source, Stock } from '../lib/types';
 
 export function ForecastPage() {
+  const [search, setSearch] = useSearchParams();
+  const tab = search.get('tab') === 'baseline' ? 'baseline' : 'models';
+  return (
+    <>
+      <PageTitle
+        title="Forecasting"
+        description="Train, evaluate and inspect reproducible daily forecasts."
+      />
+      <SectionTabs
+        id="forecast"
+        label="Forecasting workspaces"
+        value={tab}
+        items={[
+          { id: 'models', label: 'Trained models', icon: FlaskConical },
+          { id: 'baseline', label: 'Statistical baseline', icon: TrendingUp },
+        ]}
+        onChange={(value) =>
+          setSearch((p) => {
+            p.set('tab', value);
+            return p;
+          })
+        }
+      />
+      <SectionPanel id="forecast" value={tab}>
+        {tab === 'models' ? <ForecastWorkspace /> : <ForecastBaseline />}
+      </SectionPanel>
+      <ComingSoon module="forecast" />
+    </>
+  );
+}
+
+function ForecastBaseline() {
   const [asset, setAsset] = useState('BTC');
   const [horizon, setHorizon] = useState(14);
   const result = useResource<Forecast>(
@@ -55,17 +97,16 @@ export function ForecastPage() {
   ];
   return (
     <>
-      <PageTitle
-        eyebrow="POSSIBILITY, WITH PERSPECTIVE"
-        title="Forecasting"
-        description="Explore a statistical baseline, and the uncertainty around it."
-        action={<AgentButton module="chronos" context={{ symbol: `${asset}/USDT`, horizon }} />}
-      />
       <Panel className="full-panel">
         <PanelTitle
           title="Forecast workspace"
           subtitle="Chronos · log-return statistical baseline"
-          action={<Badge tone="purple">Untrained baseline</Badge>}
+          action={
+            <>
+              <Badge tone="purple">Untrained baseline</Badge>
+              <AgentButton module="chronos" context={{ symbol: `${asset}/USDT`, horizon }} />
+            </>
+          }
         />
         <div className="forecast-controls">
           <label>
@@ -198,7 +239,6 @@ export function ForecastPage() {
           Explore the assumptions
         </AgentButton>
       </div>
-      <ComingSoon module="forecast" />
     </>
   );
 }
@@ -267,7 +307,7 @@ function ExplorerView() {
     rows.reduce((sum, row) => sum + row[key], 0) / Math.max(1, rows.length);
   return (
     <>
-      {' '}
+      <BitcoinInspector />
       <Panel>
         <PanelTitle
           title="Bitcoin block explorer"
@@ -388,7 +428,11 @@ function ExplorerView() {
             </div>
             <div className="chart-footnote">
               <DataNote source={blocks.data?.source} />
-              <span>Bitcoin mainnet · latest provider observations</span>
+              <span>
+                {blocks.data?.source === 'demo'
+                  ? 'Synthetic sample blocks'
+                  : 'Bitcoin mainnet · provider observations'}
+              </span>
             </div>
           </>
         )}
@@ -549,7 +593,7 @@ export function ResearchPage() {
       <PageTitle
         eyebrow="FOLLOW YOUR CURIOSITY"
         title="Research"
-        description="Crypto concepts, project profiles, Bitcoin blocks, and equity research."
+        description="Crypto concepts, project profiles, Bitcoin activity and equity research."
       />
       <SectionTabs
         id="research"

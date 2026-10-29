@@ -10,7 +10,6 @@ import json
 import math
 import threading
 from datetime import UTC, datetime
-from itertools import product
 from statistics import mean, median
 from typing import Literal
 from uuid import uuid4
@@ -21,6 +20,14 @@ from sibyl import __version__
 from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.models import BacktestRequest, Request
 from sibyl.strategies.backtest import BacktestEngine
+from sibyl.strategies.research.search import (
+    MAX_RANDOM_AXES,
+    MAX_RANDOM_VALUES,
+    MAX_SAMPLES,
+    MAX_SPACE,
+    SAMPLER,
+    search_plan,
+)
 
 MAX_WORK_BARS = 60_000
 MIN_TEST_BARS = 20
@@ -91,11 +98,14 @@ class ValidationParameters(BacktestRequest):
 
 
 class WalkForwardRequest(Request):
-    """One exact input and a small explicit grid; no network reads or live execution."""
+    """One exact input and an explicit grid or seeded sample; no live execution."""
 
     dataset_id: str = Field(pattern=r"^[a-f0-9]{64}$")
     parameters: ValidationParameters
-    grid: dict[str, list[StrictInt | StrictFloat]] = Field(default_factory=dict, max_length=2)
+    grid: dict[str, list[StrictInt | StrictFloat]] = Field(default_factory=dict, max_length=MAX_RANDOM_AXES)
+    search_method: Literal["grid", "random"] = "grid"
+    sample_size: int | None = Field(default=None, ge=1, le=MAX_SAMPLES, strict=True)
+    seed: int | None = Field(default=None, ge=0, le=2**32 - 1, strict=True)
     folds: int = Field(default=3, ge=1, le=5, strict=True)
     initial_train_pct: int = Field(default=60, ge=40, le=80, strict=True)
     objective: Literal["return_pct", "sharpe", "max_drawdown"] = "return_pct"
@@ -104,25 +114,31 @@ class WalkForwardRequest(Request):
     @model_validator(mode="after")
     def valid_grid(self):
         """Reject irrelevant, duplicate or oversized search axes instead of skipping them."""
+        random = self.search_method == "random"
+        max_axes, max_values = (MAX_RANDOM_AXES, MAX_RANDOM_VALUES) if random else (2, 4)
+        if len(self.grid) > max_axes:
+            raise ValueError(f"This search method supports at most {max_axes} parameters.")
+        if not random and (self.sample_size is not None or self.seed is not None):
+            raise ValueError("Sample size and seed apply only to random search.")
         for key, values in self.grid.items():
             if key not in SEARCH_FIELDS[self.parameters.strategy]:
                 raise ValueError(f"{key} is not a searchable parameter for this strategy.")
-            if not 1 <= len(values) <= 4 or len(set(values)) != len(values):
-                raise ValueError("Each search parameter needs one to four distinct numeric values.")
+            if not 1 <= len(values) <= max_values or len(set(values)) != len(values):
+                raise ValueError(f"Each search parameter needs one to {max_values} distinct numeric values.")
             if not all(math.isfinite(value) for value in values):
                 raise ValueError("Search values must be finite.")
         self.candidates()  # Full strategy validation also catches unordered EMA/MACD/TSI pairs.
         return self
 
     def candidates(self) -> list[dict]:
-        """Enumerate the explicit Cartesian grid with stable, deterministic tie order."""
-        keys = sorted(self.grid)
-        candidates = []
-        for index, values in enumerate(product(*(self.grid[key] for key in keys))):
-            overrides = dict(zip(keys, values, strict=True))
-            params = ValidationParameters(**(self.parameters.model_dump() | overrides))
-            candidates.append({"id": index + 1, "overrides": overrides, "parameters": params})
-        return candidates
+        """Return the validated grid or deterministic sample in its recorded evaluation order."""
+        return self.plan()[0]
+
+    def plan(self):
+        """Construct price-independent candidate choices and their reproducible evidence."""
+        return search_plan(
+            self.parameters, self.grid, self.search_method, sample_size=self.sample_size, seed=self.seed
+        )
 
 
 class WalkForwardEngine:
@@ -144,6 +160,15 @@ class WalkForwardEngine:
             "max_folds": 5,
             "min_test_bars": MIN_TEST_BARS,
             "max_work_bars": MAX_WORK_BARS,
+            "search_methods": ["grid", "random"],
+            "random": {
+                "max_axes": MAX_RANDOM_AXES,
+                "max_values": MAX_RANDOM_VALUES,
+                "max_samples": MAX_SAMPLES,
+                "max_space": MAX_SPACE,
+                "default_seed": 42,
+                "sampler": SAMPLER,
+            },
         }
 
     def run(self, candles: list[dict], request: WalkForwardRequest) -> dict:
@@ -151,7 +176,7 @@ class WalkForwardEngine:
         n = len(candles)
         if n != request.parameters.candles:
             raise ValueError("Observation count must match the immutable dataset.")
-        candidates = request.candidates()
+        candidates, search = request.plan()
         warmup = max(c["parameters"].warmup for c in candidates + [{"parameters": request.parameters}])
         initial = n * request.initial_train_pct // 100
         boundaries = [initial + (n - initial) * i // request.folds for i in range(request.folds + 1)]
@@ -178,6 +203,7 @@ class WalkForwardEngine:
                 leaders.append(
                     {
                         "candidate_id": candidate["id"],
+                        "space_index": candidate["space_index"],
                         "overrides": candidate["overrides"],
                         "eligible": training["trades"] >= request.min_train_trades,
                         **self._metrics(training),
@@ -210,6 +236,7 @@ class WalkForwardEngine:
                     },
                     "selected": {
                         "candidate_id": chosen["id"],
+                        "space_index": chosen["space_index"],
                         "overrides": chosen["overrides"],
                         "parameters": chosen["parameters"].model_dump(),
                     },
@@ -225,6 +252,7 @@ class WalkForwardEngine:
             "engine_version": __version__,
             "request": request.model_dump(),
             "candidate_count": len(candidates),
+            "search": search,
             "processed_bars": work,
             "common_warmup": warmup,
             "folds": folds,
@@ -244,6 +272,7 @@ class WalkForwardEngine:
                 "Each test starts flat with the same virtual capital and liquidates at its final close, including costs. Returns are independent, not compounded.",
                 "Earlier test windows become training history for later windows. Repeated user experiments can overfit; these are not untouched final holdouts or forecasts.",
                 "Candidates with no training trades can qualify when the minimum is zero; compare trade counts and fixed settings, not just the winning score.",
+                "Candidate plans are fixed before scoring and reused across windows. Random search samples explicit finite choices without replacement; untested combinations may perform differently. A seed is reproducibility metadata, not a quality guarantee.",
             ],
         }
 
@@ -309,6 +338,7 @@ class StrategyValidation:
                     "request",
                     "method",
                     "engine_revision",
+                    "search",
                 )
             }
             with self.store.db() as db:
@@ -346,4 +376,9 @@ class StrategyValidation:
     def rerun(self, identity: str) -> dict:
         """Recompute retained input and choices with the current engine, keeping the original."""
         previous = self.get(identity)
-        return self.run(WalkForwardRequest(**previous["request"]), rerun_of=identity)
+        request = WalkForwardRequest(**previous["request"])
+        if previous.get("search") and request.plan()[1] != previous["search"]:
+            raise ValueError(
+                "The saved search plan does not match its recipe or sampler. The study was not rerun."
+            )
+        return self.run(request, rerun_of=identity)

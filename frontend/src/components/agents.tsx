@@ -305,6 +305,15 @@ function AgentDialog({
             context.symbol ??
             context.equity_symbol ??
             context.crypto_id?.split('-')[0].toUpperCase() ??
+            (context.validation_id
+              ? `Validation ${context.validation_id.slice(0, 8)}`
+              : undefined) ??
+            (context.bitcoin_txid
+              ? `Transaction ${context.bitcoin_txid.slice(0, 12)}…`
+              : undefined) ??
+            (context.bitcoin_address
+              ? `Address ${context.bitcoin_address.slice(0, 12)}…`
+              : undefined) ??
             (context.performance_view ? 'Retained market FIFO' : undefined) ??
             (context.funding_view ? 'Retained funding history' : undefined) ??
             (context.transfer_view ? 'Transfer reconciliation' : undefined) ??
@@ -328,8 +337,15 @@ function AgentDialog({
           </span>
         )}
         {context.job_id && <span>Run {context.job_id.slice(0, 8)}</span>}
-        {context.horizon && <span>{context.horizon}-day baseline</span>}
+        {context.horizon && (
+          <span>
+            {context.horizon}-day {context.forecast_model_id ? 'trained forecast' : 'baseline'}
+          </span>
+        )}
         {context.article_id && <span>Selected story</span>}
+        {(context.bitcoin_txid || context.bitcoin_address) && (
+          <span>{context.bitcoin_demo ? 'Demo observations' : 'Bitcoin mainnet'}</span>
+        )}
         {context.news_asset && <span>Mentions {context.news_asset}</span>}
         {context.news_publisher && <span>{context.news_publisher}</span>}
         {context.news_sentiment && <span>{context.news_sentiment} wording</span>}
@@ -380,7 +396,10 @@ function AgentDialog({
               context.symbol ||
               context.equity_symbol ||
               context.article_id ||
-              context.query
+              context.query ||
+              context.validation_id ||
+              context.bitcoin_txid ||
+              context.bitcoin_address
                 ? 'Your page selection is included. The agent reads its own module tools for the evidence.'
                 : 'Ask this module’s specialist without leaving your workspace.'}
             </p>
@@ -405,7 +424,24 @@ function AgentDialog({
                           'Summarize this project and its history.',
                           'Explain its network and token supply.',
                         ]
-                      : prompts[selection.module]
+                      : context.validation_id
+                        ? [
+                            'Explain the candidate plan and held-out results.',
+                            'What do the search coverage and seed tell me?',
+                          ]
+                        : context.bitcoin_txid || context.bitcoin_address
+                          ? [
+                              'Explain this Bitcoin observation and its limits.',
+                              context.bitcoin_txid
+                                ? 'How are the fee rate and confirmations calculated?'
+                                : 'How do confirmed balance and pending change differ?',
+                            ]
+                          : context.forecast_model_id
+                            ? [
+                                'Explain this trained forecast and its uncertainty.',
+                                'How did this model compare with the naive benchmark?',
+                              ]
+                            : prompts[selection.module]
               ).map((prompt) => (
                 <button key={prompt} onClick={() => onSend(prompt)} disabled={!agent}>
                   <span>{prompt}</span>

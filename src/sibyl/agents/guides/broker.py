@@ -158,6 +158,7 @@ STRATEGIES = {
         "/strategies",
         (
             "Expand Validate on unseen data and choose the bounded parameter search and chronological holdout/walk-forward windows.",
+            "Choose a small exhaustive grid, fixed settings, or a seeded sample of a larger finite parameter space. For random search, inspect the evaluated count, coverage, seed and recorded candidate plan.",
             "Inspect training rankings separately from later test-window metrics and fixed-settings/buy-and-hold comparisons.",
             "Open a saved study to inspect each window, reuse its exact input or export evidence.",
         ),

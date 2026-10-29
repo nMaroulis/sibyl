@@ -32,7 +32,7 @@ upper(h)    = P × exp(μ × h + 1.96 × σ × sqrt(h))
 
 The interface shows 7, 14, or 30 days; the API accepts 1–30. The band is a theoretical approximate 95% model interval under constant drift/volatility assumptions. It has not been empirically calibrated. The central curve is a log-return baseline, not an arithmetic expected-price estimate or a trained ML forecast.
 
-The current runtime does not load the earlier TensorFlow models, macroeconomic training pipeline, Nixtla, CryptoMamba, or ARIMA. Add a trained implementation behind a separate service and publish its assumptions and calibration before using it in the forecast screen.
+The separate **Trained models** tab fits daily autoregressive ridge models, with saved input, numbered versions, chronological held-out evaluation and empirical calibration. See [Trained forecasts with Chronos](forecasting.md). Neural/ARIMA and other model families remain pending.
 
 ## Wiki: curated education
 
@@ -56,9 +56,11 @@ Missing dates, supply fields, team information, and prices remain visibly unavai
 
 Sources: [CoinPaprika API](https://coinpaprika.com/api), [Wikipedia text extracts API](https://www.mediawiki.org/wiki/Extension:TextExtracts), and [Wikipedia text license](https://creativecommons.org/licenses/by-sa/4.0/).
 
-## Explorer: Bitcoin blocks
+## Explorer: Bitcoin transactions, addresses and blocks
 
-The Block explorer tab reads recent Bitcoin block summaries from mempool.space in live mode. Height, timestamp, transaction count, size, and a block reference are shown. Demo blocks are explicitly marked samples. Choose 10, 25, 50, or 100 recent blocks. Inspect a transaction-count chart, mean transactions, mean size, observed mean block interval, and export CSV. Live pagination requests older batches by height. It does not track addresses, wallet balances, or pending transactions. Additional chains and deeper transaction research are marked **Coming soon**.
+The Block explorer tab supports explicit public mainnet transaction/address lookup, independent of account activation. Inspect confirmations, satoshi fees, sat/vB, paged inputs/outputs, confirmed address totals, pending changes and paginated activity. Smaller Demo links use clearly labeled synthetic backend examples without changing settings. Ask Explorer reads the selected reference through native ProtoLink tools. See the [Bitcoin explorer guide](bitcoin-explorer.md) for units, source privacy, exports and limits.
+
+Recent block summaries remain below the lookup. In live mode they come from mempool.space; the legacy global Demo research mode supplies labeled sample blocks. Choose 10, 25, 50 or 100 blocks, inspect the transaction-count chart, mean size/count and observed interval, or export CSV. The public lookup has its own explicit mainnet/Demo boundary. Additional chains, wallet aggregation and complete historical network datasets remain pending.
 
 ## Equities
 

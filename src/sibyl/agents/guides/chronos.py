@@ -1,4 +1,4 @@
-"""Forecast page controls and the implemented statistical baseline."""
+"""Forecasting instructions aligned with the trained registry and separate statistical baseline."""
 
 from typing import Literal
 
@@ -7,43 +7,47 @@ from sibyl.agents.guides import Guide
 Topic = Literal["overview", "inputs", "intervals", "models"]
 GUIDES = {
     "overview": Guide(
-        "Explore a price baseline",
-        "/forecast",
+        "Train and inspect daily forecasts",
+        "/forecast?tab=models",
         (
-            "Choose the market and displayed 7-, 14- or 30-day horizon in Forecasting.",
-            "Read the observed history, baseline path and interval together with the source and Demo labels.",
-            "Ask Chronos to explain the selected calculation and its assumptions.",
+            "Open Trained models and choose current-feed daily prices or a saved immutable dataset.",
+            "Select Train & evaluate, then inspect chronological test errors against naive and training-drift benchmarks.",
+            "Forecast saved input offline, or explicitly read the latest matching feed. Ask Chronos about the selected model or saved result.",
         ),
+        ("Statistical baseline is a separate tab. Research models never execute trades.",),
     ),
     "inputs": Guide(
-        "Choose forecast inputs",
-        "/forecast",
+        "Prepare forecast inputs",
+        "/forecast?tab=models",
         (
-            "Select the exact supported pair and horizon; market data use the configured source.",
-            "Change market providers in Settings → Market data if your source cannot supply daily candle history.",
+            "Use an exact spot pair with 360–720 consecutive closed daily candles from the current feed.",
+            "Saved daily datasets accept 360–5,000 candles. Prepare longer ranges in Markets → History & datasets.",
+            "Try with Demo prices uses synthetic input through the same fitting/evaluation engine without activating an account or changing sources.",
         ),
-        (
-            "A quotes-only source cannot supply this baseline. Missing history is not replaced with fabricated prices.",
-        ),
+        ("Missing, duplicated, open or nonconsecutive days are rejected; they are not interpolated.",),
     ),
     "intervals": Guide(
-        "Interpret the baseline band",
-        "/forecast",
+        "Interpret empirical and theoretical bands",
+        "/forecast?tab=models",
         (
-            "The central path extrapolates historical daily log-return drift; the band scales sample volatility with the square root of the horizon.",
-            "Compare the horizon and assumptions before interpreting the width; it is an approximate model interval with no empirical calibration.",
+            "Trained models use chronological calibration log errors for nominal 90% bands, then report coverage on separate later test targets.",
+            "Compare model error with naive/drift benchmarks; negative MAE skill means the naive forecast performed better.",
+            "The baseline tab retains approximate 95% theoretical bands from constant historical drift/volatility.",
         ),
-        ("The band is not a guaranteed price range or a probability of a profitable trade.",),
+        (
+            "Time-series dependence, overlapping targets and repeated experimentation limit interpretation. Bands do not guarantee prices or profitable trades.",
+        ),
     ),
     "models": Guide(
-        "What is and is not trained",
-        "/forecast",
+        "Saved versions and model limits",
+        "/forecast?tab=models",
         (
-            "The implemented forecast is a statistical drift/volatility baseline, not trained Chronos model weights.",
-            "An AI model lets Chronos explain evidence but does not train, replace or validate the forecasting calculation.",
+            "Each JSON artifact keeps its input fingerprint, source, engine, coefficients, train/calibration/test dates and complete evidence.",
+            "Rerun exact training input saves a new numbered version without overwriting the old result or fetching prices.",
+            "Edit model settings explicitly for another experiment. AI model selection changes the assistant, not the numerical forecast model.",
         ),
         (
-            "Training pipelines, trained artifacts, versioned forecasts and empirical calibration are pending.",
+            "Trained autoregressive ridge is available. Neural/ARIMA models, rolling evaluation, automated recalibration and calibrated drift monitoring remain pending.",
         ),
     ),
 }

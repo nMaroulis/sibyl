@@ -30,7 +30,9 @@ export function ValidationWorkspace({
   const saved = useResource<ValidationSummary[]>(`/strategies/validations?demo=${demo}`, 0, open);
   const fields = options.data?.strategies[parameters.strategy] ?? [];
   const fieldKeys = fields.map((f) => f.key).join(',');
-  const [search, setSearch] = useState(true);
+  const [method, setMethod] = useState<'grid' | 'random' | 'fixed'>('grid');
+  const [samples, setSamples] = useState(8);
+  const [seed, setSeed] = useState(42);
   const [axes, setAxes] = useState<{ key: string; values: string }[]>([]);
   const [folds, setFolds] = useState(3);
   const [trainPct, setTrainPct] = useState(60);
@@ -40,6 +42,18 @@ export function ValidationWorkspace({
   const [report, setReport] = useState<ValidationReport>();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const random = method === 'random';
+  const search = method !== 'fixed';
+  const maxAxes = random ? (options.data?.random.max_axes ?? 4) : (options.data?.max_axes ?? 2);
+  const maxValues = random
+    ? (options.data?.random.max_values ?? 8)
+    : (options.data?.max_values ?? 4);
+  const selectedAxes = axes.slice(0, maxAxes);
+  const chosenAxes = selectedAxes.filter((axis) => axis.key);
+  const spaceSize = chosenAxes.length
+    ? chosenAxes.reduce((total, axis) => total * axis.values.split(',').length, 1)
+    : 0;
+  const sampleCount = Math.min(samples, spaceSize);
   useEffect(() => {
     setAxes(
       (options.data?.strategies[parameters.strategy] ?? [])
@@ -64,7 +78,7 @@ export function ValidationWorkspace({
       if (!dataset) throw new Error('Choose a saved dataset or run a backtest first.');
       const grid: Record<string, number[]> = {};
       if (search)
-        for (const axis of axes.filter((a) => a.key)) {
+        for (const axis of selectedAxes.filter((a) => a.key)) {
           const values = axis.values.split(',').map((v) => v.trim());
           if (values.some((v) => !v || !Number.isFinite(Number(v))))
             throw new Error('Enter comma-separated numeric values for each search parameter.');
@@ -79,6 +93,8 @@ export function ValidationWorkspace({
           candles: dataset.count,
         },
         grid,
+        search_method: random ? 'random' : 'grid',
+        ...(random ? { sample_size: sampleCount, seed } : {}),
         folds,
         initial_train_pct: trainPct,
         objective,
@@ -132,11 +148,16 @@ export function ValidationWorkspace({
                 {saved.data?.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.request.parameters.strategy} · {r.dataset.symbol} · {date(r.created_at)} ·{' '}
+                    {r.search?.method === 'random' ? 'Random · ' : ''}
                     {r.id.slice(0, 8)}
                   </option>
                 ))}
               </select>
             </label>
+            <p className="footnote">
+              Opening a saved study shows its recorded results below. The setup creates a new study;
+              Rerun exact study reuses the saved settings and input.
+            </p>
           </div>
           {!dataset ? (
             <p className="inline-alert">
@@ -165,11 +186,9 @@ export function ValidationWorkspace({
             <div className="validation-setup">
               <label>
                 Parameter selection
-                <select
-                  value={search ? 'search' : 'fixed'}
-                  onChange={(e) => setSearch(e.target.value === 'search')}
-                >
-                  <option value="search">Compare a small parameter grid</option>
+                <select value={method} onChange={(e) => setMethod(e.target.value as typeof method)}>
+                  <option value="grid">Compare a small parameter grid</option>
+                  <option value="random">Sample a larger parameter space</option>
                   <option value="fixed">Keep my fixed settings</option>
                 </select>
               </label>
@@ -196,7 +215,7 @@ export function ValidationWorkspace({
             </div>
             {search && (
               <div className="validation-axes">
-                {axes.map((axis, index) => (
+                {selectedAxes.map((axis, index) => (
                   <div className="form-row" key={index}>
                     <label>
                       Search parameter {index + 1}
@@ -215,7 +234,9 @@ export function ValidationWorkspace({
                       >
                         <option value="">None</option>
                         {fields
-                          .filter((f) => !axes.some((a, i) => i !== index && a.key === f.key))
+                          .filter(
+                            (f) => !selectedAxes.some((a, i) => i !== index && a.key === f.key),
+                          )
                           .map((f) => (
                             <option key={f.key} value={f.key}>
                               {label(f.key)}
@@ -224,7 +245,7 @@ export function ValidationWorkspace({
                       </select>
                     </label>
                     <label>
-                      Values · up to 4
+                      Values · up to {maxValues}
                       <input
                         aria-label={`Search values ${index + 1}`}
                         value={axis.values}
@@ -239,6 +260,72 @@ export function ValidationWorkspace({
                     </label>
                   </div>
                 ))}
+              </div>
+            )}
+            {random && (
+              <div className="validation-random-panel">
+                <div className="validation-random-heading">
+                  <div>
+                    <strong>Seeded random search</strong>
+                    <p>
+                      {number(spaceSize, 0)} possible combinations · {sampleCount} evaluated · no
+                      replacement
+                    </p>
+                  </div>
+                  {selectedAxes.length < Math.min(maxAxes, fields.length) && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      disabled={!!busy}
+                      onClick={() => {
+                        const field = fields.find(
+                          (f) => !selectedAxes.some((axis) => axis.key === f.key),
+                        );
+                        if (field)
+                          setAxes((old) => [
+                            ...old.slice(0, maxAxes),
+                            { key: field.key, values: field.values.join(', ') },
+                          ]);
+                      }}
+                    >
+                      + Add parameter
+                    </button>
+                  )}
+                </div>
+                <div className="form-row">
+                  <label>
+                    Candidate budget
+                    <select
+                      value={sampleCount}
+                      onChange={(e) => setSamples(Number(e.target.value))}
+                    >
+                      {Array.from(
+                        { length: Math.min(options.data?.random.max_samples ?? 16, spaceSize) },
+                        (_, index) => index + 1,
+                      ).map((n) => (
+                        <option key={n} value={n}>
+                          {n} candidates
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Reproducibility seed
+                    <input
+                      type="number"
+                      min={0}
+                      max={4294967295}
+                      step={1}
+                      value={seed}
+                      onChange={(e) => setSeed(Number(e.target.value))}
+                    />
+                  </label>
+                </div>
+                <p className="footnote">
+                  The same seed and ordered values reproduce the same candidate plan across all
+                  windows. This samples explicit choices, not continuous ranges. Every possible
+                  combination must be valid. Changing seeds after reading results can overfit.
+                </p>
               </div>
             )}
             <details className="advanced-options">
@@ -267,9 +354,11 @@ export function ValidationWorkspace({
                 </label>
               </div>
               <p>
-                At most 16 combinations, 5 windows and 60,000 processed bars. Each test needs 20
-                candles. Candidates with no trades can qualify when the minimum is zero. All
-                candidates must be valid; invalid combinations are never silently skipped.
+                At most 16 evaluated candidates, 5 windows and 60,000 processed bars. Grid search
+                supports two parameters with four values each; random search supports four with
+                eight values each (up to 4,096 possible combinations). Each test needs 20 candles.
+                Candidates with no trades can qualify when the minimum is zero. All candidates must
+                be valid; invalid combinations are never silently skipped.
               </p>
             </details>
             {(error || options.error || saved.error) && (
@@ -278,7 +367,10 @@ export function ValidationWorkspace({
               </p>
             )}
             <div className="validation-actions">
-              <button className="button secondary" disabled={!dataset || !!busy || !options.data}>
+              <button
+                className="button secondary"
+                disabled={!dataset || !!busy || !options.data || (random && !chosenAxes.length)}
+              >
                 <Play size={14} />
                 {busy === 'run' ? 'Testing chronological windows…' : 'Run walk-forward test'}
               </button>

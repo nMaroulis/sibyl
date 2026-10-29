@@ -83,9 +83,9 @@ AREAS = [
         "name": "Strategy research",
         "status": "partial",
         "priority": "later",
-        "working": "Six configurable algorithms, cost-aware backtests and paper runs; bounded grid search, chronological holdout/expanding walk-forward tests, fixed-setting/buy-and-hold comparisons, saved rankings/test executions, exact-study replay and read-only Broker evidence.",
+        "working": "Six configurable algorithms, cost-aware backtests and paper runs; bounded grid or seeded finite random search with explicit budgets, recorded plans/coverage/fingerprints, chronological holdout/expanding walk-forward tests, fixed-setting/buy-and-hold comparisons, saved rankings/test executions, checked exact-study replay and read-only Broker evidence.",
         "pending": [
-            "Additional benchmarks, continuous rebalanced deployment simulation, nested validation and broader optimization methods.",
+            "Additional benchmarks, continuous rebalanced deployment simulation, nested validation and Bayesian/distribution-based optimization.",
             "Custom strategy plugins, optional Freqtrade and multi-asset allocation.",
             "Separate ML/RL training and evaluation pipelines.",
         ],
@@ -117,12 +117,12 @@ AREAS = [
     {
         "id": "forecasting",
         "name": "Forecasting",
-        "status": "baseline",
+        "status": "partial",
         "priority": "later",
-        "working": "An explicitly untrained statistical log-return baseline.",
+        "working": "Versioned direct autoregressive ridge models, immutable daily inputs, chronological 60/20/20 training/calibration/test evidence, naive/drift benchmarks, empirical bands, explicit saved/current-input forecasts and read-only Chronos tools. The untrained baseline remains separate.",
         "pending": [
-            "Reproducible datasets, trained-model inference, artifacts and version registry.",
-            "Out-of-sample comparison, calibration, drift monitoring and model-backed UI results.",
+            "Neural/ARIMA and additional model families, broader assets and training inputs.",
+            "Rolling/repeated evaluation, calibrated drift monitoring, automatic recalibration and larger managed model lifecycles.",
         ],
     },
     {
@@ -140,11 +140,11 @@ AREAS = [
     {
         "id": "explorer",
         "name": "Explorer, equities & analytics",
-        "status": "basic",
+        "status": "partial",
         "priority": "later",
-        "working": "Recent Bitcoin blocks, optional equity quotes/history/statistics and Pearson/Spearman correlations.",
+        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman correlations.",
         "pending": [
-            "Transaction/address inspection, historical datasets and additional chains.",
+            "Historical chain datasets, additional chains, wallet aggregation, output-spend tracking and local chain verification.",
             "Public-official disclosure archives and advanced portfolio analytics.",
             "Distance/MIC/Granger/regression/SHAP with evaluated assumptions.",
         ],
@@ -167,10 +167,10 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-10-28",
+        "reviewed_on": "2026-10-29",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "Initial manual and automated-strategy Binance Testnet acceptance is recorded, including controlled lost-response recovery. Partial-fill/cancellation-race application tests now enforce renewed matching evidence after late corrections. Observed per-account balance checkpoints and quantity comparisons are now implemented with explicit coverage gaps. Funding fee rules and local convention reviews are implemented with explicit timing/wallet gaps. Durable opt-in pending funding updates are implemented for Binance/Bybit. Recent funding sync and observed source versions are implemented; a bounded Binance deposit-history read is recorded. Next foundations: broader funding/wallet coverage, complete reconciliation and authenticated venue/correction acceptance. Market analytics and local alerts are implemented. Multi-user support is deferred.",
+        "current_focus": "v2.1.0 adds trained Chronos models, Bitcoin transaction/address inspection and seeded finite random strategy search with recorded candidate plans and chronological evaluation. Native agents read the same evidence. Next work includes broader accounting/provider reconciliation, authenticated venue acceptance, rolling forecast evaluation and richer research workflows. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

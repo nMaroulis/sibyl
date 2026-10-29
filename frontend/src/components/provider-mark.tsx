@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { Cable, Cpu, FlaskConical, Server, Sparkles } from 'lucide-react';
 
-/** Compact inline provider marks; no remote image requests or credential-bearing URLs. */
+/** Local and inline provider marks; no remote requests or credential-bearing URLs. */
 export function ProviderMark({ provider, size = 24 }: { provider: string; size?: number }) {
   const gradientId = useId();
   const props = {
@@ -57,14 +57,15 @@ export function ProviderMark({ provider, size = 24 }: { provider: string; size?:
       );
     case 'deepseek':
       return (
-        <svg {...props}>
-          <path
-            d="M3 11c3 1 5 1 8 0 4-2 9 0 11 4l5-4 3 1-2 5 3 2-7 1c-2 6-8 8-14 4C5 21 3 17 3 11Z"
-            fill="#4d6bfe"
-          />
-          <path d="m11 8 3-4 2 5" stroke="#4d6bfe" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="19" cy="15" r="1.2" fill="white" />
-        </svg>
+        <img
+          src="/brand/deepseek.svg"
+          width={size}
+          height={size}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          style={{ objectFit: 'contain' }}
+        />
       );
     case 'grok':
       return (

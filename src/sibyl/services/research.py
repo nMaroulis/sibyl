@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 import httpx
 
+from sibyl.blockchain.bitcoin import BitcoinExplorer
 from sibyl.config import Settings
 from sibyl.news import NewsService
 from sibyl.news.fear_greed import FearGreed
@@ -64,7 +65,7 @@ KNOWLEDGE = [
     {
         "term": "Bitcoin confirmations",
         "category": "Blockchain",
-        "text": "A confirmation is a block added after a transaction enters the chain. More confirmations reduce reversal risk; confirmation times are variable.",
+        "text": "Transaction inclusion supplies its first confirmation; later blocks add confirmations. Reorganizations can change inclusion, and confirmation times vary.",
         "url": "https://bitcoin.org/en/how-it-works",
     },
     {
@@ -93,6 +94,7 @@ class Research:
 
     def __init__(self, settings: Settings, data_settings: DataSettings | None = None):
         self.settings = settings
+        self.bitcoin = BitcoinExplorer()
         self.crypto = CryptoLibrary(settings.data_dir)
         self.news_service = NewsService(settings, data_settings=data_settings)
         self.fear_greed = FearGreed(self.news_service.repository)

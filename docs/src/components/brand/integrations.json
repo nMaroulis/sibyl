@@ -1,0 +1,205 @@
+{
+  "_source": "Public names from src/sibyl/exchanges/catalog.py, agents/providers.py and messaging/catalog.py. Messaging availability follows messaging/settings.py. This is a static documentation snapshot; it contains no workspace configuration.",
+  "exchanges": [
+    {
+      "id": "binance",
+      "name": "Binance",
+      "image": "exchanges/binance.jpg"
+    },
+    {
+      "id": "binanceus",
+      "name": "Binance.US",
+      "image": "exchanges/binanceus.png"
+    },
+    {
+      "id": "coinbase",
+      "name": "Coinbase",
+      "image": "exchanges/coinbase.png"
+    },
+    {
+      "id": "kraken",
+      "name": "Kraken",
+      "image": "exchanges/kraken.jpg"
+    },
+    {
+      "id": "okx",
+      "name": "OKX",
+      "image": "exchanges/okx.png"
+    },
+    {
+      "id": "bybit",
+      "name": "Bybit",
+      "image": "exchanges/bybit.png"
+    },
+    {
+      "id": "kucoin",
+      "name": "KuCoin",
+      "image": "exchanges/kucoin.png"
+    },
+    {
+      "id": "gate",
+      "name": "Gate",
+      "image": "exchanges/gate.png"
+    },
+    {
+      "id": "bitget",
+      "name": "Bitget",
+      "image": "exchanges/bitget.jpg"
+    },
+    {
+      "id": "mexc",
+      "name": "MEXC",
+      "image": "exchanges/mexc.jpg"
+    },
+    {
+      "id": "htx",
+      "name": "HTX",
+      "image": "exchanges/htx.png"
+    },
+    {
+      "id": "cryptocom",
+      "name": "Crypto.com Exchange",
+      "image": "exchanges/cryptocom.jpg"
+    },
+    {
+      "id": "bitstamp",
+      "name": "Bitstamp",
+      "image": "exchanges/bitstamp.jpg"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "image": "exchanges/gemini.png"
+    },
+    {
+      "id": "bitfinex",
+      "name": "Bitfinex",
+      "image": "exchanges/bitfinex.png"
+    },
+    {
+      "id": "coinex",
+      "name": "CoinEx",
+      "image": "exchanges/coinex.svg"
+    },
+    {
+      "id": "bitmart",
+      "name": "BitMart",
+      "image": "exchanges/bitmart.ico"
+    },
+    {
+      "id": "phemex",
+      "name": "Phemex",
+      "image": "exchanges/phemex.png"
+    },
+    {
+      "id": "poloniex",
+      "name": "Poloniex",
+      "image": "exchanges/poloniex.png"
+    },
+    {
+      "id": "upbit",
+      "name": "Upbit",
+      "image": "exchanges/upbit.png"
+    }
+  ],
+  "models": [
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "kind": "api"
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "kind": "api"
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini",
+      "kind": "api"
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "kind": "api"
+    },
+    {
+      "id": "grok",
+      "name": "xAI",
+      "kind": "api"
+    },
+    {
+      "id": "huggingface",
+      "name": "Hugging Face",
+      "kind": "api"
+    },
+    {
+      "id": "openai-compatible",
+      "name": "OpenAI compatible",
+      "kind": "api"
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "kind": "local"
+    },
+    {
+      "id": "lmstudio",
+      "name": "LM Studio",
+      "kind": "local"
+    },
+    {
+      "id": "vllm",
+      "name": "vLLM",
+      "kind": "local"
+    },
+    {
+      "id": "llama.cpp-server",
+      "name": "llama.cpp server",
+      "kind": "local"
+    },
+    {
+      "id": "llama.cpp-local",
+      "name": "llama.cpp embedded",
+      "kind": "local"
+    }
+  ],
+  "messaging": [
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp",
+      "available": false,
+      "image": "messaging/whatsapp.svg"
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "available": true,
+      "image": "messaging/telegram.svg"
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "available": false,
+      "image": "messaging/discord.svg"
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "available": false,
+      "image": "messaging/slack.svg"
+    },
+    {
+      "id": "signal",
+      "name": "Signal",
+      "available": false,
+      "image": "messaging/signal.svg"
+    },
+    {
+      "id": "email",
+      "name": "Email",
+      "available": false,
+      "image": null
+    }
+  ]
+}

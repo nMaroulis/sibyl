@@ -625,6 +625,11 @@ export type AgentContext = {
   symbol?: string;
   equity_symbol?: string;
   horizon?: number;
+  forecast_model_id?: string;
+  forecast_run_id?: string;
+  bitcoin_txid?: string;
+  bitcoin_address?: string;
+  bitcoin_demo?: boolean;
   parameters?: StrategyParams;
   article_id?: string;
   news_mode?: 'demo' | 'live';

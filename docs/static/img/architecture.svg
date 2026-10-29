@@ -21,7 +21,7 @@
   </defs>
   <rect width="1080" height="952" rx="30" fill="url(#canvas)"/>
   <text x="32" y="43" class="eyebrow">SIBYL / ARCHITECTURE</text>
-  <text x="1048" y="43" class="small" text-anchor="end">v2.0.0</text>
+  <text x="1048" y="43" class="small" text-anchor="end">v2.1.0</text>
 
   <g class="line">
     <path d="M364 186V244"/>
@@ -53,7 +53,7 @@
   <rect x="32" y="408" width="480" height="254" rx="22" class="card"/>
   <text x="58" y="448" class="heading">Domain modules</text>
   <text x="58" y="485" class="body">Accounts · Valuation · Accounting</text>
-  <text x="58" y="516" class="body">Markets · Candle history · News</text>
+  <text x="58" y="516" class="body">Markets · Candles · Forecasts · News</text>
   <text x="58" y="547" class="body">Backtests · Paper &amp; exchange strategies</text>
   <text x="58" y="578" class="body">Reviewed orders · Alerts · Workers</text>
   <path d="M58 600H486" stroke="#e4eaf3"/>
