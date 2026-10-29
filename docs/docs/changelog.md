@@ -47,6 +47,36 @@ docker compose up --build
 
 ## Release notes
 
+## [2.1.0] - 2026-10-29
+
+:::note[Release summary]
+
+Chronos gains its first trained forecasting workflow: reproducible daily inputs, versioned numerical models, chronological evaluation and saved forecasts. The interface keeps trained research results separate from the untrained statistical baseline, with source attribution and explicit calibration limits throughout.
+
+:::
+
+### Added
+
+- A modular Python `forecasting/` engine for direct autoregressive ridge models. It fits daily log-return lags with NumPy, without new ML dependencies or startup model downloads.
+- Current-feed training from 360–720 closed daily candles and offline training from immutable daily datasets with up to 5,000 observations. The smaller Demo action uses synthetic input through the same numerical pipeline without changing account or source settings.
+- Chronological 60/20/20 training, calibration and test partitions, with targets crossing a boundary excluded. Feature scaling, coefficients and benchmark drift use training data only; empirical band widths are fixed before independent testing.
+- Per-horizon MAE, RMSE, MAPE, naïve/drift comparisons, MAE skill and observed band coverage. Negative skill remains visible, and overlapping multi-day targets are disclosed.
+- Nominal 90% empirical bands from calibration log errors and descriptive counts of lag features outside training ranges. Neither provides a guaranteed future coverage rate or calibrated regime-change detection.
+- A bounded JSON model registry with numbered versions, engine/NumPy provenance, source/input/artifact fingerprints and exact-input reruns that preserve previous versions.
+- Explicit forecasts from saved input or the original matching market feed, with observation dates, stale-input labels and the latest twenty saved outputs per model. Retained observation windows and result fingerprints support offline inspection and JSON export.
+- A Trained models workspace with progressive model settings, source/environment badges, partition summaries, held-out price charts, metrics, forecast charts and model/evidence exports.
+- Native typed Chronos tools for finding model versions, inspecting evaluation and reading selected saved forecasts. Page Ask dialogs and Sibyl consultations use the same registry and evidence; training and persistence remain explicit application actions.
+- User/developer forecasting guides and refreshed implementation coverage, with remaining model families, rolling evaluation and calibrated drift monitoring kept on the pending checklist.
+
+### Changed
+
+- Forecasting now opens the trained-model workspace; the existing untrained log-return projection remains available under Statistical baseline with its original API contract.
+- Align application, Python/npm package metadata and documentation branding at v2.1.0.
+
+### Scope
+
+This is the initial trained model family, not LSTM/ARIMA or pretrained Chronos weights. Independent historical test results do not establish profitable trading or future calibration. Automatic recalibration, monitored drift, richer model families and larger model lifecycle management remain pending. No exchange-execution or agent mutation permissions are added.
+
 ## [2.0.0] - 2026-10-28
 
 :::note[Release summary]

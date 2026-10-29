@@ -2,7 +2,7 @@
 
 The design favors ordinary functions and focused domain modules. React renders the workspace, FastAPI validates requests, and Python owns calculations, persistence and execution. ProtoLink agents use the same domain evidence through typed read-only tools.
 
-![Sibyl v2.0.0 architecture: application entry points, Python domain modules, the native ProtoLink team, data sources, local storage and configured language models.](/img/architecture.svg)
+![Sibyl v2.1.0 architecture: application entry points, Python domain modules, the native ProtoLink team, data sources, local storage and configured language models.](/img/architecture.svg)
 
 The dashboard and optional Telegram client enter the Python application. Sibyl discovers and consults the ten specialists through ProtoLink; specialists do not delegate or submit orders. Exchange writes use the separately reviewed trading pipeline. Domain services and the agent runtime retain their own state in the local workspace.
 
@@ -35,6 +35,8 @@ The [editable diagram topology](/img/architecture.mmd) accompanies the SVG used 
 | `api/routes.py`                           | Thin versioned HTTP routes                                                                          |
 
 `create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts the domain workers and the in-process ProtoLink agent network, and stops them during shutdown. The network starts Sibyl and ten persistent native specialist Agents using ProtoLink `.start()`. Each agent has its own file, prompt and tools. Native client tasks and task-local history isolate requests; tools fetch evidence on demand. See [agent lifecycle and collaboration](./agents.md). Importing the package does not connect to an exchange or initialize a model.
+
+The `forecasting/` package owns bounded numerical fitting, chronological evaluation, immutable JSON model versions and retained inference. Its ordinary Chronos tools read the same evidence without training or saving. See [forecasting contracts](forecasting.md).
 
 ## Frontend
 

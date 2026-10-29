@@ -32,7 +32,7 @@ upper(h)    = P × exp(μ × h + 1.96 × σ × sqrt(h))
 
 The interface shows 7, 14, or 30 days; the API accepts 1–30. The band is a theoretical approximate 95% model interval under constant drift/volatility assumptions. It has not been empirically calibrated. The central curve is a log-return baseline, not an arithmetic expected-price estimate or a trained ML forecast.
 
-The current runtime does not load the earlier TensorFlow models, macroeconomic training pipeline, Nixtla, CryptoMamba, or ARIMA. Add a trained implementation behind a separate service and publish its assumptions and calibration before using it in the forecast screen.
+The separate **Trained models** tab fits daily autoregressive ridge models, with saved input, numbered versions, chronological held-out evaluation and empirical calibration. See [Trained forecasts with Chronos](forecasting.md). Neural/ARIMA and other model families remain pending.
 
 ## Wiki: curated education
 

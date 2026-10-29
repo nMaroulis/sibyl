@@ -10,7 +10,7 @@ Sibyl brings your crypto accounts, market analysis, trading and strategy researc
 
 The legacy Python/Streamlit application is available at [sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit).
 
-[![Version](https://img.shields.io/badge/version-2.0.0-4273d6)](https://nmaroulis.github.io/sibyl/changelog)
+[![Version](https://img.shields.io/badge/version-2.1.0-4273d6)](https://nmaroulis.github.io/sibyl/changelog)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
 [![ProtoLink](https://img.shields.io/badge/AI_agents-ProtoLink-8B5CF6)](https://github.com/nMaroulis/protolink)
@@ -79,7 +79,7 @@ Each specialist has its own prompt, typed tools and page guidance. The **Ask** b
 | **Accountant** | Holdings, valuation, retained history and accounting evidence |
 | **Analyst** | Markets, technical statistics and correlations |
 | **Broker** | Trade, order evidence, backtests and strategy monitors |
-| **Chronos** | Forecast baseline and its assumptions |
+| **Chronos** | Trained forecasts, held-out evaluation and baseline assumptions |
 | **Reporter** | Source-linked news, article excerpts and text sentiment |
 | **Technician** | Connections, settings, model setup and diagnostics |
 | **Wiki** | Crypto concepts and project profiles |
@@ -99,11 +99,13 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 
 [News and sentiment](docs/docs/guides/research.md#reporter-news-and-insights)
 
-### Forecast · Explore a statistical baseline
+### Forecast · Train, evaluate, inspect
 
-Chronos visualizes a log-return price baseline and theoretical uncertainty bands for a chosen horizon. Its assumptions are explicit: this is an **untrained statistical baseline**, with trained models and calibration tracked as future work.
+Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
 
-[Forecast method](docs/docs/guides/research.md#chronos-forecast-baseline)
+Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families, rolling evaluation and automated recalibration are pending.
+
+[Forecasting guide](docs/docs/guides/forecasting.md) · [Engine contracts](docs/docs/developers/forecasting.md)
 
 ### Research · Understand the wider picture
 
@@ -149,6 +151,7 @@ SQLite retains accounts, ledgers, research inputs, runs, conversations and alert
 | `src/sibyl/api/` | FastAPI routes, validation and application lifecycle |
 | `src/sibyl/exchanges/` | Shared client interface, provider adapters and Demo |
 | `src/sibyl/accounting/` | Funding, transfers, balance checks and accounting rules |
+| `src/sibyl/forecasting/` | Training, evaluation, JSON model registry and retained forecasts |
 | `src/sibyl/strategies/` | Signals, backtests, validation, paper and exchange runs |
 | `src/sibyl/market_data/`, `src/sibyl/news/` | Candle history, datasets and news collection |
 | `src/sibyl/agents/` | Agent declarations, prompts, tools and native runtime integration |

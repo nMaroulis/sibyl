@@ -10,7 +10,7 @@ import BrandHero from '@site/src/components/BrandHero';
 
 Sibyl brings your exchange accounts, market analysis, trading, strategy research and AI specialists into one workspace you can run locally. A React interface connects to a modular Python API, while [ProtoLink](https://github.com/nMaroulis/protolink) powers Sibyl and its specialist team.
 
-These guides describe the **v2.0.0 application baseline**. Read the [changelog](changelog.md), start with [installation](getting-started/installation.md), or explore the [architecture](developers/architecture.md).
+These guides describe **v2.1.0**, building on the v2.0.0 application baseline. Read the [changelog](changelog.md), start with [installation](getting-started/installation.md), or explore the [architecture](developers/architecture.md).
 
 ## Find your workspace
 
@@ -22,7 +22,7 @@ These guides describe the **v2.0.0 application baseline**. Read the [changelog](
 | [Strategies](guides/strategies.md) | Backtest six algorithms, validate parameters on unseen windows and monitor paper or separately approved exchange runs. |
 | [Sibyl](guides/sibyl.md) | Ask the coordinator to consult registered specialists and bring their evidence into one conversation. |
 | [News](guides/research.md#reporter-news-and-insights) | Follow source-linked reporting, search retained excerpts and inspect text sentiment and Fear & Greed. |
-| [Forecast](guides/research.md#chronos-forecast-baseline) | Explore Chronos's explicitly untrained statistical baseline and theoretical bands. |
+| [Forecast](guides/forecasting.md) | Fit versioned daily models, inspect held-out evidence and empirical bands, or explore the separate statistical baseline. |
 | [Research](guides/research.md) | Browse crypto profiles and concepts, recent Bitcoin blocks and optional equity information. |
 | [Alerts](guides/alerts.md) | Create price, strategy, connection and account-risk watches with a persistent local inbox. |
 | [Settings](guides/settings.md) | Manage exchange accounts, AI models, news, market sources, messaging and workspace preferences. |
@@ -43,6 +43,6 @@ Configure an API or local model in [AI models](guides/settings.md) to enable rea
 
 Demo, paper, test environments and production observations are labeled separately. Provider failures remain visible. Exchange capabilities vary by adapter and are shown in Settings; code support and [authenticated acceptance](developers/exchange-acceptance.md) are documented separately.
 
-Manual exchange orders and automated strategies require their applicable server flags, permissions and scoped approvals. Agent tools remain read-only. Forecasts are untrained baselines, sentiment describes supplied text, and technical scores expose their mechanical rules.
+Manual exchange orders and automated strategies require their applicable server flags, permissions and scoped approvals. Agent tools remain read-only. Trained forecasts retain held-out evidence and empirical calibration limits; the untrained baseline remains separate. Sentiment describes supplied text, and technical scores expose their mechanical rules.
 
 Sibyl currently runs as **one user and one API worker**. The [feature overview](guides/feature-coverage.md), [security guide](guides/security.md) and [pending checklist](developers/backend-roadmap.md) explain the current boundaries and planned extensions.

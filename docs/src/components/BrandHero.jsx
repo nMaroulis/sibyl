@@ -5,7 +5,7 @@ export default function BrandHero() {
   return (
     <div className="sibyl-doc-home">
       <div className="sibyl-doc-hero">
-        <span className="doc-welcome-badge">SIBYL v2.0.0 · THE WORKSPACE GUIDE</span>
+        <span className="doc-welcome-badge">SIBYL v2.1.0 · THE WORKSPACE GUIDE</span>
         <h1>Sibyl, explained.</h1>
         <p>
           Your accounts, your research, your AI team.

@@ -625,6 +625,8 @@ export type AgentContext = {
   symbol?: string;
   equity_symbol?: string;
   horizon?: number;
+  forecast_model_id?: string;
+  forecast_run_id?: string;
   parameters?: StrategyParams;
   article_id?: string;
   news_mode?: 'demo' | 'live';

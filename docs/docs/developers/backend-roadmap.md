@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — October 28, 2026
+## Audited snapshot — October 29, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -17,7 +17,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
-| Forecasting                    | baseline      | Reproducible datasets, trained-model inference, artifacts and version registry.                       |
+| Forecasting                    | partial       | Rolling evaluation, more model families, automatic recalibration and calibrated drift monitoring.   |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
 | Explorer, equities & analytics | basic         | Transaction/address inspection, historical datasets and additional chains.                            |
 | Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                      |
@@ -168,14 +168,17 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [ ] Validate Telegram with a real bot; add media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
-### 8. Forecasting / Chronos — baseline only
+### 8. Forecasting / Chronos — partial
 
-The current forecast is an untrained log-return statistical baseline. It does not load or run the old TensorFlow models.
+v2.1.0 adds direct autoregressive ridge models over immutable daily input, alongside the separate untrained baseline. See the [user workflow](../guides/forecasting.md) and [engine contracts](forecasting.md).
 
-- [ ] Implement reproducible dataset preparation and model training.
-- [ ] Add trained-model inference, model artifacts/versioning and a registry.
-- [ ] Add out-of-sample comparisons, forecast calibration and drift monitoring.
-- [ ] Connect the UI to actual model results and make baseline/model distinctions explicit.
+- [x] Implement reproducible daily dataset preparation and real numerical model fitting, with explicit synthetic Demo input through the same engine.
+- [x] Add JSON coefficients/scalers, source and engine fingerprints, numbered model versions, exact-input reruns, current/saved-input inference and retained forecast observations.
+- [x] Add chronological 60/20/20 training/calibration/test partitions, purged boundary-crossing targets, naive/drift comparisons and independent test metrics/empirical band coverage.
+- [x] Connect the UI to trained results, explicit baseline/model tabs, test/forecast charts, exports and native read-only Chronos registry/report tools.
+- [x] Expose descriptive lag-feature departures from training ranges without claiming a calibrated drift detector.
+- [ ] Add rolling/repeated forward evaluation, calibrated drift monitoring, automated recalibration and managed archive/import beyond the initial bounded registry.
+- [ ] Add neural/ARIMA and other model families, richer features and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 

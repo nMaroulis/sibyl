@@ -236,6 +236,8 @@ class AgentContext(Request):
     )
     equity_symbol: str | None = Field(default=None, pattern=r"^[A-Z0-9^][A-Z0-9.^-]{0,9}$")
     horizon: int | None = Field(default=None, ge=1, le=30)
+    forecast_model_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    forecast_run_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     parameters: BacktestRequest | None = None
     job_id: str | None = Field(default=None, min_length=1, max_length=100)
     backtest_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")

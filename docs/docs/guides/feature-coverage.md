@@ -1,8 +1,8 @@
 # Feature coverage and roadmap
 
-This page summarizes the **v2.0.0 baseline**. Open **More → Coming soon** for the backend's implementation inventory. Planned features describe scope rather than promised release dates; subsequent shipped changes belong in the [changelog](../changelog.md).
+This page summarizes **v2.1.0**, building on the v2.0.0 baseline. Open **More → Coming soon** for the backend's implementation inventory. Planned features describe scope rather than promised release dates; subsequent shipped changes belong in the [changelog](../changelog.md).
 
-| Workspace | Available in v2.0.0 | Pending extensions |
+| Workspace | Available in v2.1.0 | Pending extensions |
 | --- | --- | --- |
 | Account / Accountant | Combined/exchange/account scopes, allocations, free/reserved balances, exact-route valuation, observed history, native-asset balance checks and CSV | Broader wallet coverage, full reconciliation and cash-flow-adjusted returns |
 | Markets / Analyst | Searchable pairs, source-specific watchlists, line/OHLC charts, indicators, region zoom, statistics, explainable technical bias, Pearson/Spearman comparisons and CSV | WebSockets, additional historical adapters and advanced statistical methods |
@@ -15,7 +15,7 @@ This page summarizes the **v2.0.0 baseline**. Open **More → Coming soon** for 
 | Sibyl & Agents | Coordinator plus ten native ProtoLink specialists, typed read-only tools/page help, saved chats, native consultation evidence, live activity, Stop and request reports | User-facing token streaming, deeper evaluated investigations, scheduling/resumption and mutation approval contracts |
 | Models and messaging | API/local profiles, preset/custom models, per-agent overrides, frozen request selection, Ollama detection/owned-server controls and direct-HTTP private-user Telegram | Real-bot acceptance, richer delivery and WhatsApp/Discord/Slack/Signal/Email clients |
 | News / Reporter | Five public publishers, optional web/NewsAPI collection, retained excerpts, filters, deduplication, source health, VADER distributions/trends and attributed Fear & Greed | Finance-trained/entity-targeted sentiment and licensed full-article processing |
-| Forecast / Chronos | Untrained log-return statistical baseline and theoretical model bands | Reproducible training, model artifacts, held-out evaluation and calibration |
+| Forecast / Chronos | Trained daily autoregressive ridge, immutable inputs/versions, chronological evaluation, benchmarks, empirical bands, saved/current-input inference, exports and native tools; separate untrained baseline | More model families, rolling evaluation, automatic recalibration and calibrated drift monitoring |
 | Research / Wiki | Curated glossary and 20 backend-fetched crypto profiles with fundamentals, attributed history excerpts and source links | Document ingestion, embeddings, hybrid RAG and cited web search |
 | Explorer & Equities | Recent Bitcoin blocks and statistics; optional equity quotes, adjusted history and available company information | Address/transaction inspection, more chains and disclosure archives |
 | Alerts | Price levels/crossings, strategy subscriptions, recorded connection-failure watches, account-value/concentration/observed-drawdown rules and persistent inbox | Broader risk metrics, silent-worker detection and optional external delivery |
@@ -41,7 +41,7 @@ Transfer review can carry acquisition lots across eligible confirmed pairs, incl
 
 ## Analysis and AI scope
 
-Backtests retain their inputs and assumptions, support exact-input reruns with the current engine, and show simulated executions. Holdout/walk-forward validation uses chronological windows, but repeated experimentation can still overfit. The technical-bias score measures mechanical direction; news sentiment measures supplied wording; Chronos is explicitly untrained.
+Backtests retain their inputs and assumptions, support exact-input reruns with the current engine, and show simulated executions. Holdout/walk-forward validation uses chronological windows, but repeated experimentation can still overfit. The technical-bias score measures mechanical direction; news sentiment measures supplied wording; Chronos separates fitted ridge forecasts with held-out evaluation from its untrained baseline; neither guarantees future coverage or profitability.
 
 Sibyl requires a configured API/local model and consults specialists through native ProtoLink discovery/delegation. Page dialogs retain direct specialist access and factual tool mode. Telegram is implemented with private-user binding and durable delivery; real-bot acceptance remains pending. Other messaging integrations are unavailable setup previews. See [Sibyl](sibyl.md) and [Telegram](telegram.md).
 

@@ -21,6 +21,7 @@ module.exports = {
         'guides/alerts',
         'guides/account-risk',
         'guides/trading',
+        'guides/forecasting',
         'guides/strategies',
         'guides/strategy-validation',
         'guides/strategy-monitor',
@@ -40,6 +41,7 @@ module.exports = {
       label: 'Developers',
       items: [
         'developers/architecture',
+        'developers/forecasting',
         'developers/strategy-research',
         'developers/strategy-controls',
         'developers/portfolio-limits',

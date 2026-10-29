@@ -153,6 +153,14 @@ def snapshot_answer(module: str, evidence) -> str:
         )
     if module == "chronos":
         point = evidence["points"][-1]
+        if evidence.get("trained"):
+            return (
+                f"Trained research model v{evidence['model_version']} on {evidence['symbol']}: "
+                f"the {evidence['horizon']}-day estimate is {point['value']:,.4f}, with a nominal 90% "
+                f"empirical band of {point['lower']:,.4f}–{point['upper']:,.4f}. "
+                f"Observation origin: {evidence['origin']}. Source: {evidence['source']}. "
+                "Inspect the model's held-out test results; future coverage and profitable trades are not guaranteed."
+            )
         return f"The {evidence['horizon']} day log-return baseline ends at {point['value']:,.2f}, with an approximate interval of {point['lower']:,.2f}–{point['upper']:,.2f}. Source: {evidence['source']}. This is an uncalibrated statistical baseline, not a trained model."
     if module == "broker" and evidence.get("selected_run"):
         run = evidence["selected_run"]

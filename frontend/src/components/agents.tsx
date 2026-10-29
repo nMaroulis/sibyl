@@ -328,7 +328,11 @@ function AgentDialog({
           </span>
         )}
         {context.job_id && <span>Run {context.job_id.slice(0, 8)}</span>}
-        {context.horizon && <span>{context.horizon}-day baseline</span>}
+        {context.horizon && (
+          <span>
+            {context.horizon}-day {context.forecast_model_id ? 'trained forecast' : 'baseline'}
+          </span>
+        )}
         {context.article_id && <span>Selected story</span>}
         {context.news_asset && <span>Mentions {context.news_asset}</span>}
         {context.news_publisher && <span>{context.news_publisher}</span>}
@@ -405,7 +409,12 @@ function AgentDialog({
                           'Summarize this project and its history.',
                           'Explain its network and token supply.',
                         ]
-                      : prompts[selection.module]
+                      : context.forecast_model_id
+                        ? [
+                            'Explain this trained forecast and its uncertainty.',
+                            'How did this model compare with the naive benchmark?',
+                          ]
+                        : prompts[selection.module]
               ).map((prompt) => (
                 <button key={prompt} onClick={() => onSend(prompt)} disabled={!agent}>
                   <span>{prompt}</span>

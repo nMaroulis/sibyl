@@ -39,8 +39,8 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     },
     {
       module: 'forecast',
-      title: 'Trained Chronos models',
-      text: 'A new training and evaluation pipeline for LSTM and other forecasting models, with saved model comparisons.',
+      title: 'More forecasting models and evaluation',
+      text: 'Neural/ARIMA models, rolling evaluation, automatic recalibration and calibrated drift monitoring. Versioned autoregressive ridge models, chronological evaluation, empirical bands and saved forecasts are available now.',
     },
     {
       module: 'knowledge',

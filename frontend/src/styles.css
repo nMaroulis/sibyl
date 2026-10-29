@@ -11199,3 +11199,49 @@ details[open] > summary {
   .telegram-credentials-editor { animation: none; }
   .telegram-runtime { transition: none; }
 }
+
+/* Versioned Chronos research stays separate from the untrained baseline. */
+.forecast-model-workspace { display: grid; gap: 18px; }
+.forecast-model-workspace > .panel { padding: 0 22px 20px; }
+.forecast-model-workspace > .panel > .panel-title { margin-inline: -22px; }
+.forecast-model-workspace label { display: flex; flex-direction: column; gap: 9px; color: var(--muted); font-size: 12px; }
+.forecast-model-workspace label input, .forecast-model-workspace label select { width: 100%; }
+.forecast-model-picker > label { max-width: 850px; }
+.forecast-training-panel > .footnote { margin: 0 0 20px; }
+.forecast-training-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 18px 0; }
+.forecast-field-wide { grid-column: 1 / -1; }
+.forecast-training-grid small { color: var(--muted); font-size: 11px; }
+.forecast-workspace-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin: 18px 0; }
+.forecast-workspace-actions label { min-width: 190px; margin-right: auto; }
+.forecast-workspace-actions .text-button { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; }
+.forecast-demo-option { font-size: 11px; color: var(--muted); padding-top: 15px; border-top: 1px solid var(--border); }
+.forecast-demo-option .text-button { font-size: inherit; color: var(--accent); }
+.forecast-model-attribution { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); margin: 14px 0; }
+.forecast-model-attribution code { font-size: 10px; margin-left: auto; }
+.forecast-partitions { display: grid; grid-template-columns: 3fr 1fr 1fr; border-radius: 14px; overflow: hidden; margin: 21px 0; }
+.forecast-partitions > div { display: flex; flex-direction: column; padding: 14px 16px; background: #edf3ff; border-right: 3px solid var(--surface); gap: 5px; }
+.forecast-partitions > div:nth-child(2) { background: #f0edf9; }
+.forecast-partitions > div:nth-child(3) { background: #eaf5f1; border-right: 0; }
+.forecast-partitions strong { text-transform: capitalize; font-size: 12px; }
+.forecast-partitions span { font-size: 11px; color: var(--muted); }
+.forecast-partitions small { font-size: 10px; color: var(--subtle); }
+.forecast-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.forecast-metrics > div { padding: 17px; border: 1px solid var(--border); border-radius: 14px; background: #f9faff; display: grid; gap: 8px; }
+.forecast-metrics small { color: var(--muted); font-size: 11px; }
+.forecast-metrics strong { font-size: 26px; font-weight: 500; color: var(--text); }
+.forecast-metrics span { color: var(--subtle); font-size: 10px; line-height: 1.6; }
+.forecast-advanced { border: 1px solid var(--border); border-radius: 12px; padding: 12px 15px; margin: 15px 0; }
+.forecast-advanced summary, .forecast-method-notes summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+.forecast-output-list { display: grid; gap: 10px; padding-top: 15px; max-height: 260px; overflow: auto; }
+.forecast-output-list .text-button { text-align: left; font-size: 12px; }
+.forecast-method-notes { padding: 15px 19px; background: #f3f5fb; border-radius: 14px; }
+.forecast-method-notes p { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.8; }
+@media (max-width: 800px) {
+  .forecast-partitions { grid-template-columns: 1fr; gap: 3px; }
+  .forecast-partitions > div { border-right: 0; }
+  .forecast-metrics { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .forecast-training-grid { grid-template-columns: 1fr; }
+  .forecast-workspace-actions { align-items: stretch; flex-direction: column; }
+}
