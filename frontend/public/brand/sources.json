@@ -1,0 +1,9 @@
+{
+  "deepseek": {
+    "file": "deepseek.svg",
+    "source": "https://github.com/deepseek-ai/awesome-deepseek-integration/blob/main/docs/_logo%20svg/ICON.svg",
+    "guidelines": "https://github.com/deepseek-ai/awesome-deepseek-integration/blob/main/docs/_logo%20svg/guidelines.md",
+    "sha256": "b15083e3cbb398bd35619b758c43adc0a632efccc7e2d69f2481a860862910fe",
+    "note": "Unmodified official DeepSeek icon. Marks belong to their respective owners."
+  }
+}

@@ -160,13 +160,15 @@ a.sibyl-subtle-link:hover {
   animation-delay: 280ms;
 }
 
-/* No canvas, external animation library or per-frame React updates. */
+/* Shared 3D space gives the rings and marks real front/back occlusion. */
 .crystal-scene {
   position: relative;
   width: 100%;
   max-width: 560px;
   aspect-ratio: 1;
   --orbit-radius: 225px;
+  --provider-size: 44px;
+  --provider-icon-size: 28px;
 }
 .crystal-art {
   position: absolute;
@@ -176,21 +178,89 @@ a.sibyl-subtle-link:hover {
   position: absolute;
   inset: 5% 4% 8%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at 56% 48%, #e4eafa99, #edf1fc55 43%, #f9faff00 70%);
+  background:
+    radial-gradient(ellipse at 65% 58%, #d6edf657, transparent 56%),
+    radial-gradient(ellipse at 45% 45%, #e1e8fa99, #edf1fc55 43%, #f9faff00 70%);
+}
+.crystal-stage {
+  position: absolute;
+  inset: 0;
+  perspective: calc(var(--orbit-radius) * 4.8);
+  perspective-origin: 50% 47%;
+  transform-style: preserve-3d;
+}
+.crystal-orbit-plane {
+  --track-radius: var(--orbit-radius);
+  --node-accent: #9cb9ec;
+  --node-lift: 0px;
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: 0;
+  height: 0;
+  transform: rotateZ(var(--plane-turn)) rotateX(var(--plane-tilt));
+  transform-style: preserve-3d;
 }
 .crystal-orbit-ring {
   position: absolute;
-  border: 1px solid #e1e8f4;
+  width: calc(var(--track-radius) * 2);
+  height: calc(var(--track-radius) * 2);
+  left: calc(var(--track-radius) * -1);
+  top: calc(var(--track-radius) * -1);
+  border: 1px solid #abc2e2b3;
+  border-top-color: #d1def173;
+  border-bottom-color: #82a6dab8;
   border-radius: 50%;
+  box-shadow:
+    0 0 12px #a9c6ed18,
+    inset 0 -1px 0 #ffffffa3;
   pointer-events: none;
 }
-.crystal-orbit-ring-one {
-  inset: 9%;
+.crystal-orbit-ring::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid transparent;
+  border-bottom-color: #d1ecffb8;
+  border-radius: inherit;
 }
-.crystal-orbit-ring-two {
-  inset: 10% 1%;
-  transform: rotate(-28deg) scaleY(0.49);
-  border-color: #dce5f28a;
+.crystal-orbit-opal .crystal-orbit-ring {
+  border-color: #c6c5e775 #c2cbea91 #a8b9dbb3 #c5d7eb91;
+  box-shadow: inset 0 -1px 0 #ffffffb3;
+}
+.crystal-orbit-opal {
+  --track-radius: calc(var(--orbit-radius) * 1.04);
+}
+.crystal-orbit-node {
+  /* Keep a tile's own track behind its face as their 3D planes intersect. */
+  --node-lift: calc(var(--provider-size) * 0.7);
+}
+.crystal-node-binance {
+  --node-accent: #d8b66d;
+}
+.crystal-node-bybit {
+  --node-accent: #d4a466;
+}
+.crystal-node-coinbase {
+  --node-accent: #7c9fee;
+}
+.crystal-node-kraken {
+  --node-accent: #b1a0e7;
+}
+.crystal-node-openai {
+  --node-accent: #8cbbb8;
+}
+.crystal-node-anthropic {
+  --node-accent: #cfac97;
+}
+.crystal-node-ollama {
+  --node-accent: #a4b3c8;
+}
+.crystal-node-gemini {
+  --node-accent: #b0a9e8;
+}
+.crystal-node-deepseek {
+  --node-accent: #95acf0;
 }
 .crystal-ball {
   position: absolute;
@@ -198,52 +268,138 @@ a.sibyl-subtle-link:hover {
   width: 100%;
   height: 100%;
   overflow: visible;
+  transform: translateZ(0);
 }
 .crystal-float {
   animation: crystal-breathe 9s ease-in-out infinite;
 }
+.crystal-shadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: crystal-grounding 9s ease-in-out infinite;
+}
+.crystal-reflection {
+  opacity: 0.5;
+  animation: crystal-reflect 18s ease-in-out infinite;
+}
+.crystal-signal-flow {
+  animation: crystal-signal 14s linear infinite;
+  opacity: 0.72;
+}
+.crystal-orbit-arm {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform: rotateZ(var(--angle));
+  transform-style: preserve-3d;
+  animation: crystal-revolve var(--orbit-period) linear infinite;
+  animation-delay: var(--orbit-delay);
+  will-change: transform;
+}
+.crystal-orbit-radius {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform: translateX(var(--track-radius));
+  transform-style: preserve-3d;
+}
 .crystal-orbiter {
   position: absolute;
-  left: 50%;
-  top: 47%;
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
+  left: calc(var(--provider-size) * -0.5);
+  top: calc(var(--provider-size) * -0.5);
+  width: var(--provider-size);
+  height: var(--provider-size);
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: crystal-orbit 76s linear infinite;
-  will-change: transform;
+  transform: rotateZ(var(--counter-angle)) rotateX(calc(var(--plane-tilt) * -1))
+    rotateZ(calc(var(--plane-turn) * -1)) translateZ(var(--node-lift));
+  animation:
+    crystal-billboard var(--orbit-period) linear infinite,
+    crystal-depth var(--orbit-period) linear infinite;
+  animation-delay: var(--orbit-delay);
+  will-change: transform, opacity;
+}
+.crystal-orbit-trail {
+  position: absolute;
+  /* Cropped 30 × 114 window of a radius-250 arc. */
+  width: calc(var(--track-radius) * 0.12);
+  height: calc(var(--track-radius) * 0.456);
+  left: calc(var(--track-radius) * 0.888);
+  top: calc(var(--track-radius) * -0.448);
+  color: var(--node-accent);
+  pointer-events: none;
+}
+.crystal-orbit-node .crystal-orbiter::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  background: radial-gradient(ellipse at 50% 65%, var(--node-accent), transparent 68%);
+  opacity: 0.18;
+  z-index: -1;
+  pointer-events: none;
 }
 .crystal-provider {
-  width: 52px;
-  height: 52px;
+  position: relative;
+  width: var(--provider-size);
+  height: var(--provider-size);
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  background: #ffffffed;
-  border: 1px solid #fff;
-  border-radius: 17px;
+  background: linear-gradient(145deg, #fffffff7, #f3f7ffed 65%, #e7effce8);
+  border: 1px solid #fffffff2;
+  border-radius: 14px;
   color: #35465b;
   box-shadow:
-    0 7px 26px #4e6c9c12,
-    0 1px 5px #49689a08;
+    0 10px 20px -7px #506d9d26,
+    0 2px 5px #49689a0a,
+    inset 0 1px 0 #fff,
+    inset 0 -1px 2px #a5bce233;
+}
+.crystal-provider::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border-top: 1px solid #fff;
+  pointer-events: none;
+}
+.crystal-provider::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 85% 100%, var(--node-accent), transparent 72%);
+  opacity: 0.18;
+  pointer-events: none;
+}
+.crystal-provider > svg,
+.crystal-provider > img {
+  width: var(--provider-icon-size);
+  height: var(--provider-icon-size);
+  position: relative;
+  z-index: 1;
+}
+.crystal-orbit-glint {
+  left: -2px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #f6fcff;
+  box-shadow:
+    0 0 0 3px #c4d9f338,
+    0 0 13px 3px #9ebde85e;
 }
 .crystal-provider img {
-  width: 30px;
-  height: 30px;
   border-radius: 8px;
   object-fit: contain;
 }
+.crystal-provider-deepseek img {
+  border-radius: 0;
+}
 .crystal-provider-anthropic {
   color: #bc8a75;
-}
-.crystal-provider-name {
-  display: block;
-  font-size: 9px;
-  letter-spacing: 0.025em;
-  color: #8290a6;
-  margin-top: 8px;
 }
 .crystal-speck {
   position: absolute;
@@ -312,8 +468,7 @@ a.sibyl-subtle-link:hover {
   cursor: default;
   opacity: 0.7;
 }
-.crystal-scene[data-paused='true'] .crystal-float,
-.crystal-scene[data-paused='true'] .crystal-orbiter {
+.crystal-scene[data-paused='true'] .crystal-art * {
   animation-play-state: paused;
 }
 
@@ -577,13 +732,35 @@ a.sibyl-workspace-card:hover {
   gap: 21px;
 }
 
-@keyframes crystal-orbit {
+@keyframes crystal-revolve {
   from {
-    transform: rotate(var(--angle)) translateX(var(--orbit-radius)) rotate(var(--counter-angle));
+    transform: rotateZ(0deg);
   }
   to {
-    transform: rotate(calc(var(--angle) + 360deg)) translateX(var(--orbit-radius))
-      rotate(calc(var(--counter-angle) - 360deg));
+    transform: rotateZ(360deg);
+  }
+}
+@keyframes crystal-billboard {
+  from {
+    transform: rotateZ(0deg) rotateX(calc(var(--plane-tilt) * -1))
+      rotateZ(calc(var(--plane-turn) * -1)) translateZ(var(--node-lift));
+  }
+  to {
+    transform: rotateZ(-360deg) rotateX(calc(var(--plane-tilt) * -1))
+      rotateZ(calc(var(--plane-turn) * -1)) translateZ(var(--node-lift));
+  }
+}
+@keyframes crystal-depth {
+  0%,
+  50%,
+  100% {
+    opacity: 0.88;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 0.54;
   }
 }
 @keyframes crystal-breathe {
@@ -592,7 +769,37 @@ a.sibyl-workspace-card:hover {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-6px);
+    transform: translateY(-4px);
+  }
+}
+@keyframes crystal-grounding {
+  0%,
+  100% {
+    transform: scaleX(0.97);
+    opacity: 0.17;
+  }
+  50% {
+    transform: scaleX(1.05);
+    opacity: 0.11;
+  }
+}
+@keyframes crystal-reflect {
+  0%,
+  100% {
+    transform: translate(-6px, -3px);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(8px, 3px);
+    opacity: 0.65;
+  }
+}
+@keyframes crystal-signal {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -100;
   }
 }
 @keyframes sibyl-rise-in {
@@ -648,16 +855,11 @@ a.sibyl-workspace-card:hover {
   }
   .crystal-scene {
     --orbit-radius: 148px;
+    --provider-size: 36px;
+    --provider-icon-size: 24px;
   }
   .crystal-provider {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-  }
-  .crystal-provider img,
-  .crystal-provider svg {
-    width: 25px;
-    height: 25px;
+    border-radius: 11px;
   }
   .crystal-scene-footer {
     left: 5px;
@@ -796,9 +998,6 @@ a.sibyl-workspace-card:hover {
     --orbit-radius: 140px;
     margin-top: 0;
   }
-  .crystal-provider-name {
-    display: none;
-  }
   .sibyl-integration-marks {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -830,8 +1029,8 @@ a.sibyl-workspace-card:hover {
     animation: none !important;
     transition: none !important;
   }
+  .crystal-orbit-arm,
   .crystal-orbiter {
-    transform: rotate(var(--angle)) translateX(var(--orbit-radius)) rotate(var(--counter-angle));
     will-change: auto;
   }
 }

@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useId } from 'react';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-/** Local integration artwork and the simplified AI marks used by the dashboard. */
+/** Local integration artwork, with official DeepSeek and simplified inline AI marks. */
 export function ProviderMark({ name }) {
   const assets = useBaseUrl('/img/integrations/');
+  const gradientId = `provider-${useId().replace(/:/g, '')}`;
   const files = {
     Binance: 'binance.jpg',
     Coinbase: 'coinbase.png',
     Kraken: 'kraken.jpg',
     Bybit: 'bybit.png',
+    DeepSeek: 'deepseek.svg',
   };
   if (files[name])
     return <img src={`${assets}${files[name]}`} width="30" height="30" alt="" draggable="false" />;
@@ -36,9 +38,23 @@ export function ProviderMark({ name }) {
   if (name === 'Gemini')
     return (
       <svg {...props}>
+        <defs>
+          <linearGradient
+            id={gradientId}
+            x1="0"
+            y1="0"
+            x2="32"
+            y2="32"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stopColor="#4285f4" />
+            <stop offset=".5" stopColor="#8b71cb" />
+            <stop offset="1" stopColor="#e7788e" />
+          </linearGradient>
+        </defs>
         <path
           d="M16 1C18 10 22 14 31 16 22 18 18 22 16 31 14 22 10 18 1 16 10 14 14 10 16 1Z"
-          fill="#6e88db"
+          fill={`url(#${gradientId})`}
         />
       </svg>
     );

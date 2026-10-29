@@ -78,9 +78,14 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 ### Changed
 
 - Give the documentation a full-width landing page with an animated crystal ball, exchange and AI-provider marks, and direct paths into the guides. Refresh guide typography, navigation, tables and reading layouts; illustration motion can be paused and respects reduced-motion preferences. Fonts and integration artwork are served locally.
+- Refine the crystal-ball illustration with intersecting perspective orbits, compact tiles for nine integrations including Gemini, DeepSeek and Bybit, provider marks that pass in front of and behind the glass, fading provider-colored trails, moving reflections, soft depth shading and opal edge lighting. Motion stays lightweight and shares the existing pause and reduced-motion controls.
 - Split documentation navigation into Getting started, User guide and Developers, with dedicated sidebars and guide/developer overview pages. Welcome belongs to Getting started; chapter links stay visible without category dropdowns.
 - Forecasting now opens the trained-model workspace; the existing untrained log-return projection remains available under Statistical baseline with its original API contract.
 - Align application, Python/npm package metadata and documentation branding at v2.1.0.
+
+### Fixed
+
+- Replace the approximate DeepSeek marks in the documentation and dashboard with the official whale SVG, served locally with its original proportions and source attribution.
 
 ### Scope
 
