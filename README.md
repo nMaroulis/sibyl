@@ -10,7 +10,7 @@ Sibyl brings your crypto accounts, market analysis, trading and strategy researc
 
 The legacy Python/Streamlit application is available at [sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit).
 
-[![Version](https://img.shields.io/badge/version-2.1.0-4273d6)](https://nmaroulis.github.io/sibyl/changelog)
+[![Version](https://img.shields.io/github/v/release/nMaroulis/sibyl?label=release&color=4273d6)](https://nmaroulis.github.io/sibyl/changelog)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
 [![ProtoLink](https://img.shields.io/badge/AI_agents-ProtoLink-8B5CF6)](https://github.com/nMaroulis/protolink)
@@ -163,48 +163,38 @@ SQLite retains accounts, ledgers, research inputs, runs, conversations and alert
 
 ## Run Sibyl
 
-You need **Python 3.12+**, [uv](https://docs.astral.sh/uv/) and **Node.js 22.12+**.
+The recommended starting point is a source checkout. You need **Python 3.12+**, [uv](https://docs.astral.sh/uv/) and **Node.js 22.12+**:
 
 ```bash
 git clone https://github.com/nMaroulis/sibyl.git
 cd sibyl
 uv sync --frozen --group dev
 npm ci
-cp .env.example .env
+npm run build
+uv run sibyl --open-browser
 ```
 
-Start the Python backend:
+Open **http://127.0.0.1:8000**. Later starts only need `uv run sibyl --open-browser`. The same process serves the dashboard and API. For frontend development with live reload, run `uv run sibyl` and `npm run dev` in separate terminals, then open port **5173**.
 
-```bash
-uv run sibyl
-```
+New workspaces have no active accounts: connect one or several in Settings, or choose the smaller **Preview with Demo** option. Public market prices default to Binance; Demo prices and news sources are independently selectable.
 
-In another terminal, start the dashboard:
+AI is optional for data and trading workspaces. Configure a model in **Settings → AI models** for model-backed conversations and Sibyl. SDK-based providers need their optional extra, for example `uv sync --frozen --group dev --extra openai`. Ollama and supported OpenAI-compatible servers need no hosted-provider SDK.
 
-```bash
-npm run dev
-```
+### Install a standalone package
 
-Open **http://127.0.0.1:5173**. A new workspace has no active accounts: connect one or several in Settings, or choose the smaller **Preview with Demo** option. Public market prices default to Binance; choose Demo prices for offline charts. News and other research sources have their own settings.
-
-AI is optional for the data and trading workspaces. Configure a model in **Settings → AI models** to enable model-backed conversations and Sibyl. For SDK-based providers, install the corresponding optional extra, for example:
-
-```bash
-uv sync --frozen --group dev --extra openai
-```
-
-Ollama and supported OpenAI-compatible HTTP servers do not need a hosted-provider SDK. Follow the [installation guide](docs/docs/getting-started/installation.md) for other extras and local-model setup.
-
-### Serve a built dashboard
+A complete Python wheel includes the dashboard, so end users need no Node.js or checkout. To build one locally after installing dependencies:
 
 ```bash
 npm run build
-uv run sibyl
+uv build
+python scripts/distribution/release.py inspect-wheel
 ```
 
-FastAPI serves the built dashboard at **http://127.0.0.1:8000**, alongside `/docs` for OpenAPI and `/health` for process health. A [Docker Compose setup](docs/docs/developers/deployment.md) is also included.
+Install the resulting wheel with uv or pipx using the [installation guide](docs/docs/getting-started/installation.md). GitHub download commands become available after a release is published. The package uses per-user application data; select `--data-dir` to open an existing source workspace. Source checkouts keep their repository `.sibyl` directory.
 
-Credentials stay encrypted on the machine running the backend and are never returned to the UI or agent tools. Preserve the database and vault key together. Remote access requires a workspace API token; use the [deployment guide](docs/docs/developers/deployment.md) when hosting. Exchange and automated strategy execution are disabled by default and require separate server flags and reviewed approvals.
+The existing [Docker Compose setup](docs/docs/developers/deployment.md) builds from source. Homebrew, prebuilt registry images, PyPI publication and desktop installers are optional future work. **No new repository is required to publish the Python package.**
+
+Credentials stay encrypted on the backend machine. Preserve the database and vault key together. Remote access needs a workspace API token. Exchange and automated strategy execution require separate server flags and reviewed approvals; see [deployment](docs/docs/developers/deployment.md).
 
 ## Documentation & development
 
@@ -212,10 +202,12 @@ Credentials stay encrypted on the machine running the backend and are never retu
 npm run docs:dev       # http://localhost:3000/sibyl/
 npm run docs:build     # Static documentation in docs/build
 uv run pytest
-uv run ruff check src tests
+uv run ruff check src tests scripts/distribution hatch_build.py
 npm run typecheck
 npm run build
 ```
+
+For release preparation, use the single version command documented in [distribution and releases](docs/docs/developers/distribution.md). It synchronizes package metadata and locks without upgrading dependencies.
 
 Start with the [user guides](https://nmaroulis.github.io/sibyl/), explore the [Python architecture](docs/docs/developers/architecture.md), or use the [extension guide](docs/docs/developers/extending.md) to add a client, strategy or agent tool. The [pending checklist](docs/docs/developers/backend-roadmap.md) tracks work beyond the v2.0.0 baseline.
 

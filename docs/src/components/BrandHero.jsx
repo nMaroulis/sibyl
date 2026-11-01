@@ -3,6 +3,7 @@ import Link from '@docusaurus/Link';
 import CrystalScene from './brand/CrystalScene';
 import { GuideIcon } from './brand/Marks';
 import IntegrationShowcase from './brand/IntegrationShowcase';
+import { ReleaseVersion } from './ReleaseInfo';
 
 const paths = [
   {
@@ -84,7 +85,8 @@ export default function BrandHero() {
         <div className="sibyl-home-width sibyl-hero-grid">
           <div className="sibyl-hero-copy">
             <Link className="doc-welcome-badge" to="/changelog">
-              <span className="doc-release-dot" /> Meet Sibyl 2.1 <span aria-hidden="true">↗</span>
+              <span className="doc-release-dot" /> <ReleaseVersion prefix="Meet Sibyl " short />{' '}
+              <span aria-hidden="true">↗</span>
             </Link>
             <h1 id="sibyl-hero-title">
               <span>Read the signals.</span>

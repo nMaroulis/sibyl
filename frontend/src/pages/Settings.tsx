@@ -27,6 +27,7 @@ import { ExchangeConnections } from '../components/exchange-connections';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
 import { Badge, PageTitle, Panel, PanelTitle, useToast } from '../components/ui';
 import { setToken } from '../lib/api';
+import { DOCUMENTATION_URL } from '../lib/docs';
 import type { System } from '../lib/types';
 
 const sections = [
@@ -286,7 +287,7 @@ function WorkspaceSettings({ system }: { system?: System }) {
         <Panel className="settings-resources">
           <PanelTitle title="Built to be understood" subtitle="Documentation and developer tools" />
           <div className="settings-links">
-            <a href="http://localhost:3000/sibyl/" target="_blank" rel="noreferrer">
+            <a href={DOCUMENTATION_URL} target="_blank" rel="noreferrer">
               <BookOpen size={19} />
               <span>
                 <strong>Read the documentation</strong>

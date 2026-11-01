@@ -6,7 +6,7 @@ Run `uv run sibyl` and `npm run dev`. Vite proxies `/api` to `127.0.0.1:8000`; F
 
 ## One-origin container
 
-The Dockerfile builds React in a Node stage, installs the locked Python runtime, and serves `frontend/dist` from FastAPI. A browser-history fallback supports direct navigation to dashboard routes.
+The Dockerfile builds React in a Node stage, installs the complete Python package with locked dependencies, and serves its bundled dashboard from FastAPI. A browser-history fallback supports direct navigation to dashboard routes.
 
 ```bash
 cp .env.example .env
@@ -27,7 +27,9 @@ npm run build
 uv run sibyl
 ```
 
-The API serves an existing `frontend/dist` in this repository layout. The Python wheel by itself contains only the API package; host the compiled frontend separately or package it explicitly for a different distribution layout.
+The API serves an existing `frontend/dist` in a source checkout. `uv build` includes those compiled assets in both the Python wheel and source archive. Installed applications use `sibyl/web` inside the package; `SIBYL_DASHBOARD_DIR` or `--dashboard-dir` can select an explicit build. Missing API endpoints and static assets retain 404 responses rather than receiving the HTML entry point.
+
+See the [distribution reference](distribution.md) for the complete uv/pipx package and GitHub release workflow. Public wheel downloads require published release assets. Homebrew and registry images are optional future work; source Docker builds do not gate package publication.
 
 ## Documentation
 

@@ -47,7 +47,7 @@ docker compose up --build
 
 ## Release notes
 
-## [2.1.0] - 2026-10-29
+## [2.1.0] - 2026-11-01
 
 :::note[Release summary]
 
@@ -56,6 +56,10 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 :::
 
 ### Added
+
+- Complete Python wheels and source archives containing the built React dashboard, with installed-resource lookup and source-checkout development support. The launcher adds version, port, workspace, environment-file, dashboard override and readiness-based browser-opening options.
+- A Python-package distribution workflow with isolated installed-app checks on Linux, Windows, Apple Silicon and Intel. Manual runs produce reviewable artifacts; published GitHub Releases receive the wheel, source archive, locked runtime requirements and checksum manifest after checks pass. No extra repository or registry is required.
+- One release-version command synchronizes Python/npm metadata and lock entries without changing dependencies. Current docs headings and package commands derive their version from metadata; historical release notes remain fixed.
 
 - A modular Python `forecasting/` engine for direct autoregressive ridge models. It fits daily log-return lags with NumPy, without new ML dependencies or startup model downloads.
 - Current-feed training from 360–720 closed daily candles and offline training from immutable daily datasets with up to 5,000 observations. The smaller Demo action uses synthetic input through the same numerical pipeline without changing account or source settings.
@@ -77,6 +81,8 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 
 ### Changed
 
+- Installed apps use a stable per-user data directory unless an explicit environment/CLI path is set. Source checkouts retain their repository `.sibyl`, including without an environment file. Docker installs a normal complete package; the existing source-build Compose setup remains available. Homebrew and prebuilt registry images are deferred independently of package publication.
+
 - Give the documentation a full-width landing page with an animated crystal ball, exchange and AI-provider marks, and direct paths into the guides. Refresh guide typography, navigation, tables and reading layouts; illustration motion can be paused and respects reduced-motion preferences. Fonts and integration artwork are served locally.
 - Refine the crystal-ball illustration with intersecting perspective orbits, compact tiles for nine integrations including Gemini, DeepSeek and Bybit, provider marks that pass in front of and behind the glass, fading provider-colored trails, moving reflections, soft depth shading and opal edge lighting. Motion stays lightweight and shares the existing pause and reduced-motion controls.
 - Split documentation navigation into Getting started, User guide and Developers, with dedicated sidebars and guide/developer overview pages. Welcome belongs to Getting started; chapter links stay visible without category dropdowns.
@@ -86,6 +92,8 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 - Align application, Python/npm package metadata and documentation branding at v2.1.0.
 
 ### Fixed
+
+- Packaged dashboard documentation links open the public site instead of requiring a local Docusaurus server; development builds keep the local preview.
 
 - Give the homepage gradient heading enough space for its descenders so “See the bigger picture.” renders without cropped letters.
 

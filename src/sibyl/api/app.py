@@ -6,7 +6,6 @@ import secrets
 import sqlite3
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
-from pathlib import Path
 
 import ccxt
 import httpx
@@ -14,13 +13,13 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from sibyl import __version__
 from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.accounting.funding.reviews import FundingReviewConflict
 from sibyl.agents.model_selection import ModelConflict
 from sibyl.agents.registry import AgentRegistry
+from sibyl.api.dashboard import mount_dashboard
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
 from sibyl.local_models.ollama import OllamaService
@@ -393,20 +392,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """Report process readiness without exposing account or provider configuration."""
         return {"status": "ok", "version": __version__}
 
-    # A container serves the built React app from the same origin as the API.
-    static_dir = Path(__file__).resolve().parents[3] / "frontend" / "dist"
-    if static_dir.is_dir():
-
-        class SPAFiles(StaticFiles):
-            async def get_response(self, path, scope):
-                from starlette.exceptions import HTTPException
-
-                try:
-                    return await super().get_response(path, scope)
-                except HTTPException as exc:
-                    if exc.status_code != 404 or path.startswith("api/") or "." in path.rsplit("/", 1)[-1]:
-                        raise
-                    return await super().get_response("index.html", scope)
-
-        app.mount("/", SPAFiles(directory=static_dir, html=True), name="dashboard")
+    mount_dashboard(app, config.dashboard_dir)
     return app

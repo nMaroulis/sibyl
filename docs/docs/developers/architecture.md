@@ -34,7 +34,7 @@ The design favors ordinary functions and focused domain modules. React renders t
   ]}
 />
 
-![Sibyl v2.1.0 architecture: application entry points, Python domain modules, the native ProtoLink team, data sources, local storage and configured language models.](/img/architecture.svg)
+![Sibyl architecture: application entry points, Python domain modules, the native ProtoLink team, data sources, local storage and configured language models.](/img/architecture.svg)
 
 The dashboard and optional Telegram client enter the Python application. Sibyl discovers and consults the ten specialists through ProtoLink; specialists do not delegate or submit orders. Exchange writes use the separately reviewed trading pipeline. Domain services and the agent runtime retain their own state in the local workspace.
 

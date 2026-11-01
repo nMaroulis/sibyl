@@ -1,4 +1,7 @@
+const { version } = require('../package.json');
+
 const config = {
+  customFields: { sibylVersion: version },
   title: 'Sibyl',
   tagline: 'Read the signals. See the bigger picture.',
   favicon: 'img/brand/logo_brand.png',

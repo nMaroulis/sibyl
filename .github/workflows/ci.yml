@@ -19,8 +19,10 @@ jobs:
           cache: npm
       - run: uv sync --frozen --group dev
       - run: uv run pytest
-      - run: uv run ruff check src tests
+      - run: uv run ruff check src tests scripts/distribution hatch_build.py
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+      - run: uv build
+      - run: python scripts/distribution/release.py inspect-wheel dist/*.whl
       - run: npm run docs:build

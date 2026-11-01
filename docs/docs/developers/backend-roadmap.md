@@ -202,15 +202,19 @@ Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity q
 
 ## Cross-cutting and optional expansion
 
-### Distribution — proposed for 2.1
+### Distribution — Python package ready; publication pending
 
-Source checkout and locally built Docker Compose installations are available. The [installation roadmap](distribution.md) proposes these additional delivery methods; none is published yet.
+The release path is a complete Python wheel and source archive published from the existing repository. Source checkout and local Docker Compose remain available. No Homebrew repository or registry is required; see [distribution](distribution.md).
 
-- [ ] Bundle the React interface in the Python wheel and add installed-package resource lookup, a stable workspace location and launcher options.
-- [ ] Test and publish the complete application for isolated uv/pipx installation.
-- [ ] Publish versioned multi-platform GHCR images and a pull-based Compose example.
-- [ ] Add a project Homebrew tap with isolated, checksummed dependencies and an installed-app smoke test.
-- [ ] Consider signed desktop installers after the shared packaging foundation.
+- [x] Bundle React in wheels/source archives, resolve installed assets, add a per-user installed workspace and launcher, and preserve source workspaces.
+- [x] Synchronize release metadata and lock entries in one version command; derive current docs/install examples from metadata while preserving history.
+- [x] Exercise a clean installed wheel and add Linux, Windows and both Mac architectures to package CI.
+- [x] Add a Python-package release workflow with dry-run artifacts, checksums and GitHub Release uploads.
+- [ ] Complete remote CI acceptance and publish the wheel/source assets.
+- [ ] Add Homebrew optionally after the package release; a recipe can live in this repository or a separate tap.
+- [ ] Validate local Docker runtime and optionally publish prebuilt amd64/arm64 registry images in a separate workflow.
+- [ ] Decide whether to claim a PyPI distribution name and configure trusted publishing.
+- [ ] Consider signed desktop installers and optional background-service setup.
 
 ### 11. Alerts and operational jobs — partial
 

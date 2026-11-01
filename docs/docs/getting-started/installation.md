@@ -4,91 +4,131 @@ hide_title: true
 ---
 
 import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+import { PackageInstall } from '@site/src/components/ReleaseInfo';
 
-<DocHero title="Installation" eyebrow="Getting started" icon="code" facts={["Source checkout", "Docker Compose", "Local workspace"]}>
+<DocHero title="Installation" eyebrow="Getting started" icon="code" facts={['Source checkout', 'Complete Python package', 'Local workspace']}>
 
-Run Sibyl on your own machine, with a source checkout or Docker Compose. The dashboard, Python API and your encrypted workspace stay under your control.
+Start with a source checkout, or install a complete Python package. Both run the same dashboard and backend. No additional repository, Homebrew setup or PyPI account is needed.
 
 </DocHero>
 
 <DocCards
   items={[
     {
-      title: 'Develop locally',
-      text: 'Run the API and dashboard separately, with live reload.',
+      title: 'Run from source',
+      text: 'The recommended way to start and keep developing.',
       icon: 'code',
-      to: '#install-dependencies',
+      to: '#run-from-source-recommended',
     },
     {
-      title: 'One application',
-      text: 'Build React once and serve it from the Python process.',
+      title: 'Install a package',
+      text: 'A standalone command with the dashboard included.',
       icon: 'server',
-      to: '#one-process-source-build',
+      to: '#install-the-python-package',
     },
     {
       title: 'Use Docker',
-      text: 'Build the complete app in a container with persistent storage.',
+      text: 'Build the application locally in a container.',
       icon: 'shield',
       to: '#docker-compose',
     },
   ]}
 />
 
-## Install dependencies
+## Run from source (recommended)
 
-For local development, install **Python 3.12 or newer**, **uv**, and **Node.js 22.12 or newer**. Start with a checkout:
+Install **Python 3.12+**, [uv](https://docs.astral.sh/uv/) and **Node.js 22.12+**, then run:
 
 ```bash
 git clone https://github.com/nMaroulis/sibyl.git
 cd sibyl
-```
-
-From the repository root:
-
-```bash
 uv sync --frozen --group dev
 npm ci
-cp .env.example .env
+npm run build
+uv run sibyl --open-browser
 ```
 
-`uv.lock` and `package-lock.json` describe the verified dependency resolution. The Python runtime does not download ML models or start additional inference servers.
+Open `http://127.0.0.1:8000` if the browser does not open automatically. One Python process serves both the built dashboard and API. Later starts only need `uv run sibyl --open-browser`; rebuild React after frontend changes.
 
-## Start the API
+Source checkouts keep their workspace in the repository's `.sibyl` directory, even without an environment file. To customize server defaults, optionally copy `.env.example` to `.env` and edit it. Preserve an existing `.env` rather than replacing it.
+
+A fresh workspace has no active accounts. Connect one or several exchanges in Settings, or explicitly choose **Preview with Demo**. Public market feeds and news settings are independent. A model is optional for data workspaces and required for the Sibyl coordinator chat. See [configuration](configuration.md) and [exchange connections](../guides/exchanges.md).
+
+### Local development with live reload
+
+For frontend development, run the API in one terminal:
 
 ```bash
 uv run sibyl
 ```
 
-The API listens at `http://127.0.0.1:8000`. `/health` reports process readiness. `/docs` exposes the interactive OpenAPI reference. Services and the paper-strategy worker initialize during application startup, not during module imports.
-
-## Start the dashboard
-
-In a separate terminal:
+In another terminal:
 
 ```bash
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. Vite proxies `/api` requests to the Python process. New workspaces have no active accounts. Connect one or several exchanges in Settings, or choose **Preview with Demo** from Account, Trade or Strategies. Public market prices default to Binance; select Demo prices in Market data for offline charts. News and other research sources have independent settings. A model is optional for these workspaces and required for the Sibyl coordinator chat.
+Open `http://127.0.0.1:5173`. Vite proxies API requests to the Python process. `/health` reports process readiness and `/docs` exposes the interactive API reference on port 8000.
 
-## One-process source build
+## Install the Python package
 
-For normal use without frontend live reload, build the dashboard after installing dependencies:
+The `.whl` file is an installable Python package containing **both the backend and the built dashboard**. Running it needs no Node.js or source checkout.
+
+### Build and install locally
+
+From a source checkout after installing its dependencies:
 
 ```bash
 npm run build
-uv run sibyl
+uv build
 ```
 
-Open `http://127.0.0.1:8000`. FastAPI serves both the built interface and the API. Keep the repository checkout: the current Python wheel does not include the dashboard assets.
+Then install the package for this checkout's version:
+
+<PackageInstall local />
+
+uv installs a separate environment and exposes the `sibyl` command. The file's version identifies the exact build being installed. Keep using the source checkout if you are actively editing the code; installed packages are snapshots until rebuilt and reinstalled.
+
+### Download a published release
+
+After the package is attached to a [GitHub Release](https://github.com/nMaroulis/sibyl/releases), users can install it directly:
+
+<PackageInstall />
+
+These download commands require the corresponding release assets to exist. The release workflow is prepared; preparing it locally does not publish an installer. Use the source or local-build instructions above before publication. With Python 3.12+ and pipx installed, `pipx install` accepts the same wheel file or URL. The project is not published to PyPI through this workflow.
+
+For an API model requiring a provider SDK, select that package extra when installing, for example:
+
+<PackageInstall extra="openai" />
+
+Ollama and compatible HTTP servers need no hosted SDK. Models and model weights remain separately configured.
+
+## Launcher and workspace
+
+```bash
+sibyl --version
+sibyl --port 8123 --open-browser
+sibyl --data-dir /path/to/existing/workspace
+sibyl --env-file /path/to/sibyl.env
+```
+
+CLI options override environment variables, which override the selected environment file. By default, Sibyl reads `.env` in the launch directory; `--no-env-file` ignores it. `--help` lists every option.
+
+Installed packages use per-user application data:
+
+| Platform | Default workspace                                 |
+| -------- | ------------------------------------------------- |
+| macOS    | `~/Library/Application Support/Sibyl`             |
+| Windows  | `%LOCALAPPDATA%\Sibyl`                            |
+| Linux    | `$XDG_DATA_HOME/sibyl`, or `~/.local/share/sibyl` |
+
+Source checkouts keep their repository `.sibyl`. Set `SIBYL_DATA_DIR` or `--data-dir` explicitly when opening that existing workspace from an installed package. Stop the previous instance first and run one API worker per workspace. Installers do not move or delete the database or vault key.
 
 ## Docker Compose
 
-With Docker and its Compose plugin installed, the repository can build the complete application without installing Python or Node.js on your host:
+The existing Compose file builds Sibyl from this repository. Install Docker and its Compose plugin, then create a configuration file if one does not already exist:
 
 ```bash
-git clone https://github.com/nMaroulis/sibyl.git
-cd sibyl
 cp .env.example .env
 ```
 
@@ -98,11 +138,20 @@ Set a private `SIBYL_API_TOKEN` in `.env`, then run:
 docker compose up --build
 ```
 
-Open `http://127.0.0.1:8000` and enter the workspace token in Settings. Compose publishes the port on loopback, stores the workspace in the `sibyl-data` volume and runs the application as a non-root user. Preserve the database and vault key together when backing up that volume. See [deployment](../developers/deployment.md#one-origin-container) for optional packages and model-server networking.
+Open `http://127.0.0.1:8000` and enter that token in Settings. Compose binds loopback, runs the app as a non-root user and stores state in the `sibyl-data` volume. Python and Node.js are built inside the container. See [deployment](../developers/deployment.md#one-origin-container) for model-server networking, optional packages and backups. Container runtime acceptance still needs a Docker environment; Python package checks do not establish container acceptance.
 
-:::note[Additional installers]
-Homebrew, an all-in-one Python package and prebuilt container images are [proposed distribution work](../developers/distribution.md). They are not published installation options yet.
-:::
+## Optional dependencies
+
+For a **source checkout**, install the relevant extras:
+
+```bash
+uv sync --frozen --group dev --extra openai
+uv sync --frozen --group dev --extra anthropic --extra gemini --extra deepseek --extra huggingface
+uv sync --frozen --group dev --extra llama-cpp
+uv sync --frozen --group dev --extra stocks
+```
+
+Combine the extras you need in one invocation. For an installed wheel, select extras on its installation requirement as shown above. Ollama and OpenAI-compatible HTTP servers need no hosted-provider SDK; start the selected server separately. Embedded `llama-cpp` inference may need a platform build toolchain. No model weights are bundled or downloaded at startup.
 
 ## Start documentation
 
@@ -110,23 +159,16 @@ Homebrew, an all-in-one Python package and prebuilt container images are [propos
 npm run docs:dev
 ```
 
-Open `http://localhost:3000/sibyl/`. Documentation links in the dashboard use this local address. For a hosted documentation site, change those links in the React source to your own documentation URL.
+Open `http://localhost:3000/sibyl/`. Development dashboard links use this local preview; packaged builds link to the public documentation. End users need no Docusaurus process. For another documentation host, update `frontend/src/lib/docs.ts` before building.
 
-## Optional dependencies
+## Other installation methods
 
-```bash
-uv sync --extra openai
-uv sync --extra anthropic --extra gemini --extra deepseek --extra huggingface
-uv sync --extra llama-cpp
-uv sync --extra stocks
-```
-
-Extras can be combined in one `uv sync` invocation. Ollama and OpenAI-compatible HTTP servers do not require a hosted-provider SDK. You must run the selected model server separately. The `llama-cpp` extra is only for embedded GGUF inference and may require a platform build toolchain. Model downloads are not bundled.
+Homebrew, prebuilt registry images, PyPI publication and desktop installers remain optional future work. They do not block source usage or a GitHub wheel release. No new repository is required for this release. See the [release process](../developers/distribution.md) and [pending checklist](../developers/backend-roadmap.md).
 
 ## Common startup problems
 
-- **The dashboard shows a provider or network error:** confirm the API is running, then retry. Live mode requires network access to the configured exchange.
-- **Workspace access is denied:** enter the configured `SIBYL_API_TOKEN` in Settings. Clearing a stored token does not remove the server's token requirement.
-- **Port is occupied:** set `SIBYL_PORT` for the API and update `frontend/vite.config.ts` to the same port. Vite prints its selected dashboard address; include that origin in `SIBYL_CORS_ORIGINS` when changing ports.
-- **Encryption key missing:** recover both `sibyl.db` and `vault.key` from the same backup. A newly generated key cannot decrypt existing credentials.
-- **Equities fail in live mode:** install the `stocks` extra and check provider availability.
+- **Port is occupied:** stop the existing instance, or use `--port` for a separate workspace. When developing with Vite, update its proxy/origins for a different API port.
+- **Workspace access is denied:** enter the server's configured API token in Settings. Clearing a browser token does not remove the server requirement.
+- **Existing accounts are missing after changing installation method:** select the original workspace using `--data-dir`; installed packages and source checkouts have different defaults.
+- **Vault key missing:** restore the database and vault key together from the same backup. A new key cannot decrypt existing credentials.
+- **A provider or model is unavailable:** check the API process, the selected provider, its required extra and network access. Saving settings alone does not verify access.
