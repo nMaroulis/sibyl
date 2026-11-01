@@ -37,7 +37,9 @@ def fire(strategies, job, action="PAUSE", state="paused", reason="Evaluation pau
 
 
 def due(alerts, rule):
+    """Reschedule atomically so the lifespan worker's event cursor cannot be rewound."""
     with alerts.store.db() as db:
+        db.execute("BEGIN IMMEDIATE")
         current = alerts._read(db, rule["id"])
         current["next_check"] = 0
         alerts._write(db, current)
