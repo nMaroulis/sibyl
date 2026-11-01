@@ -1,0 +1,421 @@
+.briefings-widget {
+  margin: 18px 0 4px;
+}
+.briefing-add,
+.briefing-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid #e4e9f4;
+  border-radius: 17px;
+  background: linear-gradient(125deg, #f5f8ff, #fcfaff);
+}
+.briefing-add > svg {
+  color: #8799c4;
+  flex-shrink: 0;
+}
+.briefing-add > div {
+  flex: 1;
+}
+.briefing-add strong {
+  display: block;
+  color: #6c7b98;
+  font-weight: 500;
+  font-size: 12px;
+}
+.briefing-add span {
+  display: block;
+  color: #96a1b6;
+  font-size: 10px;
+  margin-top: 4px;
+}
+.briefing-add .button,
+.briefing-controls .button {
+  font-size: 11px;
+  min-height: 32px;
+  padding: 7px 10px;
+}
+.briefing-calendar-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #8193c6;
+  border: 1px solid #e5eafa;
+  background: #fff;
+  border-radius: 12px;
+}
+.briefing-strip.paused {
+  background: #fafbfe;
+}
+.briefing-strip-copy {
+  flex: 1;
+  min-width: 190px;
+}
+.briefing-strip-copy > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.briefing-strip-copy strong {
+  color: #677793;
+  font-size: 12px;
+  font-weight: 500;
+}
+.briefing-strip-copy .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+}
+.briefing-strip-copy > p {
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: #939fb3;
+  line-height: 1.6;
+}
+.briefing-telegram-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: #8d9ab1;
+}
+.briefing-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-left: auto;
+}
+.briefing-controls .icon-button {
+  width: 29px;
+  height: 30px;
+  color: #91a0b9;
+  border-radius: 9px;
+}
+.briefing-controls .icon-button:hover {
+  color: #6680bd;
+  background: #eaf0fe;
+  box-shadow: 0 2px 10px #9baed81a;
+}
+.briefing-attention {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #a78d70;
+  font-size: 10px;
+  margin-top: 7px;
+  text-align: left;
+}
+.briefing-delivery-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 6px;
+  color: #8297ad;
+  font-size: 10px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.briefing-delivery-status[data-state='sent'] {
+  color: #7f9e90;
+}
+.briefing-delivery-status:is([data-state='uncertain'], [data-state='failed']) {
+  color: #b1818b;
+}
+.briefing-form-dialog {
+  max-width: 620px;
+}
+.briefing-frequency {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  margin: 20px 0;
+  background: #f3f6fc;
+  border: 1px solid #e9edf6;
+  border-radius: 14px;
+}
+.briefing-frequency button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  flex: 1;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #8c99b0;
+  font-size: 12px;
+  transition:
+    color 200ms,
+    background 200ms,
+    box-shadow 200ms;
+}
+.briefing-frequency [aria-pressed='true'] {
+  background: #fff;
+  color: #7089bd;
+  box-shadow: 0 2px 7px #8498c716;
+}
+.briefing-form-dialog .form-grid label,
+.briefing-retention label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #77859e;
+  font-size: 11px;
+}
+.briefing-form-dialog .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+}
+.briefing-form-dialog .form-grid label:nth-child(3) {
+  grid-column: 1 / -1;
+}
+@media (max-width: 540px) {
+  .briefing-form-dialog .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.briefing-telegram-choice {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  margin: 22px 0 12px;
+  border: 1px solid #e4eaf4;
+  border-radius: 15px;
+  background: #fbfcff;
+  cursor: pointer;
+  transition:
+    border-color 200ms,
+    background 200ms;
+}
+.briefing-telegram-choice.selected {
+  border-color: #bfd1ec;
+  background: #f2f7ff;
+}
+.briefing-telegram-choice > span {
+  flex: 1;
+}
+.briefing-telegram-choice strong {
+  display: block;
+  color: #6a7c9b;
+  font-weight: 500;
+  font-size: 12px;
+}
+.briefing-telegram-choice small {
+  display: block;
+  color: #96a1b6;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.briefing-telegram-choice input {
+  width: 16px;
+  height: 16px;
+  accent-color: #7b9ac8;
+}
+.briefing-format {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: #8090aa;
+  margin: 16px 0;
+}
+.briefing-format select {
+  max-width: 230px;
+}
+.briefing-retention {
+  margin: 20px 0;
+  border-top: 1px solid #edf0f6;
+  padding-top: 16px;
+}
+.briefing-retention summary {
+  font-size: 11px;
+  color: #8190aa;
+  cursor: pointer;
+}
+.briefing-retention summary span {
+  float: right;
+  font-size: 10px;
+  color: #a1aabd;
+}
+.briefing-retention label {
+  margin-top: 14px;
+}
+.briefing-retention input {
+  max-width: 100px;
+}
+.briefing-history-dialog {
+  max-width: 730px;
+}
+.briefing-history-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #8391a9;
+  margin-bottom: 20px;
+}
+.briefing-history-picker select {
+  flex: 1;
+  min-width: 0;
+}
+.briefing-history-list {
+  max-height: min(550px, 55vh);
+  overflow: auto;
+  padding-right: 5px;
+}
+.briefing-history-list > section {
+  padding: 20px 0;
+  border-top: 1px solid #edf0f6;
+}
+.briefing-history-list header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.briefing-history-list header > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #7b8ba7;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.briefing-history-list header small {
+  font-size: 10px;
+  color: #a0a9ba;
+}
+.briefing-history-list p {
+  font-size: 12px;
+  color: #8c96aa;
+  line-height: 1.8;
+}
+.briefing-history-list .text-link {
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 0 0;
+}
+.briefing-delivery {
+  margin-top: 14px;
+  border: 1px solid #e8edf6;
+  border-radius: 13px;
+  padding: 13px 15px;
+  background: #fafcff;
+}
+.briefing-delivery > div {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: #8397b8;
+}
+.briefing-delivery strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.briefing-delivery > div > span {
+  font-size: 10px;
+  margin-left: auto;
+  color: #a1adbf;
+}
+.briefing-delivery > details {
+  margin-top: 12px;
+}
+.briefing-delivery summary {
+  cursor: pointer;
+  font-size: 10px;
+  color: #a0aec3;
+}
+.briefing-part {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #edf1f7;
+  font-size: 11px;
+  color: #899ab6;
+}
+.briefing-part small {
+  color: #a0acbe;
+  font-size: 10px;
+}
+.briefing-part p {
+  width: 100%;
+  margin: 0;
+}
+.telegram-briefing-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  margin-top: 16px;
+  background: #f8fafd;
+  border: 1px solid #e6edf7;
+  border-radius: 15px;
+  color: #8498b7;
+}
+.telegram-briefing-summary > span {
+  flex: 1;
+}
+.telegram-briefing-summary strong {
+  display: block;
+  font-weight: 500;
+  font-size: 12px;
+}
+.telegram-briefing-summary small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #9cabc0;
+}
+.telegram-briefing-summary a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+@media (max-width: 700px) {
+  .briefing-controls {
+    width: 100%;
+    margin-left: 0;
+    border-top: 1px solid #e7ecf6;
+    padding-top: 9px;
+  }
+  .briefing-controls .button {
+    margin-right: auto;
+  }
+  .briefing-retention summary span {
+    float: none;
+    display: block;
+    padding-top: 6px;
+  }
+  .briefing-history-list header {
+    align-items: start;
+  }
+  .briefing-history-list header > span {
+    max-width: 220px;
+  }
+  .telegram-briefing-summary {
+    flex-wrap: wrap;
+  }
+  .telegram-briefing-summary a {
+    width: 100%;
+    padding-left: 27px;
+  }
+}

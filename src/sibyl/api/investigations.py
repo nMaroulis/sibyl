@@ -6,6 +6,7 @@ from sibyl.agents.utils.network import ModelRequired
 from sibyl.api.routes import S
 from sibyl.investigations.contracts import InvestigationCreate, InvestigationRun
 from sibyl.investigations.repository import InvestigationConflict
+from sibyl.investigations.scheduling.repository import BriefingConflict
 
 
 def private_reports(response: Response):
@@ -43,8 +44,9 @@ def definition(identity: str, s: S):
 def delete(identity: str, s: S):
     """Remove this investigation's reports; independent conversations are retained."""
     try:
+        s.briefings.require_deletable(identity)
         s.investigations.repository.delete(identity)
-    except InvestigationConflict as exc:
+    except (InvestigationConflict, BriefingConflict) as exc:
         raise HTTPException(409, str(exc)) from exc
 
 

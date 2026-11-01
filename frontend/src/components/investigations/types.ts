@@ -28,6 +28,7 @@ export type ResearchRun = {
   id: string;
   investigation_id: string;
   version: number;
+  origin?: string;
   status: string;
   created_at: string;
   finished_at: string | null;

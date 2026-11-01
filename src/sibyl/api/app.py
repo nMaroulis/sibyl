@@ -22,6 +22,7 @@ from sibyl.agents.utils.registry import AgentRegistry
 from sibyl.api.dashboard import mount_dashboard
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
+from sibyl.investigations.scheduling.service import BriefingScheduler
 from sibyl.investigations.service import Investigations
 from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
@@ -71,6 +72,7 @@ class Services:
     balance_checks: BalanceChecks
     forecasts: ForecastModels
     investigations: Investigations
+    briefings: BriefingScheduler
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -110,6 +112,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await agents.network.start()
         investigations = Investigations(store, agents.network)
         messaging = TelegramService(store, agents.network)
+        briefings = BriefingScheduler(investigations, messaging)
         ollama = OllamaService(agents.models)
         trading = ExchangeTrading(market, store)
         strategies.attach_execution(trading)
@@ -138,6 +141,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             balance_checks,
             forecasts,
             investigations,
+            briefings,
         )
 
         def background_call(method):
@@ -202,7 +206,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 await asyncio.to_thread(background_call, history.tick)
                 await asyncio.sleep(1)
 
+        async def briefing_worker():
+            while True:
+                try:
+                    with market.requests.background():
+                        await briefings.tick()
+                except sqlite3.Error:
+                    logging.getLogger(__name__).warning(
+                        "Briefing storage is unavailable; the scheduler will retry."
+                    )
+                except Exception:
+                    logging.getLogger(__name__).warning(
+                        "Briefing scheduling needs attention; the worker will retry."
+                    )
+                await asyncio.sleep(2)
+
         messaging_task = asyncio.create_task(messaging.run())
+        briefing_task = asyncio.create_task(briefing_worker())
         task = asyncio.create_task(worker())
         news_task = asyncio.create_task(news_worker())
         account_task = asyncio.create_task(account_worker())
@@ -226,6 +246,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 connection_alert_task,
                 risk_alert_task,
                 messaging_task,
+                briefing_task,
             ):
                 background.cancel()
             for background in (
@@ -239,9 +260,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 connection_alert_task,
                 risk_alert_task,
                 messaging_task,
+                briefing_task,
             ):
                 with suppress(asyncio.CancelledError):
                     await background
+            await briefings.close()
             await messaging.close()
             await investigations.close()
             await asyncio.to_thread(ollama.close)
@@ -395,6 +418,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.investigations import router as investigations_router
 
     app.include_router(investigations_router)
+
+    from sibyl.api.briefings import router as briefings_router
+
+    app.include_router(briefings_router)
 
     @app.get("/health", tags=["System"])
     def health():

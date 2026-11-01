@@ -105,7 +105,7 @@ class InvestigationRepository:
             raise LookupError("Investigation run not found.")
         return json.loads(row[0])
 
-    def reserve(self, identity, run_id, context, models):
+    def reserve(self, identity, run_id, context, models, origin="manual"):
         """Claim one version and workspace capacity atomically before accepting inference."""
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -119,13 +119,17 @@ class InvestigationRepository:
             row = db.execute("SELECT payload FROM investigations WHERE id=?", (identity,)).fetchone()
             if row is None:
                 raise LookupError("Investigation not found.")
+            retained = db.execute(
+                "SELECT COUNT(*) FROM investigation_runs WHERE investigation_id=?", (identity,)
+            ).fetchone()[0]
             version = (
                 db.execute(
-                    "SELECT COUNT(*) FROM investigation_runs WHERE investigation_id=?", (identity,)
+                    "SELECT COALESCE(MAX(json_extract(payload,'$.version')),0) FROM investigation_runs WHERE investigation_id=?",
+                    (identity,),
                 ).fetchone()[0]
                 + 1
             )
-            if version > 50:
+            if retained >= 50:
                 raise InvestigationConflict(
                     "This investigation has 50 retained runs. Create a new investigation to continue."
                 )
@@ -142,6 +146,7 @@ class InvestigationRepository:
                 "id": run_id,
                 "investigation_id": identity,
                 "version": version,
+                "origin": origin,
                 "question": json.loads(row[0])["question"],
                 "context": context,
                 "models": models,
@@ -162,6 +167,25 @@ class InvestigationRepository:
             except sqlite3.IntegrityError as exc:
                 raise InvestigationConflict("This investigation already has a pending run.") from exc
         return run, True
+
+    def prune_scheduled(self, identity, schedule_id, keep):
+        """Apply explicit retention to old terminal runs from this schedule only.
+
+        Manual reports, other schedules and active work are preserved. The caller
+        decides whether an untouched generated conversation can also be removed.
+        Keeping at least one version keeps future version numbers monotonic.
+        """
+        if keep < 1:
+            raise ValueError("Retain at least one scheduled version.")
+        with self.store.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            rows = db.execute(
+                "SELECT id,payload FROM investigation_runs WHERE investigation_id=? AND json_extract(payload,'$.origin')=? AND status NOT IN ('queued','running','cancelling') ORDER BY json_extract(payload,'$.version') DESC",
+                (identity, f"schedule:{schedule_id}"),
+            ).fetchall()
+            removed = [json.loads(row["payload"]) for row in rows[keep:]]
+            db.executemany("DELETE FROM investigation_runs WHERE id=?", [(run["id"],) for run in removed])
+        return removed
 
     @staticmethod
     def _write(db, run):

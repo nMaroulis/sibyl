@@ -15,7 +15,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and external delivery.  |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.       |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
-| Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable/scheduled investigations and messaging clients.   |
+| Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
 | Forecasting                    | partial       | Rolling evaluation, more model families, automatic recalibration and calibrated drift monitoring.   |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
@@ -159,15 +159,17 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [x] Sibyl uses native ProtoLink discovery/delegation, with delegation disabled for specialists; saved chats include collaboration evidence.
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.
 - [x] Mark unfinished requests interrupted on startup; block late consultations/answers after Stop and preserve already committed answers.
-- [ ] Add scheduled investigations and resumable long-running work. Retained request history is an audit, not workflow resumption.
-- [x] Add saved investigations with progressive starting context, native specialist collaboration, structured report validation, recorded source receipts, versioned reruns, comparison, JSON export, cancellation and restart interruption. See [report contracts](investigations.md). Reruns use newly available evidence; scheduling and workflow resumption remain pending.
+- [x] Add daily/weekly investigation calendars, time-zone/DST handling, frozen accepted model choices, bounded waiting, restart/missed-time handling, retention and explicit Telegram briefing delivery with real part outcomes. See [briefing contracts](briefings.md).
+- [ ] Add resumable long-running work. Retained request history is an audit, not workflow resumption.
+- [x] Add saved investigations with progressive starting context, native specialist collaboration, structured report validation, recorded source receipts, versioned reruns, comparison, JSON export, cancellation and restart interruption. See [report contracts](investigations.md). Reruns use newly available evidence; workflow resumption remains pending.
 - [x] Add Ollama installation/server/model detection and explicit local server Start/Stop ownership controls, with setup links.
 - [x] Add per-agent provider/model overrides with shared encrypted profiles, preset/custom IDs, revision-checked edits, frozen delegated request snapshots and accurate model attribution. See [contracts](agent-models.md).
 - [x] Stream native tool/consultation lifecycle activity into browser chats; retain polling for reopened Sibyl requests and cancel native work on stream disconnect. Show safe on-demand run summaries with tool timing/outcomes and available per-call token/cost metrics, labeled estimated, partial or unavailable.
 - [x] Run an initial real Ollama/Gemma acceptance pass for specialist evidence, native coordinator tool/inference consultations, memory/isolation, Stop and persistence; align provider/context-policy windows and preserve setup instructions in native previews. See [findings and remaining limits](agent-acceptance.md).
 - [ ] Add user-facing token streaming, broader repeated routing/grounding evaluation and fix the [upstream owned-subagent metrics gap](protolink-metrics.md). Activity streaming does not expose raw model chunks or internal action JSON.
 - [x] Implement direct-HTTP Telegram polling, private-user binding, encrypted credentials, conversation mapping and durable delivery outcomes. Explicit rate limits retry; ambiguous sends never auto-retry.
-- [ ] Validate Telegram with a real bot; add media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
+- [x] Retain initial user-confirmed Telegram conversation acceptance. Automated briefing delivery is tested with a mock HTTP transport; real scheduled-delivery acceptance remains a deployment check.
+- [ ] Add Telegram media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
 ### 8. Forecasting / Chronos — partial

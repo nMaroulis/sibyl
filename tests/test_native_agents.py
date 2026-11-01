@@ -425,7 +425,7 @@ def test_sibyl_automatically_sees_new_registry_agent_and_calls_its_advertised_to
         response = client.post("/api/v1/sibyl/ask", json={"message": "Read the new specialist's fact"})
         assert response.status_code == 200, response.text
         assert "[MOCK ERROR]" not in response.text
-        assert seen and set(network.agents["sibyl"].tools) == {"read_context_artifact", "investigation_reports"}
+        assert seen and set(network.agents["sibyl"].tools) == {"read_context_artifact", "investigation_reports", "briefing_schedules"}
         assert response.json()["delegations"][0]["evidence"] == {"fact": "native-registry-evidence"}
     finally:
         extra.stop()

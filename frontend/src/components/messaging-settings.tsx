@@ -19,6 +19,8 @@ export type MessagingChannel = {
   has_token?: boolean;
   allowed_user_id?: number;
   bot_username?: string;
+  bot_id?: number;
+  briefings_ready?: boolean;
   error?: string;
   fields: {
     id: string;
@@ -37,6 +39,7 @@ export type MessagingSettingsData = {
     delivery: Record<string, number>;
     llm_ready: boolean;
     summary?: { messages_received: number; replies_delivered: number; replies_waiting: number };
+    briefings?: Record<string, number>;
   };
 };
 

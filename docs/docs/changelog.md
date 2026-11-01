@@ -54,7 +54,10 @@ docker compose up --build
 - Saved investigations in **Sibyl → Investigations**: reusable questions, progressive starting-context controls, native specialist collaboration, structured findings, uncertainty and follow-up questions.
 - Versioned reruns with fresh conversations and frozen team-model choices, consultation progress, exact-request Stop, restart interruption, saved history, side-by-side comparison and JSON export.
 - Inspectable source receipts from retained native ProtoLink evidence, with actual tool attribution, source links, retrieval times, bounded previews and fingerprints. Invalid structured answers or invented tool citations fail explicitly; uncited interpretations remain labeled.
-- A native read-only Sibyl tool for finding previous investigations and reading dated reports, plus user/developer guides and lifecycle, privacy and collaboration tests.
+- Native read-only Sibyl tools for finding previous investigations, reading dated reports and inspecting actual briefing calendars/delivery outcomes, with setup help separated from observations.
+- Daily/weekly investigation briefings with local time-zone/DST rules, pause/resume/edit/archive controls, extra run-now actions, frozen queued team models, missed-time handling and schedule-specific report retention. No inference backlog is replayed after restart.
+- Opt-in Telegram briefing summaries or fuller reports through the existing direct-HTTP client, bound to the explicitly reviewed bot/private user. Durable message-part receipts, rate-limit retries, expiry and conservative uncertain-send handling keep delivery inspectable.
+- User/developer briefing guides, progressive calendar controls and delivery history, plus native collaboration, concurrent admission, privacy, restart, retention and mock-transport acceptance tests.
 
 ## [2.1.0] - 2026-11-01
 

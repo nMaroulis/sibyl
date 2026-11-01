@@ -53,6 +53,6 @@ Use **Report** to reopen a version and **Compare versions** for a side-by-side v
 
 Reports and conversations stay in the local backend workspace. Exports can contain private account research: share them deliberately. Exchange credentials are not agent tool inputs. Model credentials remain in the encrypted provider vault and private execution context.
 
-The workspace retains up to 100 investigations and 50 runs per investigation, with one pending run per investigation and four pending investigations overall. Deleting an investigation removes its reports/previews but keeps its separate Chat conversations. Deleting a conversation leaves completed report text/previews intact; native run details can then be unavailable.
+The workspace retains up to 100 investigations and 50 runs per investigation, with one pending run per investigation and four pending investigations overall. Scheduled versions have their own configurable retention policy; manual versions are preserved by that policy. Deleting an investigation removes its reports/previews but keeps its separate Chat conversations. Deleting a conversation leaves completed report text/previews intact; native run details can then be unavailable.
 
-Scheduled investigations, automatic delivery and resumable multi-stage work remain pending. This page runs investigations only when you explicitly start them.
+Choose **Schedule** to authorize [daily/weekly briefings](briefings.md) and optional Telegram delivery. Archive an active or paused calendar before deleting its investigation. Resumable multi-stage work remains pending; interrupted inference is never automatically replayed.

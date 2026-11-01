@@ -374,7 +374,7 @@ def test_native_failed_specialist_retains_prior_completed_consultations(client, 
 def test_native_agent_call_is_sibyls_only_delegation_path(client, monkeypatch):
     model(client)
     network = client.app.state.services.agents.network
-    assert set(network.agents["sibyl"].tools) == {"read_context_artifact", "investigation_reports"}
+    assert set(network.agents["sibyl"].tools) == {"read_context_artifact", "investigation_reports", "briefing_schedules"}
     assert network.cards["sibyl"].capabilities.delegation
     assert all(not network.cards[key].capabilities.delegation for key in ROLES)
     script(monkeypatch, [delegate("wiki", "RSI"), "Wiki explained RSI."])

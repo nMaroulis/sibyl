@@ -26,6 +26,7 @@ export function InvestigationReport({
     <article className={`investigation-report ${compact ? 'compact' : ''}`}>
       <div className="investigation-report-meta">
         <Badge>Version {run.version}</Badge>
+        {run.origin?.startsWith('schedule:') && <Badge>Scheduled</Badge>}
         {run.models.sibyl?.provider === 'mock' && <Badge tone="demo">Simulated model</Badge>}
         <span>{new Date(run.finished_at || run.created_at).toLocaleString()}</span>
       </div>

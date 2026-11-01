@@ -95,11 +95,11 @@ AREAS = [
         "name": "Sibyl & messaging",
         "status": "partial",
         "priority": "next",
-        "working": "Native ProtoLink discovery/delegation, saved chats, streamed consultation activity, Stop/outcomes and native run details; saved investigations with structured reports, actual tool-source receipts, frozen team models, versioned reruns, comparison and JSON export. Direct-HTTP Telegram supports private-user binding, encrypted configuration and durable delivery outcomes.",
+        "working": "Native ProtoLink discovery/delegation, saved chats, streamed consultation activity, Stop/outcomes and native run details; saved investigations with structured reports, actual tool-source receipts, frozen team models, versioned reruns, comparison and JSON export. Daily/weekly calendars add time zones, missed-run handling, retention and explicit Telegram briefings with durable part outcomes. Direct-HTTP Telegram supports private-user binding, encrypted configuration and durable delivery outcomes.",
         "pending": [
             "User-facing token streaming, broader repeated/model-specific routing and grounding evaluation and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3).",
-            "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
-            "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: live bot acceptance testing, richer media and delivery review controls; ambiguous sends are never auto-retried.",
+            "Resumable multi-stage investigations; stopped or interrupted inference is not replayed. General-purpose durable jobs remain separate from implemented daily/weekly research calendars.",
+            "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: real scheduled-briefing acceptance, richer media and delivery review controls; initial conversation acceptance is user-confirmed, and ambiguous sends are never auto-retried.",
         ],
     },
     {
@@ -167,10 +167,10 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-10-29",
+        "reviewed_on": "2026-11-01",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.1.0 adds trained Chronos models, Bitcoin transaction/address inspection and seeded finite random strategy search with recorded candidate plans and chronological evaluation. Native agents read the same evidence. Next work includes broader accounting/provider reconciliation, authenticated venue acceptance, rolling forecast evaluation and richer research workflows. Multi-user support stays deferred.",
+        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Next work includes evaluated agent collaboration, deeper research tools, broader accounting/provider reconciliation and rolling forecast evaluation. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

@@ -71,7 +71,7 @@ Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Boll
 
 Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Saved conversations, live activity, consultation trails and run details make the work inspectable.
 
-Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. [Saved investigations guide](docs/docs/guides/investigations.md).
+Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional delivery to your private Telegram bot chat. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
 
 Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
 
@@ -157,6 +157,7 @@ SQLite retains accounts, ledgers, research inputs, runs, conversations and alert
 | `src/sibyl/strategies/` | Signals, backtests, validation, paper and exchange runs |
 | `src/sibyl/market_data/`, `src/sibyl/news/` | Candle history, datasets and news collection |
 | `src/sibyl/agents/` | Agent declarations, prompts and tools; shared runtime/model helpers in `utils/` and page help in `guides/` |
+| `src/sibyl/investigations/` | Saved questions, structured research versions, calendar admission and report retention |
 | `src/sibyl/alerts/`, `src/sibyl/messaging/` | Alert rules, the local inbox and messaging clients |
 | `src/sibyl/services/` | Domain coordinators grouped into accounts, markets, portfolio, trading, funding, transfers, research, alerts and workspace packages |
 | `docs/` | Docusaurus user guides, API contracts and implementation checklist |

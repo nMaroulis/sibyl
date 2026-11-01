@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeftRight,
@@ -17,6 +17,7 @@ import { useResource } from '../../lib/hooks';
 import { api, post } from '../../lib/api';
 import { InvestigationForm } from './form';
 import { InvestigationReport } from './report';
+import { Briefings } from './briefings';
 import { running, runLabel } from './types';
 import type { Investigation, ResearchRun } from './types';
 import '../../styles/investigations.css';
@@ -59,6 +60,10 @@ export function Investigations() {
   const run = result.data?.id === runId ? result.data : undefined;
   const active = item?.runs.find(running);
   const ready = Boolean(status.data?.ready);
+  const refreshReports = useCallback(() => {
+    definition.retry();
+    library.retry();
+  }, [definition.retry, library.retry]);
   useEffect(
     () =>
       setFollowing(
@@ -297,6 +302,17 @@ export function Investigations() {
                   <Trash2 size={15} />
                 </button>
               </header>
+              <Briefings
+                key={item.id}
+                investigation={item.id}
+                ready={ready}
+                onChanged={refreshReports}
+                onStarted={(identity) => {
+                  navigate(item.id, identity);
+                  setFollowing(true);
+                  refreshReports();
+                }}
+              />
               <div className="investigation-toolbar">
                 <div>
                   {item.runs.length > 0 && (

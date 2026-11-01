@@ -2138,6 +2138,7 @@ dependencies = [
     { name = "pandas" },
     { name = "protolink", extra = ["http"] },
     { name = "pydantic-settings" },
+    { name = "tzdata" },
     { name = "uvicorn" },
     { name = "vadersentiment" },
 ]
@@ -2189,6 +2190,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2,<4" },
     { name = "protolink", extras = ["http"], specifier = ">=0.8.3,<0.9" },
     { name = "pydantic-settings", specifier = ">=2.8,<3" },
+    { name = "tzdata", specifier = ">=2024.1" },
     { name = "uvicorn", specifier = ">=0.34,<1" },
     { name = "vadersentiment", specifier = ">=3.3.2,<4" },
     { name = "yfinance", marker = "extra == 'stocks'", specifier = ">=0.2.59,<1" },

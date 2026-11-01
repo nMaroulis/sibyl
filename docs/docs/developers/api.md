@@ -4,7 +4,7 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 
 ## Endpoints
 
-Saved investigation endpoints are documented in [Investigation reports](investigations.md#api), including explicit run admission, progress, source receipts, version exports and cancellation.
+Saved investigation endpoints are documented in [Investigation reports](investigations.md#api), including explicit run admission, progress, source receipts, version exports and cancellation. [Briefing schedule contracts](briefings.md#api) cover daily/weekly calendars, revision-checked controls, missed occurrences and Telegram delivery history.
 
 | Method     | Path                                                | Purpose                                                                                    |
 | ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |

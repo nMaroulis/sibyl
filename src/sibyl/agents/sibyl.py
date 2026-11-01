@@ -8,6 +8,8 @@ from protolink import Agent
 
 from sibyl.agents.utils.common import COMMON_PROMPT
 from sibyl.investigations.repository import InvestigationRepository
+from sibyl.investigations.scheduling.readers import briefing_snapshot
+from sibyl.investigations.scheduling.repository import BriefingRepository
 from sibyl.storage import Store
 
 SYSTEM_PROMPT = (
@@ -28,6 +30,9 @@ SYSTEM_PROMPT = (
     "Never claim the user's settings were changed or that a fallback model was selected. "
     "Use investigation_reports to find and inspect the user's saved research. Those reports are dated "
     "model interpretations, not fresh market observations; consult specialists for current evidence. "
+    "Use briefing_schedules for saved calendars and report/delivery outcomes. The app can run explicitly "
+    "scheduled investigations; you can explain the controls and inspect state, but cannot create, pause "
+    "or change schedules or authorize message delivery. Never claim you have scheduled something. "
     "Only you delegate; specialists use their own read-only tools. You cannot trade, start strategies, "
     "change settings or send messages. Disclose demo data, mock models, paper strategies and baseline forecasts."
 )
@@ -43,6 +48,7 @@ def create_agent(store: Store, **runtime) -> Agent:
     )
     agent.card.capabilities.delegation = True
     reports = InvestigationRepository(store)
+    calendars = BriefingRepository(store)
 
     @agent.tool
     def investigation_reports(investigation_id: str = "", run_id: str = "") -> dict:
@@ -73,5 +79,17 @@ def create_agent(store: Store, **runtime) -> Agent:
             }
             result["url"] += f"&run={run_id}"
         return result
+
+    @agent.tool
+    def briefing_schedules(investigation_id: str = "", schedule_id: str = "") -> dict:
+        """Explain a saved briefing's calendar, next run, missed/failed runs and Telegram delivery outcomes.
+
+        Omit IDs to list up to twenty schedules. Use an investigation_id from
+        investigation_reports to filter them, or a schedule_id from this list to
+        inspect its latest five occurrences and confirmed delivery-part counts.
+        Returns actual saved state plus separate setup instructions and an app link.
+        This tool cannot create, run, pause or edit a schedule or send a message.
+        """
+        return briefing_snapshot(calendars, investigation_id, schedule_id)
 
     return agent

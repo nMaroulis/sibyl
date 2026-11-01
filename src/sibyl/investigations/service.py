@@ -41,7 +41,7 @@ class Investigations:
         self._tasks: dict[str, asyncio.Task] = {}
         self._closing = False
 
-    async def start(self, identity, request):
+    async def start(self, identity, request, *, origin="manual", configuration=None):
         """Accept one idempotent run and freeze all team models before it waits for a slot."""
         definition = self.repository.get(identity)
         try:
@@ -50,7 +50,7 @@ class Investigations:
             pass
         if self._closing:
             raise InvestigationConflict("The application is shutting down.")
-        configuration = freeze(self.network.owner.models.for_turn("sibyl"))
+        configuration = freeze(configuration or self.network.owner.models.for_turn("sibyl"))
         status = self.network.status(configuration)
         if not status["ready"]:
             raise ModelRequired(status["reason"])
@@ -67,7 +67,7 @@ class Investigations:
             }
             for agent, config in configuration["_agents"].items()
         }
-        run, created = self.repository.reserve(identity, request.request_id, context, models)
+        run, created = self.repository.reserve(identity, request.request_id, context, models, origin)
         if created:
             self._tasks[run["id"]] = asyncio.create_task(self._run(definition, run, configuration))
         return run
