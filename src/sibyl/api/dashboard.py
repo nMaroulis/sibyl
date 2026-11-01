@@ -28,10 +28,12 @@ class DashboardFiles(StaticFiles):
         try:
             response = await super().get_response(path, scope)
         except HTTPException as exc:
-            first = path.split("/", 1)[0]
+            # Starlette supplies filesystem paths, which use backslashes on Windows.
+            route_path = path.replace("\\", "/")
+            first = route_path.split("/", 1)[0]
             if exc.status_code != 404 or first in {"api", "assets", "health", "docs", "redoc"}:
                 raise
-            if "." in path.rsplit("/", 1)[-1]:
+            if "." in route_path.rsplit("/", 1)[-1]:
                 raise
             response = await super().get_response("index.html", scope)
         if response.media_type == "text/html":

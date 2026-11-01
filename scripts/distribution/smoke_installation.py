@@ -76,7 +76,7 @@ def main() -> None:
                 for asset in assets:
                     with urlopen(url + asset, timeout=5) as response:
                         assert response.status == 200
-                for missing in ("/api/does-not-exist", "/assets/does-not-exist.js"):
+                for missing in ("/api/does-not-exist", "/assets/does-not-exist", "/assets/does-not-exist.js"):
                     try:
                         urlopen(url + missing, timeout=5).close()
                     except URLError as exc:

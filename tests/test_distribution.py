@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from sibyl import __version__, cli, paths
-from sibyl.api.dashboard import dashboard_directory, mount_dashboard
+from sibyl.api.dashboard import DashboardFiles, dashboard_directory, mount_dashboard
 from sibyl.config import Settings
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,7 +71,21 @@ def dashboard(tmp_path):
     return TestClient(app)
 
 
-@pytest.mark.parametrize("route", ["/", "/account", "/strategies?view=monitor", "/settings/"])
+@pytest.fixture(params=["/", "\\"], ids=["posix-paths", "windows-paths"])
+def dashboard_path_style(request, monkeypatch):
+    """Exercise Starlette's OS-specific paths without changing the host filesystem."""
+    get_path = DashboardFiles.get_path
+
+    def normalized_path(self, scope):
+        return get_path(self, scope).replace("\\", "/").replace("/", request.param)
+
+    monkeypatch.setattr(DashboardFiles, "get_path", normalized_path)
+
+
+@pytest.mark.usefixtures("dashboard_path_style")
+@pytest.mark.parametrize(
+    "route", ["/", "/account", "/strategies?view=monitor", "/settings/", "/account.v2/history"]
+)
 def test_bundled_dashboard_supports_page_navigation(dashboard, route):
     response = dashboard.get(route)
     assert response.status_code == 200
@@ -79,9 +93,13 @@ def test_bundled_dashboard_supports_page_navigation(dashboard, route):
     assert response.headers["cache-control"] == "no-cache"
 
 
+@pytest.mark.usefixtures("dashboard_path_style")
 @pytest.mark.parametrize(
     "route",
-    ["/api", "/api/missing", "/assets/missing", "/assets/missing.js", "/missing.css", "/health/missing"],
+    [
+        "/api", "/api/missing", "/api/v1/missing", "/assets/missing", "/assets/missing.js",
+        "/missing.css", "/account/missing.css", "/health/missing", "/docs/missing", "/redoc/missing",
+    ],
 )
 def test_missing_api_and_assets_never_return_the_dashboard(dashboard, route):
     response = dashboard.get(route)

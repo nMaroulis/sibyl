@@ -97,6 +97,8 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 
 ### Fixed
 
+- Normalize Windows path separators when deciding whether to serve the dashboard fallback. Missing API routes and assets keep their 404 responses on every platform, while dashboard deep links still open normally.
+
 - Packaged dashboard documentation links open the public site instead of requiring a local Docusaurus server; development builds keep the local preview.
 
 - Give the homepage gradient heading enough space for its descenders so “See the bigger picture.” renders without cropped letters.
