@@ -40,6 +40,7 @@ export type MessagingSettingsData = {
     llm_ready: boolean;
     summary?: { messages_received: number; replies_delivered: number; replies_waiting: number };
     briefings?: Record<string, number>;
+    alerts?: Record<string, number>;
   };
 };
 

@@ -1,3 +1,4 @@
+import { AlertDeliveryButton } from './delivery';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Archive, ArrowUpRight, Pause, Pencil, Play, Plus, Radio, Undo2 } from 'lucide-react';
@@ -170,6 +171,7 @@ export function ConnectionRules({
                   <div className="price-rule-footer">
                     <span className="muted">Last armed {date(rule.armed_at)}</span>
                     <div className="price-rule-actions">
+                      <AlertDeliveryButton kind="connection" rule={rule.id} disabled={example} />
                       {!example && (
                         <Link className="text-button" to={connectionSettingsURL(rule.source)}>
                           Source settings <ArrowUpRight size={12} />
@@ -250,8 +252,8 @@ export function ConnectionRules({
           No recent reads means no current connection assessment. Counts restart after a
           session/profile change, a recording gap or more than five minutes between reads.
           Unsupported requests aren’t connection failures. Recovery confirms successful transport
-          reads of the same operation, not fully validated data or account readiness. Delivery stays
-          in-app.
+          reads of the same operation, not fully validated data or account readiness. Select
+          optional Telegram delivery separately on this rule.
         </p>
       </Panel>
       {example && sample.data && (

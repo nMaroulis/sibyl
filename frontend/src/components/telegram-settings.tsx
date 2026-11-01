@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
+  BellRing,
   Check,
   Clock3,
   CalendarClock,
@@ -453,6 +454,27 @@ export function TelegramSetup({
           </span>
           <Link to="/sibyl?tab=investigations">
             Briefing history <ArrowUpRight size={12} />
+          </Link>
+        </div>
+      )}
+      {!!health?.alerts && Object.keys(health.alerts).length > 0 && (
+        <div className="telegram-briefing-summary">
+          <BellRing size={15} />
+          <span>
+            <strong>{health.alerts.sent ?? 0} alerts delivered</strong>
+            <small>
+              {(health.alerts.pending ?? 0) +
+                (health.alerts.sending ?? 0) +
+                (health.alerts.retrying ?? 0)}{' '}
+              waiting ·{' '}
+              {(health.alerts.uncertain ?? 0) +
+                (health.alerts.failed ?? 0) +
+                (health.alerts.partial ?? 0)}{' '}
+              need attention
+            </small>
+          </span>
+          <Link to="/alerts?tab=delivery">
+            Alert delivery <ArrowUpRight size={12} />
           </Link>
         </div>
       )}

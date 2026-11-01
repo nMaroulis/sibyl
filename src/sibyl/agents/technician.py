@@ -108,7 +108,7 @@ GUIDES = {
             "Read counters reset on session/profile changes, recording gaps or more than five minutes between reads. No observations means no connection-status conclusion. Recovery describes successful transport reads, not fully validated data or verified current credentials. Pausing/resuming begins a new observation window.",
             "Account risk tab: select a fixed set of up to ten active accounts in one environment and a reference feed. Choose a value floor in USDT, asset concentration or observed-value drawdown limit. Arming authorizes background balance/quote reads. New connections are not automatically included; deactivate a pinned account and the watch waits for complete coverage.",
             "Recovery levels prevent repeated notices near a limit. Edits save paused; Resume resets the observed peak and incident state. Drawdown includes deposits and withdrawals, so it is not investment return. View evidence reads retained valuation details without fetching accounts.",
-            "No AI model is required. Alerts do not execute, stop strategies, cancel orders, close positions, detect silent worker outages or send external messages.",
+            "No AI model is required. A rule’s Delivery button selects optional Telegram messages to the checked bot and private user. Every save starts from future events; existing inbox entries stay local. Cooldowns suppress extra messages and delivery windows reject stale observations. Alerts never trade, stop strategies, cancel orders or detect silent-worker outages.",
         ],
     },
     "workspace": {
@@ -164,7 +164,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                 {**json.loads(row["payload"]), "created_at": row["created_at"]} for row in rows
             ],
             "url": "/alerts?tab=connections",
-            "scope": "Recorded transport reads only; no continuous uptime, credential verification or external delivery.",
+            "scope": "Recorded transport reads only; no continuous uptime or credential verification. Optional Telegram delivery is selected separately for each alert rule.",
         }
 
     def settings_guide(

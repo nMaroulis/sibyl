@@ -88,9 +88,9 @@ class TelegramClient(MessagingClient):
             )
         return {"id": bot["id"], "username": bot.get("username", "")}
 
-    async def receive(self, offset: int | None) -> list[dict]:
-        """Long-poll only new ordinary messages; offset advances after durable local ingestion."""
-        payload = {"timeout": 15, "limit": 20, "allowed_updates": ["message"]}
+    async def receive(self, offset: int | None, *, timeout: int = 15) -> list[dict]:
+        """Read new ordinary messages; use a short poll between outbound notification bursts."""
+        payload = {"timeout": timeout, "limit": 20, "allowed_updates": ["message"]}
         if offset is not None:
             payload["offset"] = offset
         result = await self.call("getUpdates", payload)

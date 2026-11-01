@@ -28,6 +28,7 @@ class TelegramService:
         self.http = http or httpx.AsyncClient(follow_redirects=False)
         self._lock = threading.RLock()
         self._tick_lock = asyncio.Lock()
+        self._notification_steps = 0
         self.notifications = NotificationOutbox(store, self.settings, self.client, self._notification_error)
         with store.db() as db:
             db.executescript("""
@@ -92,6 +93,7 @@ class TelegramService:
             ).fetchone()
         result["telegram"] = {
             "briefings": self.notifications.summary(profile.get("revision", "")),
+            "alerts": self.notifications.summary(profile.get("revision", ""), kind="alert"),
             "updates": dict(rows),
             "delivery": dict(outbox),
             "llm_ready": self.network.status()["ready"],
@@ -110,7 +112,7 @@ class TelegramService:
         return self.public()
 
     def _notification_error(self, revision, error):
-        """Expose sanitized briefing problems and honor Telegram's explicit cooldown."""
+        """Expose sanitized notification problems and honor Telegram's explicit cooldown."""
         self._update(
             revision,
             error=str(error),
@@ -177,7 +179,7 @@ class TelegramService:
             self._update(profile["revision"], enabled=False, control_id=uuid4().hex)
             self.notifications.invalidate(
                 connection_revision=profile["revision"],
-                reason="Telegram was paused before this briefing was sent.",
+                reason="Telegram was paused before this notification was sent.",
             )
         return self.public()
 
@@ -376,12 +378,17 @@ class TelegramService:
             if not profile.get("enabled") or profile.get("next_attempt", 0) > time.time():
                 return
             try:
-                if (
-                    await self.deliver(profile)
-                    or await self.notifications.deliver(profile)
-                    or await self.process(profile)
-                ):
+                if await self.deliver(profile) or await self.process(profile):
                     return
+                if self._notification_steps >= 4:
+                    updates = await self.client(profile).receive(profile.get("offset"), timeout=0)
+                    self.ingest(profile, updates)
+                    self._notification_steps = 0
+                    return
+                if await self.notifications.deliver(profile):
+                    self._notification_steps += 1
+                    return
+                self._notification_steps = 0
                 updates = await self.client(profile).receive(profile.get("offset"))
                 self.ingest(profile, updates)
             except TelegramError as error:

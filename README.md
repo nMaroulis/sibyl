@@ -119,7 +119,7 @@ Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
 ### Alerts · Keep useful signals close
 
-Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. A persistent local inbox retains the triggering evidence and unread state.
+Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
 
 [Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 

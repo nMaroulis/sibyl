@@ -1,4 +1,9 @@
 import { useState } from 'react';
+import {
+  AlertDeliveryButton,
+  AlertDeliveryHistory,
+  AlertDeliveryScope,
+} from '../components/alerts/delivery';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Archive,
@@ -89,6 +94,7 @@ const sections = [
   { id: 'strategies', label: 'Strategy alerts', icon: Waves },
   { id: 'connections', label: 'Connections', icon: Radio },
   { id: 'inbox', label: 'Inbox', icon: InboxIcon },
+  { id: 'delivery', label: 'Delivery', icon: Bell },
 ];
 const ruleState = (rule: PriceRule) =>
   rule.status !== 'armed'
@@ -194,7 +200,7 @@ export function Alerts() {
     }
   };
   const error =
-    tab === 'strategies' || tab === 'connections' || tab === 'risk'
+    tab === 'strategies' || tab === 'connections' || tab === 'risk' || tab === 'delivery'
       ? ''
       : example
         ? sample.error ||
@@ -215,7 +221,7 @@ export function Alerts() {
       ? rules.retry
       : inbox.retry;
   return (
-    <>
+    <AlertDeliveryScope>
       <PageTitle
         title="Alerts"
         description="Your price milestones, account limits and activity in one local inbox."
@@ -248,9 +254,9 @@ export function Alerts() {
       <div className="alert-delivery-note">
         <Bell size={17} />
         <span>
-          <strong>In-app notifications</strong> · Watch prices, account risk, strategy events or
-          read failures. The Sibyl API must be running; no AI model is needed. Alert controls change
-          notifications only.
+          <strong>Local inbox, optional Telegram</strong> · Watch prices, account risk, strategy
+          events or read failures. The Sibyl API must be running; no AI model is needed. Alert
+          controls change notifications only.
         </span>
       </div>
       {example && (
@@ -275,6 +281,21 @@ export function Alerts() {
       <SectionPanel id="alerts" value={tab}>
         {error ? (
           <ErrorState message={error} retry={retry} />
+        ) : tab === 'delivery' ? (
+          <Panel className="alert-delivery-panel">
+            <PanelTitle
+              title="Telegram delivery"
+              subtitle="Confirmed outcomes, cooldowns and skipped notifications."
+            />
+            {example ? (
+              <p className="muted">
+                Delivery history is available for your actual rules. No messages are sent from
+                examples.
+              </p>
+            ) : (
+              <AlertDeliveryHistory />
+            )}
+          </Panel>
         ) : tab === 'strategies' ? (
           <StrategyRules
             key={`${example}-${params.get('job_id') || ''}`}
@@ -397,6 +418,7 @@ export function Alerts() {
                         · cycle {rule.cycle}
                       </span>
                       <div className="order-actions">
+                        <AlertDeliveryButton kind="price" rule={rule.id} disabled={example} />
                         {rule.status === 'archived' ? (
                           <button
                             className="button secondary tiny"
@@ -496,7 +518,8 @@ export function Alerts() {
               Level alerts can notify on their first fresh quote. Crossing alerts wait for a new
               observed crossing. Repeat alerts require a price reset and cooldown; moves during
               cooldown are skipped. Checks run about every 30 seconds and back off on errors. Missed
-              crossings are not reconstructed. Delivery stays in-app.
+              crossings are not reconstructed. Telegram delivery is selected separately on each
+              rule.
             </p>
           </Panel>
         ) : (
@@ -646,7 +669,7 @@ export function Alerts() {
           )}
         </Modal>
       )}
-    </>
+    </AlertDeliveryScope>
   );
 }
 
@@ -820,7 +843,9 @@ function PriceRuleForm({
           {repeat === 'after_reset'
             ? 'Repeats need a reset and a new move after cooldown; moves during cooldown are skipped. '
             : 'One notification, then the rule stops. '}
-          {rule ? 'Changes save paused; past notifications stay unchanged.' : 'Delivery is in-app.'}
+          {rule
+            ? 'Changes save paused; past notifications stay unchanged.'
+            : 'Use Delivery on the saved rule to select Telegram.'}
         </span>
       </div>
       {error && (

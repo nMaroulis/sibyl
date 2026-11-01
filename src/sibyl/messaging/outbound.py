@@ -1,7 +1,7 @@
 """Durable app-origin Telegram deliveries with conservative, inspectable outcomes.
 
 Conversation replies keep their existing outbox. This queue accepts explicitly
-authorized briefing messages and never exposes credentials or retries uncertain writes.
+authorized briefing and alert messages and never exposes credentials or retries uncertain writes.
 """
 
 import json
@@ -33,7 +33,7 @@ class NotificationOutbox:
     def __init__(self, store, settings, client, on_error):
         self.store, self.settings = store, settings
         self.client, self.on_error = client, on_error
-        self.authorize = lambda delivery: False
+        self.authorizers = {}
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS message_deliveries (
@@ -70,28 +70,50 @@ class NotificationOutbox:
             "UPDATE message_deliveries SET state=?,payload=? WHERE id=?", (state, json.dumps(item), identity)
         )
 
+    def authorize(self, delivery):
+        """Dispatch each message to its domain's current authorization check; deny unknown kinds."""
+        guard = self.authorizers.get(delivery.get("kind", "briefing"))
+        return bool(guard and guard(delivery))
+
     def enqueue(self, origin_id, schedule, run, text, now):
         """Queue one completed report once, without making any HTTP request."""
+        return self.enqueue_message(
+            origin_id,
+            schedule.get("telegram_binding") or {},
+            text,
+            now,
+            datetime.fromisoformat(run["finished_at"]).timestamp() + 3600,
+            {
+                "kind": "briefing",
+                "schedule_id": schedule["id"],
+                "schedule_revision": schedule["revision"],
+                "investigation_id": run["investigation_id"],
+                "run_id": run["id"],
+                "report_version": run.get("version"),
+            },
+        )
+
+    def enqueue_message(self, origin_id, binding, text, now, expiry, metadata, *, error=None, db=None):
+        """Persist explicitly authorized text, optionally in the caller's cursor transaction.
+
+        Metadata identifies its domain policy. It must contain no credentials.
+        The shared sender rechecks that policy and connection before every send.
+        """
         profile = self.settings.profile()
-        binding = schedule.get("telegram_binding") or {}
-        expiry = datetime.fromisoformat(run["finished_at"]).timestamp() + 3600
-        error = None
-        if profile.get("bot_id") != binding.get("bot_id") or profile.get("allowed_user_id") != binding.get(
-            "recipient_id"
-        ):
-            error = "Telegram's recipient or credentials changed. Review and save the schedule's delivery setting again."
-        elif not profile.get("enabled") or not profile.get("verified"):
-            error = "Telegram is paused or unverified. This report was saved locally without delivery."
-        elif expiry <= now.timestamp():
-            error = "This briefing is more than one hour old. No stale delivery was queued."
+        if not error:
+            if (profile.get("bot_id"), profile.get("allowed_user_id")) != (
+                binding.get("bot_id"),
+                binding.get("recipient_id"),
+            ):
+                error = "Telegram's recipient changed. Review the delivery setting again."
+            elif not profile.get("enabled") or not profile.get("verified"):
+                error = "Telegram is paused or unverified. This notification stays local."
+            elif expiry <= now.timestamp():
+                error = "This notification's delivery window expired. Briefings expire after one hour."
         item = {
+            **metadata,
             "id": uuid4().hex,
             "origin_id": origin_id,
-            "schedule_id": schedule["id"],
-            "schedule_revision": schedule["revision"],
-            "investigation_id": run["investigation_id"],
-            "run_id": run["id"],
-            "report_version": run.get("version"),
             "preview": text[:240],
             "connection_revision": profile.get("revision"),
             "bot_id": binding.get("bot_id"),
@@ -104,45 +126,76 @@ class NotificationOutbox:
             "created_at": now.isoformat(),
             "updated_at": now.isoformat(),
         }
-        with self.store.db() as db:
-            db.execute("BEGIN IMMEDIATE")
-            existing = db.execute(
-                "SELECT id FROM message_deliveries WHERE origin_id=?", (origin_id,)
-            ).fetchone()
-            if existing:
-                return self._public(db, existing[0])
-            if (
-                not error
-                and db.execute(
-                    "SELECT COUNT(*) FROM message_deliveries WHERE state IN ('pending','sending','retrying')"
-                ).fetchone()[0]
-                >= 20
-            ):
-                error = "The briefing delivery queue is full. The report remains saved locally."
-                item.update(status="skipped", error=error)
-            db.execute(
-                "INSERT INTO message_deliveries VALUES(?,?,?,?,?)",
-                (item["id"], origin_id, item["status"], json.dumps(item), item["created_at"]),
+        if db is not None:
+            return self._persist(db, item, text)
+        with self.store.db() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            return self._persist(connection, item, text)
+
+    def _persist(self, db, item, text):
+        existing = db.execute(
+            "SELECT id FROM message_deliveries WHERE origin_id=?", (item["origin_id"],)
+        ).fetchone()
+        if existing:
+            return self._public(db, existing[0])
+        if (
+            item["status"] == "pending"
+            and db.execute(
+                "SELECT COUNT(*) FROM message_deliveries WHERE state IN ('pending','sending','retrying')"
+            ).fetchone()[0]
+            >= 20
+        ):
+            item.update(
+                status="skipped", error="The notification delivery queue is full. Evidence remains in Sibyl."
             )
-            older = db.execute(
-                "SELECT id FROM message_deliveries WHERE json_extract(payload,'$.schedule_id')=? AND state IN ('sent','skipped','failed','partial') ORDER BY rowid DESC LIMIT -1 OFFSET 200",
-                (schedule["id"],),
+        db.execute(
+            "INSERT INTO message_deliveries VALUES(?,?,?,?,?)",
+            (
+                item["id"],
+                item["origin_id"],
+                item["status"],
+                json.dumps(item),
+                item["created_at"],
+            ),
+        )
+        scope = item.get("schedule_id") or item.get("rule_id")
+        older = db.execute(
+            "SELECT id FROM message_deliveries WHERE COALESCE(json_extract(payload,'$.schedule_id'),json_extract(payload,'$.rule_id'))=? AND state IN ('sent','skipped','failed','partial') ORDER BY rowid DESC LIMIT -1 OFFSET 200",
+            (scope,),
+        ).fetchall()
+        for old in older:
+            db.execute("DELETE FROM message_delivery_parts WHERE delivery_id=?", (old[0],))
+            db.execute("DELETE FROM message_deliveries WHERE id=?", (old[0],))
+        if item["status"] == "pending":
+            db.executemany(
+                "INSERT INTO message_delivery_parts(delivery_id,part,text,state) VALUES(?,?,?,'pending')",
+                [(item["id"], index, part) for index, part in enumerate(chunks(text))],
+            )
+        return self._public(db, item["id"])
+
+    def history(self, *, kind, rule_id=None, limit=20, offset=0):
+        """Page safe delivery receipts; never expose queued message bodies or bot tokens."""
+        with self.store.db() as db:
+            db.execute("BEGIN")
+            clause = "COALESCE(json_extract(payload,'$.kind'),'briefing')=? AND (? IS NULL OR json_extract(payload,'$.rule_id')=?)"
+            args = (kind, rule_id, rule_id)
+            total = db.execute(f"SELECT COUNT(*) FROM message_deliveries WHERE {clause}", args).fetchone()[0]
+            rows = db.execute(
+                f"SELECT id FROM message_deliveries WHERE {clause} ORDER BY rowid DESC LIMIT ? OFFSET ?",
+                (*args, limit, offset),
             ).fetchall()
-            for old in older:
-                db.execute("DELETE FROM message_delivery_parts WHERE delivery_id=?", (old[0],))
-                db.execute("DELETE FROM message_deliveries WHERE id=?", (old[0],))
-            if not error:
-                db.executemany(
-                    "INSERT INTO message_delivery_parts(delivery_id,part,text,state) VALUES(?,?,?,'pending')",
-                    [(item["id"], index, part) for index, part in enumerate(chunks(text))],
-                )
-            return self._public(db, item["id"])
+            return {
+                "items": [self._public(db, row[0]) for row in rows],
+                "total": total,
+                "offset": offset,
+                "limit": limit,
+            }
 
     @staticmethod
     def _public(db, identity):
         row = db.execute("SELECT payload FROM message_deliveries WHERE id=?", (identity,)).fetchone()
         if row is None:
-            raise LookupError("Briefing delivery not found.")
+            raise LookupError("Notification delivery not found.")
         parts = db.execute(
             "SELECT part,state,attempts,next_attempt,error,native_id FROM message_delivery_parts WHERE delivery_id=? ORDER BY part",
             (identity,),
@@ -159,17 +212,19 @@ class NotificationOutbox:
         with self.store.db() as db:
             return self._public(db, identity)
 
-    def summary(self, revision=None):
-        """Count actual briefing delivery outcomes separately from conversation replies."""
+    def summary(self, revision=None, *, kind="briefing"):
+        """Count actual app-origin delivery outcomes separately from conversation replies."""
         with self.store.db() as db:
             return dict(
                 db.execute(
-                    "SELECT state,COUNT(*) FROM message_deliveries WHERE (? IS NULL OR json_extract(payload,'$.connection_revision')=?) GROUP BY state",
-                    (revision, revision),
+                    "SELECT state,COUNT(*) FROM message_deliveries WHERE (? IS NULL OR json_extract(payload,'$.connection_revision')=?) AND COALESCE(json_extract(payload,'$.kind'),'briefing')=? GROUP BY state",
+                    (revision, revision, kind),
                 ).fetchall()
             )
 
-    def invalidate(self, *, schedule_id=None, connection_revision=None, reason):
+    def invalidate(
+        self, *, schedule_id=None, rule_id=None, policy_revision=None, connection_revision=None, reason
+    ):
         """Withdraw queued parts after a policy or connection-control change."""
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -178,8 +233,11 @@ class NotificationOutbox:
             ).fetchall()
             for row in rows:
                 item = json.loads(row["payload"])
-                if (schedule_id and item["schedule_id"] != schedule_id) or (
-                    connection_revision and item["connection_revision"] != connection_revision
+                if (
+                    (schedule_id and item.get("schedule_id") != schedule_id)
+                    or (connection_revision and item["connection_revision"] != connection_revision)
+                    or (rule_id and item.get("rule_id") != rule_id)
+                    or (policy_revision is not None and item.get("policy_revision") != policy_revision)
                 ):
                     continue
                 self._skip(db, row["id"], reason)
@@ -216,7 +274,7 @@ class NotificationOutbox:
                 self._skip(
                     db,
                     delivery["id"],
-                    "Delivery authorization changed or the briefing expired. The saved report remains available.",
+                    "Delivery authorization changed or the notification expired. Evidence remains in Sibyl.",
                 )
                 return True
             if row["next_attempt"] > time.time():

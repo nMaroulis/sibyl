@@ -32,6 +32,10 @@ Interrupted inference is not replayed automatically. An already committed Sibyl 
 
 Briefing deliveries have separate counters in Messaging and per-part outcomes in the investigation’s schedule history. Pause Telegram or the schedule to withdraw unsent briefings. Reports completed while Telegram is paused stay local; they do not form a delivery backlog. Changed bot/user identities require reviewing the schedule’s recipient again. The same uncertainty policy below applies to automated messages.
 
+## Alert notifications
+
+Use **Delivery** on any saved price, account-risk, strategy or connection rule to select this checked bot/private user. Telegram chat alone does not enable alerts. Alert delivery needs no model, applies to future events only and has its own cooldown and freshness window. **Alerts → Delivery** shows message-part confirmations, skipped events and failures; Messaging counts alerts separately from replies and research briefings. See [Telegram alert delivery](alert-delivery.md).
+
 ## Connection activity
 
 - **Messages received** counts accepted private messages and commands from the configured user, excluding ignored traffic.

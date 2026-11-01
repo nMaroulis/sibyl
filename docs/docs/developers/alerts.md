@@ -12,7 +12,7 @@ The quote read uses `Market.snapshot(rule.source)` and `valuation_ticker(rule.sy
 
 The Demo client generates a synthetic snapshot timestamp at evaluation/cache load time; its fixed sample price still derives from the last closed fixture candle. Its historical OHLCV timestamps are unchanged. Demo remains explicitly attributed and must pass the same freshness checks as other rules. CoinGecko's Demo **API plan** remains a live API source and is not Sibyl's offline Demo.
 
-A provider read happens outside the database transaction. The commit uses `BEGIN IMMEDIATE`, reloads the rule and checks armed status and revision. Pausing, editing, archiving or rearming during an in-flight read invalidates that observation. When a condition qualifies, its lifecycle/reset/cooldown state and one inbox row commit together. A crash before commit leaves no notification; after commit the cycle cannot notify twice. Notifications retain the original label, pair, source, condition, threshold, repetition settings and rule revision, even after edits. There is no external send to retry or transactional outbox claim.
+A provider read happens outside the database transaction. The commit uses `BEGIN IMMEDIATE`, reloads the rule and checks armed status and revision. Pausing, editing, archiving or rearming during an in-flight read invalidates that observation. When a condition qualifies, its lifecycle/reset/cooldown state and one inbox row commit together. A crash before commit leaves no notification; after commit the cycle cannot notify twice. Notifications retain the original label, pair, source, condition, threshold, repetition settings and rule revision, even after edits. The evaluator sends nothing externally; the separate [delivery coordinator](alert-delivery.md) can admit explicitly selected future inbox events into the shared transactional Telegram outbox.
 
 Lifecycle actions advance revision. Arming an already armed rule is idempotent; resuming or rearming a paused/triggered rule starts a fresh cycle. Archive is reversible; restore leaves the rule paused. Notifications survive archive. Mark-read operations are idempotent and do not delete evidence. Unread/total counts cover all retained notifications independently of page size.
 
@@ -59,7 +59,7 @@ The API accepts no arbitrary destination, webhook, credential or trade field. Cr
 
 ## Current limits
 
-Editable level/crossing rules and reset-based repetition are implemented. Strategy journal subscriptions are also implemented below. Portfolio-risk, connection-health and silent-worker outage conditions remain pending. Delivery is in-app only. Notification history is retained locally and paginated, without managed retention/export yet. No general-purpose durable job queue, external delivery retries, guarantee of timely delivery or multiple-worker coordination is claimed.
+Editable level/crossing rules and reset-based repetition are implemented. Strategy journal subscriptions are also implemented below. Account-risk and connection-read watches are also implemented; silent-worker outage conditions remain pending. Local delivery is always on, with opt-in Telegram delivery handled separately. Notification history is retained locally and paginated, without managed retention/export yet. No general-purpose durable job queue, guarantee of timely delivery or multiple-worker coordination is claimed. Explicit Telegram rate limits have bounded retries; uncertain sends never auto-retry.
 
 Tests use disposable stores, exact controlled feeds and API examples. They cover threshold equality, crossing direction/baselines, cooldown reset sequences, ordered timestamps/gaps, cached-data aging, failures/backoff, edit conflicts, source pinning, concurrency and delayed-response races, atomic rollback and restart persistence, unread acknowledgment, pagination, archive/restore, capacity and absence of trading effects. See the [user guide](../guides/alerts.md).
 
@@ -85,7 +85,7 @@ Strategy payloads retain rule revision/name, job ID, algorithm/pair/interval, so
 | POST   | `/strategy-alerts/{id}/action`                                | `action: pause/arm/archive/restore`, reviewed `revision`; never a strategy control                                     |
 | GET    | `/strategy-alerts/example`                                    | Isolated sample rule/notification, no persistence                                                                      |
 
-Paths use `/api/v1`, existing workspace access controls and `Cache-Control: no-store`. Schemas reject unknown execution/delivery fields. This remains one local API worker, in-app delivery and retained journal catch-up, not a distributed scheduler, worker liveness alarm, order settlement guarantee or external notification system.
+Paths use `/api/v1`, existing workspace access controls and `Cache-Control: no-store`. Schemas reject unknown execution/delivery fields. This remains one local API worker with retained journal catch-up. Optional Telegram forwarding is selected through separate delivery contracts; no distributed scheduler, worker-liveness alarm or settlement guarantee is claimed.
 
 ## Connection read subscriptions
 

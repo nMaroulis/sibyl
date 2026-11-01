@@ -19,6 +19,7 @@ from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.accounting.funding.reviews import FundingReviewConflict
 from sibyl.agents.utils.model_selection import ModelConflict
 from sibyl.agents.utils.registry import AgentRegistry
+from sibyl.alerts.delivery.service import AlertDelivery
 from sibyl.api.dashboard import mount_dashboard
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
@@ -73,6 +74,7 @@ class Services:
     forecasts: ForecastModels
     investigations: Investigations
     briefings: BriefingScheduler
+    alert_delivery: AlertDelivery
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -117,6 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         trading = ExchangeTrading(market, store)
         strategies.attach_execution(trading)
         alerts = PriceAlerts(market, store)
+        alert_delivery = AlertDelivery(store, messaging)
         history = CandleHistory(market, store)
         app.state.services = Services(
             config,
@@ -142,6 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             forecasts,
             investigations,
             briefings,
+            alert_delivery,
         )
 
         def background_call(method):
@@ -221,7 +225,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     )
                 await asyncio.sleep(2)
 
+        async def alert_delivery_worker():
+            while True:
+                try:
+                    await asyncio.to_thread(alert_delivery.tick)
+                except sqlite3.Error:
+                    logging.getLogger(__name__).warning(
+                        "Alert delivery storage is unavailable; admission will retry."
+                    )
+                await asyncio.sleep(1)
+
         messaging_task = asyncio.create_task(messaging.run())
+        delivery_task = asyncio.create_task(alert_delivery_worker())
         briefing_task = asyncio.create_task(briefing_worker())
         task = asyncio.create_task(worker())
         news_task = asyncio.create_task(news_worker())
@@ -247,6 +262,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 risk_alert_task,
                 messaging_task,
                 briefing_task,
+                delivery_task,
             ):
                 background.cancel()
             for background in (
@@ -261,9 +277,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 risk_alert_task,
                 messaging_task,
                 briefing_task,
+                delivery_task,
             ):
                 with suppress(asyncio.CancelledError):
                     await background
+            await asyncio.to_thread(alert_delivery.close)
             await briefings.close()
             await messaging.close()
             await investigations.close()
@@ -422,6 +440,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.briefings import router as briefings_router
 
     app.include_router(briefings_router)
+
+    from sibyl.api.alert_delivery import router as alert_delivery_router
+
+    app.include_router(alert_delivery_router)
 
     @app.get("/health", tags=["System"])
     def health():

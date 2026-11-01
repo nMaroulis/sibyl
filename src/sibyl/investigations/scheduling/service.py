@@ -29,7 +29,7 @@ class BriefingScheduler:
         self._tick_lock = asyncio.Lock()
         self._closed = False
         self.last_tick = None
-        self.messaging.notifications.authorize = self.delivery_allowed
+        self.messaging.notifications.authorizers["briefing"] = self.delivery_allowed
         self._recover()
 
     def _recover(self):

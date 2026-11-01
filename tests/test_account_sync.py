@@ -1,6 +1,7 @@
 """Offline import contracts: pagination, atomic checkpoints, failures and account isolation."""
 
 import json
+import time
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 
@@ -382,8 +383,15 @@ def test_sync_api_validates_inputs_and_exposes_no_private_cursor(client):
     response = client.post("/api/v1/connections/demo/sync", json={"symbols": ["BTC/USDT"]})
     assert response.status_code == 202
     assert "cursor" not in response.text
-    client.app.state.services.account_sync.tick()
-    assert client.get("/api/v1/account-sync").json()["jobs"][0]["status"] == "caught_up"
+    # HTTP 202 admits asynchronous work; a lifespan worker can already own the slot.
+    deadline = time.monotonic() + 5
+    while True:
+        client.app.state.services.account_sync.tick()
+        job = client.get("/api/v1/account-sync").json()["jobs"][0]
+        if job["status"] not in {"queued", "running"} or time.monotonic() >= deadline:
+            break
+        time.sleep(0.01)
+    assert job["status"] == "caught_up", job
     assert "BTC/USDT" in client.get("/api/v1/connections/demo/markets").json()["symbols"]
     assert client.get("/api/v1/account-ledger/fills?limit=0").status_code == 422
     assert client.get("/api/v1/account-ledger/fills?symbol=BTC%2FUSDT%3AUSDT").status_code == 422

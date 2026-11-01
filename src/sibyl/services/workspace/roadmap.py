@@ -59,10 +59,10 @@ AREAS = [
         "name": "Alerts & local operations",
         "status": "partial",
         "priority": "next",
-        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations.",
+        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations. Opt-in per-rule Telegram delivery adds reviewed recipients, future-only admission, cooldown/expiry, durable receipts and pause controls.",
         "pending": [
             "Broader risk metrics, optional fill/order policies and silent-worker outage detection; operational diagnostics. Shared strategy capital/exposure/daily-loss enforcement is a separate implemented policy; alerts never change it.",
-            "Optional external delivery with retries and delivery state.",
+            "Additional external alert channels and richer delivery review; real Telegram alert-delivery acceptance remains a deployment check.",
             "General durable task scheduling, metrics/diagnostics and managed backup/restore.",
         ],
     },
@@ -167,10 +167,10 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-11-01",
+        "reviewed_on": "2026-11-02",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Next work includes evaluated agent collaboration, deeper research tools, broader accounting/provider reconciliation and rolling forecast evaluation. Multi-user support stays deferred.",
+        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Alert rules also support explicit Telegram forwarding with cooldowns and freshness windows. Next work includes evaluated agent collaboration, deeper research tools, broader accounting/provider reconciliation and rolling forecast evaluation. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

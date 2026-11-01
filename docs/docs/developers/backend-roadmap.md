@@ -12,7 +12,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
-| Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and external delivery.  |
+| Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and more delivery channels.  |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.       |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.   |
@@ -231,7 +231,8 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add connection read-failure/recovery rules per operation, bounded credential-free evidence, atomic cursor/inbox commits, restart catch-up and revision-checked controls. No polling/uptime claim; see [connection alerts](alerts.md#connection-read-subscriptions).
 - [x] Add fixed-account-set value floors, asset concentration and observed-value drawdown watches with complete fresh valuation, recovery/cooldown, atomic evidence/inbox commits and read-only Accountant tools. See [account risk](account-risk.md).
 - [ ] Add broader risk metrics, silent-worker outage detection and optional fill/order notification policies. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
-- [ ] Add optional external delivery integrations with explicit recipients, delivery attempts and retries.
+- [x] Add opt-in Telegram delivery per price/risk/strategy/connection rule, reviewed recipients, future-only cursors, transactional admission, cooldown suppression, expiry and actual part outcomes. See [contracts](alert-delivery.md).
+- [ ] Add other external alert channels and richer review controls; live alert-delivery acceptance remains a deployment check.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [ ] Add structured application/provider metrics, tracing and operational diagnostics beyond basic health/log output.
 - [ ] Add managed backup/restore, notification retention/export and credential/key lifecycle tools.

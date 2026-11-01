@@ -257,6 +257,8 @@ The `/market-history` routes expose local coverage, resumable reviewed imports, 
 
 Price alerts also accept `condition: crosses_above/crosses_below`, `repeat: once/after_reset` and integer `cooldown_seconds` (60–86400). `POST /alerts/{id}/edit` takes complete rule settings and `revision`, saves paused and returns `409` for a stale editor. Recurring reset/cooldown state persists; past notifications retain the original rule evidence. See [alert state and edit contracts](alerts.md).
 
+Alert forwarding policies and receipt endpoints are documented in [Alert delivery contracts](alert-delivery.md#http-api).
+
 ## Sibyl and messaging setup
 
 All paths below use the `/api/v1` prefix and existing workspace access controls.

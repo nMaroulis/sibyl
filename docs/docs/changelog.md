@@ -59,6 +59,13 @@ docker compose up --build
 - Opt-in Telegram briefing summaries or fuller reports through the existing direct-HTTP client, bound to the explicitly reviewed bot/private user. Durable message-part receipts, rate-limit retries, expiry and conservative uncertain-send handling keep delivery inspectable.
 - User/developer briefing guides, progressive calendar controls and delivery history, plus native collaboration, concurrent admission, privacy, restart, retention and mock-transport acceptance tests.
 
+- Opt-in Telegram delivery for price, account-risk, strategy and connection alert rules, with future-only cursors, explicitly checked recipients, cooldown suppression and observation-based expiry.
+- Per-rule delivery editors and a shared Delivery history tab with confirmed part counts, failure/suppression reasons and pause controls. Shared outbox admission and restart tests preserve briefing behavior; Technician setup help explains the new workflow.
+
+### Fixed
+
+- Make the account-sync API test wait for asynchronous completion when the background worker already owns the import slot, avoiding a timing-dependent failure.
+
 ## [2.1.0] - 2026-11-01
 
 :::note[Release summary]

@@ -6,14 +6,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, field_validator, model_validator
 
+from sibyl.messaging.contracts import TelegramTarget
 from sibyl.models import Request
-
-
-class TelegramTarget(Request):
-    """The exact checked bot and private user reviewed in the schedule editor."""
-
-    bot_id: int = Field(gt=0, le=2**52, strict=True)
-    user_id: int = Field(gt=0, le=2**52, strict=True)
 
 
 class BriefingSchedule(Request):

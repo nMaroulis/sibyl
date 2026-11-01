@@ -1,0 +1,55 @@
+"""Plain-text summaries from retained alert evidence; no model call or provider refresh."""
+
+
+def alert_text(notice):
+    """Explain the observed trigger, source, time and data environment without trading advice."""
+    kind = notice.get("kind", "price")
+    lines = ["Sibyl alert · " + (notice.get("label") or kind.title())]
+    if kind == "price":
+        comparison = {
+            "above": "at or above",
+            "below": "at or below",
+            "crosses_above": "crossed to or above",
+            "crosses_below": "crossed to or below",
+        }[notice["condition"]]
+        lines += [
+            f"{notice['symbol']} {comparison} {notice['threshold']:g}",
+            f"Observed price: {notice['price']:g}",
+        ]
+    elif kind == "risk":
+        metric = {
+            "value_floor": "Account value floor",
+            "concentration": "Asset concentration",
+            "drawdown": "Observed-value drawdown",
+        }[notice["metric"]]
+        unit = notice.get("currency", "USDT") if notice["metric"] == "value_floor" else "%"
+        lines += [
+            f"{metric} · {notice['action']}",
+            f"Observed: {notice['metric_value']:g} {unit}",
+            f"Limit: {notice['threshold']:g} · recovery: {notice['reset_threshold']:g} {unit}",
+        ]
+        if notice.get("asset"):
+            lines.append("Asset: " + notice["asset"])
+        lines.append("Accounts: " + ", ".join(account["label"] for account in notice["accounts"]))
+        if notice["metric"] == "drawdown":
+            lines.append("Observed value includes cash movements; this is not investment return.")
+    elif kind == "strategy":
+        lines += [
+            f"{notice['name']} · {notice['symbol']} · {notice['timeframe']}",
+            f"{notice['action']} · {notice['mode']} run {notice['job_id'][:8]}",
+            notice.get("reason", "")[:1000],
+        ]
+    else:
+        description = "Read failures observed" if notice["action"] == "failing" else "Successful reads resumed"
+        lines += [f"{description} · {notice['operation']}", notice.get("reason", "")[:1000]]
+    lines += [
+        "",
+        "Source: " + notice["source_label"],
+        "Environment: " + notice["environment"],
+        "Observed: " + notice["observed_at"],
+        "Recorded: " + notice["created_at"],
+        "",
+        "Full evidence: Sibyl → More → Alerts → Inbox.",
+        "This notification does not submit orders or change account settings.",
+    ]
+    return "\n".join(lines)[:12000]

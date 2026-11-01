@@ -62,7 +62,7 @@ module.exports = {
         chapter(
           'Alerts and workspace',
           'Set up alerts and understand privacy and feature coverage.',
-          ['guides/alerts', 'guides/account-risk', 'guides/security', 'guides/feature-coverage'],
+          ['guides/alerts', 'guides/alert-delivery', 'guides/account-risk', 'guides/security', 'guides/feature-coverage'],
         ),
       ],
     ),
@@ -138,6 +138,7 @@ module.exports = {
             'developers/strategy-controls',
             'developers/portfolio-limits',
             'developers/alerts',
+            'developers/alert-delivery',
             'developers/account-risk',
           ],
         ),
