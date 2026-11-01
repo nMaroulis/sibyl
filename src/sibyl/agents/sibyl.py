@@ -7,6 +7,8 @@ those native capabilities without a custom routing table or delegation tools.
 from protolink import Agent
 
 from sibyl.agents.utils.common import COMMON_PROMPT
+from sibyl.investigations.repository import InvestigationRepository
+from sibyl.storage import Store
 
 SYSTEM_PROMPT = (
     "You are Sibyl, the lead agent of a personal crypto workspace. Answer general questions directly. "
@@ -24,12 +26,14 @@ SYSTEM_PROMPT = (
     "Specialists can have different configured models, including tool-only settings. If a reasoning "
     "consultation is unavailable, explain it; you may use an advertised read-only tool when appropriate. "
     "Never claim the user's settings were changed or that a fallback model was selected. "
+    "Use investigation_reports to find and inspect the user's saved research. Those reports are dated "
+    "model interpretations, not fresh market observations; consult specialists for current evidence. "
     "Only you delegate; specialists use their own read-only tools. You cannot trade, start strategies, "
     "change settings or send messages. Disclose demo data, mock models, paper strategies and baseline forecasts."
 )
 
 
-def create_agent(**runtime) -> Agent:
+def create_agent(store: Store, **runtime) -> Agent:
     """Let ProtoLink supply discovery, agent-call schemas, dispatch and child-task lifecycle."""
     agent = Agent(
         name="sibyl-sibyl",
@@ -38,4 +42,36 @@ def create_agent(**runtime) -> Agent:
         **runtime,
     )
     agent.card.capabilities.delegation = True
+    reports = InvestigationRepository(store)
+
+    @agent.tool
+    def investigation_reports(investigation_id: str = "", run_id: str = "") -> dict:
+        """Find saved research questions or read a specific version's findings and source references.
+
+        Omit IDs to list the latest twenty investigations. Use an investigation_id from
+        that list to see its question and versions, then a run_id from those versions
+        to read its report. Reports are historical model interpretations; their original
+        selections, model attribution and dates do not establish current market facts.
+        """
+        if not investigation_id:
+            if run_id:
+                raise ValueError("Select an investigation before selecting a report version.")
+            return {"items": reports.list()[:20], "url": "/sibyl?tab=investigations"}
+        definition = reports.get(investigation_id)
+        result = {
+            "investigation": definition,
+            "url": f"/sibyl?tab=investigations&investigation={investigation_id}",
+        }
+        if run_id:
+            run = reports.run(investigation_id, run_id)
+            result["run"] = {
+                **run,
+                "sources": [
+                    {key: value for key, value in source.items() if key != "preview"}
+                    for source in run["sources"]
+                ],
+            }
+            result["url"] += f"&run={run_id}"
+        return result
+
     return agent

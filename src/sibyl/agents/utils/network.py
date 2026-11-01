@@ -64,7 +64,7 @@ class AgentNetwork:
             key: module.create_agent(owner.services, **self.options(key)) for key, module in modules.items()
         }
         self.agents["sibyl"] = sibyl.create_agent(
-            subagents=list(self.agents.values()), **self.options("sibyl")
+            owner.store, subagents=list(self.agents.values()), **self.options("sibyl")
         )
         self.group = AgentGroup(list(self.agents.values()), registry=self.registry, own_registry=True)
         self.cards = {key: agent.card for key, agent in self.agents.items()}
@@ -260,9 +260,9 @@ class AgentNetwork:
         self.states["sibyl"].conversation.clear_session(native_session)
         self.conversations.delete(session_id)
 
-    async def ask(self, request: SibylRequest) -> dict:
+    async def ask(self, request: SibylRequest, *, configuration: dict | None = None) -> dict:
         """Run the native coordinator with bounded UI admission and a frozen team snapshot."""
-        configuration = freeze(self.owner.models.for_turn("sibyl"))
+        configuration = freeze(configuration or self.owner.models.for_turn("sibyl"))
         status = self.status(configuration)
         if not status["ready"]:
             raise ModelRequired(status["reason"])
@@ -329,15 +329,18 @@ class AgentNetwork:
 
     async def _answer_sibyl(self, request: SibylRequest, configuration: dict) -> dict:
         """Use native session history, events and reports; retain only the UI chat projection."""
+        private = current_request_context()
+        page = private.get("page", {})
         with request_context(
-            {**current_request_context(), "models": configuration, "page": freeze({})},
+            {**private, "models": configuration, "page": freeze(page)},
             inherit=("models", "page"),
         ):
             execution = await self.send(
                 "sibyl",
                 Task.create_infer(
-                    request.message,
+                    private.get("response_instructions", "") + request.message,
                     session_id=self.session_key("sibyl", request.session_id, {}),
+                    output_schema=private.get("response_schema"),
                     budget=RunBudget(
                         max_steps=12, max_llm_calls=10, max_tool_calls=10, max_runtime_seconds=140
                     ),
@@ -350,7 +353,9 @@ class AgentNetwork:
                 "request_id": request.request_id,
                 "status": "completed",
                 "question": request.message,
-                "answer": str(execution.output),
+                "answer": execution.output
+                if isinstance(execution.output, str)
+                else json.dumps(execution.output),
                 "module": "sibyl",
                 "engine": "ProtoLink",
                 "provider": configuration["provider"],
@@ -359,5 +364,10 @@ class AgentNetwork:
                 "mode": "mock" if configuration["provider"] == "mock" else "llm",
                 "run_id": execution.report.context.run_id,
                 "delegations": self.requests.get(request.session_id, request.request_id)["delegations"],
+                **(
+                    {"investigation_id": private["investigation_id"]}
+                    if private.get("investigation_id")
+                    else {}
+                ),
             }
         )

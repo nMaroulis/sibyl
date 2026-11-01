@@ -4,6 +4,8 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 
 ## Endpoints
 
+Saved investigation endpoints are documented in [Investigation reports](investigations.md#api), including explicit run admission, progress, source receipts, version exports and cancellation.
+
 | Method     | Path                                                | Purpose                                                                                    |
 | ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | GET        | `/health` (unversioned)                             | Process readiness and package version                                                      |

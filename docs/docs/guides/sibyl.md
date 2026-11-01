@@ -1,5 +1,7 @@
 # Meet Sibyl
 
+For reusable questions and versioned reports with inspectable sources, open **Sibyl → Investigations**. See [saved investigations](investigations.md) for reruns, comparison and exports.
+
 **Sibyl** is your main conversation with the workspace. Open its gradient star in the floating dock. Ask a general question, investigate a market, compare news with indicators, or discuss your portfolio and strategies.
 
 Sibyl uses [ProtoLink](https://github.com/nMaroulis/protolink)’s automatic registry discovery and native agent delegation. The SDK exposes the registered specialists to its model, which decides which ones to consult. It can answer general questions directly. Questions that need workspace evidence can involve Analyst, Reporter, Accountant, Broker, Chronos, Wiki, Explorer, Technician, Oracle, or Equity Analyst. The choice comes from the model, rather than a keyword router.

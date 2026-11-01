@@ -22,6 +22,7 @@ from sibyl.agents.utils.registry import AgentRegistry
 from sibyl.api.dashboard import mount_dashboard
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
+from sibyl.investigations.service import Investigations
 from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
@@ -69,6 +70,7 @@ class Services:
     ollama: OllamaService
     balance_checks: BalanceChecks
     forecasts: ForecastModels
+    investigations: Investigations
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -106,6 +108,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             forecasts,
         )
         await agents.network.start()
+        investigations = Investigations(store, agents.network)
         messaging = TelegramService(store, agents.network)
         ollama = OllamaService(agents.models)
         trading = ExchangeTrading(market, store)
@@ -134,6 +137,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ollama,
             balance_checks,
             forecasts,
+            investigations,
         )
 
         def background_call(method):
@@ -239,6 +243,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 with suppress(asyncio.CancelledError):
                     await background
             await messaging.close()
+            await investigations.close()
             await asyncio.to_thread(ollama.close)
             await agents.network.close()
             await asyncio.to_thread(account_sync.close)
@@ -386,6 +391,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.bitcoin import router as bitcoin_router
 
     app.include_router(bitcoin_router)
+
+    from sibyl.api.investigations import router as investigations_router
+
+    app.include_router(investigations_router)
 
     @app.get("/health", tags=["System"])
     def health():

@@ -53,6 +53,7 @@ module.exports = {
         ),
         chapter('Sibyl and AI', 'Meet the AI team, connect Telegram and run a local model.', [
           'guides/sibyl',
+          'guides/investigations',
           'guides/oracle',
           'guides/telegram',
           'guides/ollama',
@@ -82,6 +83,7 @@ module.exports = {
             'developers/deployment',
             'developers/distribution',
             'developers/backend-roadmap',
+            'developers/investigations',
           ],
         ),
         chapter(

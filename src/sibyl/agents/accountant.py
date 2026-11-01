@@ -59,9 +59,9 @@ def create_agent(services: Services, **runtime) -> Agent:
     portfolio = services.portfolio
     performance, funding, transfers = services.performance, services.funding, services.transfers
 
-    def portfolio_snapshot(scope: str = "all") -> dict:
+    def portfolio_snapshot(scope: str | None = None) -> dict:
         """Read priced holdings, source labels, warnings, and account allocation."""
-        result = portfolio.overview(scope)
+        result = portfolio.overview(selected("portfolio_scope", scope, "all"))
         return {key: value for key, value in result.items() if key != "history"}
 
     def risk_alerts(rule_id: str = "") -> dict:

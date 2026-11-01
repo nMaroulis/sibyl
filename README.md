@@ -71,6 +71,8 @@ Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Boll
 
 Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Saved conversations, live activity, consultation trails and run details make the work inspectable.
 
+Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. [Saved investigations guide](docs/docs/guides/investigations.md).
+
 Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
 
 | Agent | Focus |

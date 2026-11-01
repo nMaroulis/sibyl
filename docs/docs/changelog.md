@@ -47,6 +47,15 @@ docker compose up --build
 
 ## Release notes
 
+## [2.2.0] - Unreleased
+
+### Added
+
+- Saved investigations in **Sibyl → Investigations**: reusable questions, progressive starting-context controls, native specialist collaboration, structured findings, uncertainty and follow-up questions.
+- Versioned reruns with fresh conversations and frozen team-model choices, consultation progress, exact-request Stop, restart interruption, saved history, side-by-side comparison and JSON export.
+- Inspectable source receipts from retained native ProtoLink evidence, with actual tool attribution, source links, retrieval times, bounded previews and fingerprints. Invalid structured answers or invented tool citations fail explicitly; uncited interpretations remain labeled.
+- A native read-only Sibyl tool for finding previous investigations and reading dated reports, plus user/developer guides and lifecycle, privacy and collaboration tests.
+
 ## [2.1.0] - 2026-11-01
 
 :::note[Release summary]

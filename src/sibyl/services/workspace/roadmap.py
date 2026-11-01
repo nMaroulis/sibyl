@@ -95,7 +95,7 @@ AREAS = [
         "name": "Sibyl & messaging",
         "status": "partial",
         "priority": "next",
-        "working": "Native ProtoLink discovery/delegation, saved chats, streamed tool/consultation activity, Stop/outcomes and on-demand native run details with available token/cost metrics, and a direct-HTTP Telegram client with private-user binding, encrypted configuration and durable delivery outcomes.",
+        "working": "Native ProtoLink discovery/delegation, saved chats, streamed consultation activity, Stop/outcomes and native run details; saved investigations with structured reports, actual tool-source receipts, frozen team models, versioned reruns, comparison and JSON export. Direct-HTTP Telegram supports private-user binding, encrypted configuration and durable delivery outcomes.",
         "pending": [
             "User-facing token streaming, broader repeated/model-specific routing and grounding evaluation and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3).",
             "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
