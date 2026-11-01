@@ -7,8 +7,8 @@ import pytest
 from test_transfer_basis import fill, row
 from test_transfer_reconciliation import STAMP, change, save_event
 
-from sibyl.services.transfer_allocation import TransferAllocation, allocate
-from sibyl.services.transfer_reconciliation import TransferConfirm, TransferConflict
+from sibyl.services.transfers.allocation import TransferAllocation, allocate
+from sibyl.services.transfers.reconciliation import TransferConfirm, TransferConflict
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def events(services, *, out_quantity=1, in_quantity=0.9, out_fee=0.1, in_fee=0, 
 
 
 def body(out, inc, allocation=None, note="Verified amount conventions and distinct fee charges."):
-    from sibyl.services.transfer_reconciliation import fingerprint
+    from sibyl.services.transfers.reconciliation import fingerprint
 
     return TransferConfirm(
         outgoing_id=out["id"],

@@ -8,9 +8,9 @@ import json
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT, Services, page_context, selected
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.accountant import GUIDES, Topic
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, page_context, selected
 
 NAME = "Accountant"
 TAGLINE = "Know what you own"

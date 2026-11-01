@@ -6,9 +6,9 @@ import pytest
 from test_account_performance import execution, retained
 from test_transfer_reconciliation import STAMP, change, request, save_event
 
-from sibyl.services.funding_ledger import FundingLedger
-from sibyl.services.performance import AccountPerformance, OpeningInventory
-from sibyl.services.transfer_reconciliation import TransferReconciliation
+from sibyl.services.funding.ledger import FundingLedger
+from sibyl.services.portfolio.performance import AccountPerformance, OpeningInventory
+from sibyl.services.transfers.reconciliation import TransferReconciliation
 
 
 @pytest.fixture
@@ -271,15 +271,15 @@ def test_deposit_before_first_fill_is_included_in_coverage(basis):
 def test_transfer_and_dependency_budgets_reject_instead_of_truncating(basis, monkeypatch):
     fill(basis, "north", 1, stamp=STAMP - 1000)
     link(basis)
-    monkeypatch.setattr("sibyl.services.performance.MAX_FILLS", 0)
+    monkeypatch.setattr("sibyl.services.portfolio.performance.MAX_FILLS", 0)
     with pytest.raises(ValueError, match="dependencies"):
         basis.report(account_id="daily")
-    monkeypatch.setattr("sibyl.services.performance.MAX_FILLS", 20_000)
-    monkeypatch.setattr("sibyl.services.transfer_basis.MAX_LINKS", 0)
+    monkeypatch.setattr("sibyl.services.portfolio.performance.MAX_FILLS", 20_000)
+    monkeypatch.setattr("sibyl.services.transfers.basis.MAX_LINKS", 0)
     with pytest.raises(ValueError, match="dependency budget"):
         basis.report()
-    monkeypatch.setattr("sibyl.services.transfer_basis.MAX_LINKS", 2000)
-    monkeypatch.setattr("sibyl.services.transfer_basis.MAX_FUNDING", 0)
+    monkeypatch.setattr("sibyl.services.transfers.basis.MAX_LINKS", 2000)
+    monkeypatch.setattr("sibyl.services.transfers.basis.MAX_FUNDING", 0)
     with pytest.raises(ValueError, match="Funding dependency"):
         basis.report()
 
@@ -378,7 +378,7 @@ def test_transfer_only_recipient_can_get_balance_checked_mark(client, monkeypatc
     monkeypatch.setattr(service.market, "metadata", lambda: {"source": "binance"})
     monkeypatch.setattr(service.market, "account_balances", lambda *_: [{"asset": "BTC", "total": 1}])
     monkeypatch.setattr(
-        "sibyl.services.performance.Valuation.price",
+        "sibyl.services.portfolio.performance.Valuation.price",
         lambda _, asset: {"price": 150 if asset == "BTC" else 1, "status": "fresh", "route": []},
     )
     result = row(service.performance, destination.id, mark=True)

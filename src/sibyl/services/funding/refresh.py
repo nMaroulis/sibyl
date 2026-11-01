@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 
-from sibyl.services.account_sync import environment
+from sibyl.services.accounts.sync import environment
 from sibyl.services.funding.contracts import FundingRefreshConflict, refresh_streams
 from sibyl.services.funding.journal import RefreshJournal
 from sibyl.services.funding.state import account_version

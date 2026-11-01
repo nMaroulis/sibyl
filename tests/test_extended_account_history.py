@@ -11,8 +11,8 @@ from sibyl.exchanges import create_client
 from sibyl.exchanges.funding import DAY, fetch_funding_page
 from sibyl.exchanges.history import TradePage
 from sibyl.exchanges.registry import provider_catalog
-from sibyl.services.account_sync import AccountSync
-from sibyl.services.market import Market
+from sibyl.services.accounts.sync import AccountSync
+from sibyl.services.markets.service import Market
 
 START = 1_704_067_200_000
 END = START + 30 * DAY

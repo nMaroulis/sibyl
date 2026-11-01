@@ -7,9 +7,9 @@ from protolink import create_llm
 from protolink.transport.runtime_transport import RuntimeTransport
 from pydantic import SecretStr
 
-from sibyl.agents.registry import ROLES
+from sibyl.agents.utils.registry import ROLES
 from sibyl.api.app import create_app
-from sibyl.services.llm_settings import ModelSettingsRequest
+from sibyl.services.workspace.llm_settings import ModelSettingsRequest
 
 
 def model(client):
@@ -64,7 +64,7 @@ def test_missing_key_and_dependency_are_setup_states(client, monkeypatch):
     monkeypatch.setattr(models, "resolve", lambda agent=None: config)
     assert "API key" in client.get("/api/v1/sibyl").json()["reason"]
     config.update(provider="llama.cpp-local", model="/not/a/real/model.gguf")
-    monkeypatch.setattr("sibyl.agents.providers.find_spec", lambda name: None)
+    monkeypatch.setattr("sibyl.agents.utils.providers.find_spec", lambda name: None)
     assert "dependency" in client.get("/api/v1/sibyl").json()["reason"]
 
 
@@ -323,7 +323,7 @@ def test_sibyl_and_channel_endpoints_require_workspace_access(settings):
 def test_concurrent_turns_and_deletion_are_rejected_while_chat_is_running(client, monkeypatch):
     import asyncio
 
-    from sibyl.agents.conversations import SibylRequest
+    from sibyl.agents.utils.conversations import SibylRequest
 
     model(client)
     network = client.app.state.services.agents.network
@@ -387,7 +387,7 @@ def test_blocking_model_does_not_block_health_or_other_api_requests(client, monk
     import threading
     import time
 
-    from sibyl.agents.conversations import SibylRequest
+    from sibyl.agents.utils.conversations import SibylRequest
 
     model(client)
     started, release = (threading.Event(), threading.Event())

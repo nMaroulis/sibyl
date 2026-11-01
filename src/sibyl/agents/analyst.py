@@ -9,11 +9,11 @@ from typing import Annotated
 from protolink import Agent
 from pydantic import Field
 
-from sibyl.agents.common import COMMON_PROMPT, Services, selected
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.analyst import GUIDES, Topic
-from sibyl.services.analytics import analyze
-from sibyl.services.market import TIMEFRAMES
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
+from sibyl.services.markets.analytics import analyze
+from sibyl.services.markets.service import TIMEFRAMES
 
 NAME = "Analyst"
 TAGLINE = "Find the signal"

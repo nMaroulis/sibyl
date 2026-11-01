@@ -21,7 +21,7 @@ from sibyl.news.sentiment import ASSETS, analyze_article, extract_summary, senti
 NewsMode = Literal["demo", "live"]
 
 if TYPE_CHECKING:
-    from sibyl.services.data_settings import DataSettings
+    from sibyl.services.workspace.data_settings import DataSettings
 
 
 class NewsService:

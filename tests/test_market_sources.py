@@ -12,8 +12,8 @@ from sibyl.config import Settings
 from sibyl.exchanges.demo import DemoClient
 from sibyl.market_data.clients import CoinGeckoClient, CryptoCompareClient
 from sibyl.models import ConnectionCreate
-from sibyl.services.data_settings import DataSettings, MarketSettingsRequest
-from sibyl.services.market import Market
+from sibyl.services.markets.service import Market
+from sibyl.services.workspace.data_settings import DataSettings, MarketSettingsRequest
 from sibyl.storage import Store
 
 
@@ -100,7 +100,7 @@ def test_saved_account_client_reuses_test_environment(settings, store, monkeypat
         seen.append((provider, kwargs))
         return DemoClient(store)
 
-    monkeypatch.setattr("sibyl.services.market.create_client", create)
+    monkeypatch.setattr("sibyl.services.markets.service.create_client", create)
     with market.snapshot(f"connection:{account.id}"):
         assert market.metadata()["environment"] == "test"
         assert market.client() is market.client(account)
@@ -110,7 +110,7 @@ def test_saved_account_client_reuses_test_environment(settings, store, monkeypat
 
 def test_page_source_override_isolated_and_exact_quote_labels(client, monkeypatch):
     market = client.app.state.services.market
-    monkeypatch.setattr("sibyl.services.market.create_client", lambda *a, **kw: DemoClient(market.store))
+    monkeypatch.setattr("sibyl.services.markets.service.create_client", lambda *a, **kw: DemoClient(market.store))
     response = client.get("/api/v1/markets?source=kraken")
     assert response.status_code == 200 and response.json()["source"] == "kraken"
     assert client.get("/api/v1/settings/market").json()["active"]["id"] == "demo"
@@ -123,7 +123,7 @@ def test_page_source_override_isolated_and_exact_quote_labels(client, monkeypatc
 def test_source_snapshot_survives_concurrent_settings_change(settings, store, monkeypatch):
     preferences = DataSettings(settings, store)
     market = Market(settings, store, preferences)
-    monkeypatch.setattr("sibyl.services.market.create_client", lambda *a, **kw: DemoClient(store))
+    monkeypatch.setattr("sibyl.services.markets.service.create_client", lambda *a, **kw: DemoClient(store))
     entered, updated = Event(), Event()
 
     def read():
@@ -310,7 +310,7 @@ def test_cache_does_not_mix_sources_and_quote_survives_history_failure(settings,
 
     preferences = DataSettings(settings, store)
     market = Market(settings, store, preferences)
-    monkeypatch.setattr("sibyl.services.market.create_client", lambda provider, **kwargs: Quotes(provider))
+    monkeypatch.setattr("sibyl.services.markets.service.create_client", lambda provider, **kwargs: Quotes(provider))
     for source, expected in [("kraken", 123), ("coinbase", 456), ("kraken", 123)]:
         with market.snapshot(source):
             overview = market.quotes(["BTC/USDT", "ETH/USDT"])

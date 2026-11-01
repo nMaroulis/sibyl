@@ -1,5 +1,5 @@
 {
-  "_source": "Public names from src/sibyl/exchanges/catalog.py, agents/providers.py and messaging/catalog.py. Messaging availability follows messaging/settings.py. This is a static documentation snapshot; it contains no workspace configuration.",
+  "_source": "Public names from src/sibyl/exchanges/catalog.py, agents/utils/providers.py and messaging/catalog.py. Messaging availability follows messaging/settings.py. This is a static documentation snapshot; it contains no workspace configuration.",
   "exchanges": [
     {
       "id": "binance",

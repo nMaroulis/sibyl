@@ -9,8 +9,8 @@ from sibyl.config import Settings
 from sibyl.exchanges import create_client
 from sibyl.exchanges.catalog import TEST_ENVIRONMENTS
 from sibyl.models import ConnectionCreate
-from sibyl.services.market import Market
-from sibyl.services.portfolio import Portfolio
+from sibyl.services.markets.service import Market
+from sibyl.services.portfolio.service import Portfolio
 
 
 @pytest.mark.parametrize("spec", TEST_ENVIRONMENTS, ids=lambda spec: spec.id)

@@ -16,8 +16,8 @@ from sibyl.exchanges.demo import DemoClient
 from sibyl.exchanges.providers import CLIENTS
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.models import ConnectionCreate, ExchangeOrderRequest
-from sibyl.services.market import Market
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.markets.service import Market
+from sibyl.services.trading.service import ExchangeTrading
 
 
 class Transport:

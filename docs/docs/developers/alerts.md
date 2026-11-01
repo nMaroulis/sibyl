@@ -20,7 +20,7 @@ The service waits for an in-flight check during shutdown before closing shared m
 
 ## Conditions and repetition
 
-`services/alert_conditions.py` contains deterministic state transitions, separate from provider reads and SQLite commits.
+`services/alerts/conditions.py` contains deterministic state transitions, separate from provider reads and SQLite commits.
 
 - `above` and `below` use inclusive `>=` / `<=`; a one-time rule can notify on its first fresh quote.
 - `crosses_above` requires a previous quote strictly below the threshold, then one at or above it. `crosses_below` is symmetric. A first quote only establishes a baseline; starting on the qualifying side does not trigger.
@@ -53,7 +53,7 @@ Paths are relative to `/api/v1` and use existing workspace access controls. Muta
 | GET    | `/notifications?limit=20&offset=0`        | Paginated history (limit 1–100), total and unread counts                                                                                                              |
 | POST   | `/notifications/{id}/read`                | Mark one read, preserving original first-read time                                                                                                                    |
 | POST   | `/notifications/read-all`                 | Acknowledge current unread rows, without removing history                                                                                                             |
-| GET    | `/roadmap`                                | Audited implementation scope from `services/roadmap.py`; multi-user explicitly deferred                                                                               |
+| GET    | `/roadmap`                                | Audited implementation scope from `services/workspace/roadmap.py`; multi-user explicitly deferred                                                                     |
 
 The API accepts no arbitrary destination, webhook, credential or trade field. Credentials stay in the existing encrypted source profiles. The rule payload and trigger evidence contain source identity and environment, never provider keys or raw transport errors.
 
@@ -77,13 +77,13 @@ The dedicated lifespan task is independent of the provider-backed price loop. Ea
 
 Strategy payloads retain rule revision/name, job ID, algorithm/pair/interval, source/mode/environment/account label, classification and original journal action, status, reason, event ID/time and receipt time. Credentials, balances and complete job/order payloads are not copied. UI helpers render the mixed inbox and route strategy entries to their exact monitor. Read acknowledgments cover both kinds without deleting history. Broker has a native read-only `strategy_alerts` evidence tool; Technician's `settings_guide(section="alerts")` explains setup. Neither can create rules or change runs.
 
-| Method | Path | Contract |
-| --- | --- | --- |
-| GET | `/strategy-alerts?include_archived=false&offset=0&job_id=...` | Optional exact-run filter; 50-row pages, global non-archived budget and category descriptions; local reads only |
-| POST | `/strategy-alerts` | Exact saved `job_id`, `events: [attention/lifecycle]`, optional single-line label; returns 201, watching future events |
-| POST | `/strategy-alerts/{id}/edit` | Full create configuration plus positive integer `revision`; saves paused, conflict 409 |
-| POST | `/strategy-alerts/{id}/action` | `action: pause/arm/archive/restore`, reviewed `revision`; never a strategy control |
-| GET | `/strategy-alerts/example` | Isolated sample rule/notification, no persistence |
+| Method | Path                                                          | Contract                                                                                                               |
+| ------ | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/strategy-alerts?include_archived=false&offset=0&job_id=...` | Optional exact-run filter; 50-row pages, global non-archived budget and category descriptions; local reads only        |
+| POST   | `/strategy-alerts`                                            | Exact saved `job_id`, `events: [attention/lifecycle]`, optional single-line label; returns 201, watching future events |
+| POST   | `/strategy-alerts/{id}/edit`                                  | Full create configuration plus positive integer `revision`; saves paused, conflict 409                                 |
+| POST   | `/strategy-alerts/{id}/action`                                | `action: pause/arm/archive/restore`, reviewed `revision`; never a strategy control                                     |
+| GET    | `/strategy-alerts/example`                                    | Isolated sample rule/notification, no persistence                                                                      |
 
 Paths use `/api/v1`, existing workspace access controls and `Cache-Control: no-store`. Schemas reject unknown execution/delivery fields. This remains one local API worker, in-app delivery and retained journal catch-up, not a distributed scheduler, worker liveness alarm, order settlement guarantee or external notification system.
 
@@ -97,13 +97,13 @@ Each rule pins a source, snapshots its safe display metadata and keeps per-opera
 
 Creation/resume establishes a fresh global journal-tail baseline and clears incidents/counts. Editing preserves ID/notifications, checks revision and saves paused. Pausing/archiving never changes a source/account, and restore leaves the rule paused. There is one non-archived rule per source and a separate 50-rule budget. A retained removed source can be watched, but no alert itself produces traffic. Idle sources, dropped observations and silent worker outages cannot be inferred as healthy or failed. Notification payloads use `kind: connection`, operation, action `failing/recovered`, source/environment, safe reason/category, thresholds/counts, original event ID/time and receipt time. Source settings links replace strategy-monitor links for this kind. Technician has a native read-only `connection_alerts` tool; it cannot save/evaluate watches.
 
-| Method | Path | Contract |
-| --- | --- | --- |
-| GET | `/connection-alerts?include_archived=false&offset=0` | Local pages of 50, budgets, safe source choices and recording status; no provider calls |
-| POST | `/connection-alerts` | `source`, optional strict `failures_required` (1–10, default 3), `successes_required` (1–5, default 2), `notify_recovery` (boolean, default true), `label` (single-line, max 80); returns 201 |
-| POST | `/connection-alerts/{id}/edit` | Full create settings + positive integer `revision`; saves paused |
-| POST | `/connection-alerts/{id}/action` | `action: pause/arm/archive/restore` + `revision`; stale editors return 409 |
-| GET | `/connection-alerts/example` | Isolated illustrative rule/inbox; no writes or probes |
+| Method | Path                                                 | Contract                                                                                                                                                                                      |
+| ------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/connection-alerts?include_archived=false&offset=0` | Local pages of 50, budgets, safe source choices and recording status; no provider calls                                                                                                       |
+| POST   | `/connection-alerts`                                 | `source`, optional strict `failures_required` (1–10, default 3), `successes_required` (1–5, default 2), `notify_recovery` (boolean, default true), `label` (single-line, max 80); returns 201 |
+| POST   | `/connection-alerts/{id}/edit`                       | Full create settings + positive integer `revision`; saves paused                                                                                                                              |
+| POST   | `/connection-alerts/{id}/action`                     | `action: pause/arm/archive/restore` + `revision`; stale editors return 409                                                                                                                    |
+| GET    | `/connection-alerts/example`                         | Isolated illustrative rule/inbox; no writes or probes                                                                                                                                         |
 
 All paths use the `/api/v1` prefix, workspace authorization and `Cache-Control: no-store`. Unknown/Demo source IDs return 400; strict invalid/unknown body fields return 422. Shared notification acknowledgment/pagination supports all three kinds without deleting evidence.
 

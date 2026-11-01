@@ -6,7 +6,7 @@ those native capabilities without a custom routing table or delegation tools.
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT
+from sibyl.agents.utils.common import COMMON_PROMPT
 
 SYSTEM_PROMPT = (
     "You are Sibyl, the lead agent of a personal crypto workspace. Answer general questions directly. "

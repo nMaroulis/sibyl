@@ -10,7 +10,7 @@ from sibyl.news.fear_greed import FearGreed
 from sibyl.news.providers import CryptoSlateWebProvider, NewsAPIProvider
 from sibyl.news.repository import NewsRepository
 from sibyl.news.service import NewsService
-from sibyl.services.data_settings import DataSettings, NewsSettingsRequest
+from sibyl.services.workspace.data_settings import DataSettings, NewsSettingsRequest
 from sibyl.storage import Store
 
 NOW = datetime(2026, 10, 20, 12, tzinfo=UTC)

@@ -209,7 +209,7 @@ def test_broker_reads_saved_sampling_evidence_through_native_protolink_without_s
     report = client.post("/api/v1/strategies/validations", json=api_body(client)).json()
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *a, **kw: create_llm(
             "mock",
             sequential_responses=[

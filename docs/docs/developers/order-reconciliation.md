@@ -26,7 +26,7 @@ Provider permissions, retention and actual authenticated account acceptance stil
 
 ## Identity, validation and atomicity
 
-`services/order_reconciliation.py` owns the import checkpoints in `order_fill_sync`. Each successful page validates every row before committing any execution. Account identity comes from the reviewed intent, and the saved exchange/environment must still match the connection. Rows must have the exact symbol, side and native order ID, a usable native fill ID, finite positive quantity/price, valid execution time and bounded fee records. Conflicting duplicate IDs and IDs already attributed to another order reject the page. Repeated or cyclic cursors reject the page.
+`services/trading/reconciliation.py` owns the import checkpoints in `order_fill_sync`. Each successful page validates every row before committing any execution. Account identity comes from the reviewed intent, and the saved exchange/environment must still match the connection. Rows must have the exact symbol, side and native order ID, a usable native fill ID, finite positive quantity/price, valid execution time and bounded fee records. Conflicting duplicate IDs and IDs already attributed to another order reject the page. Repeated or cyclic cursors reject the page.
 
 The page's upserts and cursor commit in one SQLite transaction. A failed transaction repeats that page after restart. `AccountLedger.upsert_fills()` shares the existing account + exact market + native fill identity with ordinary Account history imports, so either path can revisit or correct the same execution without doubling it. Reconciliation never manufactures a fill from cumulative quantity, average price or an order preview. Canceled/rejected orders remain lifecycle observations; only actual executions enter the fill ledger.
 
@@ -64,14 +64,14 @@ Quantities use Decimal comparisons with tolerance `max(1e-10, requested quantity
 
 All paths start with `/api/v1`.
 
-| Method | Path                                           | Effect                                                                                  |
-| ------ | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
-| GET    | `/exchange-orders`                             | Latest 100 intents, enriched with local reconciliation summaries. No remote reads.      |
+| Method | Path                                           | Effect                                                                                             |
+| ------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| GET    | `/exchange-orders`                             | Latest 100 intents, enriched with local reconciliation summaries. No remote reads.                 |
 | GET    | `/exchange-orders/{id}/reconciliation`         | Coherent `{order, fill_revision, reconciliation, fills, has_more}` retained snapshot; no new jobs. |
-| POST   | `/exchange-orders/{id}/reconcile`              | Native status check and one exact-order execution page.                                 |
-| POST   | `/exchange-orders/{id}/refresh`                | Existing status-check response, now with one execution page and reconciliation summary. |
-| POST   | `/exchange-orders/{id}/reconcile/tracking`     | `{enabled: boolean}` changes only persisted execution-read scheduling.                  |
-| GET    | `/exchange-orders/example/{id}/reconciliation` | Isolated illustrative evidence, without account/ledger writes.                          |
+| POST   | `/exchange-orders/{id}/reconcile`              | Native status check and one exact-order execution page.                                            |
+| POST   | `/exchange-orders/{id}/refresh`                | Existing status-check response, now with one execution page and reconciliation summary.            |
+| POST   | `/exchange-orders/{id}/reconcile/tracking`     | `{enabled: boolean}` changes only persisted execution-read scheduling.                             |
+| GET    | `/exchange-orders/example/{id}/reconciliation` | Isolated illustrative evidence, without account/ledger writes.                                     |
 
 ## Remaining work
 

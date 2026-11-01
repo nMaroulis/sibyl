@@ -9,9 +9,9 @@ from typing import Annotated
 from protolink import Agent
 from pydantic import Field
 
-from sibyl.agents.common import COMMON_PROMPT, Services, page_context
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.explorer import GUIDES, Topic
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, page_context
 
 NAME = "Explorer"
 TAGLINE = "Follow the chain"

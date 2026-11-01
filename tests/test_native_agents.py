@@ -8,7 +8,7 @@ import pytest
 from agent_helpers import coordinator_factory, delegate
 from protolink import Task, create_llm, current_request_context
 
-from sibyl.agents.conversations import SibylRequest
+from sibyl.agents.utils.conversations import SibylRequest
 from sibyl.models import AgentRequest
 
 
@@ -19,7 +19,7 @@ def action(tool, **args):
 def use_model(client, monkeypatch, actions):
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=actions)
+        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=actions)
     )
 
 
@@ -135,7 +135,7 @@ def test_reporter_selects_cached_tools_instead_of_preloaded_observations(client,
         return create_llm("mock", response_callback=respond)
 
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     response = client.post(
         "/api/v1/agents/ask",
         json={
@@ -301,7 +301,7 @@ def test_concurrent_requests_to_same_agent_keep_history_and_page_defaults_isolat
 
         return create_llm("mock", response_callback=respond)
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     eth = client.portal.start_task_soon(
         owner.ask,
         AgentRequest(
@@ -420,7 +420,7 @@ def test_sibyl_automatically_sees_new_registry_agent_and_calls_its_advertised_to
         return create_llm("mock", response_callback=respond)
 
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     try:
         response = client.post("/api/v1/sibyl/ask", json={"message": "Read the new specialist's fact"})
         assert response.status_code == 200, response.text

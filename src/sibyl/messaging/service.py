@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import httpx
 
-from sibyl.agents.conversations import SibylRequest
+from sibyl.agents.utils.conversations import SibylRequest
 from sibyl.messaging.settings import MessagingSettings
 from sibyl.messaging.telegram import TelegramClient, TelegramError
 

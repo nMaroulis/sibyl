@@ -13,15 +13,15 @@ from agent_helpers import delegate
 from fastapi.testclient import TestClient
 from protolink import Task, create_llm, current_request_context, request_context
 
-from sibyl.agents.common import freeze
+from sibyl.agents.utils.common import freeze
 from sibyl.api.app import create_app
 from sibyl.models import AgentRequest
-from sibyl.services.llm_settings import ModelSettingsRequest
+from sibyl.services.workspace.llm_settings import ModelSettingsRequest
 
 
 def test_native_factories_are_lazy_and_tools_remain_ordinary_functions(settings, monkeypatch):
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm", lambda *_a, **_kw: pytest.fail("Startup created a provider")
+        "sibyl.agents.utils.registry.create_llm", lambda *_a, **_kw: pytest.fail("Startup created a provider")
     )
     with TestClient(create_app(settings)) as client:
         network = client.app.state.services.agents.network
@@ -46,7 +46,7 @@ def test_private_snapshot_is_immutable_and_not_inherited_across_runtime_transpor
         calls.append(kw.get("model"))
         return create_llm("mock", default_response="Native independent answer")
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", model)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", model)
     snapshot = freeze(owner.models.for_turn("reporter"))
     with pytest.raises(TypeError):
         snapshot["_agents"]["reporter"]["model"] = "mutated"
@@ -84,7 +84,7 @@ def test_queued_request_keeps_the_accepted_team_configuration(client, monkeypatc
         selected.append((current_request_context()["agent_id"], kw["model"]))
         return create_llm("mock", default_response="The accepted model answered")
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", model)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", model)
     semaphore = owner._semaphore
     client.portal.call(semaphore.acquire)
     client.portal.call(semaphore.acquire)
@@ -115,7 +115,7 @@ def test_native_reports_keep_child_evidence_once_and_the_ui_uses_only_the_root_a
         )
         return create_llm("mock", sequential_responses=actions)
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", model)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", model)
     response = client.post("/api/v1/sibyl/ask", json={"message": "How do I change news sources?"})
     assert response.status_code == 200, response.text
     reply = response.json()
@@ -141,7 +141,7 @@ def test_native_evidence_keeps_the_actual_tool_return_before_context_truncation(
     actual = {"id": "retained-story", "excerpt": "Sourced text. " * 2000, "source": "test-fixture"}
     monkeypatch.setattr(owner.services.research.news_service, "article", lambda *_: actual.copy())
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *_a, **_kw: create_llm(
             "mock",
             sequential_responses=[
@@ -233,7 +233,7 @@ def test_provider_credentials_are_redacted_from_native_reports(client, monkeypat
     def failure(*_a, **_kw):
         raise RuntimeError("Provider rejected " + secret)
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", failure)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", failure)
     response = client.post("/api/v1/agents/ask", json={"module": "reporter", "message": "Hello"})
     assert response.status_code == 502 and secret not in response.text
     network = client.app.state.services.agents.network
@@ -256,7 +256,7 @@ def test_native_conversation_history_survives_restart_and_delete_clears_the_sess
 
         return create_llm("mock", response_callback=answer)
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", model)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", model)
     first = client.post("/api/v1/sibyl/ask", json={"message": "unique-native-first-turn"}).json()
     with TestClient(create_app(settings)) as restarted:
         second = restarted.post(

@@ -12,7 +12,7 @@ from sibyl.accounting.funding import FundingReviews, balance_effect
 from sibyl.accounting.funding.reviews import FundingReviewConflict, ReviewFunding, ReviewVersion
 from sibyl.accounting.funding.rules import fingerprint
 from sibyl.exchanges.funding import _binance_row
-from sibyl.services.funding_ledger import FundingLedger
+from sibyl.services.funding.ledger import FundingLedger
 
 
 def event(**changes):

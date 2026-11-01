@@ -9,10 +9,10 @@ from typing import Literal
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT, Services
+from sibyl.agents.utils.common import COMMON_PROMPT, Services
 from sibyl.exchanges.catalog import CATALOG, exchange_spec
 from sibyl.exchanges.registry import provider_catalog
-from sibyl.services.llm_settings import ModelSettings
+from sibyl.services.workspace.llm_settings import ModelSettings
 
 NAME = "Technician"
 TAGLINE = "Keep everything connected"

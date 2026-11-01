@@ -18,8 +18,8 @@ from sibyl.alerts.risk.service import RiskAlerts
 from sibyl.exchanges.demo import DemoClient
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import ConnectionCreate
-from sibyl.services.data_settings import DataSettings, MarketSettingsRequest
-from sibyl.services.market import Market
+from sibyl.services.markets.service import Market
+from sibyl.services.workspace.data_settings import DataSettings, MarketSettingsRequest
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ def risk(settings, store, monkeypatch):
         def now(cls, tz=None):
             return datetime.fromtimestamp(wall[0], tz or UTC)
 
-    monkeypatch.setattr("sibyl.services.valuation.datetime", Time)
+    monkeypatch.setattr("sibyl.services.portfolio.valuation.datetime", Time)
 
     class Quotes(DemoClient):
         def load_markets(self):

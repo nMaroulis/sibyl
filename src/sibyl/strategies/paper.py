@@ -9,8 +9,8 @@ from uuid import uuid4
 from sibyl.alerts.strategies import StrategyAlerts
 from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.models import BacktestRequest
-from sibyl.services.analytics import performance_metrics
-from sibyl.services.market import Market
+from sibyl.services.markets.analytics import performance_metrics
+from sibyl.services.markets.service import Market
 from sibyl.storage import Store
 from sibyl.strategies.journal import StrategyJournal
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators

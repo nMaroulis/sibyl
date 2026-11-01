@@ -38,17 +38,23 @@ The migration follows the published [application-runtime guide](https://github.c
 
 ## Files and responsibilities
 
-| File                              | Responsibility                                                                  |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `<module>.py`                     | Specialist declaration, prompt and typed read-only functions                    |
-| `sibyl.py`                        | Coordinator prompt; native delegation enabled                                   |
-| `guides/`                         | Curated page instructions retrieved through help tools                          |
-| `common.py`                       | Domain service references, immutable snapshots and private page defaults        |
-| `registry.py`                     | Domain wiring, lazy model factory and UI reply projection                       |
-| `network.py`                      | `AgentGroup`, admission, private scope, native handles and UI chat coordination |
-| `presentation.py`                 | Format native events and `ToolEvidence` into consultation cards                 |
-| `snapshots.py`                    | Deterministic factual formatting when no model is selected                      |
-| `conversations.py`, `requests.py` | UI chat cards, queued-request IDs, progress and durable outcomes                |
+Paths below are relative to `src/sibyl/agents/`. The top-level Python files declare
+the agents. Shared runtime/model code lives in `utils/`, and page-help content stays
+in `guides/`.
+
+| File                                             | Responsibility                                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `<module>.py`                                    | Specialist declaration, prompt and typed read-only functions                    |
+| `sibyl.py`                                       | Coordinator prompt; native delegation enabled                                   |
+| `guides/`                                        | Curated page instructions retrieved through help tools                          |
+| `utils/common.py`                                | Domain service references, immutable snapshots and private page defaults        |
+| `utils/registry.py`                              | Domain wiring, lazy model factory and UI reply projection                       |
+| `utils/network.py`                               | `AgentGroup`, admission, private scope, native handles and UI chat coordination |
+| `utils/model_selection.py`, `utils/providers.py` | Model assignments, provider catalog and passive readiness                       |
+| `utils/presentation.py`                          | Format native events and `ToolEvidence` into consultation cards                 |
+| `utils/reporting.py`, `utils/streaming.py`       | Public run summaries and streaming response formatting                          |
+| `utils/snapshots.py`                             | Deterministic factual formatting when no model is selected                      |
+| `utils/conversations.py`, `utils/requests.py`    | UI chat cards, queued-request IDs, progress and durable outcomes                |
 
 `background_tool`, `WorkspaceLLM`, the custom `Turn`/`ContextVar` and `ChatTelemetry` have been removed. UI records do not supply model conversation history or collect tool execution receipts.
 
@@ -58,7 +64,7 @@ Each module follows this pattern:
 
 ```python
 from protolink import Agent
-from sibyl.agents.common import COMMON_PROMPT, Services, selected
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
 
 
 def create_agent(services: Services, **runtime) -> Agent:

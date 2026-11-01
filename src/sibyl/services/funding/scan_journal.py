@@ -7,11 +7,11 @@ from uuid import uuid4
 
 from sibyl.accounting.funding.versions import source_version as fingerprint
 from sibyl.exchanges.funding import DAY
+from sibyl.services.accounts.ledger import now_iso
 from sibyl.services.funding.contracts import SCAN_PAGE_LIMIT, SCAN_SOURCE_LIMIT
 from sibyl.services.funding.coverage import cover_gaps
+from sibyl.services.funding.ledger import validated_page, write_event
 from sibyl.services.funding.state import FundingJobs, account_version
-from sibyl.services.funding_ledger import validated_page, write_event
-from sibyl.services.ledger import now_iso
 
 
 class ScanJournal(FundingJobs):

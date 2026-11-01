@@ -4,7 +4,7 @@ import pandas as pd
 
 from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.models import BacktestRequest
-from sibyl.services.analytics import performance_metrics
+from sibyl.services.markets.analytics import performance_metrics
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
 
 

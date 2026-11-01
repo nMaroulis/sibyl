@@ -35,8 +35,8 @@ Additional native contracts: [OKX fill history](https://www.okx.com/docs-v5/en/#
 ## Ownership and persistence
 
 - `exchanges/history.py` defines `TradePage` and original native page adapters; `exchanges/spot_history.py` implements the four additional reviewed contracts and provider limits. `ExchangeClient.fetch_trade_page()` is separate from bounded `fetch_my_trades()`.
-- `services/ledger.py` owns `account_fills` and `account_sync` in workspace `sibyl.db`. Fills retain execution values, source/environment, native fill/order IDs, and fee currencies/signs. Raw provider responses and credentials are excluded.
-- `services/account_sync.py` validates selections, schedules pages, sanitizes failures and exposes public progress. Opaque cursors and a short cursor-loop guard stay server-side.
+- `services/accounts/ledger.py` owns `account_fills` and `account_sync` in workspace `sibyl.db`. Fills retain execution values, source/environment, native fill/order IDs, and fee currencies/signs. Raw provider responses and credentials are excluded.
+- `services/accounts/sync.py` validates selections, schedules pages, sanitizes failures and exposes public progress. Opaque cursors and a short cursor-loop guard stay server-side.
 - A separate lifespan worker attempts one page per second, fairly across queued markets. Pages contain at most 100 fills; existing CCXT rate limits and client locks also apply. Run one API process; this is not a distributed scheduler.
 
 Identity is `(account_id, exact_symbol, trade_id)`, so accounts/environments cannot collapse together. Every page's upserts and next checkpoint commit in one transaction. Validation failure rejects the entire page and preserves the prior checkpoint. A crash before commit repeats the page safely. Startup returns interrupted `running` jobs to `queued` at their saved checkpoints.

@@ -12,7 +12,7 @@ from test_strategy_cancellation import approve_stop, retained
 from test_strategy_execution import execution as execution
 from test_strategy_execution import reconcile, request, submit
 
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.trading.service import ExchangeTrading
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution.contracts import ClosePositionRequest
 

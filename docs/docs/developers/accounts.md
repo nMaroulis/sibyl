@@ -1,6 +1,6 @@
 # Active accounts and portfolio scopes
 
-`services/accounts.py` separates saved connection metadata from active inclusion in account-dependent workflows. Neither a config `mode` nor a process restart activates an account. A fresh Store creates no Demo connection and no activation rows. Existing saved connections are retained; there is no inference that saved means active.
+`services/accounts/service.py` separates saved connection metadata from active inclusion in account-dependent workflows. Neither a config `mode` nor a process restart activates an account. A fresh Store creates no Demo connection and no activation rows. Existing saved connections are retained; there is no inference that saved means active.
 
 ## Atomic selection
 

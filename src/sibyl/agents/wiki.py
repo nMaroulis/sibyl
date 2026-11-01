@@ -6,9 +6,9 @@ instructions. ProtoLink publishes their typed arguments and docstrings.
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT, Services, selected
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.wiki import GUIDES, Topic
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
 
 NAME = "Wiki"
 TAGLINE = "Make the complex clear"

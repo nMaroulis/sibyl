@@ -233,7 +233,7 @@ def test_broker_reads_selected_validation_through_native_tool_without_running_re
     result = client.post("/api/v1/strategies/validations", json=saved_request(client)).json()
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *args, **kwargs: create_llm(
             "mock",
             sequential_responses=[

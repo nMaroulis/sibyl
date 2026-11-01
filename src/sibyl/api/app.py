@@ -17,8 +17,8 @@ from fastapi.responses import JSONResponse
 from sibyl import __version__
 from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.accounting.funding.reviews import FundingReviewConflict
-from sibyl.agents.model_selection import ModelConflict
-from sibyl.agents.registry import AgentRegistry
+from sibyl.agents.utils.model_selection import ModelConflict
+from sibyl.agents.utils.registry import AgentRegistry
 from sibyl.api.dashboard import mount_dashboard
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
@@ -26,19 +26,19 @@ from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.messaging.service import TelegramService
-from sibyl.services.account_sync import AccountSync
-from sibyl.services.accounts import Accounts
-from sibyl.services.alerts import AlertConflict, PriceAlerts
-from sibyl.services.data_settings import DataSettings
+from sibyl.services.accounts.service import Accounts
+from sibyl.services.accounts.sync import AccountSync
+from sibyl.services.alerts.service import AlertConflict, PriceAlerts
 from sibyl.services.funding.contracts import FundingRefreshConflict
-from sibyl.services.funding_sync import FundingSync
-from sibyl.services.market import Market
-from sibyl.services.performance import AccountPerformance
-from sibyl.services.portfolio import Portfolio
-from sibyl.services.research import Research
-from sibyl.services.trading import ExchangeTrading
-from sibyl.services.transfer_reconciliation import TransferConflict, TransferReconciliation
-from sibyl.services.watchlists import Watchlists
+from sibyl.services.funding.sync import FundingSync
+from sibyl.services.markets.service import Market
+from sibyl.services.markets.watchlists import Watchlists
+from sibyl.services.portfolio.performance import AccountPerformance
+from sibyl.services.portfolio.service import Portfolio
+from sibyl.services.research.service import Research
+from sibyl.services.trading.service import ExchangeTrading
+from sibyl.services.transfers.reconciliation import TransferConflict, TransferReconciliation
+from sibyl.services.workspace.data_settings import DataSettings
 from sibyl.storage import Store
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution.controls import ControlConflict

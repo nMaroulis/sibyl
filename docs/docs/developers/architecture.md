@@ -42,30 +42,49 @@ The [editable diagram topology](/img/architecture.mmd) accompanies the SVG used 
 
 ## Python package
 
-| File/module                               | Responsibility                                                                                        |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `config.py`                               | Validated environment configuration, with no import-time network work                                 |
-| `models.py`                               | Strict request models, enum-like IDs, canonical symbol validation                                     |
-| `storage.py`                              | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                         |
-| `services/market.py`                      | Client ownership, closed candles, source labels and bounded cache                                     |
-| `services/accounts.py`                    | Saved versus active accounts, exclusive Demo preview and combined/exchange/account scopes             |
-| `services/valuation.py`                   | Exact direct/inverse/bridge routes, quote freshness, bounded reads and aligned conversion histories   |
-| `services/portfolio.py`                   | Aggregate account balances, valuation, history, incomplete-account reporting                          |
-| `services/analytics.py`                   | Pure indicator, correlation, and baseline forecasting functions                                       |
-| `strategies/`                             | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                            |
-| `strategies/journal.py`                   | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV     |
-| `services/trading.py`                     | Exchange preview validation, intent expiry, at-most-once submission attempts                          |
-| `services/account_sync.py`                | Durable selected-market fill imports, native cursors, bounded retries, pause/resume and progress      |
-| `services/ledger.py`                      | Normalized fill storage, native-currency fees, atomic page/checkpoint commits and ledger queries      |
-| `services/research.py`                    | Bounded source-labeled research reads                                                                 |
-| `blockchain/`                             | Fixed-source Bitcoin reads, identifier checks, amount normalization, bounded paging and explicit Demo |
-| `agents/providers.py`                     | ProtoLink provider capabilities, model presets, dependency metadata                                   |
-| `services/llm_settings.py`                | Encrypted provider profiles, active selection, request-scoped adapter configuration                   |
-| `news/`                                   | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment          |
-| `agents/<module>.py`                      | Native Agent declarations, module prompts and typed read-only tools                                   |
-| `agents/registry.py`, `agents/network.py` | Wiring, AgentGroup lifecycle, native run handles and UI request persistence                           |
-| `api/app.py`                              | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA           |
-| `api/routes.py`                           | Thin versioned HTTP routes                                                                            |
+Services are grouped by domain rather than collected in one flat directory:
+
+```text
+services/
+  accounts/    # Activation, fill ledger and history-import coordination
+  alerts/      # Price rules and notification coordination
+  funding/     # Funding ledger, sync, pending updates and recent-history workers
+  markets/     # Market reads, price analytics and watchlists
+  portfolio/   # Combined holdings, valuation, performance and FIFO
+  research/    # Research reads and crypto project profiles
+  trading/     # Reviewed orders, discovery, recovery and execution reports
+  transfers/   # Transfer reviews, allocations and acquisition-lot carryover
+  workspace/   # Source/model settings and implementation inventory
+```
+
+The main coordinator in a domain lives in `service.py`; focused helpers and workers
+stay alongside it. The existing `accounting/`, `market_data/`, `news/` and other
+domain engines keep their own contracts and persistence rules.
+
+| File/module                                           | Responsibility                                                                                        |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `config.py`                                           | Validated environment configuration, with no import-time network work                                 |
+| `models.py`                                           | Strict request models, enum-like IDs, canonical symbol validation                                     |
+| `storage.py`                                          | Short-lived SQLite connections, transactions, credentials, paper ledger, runs                         |
+| `services/markets/service.py`                         | Client ownership, closed candles, source labels and bounded cache                                     |
+| `services/accounts/service.py`                        | Saved versus active accounts, exclusive Demo preview and combined/exchange/account scopes             |
+| `services/portfolio/valuation.py`                     | Exact direct/inverse/bridge routes, quote freshness, bounded reads and aligned conversion histories   |
+| `services/portfolio/service.py`                       | Aggregate account balances, valuation, history, incomplete-account reporting                          |
+| `services/markets/analytics.py`                       | Pure indicator, correlation, and baseline forecasting functions                                       |
+| `strategies/`                                         | Strategy catalog, signal functions, backtest mechanics, durable paper jobs                            |
+| `strategies/journal.py`                               | Atomic run journal, bounded quote observations, monitor snapshots, paged events and streaming CSV     |
+| `services/trading/service.py`                         | Exchange preview validation, intent expiry, at-most-once submission attempts                          |
+| `services/accounts/sync.py`                           | Durable selected-market fill imports, native cursors, bounded retries, pause/resume and progress      |
+| `services/accounts/ledger.py`                         | Normalized fill storage, native-currency fees, atomic page/checkpoint commits and ledger queries      |
+| `services/research/service.py`                        | Bounded source-labeled research reads                                                                 |
+| `blockchain/`                                         | Fixed-source Bitcoin reads, identifier checks, amount normalization, bounded paging and explicit Demo |
+| `agents/utils/providers.py`                           | ProtoLink provider capabilities, model presets, dependency metadata                                   |
+| `services/workspace/llm_settings.py`                  | Encrypted provider profiles, active selection, request-scoped adapter configuration                   |
+| `news/`                                               | Public publisher ingestion, SQLite news archive, source health, filtering and text sentiment          |
+| `agents/<module>.py`                                  | Native Agent declarations, module prompts and typed read-only tools                                   |
+| `agents/utils/registry.py`, `agents/utils/network.py` | Wiring, AgentGroup lifecycle, native run handles and UI request persistence                           |
+| `api/app.py`                                          | Factory, lifespan, service composition, worker ownership, access/error handling, static SPA           |
+| `api/routes.py`                                       | Thin versioned HTTP routes                                                                            |
 
 `create_app(settings)` accepts explicit Settings, making tests independent of the developer's `.env`. Lifespan creates service instances, initializes storage, starts the domain workers and the in-process ProtoLink agent network, and stops them during shutdown. The network starts Sibyl and ten persistent native specialist Agents using ProtoLink `.start()`. Each agent has its own file, prompt and tools. Native client tasks and task-local history isolate requests; tools fetch evidence on demand. See [agent lifecycle and collaboration](./agents.md). Importing the package does not connect to an exchange or initialize a model.
 
@@ -95,6 +114,6 @@ Strategy monitoring components are split into the run list, detail workspace, de
 
 Model profiles store encrypted JSON in `model_profiles`; the active ID is committed in the same transaction in `workspace_settings`. The model settings service owns key resolution and sanitized metadata. Provider keys are constructor arguments or authorization headers only, never process-wide environment mutations. Registry requests resolve a configuration once before fetching evidence and keep it throughout inference, including its response provider label.
 
-`services/crypto_library.py` owns the fixed asset selection, normalized CoinPaprika/Wikipedia reads, bounded HTTP responses, per-source single-flight locks, and atomic public JSON cache files. Research creates it without fetching data on startup. Only the requested asset is fetched; trading/demo settings do not alter public educational sources. Wiki's native tool can resolve a validated `crypto_id` to the same profile.
+`services/research/crypto_library.py` owns the fixed asset selection, normalized CoinPaprika/Wikipedia reads, bounded HTTP responses, per-source single-flight locks, and atomic public JSON cache files. Research creates it without fetching data on startup. Only the requested asset is fetched; trading/demo settings do not alter public educational sources. Wiki's native tool can resolve a validated `crypto_id` to the same profile.
 
-Native ProtoLink 0.8.3 owns threaded tool/provider execution, private `request_context`, owned local delegation, SQLite sessions and correlated run reports. `agents/presentation.py` formats its events/evidence for the existing UI. See [runtime contracts](agents.md).
+Native ProtoLink 0.8.3 owns threaded tool/provider execution, private `request_context`, owned local delegation, SQLite sessions and correlated run reports. `agents/utils/presentation.py` formats its events/evidence for the existing UI. See [runtime contracts](agents.md).

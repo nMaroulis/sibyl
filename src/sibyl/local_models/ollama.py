@@ -13,7 +13,7 @@ import httpx
 from pydantic import Field, field_validator
 
 from sibyl.models import Request
-from sibyl.services.llm_settings import ModelSettingsRequest
+from sibyl.services.workspace.llm_settings import ModelSettingsRequest
 
 
 class OllamaRequest(Request):

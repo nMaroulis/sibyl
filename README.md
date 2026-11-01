@@ -154,9 +154,9 @@ SQLite retains accounts, ledgers, research inputs, runs, conversations and alert
 | `src/sibyl/forecasting/` | Training, evaluation, JSON model registry and retained forecasts |
 | `src/sibyl/strategies/` | Signals, backtests, validation, paper and exchange runs |
 | `src/sibyl/market_data/`, `src/sibyl/news/` | Candle history, datasets and news collection |
-| `src/sibyl/agents/` | Agent declarations, prompts, tools and native runtime integration |
+| `src/sibyl/agents/` | Agent declarations, prompts and tools; shared runtime/model helpers in `utils/` and page help in `guides/` |
 | `src/sibyl/alerts/`, `src/sibyl/messaging/` | Alert rules, the local inbox and messaging clients |
-| `src/sibyl/services/` | Domain coordination and focused funding-sync workers |
+| `src/sibyl/services/` | Domain coordinators grouped into accounts, markets, portfolio, trading, funding, transfers, research, alerts and workspace packages |
 | `docs/` | Docusaurus user guides, API contracts and implementation checklist |
 
 [Architecture guide](docs/docs/developers/architecture.md) · [Diagram source](docs/static/img/architecture.mmd) · [API reference](docs/docs/developers/api.md)

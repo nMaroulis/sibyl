@@ -8,8 +8,8 @@ import pytest
 
 from sibyl.exchanges.demo import DemoClient
 from sibyl.models import ConnectionCreate
-from sibyl.services.data_settings import MarketSettingsRequest
-from sibyl.services.valuation import Valuation
+from sibyl.services.portfolio.valuation import Valuation
+from sibyl.services.workspace.data_settings import MarketSettingsRequest
 
 VALUATION_TIME = datetime(2026, 10, 1, tzinfo=UTC)
 
@@ -139,7 +139,7 @@ def test_invalid_or_stale_leg_excludes_the_holding(client, monkeypatch, ticker, 
         def now(cls, tz=None):
             return VALUATION_TIME.astimezone(tz) if tz else VALUATION_TIME.replace(tzinfo=None)
 
-    monkeypatch.setattr("sibyl.services.valuation.datetime", FrozenDatetime)
+    monkeypatch.setattr("sibyl.services.portfolio.valuation.datetime", FrozenDatetime)
     feed(client, monkeypatch, {"ALT/USDT": ticker}, {"ALT": 2, "USDT": 10})
     result = client.get("/api/v1/portfolio").json()
     assert result["total"] == 10
@@ -196,7 +196,7 @@ def test_history_aligns_exact_conversion_legs_without_filling_gaps(client, monke
 
 def test_quote_budget_is_explicit_and_keeps_known_values(client, monkeypatch):
     market, adapter = feed(client, monkeypatch, {"ONE/USDT": 1, "TWO/USDT": 2})
-    monkeypatch.setattr("sibyl.services.valuation.MAX_QUOTES", 1)
+    monkeypatch.setattr("sibyl.services.portfolio.valuation.MAX_QUOTES", 1)
     with market.snapshot():
         valuation = Valuation(market)
         assert valuation.price("ONE")["price"] == 1
@@ -297,7 +297,7 @@ def test_quotes_only_api_uses_observed_usdt_usd_conversion(client, monkeypatch):
 
 
 def test_cached_quote_is_rechecked_for_freshness_and_is_source_scoped(client, monkeypatch):
-    import sibyl.services.valuation as module
+    import sibyl.services.portfolio.valuation as module
 
     market, adapter = feed(client, monkeypatch, {"ALT/USDT": 10})
     with market.snapshot():
@@ -337,7 +337,7 @@ def test_catalog_outage_still_reports_native_cash_and_keeps_other_quantities(cli
 
 def test_chart_budget_does_not_hide_current_prices(client, monkeypatch):
     market, _ = feed(client, monkeypatch, {"ALT/USDT": 2}, {"ALT": 10})
-    monkeypatch.setattr("sibyl.services.valuation.MAX_HISTORY", 0)
+    monkeypatch.setattr("sibyl.services.portfolio.valuation.MAX_HISTORY", 0)
     monkeypatch.setattr(market, "candles", lambda *args: pytest.fail("Chart budget exceeded"))
     result = client.get("/api/v1/portfolio").json()
     assert result["total"] == 20 and result["complete"]

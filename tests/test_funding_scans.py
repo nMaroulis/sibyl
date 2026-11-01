@@ -12,10 +12,10 @@ from sibyl.accounting.funding.versions import FundingVersions
 from sibyl.exchanges.funding import DAY, FundingPage
 from sibyl.models import ConnectionCreate
 from sibyl.services.funding.contracts import FundingRefreshConflict, RefreshFunding, ScanFunding, scan_streams
+from sibyl.services.funding.ledger import funding_event, write_event
 from sibyl.services.funding.scans import FundingScans
-from sibyl.services.funding_ledger import funding_event, write_event
-from sibyl.services.funding_sync import FundingSync
-from sibyl.services.market import Market
+from sibyl.services.funding.sync import FundingSync
+from sibyl.services.markets.service import Market
 
 
 @pytest.fixture
@@ -457,8 +457,8 @@ def test_read_only_http_versions_and_controls(client, monkeypatch):
 def test_unfetched_intervals_remain_visible_after_subsequent_scans_and_manual_backfill_closes_them(workspace):
     from datetime import UTC, datetime
 
-    from sibyl.services.funding_sync import FundingSyncRequest
-    from sibyl.services.import_worker import ImportWorker
+    from sibyl.services.accounts.import_worker import ImportWorker
+    from sibyl.services.funding.sync import FundingSyncRequest
 
     w = workspace
     w.clock.value -= 10 * 86400

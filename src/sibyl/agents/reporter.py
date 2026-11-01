@@ -9,9 +9,9 @@ from typing import Annotated, Literal
 from protolink import Agent
 from pydantic import Field
 
-from sibyl.agents.common import COMMON_PROMPT, Services, selected
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.reporter import GUIDES, Topic
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
 
 NAME = "Reporter"
 TAGLINE = "See the bigger picture"

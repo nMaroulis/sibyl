@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from sibyl.agents.providers import ProviderId
+from sibyl.agents.utils.providers import ProviderId
 from sibyl.exchanges.catalog import ExchangeId
 from sibyl.paths import default_data_dir
 

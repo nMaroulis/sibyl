@@ -6,9 +6,9 @@ from pydantic import ValidationError
 from sibyl.config import Settings
 from sibyl.exchanges import create_client
 from sibyl.models import ConnectionCreate, ExchangeOrderRequest
-from sibyl.services.market import Market
-from sibyl.services.portfolio import Portfolio
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.markets.service import Market
+from sibyl.services.portfolio.service import Portfolio
+from sibyl.services.trading.service import ExchangeTrading
 from sibyl.storage import Store
 
 

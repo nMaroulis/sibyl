@@ -13,8 +13,8 @@ import pytest
 from sibyl.exchanges.demo import DemoClient
 from sibyl.market_data.clients import CoinGeckoClient
 from sibyl.market_data.control import ClientGuard, ProviderControl, ProviderDeferred, retry_after
-from sibyl.services.data_settings import DataSettings, MarketSettingsRequest
-from sibyl.services.market import Market
+from sibyl.services.markets.service import Market
+from sibyl.services.workspace.data_settings import DataSettings, MarketSettingsRequest
 
 
 def source(identity="binance", provider="binance", environment="production"):
@@ -321,7 +321,7 @@ def test_identical_cache_misses_coalesce_without_blocking_other_feeds(settings, 
             return super().fetch_ohlcv(*args, **kwargs)
 
     monkeypatch.setattr(
-        "sibyl.services.market.create_client",
+        "sibyl.services.markets.service.create_client",
         lambda provider, **kw: Quotes(store) if provider == "kraken" else DemoClient(store),
     )
 

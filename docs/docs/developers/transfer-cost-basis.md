@@ -19,7 +19,7 @@ The UI shows **Lots carried** or **Unapplied**, with a reason for each reviewed 
 
 ## Calculation
 
-The same `services/fifo.py` book handles ordinary fills and transfer-aware calculations. A single chronological replay processes each account's fills, outgoing dispatch and incoming receipt. At dispatch, FIFO slices leave the source book; at receipt, those exact slices enter the destination book. There are no disposal proceeds and no realized P&L for the move.
+The same `services/portfolio/fifo.py` book handles ordinary fills and transfer-aware calculations. A single chronological replay processes each account's fills, outgoing dispatch and incoming receipt. At dispatch, FIFO slices leave the source book; at receipt, those exact slices enter the destination book. There are no disposal proceeds and no realized P&L for the move.
 
 Each slice retains its original acquisition time, origin fill/opening record, originating account, quantity and cost in the exact market's quote. Partial slices divide cost proportionally with `Decimal` precision 50. Transfer receipt dates do **not** reset acquisition age: older transferred units precede newer local purchases. A subsequent eligible transfer carries those same origins through intermediate accounts or back to the original account.
 

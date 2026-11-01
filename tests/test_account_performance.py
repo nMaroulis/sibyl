@@ -5,9 +5,9 @@ import json
 import pytest
 
 from sibyl.models import ConnectionCreate
-from sibyl.services.ledger import AccountLedger, ledger_fill
-from sibyl.services.market import Market
-from sibyl.services.performance import AccountPerformance, OpeningInventory, fifo
+from sibyl.services.accounts.ledger import AccountLedger, ledger_fill
+from sibyl.services.markets.service import Market
+from sibyl.services.portfolio.performance import AccountPerformance, OpeningInventory, fifo
 
 
 def execution(identity=1, *, side="buy", quantity=1, price=100, fees=None, **values):
@@ -320,7 +320,7 @@ def test_current_mark_requires_matching_balance_known_basis_and_active_account(p
     retained(performance, execution(1))
     monkeypatch.setattr(performance.market, "account_balances", lambda *_: [{"asset": "BTC", "total": 1}])
     monkeypatch.setattr(
-        "sibyl.services.performance.Valuation.price",
+        "sibyl.services.portfolio.performance.Valuation.price",
         lambda _, asset: {"price": 120 if asset == "BTC" else 1, "status": "undated", "route": []},
     )
     row = performance.report(mark=True)["items"][0]
@@ -339,12 +339,12 @@ def test_unknown_inventory_and_stale_rates_are_not_marked(performance, monkeypat
     retained(performance, execution(1, fees=[]))
     monkeypatch.setattr(performance.market, "account_balances", lambda *_: [{"asset": "BTC", "total": 1}])
     monkeypatch.setattr(
-        "sibyl.services.performance.Valuation.price", lambda *_: pytest.fail("Unknown lots cannot be marked")
+        "sibyl.services.portfolio.performance.Valuation.price", lambda *_: pytest.fail("Unknown lots cannot be marked")
     )
     assert performance.report(mark=True)["items"][0]["unrealized"] is None
     retained(performance, execution(1))
     monkeypatch.setattr(
-        "sibyl.services.performance.Valuation.price", lambda *_: {"price": None, "status": "stale"}
+        "sibyl.services.portfolio.performance.Valuation.price", lambda *_: {"price": None, "status": "stale"}
     )
     assert performance.report(mark=True)["items"][0]["unrealized"] is None
 
@@ -352,7 +352,7 @@ def test_unknown_inventory_and_stale_rates_are_not_marked(performance, monkeypat
 def test_closed_inventory_requires_no_conversion_quotes(performance, monkeypatch):
     retained(performance, execution(1), execution(2, side="sell"))
     monkeypatch.setattr(performance.market, "account_balances", lambda *_: [])
-    monkeypatch.setattr("sibyl.services.performance.Valuation.price", lambda *_: pytest.fail("No open lots"))
+    monkeypatch.setattr("sibyl.services.portfolio.performance.Valuation.price", lambda *_: pytest.fail("No open lots"))
     assert performance.report(mark=True)["items"][0]["unrealized"] == 0
 
 
@@ -367,7 +367,7 @@ def test_demo_feed_never_marks_actual_exchange_inventory(performance, monkeypatc
 
 def test_report_does_not_silently_truncate_history(performance, monkeypatch):
     retained(performance, execution(1), execution(2))
-    monkeypatch.setattr("sibyl.services.performance.MAX_FILLS", 1)
+    monkeypatch.setattr("sibyl.services.portfolio.performance.MAX_FILLS", 1)
     with pytest.raises(ValueError, match="never silently truncated"):
         performance.report()
 

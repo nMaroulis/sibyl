@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from protolink import create_llm
 
-from sibyl.agents.registry import ROLES
+from sibyl.agents.utils.registry import ROLES
 from sibyl.api.app import create_app
 from sibyl.config import Settings
 
@@ -51,7 +51,7 @@ def test_model_path_uses_protolink_with_mock_provider(client, monkeypatch):
     registry.settings.llm_provider = "ollama"
     registry.settings.llm_model = "fixture-model"
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *a, **kw: create_llm("mock", default_response="A controlled model response."),
     )
     response = client.post("/api/v1/agents/ask", json={"module": "oracle", "message": "Explain my holdings"})

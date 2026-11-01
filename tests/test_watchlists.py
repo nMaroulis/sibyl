@@ -92,7 +92,7 @@ def test_empty_watchlist_stays_empty_without_touching_portfolio(client, settings
 
 def test_watchlists_and_quote_caches_are_isolated_by_feed(client, monkeypatch):
     market = client.app.state.services.market
-    monkeypatch.setattr("sibyl.services.market.create_client", lambda *a, **kw: DemoClient(market.store))
+    monkeypatch.setattr("sibyl.services.markets.service.create_client", lambda *a, **kw: DemoClient(market.store))
     demo = client.get(CONFIG).json()["symbols"]
     client.post(ITEMS, params={"source": "kraken"}, json={"symbol": "ETH/BTC"})
     assert client.get(CONFIG).json()["symbols"] == demo

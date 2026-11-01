@@ -8,9 +8,9 @@ from typing import Literal
 
 from protolink import Agent, ToolRejectedError
 
-from sibyl.agents.common import COMMON_PROMPT, Services, selected
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.broker import STRATEGIES, TRADE, StrategyTopic, TradeTopic
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.models import BacktestRequest
 from sibyl.strategies import CATALOG

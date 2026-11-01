@@ -81,6 +81,10 @@ Chronos gains its first trained forecasting workflow: reproducible daily inputs,
 
 ### Changed
 
+- Keep agent declarations at the top level of `agents/` and organize shared runtime, model, request and presentation code under `agents/utils/`. Update application imports, scripts, tests and developer documentation to the new layout.
+
+- Group services into domain subpackages for accounts, markets, portfolio, trading, funding, transfers, research, alerts and workspace settings. Consolidate funding imports with the existing funding workers and update all callers and documentation.
+
 - Installed apps use a stable per-user data directory unless an explicit environment/CLI path is set. Source checkouts retain their repository `.sibyl`, including without an environment file. Docker installs a normal complete package; the existing source-build Compose setup remains available. Homebrew and prebuilt registry images are deferred independently of package publication.
 
 - Give the documentation a full-width landing page with an animated crystal ball, exchange and AI-provider marks, and direct paths into the guides. Refresh guide typography, navigation, tables and reading layouts; illustration motion can be paused and respects reduced-motion preferences. Fonts and integration artwork are served locally.

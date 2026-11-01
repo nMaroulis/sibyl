@@ -15,7 +15,7 @@ from sibyl.alerts.contracts import (
 )
 from sibyl.alerts.strategies import StrategyAlerts, event_kind, strategy_alert_example
 from sibyl.models import BacktestRequest
-from sibyl.services.market import Market
+from sibyl.services.markets.service import Market
 from sibyl.strategies import Strategies
 
 
