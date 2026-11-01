@@ -1,6 +1,38 @@
-# Market statistics and technical bias
+---
+title: Market statistics and technical bias
+hide_title: true
+---
+
+import { DocHero, DocCards, BiasWeights } from '@site/src/components/DocBlocks';
+
+<DocHero title="Market statistics and technical bias" eyebrow="User guide · Markets" icon="markets" facts={["Closed candles", "Source-specific", "Explainable calculations"]}>
 
 Open **Markets**, select a feed, exact pair and candle interval, then scroll to **Market statistics**. Statistics are calculated in Python from that feed's closed OHLCV candles. They use no LLM, new data subscription or additional provider requests. Offline Demo uses the same calculations on explicitly synthetic data.
+
+</DocHero>
+
+<DocCards
+  items={[
+    {
+      title: 'Check the sample',
+      text: 'Source, interval and consecutive history come first.',
+      icon: 'research',
+      to: '#read-the-sample-first',
+    },
+    {
+      title: 'Understand the score',
+      text: 'See the five inputs behind technical bias.',
+      icon: 'markets',
+      to: '#technical-bias-from-0-to-100',
+    },
+    {
+      title: 'Read beyond price',
+      text: 'Explore momentum, volatility, flow and observed risk.',
+      icon: 'forecast',
+      to: '#available-readings',
+    },
+  ]}
+/>
 
 ## Read the sample first
 
@@ -16,15 +48,17 @@ Chart zoom changes the visible viewport only. It does **not** change the statist
 
 The side card summarizes **directional technical alignment**. Higher means more bullish, not safer, more valuable or more likely to make money. It is a fixed, uncalibrated heuristic, not an investment-quality rating, trading instruction or probability of profit.
 
+<BiasWeights />
+
 Expand **What makes this score?** for the actual votes and available weights. Each component votes 0, 50 or 100:
 
-| Component | Weight | Bullish: 100 | Neutral: 50 | Bearish: 0 |
-| --- | --- | --- | --- | --- |
-| EMA alignment | 25% | EMA 9 > EMA 21 | Equal | EMA 9 < EMA 21 |
-| Medium-term trend | 20% | Close > SMA 50 | Equal | Close < SMA 50 |
-| MACD momentum | 20% | MACD > signal | Equal | MACD < signal |
-| RSI momentum | 20% | RSI > 55 | 45–55 inclusive | RSI < 45 |
-| Volume pressure | 15% | CMF > 0.05 | −0.05–0.05 inclusive | CMF < −0.05 |
+| Component         | Weight | Bullish: 100   | Neutral: 50          | Bearish: 0     |
+| ----------------- | ------ | -------------- | -------------------- | -------------- |
+| EMA alignment     | 25%    | EMA 9 > EMA 21 | Equal                | EMA 9 < EMA 21 |
+| Medium-term trend | 20%    | Close > SMA 50 | Equal                | Close < SMA 50 |
+| MACD momentum     | 20%    | MACD > signal  | Equal                | MACD < signal  |
+| RSI momentum      | 20%    | RSI > 55       | 45–55 inclusive      | RSI < 45       |
+| Volume pressure   | 15%    | CMF > 0.05     | −0.05–0.05 inclusive | CMF < −0.05    |
 
 The score is the rounded weighted mean of available votes. Missing votes are excluded and their weights are visibly absent; a zero-volume source can still have 85% of the original weight. An overall score requires **50 consecutive candles, fresh history and at least 80% available weight**. Floating-point equality uses relative tolerance `1e-10` and absolute tolerance `1e-12` for the direct comparisons. A score at least 65 is **Bullish**, at most 35 is **Bearish**, otherwise **Mixed**. Version: `technical-bias-v1`.
 
@@ -34,15 +68,15 @@ These related indicators are not independent confirmations. Short samples, movin
 
 Each statistics card shows its main readings first. Expand **More readings & definitions** for the remaining values and a definition of every reading. Hovering a metric also shows its definition. Prices retain the pair's quote unit; base volume retains the base unit.
 
-| Group | Implemented readings |
-| --- | --- |
-| Returns & distribution | Sample, 1/5/20/60-candle return; positive-candle share; mean, median, best and worst candle returns |
-| Trend | EMA 9/21, SMA 20/50/200, close distance from SMA 50, ADX 14 |
-| Momentum | RSI 14, MACD 12/26 and signal 9, histogram, ROC 10, stochastic %K 14 and %D 3 |
-| Volatility | Sample candle and annualized volatility; ATR 14 and ATR/price; Bollinger width and %B; annualized downside deviation |
-| Historical risk | Maximum and current close-based drawdown within the sample; zero-rate Sharpe and zero-target Sortino; historical one-candle VaR and expected shortfall at 95% |
-| Volume & flow | Latest/mean-20 base volume; latest volume relative to the preceding 20; CMF 20; rolling typical-price VWAP 20 and distance; 20-candle OBV change |
-| Price references | Sample high/low and distance; previous 20-candle high/low excluding the latest; position in the sample range; previous-candle classic pivot, R1/R2 and S1/S2 |
+| Group                  | Implemented readings                                                                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Returns & distribution | Sample, 1/5/20/60-candle return; positive-candle share; mean, median, best and worst candle returns                                                           |
+| Trend                  | EMA 9/21, SMA 20/50/200, close distance from SMA 50, ADX 14                                                                                                   |
+| Momentum               | RSI 14, MACD 12/26 and signal 9, histogram, ROC 10, stochastic %K 14 and %D 3                                                                                 |
+| Volatility             | Sample candle and annualized volatility; ATR 14 and ATR/price; Bollinger width and %B; annualized downside deviation                                          |
+| Historical risk        | Maximum and current close-based drawdown within the sample; zero-rate Sharpe and zero-target Sortino; historical one-candle VaR and expected shortfall at 95% |
+| Volume & flow          | Latest/mean-20 base volume; latest volume relative to the preceding 20; CMF 20; rolling typical-price VWAP 20 and distance; 20-candle OBV change              |
+| Price references       | Sample high/low and distance; previous 20-candle high/low excluding the latest; position in the sample range; previous-candle classic pivot, R1/R2 and S1/S2  |
 
 ### Calculation details
 

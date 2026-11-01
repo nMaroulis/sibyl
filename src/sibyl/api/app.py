@@ -6,7 +6,6 @@ import secrets
 import sqlite3
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
-from pathlib import Path
 
 import ccxt
 import httpx
@@ -14,31 +13,32 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from sibyl import __version__
 from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.accounting.funding.reviews import FundingReviewConflict
-from sibyl.agents.model_selection import ModelConflict
-from sibyl.agents.registry import AgentRegistry
+from sibyl.agents.utils.model_selection import ModelConflict
+from sibyl.agents.utils.registry import AgentRegistry
+from sibyl.api.dashboard import mount_dashboard
 from sibyl.config import Settings
+from sibyl.forecasting.service import ForecastModels
 from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.messaging.service import TelegramService
-from sibyl.services.account_sync import AccountSync
-from sibyl.services.accounts import Accounts
-from sibyl.services.alerts import AlertConflict, PriceAlerts
-from sibyl.services.data_settings import DataSettings
+from sibyl.services.accounts.service import Accounts
+from sibyl.services.accounts.sync import AccountSync
+from sibyl.services.alerts.service import AlertConflict, PriceAlerts
 from sibyl.services.funding.contracts import FundingRefreshConflict
-from sibyl.services.funding_sync import FundingSync
-from sibyl.services.market import Market
-from sibyl.services.performance import AccountPerformance
-from sibyl.services.portfolio import Portfolio
-from sibyl.services.research import Research
-from sibyl.services.trading import ExchangeTrading
-from sibyl.services.transfer_reconciliation import TransferConflict, TransferReconciliation
-from sibyl.services.watchlists import Watchlists
+from sibyl.services.funding.sync import FundingSync
+from sibyl.services.markets.service import Market
+from sibyl.services.markets.watchlists import Watchlists
+from sibyl.services.portfolio.performance import AccountPerformance
+from sibyl.services.portfolio.service import Portfolio
+from sibyl.services.research.service import Research
+from sibyl.services.trading.service import ExchangeTrading
+from sibyl.services.transfers.reconciliation import TransferConflict, TransferReconciliation
+from sibyl.services.workspace.data_settings import DataSettings
 from sibyl.storage import Store
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution.controls import ControlConflict
@@ -68,6 +68,7 @@ class Services:
     messaging: TelegramService
     ollama: OllamaService
     balance_checks: BalanceChecks
+    forecasts: ForecastModels
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -89,6 +90,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         transfers = TransferReconciliation(store)
         performance = AccountPerformance(market, store)
         balance_checks = BalanceChecks(market, store)
+        forecasts = ForecastModels(market, store)
         agents = AgentRegistry(
             config,
             store,
@@ -101,6 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             funding_sync,
             transfers,
             balance_checks,
+            forecasts,
         )
         await agents.network.start()
         messaging = TelegramService(store, agents.network)
@@ -130,6 +133,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             messaging,
             ollama,
             balance_checks,
+            forecasts,
         )
 
         def background_call(method):
@@ -375,25 +379,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(funding_scans_router)
 
+    from sibyl.api.forecasting import router as forecasting_router
+
+    app.include_router(forecasting_router)
+
+    from sibyl.api.bitcoin import router as bitcoin_router
+
+    app.include_router(bitcoin_router)
+
     @app.get("/health", tags=["System"])
     def health():
         """Report process readiness without exposing account or provider configuration."""
         return {"status": "ok", "version": __version__}
 
-    # A container serves the built React app from the same origin as the API.
-    static_dir = Path(__file__).resolve().parents[3] / "frontend" / "dist"
-    if static_dir.is_dir():
-
-        class SPAFiles(StaticFiles):
-            async def get_response(self, path, scope):
-                from starlette.exceptions import HTTPException
-
-                try:
-                    return await super().get_response(path, scope)
-                except HTTPException as exc:
-                    if exc.status_code != 404 or path.startswith("api/") or "." in path.rsplit("/", 1)[-1]:
-                        raise
-                    return await super().get_response("index.html", scope)
-
-        app.mount("/", SPAFiles(directory=static_dir, html=True), name="dashboard")
+    mount_dashboard(app, config.dashboard_dir)
     return app

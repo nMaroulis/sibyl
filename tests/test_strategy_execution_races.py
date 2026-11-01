@@ -10,8 +10,8 @@ from test_strategy_cancellation import approve_stop, expiring, retained
 from test_strategy_execution import execution as execution
 from test_strategy_execution import reconcile, submit
 
-from sibyl.services.ledger import AccountLedger, ledger_fill, now_iso
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.accounts.ledger import AccountLedger, ledger_fill, now_iso
+from sibyl.services.trading.service import ExchangeTrading
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution import runner
 from sibyl.strategies.execution.contracts import ClosePositionRequest

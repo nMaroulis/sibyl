@@ -10,8 +10,8 @@ from protolink import create_llm
 from protolink.core.events import RunEvent
 from pydantic import SecretStr
 
-from sibyl.agents.reporting import run_details
-from sibyl.agents.streaming import public_activity, stream_reply
+from sibyl.agents.utils.reporting import run_details
+from sibyl.agents.utils.streaming import public_activity, stream_reply
 from sibyl.api.app import create_app
 from sibyl.models import AgentRequest
 
@@ -32,7 +32,7 @@ def test_module_ndjson_uses_native_activity_and_one_saved_reply(client):
 def test_sibyl_stream_propagates_native_consultations_and_only_returns_the_root_reply(client, monkeypatch):
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *_a, **_kw: create_llm(
             "mock",
             sequential_responses=[
@@ -65,7 +65,7 @@ def test_sibyl_stream_propagates_native_consultations_and_only_returns_the_root_
 def test_direct_specialist_summary_keeps_native_estimated_token_labels(client, monkeypatch):
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *_a, **_kw: create_llm("mock", default_response="A simulated answer"),
     )
     response = client.post("/api/v1/agents/ask/stream", json={"module": "reporter", "message": "Hello"})
@@ -81,7 +81,7 @@ def test_stream_errors_remain_sanitized_and_validation_still_uses_http_status(cl
     def failure(*_a, **_kw):
         raise RuntimeError("PRIVATE-PROVIDER-ERROR")
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", failure)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", failure)
     response = client.post("/api/v1/agents/ask/stream", json={"module": "reporter", "message": "Hello"})
     assert "PRIVATE" not in response.text
     assert json.loads(response.text.splitlines()[-1])["type"] == "error"

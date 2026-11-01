@@ -75,7 +75,7 @@ Run `uv run pytest tests/test_news.py` for parser, conditional transport, dedupl
 
 ## Saved collectors, API access, and web collection
 
-`services/data_settings.py` owns News settings and saved public market choices. Profiles are encrypted with the workspace vault key using `Store.data_profile` / `save_data_profile`. API responses expose key presence only. News selections apply to subsequent reads; public market changes are saved for restart so a request cannot combine an old quote with a new source label.
+`services/workspace/data_settings.py` owns News settings and saved public market choices. Profiles are encrypted with the workspace vault key using `Store.data_profile` / `save_data_profile`. API responses expose key presence only. News selections apply to subsequent reads; public market changes are saved for restart so a request cannot combine an old quote with a new source label.
 
 - `GET /settings/news`: mode, enabled source IDs, collector choices, NewsAPI query, `has_api_key`, and the provider catalog.
 - `POST /settings/news`: save `mode` (`auto`, `demo`, `live`), `sources`, `cryptoslate_method` (`rss`, `web`), `query`, optional `api_key`, and optional `clear_api_key`. Omitted keys are preserved; enabling NewsAPI requires a key. Live/default configurations require at least one public source. Explicit Demo selections normalize the source list to empty, including older saved profiles; saved API credentials remain encrypted and unused. The UI chooses sources through selectable logo cards and saves explicit demo/live mode. Demo is exclusive; public choices can be combined.

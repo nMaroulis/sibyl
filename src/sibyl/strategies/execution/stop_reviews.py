@@ -4,7 +4,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from sibyl.services.order_lifecycle import TERMINAL
+from sibyl.services.trading.lifecycle import TERMINAL
 from sibyl.strategies.execution.contracts import ExecutionGuard
 
 

@@ -1,0 +1,122 @@
+name: Build and release distributions
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+  pull_request:
+    paths:
+      - '.github/workflows/distribution.yml'
+      - 'hatch_build.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/distribution/**'
+      - 'src/sibyl/cli.py'
+      - 'src/sibyl/__main__.py'
+      - 'src/sibyl/paths.py'
+      - 'src/sibyl/config.py'
+      - 'src/sibyl/api/app.py'
+      - 'src/sibyl/__init__.py'
+      - 'src/sibyl/api/dashboard.py'
+      - 'tests/test_distribution.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: distribution-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate release identity
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: python scripts/distribution/release.py version --tag "${RELEASE_TAG}"
+      - run: uv sync --frozen --group dev
+      - run: uv run pytest
+      - run: uv run ruff check src tests scripts/distribution hatch_build.py
+      - run: npm ci
+      - run: npm run build
+      - run: uv build
+      - name: Verify the package and export locked runtime dependencies
+        run: |
+          python scripts/distribution/release.py inspect-wheel
+          uv export --frozen --no-dev --no-emit-project --extra openai --extra anthropic --extra gemini --extra deepseek --extra huggingface --output-file dist/runtime-requirements.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          path: |
+            dist/*.whl
+            dist/sibyl-*.tar.gz
+            dist/runtime-requirements.txt
+          if-no-files-found: error
+
+  installed-package:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: dist
+      - name: Install the locked dependencies and complete application
+        shell: bash
+        run: |
+          python -m pip install --require-hashes --requirement dist/runtime-requirements.txt
+          python -m pip install --no-deps dist/*.whl
+          python -m pip check
+      - name: Exercise the installed application outside the checkout
+        run: python scripts/distribution/smoke_installation.py
+
+  publish:
+    needs: [build, installed-package]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: release-dist
+      - name: Write release checksums
+        run: python scripts/distribution/release.py checksums release-dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate
+          path: release-dist/*
+      - name: Attach packages to the published GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "${RELEASE_TAG}" release-dist/* --repo "${REPOSITORY}"

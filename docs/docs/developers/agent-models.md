@@ -4,7 +4,7 @@ All eleven native ProtoLink agents remain registered for the application lifetim
 
 ## Storage and configuration
 
-`services/llm_settings.py` resolves provider profiles and assignments. `agents/model_selection.py` owns the assignment contract, registered IDs/names and passive readiness checks. `Store.model_snapshot()` reads the selected provider, separately encrypted `llm_default_model`, encrypted provider profiles and encrypted `data:agent-models` settings from one SQLite read transaction.
+`services/workspace/llm_settings.py` resolves provider profiles and assignments. `agents/utils/model_selection.py` owns the assignment contract, registered IDs/names and passive readiness checks. `Store.model_snapshot()` reads the selected provider, separately encrypted `llm_default_model`, encrypted provider profiles and encrypted `data:agent-models` settings from one SQLite read transaction.
 
 The assignment document contains a revision and a map from agent ID to `{provider, model}`. `save_agent_model()` merges one assignment in a write transaction and compares the supplied revision. A stale editor receives HTTP 409; unrelated agent edits cannot silently overwrite each other. A null provider removes the override. Existing workspaces need no migration: a missing document means revision zero with all agents inheriting.
 

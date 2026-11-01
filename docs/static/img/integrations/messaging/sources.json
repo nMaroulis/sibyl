@@ -1,0 +1,23 @@
+{
+  "whatsapp": {
+    "source": "https://www.whatsapp.com/",
+    "note": "Unmodified symbol paths from the official header, using the official green colorway."
+  },
+  "telegram": {
+    "source": "https://telegram.org/img/t_logo.svg"
+  },
+  "discord": {
+    "source": "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e3d80db9971f10a9757c99_Symbol.svg"
+  },
+  "slack": {
+    "source": "https://a.slack-edge.com/9cc0056/marketing/img/nav/logo.svg"
+  },
+  "signal": {
+    "source": "https://signal.org/brand/bundles/Signal%20Logo.zip",
+    "note": "Unmodified Logo/SVG/Signal-Logo-Ultramarine.svg from the official brand bundle."
+  },
+  "email": {
+    "source": "https://lucide.dev/icons/mail",
+    "note": "Generic Mail icon from the existing Lucide dependency; email has no provider-specific brand."
+  }
+}

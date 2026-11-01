@@ -25,12 +25,12 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'strategies',
       title: 'More ways to test an idea',
-      text: 'Nested validation, broader search methods, Freqtrade integration and ML/RL strategies. Bounded parameter search and chronological walk-forward tests are available now.',
+      text: 'Nested validation, Bayesian/distribution-based optimization, Freqtrade integration and ML/RL strategies. Bounded grid/seeded random search and chronological walk-forward tests are available now.',
     },
     {
       module: 'strategies',
       title: 'More execution controls',
-      text: 'Portfolio-wide exposure/daily-loss limits and more providers. A durable global submission halt, reviewed position exits, order expiry and Stop & cancel are available now; residual sells need fresh reviews and private venue acceptance remains pending.',
+      text: 'Broader allocation/concentration policies and more providers. Shared strategy exposure/observed daily-loss limits, a global halt, reviewed exits, order expiry and Stop & cancel are available now; residual sells need fresh reviews and broader venue acceptance remains pending.',
     },
     {
       module: 'trade',
@@ -39,8 +39,8 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     },
     {
       module: 'forecast',
-      title: 'Trained Chronos models',
-      text: 'A new training and evaluation pipeline for LSTM and other forecasting models, with saved model comparisons.',
+      title: 'More forecasting models and evaluation',
+      text: 'Neural/ARIMA models, rolling evaluation, automatic recalibration and calibrated drift monitoring. Versioned autoregressive ridge models, chronological evaluation, empirical bands and saved forecasts are available now.',
     },
     {
       module: 'knowledge',
@@ -60,7 +60,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'explorer',
       title: 'Beyond Bitcoin',
-      text: 'Litecoin and additional chains, transaction inspection, and longer historical network datasets.',
+      text: 'Additional chains, complete historical network datasets and wallet aggregation. Bitcoin transaction/address inspection, paginated activity and source-labeled fee/confirmation evidence are available now.',
     },
     {
       module: 'markets',

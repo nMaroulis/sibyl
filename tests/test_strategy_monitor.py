@@ -10,7 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from sibyl.models import BacktestRequest
-from sibyl.services.market import Market
+from sibyl.services.markets.service import Market
 from sibyl.strategies import Strategies, strategy_indicators
 
 

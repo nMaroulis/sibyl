@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 import numpy as np
 import pytest
 
-from sibyl.services.analytics import analyze
+from sibyl.services.markets.analytics import analyze
 
 NOW = datetime(2026, 10, 23, 12, tzinfo=UTC)
 

@@ -63,6 +63,9 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 | GET        | `/research/crypto`                                  | Curated 20-asset catalog                                                                   |
 | GET        | `/research/crypto/{asset_id}`                       | Fetched metadata, history, market snapshot, and source status                              |
 | GET        | `/blocks`                                           | Recent Bitcoin blocks, count 1–100                                                         |
+| GET        | `/bitcoin`                                          | Mainnet lookup scope and explicit Demo references, without network access                    |
+| POST       | `/bitcoin/inspect`                                  | Exact transaction/address inspection, with optional paged transaction inputs/outputs          |
+| POST       | `/bitcoin/history`                                  | One confirmed cursor page or bounded pending address activity                                |
 | GET        | `/stocks/{symbol}`                                  | Quote, adjusted history, statistics, profile                                               |
 | GET        | `/agents`                                           | Agent catalog and tool/provider metadata                                                   |
 | GET        | `/agents/runs/{run_id}/summary`                     | Safe native tool outcomes/timing and available per-call metrics; no raw prompts or results |

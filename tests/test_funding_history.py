@@ -10,9 +10,9 @@ import pytest
 from sibyl.exchanges import create_client
 from sibyl.exchanges.funding import DAY, FundingPage, fetch_funding_page, funding_streams
 from sibyl.models import ConnectionCreate
-from sibyl.services.funding_ledger import funding_event
-from sibyl.services.funding_sync import FundingSync, FundingSyncRequest, supported
-from sibyl.services.market import Market
+from sibyl.services.funding.ledger import funding_event
+from sibyl.services.funding.sync import FundingSync, FundingSyncRequest, supported
+from sibyl.services.markets.service import Market
 
 START = 1_704_067_200_000
 END = START + 7 * DAY
@@ -487,7 +487,7 @@ def test_funding_accountant_reads_same_filtered_ledger_via_protolink(client, mon
 
 def seed_market_fifo(service):
     """Use normalized execution facts, without placing an order even in this test workspace."""
-    from sibyl.services.ledger import ledger_fill
+    from sibyl.services.accounts.ledger import ledger_fill
 
     for index, side in enumerate(["buy", "sell"]):
         row = ledger_fill(
@@ -539,8 +539,8 @@ def seed_market_fifo(service):
 def test_funding_movements_flag_affected_fifo_without_inventing_lots(
     funding, monkeypatch, status, asset, fee, blocked
 ):
-    from sibyl.services.ledger import AccountLedger
-    from sibyl.services.performance import AccountPerformance
+    from sibyl.services.accounts.ledger import AccountLedger
+    from sibyl.services.portfolio.performance import AccountPerformance
 
     AccountLedger(funding.store)
     performance = AccountPerformance(funding.market, funding.store)
@@ -557,7 +557,7 @@ def test_funding_movements_flag_affected_fifo_without_inventing_lots(
 
 
 def test_funding_before_opening_boundary_does_not_double_count_user_assertion(client, monkeypatch):
-    from sibyl.services.performance import OpeningInventory
+    from sibyl.services.portfolio.performance import OpeningInventory
 
     service = client.app.state.services
     service.performance.save_opening(
@@ -578,7 +578,7 @@ def test_funding_model_cannot_change_fixed_report_selection(client, monkeypatch)
     registry.settings.llm_provider = "ollama"
     registry.settings.llm_model = "fixture-model"
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *a, **kw: create_llm(
             "mock",
             sequential_responses=[

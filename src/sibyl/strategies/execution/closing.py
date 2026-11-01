@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from sibyl.models import ExchangeOrderRequest
-from sibyl.services.order_lifecycle import TERMINAL
+from sibyl.services.trading.lifecycle import TERMINAL
 from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ClosePositionRequest, ExecutionGuard

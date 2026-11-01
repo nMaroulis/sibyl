@@ -8,8 +8,8 @@ import ccxt
 import pytest
 
 from sibyl.models import ConnectionCreate, ExchangeOrderRequest
-from sibyl.services.market import Market
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.markets.service import Market
+from sibyl.services.trading.service import ExchangeTrading
 
 
 class FakeExchange:

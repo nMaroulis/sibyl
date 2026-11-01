@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from sibyl.local_models.ollama import OllamaRequest, OllamaService
-from sibyl.services.llm_settings import ModelSettings
+from sibyl.services.workspace.llm_settings import ModelSettings
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def test_checks_real_native_catalog_and_loaded_models_without_inference(service)
 
 
 def test_only_saved_endpoint_receives_saved_credential(service):
-    from sibyl.services.llm_settings import ModelSettingsRequest
+    from sibyl.services.workspace.llm_settings import ModelSettingsRequest
 
     service.models.save(
         ModelSettingsRequest(

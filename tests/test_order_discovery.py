@@ -16,10 +16,10 @@ from sibyl.exchanges.history import TradePage
 from sibyl.exchanges.order_discovery import DAY_MS, OrderDiscoveryPage, discovery_page
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import ConnectionCreate, OrderRequest
-from sibyl.services.ledger import AccountLedger
-from sibyl.services.market import Market
-from sibyl.services.order_discovery import OrderDiscoveryRequest, normalized_order
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.accounts.ledger import AccountLedger
+from sibyl.services.markets.service import Market
+from sibyl.services.trading.discovery import OrderDiscoveryRequest, normalized_order
+from sibyl.services.trading.service import ExchangeTrading
 
 
 def order(identity="outside-1", **changes):

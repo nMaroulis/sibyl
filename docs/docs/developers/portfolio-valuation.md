@@ -1,6 +1,6 @@
 # Portfolio valuation
 
-`services/valuation.py` prices native holdings in **USDT**. `Portfolio` uses it for the overview and per-account balances; it never reads user watchlist membership. All work occurs inside one `Market.snapshot()` so credentials, feed labels and cache namespaces cannot change during a read.
+`services/portfolio/valuation.py` prices native holdings in **USDT**. `Portfolio` uses it for the overview and per-account balances; it never reads user watchlist membership. All work occurs inside one `Market.snapshot()` so credentials, feed labels and cache namespaces cannot change during a read.
 
 ## Conversion graph
 

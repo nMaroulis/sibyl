@@ -8,7 +8,12 @@ from contextlib import contextmanager
 import httpx
 import pytest
 
-from sibyl.services.crypto_library import CryptoLibrary, CryptoSourceError, article_sections, safe_url
+from sibyl.services.research.crypto_library import (
+    CryptoLibrary,
+    CryptoSourceError,
+    article_sections,
+    safe_url,
+)
 
 
 @pytest.fixture

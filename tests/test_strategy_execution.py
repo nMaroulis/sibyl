@@ -12,8 +12,8 @@ import pytest
 
 from sibyl.exchanges.history import TradePage
 from sibyl.models import ConnectionCreate
-from sibyl.services.market import Market
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.markets.service import Market
+from sibyl.services.trading.service import ExchangeTrading
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution import cancellation, runner, venue
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest

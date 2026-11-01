@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sibyl.api.app import create_app
 from sibyl.config import Settings
 from sibyl.models import ConnectionCreate, OrderRequest
-from sibyl.services.accounts import Accounts
+from sibyl.services.accounts.service import Accounts
 from sibyl.storage import Store
 
 

@@ -15,7 +15,7 @@ from sibyl.alerts.contracts import (
 )
 from sibyl.alerts.strategies import StrategyAlerts, event_kind, strategy_alert_example
 from sibyl.models import BacktestRequest
-from sibyl.services.market import Market
+from sibyl.services.markets.service import Market
 from sibyl.strategies import Strategies
 
 
@@ -37,7 +37,9 @@ def fire(strategies, job, action="PAUSE", state="paused", reason="Evaluation pau
 
 
 def due(alerts, rule):
+    """Reschedule atomically so the lifespan worker's event cursor cannot be rewound."""
     with alerts.store.db() as db:
+        db.execute("BEGIN IMMEDIATE")
         current = alerts._read(db, rule["id"])
         current["next_check"] = 0
         alerts._write(db, current)

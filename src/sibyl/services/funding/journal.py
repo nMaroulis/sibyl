@@ -11,10 +11,10 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from sibyl.accounting.funding.versions import source_version as fingerprint
+from sibyl.services.accounts.ledger import now_iso
 from sibyl.services.funding.contracts import MISSING_LIMIT, PAGE_LIMIT, READ_GAP, TARGET_LIMIT
+from sibyl.services.funding.ledger import validated_page, write_event
 from sibyl.services.funding.state import FundingJobs, account_version
-from sibyl.services.funding_ledger import validated_page, write_event
-from sibyl.services.ledger import now_iso
 
 
 class RefreshJournal(FundingJobs):

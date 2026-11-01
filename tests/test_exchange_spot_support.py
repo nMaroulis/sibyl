@@ -202,8 +202,8 @@ def test_okx_preview_persists_native_id_before_ambiguous_submission(
     settings, store, native_client, monkeypatch
 ):
     from sibyl.models import ConnectionCreate, ExchangeOrderRequest
-    from sibyl.services.market import Market
-    from sibyl.services.trading import ExchangeTrading
+    from sibyl.services.markets.service import Market
+    from sibyl.services.trading.service import ExchangeTrading
 
     settings.allow_live_trading = True
     connection = store.add_connection(

@@ -4,9 +4,9 @@ import json
 import time
 from uuid import uuid4
 
+from sibyl.services.accounts.import_worker import ImportLimitError, ImportWorker
 from sibyl.services.funding.contracts import PAGE_LIMIT, READ_GAP
 from sibyl.services.funding.state import account_version
-from sibyl.services.import_worker import ImportLimitError, ImportWorker
 
 
 class AutoFundingWorker(ImportWorker):

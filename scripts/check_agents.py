@@ -25,7 +25,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from protolink import request_context
 
-from sibyl.agents.conversations import SibylRequest
+from sibyl.agents.utils.conversations import SibylRequest
 from sibyl.api.app import create_app
 from sibyl.config import Settings
 from sibyl.storage import Store

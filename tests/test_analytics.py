@@ -6,8 +6,8 @@ import pandas as pd
 import pytest
 
 from sibyl.models import BacktestRequest
-from sibyl.services.analytics import analyze, correlation, forecast, indicators
-from sibyl.services.market import Market
+from sibyl.services.markets.analytics import analyze, correlation, forecast, indicators
+from sibyl.services.markets.service import Market
 from sibyl.strategies import CATALOG, Strategies, backtest, signals
 
 

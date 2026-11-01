@@ -9,17 +9,18 @@ from typing import Literal
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT, Services
+from sibyl.agents.utils.common import COMMON_PROMPT, Services
 from sibyl.exchanges.catalog import CATALOG, exchange_spec
 from sibyl.exchanges.registry import provider_catalog
-from sibyl.services.llm_settings import ModelSettings
+from sibyl.services.workspace.llm_settings import ModelSettings
 
 NAME = "Technician"
 TAGLINE = "Keep everything connected"
 DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging and alerts; explain saved diagnostics."
 SYSTEM_PROMPT = (
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
-    "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace; "
+    "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace "
+    "(including installation and launcher help); "
     "overview lists the available sections. For a particular "
     "exchange, call exchange_setup with its catalog ID, e.g. binance. Use connection_status only when "
     "actual saved setup matters. Give numbered, practical instructions and a settings link. Explain "
@@ -114,6 +115,9 @@ GUIDES = {
         "url": "/settings?tab=workspace",
         "steps": [
             "Inspect server configuration and documentation links in Workspace.",
+            "Complete release wheels include the dashboard and can run with sibyl --open-browser, without Node.js. Use sibyl --version or --help for launcher options. Public wheel URLs require a published GitHub Release. Homebrew, PyPI and prebuilt registry images remain optional future work; no new repository is needed for the Python package.",
+            "Source checkouts keep their repository .sibyl workspace. Installed apps default to per-user application data: macOS Application Support/Sibyl, Windows Local AppData/Sibyl or Linux XDG data/sibyl. Use --data-dir or SIBYL_DATA_DIR to open an existing workspace; no installer moves or deletes it.",
+            "Use --env-file for an explicit configuration file, --no-env-file to ignore .env, and --port for a different listening port. Stop the app before backing up its database and vault key together.",
             "If workspace access is token-protected, enter the server's configured access token in the browser's access field, never in agent chat.",
             "This is a local workspace. Hosted multi-user accounts and tenant isolation are deferred.",
         ],
@@ -180,7 +184,8 @@ def create_agent(services: Services, **runtime) -> Agent:
 
         Choose models for API/Local providers, per-agent models or Ollama; exchanges
         for account activation; news/market for data sources; messaging for Telegram;
-        alerts or strategies for their controls; workspace for local access settings.
+        alerts or strategies for their controls; workspace for installation, launch options,
+        data directories and local access settings.
         overview lists the settings sections. This tool explains setup without changing it.
         """
         return {"section": section, **GUIDES[section], "sections": list(GUIDES)}

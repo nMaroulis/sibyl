@@ -22,8 +22,8 @@ from sibyl.market_data.archive import (
 from sibyl.market_data.backfills import CandleHistory, CandleRange, DatasetBacktest
 from sibyl.market_data.clients import CryptoCompareClient
 from sibyl.market_data.research import saved_backtest
-from sibyl.services.data_settings import DataSettings
-from sibyl.services.market import Market
+from sibyl.services.markets.service import Market
+from sibyl.services.workspace.data_settings import DataSettings
 
 META = {"source": "demo", "source_label": "Demo", "environment": "demo", "provider": "demo"}
 DAY = 86400000

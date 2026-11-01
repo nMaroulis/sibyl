@@ -11,8 +11,8 @@ import json
 import pytest
 from protolink import Task, create_llm
 
-from sibyl.services.ledger import AccountLedger, now_iso
-from sibyl.services.order_examples import order_examples
+from sibyl.services.accounts.ledger import AccountLedger, now_iso
+from sibyl.services.trading.examples import order_examples
 
 
 def tool_call(client, module, tool, **args):
@@ -69,10 +69,10 @@ def forbid_reads(client, monkeypatch):
         ("broker", "trade_help", "history", "/trade?tab=history", "Fills & imports"),
         ("broker", "strategy_help", "results", "/strategies", "Price & trades"),
         ("broker", "strategy_help", "limits", "/strategies", "SAVE STRATEGY LIMITS"),
-        ("chronos", "page_help", "models", "/forecast", "not trained"),
+        ("chronos", "page_help", "models", "/forecast?tab=models", "new numbered version"),
         ("reporter", "page_help", "articles", "/news", "Read full article"),
         ("wiki", "page_help", "profiles", "/research?tab=crypto", "Ask Wiki"),
-        ("explorer", "page_help", "transactions", "/research?tab=explorer", "not address"),
+        ("explorer", "page_help", "transactions", "/research?tab=explorer", "Inspect confirmations"),
         ("stocks", "page_help", "setup", "/research?tab=stocks", "uv sync --extra stocks"),
     ],
 )
@@ -135,7 +135,7 @@ def test_broker_how_to_answer_uses_help_without_reading_account_history(client, 
         "Open [Trade → Account history](/trade?tab=history), then Fills & imports and Sync market history.",
     ]
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
+        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
     )
     response = client.post(
         "/api/v1/agents/ask",
@@ -161,7 +161,7 @@ def test_sibyl_can_call_discovered_help_using_native_delegation(client, monkeypa
         "Reporter explains source configuration in [Settings → News](/settings?tab=news).",
     ]
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
+        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
     )
     response = client.post("/api/v1/sibyl/ask", json={"message": "How do I choose news sources?"})
     assert response.status_code == 200, response.text
@@ -180,7 +180,7 @@ def test_explicit_glossary_query_does_not_fetch_the_page_selected_project(client
     )
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *a, **kw: create_llm(
             "mock",
             sequential_responses=[
@@ -266,7 +266,7 @@ def test_native_tool_rejection_allows_model_to_correct_an_unknown_order_id(clien
         "There are no retained orders to inspect. Open Trade → Executions.",
     ]
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
+        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
     )
     response = client.post("/api/v1/agents/ask", json={"module": "broker", "message": "Check my order"})
     assert response.status_code == 200, response.text
@@ -291,7 +291,7 @@ def test_exchange_setup_keeps_actionable_guidance_in_native_bounded_context(clie
         return "Use the supplied Exchanges settings link."
 
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *_a, **_kw: create_llm("mock", response_callback=respond),
     )
     response = client.post("/api/v1/agents/ask", json={"module": "technician", "message": "Connect Binance"})

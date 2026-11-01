@@ -10,7 +10,7 @@ Sibyl brings your crypto accounts, market analysis, trading and strategy researc
 
 The legacy Python/Streamlit application is available at [sibyl-streamlit](https://github.com/nMaroulis/sibyl-streamlit).
 
-[![Version](https://img.shields.io/badge/version-2.0.0-4273d6)](https://nmaroulis.github.io/sibyl/changelog)
+[![Version](https://img.shields.io/github/v/release/nMaroulis/sibyl?label=release&color=4273d6)](https://nmaroulis.github.io/sibyl/changelog)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
 [![ProtoLink](https://img.shields.io/badge/AI_agents-ProtoLink-8B5CF6)](https://github.com/nMaroulis/protolink)
@@ -20,13 +20,13 @@ The legacy Python/Streamlit application is available at [sibyl-streamlit](https:
 
 ## One workspace, from understanding to action
 
-- **See the whole picture.** Combine accounts across exchanges, or focus on one exchange, account or asset.
+- **See the whole picture.** Combine accounts across exchanges or focus on one exchange, account or asset.
 - **Research before you trade.** Inspect prices, statistics, news and historical strategy results in the same place.
-- **Ask a specialist.** Open a contextual conversation on a page, or let Sibyl consult the team for you.
-- **Keep control.** Credentials are encrypted locally. Exchange execution needs explicit setup and approval; AI tools are read-only.
-- **Explore at your own pace.** Start without credentials, connect your accounts when ready, or use the clearly labeled Demo preview.
+- **Ask a specialist.** Open a contextual conversation on a page or let Sibyl consult the team for you.
+- **Keep control.** Credentials are encrypted locally. Exchange execution needs explicit setup and approval. AI tools are read-only.
+- **Explore at your own pace.** Start without credentials, connect your accounts when ready or use the clearly labeled Demo preview.
 
-The interface pairs a floating navigation dock with focused workspaces, interactive charts and expandable advanced controls. React handles the experience; a modular Python backend owns the data, calculations and execution.
+The interface pairs a floating navigation dock with focused workspaces, interactive charts and expandable advanced controls. React handles the experience a modular Python backend owns the data, calculations and execution.
 
 ## Explore the modules
 
@@ -48,7 +48,7 @@ Python calculates returns, trend and momentum, volatility, drawdowns, volume sta
 
 ### Trade · Follow an order through
 
-Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Monitor orders, partial fills and cancellation evidence; recover uncertain submissions by client ID without blindly submitting again.
+Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Monitor orders, partial fills and cancellation evidence. Recover uncertain submissions by client ID without blindly submitting again.
 
 Account history brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
 
@@ -61,7 +61,7 @@ Execution, imports and recovery vary by provider. Each exchange card in Settings
 Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Bollinger Surge, Impulse Breakout and Quantum Momentum**. Start with a simple configuration, then expand indicator, risk and execution settings.
 
 - **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against buy-and-hold, drawdowns and trade-level metrics.
-- **Validate:** run bounded parameter searches, chronological holdouts and expanding walk-forward tests. Save inputs, compare compatible experiments and rerun exact datasets.
+- **Validate:** compare a small grid or sample a larger parameter space with a reproducible seed, then run chronological holdouts and expanding walk-forward tests. Inspect candidate coverage, save inputs and rerun exact studies.
 - **Monitor:** follow paper or separately approved exchange runs through charts, execution markers and a persistent decision journal.
 - **Control:** use account-bound budgets, order limits, a global strategy halt and optional shared exposure and observed daily-loss controls.
 
@@ -79,11 +79,11 @@ Each specialist has its own prompt, typed tools and page guidance. The **Ask** b
 | **Accountant** | Holdings, valuation, retained history and accounting evidence |
 | **Analyst** | Markets, technical statistics and correlations |
 | **Broker** | Trade, order evidence, backtests and strategy monitors |
-| **Chronos** | Forecast baseline and its assumptions |
+| **Chronos** | Trained forecasts, held-out evaluation and baseline assumptions |
 | **Reporter** | Source-linked news, article excerpts and text sentiment |
 | **Technician** | Connections, settings, model setup and diagnostics |
 | **Wiki** | Crypto concepts and project profiles |
-| **Explorer** | Recent Bitcoin blocks and network context |
+| **Explorer** | Bitcoin transactions, address activity, fees, confirmations and recent blocks |
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
@@ -99,15 +99,17 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 
 [News and sentiment](docs/docs/guides/research.md#reporter-news-and-insights)
 
-### Forecast · Explore a statistical baseline
+### Forecast · Train, evaluate, inspect
 
-Chronos visualizes a log-return price baseline and theoretical uncertainty bands for a chosen horizon. Its assumptions are explicit: this is an **untrained statistical baseline**, with trained models and calibration tracked as future work.
+Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
 
-[Forecast method](docs/docs/guides/research.md#chronos-forecast-baseline)
+Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families, rolling evaluation and automated recalibration are pending.
+
+[Forecasting guide](docs/docs/guides/forecasting.md) · [Engine contracts](docs/docs/developers/forecasting.md)
 
 ### Research · Understand the wider picture
 
-Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect recent Bitcoin blocks, or explore optional equity quotes, adjusted history and company information.
+Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
 
 Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
@@ -149,59 +151,50 @@ SQLite retains accounts, ledgers, research inputs, runs, conversations and alert
 | `src/sibyl/api/` | FastAPI routes, validation and application lifecycle |
 | `src/sibyl/exchanges/` | Shared client interface, provider adapters and Demo |
 | `src/sibyl/accounting/` | Funding, transfers, balance checks and accounting rules |
+| `src/sibyl/forecasting/` | Training, evaluation, JSON model registry and retained forecasts |
 | `src/sibyl/strategies/` | Signals, backtests, validation, paper and exchange runs |
 | `src/sibyl/market_data/`, `src/sibyl/news/` | Candle history, datasets and news collection |
-| `src/sibyl/agents/` | Agent declarations, prompts, tools and native runtime integration |
+| `src/sibyl/agents/` | Agent declarations, prompts and tools; shared runtime/model helpers in `utils/` and page help in `guides/` |
 | `src/sibyl/alerts/`, `src/sibyl/messaging/` | Alert rules, the local inbox and messaging clients |
-| `src/sibyl/services/` | Domain coordination and focused funding-sync workers |
+| `src/sibyl/services/` | Domain coordinators grouped into accounts, markets, portfolio, trading, funding, transfers, research, alerts and workspace packages |
 | `docs/` | Docusaurus user guides, API contracts and implementation checklist |
 
 [Architecture guide](docs/docs/developers/architecture.md) · [Diagram source](docs/static/img/architecture.mmd) · [API reference](docs/docs/developers/api.md)
 
 ## Run Sibyl
 
-You need **Python 3.12+**, [uv](https://docs.astral.sh/uv/) and **Node.js 22.12+**.
+The recommended starting point is a source checkout. You need **Python 3.12+**, [uv](https://docs.astral.sh/uv/) and **Node.js 22.12+**:
 
 ```bash
 git clone https://github.com/nMaroulis/sibyl.git
 cd sibyl
 uv sync --frozen --group dev
 npm ci
-cp .env.example .env
+npm run build
+uv run sibyl --open-browser
 ```
 
-Start the Python backend:
+Open **http://127.0.0.1:8000**. Later starts only need `uv run sibyl --open-browser`. The same process serves the dashboard and API. For frontend development with live reload, run `uv run sibyl` and `npm run dev` in separate terminals, then open port **5173**.
 
-```bash
-uv run sibyl
-```
+New workspaces have no active accounts: connect one or several in Settings, or choose the smaller **Preview with Demo** option. Public market prices default to Binance; Demo prices and news sources are independently selectable.
 
-In another terminal, start the dashboard:
+AI is optional for data and trading workspaces. Configure a model in **Settings → AI models** for model-backed conversations and Sibyl. SDK-based providers need their optional extra, for example `uv sync --frozen --group dev --extra openai`. Ollama and supported OpenAI-compatible servers need no hosted-provider SDK.
 
-```bash
-npm run dev
-```
+### Install a standalone package
 
-Open **http://127.0.0.1:5173**. A new workspace has no active accounts: connect one or several in Settings, or choose the smaller **Preview with Demo** option. Public market prices default to Binance; choose Demo prices for offline charts. News and other research sources have their own settings.
-
-AI is optional for the data and trading workspaces. Configure a model in **Settings → AI models** to enable model-backed conversations and Sibyl. For SDK-based providers, install the corresponding optional extra, for example:
-
-```bash
-uv sync --frozen --group dev --extra openai
-```
-
-Ollama and supported OpenAI-compatible HTTP servers do not need a hosted-provider SDK. Follow the [installation guide](docs/docs/getting-started/installation.md) for other extras and local-model setup.
-
-### Serve a built dashboard
+A complete Python wheel includes the dashboard, so end users need no Node.js or checkout. To build one locally after installing dependencies:
 
 ```bash
 npm run build
-uv run sibyl
+uv build
+python scripts/distribution/release.py inspect-wheel
 ```
 
-FastAPI serves the built dashboard at **http://127.0.0.1:8000**, alongside `/docs` for OpenAPI and `/health` for process health. A [Docker Compose setup](docs/docs/developers/deployment.md) is also included.
+Install the resulting wheel with uv or pipx using the [installation guide](docs/docs/getting-started/installation.md). GitHub download commands become available after a release is published. The package uses per-user application data; select `--data-dir` to open an existing source workspace. Source checkouts keep their repository `.sibyl` directory.
 
-Credentials stay encrypted on the machine running the backend and are never returned to the UI or agent tools. Preserve the database and vault key together. Remote access requires a workspace API token; use the [deployment guide](docs/docs/developers/deployment.md) when hosting. Exchange and automated strategy execution are disabled by default and require separate server flags and reviewed approvals.
+The existing [Docker Compose setup](docs/docs/developers/deployment.md) builds from source. Homebrew, prebuilt registry images, PyPI publication and desktop installers are optional future work. **No new repository is required to publish the Python package.**
+
+Credentials stay encrypted on the backend machine. Preserve the database and vault key together. Remote access needs a workspace API token. Exchange and automated strategy execution require separate server flags and reviewed approvals; see [deployment](docs/docs/developers/deployment.md).
 
 ## Documentation & development
 
@@ -209,10 +202,12 @@ Credentials stay encrypted on the machine running the backend and are never retu
 npm run docs:dev       # http://localhost:3000/sibyl/
 npm run docs:build     # Static documentation in docs/build
 uv run pytest
-uv run ruff check src tests
+uv run ruff check src tests scripts/distribution hatch_build.py
 npm run typecheck
 npm run build
 ```
+
+For release preparation, use the single version command documented in [distribution and releases](docs/docs/developers/distribution.md). It synchronizes package metadata and locks without upgrading dependencies.
 
 Start with the [user guides](https://nmaroulis.github.io/sibyl/), explore the [Python architecture](docs/docs/developers/architecture.md), or use the [extension guide](docs/docs/developers/extending.md) to add a client, strategy or agent tool. The [pending checklist](docs/docs/developers/backend-roadmap.md) tracks work beyond the v2.0.0 baseline.
 

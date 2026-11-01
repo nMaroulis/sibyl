@@ -13,7 +13,7 @@ PRIMARY = {
     "reporter": "news_briefing",
     "technician": "connection_status",
     "wiki": "search_knowledge",
-    "explorer": "bitcoin_blocks",
+    "explorer": "bitcoin_lookup",
     "stocks": "equity_quote",
 }
 
@@ -62,4 +62,4 @@ def coordinator_factory(monkeypatch, factory):
 
         return create_llm("mock", response_callback=respond)
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", build)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", build)

@@ -9,10 +9,10 @@ from agent_helpers import delegate
 from fastapi.testclient import TestClient
 from protolink import Task, create_llm, current_request_context
 
-from sibyl.agents.model_selection import AGENT_NAMES, AgentModelRequest, ModelConflict
-from sibyl.agents.providers import PROVIDERS
+from sibyl.agents.utils.model_selection import AGENT_NAMES, AgentModelRequest, ModelConflict
+from sibyl.agents.utils.providers import PROVIDERS
 from sibyl.api.app import create_app
-from sibyl.services.llm_settings import ModelSettingsRequest
+from sibyl.services.workspace.llm_settings import ModelSettingsRequest
 
 
 @pytest.fixture(autouse=True)
@@ -43,7 +43,7 @@ def agent_row(state, agent="reporter"):
 
 
 def test_profile_only_save_keeps_default_and_does_not_invoke_provider(client, monkeypatch):
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", lambda *a, **kw: pytest.fail("Provider called"))
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", lambda *a, **kw: pytest.fail("Provider called"))
     state = profile(client, "openai", api_key="PROFILE-SECRET-SENTINEL").json()
     assert state["active_provider"] == "none" and state["profiles"]["openai"]["saved"]
     assert all(row["inherited"] and row["provider"] == "none" for row in state["agents"])
@@ -196,7 +196,7 @@ def test_direct_module_request_and_native_client_use_same_override(client, monke
         calls.append((current_request_context().get("agent_id", ""), provider, kwargs))
         return create_llm("mock", default_response="Controlled answer")
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     first = client.post(
         "/api/v1/agents/ask", json={"module": "reporter", "message": "Explain the news"}
     ).json()
@@ -216,7 +216,7 @@ def test_direct_module_request_and_native_client_use_same_override(client, monke
 def test_tool_only_override_keeps_direct_native_tools_available(client, monkeypatch):
     profile(client, "mock", activate=True)
     assign(client, provider="none", model="")
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", lambda *a, **kw: pytest.fail("Model called"))
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", lambda *a, **kw: pytest.fail("Model called"))
     result = client.post(
         "/api/v1/agents/ask", json={"module": "reporter", "message": "News", "context": {"news_mode": "demo"}}
     )
@@ -237,7 +237,7 @@ def test_removed_override_key_is_unavailable_and_does_not_fall_back_to_default(c
     assert state["active_provider"] == "mock" and not agent_row(state)["ready"]
     assert agent_row(state)["provider"] == "openai" and "API key" in agent_row(state)["reason"]
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm", lambda *a, **kw: pytest.fail("Silently fell back")
+        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: pytest.fail("Silently fell back")
     )
     response = client.post("/api/v1/agents/ask", json={"module": "reporter", "message": "Hello"})
     assert response.status_code == 502 and "REMOVE-SENTINEL" not in response.text
@@ -285,7 +285,7 @@ def test_native_delegation_uses_each_specialist_frozen_provider_model_and_key(cl
             ],
         )
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     result = client.post("/api/v1/sibyl/ask", json={"message": "Explain the news"})
     assert result.status_code == 200, result.text
     result = result.json()
@@ -322,7 +322,7 @@ def test_assignments_do_not_leak_into_native_task_payloads(client, monkeypatch):
 
     monkeypatch.setattr(owner.network.group, "run", inspect_task)
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *a, **kw: create_llm("mock", default_response="Safe response"),
     )
     assert (
@@ -332,7 +332,7 @@ def test_assignments_do_not_leak_into_native_task_payloads(client, monkeypatch):
 
 
 def test_passive_metadata_and_registered_catalog_names_match(client, monkeypatch):
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", lambda *a, **kw: pytest.fail("Provider called"))
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", lambda *a, **kw: pytest.fail("Provider called"))
     state = client.get("/api/v1/settings/llm")
     assert state.headers["cache-control"] == "no-store"
     names = {row["id"]: row["name"] for row in state.json()["agents"]}
@@ -370,7 +370,7 @@ def test_missing_embedded_file_marks_saved_override_unavailable(client, tmp_path
     result = assign(client, provider="llama.cpp-local", model=str(path))
     assert result.status_code == 200
     path.unlink()
-    monkeypatch.setattr("sibyl.agents.providers.find_spec", lambda _: object())
+    monkeypatch.setattr("sibyl.agents.utils.providers.find_spec", lambda _: object())
     row = agent_row(client.get("/api/v1/settings/llm").json())
     assert not row["ready"] and "GGUF file is missing" in row["reason"]
 
@@ -380,7 +380,7 @@ def test_environment_provider_can_be_assigned_and_key_fallback_is_provider_speci
     client, monkeypatch, dependency_available
 ):
     monkeypatch.setattr(
-        "sibyl.agents.providers.find_spec", lambda _: object() if dependency_available else None
+        "sibyl.agents.utils.providers.find_spec", lambda _: object() if dependency_available else None
     )
     owner = client.app.state.services.agents
     owner.settings.llm_provider = "openai"

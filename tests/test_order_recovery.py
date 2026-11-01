@@ -11,7 +11,7 @@ from test_order_management import setup as setup
 
 from sibyl.exchanges.order_lookup import OrderLookupPage, lookup_order_page
 from sibyl.market_data.control import ProviderDeferred
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.trading.service import ExchangeTrading
 
 
 @pytest.fixture

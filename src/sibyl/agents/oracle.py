@@ -6,9 +6,9 @@ here provide portfolio observations or focused workspace instructions.
 
 from protolink import Agent
 
-from sibyl.agents.common import COMMON_PROMPT, Services, selected
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.oracle import GUIDES, Topic
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
 
 NAME = "Oracle"
 TAGLINE = "Your portfolio, in perspective"

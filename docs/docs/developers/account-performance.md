@@ -12,7 +12,7 @@ This is matched market P&L, not full account returns, cross-market accounting, a
 
 ## FIFO rules
 
-`services/fifo.py` exposes the pure `fifo(fills, opening)` function and incremental `FifoBook`; `services/performance.py` retains the import for callers. Transfer replay uses that same book, so fee rules and sale matching do not diverge. It uses `Decimal` arithmetic at 50-digit precision over the normalized ledger's recorded numeric values. Normalization currently uses JSON numbers; original exchange decimal-string precision is not recovered. Display values are finite floats or null; overflow never becomes JSON Infinity/NaN.
+`services/portfolio/fifo.py` exposes the pure `fifo(fills, opening)` function and incremental `FifoBook`; `services/portfolio/performance.py` retains the import for callers. Transfer replay uses that same book, so fee rules and sale matching do not diverge. It uses `Decimal` arithmetic at 50-digit precision over the normalized ledger's recorded numeric values. Normalization currently uses JSON numbers; original exchange decimal-string precision is not recovered. Display values are finite floats or null; overflow never becomes JSON Infinity/NaN.
 
 - Buy fees in the pair's quote increase acquisition cost. Sell quote fees reduce proceeds.
 - Buy fees in the base reduce acquired quantity. Sell base fees increase inventory consumed. This allocates the cost of base-denominated sale fees to the disposal.

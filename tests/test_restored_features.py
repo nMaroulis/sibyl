@@ -8,11 +8,11 @@ import pytest
 from pydantic import ValidationError
 
 from sibyl.models import BacktestRequest, ConnectionCreate
-from sibyl.services.analytics import correlation, performance_metrics
-from sibyl.services.market import Market
-from sibyl.services.portfolio import Portfolio
-from sibyl.services.reporting import trading_report
-from sibyl.services.research import Research
+from sibyl.services.markets.analytics import correlation, performance_metrics
+from sibyl.services.markets.service import Market
+from sibyl.services.portfolio.service import Portfolio
+from sibyl.services.research.service import Research
+from sibyl.services.trading.reporting import trading_report
 from sibyl.strategies import backtest
 
 
@@ -211,7 +211,7 @@ def test_agent_keeps_exact_chart_context_without_adding_defaults(client):
 
 
 def test_block_pagination_uses_last_height_and_stops_at_requested_count(settings, monkeypatch):
-    import sibyl.services.research as module
+    import sibyl.services.research.service as module
 
     settings.mode = "live"
     urls = []

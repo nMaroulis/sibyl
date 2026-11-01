@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 from sibyl.exchanges.catalog import CATALOG
 from sibyl.models import ExchangeOrderRequest
-from sibyl.services.analytics import performance_metrics
+from sibyl.services.markets.analytics import performance_metrics
 from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.approvals import StrategyApprovals
 from sibyl.strategies.execution.cancellation import StrategyCancellations

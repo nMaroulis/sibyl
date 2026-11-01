@@ -12,7 +12,7 @@ from sibyl.accounting.balance_checks.contracts import MAX_ASSETS
 from sibyl.accounting.balance_checks.journal import CheckJournal
 from sibyl.accounting.balance_checks.movements import compare
 from sibyl.exchanges.catalog import exchange_spec
-from sibyl.services.accounts import Accounts
+from sibyl.services.accounts.service import Accounts
 
 
 class BalanceChecks:

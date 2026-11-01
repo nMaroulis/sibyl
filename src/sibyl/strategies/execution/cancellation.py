@@ -9,7 +9,7 @@ import json
 import time
 from datetime import UTC, datetime
 
-from sibyl.services.order_lifecycle import TERMINAL
+from sibyl.services.trading.lifecycle import TERMINAL
 from sibyl.strategies.execution.contracts import ExecutionGuard
 
 # Both cancellation scheduling and exit readiness use this predicate. A ledger

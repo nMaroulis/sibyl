@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from protolink import create_llm
 from pydantic import SecretStr
 
-from sibyl.agents.conversations import SibylRequest
+from sibyl.agents.utils.conversations import SibylRequest
 from sibyl.api.app import create_app
 
 

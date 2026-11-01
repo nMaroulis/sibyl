@@ -10,8 +10,8 @@ from test_order_management import setup as setup
 
 from sibyl.exchanges.history import TradePage
 from sibyl.exchanges.order_fills import fetch_order_fill_page
-from sibyl.services.ledger import AccountLedger, ledger_fill, now_iso
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.accounts.ledger import AccountLedger, ledger_fill, now_iso
+from sibyl.services.trading.service import ExchangeTrading
 
 
 def execution(identity="1", quantity=0.01, **changes):

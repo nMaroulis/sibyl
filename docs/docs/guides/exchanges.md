@@ -1,6 +1,38 @@
-# Exchange connections
+---
+title: Exchange connections
+hide_title: true
+---
+
+import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+
+<DocHero title="Exchange connections" eyebrow="User guide · Accounts" icon="account" facts={["20 exchange clients", "Multiple accounts", "Encrypted credentials"]}>
 
 Sibyl has 20 spot exchange clients and an offline demo client. **Settings → Exchanges** gets its searchable provider catalog from the Python backend. Multiple accounts per exchange are supported. Keys, passphrases and API memos are encrypted in your local workspace and cannot be retrieved through the API.
+
+</DocHero>
+
+<DocCards
+  items={[
+    {
+      title: 'Connect an account',
+      text: 'Save credentials and check actual exchange access.',
+      icon: 'account',
+      to: '#connect-an-account',
+    },
+    {
+      title: 'Explore with Demo',
+      text: 'An optional, clearly labeled virtual wallet.',
+      icon: 'spark',
+      to: '#develop-with-demo-data',
+    },
+    {
+      title: 'Test environments',
+      text: 'Separate Binance Testnet and Coinbase Exchange Sandbox accounts.',
+      icon: 'shield',
+      to: '#test-environments-and-orders',
+    },
+  ]}
+/>
 
 Supported providers: Binance, Binance.US, Coinbase, Kraken, OKX, Bybit, KuCoin, Gate, Bitget, MEXC, HTX, Crypto.com Exchange, Bitstamp, Gemini, Bitfinex, CoinEx, BitMart, Phemex and Poloniex, plus Upbit.
 

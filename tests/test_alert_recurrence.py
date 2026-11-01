@@ -12,14 +12,14 @@ from pydantic import ValidationError
 from test_alerts import due, request
 from test_alerts import setup as setup
 
-from sibyl.services.alerts import AlertConflict, PriceAlerts, PriceAlertUpdate
+from sibyl.services.alerts.service import AlertConflict, PriceAlerts, PriceAlertUpdate
 
 
 @pytest.fixture
 def clocked(setup, monkeypatch):
     alerts, feed = setup
     wall = [time.time()]
-    monkeypatch.setattr("sibyl.services.alerts.time.time", lambda: wall[0])
+    monkeypatch.setattr("sibyl.services.alerts.service.time.time", lambda: wall[0])
 
     def observe(rule, price, seconds=31, timestamp=None):
         wall[0] += seconds

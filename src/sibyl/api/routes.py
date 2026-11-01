@@ -8,13 +8,13 @@ from fastapi.responses import StreamingResponse
 from protolink import ContextLimitError
 
 from sibyl import __version__
-from sibyl.agents.conversations import SibylRequest
-from sibyl.agents.model_selection import AgentId, AgentModelRequest
-from sibyl.agents.network import ModelRequired
-from sibyl.agents.providers import ProviderId
-from sibyl.agents.reporting import run_details
-from sibyl.agents.requests import CancelSibylRequest
-from sibyl.agents.streaming import stream_reply
+from sibyl.agents.utils.conversations import SibylRequest
+from sibyl.agents.utils.model_selection import AgentId, AgentModelRequest
+from sibyl.agents.utils.network import ModelRequired
+from sibyl.agents.utils.providers import ProviderId
+from sibyl.agents.utils.reporting import run_details
+from sibyl.agents.utils.requests import CancelSibylRequest
+from sibyl.agents.utils.streaming import stream_reply
 from sibyl.api.app import Services
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.market_data.backfills import (
@@ -38,20 +38,20 @@ from sibyl.models import (
     OrderTracking,
     Timeframe,
 )
-from sibyl.services.account_sync import AccountSyncRequest
-from sibyl.services.alerts import PriceAlertAction, PriceAlertCreate, PriceAlertUpdate, alert_example
-from sibyl.services.analytics import analyze, correlation, forecast
-from sibyl.services.data_settings import MarketSettingsRequest, NewsSettingsRequest
-from sibyl.services.funding_sync import FundingSyncRequest
-from sibyl.services.llm_settings import ModelSettingsRequest
-from sibyl.services.market import TIMEFRAMES
-from sibyl.services.order_discovery import OrderDiscoveryRequest
-from sibyl.services.order_examples import order_examples
-from sibyl.services.performance import OpeningInventory
-from sibyl.services.reporting import trading_report
-from sibyl.services.roadmap import implementation_status
-from sibyl.services.transfer_reconciliation import TransferConfirm, TransferPair
-from sibyl.services.watchlists import WatchlistItem, WatchlistOrder
+from sibyl.services.accounts.sync import AccountSyncRequest
+from sibyl.services.alerts.service import PriceAlertAction, PriceAlertCreate, PriceAlertUpdate, alert_example
+from sibyl.services.funding.sync import FundingSyncRequest
+from sibyl.services.markets.analytics import analyze, correlation, forecast
+from sibyl.services.markets.service import TIMEFRAMES
+from sibyl.services.markets.watchlists import WatchlistItem, WatchlistOrder
+from sibyl.services.portfolio.performance import OpeningInventory
+from sibyl.services.trading.discovery import OrderDiscoveryRequest
+from sibyl.services.trading.examples import order_examples
+from sibyl.services.trading.reporting import trading_report
+from sibyl.services.transfers.reconciliation import TransferConfirm, TransferPair
+from sibyl.services.workspace.data_settings import MarketSettingsRequest, NewsSettingsRequest
+from sibyl.services.workspace.llm_settings import ModelSettingsRequest
+from sibyl.services.workspace.roadmap import implementation_status
 from sibyl.strategies import CATALOG
 
 router = APIRouter()

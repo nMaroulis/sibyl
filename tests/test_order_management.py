@@ -14,9 +14,9 @@ from test_exchange_trading import FakeExchange
 from sibyl.exchanges.demo import DemoClient
 from sibyl.exchanges.paper_limits import PaperLimits
 from sibyl.models import ConnectionCreate, ExchangeOrderRequest, OrderRequest
-from sibyl.services.market import Market
-from sibyl.services.reporting import trading_report
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.markets.service import Market
+from sibyl.services.trading.reporting import trading_report
+from sibyl.services.trading.service import ExchangeTrading
 from sibyl.storage import Store
 
 

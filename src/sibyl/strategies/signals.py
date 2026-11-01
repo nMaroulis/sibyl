@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from sibyl.models import BacktestRequest
-from sibyl.services.analytics import indicators
+from sibyl.services.markets.analytics import indicators
 
 
 def signals(frame: pd.DataFrame, strategy: str, request: BacktestRequest | None = None) -> pd.Series:

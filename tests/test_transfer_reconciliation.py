@@ -5,8 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from sibyl.services.funding_ledger import FundingLedger, funding_event
-from sibyl.services.transfer_reconciliation import (
+from sibyl.services.funding.ledger import FundingLedger, funding_event
+from sibyl.services.transfers.reconciliation import (
     TransferConfirm,
     TransferConflict,
     TransferPair,
@@ -320,7 +320,7 @@ def test_audit_failure_rolls_back_link_and_both_reservations(transfers, store, m
 
 def test_scans_are_bounded_and_manual_search_is_independent(transfers, store, monkeypatch):
     outgoing, incoming = pair(transfers, store)
-    monkeypatch.setattr("sibyl.services.transfer_reconciliation.MAX_EVENTS", 1)
+    monkeypatch.setattr("sibyl.services.transfers.reconciliation.MAX_EVENTS", 1)
     report = transfers.report()
     assert report["scan_limited"] and report["scanned_events"] == 1 and report["candidates"] == []
     assert transfers.events("out", q=outgoing["native_id"])["items"][0]["id"] == outgoing["id"]
@@ -477,7 +477,7 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
     registry.settings.llm_provider = "ollama"
     registry.settings.llm_model = "fixture-model"
     monkeypatch.setattr(
-        "sibyl.agents.registry.create_llm",
+        "sibyl.agents.utils.registry.create_llm",
         lambda *a, **kw: create_llm(
             "mock",
             sequential_responses=[

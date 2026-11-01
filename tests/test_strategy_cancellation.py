@@ -15,7 +15,7 @@ from test_strategy_execution import Venue, reconcile, request, start, submit
 from test_strategy_execution import execution as execution
 
 from sibyl.models import ConnectionCreate, ExchangeOrderRequest
-from sibyl.services.trading import ExchangeTrading
+from sibyl.services.trading.service import ExchangeTrading
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution import cancellation, runner, venue
 from sibyl.strategies.execution.contracts import ExecutionRisk

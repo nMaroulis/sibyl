@@ -4,20 +4,20 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 
 ## Reviewed providers
 
-| Client | Lookup |
-| --- | --- |
-| Binance / Binance.US / Binance Testnet | Direct native order read using `origClientOrderId` and the exact spot symbol. |
-| Coinbase Exchange Sandbox | Direct client-ID namespace lookup through the installed Exchange SDK adapter. |
-| Coinbase Advanced | Native order-history pages for one exact product and creation-time window, filtering the returned `client_order_id` exactly. |
-| Kraken | Client-filtered open orders, followed by client-filtered closed-order pages within an opening-time window. Uses `cl_ord_id`, not numeric `userref`. |
-| Demo | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself. |
-| Other clients | Explicitly unsupported; no generic scan or production/Demo fallback. |
+| Client                                 | Lookup                                                                                                                                              |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Binance / Binance.US / Binance Testnet | Direct native order read using `origClientOrderId` and the exact spot symbol.                                                                       |
+| Coinbase Exchange Sandbox              | Direct client-ID namespace lookup through the installed Exchange SDK adapter.                                                                       |
+| Coinbase Advanced                      | Native order-history pages for one exact product and creation-time window, filtering the returned `client_order_id` exactly.                        |
+| Kraken                                 | Client-filtered open orders, followed by client-filtered closed-order pages within an opening-time window. Uses `cl_ord_id`, not numeric `userref`. |
+| Demo                                   | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself.                                 |
+| Other clients                          | Explicitly unsupported; no generic scan or production/Demo fallback.                                                                                |
 
 Contracts follow the [Binance order query](https://developers.binance.com/en/docs/catalog/core-trading-spot-trading/api/rest-api/account), [Coinbase Exchange single-order read](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/orders/get-single-order), [Coinbase Advanced list-orders API](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/list-orders), and Kraken [open](https://docs.kraken.com/api-reference/account-data/get-open-orders) / [closed](https://docs.kraken.com/api-reference/account-data/get-closed-orders) order reads. Coinbase Advanced does not provide the same direct client-ID endpoint as Exchange Sandbox. The provider's permissions, retention, clock and pagination behavior still apply; authenticated venue acceptance is outstanding.
 
 ## Acceptance rules
 
-`services/order_recovery.py` accepts an ID only when:
+`services/trading/recovery.py` accepts an ID only when:
 
 - The local intent is `unknown` or `submitting`, without a saved native ID. Previews and explicitly rejected orders cannot be recovered.
 - The saved account ID, exchange and sandbox environment still agree. Automatic checks require an active account; explicit manual checks may read a saved inactive one.

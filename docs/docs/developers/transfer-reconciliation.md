@@ -18,7 +18,7 @@ Confirmation classifies pairs. The separate [Performance calculation](transfer-c
 
 ## Suggestion boundaries
 
-`services/transfer_reconciliation.py` reads at most the latest **1,000 eligible observations** for the selected asset/environment across accounts. It returns at most **40 suggestions**. The response and UI disclose truncation, scanned/eligible counts and the scan's scope. Narrow the asset filter or use manual search when the scan is limited. No suggestion is automatically confirmed.
+`services/transfers/reconciliation.py` reads at most the latest **1,000 eligible observations** for the selected asset/environment across accounts. It returns at most **40 suggestions**. The response and UI disclose truncation, scanned/eligible counts and the scan's scope. Narrow the asset filter or use manual search when the scan is limited. No suggestion is automatically confirmed.
 
 A suggestion requires:
 

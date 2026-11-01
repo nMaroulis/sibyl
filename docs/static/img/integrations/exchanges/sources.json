@@ -1,0 +1,85 @@
+{
+  "source": "Public exchange-directory artwork (CoinGecko), Web3Icons CoinEx symbol (MIT), and official BitMart favicon. Marks belong to their respective owners.",
+  "icons": {
+    "binance": {
+      "path": "/exchanges/binance.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/52/small/binance.jpg?1706864274"
+    },
+    "binanceus": {
+      "path": "/exchanges/binanceus.png",
+      "source": "https://coin-images.coingecko.com/markets/images/469/small/Binance.png?1706864454"
+    },
+    "coinbase": {
+      "path": "/exchanges/coinbase.png",
+      "source": "https://coin-images.coingecko.com/markets/images/23/small/Coinbase_Coin_Primary.png?1706864258"
+    },
+    "kraken": {
+      "path": "/exchanges/kraken.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/29/small/kraken.jpg?1706864265"
+    },
+    "okx": {
+      "path": "/exchanges/okx.png",
+      "source": "https://coin-images.coingecko.com/markets/images/96/small/WeChat_Image_20220117220452.png?1706864283"
+    },
+    "bybit": {
+      "path": "/exchanges/bybit.png",
+      "source": "https://coin-images.coingecko.com/markets/images/698/small/bybit_spot.png?1706864649"
+    },
+    "kucoin": {
+      "path": "/exchanges/kucoin.png",
+      "source": "https://coin-images.coingecko.com/markets/images/61/small/kucoin.png?1706864282"
+    },
+    "gate": {
+      "path": "/exchanges/gate.png",
+      "source": "https://coin-images.coingecko.com/markets/images/60/small/Frame_1.png?1747795534"
+    },
+    "bitget": {
+      "path": "/exchanges/bitget.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/540/small/2023-07-25_21.47.43.jpg?1706864507"
+    },
+    "mexc": {
+      "path": "/exchanges/mexc.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/409/small/164286be-32a5-4b58-978c-d072eea00eb9.jpeg?1775619316"
+    },
+    "htx": {
+      "path": "/exchanges/htx.png",
+      "source": "https://coin-images.coingecko.com/markets/images/25/small/htx.png?1721712842"
+    },
+    "cryptocom": {
+      "path": "/exchanges/cryptocom.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/589/small/h2oMjPp6_400x400.jpg?1706864542"
+    },
+    "bitstamp": {
+      "path": "/exchanges/bitstamp.jpg",
+      "source": "https://coin-images.coingecko.com/markets/images/9/small/bitstamp.jpg?1706864251"
+    },
+    "gemini": {
+      "path": "/exchanges/gemini.png",
+      "source": "https://coin-images.coingecko.com/markets/images/50/small/gemini.png?1706864273"
+    },
+    "bitfinex": {
+      "path": "/exchanges/bitfinex.png",
+      "source": "https://coin-images.coingecko.com/markets/images/4/small/BItfinex.png?1706864245"
+    },
+    "phemex": {
+      "path": "/exchanges/phemex.png",
+      "source": "https://coin-images.coingecko.com/markets/images/564/small/phemex-exchange-new-logo.png?1763018222"
+    },
+    "poloniex": {
+      "path": "/exchanges/poloniex.png",
+      "source": "https://coin-images.coingecko.com/markets/images/37/small/poloniex.png?1706864269"
+    },
+    "upbit": {
+      "path": "/exchanges/upbit.png",
+      "source": "https://coin-images.coingecko.com/markets/images/117/small/upbit.png?1706864294"
+    },
+    "coinex": {
+      "path": "/exchanges/coinex.svg",
+      "source": "https://raw.githubusercontent.com/0xa3k5/web3icons/main/packages/core/src/svgs/exchanges/background/coinex.svg"
+    },
+    "bitmart": {
+      "path": "/exchanges/bitmart.ico",
+      "source": "https://www.bitmart.com/favicon.ico"
+    }
+  }
+}

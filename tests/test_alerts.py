@@ -11,9 +11,9 @@ import pytest
 from pydantic import ValidationError
 
 from sibyl.models import ConnectionCreate
-from sibyl.services.alerts import PriceAlertCreate, PriceAlerts, fresh_quote
-from sibyl.services.data_settings import DataSettings
-from sibyl.services.market import Market
+from sibyl.services.alerts.service import PriceAlertCreate, PriceAlerts, fresh_quote
+from sibyl.services.markets.service import Market
+from sibyl.services.workspace.data_settings import DataSettings
 from sibyl.storage import Store
 
 

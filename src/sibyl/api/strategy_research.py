@@ -55,5 +55,5 @@ def validation_detail(identity: str, s: S):
 
 @router.post("/validations/{identity}/rerun", status_code=201)
 def rerun_validation(identity: str, s: S):
-    """Replay the original immutable input and grid; never overwrite the old study."""
+    """Replay the original immutable input and verified candidate plan; retain the old study."""
     return s.strategies.validation.rerun(identity)

@@ -10,9 +10,9 @@ import pytest
 from sibyl.exchanges import create_client
 from sibyl.exchanges.history import TradePage
 from sibyl.models import ConnectionCreate, OrderRequest
-from sibyl.services.account_sync import AccountSync, AccountSyncRequest
-from sibyl.services.ledger import ledger_fill
-from sibyl.services.market import Market
+from sibyl.services.accounts.ledger import ledger_fill
+from sibyl.services.accounts.sync import AccountSync, AccountSyncRequest
+from sibyl.services.markets.service import Market
 
 
 @pytest.fixture

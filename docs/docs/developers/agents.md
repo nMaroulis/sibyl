@@ -1,22 +1,60 @@
-# ProtoLink agents
+---
+title: ProtoLink agents
+hide_title: true
+---
+
+import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+
+<DocHero title="ProtoLink agents" eyebrow="Developers · ProtoLink" icon="spark" facts={["One file per agent", "Typed tools", "Request-local models"]}>
 
 Sibyl uses `protolink[http]>=0.8.3,<0.9`, locked to 0.8.3. Every specialist has its own file, system prompt and ordinary typed tool functions. ProtoLink owns tool execution, request-local model instances, native delegation, session history, event correlation and run reports. There is no application tool wrapper or LLM subclass.
+
+</DocHero>
+
+<DocCards
+  items={[
+    {
+      title: 'Agent definitions',
+      text: 'Prompts and tools stay with each specialist.',
+      icon: 'code',
+      to: '#ordinary-tool-declarations',
+    },
+    {
+      title: 'Model choices',
+      text: 'Workspace defaults and per-agent overrides.',
+      icon: 'spark',
+      to: '/developers/agent-models',
+    },
+    {
+      title: 'Acceptance checks',
+      text: 'Inspect evaluated runtime behavior and limits.',
+      icon: 'shield',
+      to: '/developers/agent-acceptance',
+    },
+  ]}
+/>
 
 The migration follows the published [application-runtime guide](https://github.com/nMaroulis/protolink/blob/v0.8.3/docs/content/application-runtime.md) and [FastAPI example](https://github.com/nMaroulis/protolink/blob/v0.8.3/examples/application_runtime.py), checked against the installed PyPI package. The HTTP extra supplies the dependencies used by its HTTP model adapters, including `httpx2`.
 
 ## Files and responsibilities
 
-| File                              | Responsibility                                                                  |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `<module>.py`                     | Specialist declaration, prompt and typed read-only functions                    |
-| `sibyl.py`                        | Coordinator prompt; native delegation enabled                                   |
-| `guides/`                         | Curated page instructions retrieved through help tools                          |
-| `common.py`                       | Domain service references, immutable snapshots and private page defaults        |
-| `registry.py`                     | Domain wiring, lazy model factory and UI reply projection                       |
-| `network.py`                      | `AgentGroup`, admission, private scope, native handles and UI chat coordination |
-| `presentation.py`                 | Format native events and `ToolEvidence` into consultation cards                 |
-| `snapshots.py`                    | Deterministic factual formatting when no model is selected                      |
-| `conversations.py`, `requests.py` | UI chat cards, queued-request IDs, progress and durable outcomes                |
+Paths below are relative to `src/sibyl/agents/`. The top-level Python files declare
+the agents. Shared runtime/model code lives in `utils/`, and page-help content stays
+in `guides/`.
+
+| File                                             | Responsibility                                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `<module>.py`                                    | Specialist declaration, prompt and typed read-only functions                    |
+| `sibyl.py`                                       | Coordinator prompt; native delegation enabled                                   |
+| `guides/`                                        | Curated page instructions retrieved through help tools                          |
+| `utils/common.py`                                | Domain service references, immutable snapshots and private page defaults        |
+| `utils/registry.py`                              | Domain wiring, lazy model factory and UI reply projection                       |
+| `utils/network.py`                               | `AgentGroup`, admission, private scope, native handles and UI chat coordination |
+| `utils/model_selection.py`, `utils/providers.py` | Model assignments, provider catalog and passive readiness                       |
+| `utils/presentation.py`                          | Format native events and `ToolEvidence` into consultation cards                 |
+| `utils/reporting.py`, `utils/streaming.py`       | Public run summaries and streaming response formatting                          |
+| `utils/snapshots.py`                             | Deterministic factual formatting when no model is selected                      |
+| `utils/conversations.py`, `utils/requests.py`    | UI chat cards, queued-request IDs, progress and durable outcomes                |
 
 `background_tool`, `WorkspaceLLM`, the custom `Turn`/`ContextVar` and `ChatTelemetry` have been removed. UI records do not supply model conversation history or collect tool execution receipts.
 
@@ -26,7 +64,7 @@ Each module follows this pattern:
 
 ```python
 from protolink import Agent
-from sibyl.agents.common import COMMON_PROMPT, Services, selected
+from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
 
 
 def create_agent(services: Services, **runtime) -> Agent:

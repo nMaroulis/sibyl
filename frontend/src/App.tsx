@@ -17,6 +17,7 @@ import {
   Waves,
 } from 'lucide-react';
 import { exchangeCategoryIcons } from './lib/category-icons';
+import { DOCUMENTATION_URL } from './lib/docs';
 import { Badge, Loading, Modal } from './components/ui';
 import { NotificationBell } from './components/notifications';
 import { NavigationDock, PageView } from './components/navigation';
@@ -275,7 +276,7 @@ export function App() {
               <span className="status-dot" />
               Local workspace · Sibyl {system?.version ?? '0.2.0'}
             </span>
-            <a href="http://localhost:3000/sibyl/" target="_blank" rel="noreferrer">
+            <a href={DOCUMENTATION_URL} target="_blank" rel="noreferrer">
               Documentation <ArrowUpRight size={12} />
             </a>
           </footer>

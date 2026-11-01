@@ -9,6 +9,26 @@ export type ValidationOptions = {
   max_folds: number;
   min_test_bars: number;
   max_work_bars: number;
+  search_methods: ('grid' | 'random')[];
+  random: {
+    max_axes: number;
+    max_values: number;
+    max_samples: number;
+    max_space: number;
+    default_seed: number;
+    sampler: string;
+  };
+};
+export type SearchPlan = {
+  method: 'fixed' | 'grid' | 'random';
+  sampler: string;
+  seed: number | null;
+  space_size: number;
+  evaluated_candidates: number;
+  coverage_pct: number;
+  space_fingerprint: string;
+  plan_fingerprint: string;
+  candidates: { id: number; space_index: number; overrides: Record<string, number> }[];
 };
 export type ValidationMetrics = {
   return_pct: number;
@@ -26,10 +46,14 @@ export type ValidationSummary = {
   candidate_count: number;
   method: string;
   engine_revision: string;
+  search?: SearchPlan;
   request: {
     dataset_id: string;
     parameters: StrategyParams;
     grid: Record<string, number[]>;
+    search_method?: 'grid' | 'random';
+    sample_size?: number | null;
+    seed?: number | null;
     folds: number;
     initial_train_pct: number;
     objective: 'return_pct' | 'sharpe' | 'max_drawdown';
@@ -57,11 +81,13 @@ export type ValidationReport = ValidationSummary & {
     test: { start: string; end: string; bars: number };
     selected: {
       candidate_id: number;
+      space_index?: number;
       overrides: Record<string, number>;
       parameters: StrategyParams;
     };
     training_ranking: (ValidationMetrics & {
       candidate_id: number;
+      space_index?: number;
       overrides: Record<string, number>;
       eligible: boolean;
     })[];

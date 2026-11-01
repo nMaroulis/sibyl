@@ -1,24 +1,59 @@
-# Configuration
+---
+title: Configuration
+hide_title: true
+---
+
+import { DocHero, DocCards } from '@site/src/components/DocBlocks';
+
+<DocHero title="Configuration" eyebrow="Getting started" icon="shield" facts={["Local vault", "Environment defaults", "Saved workspace settings"]}>
 
 Settings are validated by `pydantic-settings`. Environment variables override `.env`; all application settings use the `SIBYL_` prefix. Restart the API after changing environment variables. A saved model profile in Settings takes precedence over the LLM environment defaults and applies without a restart.
 
-| Variable                   | Default                           | Purpose                                                                                       |
-| -------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------- |
-| `SIBYL_HOST`               | `127.0.0.1`                       | API bind address                                                                              |
-| `SIBYL_PORT`               | `8000`                            | API port                                                                                      |
-| `SIBYL_DATA_DIR`           | `.sibyl`                          | SQLite and local vault directory                                                              |
-| `SIBYL_MODE`               | `demo`                            | Legacy standalone research default; account activation is explicit in Exchanges                                                       |
-| `SIBYL_NEWS_MODE`          | `auto`                            | Follow SIBYL_MODE for research, or independently choose `demo` / `live` news |
-| `SIBYL_NEWS_REFRESH_SECONDS` | `600`                          | Publisher collection interval, 60–86,400 seconds |
-| `SIBYL_NEWS_RETENTION_DAYS` | `30`                            | News archive retention, 1–365 days, capped at 5,000 stories |
-| `SIBYL_MARKET_EXCHANGE`    | `binance`                         | Default market feed, independent of account mode: any of the 20 exchange IDs in the [catalog](../developers/exchange-clients.md) |
-| `SIBYL_CORS_ORIGINS`       | localhost and 127.0.0.1 port 5173 | JSON array of permitted browser origins                                                       |
-| `SIBYL_API_TOKEN`          | empty                             | Bearer token for all versioned API routes                                                     |
-| `SIBYL_ALLOW_LIVE_TRADING` | `false`                           | Enable reviewed exchange orders; also required for approved strategies                          |
-| `SIBYL_ALLOW_STRATEGY_EXECUTION` | `false`                     | Permit scoped exchange strategy approvals, including test environments; requires live-trading flag |
-| `SIBYL_LLM_PROVIDER`       | `none`                            | `none` or any provider in [Settings](../guides/settings.md)                                   |
-| `SIBYL_LLM_MODEL`          | empty                             | Model name; provider default is used if omitted                                               |
-| `SIBYL_LLM_BASE_URL`       | `http://127.0.0.1:11434`          | Model server URL for the environment-selected adapter                                         |
+</DocHero>
+
+<DocCards
+  items={[
+    {
+      title: 'Environment',
+      text: 'Ports, data paths and server defaults.',
+      icon: 'code',
+      to: '#environment-reference',
+    },
+    {
+      title: 'Saved preferences',
+      text: 'Configure providers and models in the app.',
+      icon: 'spark',
+      to: '#configuration-helper-in-settings',
+    },
+    {
+      title: 'State & backups',
+      text: 'Keep the database and its vault key together.',
+      icon: 'shield',
+      to: '#state-and-backups',
+    },
+  ]}
+/>
+
+## Environment reference
+
+| Variable                         | Default                             | Purpose                                                                                                                          |
+| -------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `SIBYL_HOST`                     | `127.0.0.1`                         | API bind address                                                                                                                 |
+| `SIBYL_PORT`                     | `8000`                              | API port                                                                                                                         |
+| `SIBYL_DATA_DIR`                 | Source `.sibyl`; installed per-user | SQLite and local vault directory; source checkouts keep the repository workspace                                                 |
+| `SIBYL_DASHBOARD_DIR`            | Bundled dashboard                   | Optional local React build override; must contain `index.html`                                                                   |
+| `SIBYL_MODE`                     | `demo`                              | Legacy standalone research default; account activation is explicit in Exchanges                                                  |
+| `SIBYL_NEWS_MODE`                | `auto`                              | Follow SIBYL_MODE for research, or independently choose `demo` / `live` news                                                     |
+| `SIBYL_NEWS_REFRESH_SECONDS`     | `600`                               | Publisher collection interval, 60–86,400 seconds                                                                                 |
+| `SIBYL_NEWS_RETENTION_DAYS`      | `30`                                | News archive retention, 1–365 days, capped at 5,000 stories                                                                      |
+| `SIBYL_MARKET_EXCHANGE`          | `binance`                           | Default market feed, independent of account mode: any of the 20 exchange IDs in the [catalog](../developers/exchange-clients.md) |
+| `SIBYL_CORS_ORIGINS`             | localhost and 127.0.0.1 port 5173   | JSON array of permitted browser origins                                                                                          |
+| `SIBYL_API_TOKEN`                | empty                               | Bearer token for all versioned API routes                                                                                        |
+| `SIBYL_ALLOW_LIVE_TRADING`       | `false`                             | Enable reviewed exchange orders; also required for approved strategies                                                           |
+| `SIBYL_ALLOW_STRATEGY_EXECUTION` | `false`                             | Permit scoped exchange strategy approvals, including test environments; requires live-trading flag                               |
+| `SIBYL_LLM_PROVIDER`             | `none`                              | `none` or any provider in [Settings](../guides/settings.md)                                                                      |
+| `SIBYL_LLM_MODEL`                | empty                               | Model name; provider default is used if omitted                                                                                  |
+| `SIBYL_LLM_BASE_URL`             | `http://127.0.0.1:11434`            | Model server URL for the environment-selected adapter                                                                            |
 
 Example for connected balances with local inference:
 
@@ -42,11 +77,13 @@ When setting an API token, enter it in the dashboard's **Settings → Workspace*
 
 The workspace directory contains `sibyl.db` and `vault.key`. It stores encrypted exchange credentials, manual paper balances and orders, historical backtests, agent requests and responses, observed live portfolio snapshots, paper strategy jobs, and exchange order intents/results.
 
+Packaged installations default to `~/Library/Application Support/Sibyl` on macOS, `%LOCALAPPDATA%\Sibyl` on Windows, and `$XDG_DATA_HOME/sibyl` or `~/.local/share/sibyl` on Linux. Source checkouts default to their repository `.sibyl`, including when no `.env` exists. Set `SIBYL_DATA_DIR` or launch with `sibyl --data-dir /existing/workspace` to retain a workspace when changing installation method. No automatic relocation takes place.
+
 Back up the directory as a unit with the API stopped. The vault key is necessary to recover stored credentials. Existing state is not reset when toggling demo/live data. Paper and connected exchange funds remain separate.
 
 ## Configuration helper in Settings
 
-[Settings](../guides/settings.md) groups accounts and configuration into five tabs: Exchanges, AI models, News, Market data, and Workspace. AI models saves an encrypted provider-specific profile, including an optional API key, and activates it immediately for new agent requests. Preset model choices and custom IDs are supported for every adapter. Stored profiles override environment LLM defaults after restart; provider environment keys remain a fallback when no saved key exists.
+[Settings](../guides/settings.md) groups accounts and configuration into six tabs: Exchanges, AI models, News, Market data, Messaging, and Workspace. AI models saves an encrypted provider-specific profile, including an optional API key, and activates it immediately for new agent requests. Preset model choices and custom IDs are supported for every adapter. Stored profiles override environment LLM defaults after restart; provider environment keys remain a fallback when no saved key exists.
 
 News saves enabled collectors and encrypted optional NewsAPI credentials immediately. Market data saves one default feed and encrypted provider-specific keys immediately, independently of account mode. Saved workspace choices override environment defaults. Public exchanges need no key; saved accounts retain their own environment. See [Market data sources](../developers/market-data.md). Workspace shows current runtime settings and manages browser-session access. Local model downloads, quantization, and deployment management are marked **Coming soon**.
 

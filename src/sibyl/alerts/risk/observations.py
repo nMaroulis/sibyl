@@ -5,7 +5,7 @@ import time
 from datetime import UTC, datetime
 
 from sibyl.exchanges.base import number
-from sibyl.services.valuation import CURRENCY, Valuation
+from sibyl.services.portfolio.valuation import CURRENCY, Valuation
 
 MAX_ASSETS = 100
 MAX_SAMPLE_SECONDS = 45

@@ -12,9 +12,9 @@ from sibyl.accounting.funding.rules import fingerprint
 from sibyl.exchanges.funding import FundingPage
 from sibyl.models import ConnectionCreate
 from sibyl.services.funding.contracts import FundingRefreshConflict, RefreshFunding, refresh_streams
-from sibyl.services.funding_ledger import funding_event, write_event
-from sibyl.services.funding_sync import FundingSync
-from sibyl.services.market import Market
+from sibyl.services.funding.ledger import funding_event, write_event
+from sibyl.services.funding.sync import FundingSync
+from sibyl.services.markets.service import Market
 
 
 @pytest.fixture
@@ -543,7 +543,7 @@ def test_overlapping_target_across_pages_fails_instead_of_double_counting(worksp
 def test_new_manual_range_does_not_forget_older_pending_record(workspace):
     from datetime import UTC, datetime
 
-    from sibyl.services.funding_sync import FundingSyncRequest
+    from sibyl.services.funding.sync import FundingSyncRequest
 
     w = workspace
     raw = native(w)

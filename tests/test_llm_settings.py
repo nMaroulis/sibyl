@@ -9,10 +9,10 @@ from fastapi.testclient import TestClient
 from protolink import create_llm
 from protolink.llms.factory import LLMFactory, LLMProvider
 
-from sibyl.agents.providers import PROVIDERS
+from sibyl.agents.utils.providers import PROVIDERS
 from sibyl.api.app import create_app
 from sibyl.config import Settings
-from sibyl.services.llm_settings import ModelSettings, ModelSettingsRequest
+from sibyl.services.workspace.llm_settings import ModelSettings, ModelSettingsRequest
 
 
 @pytest.fixture(autouse=True)
@@ -79,14 +79,14 @@ def test_provider_switch_and_model_edits_preserve_the_correct_key(client):
 
 def test_save_does_not_contact_a_provider_and_agent_uses_saved_credentials(client, monkeypatch):
     # This tests native MockLLM wiring, independently of optional SDK installation.
-    monkeypatch.setattr("sibyl.agents.providers.find_spec", lambda _: object())
+    monkeypatch.setattr("sibyl.agents.utils.providers.find_spec", lambda _: object())
     calls = []
 
     def factory(provider, **kwargs):
         calls.append((provider, kwargs))
         return create_llm("mock", default_response="A controlled model response.")
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     assert save(client, api_key="only-adapter-sees-this").status_code == 200
     assert calls == []
     response = client.post(
@@ -101,7 +101,7 @@ def test_save_does_not_contact_a_provider_and_agent_uses_saved_credentials(clien
 
 def test_inflight_agent_keeps_its_provider_snapshot_when_settings_change(client, monkeypatch):
     # The provider factory below is scripted; CI need not install hosted SDKs.
-    monkeypatch.setattr("sibyl.agents.providers.find_spec", lambda _: object())
+    monkeypatch.setattr("sibyl.agents.utils.providers.find_spec", lambda _: object())
     save(client, api_key="first-key")
     calls = []
 
@@ -112,7 +112,7 @@ def test_inflight_agent_keeps_its_provider_snapshot_when_settings_change(client,
         )
         return create_llm("mock", default_response="Snapshot preserved.")
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     response = client.post("/api/v1/agents/ask", json={"module": "wiki", "message": "What is RSI?"})
     assert response.status_code == 200, response.text
     assert response.json()["provider"] == "openai"
@@ -250,7 +250,7 @@ def test_ollama_context_is_persisted_and_shared_with_native_budget(client, setti
         created.append(model)
         return model
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     response = client.post("/api/v1/agents/ask", json={"module": "wiki", "message": "Hello"})
     assert response.status_code == 200
     assert arguments[0][0] == "ollama"
@@ -273,7 +273,7 @@ def test_small_ollama_context_rejects_coordinator_before_model_call(client, monk
             "mock", response_callback=lambda *_: pytest.fail("Oversized input reached the model")
         )
 
-    monkeypatch.setattr("sibyl.agents.registry.create_llm", factory)
+    monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", factory)
     response = client.post("/api/v1/sibyl/ask", json={"message": "How do I see account history?"})
     assert response.status_code == 409, response.text
     assert "context window" in response.json()["detail"]

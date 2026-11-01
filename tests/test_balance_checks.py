@@ -11,7 +11,7 @@ import pytest
 from sibyl.accounting.balance_checks import service
 from sibyl.accounting.balance_checks.movements import compare
 from sibyl.models import ConnectionCreate
-from sibyl.services.ledger import AccountLedger, ledger_fill, now_iso
+from sibyl.services.accounts.ledger import AccountLedger, ledger_fill, now_iso
 
 
 def observation(**changes):

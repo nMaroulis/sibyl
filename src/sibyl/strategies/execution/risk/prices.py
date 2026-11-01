@@ -4,7 +4,7 @@ import hashlib
 import json
 from datetime import UTC, datetime
 
-from sibyl.services.valuation import Valuation
+from sibyl.services.portfolio.valuation import Valuation
 from sibyl.strategies.execution.contracts import ExecutionGuard
 
 MAX_AGE = 60
