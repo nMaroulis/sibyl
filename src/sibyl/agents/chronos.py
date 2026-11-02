@@ -6,7 +6,7 @@ forecast model. Tool descriptions explain their purpose to the reasoning model.
 
 from typing import Annotated
 
-from protolink import Agent
+from protolink import Agent, ToolRejectedError
 from pydantic import Field
 
 from sibyl.agents.guides import read_guide
@@ -54,7 +54,14 @@ def create_agent(services: Services, **runtime) -> Agent:
         if identity:
             if not services.forecasts:
                 raise ValueError("Trained forecasting is unavailable in this workspace.")
-            model = services.forecasts.detail(identity)["model"]
+            try:
+                model = services.forecasts.detail(identity)["model"]
+            except LookupError as exc:
+                raise ToolRejectedError(
+                    "That trained model version is not retained in this workspace.",
+                    code="forecast_model_not_found",
+                    suggestion="Call trained_models() to find saved versions, or explain that the selected version is missing. Never silently replace it with the untrained baseline.",
+                ) from exc
             symbol = symbol or (
                 model["symbol"] if explicit_model else selected("symbol", None, model["symbol"])
             )
@@ -124,8 +131,19 @@ def create_agent(services: Services, **runtime) -> Agent:
         """
         identity = selected("forecast_model_id", model_id)
         if not identity or not services.forecasts:
-            raise ValueError("Select a trained model in Forecasting or choose an ID from trained_models.")
-        report = services.forecasts.detail(identity)
+            raise ToolRejectedError(
+                "No trained model is selected.",
+                code="forecast_model_required",
+                suggestion="Use trained_models() for saved versions or guide the user to Forecasting. An empty registry is not a trained forecast.",
+            )
+        try:
+            report = services.forecasts.detail(identity)
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That trained model version is not retained in this workspace.",
+                code="forecast_model_not_found",
+                suggestion="Use trained_models() for current model IDs; do not invent a version or substitute the baseline.",
+            ) from exc
         return {key: value for key, value in report.items() if key not in {"test_trace", "outputs"}}
 
     def page_help(topic: Topic = "overview") -> dict:

@@ -93,7 +93,7 @@ GUIDES = {
     "messaging": {
         "url": "/settings?tab=messaging",
         "steps": [
-            "Messaging lets you talk to Sibyl through another app. Telegram is implemented; WhatsApp, Discord, Slack, Signal and Email are unavailable previews.",
+            "Messaging lets you talk to Sibyl through another app. Telegram is implemented; WhatsApp, Discord, Slack, Signal and Email are unavailable previews. Telegram can also receive explicitly selected scheduled briefings and per-rule alerts; enabling chat alone does not enable these deliveries.",
             "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. Other channels remain unavailable previews.",
         ],
     },

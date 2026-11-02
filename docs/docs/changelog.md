@@ -61,10 +61,13 @@ docker compose up --build
 
 - Opt-in Telegram delivery for price, account-risk, strategy and connection alert rules, with future-only cursors, explicitly checked recipients, cooldown suppression and observation-based expiry.
 - Per-rule delivery editors and a shared Delivery history tab with confirmed part counts, failure/suppression reasons and pause controls. Shared outbox admission and restart tests preserve briefing behavior; Technician setup help explains the new workflow.
+- A developer agent-evaluation command using native ProtoLink cases, repeated runs, actual specialist tool evidence, scope/link/number checks and baseline score comparisons. Isolated local-model fixtures cover missing accounts/models, explicit market selection, native consultations and an untrusted news excerpt; model-specific failures remain recorded.
+- Native correctable selection errors for removed articles, trained models, strategy runs and saved investigations/calendars, with useful next steps and focused acceptance tests. Agent help explains opt-in alert delivery.
 
 ### Fixed
 
 - Make the account-sync API test wait for asynchronous completion when the background worker already owns the import slot, avoiding a timing-dependent failure.
+- Label retained exchange strategy summaries with their actual environment instead of describing every selected run as paper execution; leave unavailable equity explicit and distinguish the mixed saved-run catalog. Record paper mode when creating virtual runs. Reject investigation/calendar mismatches instead of returning another investigation's schedule.
 
 ## [2.1.0] - 2026-11-01
 

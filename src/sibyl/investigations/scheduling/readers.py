@@ -2,7 +2,7 @@
 
 import json
 
-from sibyl.investigations.scheduling.repository import BriefingRepository
+from sibyl.investigations.scheduling.repository import BriefingConflict, BriefingRepository
 
 
 def briefing_snapshot(repository: BriefingRepository, investigation_id="", schedule_id=""):
@@ -11,6 +11,8 @@ def briefing_snapshot(repository: BriefingRepository, investigation_id="", sched
     schedules = (
         [repository.get(schedule_id)] if schedule_id else repository.list(investigation_id or None)[:20]
     )
+    if investigation_id and any(item["investigation_id"] != investigation_id for item in schedules):
+        raise BriefingConflict("This schedule belongs to a different investigation.")
     items = []
     for schedule in schedules:
         binding = schedule.get("telegram_binding") or {}

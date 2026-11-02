@@ -59,11 +59,6 @@ def create_agent(services: Services, **runtime) -> Agent:
     portfolio = services.portfolio
     performance, funding, transfers = services.performance, services.funding, services.transfers
 
-    def portfolio_snapshot(scope: str | None = None) -> dict:
-        """Read priced holdings, source labels, warnings, and account allocation."""
-        result = portfolio.overview(selected("portfolio_scope", scope, "all"))
-        return {key: value for key, value in result.items() if key != "history"}
-
     def risk_alerts(rule_id: str = "") -> dict:
         """Inspect account-risk rules and recent notices to explain what a saved watch observed.
 
@@ -85,7 +80,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             ],
             "evidence": portfolio.risk_alerts.journal.evidence(rule_id) if rule_id else None,
             "url": "/alerts?tab=risk",
-            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. No execution or external delivery.",
+            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. This tool cannot change rules, trade or send messages. Optional Telegram delivery is selected separately for each rule.",
         }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:
@@ -314,7 +309,8 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "recent_sync_policy_limit": 10,
             }
         if not performance_view:
-            return portfolio_snapshot(scope)
+            result = portfolio.overview(scope)
+            return {key: value for key, value in result.items() if key != "history"}
         if performance is None:
             return {
                 "view": "performance",

@@ -75,6 +75,8 @@ Save reusable questions in **Investigations** and bring the team’s findings in
 
 Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
 
+Developers can run [repeatable native agent checks](docs/docs/developers/agent-evaluation.md) against local models and compare actual tool evidence and scores. Recorded model limitations remain visible.
+
 | Agent | Focus |
 | --- | --- |
 | **Sibyl** | Coordinate the team and combine specialist findings |

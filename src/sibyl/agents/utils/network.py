@@ -170,6 +170,22 @@ class AgentNetwork:
         if result.status == "canceled":
             raise asyncio.CancelledError()
         if result.status != "completed":
+            if configuration.get("provider") == "none" and any(
+                item.outcome == "rejected"
+                and isinstance(item.error, dict)
+                and item.error.get("code")
+                in {
+                    "article_not_found",
+                    "strategy_run_not_found",
+                    "forecast_model_not_found",
+                    "investigation_not_found",
+                    "briefing_not_found",
+                }
+                for item in result.tool_evidence
+            ):
+                # Direct tool mode has no reasoning loop to correct a missing record.
+                # Preserve the HTTP boundary without exposing native/private error text.
+                raise LookupError("Record not found.")
             failures = [result.error.get("code")] if isinstance(result.error, dict) else []
             for event in result.report.events:
                 error = event.payload.get("error") or event.payload.get("metadata", {}).get("error")

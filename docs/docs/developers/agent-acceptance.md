@@ -1,5 +1,7 @@
 # Real-model agent acceptance
 
+For repeated tool/source contracts and native score comparisons, see [Agent reliability checks](agent-evaluation.md). This page records the complementary HTTP/session/Stop checks and their earlier findings.
+
 These opt-in checks exercise Sibyl's actual HTTP handlers, native ProtoLink agents, tool execution, discovery, sessions and reports against a running local Ollama model. They use a disposable workspace with Demo market/news data, no exchange accounts and both execution flags off. Socket connections are restricted to the selected loopback Ollama port. The ordinary test suite remains offline.
 
 ## Repeat the checks

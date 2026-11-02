@@ -122,7 +122,7 @@ GUIDES = {
         (
             "Open Alerts → Account risk and pin a fixed set of active accounts in one environment plus a reference feed.",
             "Choose a value floor, asset concentration or observed-value drawdown threshold, then explicitly arm the rule.",
-            "Use View evidence for retained valuation details and Inbox for notices. Edits save paused; Resume starts a new observation window.",
+            "Use View evidence for retained valuation details and Inbox for notices. A rule’s Delivery control can opt into Telegram notifications with a checked private recipient, cooldown and freshness window. Edits save paused; Resume starts a new observation window.",
         ),
         (
             "Rules require complete usable valuation coverage. Drawdown includes cash movements and is not cash-flow-adjusted return. Alerts do not control trading.",

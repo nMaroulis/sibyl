@@ -6,7 +6,7 @@ Evidence comes from the news services; curated page instructions live in guides/
 
 from typing import Annotated, Literal
 
-from protolink import Agent
+from protolink import Agent, ToolRejectedError
 from pydantic import Field
 
 from sibyl.agents.guides import read_guide
@@ -51,6 +51,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         the News page selection; otherwise the date range defaults to seven days.
         Use days=0 for all retained dates, q for text search and asset for mentions.
         Pass article_id only for a known story; read_article provides its full retained evidence.
+        Use article_id='' to clear a page-selected story and list the matching headlines.
         """
         article_id = selected("article_id", article_id, "")
         mode = selected("news_mode", mode, "")
@@ -71,7 +72,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         )
         result["fear_greed"] = research.fear_greed.read(result["mode"], refresh=False)
         if article_id:
-            result = {**result, "selected_article": research.news_service.article(article_id, mode or None)}
+            result = {**result, "selected_article": read_article(article_id, mode or None)}
         return result
 
     def read_article(article_id: str, mode: Literal["live", "demo"] | None = None) -> dict:
@@ -81,7 +82,14 @@ def create_agent(services: Services, **runtime) -> Agent:
         publisher link lets the user read the entire article; returned text may be an excerpt.
         Omit mode to follow the current News selection.
         """
-        return research.news_service.article(article_id, selected("news_mode", mode, None))
+        try:
+            return research.news_service.article(article_id, selected("news_mode", mode, None))
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That story is not in the selected news archive.",
+                code="article_not_found",
+                suggestion="Use news_briefing(article_id='') to find available article IDs. Keep the requested news mode; never substitute Demo for missing live news.",
+            ) from exc
 
     def news_sources() -> dict:
         """Identify the selected news publishers and explain freshness or missing coverage.

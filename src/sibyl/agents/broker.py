@@ -97,7 +97,14 @@ def create_agent(services: Services, **runtime) -> Agent:
         symbol = selected("symbol", symbol, "BTC/USDT")
         parameters = selected("parameters", parameters, None)
         if job_id:
-            monitor = strategies.journal.monitor(job_id, 30)
+            try:
+                monitor = strategies.journal.monitor(job_id, 30)
+            except LookupError as exc:
+                raise ToolRejectedError(
+                    "That strategy run is not saved in this workspace.",
+                    code="strategy_run_not_found",
+                    suggestion="Use strategy_context(job_id='') to find saved runs, or ask the user to open the intended monitor. Do not invent a replacement run.",
+                ) from exc
             job = monitor["job"]
             return {
                 "selected_parameters": job["parameters"],
@@ -120,7 +127,6 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "account",
                         "exchange",
                         "environment",
-                        "mode",
                         "sandbox",
                         "read_only",
                         "risk",
@@ -145,7 +151,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "selected_parameters": simulation.model_dump(),
             "catalog": CATALOG,
             "recent_paper_orders": store.orders()[:10],
-            "paper_jobs": strategies.jobs(),
+            "strategy_jobs": strategies.jobs(),
             "backtests": [
                 {
                     "id": run["id"],

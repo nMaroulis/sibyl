@@ -97,7 +97,7 @@ AREAS = [
         "priority": "next",
         "working": "Native ProtoLink discovery/delegation, saved chats, streamed consultation activity, Stop/outcomes and native run details; saved investigations with structured reports, actual tool-source receipts, frozen team models, versioned reruns, comparison and JSON export. Daily/weekly calendars add time zones, missed-run handling, retention and explicit Telegram briefings with durable part outcomes. Direct-HTTP Telegram supports private-user binding, encrypted configuration and durable delivery outcomes.",
         "pending": [
-            "User-facing token streaming, broader repeated/model-specific routing and grounding evaluation and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3).",
+            "User-facing token streaming, broader provider/model and semantic-grounding evaluation and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3). Repeatable native evidence-contract checks and baseline comparisons are implemented; small-model coordinator failures remain documented.",
             "Resumable multi-stage investigations; stopped or interrupted inference is not replayed. General-purpose durable jobs remain separate from implemented daily/weekly research calendars.",
             "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: real scheduled-briefing acceptance, richer media and delivery review controls; initial conversation acceptance is user-confirmed, and ambiguous sends are never auto-retried.",
         ],
@@ -107,10 +107,10 @@ AREAS = [
         "name": "ProtoLink workflows",
         "status": "partial",
         "priority": "later",
-        "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent provider/model selection, encrypted shared profiles and frozen delegated request snapshots; Broker reads saved experiments and bounded retained order/fill evidence. Ollama settings detect models, configure a shared context window aligned with native input budgets, and can manage an explicitly started local server. Initial real Gemma acceptance covers evidence, coordinator tool/inference consultations, memory, cancellation and persistence; broader reliability remains unproven.",
+        "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent model selection, encrypted profiles and frozen delegated snapshots; Broker reads saved experiments and retained order/fill evidence with accurate paper/exchange labels. Ollama settings detect models and manage an explicitly started local server. Native repeated evaluations compare actual tool/source selections, required readings/links, empty data and consultation receipts against saved score baselines. Recorded Gemma checks retain coordinator failures; broad answer reliability remains unproven.",
         "pending": [
             "Deeper domain investigation tools as features expand.",
-            "Evaluated tool/source selection, inspected internal traces and collaboration budgets.",
+            "Broader provider/model coverage, semantic claim grounding and adversarial examples beyond the implemented bounded native evidence-contract cases; complete upstream owned-subagent usage metrics.",
             "Explicit approvals and audit contracts before mutation tools.",
         ],
     },

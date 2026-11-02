@@ -4,12 +4,12 @@ Specialists advertise their own evidence and help tools. Sibyl chooses among
 those native capabilities without a custom routing table or delegation tools.
 """
 
-from protolink import Agent
+from protolink import Agent, ToolRejectedError
 
 from sibyl.agents.utils.common import COMMON_PROMPT
 from sibyl.investigations.repository import InvestigationRepository
 from sibyl.investigations.scheduling.readers import briefing_snapshot
-from sibyl.investigations.scheduling.repository import BriefingRepository
+from sibyl.investigations.scheduling.repository import BriefingConflict, BriefingRepository
 from sibyl.storage import Store
 
 SYSTEM_PROMPT = (
@@ -61,15 +61,26 @@ def create_agent(store: Store, **runtime) -> Agent:
         """
         if not investigation_id:
             if run_id:
-                raise ValueError("Select an investigation before selecting a report version.")
+                raise ToolRejectedError(
+                    "Select an investigation before selecting its report version.",
+                    code="investigation_required",
+                    suggestion="Call investigation_reports() for saved investigation IDs, then inspect one for its version IDs.",
+                )
             return {"items": reports.list()[:20], "url": "/sibyl?tab=investigations"}
-        definition = reports.get(investigation_id)
+        try:
+            definition = reports.get(investigation_id)
+            run = reports.run(investigation_id, run_id) if run_id else None
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That investigation or report version is not retained in this workspace.",
+                code="investigation_not_found",
+                suggestion="Call investigation_reports() for current IDs, then select a version from that investigation. Removed versions cannot be reconstructed as current facts.",
+            ) from exc
         result = {
             "investigation": definition,
             "url": f"/sibyl?tab=investigations&investigation={investigation_id}",
         }
-        if run_id:
-            run = reports.run(investigation_id, run_id)
+        if run is not None:
             result["run"] = {
                 **run,
                 "sources": [
@@ -90,6 +101,13 @@ def create_agent(store: Store, **runtime) -> Agent:
         Returns actual saved state plus separate setup instructions and an app link.
         This tool cannot create, run, pause or edit a schedule or send a message.
         """
-        return briefing_snapshot(calendars, investigation_id, schedule_id)
+        try:
+            return briefing_snapshot(calendars, investigation_id, schedule_id)
+        except (LookupError, BriefingConflict) as exc:
+            raise ToolRejectedError(
+                "Select a retained schedule belonging to the requested investigation.",
+                code="briefing_not_found",
+                suggestion="Use briefing_schedules() to find current schedule IDs; retain the investigation/schedule relationship from that list.",
+            ) from exc
 
     return agent

@@ -182,10 +182,28 @@ def snapshot_answer(module: str, evidence) -> str:
     if module == "broker" and evidence.get("selected_run"):
         run = evidence["selected_run"]
         selected = evidence["selected_parameters"]
-        return f"{selected['strategy']} on {selected['symbol']}: {run['status']} · paper execution. Current equity {run['equity']:,.4f} {selected['symbol'].split('/')[1]}. {len(evidence['recent_events'])} recent events are included for inspection. Last worker check: {run['checked_at'] or 'pending'}."
+        mode = run.get("mode")
+        if mode not in {"paper", "exchange"}:
+            return f"{selected['strategy']} on {selected['symbol']}: {run['status']}. Execution mode is unavailable; inspect the retained monitor before treating these observations as paper or exchange activity."
+        if mode == "exchange":
+            environment = run.get("environment") or "unspecified environment"
+            equity = (
+                f"Retained strategy equity {run['equity']:,.4f}"
+                if run.get("equity") is not None
+                else "Strategy equity unavailable"
+            )
+            return (
+                f"{selected['strategy']} on {selected['symbol']}: {run['status']} · exchange execution · {environment}. "
+                f"{equity} {selected['symbol'].split('/')[1]}. "
+                f"{len(evidence['recent_events'])} recent events are included. "
+                f"Last worker check: {run.get('checked_at') or 'pending'}. "
+                "These are retained strategy observations, not a fresh exchange balance or proof that orders are settled. "
+                + ("Some native fees remain unvalued. " if run.get("unvalued_fees") else "")
+            )
+        return f"{selected['strategy']} on {selected['symbol']}: {run['status']} · paper execution. Current virtual equity {run['equity']:,.4f} {selected['symbol'].split('/')[1]}. {len(evidence['recent_events'])} recent events are included for inspection. Last worker check: {run['checked_at'] or 'pending'}."
     if module == "broker":
         selected = evidence["selected_parameters"]
-        return f"Selected: {selected['strategy']} on {selected['symbol']}, {selected['candles']} candles and {selected['capital']:,.2f} {selected['symbol'].split('/')[1]} virtual capital. {len(evidence['catalog'])} strategies are available. {len(evidence['paper_jobs'])} paper jobs and {len(evidence['backtests'])} recent backtests are recorded. Backtests use next-open fills with fees and slippage. Paper strategies use isolated virtual capital."
+        return f"Selected: {selected['strategy']} on {selected['symbol']}, {selected['candles']} candles and {selected['capital']:,.2f} {selected['symbol'].split('/')[1]} virtual capital. {len(evidence['catalog'])} strategies are available. {len(evidence['strategy_jobs'])} saved strategy runs and {len(evidence['backtests'])} recent backtests are recorded. Backtests use next-open fills with fees and slippage. Paper strategies use isolated virtual capital."
     if module == "reporter":
         selected = evidence.get("selected_article")
         items = [selected] if selected else evidence["items"][:3]

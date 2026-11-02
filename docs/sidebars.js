@@ -150,6 +150,7 @@ module.exports = {
             'developers/agent-models',
             'developers/protolink-metrics',
             'developers/agent-acceptance',
+            'developers/agent-evaluation',
           ],
         ),
       ],

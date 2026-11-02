@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — October 29, 2026
+## Audited snapshot — November 2, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -166,7 +166,9 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [x] Add per-agent provider/model overrides with shared encrypted profiles, preset/custom IDs, revision-checked edits, frozen delegated request snapshots and accurate model attribution. See [contracts](agent-models.md).
 - [x] Stream native tool/consultation lifecycle activity into browser chats; retain polling for reopened Sibyl requests and cancel native work on stream disconnect. Show safe on-demand run summaries with tool timing/outcomes and available per-call token/cost metrics, labeled estimated, partial or unavailable.
 - [x] Run an initial real Ollama/Gemma acceptance pass for specialist evidence, native coordinator tool/inference consultations, memory/isolation, Stop and persistence; align provider/context-policy windows and preserve setup instructions in native previews. See [findings and remaining limits](agent-acceptance.md).
-- [ ] Add user-facing token streaming, broader repeated routing/grounding evaluation and fix the [upstream owned-subagent metrics gap](protolink-metrics.md). Activity streaming does not expose raw model chunks or internal action JSON.
+- [x] Add repeatable native ProtoLink evaluations with scoped specialist evidence, source/selection checks, missing-data and untrusted-excerpt cases, coordinator delegation receipts, bounded repetitions, private local fixtures, native report export and baseline score comparisons. Record actual small-model successes and coordinator failures. See [agent evaluation](agent-evaluation.md).
+- [x] Use native correctable rejections for missing retained articles, trained models, strategy runs and investigations/calendars; preserve operational errors and selected-source boundaries. Broker's deterministic summaries distinguish paper, test and production exchange runs.
+- [ ] Add user-facing token streaming, broader provider/model and semantic-grounding evaluation and fix the [upstream owned-subagent metrics gap](protolink-metrics.md). Activity streaming does not expose raw model chunks or internal action JSON. Narrow contract checks do not establish general answer reliability.
 - [x] Implement direct-HTTP Telegram polling, private-user binding, encrypted credentials, conversation mapping and durable delivery outcomes. Explicit rate limits retry; ambiguous sends never auto-retry.
 - [x] Retain initial user-confirmed Telegram conversation acceptance. Automated briefing delivery is tested with a mock HTTP transport; real scheduled-delivery acceptance remains a deployment check.
 - [ ] Add Telegram media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
