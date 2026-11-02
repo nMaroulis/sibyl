@@ -783,57 +783,6 @@ kbd {
   font-size: 10px;
   padding: 5px 9px;
 }
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-}
-.summary-card {
-  padding: 21px 22px;
-}
-.summary-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.summary-label svg {
-  color: #9aa8bd;
-}
-.summary-value {
-  display: block;
-  margin: 18px 0 14px;
-  font-size: clamp(23px, 2.15vw, 32px);
-  font-weight: 600;
-  letter-spacing: -0.9px;
-  overflow-wrap: anywhere;
-}
-.summary-value small {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-.summary-detail {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 16px;
-  font-size: 10px;
-  color: var(--subtle);
-}
-.summary-detail .change {
-  font-size: 10px;
-}
-.summary-detail a {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--muted);
-}
 .dashboard-chart-grid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
@@ -2917,9 +2866,6 @@ details[open] > summary {
   .workspace-footer {
     padding-inline: 40px;
   }
-  .summary-card {
-    padding: 24px;
-  }
 }
 @media (max-width: 1150px) {
   .topbar-context > span {
@@ -2930,12 +2876,6 @@ details[open] > summary {
   }
   .workspace-footer {
     padding-inline: 24px;
-  }
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .summary-value {
-    font-size: 29px;
   }
   .market-ticker-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3145,17 +3085,9 @@ details[open] > summary {
     font-size: 11px;
     gap: 5px;
   }
-  .summary-grid,
   .market-ticker-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
-  }
-  .summary-card {
-    padding: 19px;
-  }
-  .summary-value {
-    font-size: 28px;
-    margin: 15px 0 12px;
   }
   .panel {
     border-radius: 12px;

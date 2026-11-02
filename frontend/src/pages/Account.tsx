@@ -4,13 +4,10 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Download,
-  Layers3,
   Plus,
   ShieldCheck,
   ShieldAlert,
   Sparkles,
-  Wallet,
-  Waves,
 } from 'lucide-react';
 import {
   AssetIcon,
@@ -27,6 +24,7 @@ import {
 import { SourceHealthSummary } from '../components/provider-health';
 import { ExpandableRows } from '../components/expandable-rows';
 import { AccountBalances } from '../components/account-balances';
+import { AccountOverview } from '../components/account-overview';
 import { BalanceChecks } from '../components/balance-checks';
 import { ExchangeMark } from '../components/exchange-mark';
 import { AgentButton } from '../components/agents';
@@ -108,7 +106,7 @@ function PortfolioWorkspace({
   const chartData = data.history.slice(
     -({ '1W': 7, '1M': 30, '3M': 90, ALL: data.history.length }[range] ?? 30),
   );
-  const activeJobs = jobs?.filter((job) => job.status === 'running').length ?? 0;
+  const activeJobs = jobs?.filter((job) => job.status === 'running').length;
   const holdings = [...data.holdings].sort(
     (a, b) => (b[sort] ?? -Infinity) - (a[sort] ?? -Infinity),
   );
@@ -188,77 +186,7 @@ function PortfolioWorkspace({
       <AccountContext selection={{ ...selection, mode: data.mode }} />
       <PortfolioScope selection={selection} scope={scope} onChange={select} />
       <PortfolioAccounts portfolio={data} select={select} />
-      {data.warnings.map((warning) => (
-        <div className="inline-alert" key={warning}>
-          {warning}
-        </div>
-      ))}
-      <div className="summary-grid">
-        <Panel className="summary-card">
-          <div className="summary-label">
-            {data.complete ? 'Portfolio value' : 'Priced portfolio value'}
-            <Wallet size={17} />
-          </div>
-          <strong className="summary-value monetary">
-            {number(data.total)} <small>{data.currency}</small>
-          </strong>
-          <div className="summary-detail">
-            <Change value={data.change} />
-            <span>daily price move</span>
-          </div>
-        </Panel>
-        <Panel className="summary-card">
-          <div className="summary-label">
-            {data.mode === 'demo' ? 'Paper cash & stablecoins' : 'Pricing source'}
-            <ShieldCheck size={17} />
-          </div>
-          <strong className={`summary-value ${data.mode === 'demo' ? 'monetary' : ''}`}>
-            {data.mode === 'demo' ? (
-              <>
-                {number(data.cash)} <small>{data.currency}</small>
-              </>
-            ) : (
-              data.source_label || data.source
-            )}
-          </strong>
-          <div className="summary-detail">
-            <span>
-              {data.mode === 'demo'
-                ? 'Reference value of virtual cash holdings'
-                : 'Read-only connected balances'}
-            </span>
-          </div>
-        </Panel>
-        <Panel className="summary-card">
-          <div className="summary-label">
-            Assets
-            <Layers3 size={17} />
-          </div>
-          <strong className="summary-value">{data.coverage.total}</strong>
-          <div className="summary-detail">
-            <span>
-              {data.coverage.priced}/{data.coverage.total} priced · {data.venues.length}{' '}
-              {data.venues.length === 1 ? 'account in this view' : 'accounts combined'}
-            </span>
-          </div>
-        </Panel>
-        <Panel className="summary-card">
-          <div className="summary-label">
-            Paper strategies
-            <Waves size={17} />
-          </div>
-          <strong className="summary-value">
-            {activeJobs}
-            <small> running</small>
-          </strong>
-          <div className="summary-detail">
-            <Link to="/strategies">
-              Open strategy studio
-              <ArrowUpRight size={12} />
-            </Link>
-          </div>
-        </Panel>
-      </div>
+      <AccountOverview portfolio={data} runningStrategies={activeJobs} />
       <div className="dashboard-chart-grid">
         <Panel className="performance-panel">
           <PanelTitle
@@ -498,7 +426,7 @@ function PortfolioWorkspace({
           </Panel>
         </div>
       </div>
-      <Panel className="full-panel">
+      <section id="valuation-notes" className="panel full-panel">
         <PanelTitle title="Valuation notes" />
         <p className="muted">
           {data.valuation_note} {data.history_note}
@@ -542,7 +470,7 @@ function PortfolioWorkspace({
             )}
           </ExpandableRows>
         )}
-      </Panel>
+      </section>
       <AccountBalances scope={scope} />
       <BalanceChecks scope={scope} />
     </>

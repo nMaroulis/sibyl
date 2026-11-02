@@ -14,6 +14,12 @@ The **Account view** picker offers **All exchanges**, **By exchange**, and **Ind
 
 Production totals exclude test accounts. When only test accounts are active, the combined view is clearly labeled **Combined test accounts**. Individual test scopes remain available alongside production scopes, with test-funds labels. A failed account read is identified and excluded; it never becomes a zero balance.
 
+## Compact account summary
+
+The summary strip groups portfolio value, valuation prices, asset coverage and running strategies in one compact view. A **Partial** badge stays beside incomplete values; **Daily move unavailable** replaces an absent price change. Strategy counts describe the workspace, rather than only the selected accounts. Unavailable strategy counts display a dash.
+
+Pricing and account warnings share one **Details** disclosure below the metrics. Its collapsed caption still identifies assets excluded from the total. Expand it to read every warning and open **View valuation notes** for asset-by-asset reasons. The asset coverage bar is a visual aid; the priced/total counts remain explicit. Keyboard users can focus the disclosure and press Enter or Space.
+
 ## Optional Demo preview
 
 **Preview with Demo** explicitly activates a local virtual wallet. A warm banner says **Demo preview is active**, the header shows **Demo preview**, and **Exit preview** returns to setup. Demo cannot be activated while exchange accounts are active. It uses the same backend account and valuation interface as exchanges, with no API key. Connecting an exchange turns it off automatically.
@@ -22,7 +28,9 @@ The persistent initial paper balances are 24,850 USDT, 0.84 BTC, 8.2 ETH, 74 SOL
 
 ## Valuation
 
-Prices come from the workspace's selected **Market data** feed. Valuation discovers exact native pairs for your actual holdings, independently of your Markets watchlist. It tries direct and inverse pairs, then short paths through USDC, USD, BTC, ETH, EUR or DAI. For example, ADA → BTC → USDT multiplies the two observed rates; EUR → USD → USDT can invert a native USDT/USD quote.
+Prices come from the workspace's selected **Market data** feed. **Account view** chooses whose balances to show; **Valuation price feed** identifies where reference prices come from. For example, selecting Coinbase can show Coinbase balances valued using Binance prices. This shared feed keeps exchange and combined views comparable; selecting an account does not switch it. Select the source name in **Valuation price feed**, or open **Settings → Market data**, to choose another source for all account views.
+
+Valuation discovers exact native pairs for your actual holdings, independently of your Markets watchlist. It tries direct and inverse pairs, then short paths through USDC, USD, BTC, ETH, EUR or DAI. For example, ADA → BTC → USDT multiplies the two observed rates; EUR → USD → USDT can invert a native USDT/USD quote.
 
 Only USDT itself equals 1 USDT. Stablecoins and fiat need observed conversion rates, so a stablecoin away from its peg changes the value. Source coverage varies: public exchanges expose their active spot catalog; API adapters have a curated catalog. The service never switches feeds or invents parity to fill a gap.
 
