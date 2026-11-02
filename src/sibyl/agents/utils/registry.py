@@ -57,6 +57,8 @@ class AgentRegistry:
         transfers=None,
         balance_checks=None,
         forecasts=None,
+        library=None,
+        workers=None,
     ):
         self.settings, self.store = settings, store
         self.models = ModelSettings(settings, store)
@@ -73,6 +75,8 @@ class AgentRegistry:
             transfers,
             balance_checks,
             forecasts,
+            library,
+            workers,
         )
         self._semaphore = asyncio.Semaphore(2)
         self.network = AgentNetwork(self, MODULES)
@@ -139,7 +143,18 @@ class AgentRegistry:
             inherit=("models", "page"),
         ):
             if configuration["provider"] == "none":
-                task = Task.create_tool_call(primary_tool, tool_arguments(request), session_id=session_id)
+                arguments = tool_arguments(request)
+                if request.module == "wiki" and request.context.library_passage_id:
+                    primary_tool, arguments = (
+                        "read_research_passage",
+                        {"passage_id": request.context.library_passage_id},
+                    )
+                elif request.module == "wiki" and request.context.library_document_id:
+                    primary_tool, arguments = (
+                        "read_research_document",
+                        {"document_id": request.context.library_document_id},
+                    )
+                task = Task.create_tool_call(primary_tool, arguments, session_id=session_id)
                 mode = "tools"
             else:
                 task = Task.create_infer(

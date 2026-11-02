@@ -134,6 +134,15 @@ def snapshot_answer(module: str, evidence) -> str:
             + " ".join(statistics["sample"]["warnings"])
             + " Higher bias means more bullish, not safer. These historical readings are not a trade recommendation."
         )
+    if (
+        module == "wiki"
+        and isinstance(evidence, dict)
+        and ("passages" in evidence or "document_id" in evidence)
+    ):
+        source = evidence.get("source", evidence)
+        items = evidence.get("passages", [evidence])
+        snippets = "\n\n".join(f"Page {part['page']}: {part['text']}\n{part['url']}" for part in items[:2])
+        return f"Retained source: {source.get('title', 'Research document')}.\n\n{snippets}\n\nThis is a source excerpt, not an AI interpretation or verified fact. Open the reader for more passages; configure a model in /settings?tab=models for a reasoned answer."
     if module == "wiki" and isinstance(evidence, dict):
         asset = evidence["asset"]
         profile, history = (evidence.get("profile") or {}, evidence.get("history") or {})

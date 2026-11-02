@@ -175,6 +175,8 @@ class AgentNetwork:
                 and isinstance(item.error, dict)
                 and item.error.get("code")
                 in {
+                    "research_document_not_found",
+                    "research_passage_not_found",
                     "article_not_found",
                     "strategy_run_not_found",
                     "forecast_model_not_found",

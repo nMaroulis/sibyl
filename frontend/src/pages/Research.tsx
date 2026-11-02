@@ -33,6 +33,7 @@ import { AgentButton } from '../components/agents';
 import { NewsWorkspace } from '../components/news-workspace';
 import { ForecastWorkspace } from '../components/forecast-workspace';
 import { BitcoinInspector } from '../components/bitcoin-inspector';
+import { ResearchLibrary } from '../components/research-library';
 import { CryptoLibraryView } from '../components/crypto-library';
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { ComingSoon } from '../components/coming-soon';
@@ -579,7 +580,7 @@ function StocksView() {
 export function ResearchPage() {
   const [params, setParams] = useSearchParams();
   const selected = params.get('tab') ?? 'knowledge';
-  const tab = ['knowledge', 'crypto', 'explorer', 'stocks'].includes(selected)
+  const tab = ['knowledge', 'library', 'crypto', 'explorer', 'stocks'].includes(selected)
     ? selected
     : 'knowledge';
   const setTab = (value: string) =>
@@ -600,6 +601,7 @@ export function ResearchPage() {
         label="Research sections"
         items={[
           { id: 'knowledge', label: 'Crypto knowledge', icon: BookOpen },
+          { id: 'library', label: 'My research', icon: BookOpen },
           { id: 'crypto', label: 'Crypto profiles', icon: BookOpen },
           { id: 'explorer', label: 'Block explorer', icon: Box },
           { id: 'stocks', label: 'Equities', icon: TrendingUp },
@@ -608,7 +610,9 @@ export function ResearchPage() {
         onChange={setTab}
       />
       <SectionPanel id="research" value={tab}>
-        {tab === 'knowledge' ? (
+        {tab === 'library' ? (
+          <ResearchLibrary />
+        ) : tab === 'knowledge' ? (
           <KnowledgeView />
         ) : tab === 'crypto' ? (
           <CryptoLibraryView />

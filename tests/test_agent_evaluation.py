@@ -140,7 +140,7 @@ async def test_instruction_case_flags_unnecessary_reads_and_does_not_inflate_oth
 
 def test_case_catalog_matches_real_native_tools_and_validated_page_contracts(client):
     cases = selected_cases()
-    assert len(cases) == 13
+    assert len(cases) == 15
     validate_tools(cases, client.app.state.services.agents)
     with pytest.raises(ValueError, match="Unknown cases"):
         selected_cases(["invented"])

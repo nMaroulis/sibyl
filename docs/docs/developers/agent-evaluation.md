@@ -68,7 +68,7 @@ The runner restores only saved native score records for `compare_evaluations()`,
 
 ## Case coverage
 
-The JSONL catalog lives in `scripts/agent_evaluation/cases.jsonl`. Names and input argument expectations are validated against the agents' actual advertised tool schemas.
+The catalog also covers imported-source evidence and empty-library results; fixtures include a synthetic research memorandum. The JSONL catalog lives in `scripts/agent_evaluation/cases.jsonl`. Names and input argument expectations are validated against the agents' actual advertised tool schemas.
 
 | Cases | Contract |
 | --- | --- |

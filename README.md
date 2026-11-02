@@ -115,6 +115,8 @@ Chronos explains the same evidence through native ProtoLink tools. The separate 
 
 Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
 
+Import PDFs, Markdown and text into **My research**, search uploads and retained news, and open exact cited passages. Wiki and Reporter can retrieve this evidence through native tools; keyword search and reading work without a model. [Research library](docs/docs/guides/research-library.md).
+
 Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
 [Research guide](docs/docs/guides/research.md)
@@ -126,6 +128,8 @@ Create price-level and crossing rules, follow strategy lifecycle events, watch r
 [Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 
 ### Settings & Coming soon · Make it yours
+
+Inspect actual background-worker activity and fault history, then preserve your workspace with passphrase-encrypted backups. Restore into a separate directory with automatic work paused for review. [Worker health](docs/docs/guides/worker-health.md) · [Backup and recovery](docs/docs/guides/workspace-backups.md).
 
 Manage **Exchanges, AI models, News, Market data, Messaging and Workspace** in one place. Exchange cards expose implementation coverage; source diagnostics distinguish observed connectivity from quote freshness. Ollama setup can detect the server and installed models, with explicit controls for a server started by Sibyl.
 

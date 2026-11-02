@@ -118,3 +118,5 @@ Manual runs and relevant pull requests produce reviewable artifacts. A published
 Homebrew can be added later as a small recipe pointing at published packages. That recipe can live in this repository; a separate conventional tap is an optional organizational choice. No Homebrew install command is currently advertised.
 
 Prebuilt container images, PyPI publishing, optional background-service setup and signed desktop installers also remain future work. Local Docker builds continue through the existing `docker-compose.yaml`. Track these separately in the [pending checklist](backend-roadmap.md), rather than making them prerequisites for the first packaged release.
+
+Installed-package smoke checks also import/search an isolated research document, inspect worker health, and create/authenticate/restore an encrypted test archive. Recovered accounts remain inactive. These checks run outside the checkout with no user credentials.

@@ -12,7 +12,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
 | Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
 | Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
-| Alerts & local operations      | partial       | Broader risk metrics, silent-worker outage detection, operational diagnostics and more delivery channels.  |
+| Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, resource metrics and more delivery channels.  |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.       |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.   |
@@ -190,7 +190,8 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 
 Crypto profiles/history are fetched by the backend. Knowledge search is a curated glossary. News has five publisher RSS/Atom adapters, retained excerpts, deduplication, source health, backend filters, extractive summaries, VADER distributions/trends and contextual Reporter tools. See the [news backend](news.md).
 
-- [ ] Add document ingestion, chunking, embeddings and retrieval storage.
+- [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
+- [ ] Add embeddings and evaluated semantic retrieval. Keyword relevance is not semantic grounding.
 - [ ] Implement hybrid RAG with attributable citations and optional web-search tools.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
 - [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.
@@ -236,8 +237,10 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add opt-in Telegram delivery per price/risk/strategy/connection rule, reviewed recipients, future-only cursors, transactional admission, cooldown suppression, expiry and actual part outcomes. See [contracts](alert-delivery.md).
 - [ ] Add other external alert channels and richer review controls; live alert-delivery acceptance remains a deployment check.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
-- [ ] Add structured application/provider metrics, tracing and operational diagnostics beyond basic health/log output.
-- [ ] Add managed backup/restore, notification retention/export and credential/key lifecycle tools.
+- [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
+- [ ] Add resource metrics, tracing, external uptime monitoring and richer latency distributions.
+- [x] Add passphrase-encrypted managed archives, authenticated inspection/download/import and validated separate-directory restore. Recovery quarantines automatic work and requires explicit review/restart.
+- [ ] Add notification retention/export and credential/key rotation tools beyond encrypted backup/restore.
 
 ### 12. Hosted/multi-user product — deferred
 

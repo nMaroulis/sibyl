@@ -16,6 +16,8 @@ from protolink import current_request_context
 from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
+from sibyl.operations.health import WorkerHealth
+from sibyl.research_library.service import ResearchLibrary
 from sibyl.services.accounts.sync import AccountSync
 from sibyl.services.funding.sync import FundingSync
 from sibyl.services.markets.service import Market
@@ -61,6 +63,8 @@ class Services:
     transfers: TransferReconciliation | None = None
     balance_checks: BalanceChecks | None = None
     forecasts: ForecastModels | None = None
+    library: ResearchLibrary | None = None
+    workers: WorkerHealth | None = None
 
 
 def freeze(value):

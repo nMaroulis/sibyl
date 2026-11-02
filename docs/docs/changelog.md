@@ -51,6 +51,9 @@ docker compose up --build
 
 ### Added
 
+- **Research → My research**: bounded PDF/text/Markdown imports, original retention, attributed exact passages, lexical search across uploads and retained news, source management and changed-citation protection. Wiki and Reporter expose native read-only library tools; search/reading also work without an LLM.
+- Background-worker supervision with actual iteration times, duration/deadline states, sanitized fault history, explicit storage retries, cancellation/draining and an app-wide attention notice. Workspace settings exposes current progress; Technician can inspect it through a native tool.
+- Passphrase-encrypted local workspace archives with authenticated inspection, download/import, SQLite online snapshots and non-destructive restore into a new directory. Recovery starts with workers/exchange execution paused, accounts inactive, strategy/calendar pauses and pending-message quarantine; explicit review and restart are required. Installed-package smoke coverage exercises isolated research, worker diagnostics and encrypted recovery.
 - Saved investigations in **Sibyl → Investigations**: reusable questions, progressive starting-context controls, native specialist collaboration, structured findings, uncertainty and follow-up questions.
 - Versioned reruns with fresh conversations and frozen team-model choices, consultation progress, exact-request Stop, restart interruption, saved history, side-by-side comparison and JSON export.
 - Inspectable source receipts from retained native ProtoLink evidence, with actual tool attribution, source links, retrieval times, bounded previews and fingerprints. Invalid structured answers or invented tool citations fail explicitly; uncited interpretations remain labeled.

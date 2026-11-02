@@ -23,6 +23,7 @@ dependencies = [
   "pandas>=2.2,<4",
   "vadersentiment>=3.3.2,<4",
   "tzdata>=2024.1",
+  "pypdf>=6.21.4,<7",
 ]
 
 [project.optional-dependencies]

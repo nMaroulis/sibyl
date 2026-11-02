@@ -35,6 +35,7 @@ module.exports = {
             'guides/market-statistics',
             'guides/market-history',
             'guides/research',
+            'guides/research-library',
             'guides/bitcoin-explorer',
             'guides/forecasting',
           ],
@@ -62,7 +63,7 @@ module.exports = {
         chapter(
           'Alerts and workspace',
           'Set up alerts and understand privacy and feature coverage.',
-          ['guides/alerts', 'guides/alert-delivery', 'guides/account-risk', 'guides/security', 'guides/feature-coverage'],
+          ['guides/alerts', 'guides/alert-delivery', 'guides/account-risk', 'guides/worker-health', 'guides/workspace-backups', 'guides/security', 'guides/feature-coverage'],
         ),
       ],
     ),
@@ -86,6 +87,7 @@ module.exports = {
             'developers/backend-roadmap',
             'developers/investigations',
             'developers/briefings',
+            'developers/workspace-operations',
           ],
         ),
         chapter(
@@ -126,6 +128,7 @@ module.exports = {
             'developers/provider-control',
             'developers/candle-history',
             'developers/news',
+            'developers/research-library',
             'developers/forecasting',
             'developers/bitcoin-explorer',
           ],

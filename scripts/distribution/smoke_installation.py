@@ -1,5 +1,6 @@
 """Exercise an installed Sibyl outside its checkout, with isolated offline state and no credentials."""
 
+import base64
 import json
 import os
 import re
@@ -10,7 +11,7 @@ import tempfile
 import time
 from pathlib import Path
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 def main() -> None:
@@ -26,7 +27,7 @@ def main() -> None:
         }
         # Seed only source preferences, never a Demo account or an exchange connection.
         prepare = (
-            "from sibyl.storage import Store; import sibyl, sys; from pathlib import Path; "
+            "from sibyl.storage import Store; import pypdf, sibyl, sys; from pathlib import Path; "
             "assert Path(sibyl.__file__).resolve().is_relative_to(Path(sys.prefix).resolve()), "
             "'Expected an installed package, not an editable checkout'; "
             "store=Store(Path(sys.argv[1])); "
@@ -87,8 +88,59 @@ def main() -> None:
                 assert (workspace / "vault.key").is_file()
                 with urlopen(url + "/api/v1/connections", timeout=5) as response:
                     assert json.load(response) == [], "Installation activated an account."
+
+                def request_json(path, body=None):
+                    request = Request(
+                        url + "/api/v1" + path,
+                        data=json.dumps(body).encode() if body is not None else None,
+                        headers={"Content-Type": "application/json"},
+                    )
+                    with urlopen(request, timeout=20) as response:
+                        assert response.headers.get("Cache-Control") == "no-store"
+                        return json.load(response)
+
+                document = request_json(
+                    "/library/documents",
+                    {
+                        "filename": "installation-check.txt",
+                        "title": "Installation research",
+                        "data_base64": base64.b64encode(
+                            b"Isolated installation research about quasar reserves."
+                        ).decode(),
+                    },
+                )
+                matches = request_json("/library/search?query=quasar")
+                assert matches["items"][0]["document_id"] == document["id"]
+                workers = request_json("/workspace/health")
+                assert any(worker["id"] == "library" for worker in workers["workers"])
+                passphrase = "isolated installation archive passphrase"
+                archive = request_json("/workspace/backups", {"passphrase": passphrase})
+                inspected = request_json(
+                    f"/workspace/backups/{archive['id']}/inspect", {"passphrase": passphrase}
+                )
+                assert inspected["includes_credentials"] and inspected["files"] >= 2
+                restored = request_json(
+                    f"/workspace/backups/{archive['id']}/restore",
+                    {
+                        "passphrase": passphrase,
+                        "confirmation": "RESTORE AS NEW WORKSPACE",
+                    },
+                )
+                recovered = Path(restored["data_dir"]).resolve()
+                assert (
+                    recovered.is_relative_to(workspace.resolve() / ".sibyl-managed" / "recovered")
+                    and recovered != workspace.resolve()
+                )
+                check = (
+                    "from sibyl.storage import Store; from pathlib import Path; import sys; "
+                    "store=Store(Path(sys.argv[1])); assert store.data_profile('workspace-recovery')['required']; "
+                    "\nwith store.db() as db:\n    assert not db.execute('SELECT account_id FROM active_accounts').fetchall()\n"
+                )
+                subprocess.run(
+                    [sys.executable, "-I", "-c", check, str(recovered)], cwd=root, env=env, check=True
+                )
                 print(
-                    f"{version}: installed CLI, dashboard, assets, deep links, API boundaries and workspace OK."
+                    f"{version}: installed CLI, dashboard, API boundaries, research, worker health and encrypted recovery OK."
                 )
             except BaseException:
                 log.flush()

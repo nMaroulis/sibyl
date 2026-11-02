@@ -19,6 +19,7 @@ import {
 import { exchangeCategoryIcons } from './lib/category-icons';
 import { DOCUMENTATION_URL } from './lib/docs';
 import { Badge, Loading, Modal } from './components/ui';
+import { WorkerHealthNotice } from './components/workspace/worker-health';
 import { NotificationBell } from './components/notifications';
 import { NavigationDock, PageView } from './components/navigation';
 import { useResource } from './lib/hooks';
@@ -226,6 +227,7 @@ export function App() {
         <NavigationDock items={primary} moreItems={secondary} />
         <div className="workspace-surface">
           <main id="main-content" className="main-content" tabIndex={-1}>
+            <WorkerHealthNotice />
             {systemError && location.pathname !== '/settings' && (
               <div className="inline-alert">
                 {systemError}

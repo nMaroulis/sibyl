@@ -39,7 +39,7 @@ from sibyl.storage import Store
 from .checks import checks_for, compatible_cases, restore_scores
 
 CASES_PATH = Path(__file__).with_name("cases.jsonl")
-FIXTURE_VERSION = "isolated-demo-and-injected-excerpt-v1"
+FIXTURE_VERSION = "isolated-demo-library-and-injected-excerpt-v2"
 
 
 @contextmanager
@@ -219,6 +219,11 @@ async def run_cases(args, cases, baseline=None):
             )
             validate_tools(cases, owner)
             seed_excerpt(services.research.news_service)
+            services.library.import_document(
+                "evaluation-memo.txt",
+                b"LYRA reserve disclosures cannot establish solvency. This synthetic research note describes a limitation, not a token recommendation.",
+                title="Offline evaluation research note",
+            )
             for case in cases:
                 module = case.metadata["module"]
                 configuration = freeze(owner.models.for_turn(module))

@@ -68,7 +68,7 @@ Saved choices take precedence over environment defaults. This tab also describes
 
 ## Workspace
 
-Open `/settings?tab=workspace` for the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
+Open `/settings?tab=workspace` for [background-worker activity](worker-health.md), [encrypted backup/recovery](workspace-backups.md), the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
 
 Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated exchange strategies additionally require `SIBYL_ALLOW_STRATEGY_EXECUTION` and an explicit account/budget approval; see [exchange strategy execution](strategy-execution.md). Paper strategy accounts always remain virtual. Workspace displays both permission states. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
 

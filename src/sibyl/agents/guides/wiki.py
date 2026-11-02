@@ -4,8 +4,20 @@ from typing import Literal
 
 from sibyl.agents.guides import Guide
 
-Topic = Literal["overview", "glossary", "profiles", "sources"]
+Topic = Literal["overview", "glossary", "profiles", "sources", "library"]
 GUIDES = {
+    "library": Guide(
+        "Use your research library",
+        "/research?tab=library",
+        (
+            "Add a text PDF, UTF-8 text or Markdown source, optionally naming its author, URL and publication date.",
+            "Search uploads and retained news by keyword, then open a match to read exact passages and page numbers. Synchronize news copies without fetching publishers.",
+            "Ask Wiki or Reporter to retrieve and cite passages. Reindex uploads from their retained originals; remove a source to delete its original and search entries.",
+        ),
+        (
+            "Imported passages can be sent to the configured model when requested; keep credentials out of files. Scans need OCR before import. Ranking is lexical relevance, not confidence or verified truth. Embeddings and web search remain pending.",
+        ),
+    ),
     "overview": Guide(
         "Use crypto research",
         "/research?tab=knowledge",
@@ -22,7 +34,7 @@ GUIDES = {
             "Ask Wiki to explain a concept plainly or compare the sourced definitions.",
         ),
         (
-            "This is a curated glossary. Document uploads, embeddings, RAG and web search are not implemented.",
+            "This is a curated glossary. My research separately supports imported documents and retained-news passage search. Semantic embeddings and web search remain pending.",
         ),
     ),
     "profiles": Guide(

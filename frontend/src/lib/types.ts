@@ -619,6 +619,8 @@ export type AgentContext = {
   transfer_example?: boolean;
   market_source?: string;
   crypto_id?: string;
+  library_document_id?: string;
+  library_passage_id?: string;
   job_id?: string;
   timeframe?: Timeframe;
   limit?: number;

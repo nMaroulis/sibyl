@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
+import { WorkerHealthPanel } from '../components/workspace/worker-health';
+import { WorkspaceBackups } from '../components/workspace/backups';
 import { AgentButton } from '../components/agents';
 import { ComingSoon } from '../components/coming-soon';
 import { SourceHealthPanel } from '../components/provider-health';
@@ -284,6 +286,10 @@ function WorkspaceSettings({ system }: { system?: System }) {
             </button>
           </form>
         </Panel>
+        <div className="workspace-operations">
+          <WorkerHealthPanel />
+          <WorkspaceBackups />
+        </div>
         <Panel className="settings-resources">
           <PanelTitle title="Built to be understood" subtitle="Documentation and developer tools" />
           <div className="settings-links">
