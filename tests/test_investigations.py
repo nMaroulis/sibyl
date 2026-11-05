@@ -10,6 +10,7 @@ from agent_helpers import coordinator_factory, delegate
 from fastapi.testclient import TestClient
 from protolink import Task, create_llm, current_request_context
 
+from sibyl.agents.utils import providers
 from sibyl.api.app import create_app
 from sibyl.investigations.contracts import InvestigationCreate, InvestigationRun
 from sibyl.investigations.evidence import report_sources, source_links
@@ -341,6 +342,11 @@ def test_cancelling_before_a_slot_is_available_never_calls_a_provider(client, mo
 
 
 def test_saved_report_metadata_excludes_real_provider_credentials(client, monkeypatch):
+    # This tests secret redaction with a controlled model, not optional-SDK installation.
+    available = providers.find_spec
+    monkeypatch.setattr(
+        providers, "find_spec", lambda name: object() if name == "openai" else available(name)
+    )
     assert (
         client.post(
             "/api/v1/settings/llm",
@@ -365,3 +371,23 @@ def test_saved_report_metadata_excludes_real_provider_credentials(client, monkey
     assert calls == ["INVESTIGATION-PROVIDER-SECRET"]
     exported = client.get(f"/api/v1/investigations/{definition['id']}/runs/{saved['id']}/export")
     assert "INVESTIGATION-PROVIDER-SECRET" not in exported.text and "api_key" not in exported.text
+
+
+def test_missing_optional_provider_sdk_rejects_report_before_model_call(client, monkeypatch):
+    available = providers.find_spec
+    monkeypatch.setattr(providers, "find_spec", lambda name: None if name == "openai" else available(name))
+    assert (
+        client.post(
+            "/api/v1/settings/llm",
+            json={"provider": "openai", "model": "controlled-test", "api_key": "SDK-ABSENT-PRIVATE"},
+        ).status_code
+        == 200
+    )
+    coordinator_factory(monkeypatch, lambda *a, **kw: pytest.fail("Missing SDK passed report admission"))
+    definition = create(client)
+    response = client.post(
+        f"/api/v1/investigations/{definition['id']}/runs", json={"request_id": uuid4().hex}
+    )
+    assert response.status_code == 409 and "dependency" in response.json()["detail"]
+    assert "SDK-ABSENT-PRIVATE" not in response.text
+    assert client.get(f"/api/v1/investigations/{definition['id']}").json()["runs"] == []

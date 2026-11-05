@@ -3,7 +3,6 @@
 import csv
 import io
 import json
-import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 
@@ -378,7 +377,7 @@ def test_close_pipeline_covers_all_supported_execution_variants(execution, provi
     assert len(native.calls) == 2 and native.calls[-1][0] == "sell"
 
 
-def test_http_readiness_preview_confirmation_and_monitor(client, monkeypatch):
+def test_http_readiness_preview_confirmation_and_monitor(manual_client, monkeypatch):
     from types import SimpleNamespace
 
     import pandas as pd
@@ -387,18 +386,8 @@ def test_http_readiness_preview_confirmation_and_monitor(client, monkeypatch):
     from sibyl.models import ConnectionCreate
     from sibyl.strategies.execution import runner, venue
 
+    client = manual_client
     s = client.app.state.services
-    # This test drives tick() manually. Let the lifespan worker finish its initial
-    # pass before introducing a run, so two workers cannot overlap order planning.
-    worker = s.workers.workers["strategies"]
-    deadline = time.monotonic() + 5
-    while (
-        worker["iterations"] == 0
-        and worker["state"] not in {"failed", "stopped"}
-        and time.monotonic() < deadline
-    ):
-        time.sleep(0.01)
-    assert worker["iterations"] > 0, worker
     s.settings.allow_live_trading = s.settings.allow_strategy_execution = True
     connection = s.store.add_connection(
         ConnectionCreate(exchange="binance-testnet", label="Simulated exit", api_key="FAKE", secret="FAKE")

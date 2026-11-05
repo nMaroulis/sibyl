@@ -13,8 +13,8 @@ DAY = step_ms("1d")
 
 
 @pytest.fixture
-def tracked(client):
-    owner = client.app.state.services.forecasts
+def tracked(manual_client):
+    owner = manual_client.app.state.services.forecasts
     now = milliseconds(datetime.now(UTC))
     origin = (now // DAY - 3) * DAY
     # A controlled saved output exercises real persistence/fingerprints without provider calls.
@@ -223,3 +223,12 @@ def test_restored_workspace_pauses_tracking_and_execution_subscriptions(tracked)
     assert alerts.rules()["items"][0]["status"] == "paused"
     assert alerts.rules()["items"][0]["id"] == rule["id"]
     assert owner.output(output["id"])["result_fingerprint"] == output["result_fingerprint"]
+
+
+def test_overlapping_forecast_check_keeps_runtime_admission_guard(tracked, client):
+    owner, row, output, now = tracked
+    with owner.forward.lock:
+        response = client.post(f"/api/v1/forecast-models/outputs/{row['id']}/tracking/check")
+    assert response.status_code == 400
+    assert "already running" in response.json()["detail"]
+    assert owner.forward.detail(row["id"])["checked_at"] is None

@@ -75,8 +75,8 @@ docker compose up --build
 
 ### Fixed
 
+- Make the investigation credential-privacy test independent of optional OpenAI SDK installation. Drain automatic workers before forecast and strategy tests that advance fake clocks manually, removing CI timing races without weakening runtime guards.
 - Fix repository-helper imports during CI test collection by setting pytest’s checkout-root import path explicitly. Name application, release-package, installed-platform and documentation jobs/steps by their purpose.
-- Wait for the initial strategy worker pass before manually driving the simulated closing HTTP test, preventing a timing-dependent overlap during order planning.
 - Replace the large Account summary cards and stacked pricing warnings with a compact metric strip and one accessible warning disclosure. Keep partial values, excluded asset counts, shared valuation-feed attribution and workspace strategy scope explicit; update Accountant help and the Account guide.
 - Make the account-sync API test wait for asynchronous completion when the background worker already owns the import slot, avoiding a timing-dependent failure.
 - Label retained exchange strategy summaries with their actual environment instead of describing every selected run as paper execution; leave unavailable equity explicit and distinguish the mixed saved-run catalog. Record paper mode when creating virtual runs. Reject investigation/calendar mismatches instead of returning another investigation's schedule.
