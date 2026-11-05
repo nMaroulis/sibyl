@@ -47,7 +47,15 @@ docker compose up --build
 
 ## Release notes
 
-## [2.2.0] - Unreleased
+## [2.2.0] - 2026-11-07
+
+:::note[Latest Release]
+
+Sibyl gains saved investigations and scheduled AI briefings, with inspectable specialist evidence and optional Telegram delivery. A new research library supports document imports and optional local semantic search, while Account performance estimates, live forecast scorecards, rolling forecast evaluation and Bitcoin output-spend checks deepen the analysis tools.
+
+Order/fill notifications, background-worker diagnostics and encrypted workspace backup and recovery make everyday operation easier to inspect and manage.
+
+:::
 
 ### Added
 
