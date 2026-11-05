@@ -15,11 +15,12 @@ from sibyl.agents.utils.common import COMMON_PROMPT, Services, page_context
 
 NAME = "Explorer"
 TAGLINE = "Follow the chain"
-DESCRIPTION = "Inspect Bitcoin transactions, address activity, fees and confirmations; explain the explorer."
+DESCRIPTION = "Inspect Bitcoin transactions, output spends, address activity, fees and confirmations; explain the explorer."
 SYSTEM_PROMPT = (
     "Use page_help for explorer controls and navigation. Explain Bitcoin blocks, confirmations "
     "and chain mechanics. Use bitcoin_lookup for an exact transaction/address or the selected page, "
-    "bitcoin_address_history for further confirmed pages or pending transactions, and bitcoin_blocks for recent blocks. "
+    "bitcoin_address_history for further confirmed pages or pending transactions, bitcoin_output_spends for output spending evidence, and bitcoin_blocks for recent blocks. "
+    "Output-spend observations distinguish unspent, pending, confirmed and incomplete details. Unspent does not mean spendable or prove ownership. Never infer unspent from a failed lookup. "
     "Use blockchain_help for concepts. Amounts are integer satoshis (100,000,000 per BTC); "
     "confirmed balances and pending deltas are separate. Fee rates use virtual bytes. Output totals are "
     "not a payment amount or profit: change/self-transfers can be included. Do not infer owners, wallets, "
@@ -86,6 +87,32 @@ def create_agent(services: Services, **runtime) -> Agent:
             selected_address, cursor=cursor, pending=pending, simulated=bool(page.get("bitcoin_demo", False))
         )
 
+    def bitcoin_output_spends(
+        transaction_id: Annotated[str | None, Field(pattern=r"^[a-fA-F0-9]{64}$")] = None,
+        output_offset: Annotated[int | None, Field(ge=0, le=9999)] = None,
+    ) -> dict:
+        """Inspect whether transaction outputs are spent and find their spending transaction/input.
+
+        Omit transaction_id for the selected Explorer transaction, or supply an exact
+        ID from the user or observed evidence. Returns twenty outputs and next_offset,
+        indexer-reported unspent/pending/confirmed/unknown states, timestamps and source.
+        Missing spend details remain unknown. Unspent is not a spendability or ownership
+        guarantee; pending spends and confirmations may change. This creates no watch.
+        """
+        page = page_context()
+        identity = transaction_id or page.get("bitcoin_txid")
+        if not identity:
+            raise ValueError("Choose a transaction from the user or returned Explorer evidence first.")
+        return research.bitcoin.output_spends(
+            identity,
+            output_offset=output_offset
+            if output_offset is not None
+            else (page.get("bitcoin_output_offset") or 0)
+            if identity == page.get("bitcoin_txid")
+            else 0,
+            simulated=bool(page.get("bitcoin_demo", False)),
+        )
+
     def bitcoin_blocks() -> dict:
         """Get recent Bitcoin block heights, timestamps, transaction counts, sizes and source labels."""
         return research.blocks()
@@ -97,7 +124,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         """
         return {
             "network": "Bitcoin",
-            "supported": "Recent blocks, mainnet transaction inputs/outputs, integer-satoshi fees and sat/vB, confirmed address totals, pending deltas and paginated confirmed activity.",
+            "supported": "Recent blocks, mainnet transaction inputs/outputs, integer-satoshi fees and sat/vB, confirmed address totals, pending deltas, paginated confirmed activity and output-spend observations with spending transaction links.",
             "confirmations": "The inclusion block counts as the first confirmation; observed tip minus inclusion height plus one. Reorganizations and non-atomic provider reads can change it.",
             "privacy": "Explicit mainnet lookup IDs are sent to mempool.space. Addresses do not prove ownership, income or a complete wallet.",
             "not_implemented": [
@@ -120,7 +147,14 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-explorer",
         description=DESCRIPTION,
-        tools=[bitcoin_lookup, bitcoin_address_history, bitcoin_blocks, blockchain_help, page_help],
+        tools=[
+            bitcoin_lookup,
+            bitcoin_address_history,
+            bitcoin_output_spends,
+            bitcoin_blocks,
+            blockchain_help,
+            page_help,
+        ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

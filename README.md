@@ -87,7 +87,7 @@ Developers can run [repeatable native agent checks](docs/docs/developers/agent-e
 | **Reporter** | Source-linked news, article excerpts and text sentiment |
 | **Technician** | Connections, settings, model setup and diagnostics |
 | **Wiki** | Crypto concepts and project profiles |
-| **Explorer** | Bitcoin transactions, address activity, fees, confirmations and recent blocks |
+| **Explorer** | Bitcoin transactions, output-spend checks, address activity, fees, confirmations and recent blocks |
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
@@ -113,7 +113,7 @@ Chronos explains the same evidence through native ProtoLink tools. The separate 
 
 ### Research · Understand the wider picture
 
-Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
+Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence and explicit output-spend checks, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
 
 Import PDFs, Markdown and text into **My research**, search uploads and retained news, and open exact cited passages. Wiki and Reporter can retrieve this evidence through native tools; keyword search and reading work without a model. [Research library](docs/docs/guides/research-library.md).
 

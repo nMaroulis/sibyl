@@ -29,6 +29,7 @@ GUIDES = {
         (
             "Paste a complete transaction ID or checksummed mainnet address and choose Inspect. Lookups are sent to mempool.space; private keys and seed phrases are never needed.",
             "Inspect confirmations, fees in satoshis and sat/vB, and paged inputs/outputs. An address shows confirmed balance, pending change and confirmed activity; load older pages or separately inspect pending transactions.",
+            "In a transaction, select Check output spends below Outputs. Inspect the current page’s spending state and follow a spending transaction; Refresh checks reads a new observation. Export spends retains that dated snapshot. Unspent does not guarantee spendability; pending spends can change.",
             "Use the small Demo links for synthetic examples. Ask Explorer includes the current reference; an address is not a complete wallet or proof of ownership.",
         ),
     ),

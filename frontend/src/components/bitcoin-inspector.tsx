@@ -8,6 +8,7 @@ import {
   Search,
 } from 'lucide-react';
 import { AgentButton } from './agents';
+import { BitcoinOutputSpends } from './bitcoin-output-spends';
 import { Badge, ErrorState, Loading, Panel, PanelTitle } from './ui';
 import { number, post } from '../lib/api';
 import { useResource } from '../lib/hooks';
@@ -134,7 +135,11 @@ export function BitcoinInspector() {
     report?.kind === 'transaction' ? report.transaction.txid : report?.address.address;
   const context =
     report?.kind === 'transaction'
-      ? { bitcoin_txid: report.transaction.txid, bitcoin_demo: simulated }
+      ? {
+          bitcoin_txid: report.transaction.txid,
+          bitcoin_demo: simulated,
+          bitcoin_output_offset: report.transaction.output_offset,
+        }
       : report?.kind === 'address'
         ? { bitcoin_address: report.address.address, bitcoin_demo: simulated }
         : {};
@@ -381,6 +386,15 @@ export function BitcoinInspector() {
                         <strong>{btc(output.value_sats)}</strong>
                       </div>
                     ))}
+                    <BitcoinOutputSpends
+                      key={`${report.transaction.txid}:${report.transaction.output_offset}:${report.source}`}
+                      transactionId={report.transaction.txid}
+                      offset={report.transaction.output_offset}
+                      demo={!!simulated}
+                      disabled={!!busy}
+                      examples={capabilities.data?.demo}
+                      inspect={(identity) => void inspect(identity, simulated)}
+                    />
                     {report.transaction.next_output_offset != null && (
                       <button
                         className="text-button"

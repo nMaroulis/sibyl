@@ -202,7 +202,8 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman correlation exist.
 
 - [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
-- [ ] Add historical chain datasets, additional chains, wallet aggregation, output-spend tracking and local chain verification.
+- [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools. No spendability proof or durable watch is claimed.
+- [ ] Add historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
 - [ ] Add distance correlation, MIC, Granger causality, regression and SHAP only with clear statistical assumptions.
 

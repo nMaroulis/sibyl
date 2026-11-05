@@ -142,9 +142,9 @@ AREAS = [
         "name": "Explorer, equities & analytics",
         "status": "partial",
         "priority": "later",
-        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman correlations.",
+        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, explicit paged output-spend checks with spending-transaction links, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman correlations.",
         "pending": [
-            "Historical chain datasets, additional chains, wallet aggregation, output-spend tracking and local chain verification.",
+            "Historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.",
             "Public-official disclosure archives and advanced portfolio analytics.",
             "Distance/MIC/Granger/regression/SHAP with evaluated assumptions.",
         ],

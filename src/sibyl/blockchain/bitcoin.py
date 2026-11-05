@@ -14,6 +14,7 @@ import httpx
 
 from sibyl.blockchain import demo, normalize
 from sibyl.blockchain.identifiers import address, txid
+from sibyl.blockchain.spends import output_spend
 
 BASE_URL = "https://mempool.space/api"
 MAX_RESPONSE = 8 * 1024 * 1024
@@ -50,7 +51,13 @@ class BitcoinExplorer:
             "history_page_size": 25,
             "pending_limit": 50,
             "io_page_size": normalize.PAGE_SIZE,
-            "demo": {"txid": demo.TXID, "address": demo.ADDRESS},
+            "demo": {
+                "txid": demo.TXID,
+                "address": demo.ADDRESS,
+                "confirmed_spend_txid": f"{1:064x}",
+                "pending_spend_txid": f"{3:064x}",
+            },
+            "output_spends": True,
             "note": "Public lookups send the entered transaction ID or address to mempool.space. Address activity does not identify its owner or represent a complete wallet.",
         }
 
@@ -210,3 +217,49 @@ class BitcoinExplorer:
             tip = self._tip(client, simulated)
             history = self._history(client, selected, cursor, pending, simulated, tip)
         return {**self._metadata(simulated, tip), "kind": "history", "address": selected, **history}
+
+    def output_spends(self, identity, *, simulated=False, output_offset=0):
+        """Inspect twenty output spend states from one bounded indexer snapshot, with exact links.
+
+        Read the parent transaction, its bulk outspends and a separate tip. A missing
+        spending reference or status remains unknown; unspent never means spendable.
+        No watch, transaction broadcast or account mutation is created.
+        """
+        identity = txid(identity)
+        if type(output_offset) is not int or not 0 <= output_offset <= 9999:
+            raise ValueError("Use an output offset from 0 to 9,999.")
+        with self._session(simulated) as client:
+            raw = self._read(client, f"/tx/{identity}", simulated)
+            if txid(raw["txid"]) != identity:
+                raise BitcoinUnavailable("The Bitcoin provider returned a different transaction.")
+            # Validate the complete parent and page before requesting spend data.
+            parent = normalize.transaction(raw, None, output_offset=output_offset)
+            observations = self._read(client, f"/tx/{identity}/outspends", simulated)
+            if not isinstance(observations, list) or len(observations) != parent["output_count"]:
+                raise BitcoinUnavailable("The Bitcoin indexer returned an incomplete output-spend snapshot.")
+            tip = self._tip(client, simulated)
+            # Validate every row, including off-page observations, before exposing the page.
+            rows = [
+                output_spend(observation, normalize.output(output, index), identity, tip)
+                for index, (observation, output) in enumerate(zip(observations, raw["vout"], strict=True))
+            ]
+        unknown = sum(row["state"] == "unknown" for row in rows)
+        warnings = (
+            [f"{unknown} spending observations have incomplete transaction details."] if unknown else []
+        )
+        if any(
+            row["status"] and row["status"]["confirmed"] and row["status"]["confirmations"] is None
+            for row in rows
+        ):
+            warnings.append("Some confirmed spends have no consistent confirmation depth.")
+        return {
+            **self._metadata(simulated, tip, warnings),
+            "kind": "output_spends",
+            "transaction_id": identity,
+            "output_offset": output_offset,
+            "total": len(rows),
+            "limit": normalize.PAGE_SIZE,
+            "next_offset": parent["next_output_offset"],
+            "items": rows[output_offset : output_offset + normalize.PAGE_SIZE],
+            "spend_note": "Indexer-reported spending states, not independent chain verification. Unspent does not prove spendability, ownership or available wallet funds. Pending spends can disappear or be replaced; refresh explicitly.",
+        }

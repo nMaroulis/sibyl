@@ -1,0 +1,74 @@
+.bitcoin-spends {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #e4eaf4;
+  border-radius: 12px;
+  background: #f8faff;
+}
+.bitcoin-spends-heading,
+.bitcoin-spends-attribution {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.bitcoin-spends-heading > strong {
+  font-size: 12px;
+}
+.bitcoin-spends button {
+  font-size: 10px;
+}
+.bitcoin-spends .footnote {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+.bitcoin-spends-attribution {
+  margin-top: 12px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.bitcoin-spend-row {
+  display: grid;
+  gap: 6px;
+  padding: 11px 0;
+  border-bottom: 1px solid #e6ecf5;
+  font-size: 11px;
+}
+.bitcoin-spend-row > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.bitcoin-spend-row small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.bitcoin-spending-link {
+  justify-content: flex-start;
+  min-width: 0;
+  text-align: left;
+}
+.bitcoin-spending-link code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+.bitcoin-spending-link svg {
+  flex-shrink: 0;
+}
+.bitcoin-spends-examples {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.bitcoin-spends .badge.amber {
+  color: #926d31;
+  background: #fbf0d9;
+}

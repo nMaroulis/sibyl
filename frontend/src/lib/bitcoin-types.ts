@@ -94,5 +94,23 @@ export type BitcoinCapabilities = {
   source: string;
   source_url: string;
   note: string;
-  demo: { txid: string; address: string };
+  demo: { txid: string; address: string; confirmed_spend_txid: string; pending_spend_txid: string };
+};
+
+export type BitcoinOutputSpends = BitcoinAttribution & {
+  kind: 'output_spends';
+  transaction_id: string;
+  output_offset: number;
+  total: number;
+  limit: number;
+  next_offset: number | null;
+  spend_note: string;
+  items: (BitcoinOutput & {
+    spent: boolean;
+    state: 'unspent' | 'pending' | 'confirmed' | 'unknown';
+    spending_txid: string | null;
+    spending_input_index: number | null;
+    status: BitcoinStatus | null;
+    reason: string | null;
+  })[];
 };

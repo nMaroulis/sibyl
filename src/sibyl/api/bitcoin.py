@@ -94,3 +94,23 @@ def history(body: BitcoinHistory, s: S, response: Response):
         pending=body.pending,
         simulated=body.demo,
     )
+
+
+class BitcoinOutputSpends(Request):
+    """Inspect spending observations for one exact transaction output page."""
+
+    transaction_id: str = Field(pattern=r"^[a-fA-F0-9]{64}$")
+    output_offset: int = Field(default=0, ge=0, le=9999, strict=True)
+    demo: bool = Field(default=False, strict=True)
+
+
+@router.post("/output-spends")
+def output_spends(body: BitcoinOutputSpends, s: S, response: Response):
+    """Read current output-spend evidence without creating a watch or persisting lookup IDs."""
+    response.headers["Cache-Control"] = "no-store"
+    return read(
+        s.research.bitcoin.output_spends,
+        body.transaction_id,
+        output_offset=body.output_offset,
+        simulated=body.demo,
+    )

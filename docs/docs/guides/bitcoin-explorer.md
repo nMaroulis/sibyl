@@ -30,6 +30,19 @@ The initial activity table contains at most 25 confirmed transactions. **Load ol
 
 Net change concerns the selected address only, including its received outputs and spent previous outputs. Missing previous-output evidence makes net change unavailable. The transaction's whole fee is shown separately; it is not attributed to the address as a standalone wallet expense. History pages are not one frozen snapshot. If duplicate rows appear between pages, refresh the lookup before continuing.
 
+## Check output spending
+
+In a transaction’s **Outputs** section, select **Check output spends**. Sibyl reads current indexer observations for that output page separately from the earlier transaction lookup. No background watch is started. **Refresh checks** explicitly reads a new snapshot; if refresh fails, the previous dated observation remains labeled as not refreshed.
+
+- **No spend reported:** the indexer reports the output as unspent. Script restrictions, coinbase maturity, ownership and wallet funds are not verified.
+- **Spend pending:** a spending transaction is observed but unconfirmed. It can disappear or be replaced.
+- **Spent · confirmed:** the source reports an included spending transaction. Its confirmation depth can remain unavailable if the separate tip read fails or disagrees.
+- **Spend details unknown:** a spend is reported but its identifying details or status are incomplete. A failed request never means unspent.
+
+Follow the spending transaction hash to inspect it in place; the spending input number identifies the linked outpoint. Outputs remain paged in groups of twenty. **Export spends** downloads the exact checked page, source, timestamp and limits as a separate JSON observation. Ordinary transaction export does not silently merge observations made at different times.
+
+The Demo spend examples open deterministic confirmed and pending parent outputs; their links follow the same synthetic transaction graph. No actual lookup or exchange connection is required.
+
 ## Demo, export and Explorer
 
 The small **Demo transaction** and **Demo address** links use synthetic backend fixtures through the same validation and calculation pipeline. They do not activate an account or change market/research settings. Every result is labeled **Demo** and has no external mainnet reference link. Live failures never substitute these examples.
@@ -38,6 +51,6 @@ The small **Demo transaction** and **Demo address** links use synthetic backend 
 
 **Ask Explorer** includes the selected reference and its Demo/mainnet boundary. Native ProtoLink tools read the same normalized observations; Sibyl can consult Explorer too. Asking the agent can fetch a newer observation. Agent questions and tool evidence follow the application's existing local conversation/report persistence. Agents cannot broadcast transactions or infer address owners.
 
-Additional chains, wallet aggregation, output-spend tracking, local chain verification and complete historical chain datasets remain in the [planning checklist](../developers/backend-roadmap.md).
+Additional chains, wallet aggregation, durable spend watches, local chain verification and complete historical chain datasets remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Source contracts: [mempool.space API](https://mempool.space/docs/api/rest), [Esplora API](https://github.com/Blockstream/esplora/blob/master/API.md), and Bitcoin's [Bech32](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki)/[Bech32m](https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki) address specifications.

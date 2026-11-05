@@ -10566,14 +10566,14 @@ details[open] > summary {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 16px 8px 6px;
-  margin-top: 5px;
+  gap: 8px;
+  padding: 9px 8px 4px;
+  margin-top: 3px;
   border-top: 1px solid var(--border);
   background: linear-gradient(180deg, #f8f9fc00, #f8f9fc70);
 }
 .expandable-row-controls > small {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -10583,13 +10583,14 @@ details[open] > summary {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #e1e5f1;
-  padding: 7px 12px;
+  border: 1px solid #e1e7f3;
+  padding: 5px 11px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 500;
   color: #6373a9;
-  background: #f8f9ff;
+  background: linear-gradient(125deg, #f8faff, #eef2fc 65%, #f3f0fb);
+  box-shadow: inset 0 1px 0 #ffffffc9;
   transition:
     box-shadow 0.25s,
     color 0.25s,
@@ -10606,11 +10607,11 @@ details[open] > summary {
 .reveal-less:hover,
 .reveal-less:focus-visible {
   color: #495fa7;
-  border-color: #c5cfee;
-  background: #f1f4ff;
+  border-color: #cbd6ee;
+  background: linear-gradient(125deg, #f4f8ff, #e8effd 65%, #eee9fa);
   box-shadow:
-    0 0 0 3px #b9c5ef1f,
-    0 3px 18px #8196d524;
+    0 0 0 2px #b9c5ef14,
+    0 3px 14px #8196d51c;
 }
 @media (prefers-reduced-motion: reduce) {
   .connection-arrival .check-access-button {

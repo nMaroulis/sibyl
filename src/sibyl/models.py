@@ -245,6 +245,7 @@ class AgentContext(Request):
     bitcoin_txid: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     bitcoin_address: str | None = Field(default=None, min_length=14, max_length=90)
     bitcoin_demo: bool | None = None
+    bitcoin_output_offset: int | None = Field(default=None, ge=0, le=9999, strict=True)
     parameters: BacktestRequest | None = None
     job_id: str | None = Field(default=None, min_length=1, max_length=100)
     backtest_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")

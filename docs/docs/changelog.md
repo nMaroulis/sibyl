@@ -51,6 +51,7 @@ docker compose up --build
 
 ### Added
 
+- Bitcoin output-spend checks in **Research → Block explorer**, with explicit per-page refresh, confirmed/pending/unspent/unknown states, spending-transaction navigation, dated JSON exports, deterministic Demo examples and a native read-only Explorer tool. Failed checks never imply unspent funds; spendability and independent chain verification remain outside scope.
 - **Research → My research**: bounded PDF/text/Markdown imports, original retention, attributed exact passages, lexical search across uploads and retained news, source management and changed-citation protection. Wiki and Reporter expose native read-only library tools; search/reading also work without an LLM.
 - Background-worker supervision with actual iteration times, duration/deadline states, sanitized fault history, explicit storage retries, cancellation/draining and an app-wide attention notice. Workspace settings exposes current progress; Technician can inspect it through a native tool.
 - Passphrase-encrypted local workspace archives with authenticated inspection, download/import, SQLite online snapshots and non-destructive restore into a new directory. Recovery starts with workers/exchange execution paused, accounts inactive, strategy/calendar pauses and pending-message quarantine; explicit review and restart are required. Installed-package smoke coverage exercises isolated research, worker diagnostics and encrypted recovery.
@@ -69,6 +70,7 @@ docker compose up --build
 
 ### Fixed
 
+- Wait for the initial strategy worker pass before manually driving the simulated closing HTTP test, preventing a timing-dependent overlap during order planning.
 - Replace the large Account summary cards and stacked pricing warnings with a compact metric strip and one accessible warning disclosure. Keep partial values, excluded asset counts, shared valuation-feed attribution and workspace strategy scope explicit; update Accountant help and the Account guide.
 - Make the account-sync API test wait for asynchronous completion when the background worker already owns the import slot, avoiding a timing-dependent failure.
 - Label retained exchange strategy summaries with their actual environment instead of describing every selected run as paper execution; leave unavailable equity explicit and distinguish the mixed saved-run catalog. Record paper mode when creating virtual runs. Reject investigation/calendar mismatches instead of returning another investigation's schedule.
