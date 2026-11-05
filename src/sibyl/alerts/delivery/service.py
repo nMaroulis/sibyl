@@ -17,6 +17,7 @@ TABLES = {
     "risk": "risk_alerts",
     "strategy": "strategy_alerts",
     "connection": "connection_alerts",
+    "order": "order_alerts",
 }
 
 

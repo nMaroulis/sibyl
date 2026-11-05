@@ -13,6 +13,7 @@ from sibyl import __version__
 from sibyl.forecasting.contracts import ForecastRequest, TrainForecast
 from sibyl.forecasting.engine import ENGINE, fingerprint, predict, train
 from sibyl.forecasting.evaluations import RollingEvaluations
+from sibyl.forecasting.forward import ForwardMonitor
 from sibyl.market_data.archive import iso, milliseconds, now_ms, step_ms
 
 
@@ -36,6 +37,7 @@ class ForecastModels:
             """)
 
         self.evaluations = RollingEvaluations(self)
+        self.forward = ForwardMonitor(self)
 
     def _input(self, body):
         if body.input_kind == "saved_dataset":
@@ -248,7 +250,7 @@ class ForecastModels:
                 (result["id"], identity, json.dumps(result, allow_nan=False)),
             )
             db.execute(
-                "DELETE FROM forecast_outputs WHERE model_id=? AND id NOT IN (SELECT id FROM forecast_outputs WHERE model_id=? ORDER BY rowid DESC LIMIT 20)",
+                "DELETE FROM forecast_outputs WHERE model_id=? AND id NOT IN (SELECT id FROM forecast_tracking) AND id NOT IN (SELECT id FROM forecast_outputs WHERE model_id=? ORDER BY rowid DESC LIMIT 20)",
                 (identity, identity),
             )
         return result

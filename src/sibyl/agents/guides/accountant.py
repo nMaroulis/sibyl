@@ -5,6 +5,7 @@ from typing import Literal
 from sibyl.agents.guides import Guide
 
 Topic = Literal[
+    "returns",
     "overview",
     "accounts",
     "valuation",
@@ -16,6 +17,18 @@ Topic = Literal[
     "balance_checks",
 ]
 GUIDES = {
+    "returns": Guide(
+        "Measure investment performance",
+        "/account",
+        (
+            "Open Investment performance in Account, choose the desired view and capture a fresh opening valuation.",
+            "Later capture closing values, import/review funding, and confirm complete nonduplicated coverage.",
+            "Review per-account and combined Modified Dietz estimates, blockers, source assertions and exports.",
+        ),
+        (
+            "Historical principal conversions and completeness are user assertions. Missing or stale evidence leaves returns unavailable; this is separate from market FIFO and raw account-value changes.",
+        ),
+    ),
     "balance_checks": Guide(
         "Compare balances with imported activity",
         "/account",

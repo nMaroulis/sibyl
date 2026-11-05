@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { AgentButton } from './agents';
 import { ForecastPlot } from './forecast-plot';
+import { ForecastForward } from './forecast-forward';
 import { ForecastRolling } from './forecast-rolling';
 import { Badge, Empty, ErrorState, Loading, Panel, PanelTitle, useToast } from './ui';
 import { api, number, post } from '../lib/api';
@@ -484,6 +485,7 @@ export function ForecastWorkspace() {
                   </p>
                 </Panel>
               )}
+              <ForecastForward key={selected} modelId={selected} outputs={report.outputs} />
               <ForecastRolling
                 key={selected}
                 model={report.model}

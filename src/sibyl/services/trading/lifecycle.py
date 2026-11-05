@@ -14,6 +14,7 @@ from uuid import uuid4
 
 import ccxt
 
+from sibyl.alerts.orders.events import order_changed
 from sibyl.exchanges.base import number
 from sibyl.market_data.control import ProviderDeferred
 
@@ -54,6 +55,7 @@ class OrderLifecycle:
     @staticmethod
     def write(db, intent: dict) -> None:
         """Persist a sanitized intent, never raw provider exceptions or responses."""
+        order_changed(db, OrderLifecycle.read(db, intent["id"]), intent)
         db.execute(
             "UPDATE exchange_orders SET payload=? WHERE id=?",
             (json.dumps(intent, allow_nan=False), intent["id"]),

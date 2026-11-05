@@ -25,7 +25,7 @@ module.exports = {
         chapter(
           'Accounts and setup',
           'Connect exchanges, configure Sibyl and understand your balances.',
-          ['guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks'],
+          ['guides/account-returns', 'guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks'],
         ),
         chapter(
           'Markets and research',
@@ -38,6 +38,7 @@ module.exports = {
             'guides/research-library',
             'guides/bitcoin-explorer',
             'guides/forecasting',
+            'guides/forecast-outcomes',
           ],
         ),
         chapter(
@@ -63,7 +64,7 @@ module.exports = {
         chapter(
           'Alerts and workspace',
           'Set up alerts and understand privacy and feature coverage.',
-          ['guides/alerts', 'guides/alert-delivery', 'guides/account-risk', 'guides/worker-health', 'guides/workspace-backups', 'guides/security', 'guides/feature-coverage'],
+          ['guides/alerts', 'guides/execution-alerts', 'guides/alert-delivery', 'guides/account-risk', 'guides/worker-health', 'guides/workspace-backups', 'guides/security', 'guides/feature-coverage'],
         ),
       ],
     ),
@@ -95,6 +96,7 @@ module.exports = {
           'Exchange adapters, synchronization, valuation and accounting evidence.',
           [
             'developers/accounts',
+            'developers/performance-outcomes-alerts',
             'developers/exchange-clients',
             'developers/exchange-acceptance',
             'developers/account-sync',

@@ -8,7 +8,7 @@ import type { MessagingChannel, MessagingSettingsData } from '../messaging-setti
 import { DeliveryReceipt, type MessageDelivery } from '../messaging/delivery-receipt';
 import '../../styles/alert-delivery.css';
 
-type Kind = 'price' | 'risk' | 'strategy' | 'connection';
+type Kind = 'price' | 'risk' | 'strategy' | 'connection' | 'order';
 type Policy = {
   rule_id: string;
   kind: Kind;

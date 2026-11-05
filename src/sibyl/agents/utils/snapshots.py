@@ -72,6 +72,16 @@ def tool_arguments(request: AgentRequest) -> dict:
 
 def snapshot_answer(module: str, evidence) -> str:
     """Format actual tool output when language-model inference has not been configured."""
+    if isinstance(evidence, dict) and evidence.get("kind") == "account_return_period":
+        result = evidence["result"]
+        if result:
+            ratio = f"{result['return_pct']:.2f}%" if result["return_pct"] is not None else "unavailable"
+            return f"{evidence['label']}: gain {result['gain']:.2f} USDT, net external cash flow {result['net_external_flow']:.2f} USDT. Modified Dietz estimate: {ratio}.\n\n{evidence['note']}\n{evidence['url']}"
+        return "Return unavailable. " + " ".join(evidence["blockers"]) + "\n" + evidence["url"]
+    if isinstance(evidence, dict) and evidence.get("kind") == "forecast_outcomes":
+        if "points" in evidence:
+            return f"Live forecast outcomes: {evidence['observed']} targets observed, {evidence['pending']} awaiting actuals. Metrics are available only for observed targets.\n{evidence['note']}\n{evidence['url']}"
+        return f"{len(evidence['items'])} tracked prospective forecasts. Historical research and live observations stay separate.\n{evidence['url']}"
     if module in {"oracle", "accountant"}:
         if evidence.get("view") == "transfers":
             return (

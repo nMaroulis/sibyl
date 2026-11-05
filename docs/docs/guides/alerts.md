@@ -1,4 +1,6 @@
-# Alerts & inbox
+# Alerts
+
+Use **Orders & fills** for per-account observed execution changes, including partial fills, cancellations and imported corrections. See [execution notifications](execution-alerts.md). & inbox
 
 Open **More → Alerts**, or choose **Price alerts** on Markets. Alerts use public market data independently of your portfolio accounts, execution permission and AI model. No account or LLM is required for a public feed. A connected-account feed still needs that account active; API feeds need their saved key.
 

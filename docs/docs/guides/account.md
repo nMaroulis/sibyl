@@ -1,5 +1,7 @@
 # Account
 
+**Investment performance** measures new periods with fresh opening/closing valuations and explicit cash-flow review. See [Investment performance](account-returns.md) for per-account/combined gains, coverage requirements and the Modified Dietz estimate.
+
 **Account → Balance checks**, below Account balances, compares fresh wallet quantities with imported activity from a saved starting point. It reports differences and missing evidence without inventing opening cost basis or investment returns. See [Balance checks](balance-checks.md) for setup and limits.
 
 Account is the home screen. It combines portfolio value, allocation, holdings, recent activity, valuation notes, per-account balances, and the contextual Accountant assistant.

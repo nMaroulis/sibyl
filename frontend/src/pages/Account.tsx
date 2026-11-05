@@ -23,6 +23,7 @@ import {
 } from '../components/ui';
 import { SourceHealthSummary } from '../components/provider-health';
 import { ExpandableRows } from '../components/expandable-rows';
+import { AccountReturns } from '../components/account-returns';
 import { AccountBalances } from '../components/account-balances';
 import { AccountOverview } from '../components/account-overview';
 import { BalanceChecks } from '../components/balance-checks';
@@ -471,6 +472,7 @@ function PortfolioWorkspace({
           </ExpandableRows>
         )}
       </section>
+      <AccountReturns scope={scope} />
       <AccountBalances scope={scope} />
       <BalanceChecks scope={scope} />
     </>

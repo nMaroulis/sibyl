@@ -160,6 +160,10 @@ class AgentRegistry:
                     and not (request.context.library_document_id or request.context.library_passage_id)
                 ):
                     primary_tool, arguments = "search_research", {}
+                if request.module == "accountant" and request.context.return_period_id:
+                    primary_tool, arguments = "investment_returns", {}
+                if request.module == "chronos" and request.context.forecast_tracking:
+                    primary_tool, arguments = "forecast_outcomes", {}
                 if request.module == "chronos" and request.context.forecast_evaluation_id:
                     primary_tool, arguments = "rolling_evaluation", {}
                 task = Task.create_tool_call(primary_tool, arguments, session_id=session_id)

@@ -317,6 +317,31 @@ def create_agent(services: Services, **runtime) -> Agent:
             return {"ready": False, "reason": "Open a specific exchange strategy monitor first."}
         return strategies.execution.closing.context(job_id)
 
+    def execution_alerts(account_id: str = "") -> dict:
+        """Inspect saved order/fill subscriptions and recent observed execution notifications.
+
+        Filter recent notices by account_id or omit it for the workspace. Imported fills
+        can be historical; cumulative order status and individual executions are separate
+        observations. Subscriptions use existing observations and do not enable polling,
+        place orders or send messages. Guide setup in Alerts → Orders & fills; Telegram
+        delivery is selected separately for each saved rule.
+        """
+        execution = strategies.execution
+        if not execution:
+            return {"items": [], "available": False}
+        with services.store.db() as db:
+            rows = db.execute(
+                "SELECT payload,created_at FROM alert_notifications WHERE json_extract(payload,'$.kind')='order' AND (?='' OR json_extract(payload,'$.account_id')=?) ORDER BY rowid DESC LIMIT 10",
+                (account_id, account_id),
+            ).fetchall()
+        import json
+
+        return {
+            "rules": execution.trading.alerts.rules(),
+            "recent_notifications": [{**json.loads(r[0]), "created_at": r[1]} for r in rows],
+            "url": "/alerts?tab=orders",
+        }
+
     def recorded_orders(
         account_id: str = "",
         status: Literal["", "active", "terminal"] = "",
@@ -440,6 +465,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             recorded_orders,
             trade_help,
             strategy_help,
+            execution_alerts,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

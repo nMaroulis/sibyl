@@ -4,8 +4,20 @@ from typing import Literal
 
 from sibyl.agents.guides import Guide
 
-Topic = Literal["overview", "inputs", "intervals", "models", "rolling"]
+Topic = Literal["outcomes", "overview", "inputs", "intervals", "models", "rolling"]
 GUIDES = {
+    "outcomes": Guide(
+        "Follow live forecast outcomes",
+        "/forecast?tab=models",
+        (
+            "Save a current-feed forecast and select it in Live forecast scorecard. Historical saved-input and Demo forecasts are excluded.",
+            "The worker checks retained daily closes; Refresh matching feed explicitly fetches a bounded current page. Import older missing closes in Markets.",
+            "Read original predictions against actuals, correction versions and equal-horizon benchmarks; pause/resume or export the evidence.",
+        ),
+        (
+            "Targets must follow original save time. Missing prices stay missing; operator selection and overlapping forecasts limit interpretation.",
+        ),
+    ),
     "rolling": Guide(
         "Evaluate a recipe across successive periods",
         "/forecast?tab=models",

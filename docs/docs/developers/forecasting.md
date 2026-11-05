@@ -58,7 +58,7 @@ Native tools only read persisted evidence or calculate from the original retaine
 
 ## Verification and remaining scope
 
-Tests cover causal features, purged partitions, isolation of test/calibration changes, benchmark math, constant markets, invalid/bounded inputs, fit failures, concurrent admission, JSON integrity, exact-input reruns, retention, API privacy and native Chronos evidence. Controlled data and successful provider retrieval do not establish predictive profitability. Neural/ARIMA families, live forward-performance monitoring, calibrated drift monitoring, managed archive/import and automatic training remain pending.
+Tests cover causal features, purged partitions, isolation of test/calibration changes, benchmark math, constant markets, invalid/bounded inputs, fit failures, concurrent admission, JSON integrity, exact-input reruns, retention, API privacy and native Chronos evidence. Controlled data and successful provider retrieval do not establish predictive profitability. Prospective tracking now uses a separate [outcome service](performance-outcomes-alerts.md). Neural/ARIMA families, calibrated drift monitoring, managed archive/import and automatic training remain pending.
 
 An isolated October 29, 2026 acceptance run trained on 720 real Binance BTC/USDT daily candles, retained 137 seven-day test origins and produced a seven-point forecast. Its exact-input rerun reproduced the artifact fingerprint with zero additional provider reads. The transport admitted only credential-free GET requests to Binance's public spot `exchangeInfo` and `klines` endpoints (two requests); there were no private requests, account reads or orders. This establishes the observed data/fit/replay workflow, not forecast quality or other providers' history coverage.
 

@@ -6,7 +6,7 @@ tool retrieves user instructions without accessing funds or changing records.
 
 import json
 
-from protolink import Agent
+from protolink import Agent, ToolRejectedError
 
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.accountant import GUIDES, Topic
@@ -16,6 +16,7 @@ NAME = "Accountant"
 TAGLINE = "Know what you own"
 DESCRIPTION = "Explain account holdings, valuation, retained fills, FIFO performance, funding and transfers; guide Account workflows."
 SYSTEM_PROMPT = (
+    "Use investment_returns for cash-flow-adjusted measured periods. Source-bound values and completeness reviews are user assertions, not audited provider guarantees. Missing coverage, stale reviews or ambiguous boundaries mean the return is unavailable; do not substitute raw value growth or FIFO profit. "
     "For how-to or navigation questions call page_help; instructions do not require reading balances. "
     "Read holdings and accounting reports through accountant_snapshot. Page-selected funding, "
     "performance and transfer reports are fixed selections; do not switch to balances or another view. "
@@ -58,6 +59,66 @@ def create_agent(services: Services, **runtime) -> Agent:
     """Declare Accountant's tools and expose them through ProtoLink's runtime transport."""
     portfolio = services.portfolio
     performance, funding, transfers = services.performance, services.funding, services.transfers
+
+    def investment_returns(period_id: str | None = None, flow_offset: int = 0) -> dict:
+        """Explain a measured account return using its saved valuations and reviewed cash flows.
+
+        Omit period_id to follow the selected Account performance period, or list periods
+        when none is selected. Returns at most 20 flow observations; increase flow_offset
+        by 20 for more. Disclose partial readings, coverage/timing blockers and user assertions.
+        Modified Dietz is an approximate period return; it is separate from market FIFO,
+        taxes, raw value change and drawdown. Internal transfers cancel only within the
+        measured combined account set. This tool cannot capture valuations or edit reviews.
+        """
+        if not performance:
+            return {"available": False, "items": []}
+        identity = selected("return_period_id", period_id)
+        if not identity:
+            return performance.returns.list(selected("portfolio_scope", None, "all"))
+        try:
+            if not 0 <= flow_offset <= 2000:
+                raise ToolRejectedError(
+                    "Use a flow offset between zero and 2,000.", code="invalid_period_offset"
+                )
+            report = performance.returns.detail(identity)
+            result = {
+                key: report[key]
+                for key in (
+                    "id",
+                    "label",
+                    "source",
+                    "environment",
+                    "method",
+                    "result",
+                    "account_results",
+                    "blockers",
+                    "note",
+                    "coverage",
+                    "evidence_fingerprint",
+                )
+            }
+            result["valuations"] = {
+                stage: {
+                    account: {key: sample[key] for key in ("total", "currency", "started_at", "as_of")}
+                    for account, sample in (report[stage] or {}).items()
+                }
+                for stage in ("opening", "closing")
+            }
+            return {
+                "kind": "account_return_period",
+                **result,
+                "flows": report["flows"][flow_offset : flow_offset + 20],
+                "flow_offset": flow_offset,
+                "flow_limit": 20,
+                "flow_count": len(report["flows"]),
+                "url": f"/account?scope={report['scope']}&period={identity}",
+            }
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That measured period is not retained.",
+                code="return_period_not_found",
+                suggestion="List current periods instead of inventing an ID.",
+            ) from exc
 
     def risk_alerts(rule_id: str = "") -> dict:
         """Inspect account-risk rules and recent notices to explain what a saved watch observed.
@@ -376,6 +437,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             account_history,
             risk_alerts,
             page_help,
+            investment_returns,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

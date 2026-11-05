@@ -631,6 +631,8 @@ export type AgentContext = {
   equity_symbol?: string;
   horizon?: number;
   forecast_model_id?: string;
+  forecast_tracking?: boolean;
+  return_period_id?: string;
   forecast_run_id?: string;
   forecast_evaluation_id?: string;
   bitcoin_txid?: string;

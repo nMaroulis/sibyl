@@ -7,7 +7,7 @@ from pydantic import Field, model_validator
 from sibyl.messaging.contracts import TelegramTarget
 from sibyl.models import Request
 
-AlertKind = Literal["price", "risk", "strategy", "connection"]
+AlertKind = Literal["price", "risk", "strategy", "connection", "order"]
 
 
 class DeliverySettings(Request):

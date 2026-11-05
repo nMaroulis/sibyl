@@ -20,6 +20,7 @@ DESCRIPTION = (
     "Explain selected trained forecasts, model evaluation and baseline assumptions; guide Forecasting."
 )
 SYSTEM_PROMPT = (
+    "Use forecast_outcomes for live prospective scorecards, distinct from historical held-out or rolling evaluations. Missing future or archived targets remain missing; repeated horizon errors and selected forecast runs do not establish reliable future accuracy. "
     "Use rolling_evaluation to inspect selected saved rolling reports or list evaluations for a model. These refit a fixed recipe over earlier windows; they do not evaluate the original saved weights. Disclose per-fold variation, pooled benchmark skill, overlapping targets and repeated-experiment limitations. Never claim a rolling run trained or deployed a production model. "
     "Use page_help for Forecasting controls and setup, forecast_method for conceptual methodology, "
     "and price_forecast for a selected trained result or baseline. Use trained_models and model_report "
@@ -89,6 +90,60 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "source": market.source,
                 **forecast(market.candles(symbol, 180), horizon),
             }
+
+    def forecast_outcomes(model_id: str | None = None, run_id: str | None = None) -> dict:
+        """Compare saved prospective forecasts with later observed prices from their exact source.
+
+        Follow the selected trained model/run when IDs are omitted. With a model only,
+        return up to 20 compact tracked-output summaries and equal-horizon aggregates; with a run, inspect original
+        predictions, actuals, correction versions, missing targets and naïve/drift benchmarks.
+        Historical saved-input and Demo forecasts cannot establish live performance.
+        Overlapping/operator-selected forecasts are not an unbiased accuracy leaderboard.
+        This tool never refreshes prices, starts tracking, retrains or deploys a model.
+        """
+        identity = selected("forecast_model_id", model_id)
+        run = selected("forecast_run_id", run_id) if model_id is None else run_id
+        if not services.forecasts or not identity:
+            raise ToolRejectedError("Select a trained model first.", code="forecast_model_required")
+        try:
+            result = (
+                services.forecasts.forward.detail(run) if run else services.forecasts.forward.list(identity)
+            )
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That tracked forecast is not retained.",
+                code="forecast_tracking_not_found",
+                suggestion="Read the model's tracking list for current IDs.",
+            ) from exc
+        if run and result["model_id"] != identity:
+            raise ToolRejectedError(
+                "This tracked output belongs to another model.", code="forecast_tracking_not_found"
+            )
+        if not run:
+            all_items = result["items"]
+            result = {
+                **result,
+                "total": len(all_items),
+                "limit": 20,
+                "items": [
+                    {
+                        key: item[key]
+                        for key in (
+                            "id",
+                            "accepted_at",
+                            "status",
+                            "observed",
+                            "pending",
+                            "metrics",
+                            "naive",
+                            "coverage_pct",
+                            "mae_skill_vs_naive_pct",
+                        )
+                    }
+                    for item in all_items[:20]
+                ],
+            }
+        return {"kind": "forecast_outcomes", **result, "url": f"/forecast?tab=models&model={identity}"}
 
     def forecast_method() -> dict:
         """Explain trained autoregressive forecasts and the separate statistical baseline.
@@ -220,7 +275,15 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-chronos",
         description=DESCRIPTION,
-        tools=[price_forecast, forecast_method, page_help, trained_models, model_report, rolling_evaluation],
+        tools=[
+            price_forecast,
+            forecast_method,
+            page_help,
+            trained_models,
+            model_report,
+            rolling_evaluation,
+            forecast_outcomes,
+        ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

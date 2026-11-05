@@ -244,6 +244,8 @@ class AgentContext(Request):
     equity_symbol: str | None = Field(default=None, pattern=r"^[A-Z0-9^][A-Z0-9.^-]{0,9}$")
     horizon: int | None = Field(default=None, ge=1, le=30)
     forecast_model_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    forecast_tracking: bool | None = None
+    return_period_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     forecast_run_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     forecast_evaluation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     bitcoin_txid: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")

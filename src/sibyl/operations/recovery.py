@@ -27,6 +27,22 @@ def prepare_recovery(store, backup_id):
                         recovery_required=True,
                     )
                     db.execute("UPDATE strategy_jobs SET payload=? WHERE id=?", (json.dumps(job), row[0]))
+        for table in ("order_alerts", "forecast_tracking"):
+            if table in tables:
+                for record in db.execute(f"SELECT id,payload FROM {table}").fetchall():
+                    item = json.loads(record[1])
+                    if item["status"] in {"armed", "active"}:
+                        item.update(status="paused", revision=item["revision"] + 1)
+                        if table == "order_alerts":
+                            db.execute(
+                                "UPDATE order_alerts SET status='paused',payload=? WHERE id=?",
+                                (json.dumps(item), record[0]),
+                            )
+                        else:
+                            db.execute(
+                                "UPDATE forecast_tracking SET payload=? WHERE id=?",
+                                (json.dumps(item), record[0]),
+                            )
         if "briefing_schedules" in tables:
             for row in db.execute(
                 "SELECT id,payload FROM briefing_schedules WHERE status='armed'"

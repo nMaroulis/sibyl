@@ -74,6 +74,6 @@ The input-shift check counts lag features outside the training sample's observed
 
 ## Remaining work
 
-Additional model families, richer features, automated recalibration, empirically evaluated drift monitoring, larger model lifecycle management and live forward-performance monitoring remain in the [planning checklist](../developers/backend-roadmap.md).
+The [Live forecast scorecard](forecast-outcomes.md) compares saved prospective predictions with actual closes. Additional model families, richer features, automated recalibration, empirically evaluated drift monitoring and larger model lifecycle management remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Trained forecast origins and chart targets use the daily candle close time, when the close becomes available. Raw dataset timestamps and partition boundaries retain the archive’s opening-time convention; a target close can equal the exclusive end boundary of the partition containing its candle.

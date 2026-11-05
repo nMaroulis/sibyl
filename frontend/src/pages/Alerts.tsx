@@ -34,6 +34,7 @@ import {
   useToast,
 } from '../components/ui';
 import { StrategyRules, type StrategyAlertExample } from '../components/alerts/strategy-rules';
+import { OrderRules } from '../components/alerts/order-rules';
 import { ConnectionRules } from '../components/alerts/connection-rules';
 import { connectionSettingsURL, type ConnectionAlertExample } from '../lib/connection-alerts';
 import { RiskRules } from '../components/alerts/risk-rules';
@@ -92,6 +93,7 @@ const sections = [
   { id: 'rules', label: 'Price rules', icon: ListChecks },
   { id: 'risk', label: 'Account risk', icon: ShieldAlert },
   { id: 'strategies', label: 'Strategy alerts', icon: Waves },
+  { id: 'orders', label: 'Orders & fills', icon: ListChecks },
   { id: 'connections', label: 'Connections', icon: Radio },
   { id: 'inbox', label: 'Inbox', icon: InboxIcon },
   { id: 'delivery', label: 'Delivery', icon: Bell },
@@ -200,7 +202,11 @@ export function Alerts() {
     }
   };
   const error =
-    tab === 'strategies' || tab === 'connections' || tab === 'risk' || tab === 'delivery'
+    tab === 'orders' ||
+    tab === 'strategies' ||
+    tab === 'connections' ||
+    tab === 'risk' ||
+    tab === 'delivery'
       ? ''
       : example
         ? sample.error ||
@@ -312,6 +318,8 @@ export function Alerts() {
             }
             initialScope={params.get('scope') || 'all'}
           />
+        ) : tab === 'orders' ? (
+          <OrderRules example={example} />
         ) : tab === 'connections' ? (
           <ConnectionRules
             key={`${example}-${params.get('source') || ''}`}

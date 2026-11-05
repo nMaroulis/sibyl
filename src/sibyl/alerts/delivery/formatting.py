@@ -39,8 +39,19 @@ def alert_text(notice):
             f"{notice['action']} · {notice['mode']} run {notice['job_id'][:8]}",
             notice.get("reason", "")[:1000],
         ]
+    elif kind == "order":
+        lines += [
+            f"{notice['symbol']} · {notice['action'].replace('_', ' ')}",
+            "Observation: " + notice["type"],
+            f"Cumulative filled: {notice.get('filled')}"
+            if notice["type"] == "order"
+            else f"Imported execution quantity: {notice['quantity']}",
+            "Imported fills may describe older executions; order totals and individual fills are distinct observations.",
+        ]
     else:
-        description = "Read failures observed" if notice["action"] == "failing" else "Successful reads resumed"
+        description = (
+            "Read failures observed" if notice["action"] == "failing" else "Successful reads resumed"
+        )
         lines += [f"{description} · {notice['operation']}", notice.get("reason", "")[:1000]]
     lines += [
         "",

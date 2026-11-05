@@ -205,6 +205,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 1,
                 120,
             ),
+            ("execution-alerts", "Order and fill notifications", trading.alerts.tick, 1, 60),
+            ("forecast-observations", "Forecast outcomes", forecasts.forward.tick, 60, 120),
             ("history", "Candle history", lambda: background_call(history.tick), 1, 120),
             ("briefings", "Scheduled investigations", briefing_tick, 2, 120),
             ("alert-delivery", "Alert delivery admission", alert_delivery.tick, 1, 60),
@@ -219,7 +221,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 interval=interval,
                 deadline=deadline,
                 retryable=(sqlite3.Error,)
-                if name in {"risk-alerts", "briefings", "alert-delivery", "messaging", "library"}
+                if name
+                in {
+                    "risk-alerts",
+                    "briefings",
+                    "alert-delivery",
+                    "messaging",
+                    "library",
+                    "execution-alerts",
+                    "forecast-observations",
+                }
                 else (),
                 paused=recovery,
             )
@@ -228,6 +239,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             await workers.close()
             await asyncio.to_thread(alert_delivery.close)
+            await asyncio.to_thread(trading.alerts.close)
+            await asyncio.to_thread(forecasts.forward.close)
             await briefings.close()
             await messaging.close()
             await investigations.close()
@@ -334,6 +347,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     for exception in (ccxt.BaseError, httpx.HTTPError):
         app.add_exception_handler(exception, provider_error)
 
+    from sibyl.api.account_returns import router as returns_router
+    from sibyl.api.order_alerts import router as order_alerts_router
+
+    app.include_router(returns_router)
+    app.include_router(order_alerts_router)
     from sibyl.api.library import router as library_router
     from sibyl.api.workspace import router as workspace_router
 
