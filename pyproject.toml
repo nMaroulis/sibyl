@@ -51,6 +51,8 @@ include = ["src/sibyl", "hatch_build.py", "pyproject.toml", "uv.lock", "README.m
 path = "hatch_build.py"
 
 [tool.pytest.ini_options]
+# Repository development helpers (scripts/) are imported by checkout tests.
+pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 

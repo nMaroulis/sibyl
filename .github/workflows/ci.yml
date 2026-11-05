@@ -1,4 +1,4 @@
-name: Verify Sibyl
+name: Application CI
 on:
   push:
   pull_request:
@@ -6,6 +6,7 @@ permissions:
   contents: read
 jobs:
   verify:
+    name: Test, lint and build application
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,12 +18,21 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: uv sync --frozen --group dev
-      - run: uv run pytest
-      - run: uv run ruff check src tests scripts/distribution hatch_build.py
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
-      - run: uv build
-      - run: python scripts/distribution/release.py inspect-wheel dist/*.whl
-      - run: npm run docs:build
+      - name: Install locked Python development dependencies
+        run: uv sync --frozen --group dev
+      - name: Run backend and agent tests
+        run: uv run pytest
+      - name: Lint Python code
+        run: uv run ruff check src tests scripts/distribution hatch_build.py
+      - name: Install locked JavaScript dependencies
+        run: npm ci
+      - name: Typecheck React dashboard
+        run: npm run typecheck
+      - name: Build React dashboard
+        run: npm run build
+      - name: Build Python wheel and source archive
+        run: uv build
+      - name: Validate bundled dashboard in wheel
+        run: python scripts/distribution/release.py inspect-wheel dist/*.whl
+      - name: Build and check documentation
+        run: npm run docs:build

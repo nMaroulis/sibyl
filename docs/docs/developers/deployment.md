@@ -41,7 +41,7 @@ Host `docs/build` as a static site. The configured public URL is `https://nmarou
 
 ### GitHub Pages
 
-The **Deploy documentation** workflow in `.github/workflows/docs.yml` builds Docusaurus and publishes **only `docs/build`**. It runs on documentation/package/workflow changes pushed to `main`, or manually through **Actions → Deploy documentation → Run workflow**. Select `main` for a manual deployment. Build and deployment are separate jobs; only the deployment job receives Pages/OIDC write permissions.
+The **Documentation deployment** workflow in `.github/workflows/docs.yml` builds Docusaurus and publishes **only `docs/build`**. It runs on documentation/package/workflow changes pushed to `main`, or manually through **Actions → Documentation deployment → Run workflow**. Select `main` for a manual deployment. Build and deployment are separate jobs; only the deployment job receives Pages/OIDC write permissions.
 
 One-time repository setup:
 

@@ -10,6 +10,8 @@ npm run build
 npm run docs:build
 ```
 
+The pytest configuration adds the checkout root to its import path so tests can import repository-only helpers such as `scripts.agent_evaluation`. Both `uv run pytest` (used in CI) and `uv run python -m pytest` work without setting `PYTHONPATH`. These development helpers are not added to the application wheel.
+
 ## Strategy research and monitoring
 
 `tests/test_strategy_research.py`, `tests/test_strategy_monitor.py`, `tests/test_analytics.py` and `tests/test_restored_features.py` cover causal indicator rules, next-open historical fills, costs, immutable input reruns, native chart evidence, paper-source pinning, durable journals, metric baselines, event paging/CSV and pause/stop behavior. Demo supplies explicitly synthetic input to the same simulation engine. Retained datasets let a test verify a replay without provider calls.

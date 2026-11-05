@@ -93,8 +93,8 @@ python scripts/distribution/release.py version
 ## Publish in the existing repository
 
 1. Commit and push the intended changes to the existing Sibyl repository.
-2. In **Actions**, run **Build and release distributions** manually. This creates an Actions artifact called `release-candidate`; it publishes no release downloads.
-3. Confirm the build and installed-package jobs pass. They exercise the wheel on Linux, Windows, Apple Silicon and Intel Macs.
+2. In **Actions**, run **Package CI and release** manually. This creates an Actions artifact called `release-candidate`; it publishes no release downloads.
+3. Confirm **Test and build release packages** and each **Install and launch on …** job pass. They exercise the wheel on Linux, Windows, Apple Silicon and Intel Macs.
 4. Create and publish a GitHub Release from that tested commit, using `v` followed by the declared version. The release event reruns the checks and attaches the resulting packages after they pass.
 
 No additional repository, PyPI account or registry setup is needed. GitHub's built-in token is used only by the upload job. Existing release assets are not overwritten automatically.
