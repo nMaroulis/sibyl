@@ -12,6 +12,7 @@ from uuid import uuid4
 from sibyl import __version__
 from sibyl.forecasting.contracts import ForecastRequest, TrainForecast
 from sibyl.forecasting.engine import ENGINE, fingerprint, predict, train
+from sibyl.forecasting.evaluations import RollingEvaluations
 from sibyl.market_data.archive import iso, milliseconds, now_ms, step_ms
 
 
@@ -33,6 +34,8 @@ class ForecastModels:
                 );
                 CREATE INDEX IF NOT EXISTS forecast_outputs_model ON forecast_outputs(model_id);
             """)
+
+        self.evaluations = RollingEvaluations(self)
 
     def _input(self, body):
         if body.input_kind == "saved_dataset":
@@ -64,7 +67,9 @@ class ForecastModels:
     def train(self, body: TrainForecast, *, parent_id=None):
         """Explicitly fit and evaluate, committing a complete model version only on success."""
         if not self._training.acquire(blocking=False):
-            raise ValueError("A forecast model is already training. Wait for it to finish.")
+            raise ValueError(
+                "A forecast model is already training or being evaluated. Wait for it to finish."
+            )
         try:
             with self.store.db() as db:
                 if db.execute("SELECT COUNT(*) FROM forecast_models").fetchone()[0] >= 100:

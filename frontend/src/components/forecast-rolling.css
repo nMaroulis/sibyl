@@ -1,0 +1,120 @@
+.forecast-rolling {
+  margin: 20px 0;
+  border: 1px solid #e2e8f3;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+.forecast-rolling > summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 22px;
+  cursor: pointer;
+  list-style: none;
+  background: linear-gradient(110deg, #f5f8ff, #fff 70%);
+}
+.forecast-rolling > summary div {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.forecast-rolling > summary strong {
+  font-size: 14px;
+}
+.forecast-rolling > summary span:not(.badge) {
+  font-size: 11px;
+  color: var(--muted);
+}
+.forecast-rolling-body {
+  padding: 0 22px 20px;
+}
+.forecast-rolling-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.forecast-rolling label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.forecast-rolling-window {
+  margin: 12px 0;
+  font-size: 11px;
+}
+.forecast-rolling-window label {
+  max-width: 440px;
+  margin-top: 12px;
+}
+.forecast-rolling-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+.forecast-rolling-actions small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.forecast-rolling-history {
+  margin: 20px 0;
+}
+.forecast-rolling-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 0;
+}
+.forecast-rolling-metrics > div {
+  display: grid;
+  gap: 8px;
+}
+.forecast-rolling-metrics strong {
+  font-size: 22px;
+}
+.forecast-rolling-metrics small,
+.forecast-rolling-metrics span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.forecast-rolling-fold {
+  max-width: 500px;
+  margin: 18px 0;
+}
+.forecast-rolling-notes {
+  margin-top: 16px;
+  font-size: 11px;
+}
+.forecast-rolling-notes p {
+  margin: 10px 0;
+  color: var(--muted);
+}
+.forecast-rolling-notes code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 850px) {
+  .forecast-rolling-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .forecast-rolling > summary {
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+  .forecast-rolling-body {
+    padding: 0 14px 16px;
+  }
+  .forecast-rolling-metrics {
+    grid-template-columns: 1fr;
+  }
+  .forecast-rolling-form {
+    grid-template-columns: 1fr;
+  }
+}

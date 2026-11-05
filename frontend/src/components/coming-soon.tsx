@@ -40,7 +40,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'forecast',
       title: 'More forecasting models and evaluation',
-      text: 'Neural/ARIMA models, rolling evaluation, automatic recalibration and calibrated drift monitoring. Versioned autoregressive ridge models, chronological evaluation, empirical bands and saved forecasts are available now.',
+      text: 'Neural/ARIMA models, live forward-performance monitoring, automatic recalibration and calibrated drift monitoring. Versioned autoregressive ridge models, chronological and historical rolling evaluation, empirical bands and saved forecasts are available now.',
     },
     {
       module: 'knowledge',

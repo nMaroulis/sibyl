@@ -20,6 +20,7 @@ DESCRIPTION = (
     "Explain selected trained forecasts, model evaluation and baseline assumptions; guide Forecasting."
 )
 SYSTEM_PROMPT = (
+    "Use rolling_evaluation to inspect selected saved rolling reports or list evaluations for a model. These refit a fixed recipe over earlier windows; they do not evaluate the original saved weights. Disclose per-fold variation, pooled benchmark skill, overlapping targets and repeated-experiment limitations. Never claim a rolling run trained or deployed a production model. "
     "Use page_help for Forecasting controls and setup, forecast_method for conceptual methodology, "
     "and price_forecast for a selected trained result or baseline. Use trained_models and model_report "
     "to inspect registry versions, chronological evaluation, naive/drift benchmarks, calibration and data provenance. "
@@ -146,6 +147,69 @@ def create_agent(services: Services, **runtime) -> Agent:
             ) from exc
         return {key: value for key, value in report.items() if key not in {"test_trace", "outputs"}}
 
+    def rolling_evaluation(
+        model_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
+        evaluation_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
+    ) -> dict:
+        """Read saved rolling forecast accuracy across successive historical test windows.
+
+        Omit IDs to use the selected model/evaluation. With only a model, list its
+        retained reports; supply an evaluation ID to inspect per-fold boundaries,
+        errors, naive/drift comparisons, band coverage and input provenance. Each fold
+        refits the saved recipe using earlier data; this evaluates the recipe rather
+        than the original coefficients. Results are dated research, not live forward
+        performance or investment returns. This tool cannot fit, rerun or deploy models.
+        """
+        identity = selected("forecast_model_id", model_id)
+        report_id = evaluation_id or (
+            selected("forecast_evaluation_id", None)
+            if model_id is None or model_id == selected("forecast_model_id", None)
+            else None
+        )
+        if not services.forecasts or not identity and not report_id:
+            raise ToolRejectedError(
+                "Choose a saved model or rolling evaluation first.",
+                code="forecast_model_required",
+                suggestion="Use trained_models() or open Forecasting → Trained models.",
+            )
+        try:
+            if not report_id:
+                return {
+                    "kind": "rolling_evaluations",
+                    "model_id": identity,
+                    **services.forecasts.evaluations.list(identity),
+                }
+            report = services.forecasts.evaluations.detail(report_id)
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That model or rolling evaluation is no longer retained.",
+                code="forecast_evaluation_not_found",
+                suggestion="List rolling_evaluation(model_id=...) for retained reports. Never substitute a different evaluation or baseline.",
+            ) from exc
+        if identity and report["model_id"] != identity:
+            raise ToolRejectedError(
+                "The evaluation belongs to a different model version.",
+                code="forecast_evaluation_not_found",
+                suggestion="Choose an evaluation retained for the selected model version.",
+            )
+        return {
+            "kind": "rolling_evaluation",
+            "report": {
+                **services.forecasts.evaluations.header(report),
+                "notes": report["result"]["notes"],
+                "folds": [
+                    {
+                        "index": fold["index"],
+                        "partitions": fold["partitions"],
+                        "evaluation": {
+                            key: value for key, value in fold["evaluation"].items() if key != "trace"
+                        },
+                    }
+                    for fold in report["result"]["folds"]
+                ],
+            },
+        }
+
     def page_help(topic: Topic = "overview") -> dict:
         """Explain Forecasting controls, input requirements, baseline intervals or model availability.
 
@@ -156,7 +220,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-chronos",
         description=DESCRIPTION,
-        tools=[price_forecast, forecast_method, page_help, trained_models, model_report],
+        tools=[price_forecast, forecast_method, page_help, trained_models, model_report, rolling_evaluation],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

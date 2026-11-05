@@ -72,6 +72,80 @@ def metrics(actual, predicted):
     return result
 
 
+def fit_horizon(logs, x, lags, alpha, horizon, training, calibration):
+    """Fit one causal ridge model and calibrate it using only the supplied earlier partitions."""
+    if len(training) < max(60, 3 * lags) or len(calibration) < 20:
+        raise ValueError("Use more training and calibration observations for this horizon.")
+    raw = x[training - lags]
+    mean, scale = raw.mean(axis=0), raw.std(axis=0)
+    scale = np.where(scale < 1e-12, 1, scale)
+    z = (raw - mean) / scale
+    y = logs[training + horizon] - logs[training]
+    intercept = float(y.mean())
+    try:
+        coefficients = np.linalg.solve(z.T @ z + alpha * np.eye(lags), z.T @ (y - intercept))
+    except np.linalg.LinAlgError:
+        raise ValueError("This numerical fit did not converge. Choose another dataset or penalty.") from None
+
+    predictions = intercept + ((x - mean) / scale) @ coefficients
+    residuals = np.abs(logs[calibration + horizon] - logs[calibration] - predictions[calibration - lags])
+    rank = math.ceil((len(residuals) + 1) * COVERAGE)
+    if rank > len(residuals):
+        raise ValueError("Not enough calibration observations for the selected interval.")
+    radius = float(np.sort(residuals)[rank - 1])
+    model = {
+        "horizon": horizon,
+        "mean": mean.tolist(),
+        "scale": scale.tolist(),
+        "coefficients": coefficients.tolist(),
+        "intercept": intercept,
+        "radius": radius,
+        "training_samples": len(training),
+        "calibration_samples": len(calibration),
+        "feature_min": raw.min(axis=0).tolist(),
+        "feature_max": raw.max(axis=0).tolist(),
+    }
+    return model, predictions
+
+
+def score_horizon(logs, times, predictions, model, test, drift, lags):
+    """Score one fixed fit and matching benchmarks against identical held-out price targets."""
+    horizon, radius = model["horizon"], model["radius"]
+    predicted_logs = logs[test] + predictions[test - lags]
+    actual, predicted = prices(logs[test + horizon]), prices(predicted_logs)
+    naive, drift_prices = prices(logs[test]), prices(logs[test] + drift * horizon)
+    lower, upper = prices(predicted_logs - radius), prices(predicted_logs + radius)
+    model_metrics, naive_metrics = metrics(actual, predicted), metrics(actual, naive)
+    return {
+        "horizon": horizon,
+        "samples": len(test),
+        "model": model_metrics,
+        "naive": naive_metrics,
+        "drift": metrics(actual, drift_prices),
+        "mae_skill_vs_naive_pct": (1 - model_metrics["mae"] / naive_metrics["mae"]) * 100
+        if naive_metrics["mae"] > 1e-12
+        else None,
+        "coverage_pct": float(np.mean((actual >= lower) & (actual <= upper)) * 100),
+        "mean_interval_width_pct": float(np.mean((upper - lower) / actual) * 100),
+        "overlapping_targets": horizon > 1,
+        "trace": [
+            {
+                "origin": iso(times[int(t)] + step_ms("1d")),
+                "timestamp": iso(times[int(t) + horizon] + step_ms("1d")),
+                "actual": float(a),
+                "predicted": float(p),
+                "lower": float(lo),
+                "upper": float(hi),
+                "naive": float(b),
+                "drift": float(d),
+            }
+            for t, a, p, lo, hi, b, d in zip(
+                test, actual, predicted, lower, upper, naive, drift_prices, strict=True
+            )
+        ],
+    }
+
+
 def train(candles, request):
     """Fit independently for each horizon and retain reproducible artifacts and test evidence."""
     logs, times = validate(candles, 360)
@@ -86,74 +160,9 @@ def train(candles, request):
         test = np.arange(calibration_end, n - horizon)
         if len(training) < max(60, 3 * lags) or min(len(calibration), len(test)) < 20:
             raise ValueError("The selected horizon needs more training/calibration/test observations.")
-        raw = x[training - lags]
-        mean, scale = raw.mean(axis=0), raw.std(axis=0)
-        scale = np.where(scale < 1e-12, 1, scale)
-        z = (raw - mean) / scale
-        y = logs[training + horizon] - logs[training]
-        intercept = float(y.mean())
-        try:
-            coefficients = np.linalg.solve(z.T @ z + request.alpha * np.eye(lags), z.T @ (y - intercept))
-        except np.linalg.LinAlgError:
-            raise ValueError(
-                "This numerical fit did not converge. Choose another dataset or penalty."
-            ) from None
-
-        predictions = intercept + ((x - mean) / scale) @ coefficients
-        residuals = np.abs(logs[calibration + horizon] - logs[calibration] - predictions[calibration - lags])
-        rank = math.ceil((len(residuals) + 1) * COVERAGE)
-        if rank > len(residuals):
-            raise ValueError("Not enough calibration observations for the selected interval.")
-        radius = float(np.sort(residuals)[rank - 1])
-        fitted.append(
-            {
-                "horizon": horizon,
-                "mean": mean.tolist(),
-                "scale": scale.tolist(),
-                "coefficients": coefficients.tolist(),
-                "intercept": intercept,
-                "radius": radius,
-                "training_samples": len(training),
-                "calibration_samples": len(calibration),
-                "feature_min": raw.min(axis=0).tolist(),
-                "feature_max": raw.max(axis=0).tolist(),
-            }
-        )
-        predicted_logs = logs[test] + predictions[test - lags]
-        actual, predicted = prices(logs[test + horizon]), prices(predicted_logs)
-        naive, drift_prices = prices(logs[test]), prices(logs[test] + drift * horizon)
-        lower, upper = prices(predicted_logs - radius), prices(predicted_logs + radius)
-        model_metrics, naive_metrics = metrics(actual, predicted), metrics(actual, naive)
-        evaluation.append(
-            {
-                "horizon": horizon,
-                "samples": len(test),
-                "model": model_metrics,
-                "naive": naive_metrics,
-                "drift": metrics(actual, drift_prices),
-                "mae_skill_vs_naive_pct": (1 - model_metrics["mae"] / naive_metrics["mae"]) * 100
-                if naive_metrics["mae"] > 1e-12
-                else None,
-                "coverage_pct": float(np.mean((actual >= lower) & (actual <= upper)) * 100),
-                "mean_interval_width_pct": float(np.mean((upper - lower) / actual) * 100),
-                "overlapping_targets": horizon > 1,
-                "trace": [
-                    {
-                        "origin": iso(times[int(t)] + step_ms("1d")),
-                        "timestamp": iso(times[int(t) + horizon] + step_ms("1d")),
-                        "actual": float(a),
-                        "predicted": float(p),
-                        "lower": float(lo),
-                        "upper": float(hi),
-                        "naive": float(b),
-                        "drift": float(d),
-                    }
-                    for t, a, p, lo, hi, b, d in zip(
-                        test, actual, predicted, lower, upper, naive, drift_prices, strict=True
-                    )
-                ],
-            }
-        )
+        model, predictions = fit_horizon(logs, x, lags, request.alpha, horizon, training, calibration)
+        fitted.append(model)
+        evaluation.append(score_horizon(logs, times, predictions, model, test, drift, lags))
     artifact = {
         "engine": ENGINE,
         "numpy_version": np.__version__,

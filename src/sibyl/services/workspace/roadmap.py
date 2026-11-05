@@ -119,10 +119,10 @@ AREAS = [
         "name": "Forecasting",
         "status": "partial",
         "priority": "later",
-        "working": "Versioned direct autoregressive ridge models, immutable daily inputs, chronological 60/20/20 training/calibration/test evidence, naive/drift benchmarks, empirical bands, explicit saved/current-input forecasts and read-only Chronos tools. The untrained baseline remains separate.",
+        "working": "Versioned direct autoregressive ridge models, immutable daily inputs, chronological 60/20/20 training/calibration/test evidence, naive/drift benchmarks, empirical bands, explicit saved/current-input forecasts, bounded historical expanding/fixed-window recipe evaluation with purged fold boundaries, pooled benchmarks, saved reports/reruns/exports and read-only Chronos tools. The untrained baseline remains separate.",
         "pending": [
             "Neural/ARIMA and additional model families, broader assets and training inputs.",
-            "Rolling/repeated evaluation, calibrated drift monitoring, automatic recalibration and larger managed model lifecycles.",
+            "Live forward-performance monitoring, calibrated drift monitoring, automatic recalibration and larger managed model lifecycles.",
         ],
     },
     {
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-11-02",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Alert rules also support explicit Telegram forwarding with cooldowns and freshness windows. Native repeated agent checks now include imported-source and empty-library cases. Research gains attributable document/news retrieval; Workspace gains worker monitoring and encrypted backup/recovery. Next work includes broader model/semantic evaluation, embeddings, accounting/provider reconciliation and rolling forecast evaluation. Multi-user support stays deferred.",
+        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Alert rules also support explicit Telegram forwarding with cooldowns and freshness windows. Native repeated agent checks now include imported-source and empty-library cases. Research gains attributable document/news retrieval; Workspace gains worker monitoring and encrypted backup/recovery. Next work includes broader model/semantic evaluation, embeddings, accounting/provider reconciliation and live forecast monitoring. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

@@ -17,7 +17,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
-| Forecasting                    | partial       | Rolling evaluation, more model families, automatic recalibration and calibrated drift monitoring.   |
+| Forecasting                    | partial       | Live forward monitoring, more model families, automatic recalibration and calibrated drift monitoring.   |
 | Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
 | Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.              |
 | Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                      |
@@ -183,7 +183,8 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Add chronological 60/20/20 training/calibration/test partitions, purged boundary-crossing targets, naive/drift comparisons and independent test metrics/empirical band coverage.
 - [x] Connect the UI to trained results, explicit baseline/model tabs, test/forecast charts, exports and native read-only Chronos registry/report tools.
 - [x] Expose descriptive lag-feature departures from training ranges without claiming a calibrated drift detector.
-- [ ] Add rolling/repeated forward evaluation, calibrated drift monitoring, automated recalibration and managed archive/import beyond the initial bounded registry.
+- [x] Add bounded expanding/fixed-window historical rolling evaluation of a saved recipe, with causal refits/calibration, purged test boundaries, pooled benchmark metrics, immutable reports/reruns, per-fold charts/exports and native Chronos evidence. This is historical research, not live forward performance.
+- [ ] Add live forward-performance monitoring, calibrated drift monitoring, automated recalibration and managed model archive/import beyond the bounded registry.
 - [ ] Add neural/ARIMA and other model families, richer features and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial

@@ -242,6 +242,7 @@ class AgentContext(Request):
     horizon: int | None = Field(default=None, ge=1, le=30)
     forecast_model_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     forecast_run_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    forecast_evaluation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     bitcoin_txid: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     bitcoin_address: str | None = Field(default=None, min_length=14, max_length=90)
     bitcoin_demo: bool | None = None

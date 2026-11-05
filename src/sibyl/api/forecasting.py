@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Query, Response
 
 from sibyl.api.routes import S
-from sibyl.forecasting.contracts import ForecastRequest, TrainForecast
+from sibyl.forecasting.contracts import ForecastRequest, RollingEvaluationRequest, TrainForecast
 
 
 def private_evidence(response: Response):
@@ -32,6 +32,24 @@ def train_model(body: TrainForecast, s: S):
 def output(identity: str, s: S):
     """Read one exact saved forecast with its original observation window."""
     return s.forecasts.output(identity)
+
+
+@router.get("/evaluations/{evaluation_id}")
+def rolling_report(evaluation_id: str, s: S):
+    """Read/export an exact saved rolling evaluation without rerunning it."""
+    return s.forecasts.evaluations.detail(evaluation_id)
+
+
+@router.get("/{identity}/evaluations")
+def rolling_history(identity: str, s: S):
+    """Read retained evaluation headers for the selected model version."""
+    return s.forecasts.evaluations.list(identity)
+
+
+@router.post("/{identity}/evaluations", status_code=201)
+def rolling_evaluate(identity: str, body: RollingEvaluationRequest, s: S):
+    """Explicitly refit the saved recipe over earlier windows and retain later test evidence."""
+    return s.forecasts.evaluations.run(identity, body)
 
 
 @router.get("/{identity}")

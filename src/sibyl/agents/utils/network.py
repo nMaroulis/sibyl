@@ -180,6 +180,7 @@ class AgentNetwork:
                     "article_not_found",
                     "strategy_run_not_found",
                     "forecast_model_not_found",
+                    "forecast_evaluation_not_found",
                     "investigation_not_found",
                     "briefing_not_found",
                 }

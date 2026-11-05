@@ -160,6 +160,16 @@ def snapshot_answer(module: str, evidence) -> str:
             "\n\n".join(f"{item['term']}: {item['text']}\n{item['url']}" for item in evidence)
             or "No glossary entries matched. Try RSI, diversification, backtesting, or API key permissions."
         )
+    if module == "chronos" and evidence.get("kind") == "rolling_evaluation":
+        report = evidence["report"]
+        score = report["aggregate"]["mae_skill_vs_naive_pct"]
+        skill = "undefined" if score is None else f"{score:.2f}%"
+        return (
+            f"Saved rolling evaluation on {report['symbol']}: {len(report['folds'])} folds, "
+            f"{report['aggregate']['samples']} held-out targets and pooled MAE skill vs naive {skill}. "
+            f"Source: {report['source']}. Recorded: {report['created_at']}. "
+            "Each fold refits the recipe; historical accuracy is not investment return or live forward performance."
+        )
     if module == "chronos":
         point = evidence["points"][-1]
         if evidence.get("trained"):

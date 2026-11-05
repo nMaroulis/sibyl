@@ -4,8 +4,21 @@ from typing import Literal
 
 from sibyl.agents.guides import Guide
 
-Topic = Literal["overview", "inputs", "intervals", "models"]
+Topic = Literal["overview", "inputs", "intervals", "models", "rolling"]
 GUIDES = {
+    "rolling": Guide(
+        "Evaluate a recipe across successive periods",
+        "/forecast?tab=models",
+        (
+            "Select a trained model, then open Rolling evaluation below its independent test results.",
+            "Choose a horizon, test/calibration days and fold count. Expanding uses all earlier training history; Fixed window uses the selected number of training days.",
+            "Run rolling evaluation uses the saved input offline. Inspect pooled benchmarks and each fold's boundaries, metrics and price trace. It creates a separate report; the model version stays unchanged.",
+            "Reopen a retained report, Export rolling evidence, or Rerun exact evaluation. Ask Chronos includes the selected evaluation. The latest ten reports per model and one hundred workspace-wide are retained.",
+        ),
+        (
+            "Prior test periods can join later training windows. Purged boundaries, overlapping multi-day targets and repeated experimentation limit interpretation; no automatic selection or deployment occurs.",
+        ),
+    ),
     "overview": Guide(
         "Train and inspect daily forecasts",
         "/forecast?tab=models",
@@ -47,7 +60,7 @@ GUIDES = {
             "Edit model settings explicitly for another experiment. AI model selection changes the assistant, not the numerical forecast model.",
         ),
         (
-            "Trained autoregressive ridge is available. Neural/ARIMA models, rolling evaluation, automated recalibration and calibrated drift monitoring remain pending.",
+            "Trained autoregressive ridge is available. Neural/ARIMA models, automated recalibration and calibrated drift monitoring remain pending.",
         ),
     ),
 }

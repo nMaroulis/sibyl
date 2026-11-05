@@ -154,6 +154,8 @@ class AgentRegistry:
                         "read_research_document",
                         {"document_id": request.context.library_document_id},
                     )
+                if request.module == "chronos" and request.context.forecast_evaluation_id:
+                    primary_tool, arguments = "rolling_evaluation", {}
                 task = Task.create_tool_call(primary_tool, arguments, session_id=session_id)
                 mode = "tools"
             else:

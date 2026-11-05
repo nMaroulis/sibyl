@@ -107,7 +107,9 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 
 Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
 
-Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families, rolling evaluation and automated recalibration are pending.
+Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families and automated recalibration are pending.
+
+Inspect a saved recipe across successive periods with expanding or fixed training windows, pooled benchmark errors and per-fold charts. Rolling reports retain their exact inputs and fitting evidence; evaluation never deploys or replaces a model.
 
 [Forecasting guide](docs/docs/guides/forecasting.md) · [Engine contracts](docs/docs/developers/forecasting.md)
 
