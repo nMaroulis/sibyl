@@ -47,6 +47,40 @@ docker compose up --build
 
 ## Release notes
 
+## [2.2.0] - Unreleased
+
+### Added
+
+- Measured Account investment-performance periods with fresh opening/closing valuations, source-bound funding reviews, explicit/manual external-flow assertions, coverage gates, per-account/combined Modified Dietz estimates, audit/export and native Accountant evidence. Historical conversion automation and provider-verified full accounting remain outside this workflow.
+- Live forecast scorecards for predictions saved before their targets, exact-source observed daily closes, versioned actual-price corrections, equal-horizon naïve/drift comparisons, pause/resume, explicit feed refresh, JSON exports and native Chronos tools. Missing prices and historical/Demo predictions cannot become live evidence.
+- Per-account order/fill notifications with atomic observed-change receipts, future-only cursors, partial-fill/cancellation/error/correction categories, inbox history, retention-gap handling, native Broker evidence and optional existing Telegram delivery.
+- Optional local Ollama embeddings in **Research → My research**, with explicit model checks, bounded checkpointed indexing, partial-coverage reporting, cosine search and keyword/semantic rank fusion. Exact source citations survive retrieval; deletion and reindexing invalidate vectors. Wiki and Reporter use native typed retrieval/status tools. Chat settings stay independent; broader real-model relevance evaluation and hosted embedding providers remain pending.
+- Historical rolling forecast evaluation with expanding/fixed training windows, fresh causal ridge fits and calibration per fold, purged boundaries, pooled naïve/drift comparisons, saved reproducible reports, per-window charts and JSON exports. Chronos reads selected reports through native ProtoLink tools; training and evaluation share bounded admission. No automatic model selection, deployment or recalibration is added.
+- Bitcoin output-spend checks in **Research → Block explorer**, with explicit per-page refresh, confirmed/pending/unspent/unknown states, spending-transaction navigation, dated JSON exports, deterministic Demo examples and a native read-only Explorer tool. Failed checks never imply unspent funds; spendability and independent chain verification remain outside scope.
+- **Research → My research**: bounded PDF/text/Markdown imports, original retention, attributed exact passages, lexical search across uploads and retained news, source management and changed-citation protection. Wiki and Reporter expose native read-only library tools; search/reading also work without an LLM.
+- Background-worker supervision with actual iteration times, duration/deadline states, sanitized fault history, explicit storage retries, cancellation/draining and an app-wide attention notice. Workspace settings exposes current progress; Technician can inspect it through a native tool.
+- Passphrase-encrypted local workspace archives with authenticated inspection, download/import, SQLite online snapshots and non-destructive restore into a new directory. Recovery starts with workers/exchange execution paused, accounts inactive, strategy/calendar pauses and pending-message quarantine; explicit review and restart are required. Installed-package smoke coverage exercises isolated research, worker diagnostics and encrypted recovery.
+- Saved investigations in **Sibyl → Investigations**: reusable questions, progressive starting-context controls, native specialist collaboration, structured findings, uncertainty and follow-up questions.
+- Versioned reruns with fresh conversations and frozen team-model choices, consultation progress, exact-request Stop, restart interruption, saved history, side-by-side comparison and JSON export.
+- Inspectable source receipts from retained native ProtoLink evidence, with actual tool attribution, source links, retrieval times, bounded previews and fingerprints. Invalid structured answers or invented tool citations fail explicitly; uncited interpretations remain labeled.
+- Native read-only Sibyl tools for finding previous investigations, reading dated reports and inspecting actual briefing calendars/delivery outcomes, with setup help separated from observations.
+- Daily/weekly investigation briefings with local time-zone/DST rules, pause/resume/edit/archive controls, extra run-now actions, frozen queued team models, missed-time handling and schedule-specific report retention. No inference backlog is replayed after restart.
+- Opt-in Telegram briefing summaries or fuller reports through the existing direct-HTTP client, bound to the explicitly reviewed bot/private user. Durable message-part receipts, rate-limit retries, expiry and conservative uncertain-send handling keep delivery inspectable.
+- User/developer briefing guides, progressive calendar controls and delivery history, plus native collaboration, concurrent admission, privacy, restart, retention and mock-transport acceptance tests.
+
+- Opt-in Telegram delivery for price, account-risk, strategy and connection alert rules, with future-only cursors, explicitly checked recipients, cooldown suppression and observation-based expiry.
+- Per-rule delivery editors and a shared Delivery history tab with confirmed part counts, failure/suppression reasons and pause controls. Shared outbox admission and restart tests preserve briefing behavior; Technician setup help explains the new workflow.
+- A developer agent-evaluation command using native ProtoLink cases, repeated runs, actual specialist tool evidence, scope/link/number checks and baseline score comparisons. Isolated local-model fixtures cover missing accounts/models, explicit market selection, native consultations and an untrusted news excerpt; model-specific failures remain recorded.
+- Native correctable selection errors for removed articles, trained models, strategy runs and saved investigations/calendars, with useful next steps and focused acceptance tests. Agent help explains opt-in alert delivery.
+
+### Fixed
+
+- Make the investigation credential-privacy test independent of optional OpenAI SDK installation. Drain automatic workers before forecast and strategy tests that advance fake clocks manually, removing CI timing races without weakening runtime guards.
+- Fix repository-helper imports during CI test collection by setting pytest’s checkout-root import path explicitly. Name application, release-package, installed-platform and documentation jobs/steps by their purpose.
+- Replace the large Account summary cards and stacked pricing warnings with a compact metric strip and one accessible warning disclosure. Keep partial values, excluded asset counts, shared valuation-feed attribution and workspace strategy scope explicit; update Accountant help and the Account guide.
+- Make the account-sync API test wait for asynchronous completion when the background worker already owns the import slot, avoiding a timing-dependent failure.
+- Label retained exchange strategy summaries with their actual environment instead of describing every selected run as paper execution; leave unavailable equity explicit and distinguish the mixed saved-run catalog. Record paper mode when creating virtual runs. Reject investigation/calendar mismatches instead of returning another investigation's schedule.
+
 ## [2.1.0] - 2026-11-01
 
 :::note[Release summary]

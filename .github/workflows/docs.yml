@@ -1,4 +1,4 @@
-name: Deploy documentation
+name: Documentation deployment
 
 on:
   push:
@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   build:
+    name: Build Docusaurus documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -38,6 +39,7 @@ jobs:
           path: docs/build
 
   deploy:
+    name: Publish documentation to GitHub Pages
     if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest

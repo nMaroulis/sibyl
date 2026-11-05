@@ -502,6 +502,7 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
     assert response.json()["evidence"]["view"] == "transfers" and response.json()["evidence"]["example"]
     assert set(registry.agents["accountant"].tools) == {
         "accountant_snapshot",
+        "investment_returns",
         "account_history",
         "balance_check_report",
         "risk_alerts",

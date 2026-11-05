@@ -339,7 +339,9 @@ function AgentDialog({
         {context.job_id && <span>Run {context.job_id.slice(0, 8)}</span>}
         {context.horizon && (
           <span>
-            {context.horizon}-day {context.forecast_model_id ? 'trained forecast' : 'baseline'}
+            {context.forecast_evaluation_id
+              ? 'Rolling evaluation'
+              : `${context.horizon}-day ${context.forecast_model_id ? 'trained forecast' : 'baseline'}`}
           </span>
         )}
         {context.article_id && <span>Selected story</span>}
@@ -436,12 +438,18 @@ function AgentDialog({
                                 ? 'How are the fee rate and confirmations calculated?'
                                 : 'How do confirmed balance and pending change differ?',
                             ]
-                          : context.forecast_model_id
+                          : context.forecast_evaluation_id
                             ? [
-                                'Explain this trained forecast and its uncertainty.',
-                                'How did this model compare with the naive benchmark?',
+                                'Explain this rolling evaluation.',
+                                'How consistent is accuracy across the test windows?',
+                                'Compare the pooled errors with the naïve benchmark.',
                               ]
-                            : prompts[selection.module]
+                            : context.forecast_model_id
+                              ? [
+                                  'Explain this trained forecast and its uncertainty.',
+                                  'How did this model compare with the naive benchmark?',
+                                ]
+                              : prompts[selection.module]
               ).map((prompt) => (
                 <button key={prompt} onClick={() => onSend(prompt)} disabled={!agent}>
                   <span>{prompt}</span>

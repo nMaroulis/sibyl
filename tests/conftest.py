@@ -27,3 +27,14 @@ def store(settings):
 def client(settings):
     with TestClient(create_app(settings)) as client:
         yield client
+
+
+@pytest.fixture
+def manual_client(client):
+    """Drain lifespan workers before a test drives fake clocks and domain ticks itself.
+
+    Services and the native agent runtime remain open. Only automatic scheduling
+    is stopped, using the same cancellation/draining path as app shutdown.
+    """
+    client.portal.call(client.app.state.services.workers.close)
+    return client

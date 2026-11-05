@@ -1,3 +1,4 @@
+import { AlertDeliveryButton } from './delivery';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Archive, ArrowUpRight, Bell, Pause, Pencil, Play, Plus, Undo2, Waves } from 'lucide-react';
@@ -146,6 +147,7 @@ export function StrategyRules({ example, jobId }: { example: boolean; jobId: str
                 <div className="price-rule-footer">
                   <span className="muted">Last armed {date(rule.armed_at)}</span>
                   <div className="price-rule-actions">
+                    <AlertDeliveryButton kind="strategy" rule={rule.id} disabled={example} />
                     <Link
                       className={`text-button ${example ? 'disabled-link' : ''}`}
                       aria-disabled={example}

@@ -9,6 +9,7 @@ from uuid import uuid4
 import httpx
 
 from sibyl.agents.utils.conversations import SibylRequest
+from sibyl.messaging.outbound import NotificationOutbox
 from sibyl.messaging.settings import MessagingSettings
 from sibyl.messaging.telegram import TelegramClient, TelegramError
 
@@ -27,6 +28,8 @@ class TelegramService:
         self.http = http or httpx.AsyncClient(follow_redirects=False)
         self._lock = threading.RLock()
         self._tick_lock = asyncio.Lock()
+        self._notification_steps = 0
+        self.notifications = NotificationOutbox(store, self.settings, self.client, self._notification_error)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS telegram_updates (
@@ -89,6 +92,8 @@ class TelegramService:
                 (profile.get("revision", ""),),
             ).fetchone()
         result["telegram"] = {
+            "briefings": self.notifications.summary(profile.get("revision", "")),
+            "alerts": self.notifications.summary(profile.get("revision", ""), kind="alert"),
             "updates": dict(rows),
             "delivery": dict(outbox),
             "llm_ready": self.network.status()["ready"],
@@ -105,6 +110,14 @@ class TelegramService:
         with self._lock:
             self.settings.save(body)
         return self.public()
+
+    def _notification_error(self, revision, error):
+        """Expose sanitized notification problems and honor Telegram's explicit cooldown."""
+        self._update(
+            revision,
+            error=str(error),
+            next_attempt=time.time() + error.retry_after if error.retry_after else 0,
+        )
 
     def _update(self, revision, **changes):
         with self._lock:
@@ -128,6 +141,7 @@ class TelegramService:
             profile["revision"],
             verified=True,
             bot_username=bot["username"],
+            bot_id=bot["id"],
             error=None,
             last_checked_at=time.time(),
         ):
@@ -163,12 +177,21 @@ class TelegramService:
         profile = self.settings.profile()
         if profile:
             self._update(profile["revision"], enabled=False, control_id=uuid4().hex)
+            self.notifications.invalidate(
+                connection_revision=profile["revision"],
+                reason="Telegram was paused before this notification was sent.",
+            )
         return self.public()
 
     def disconnect(self):
         """Remove the encrypted bot credential and invalidate queued work; chats stay local."""
         with self._lock:
+            revision = self.settings.profile().get("revision")
             self.store.save_data_profile("messaging:telegram", {})
+            if revision:
+                self.notifications.invalidate(
+                    connection_revision=revision, reason="The Telegram connection was removed."
+                )
         return self.public()
 
     def _current(self, revision):
@@ -357,6 +380,15 @@ class TelegramService:
             try:
                 if await self.deliver(profile) or await self.process(profile):
                     return
+                if self._notification_steps >= 4:
+                    updates = await self.client(profile).receive(profile.get("offset"), timeout=0)
+                    self.ingest(profile, updates)
+                    self._notification_steps = 0
+                    return
+                if await self.notifications.deliver(profile):
+                    self._notification_steps += 1
+                    return
+                self._notification_steps = 0
                 updates = await self.client(profile).receive(profile.get("offset"))
                 self.ingest(profile, updates)
             except TelegramError as error:

@@ -1,3 +1,4 @@
+import { AlertDeliveryButton } from './delivery';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -193,6 +194,7 @@ export function RiskRules({
                 <div className="price-rule-footer">
                   <span className="muted">Window started {date(rule.armed_at)}</span>
                   <div className="price-rule-actions">
+                    <AlertDeliveryButton kind="risk" rule={rule.id} disabled={example} />
                     <button
                       className="text-button"
                       disabled={!rule.last_sample_id}

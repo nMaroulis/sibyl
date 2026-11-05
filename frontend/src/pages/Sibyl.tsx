@@ -10,12 +10,15 @@ import {
   MessageCircle,
   Plus,
   ClipboardList,
+  FileSearch,
   Trash2,
 } from 'lucide-react';
 import { SibylProgress, SibylRequestHistory, activeRequest } from '../components/sibyl-activity';
 import type { SibylActivity, Consultation } from '../components/sibyl-activity';
 import { SibylMark } from '../components/sibyl-mark';
 import { AgentActivityTrail, AgentRunDetails, mergeActivity } from '../components/agent-run';
+import { Investigations } from '../components/investigations/workspace';
+import { SectionTabs } from '../components/section-tabs';
 import { Badge, ErrorState, Loading, Modal } from '../components/ui';
 import { api, post, postStream } from '../lib/api';
 import { useResource } from '../lib/hooks';
@@ -41,6 +44,8 @@ type Reply = {
   mode: string;
   created_at: string;
   delegations: Consultation[];
+  request_id?: string;
+  investigation_id?: string;
 };
 type Chat = { id: string; title: string; turns: Reply[]; pending?: boolean };
 const starters = [
@@ -61,8 +66,81 @@ const starters = [
   },
 ];
 
-/** Sibyl chooses collaborators on the backend; the interface displays actual consultations. */
 export function Sibyl() {
+  const [params] = useSearchParams();
+  if (params.get('tab') !== 'investigations') return <SibylChat />;
+  return (
+    <div className="sibyl-page">
+      <header className="sibyl-page-heading">
+        <div className="sibyl-wordmark">
+          <SibylMark small />
+          <div>
+            <h1>Sibyl</h1>
+            <p>Your connected intelligence</p>
+          </div>
+        </div>
+        <Link to="/settings?tab=messaging" className="button">
+          <MessageCircle size={15} />
+          Messaging
+        </Link>
+      </header>
+      <SibylTabs />
+      <Investigations />
+    </div>
+  );
+}
+
+function SibylTabs() {
+  const [params, setParams] = useSearchParams();
+  const value = params.get('tab') === 'investigations' ? 'investigations' : 'chat';
+  return (
+    <SectionTabs
+      id="sibyl-workspace"
+      label="Sibyl workspace"
+      value={value}
+      items={[
+        { id: 'chat', label: 'Chat', icon: MessageCircle },
+        { id: 'investigations', label: 'Investigations', icon: FileSearch },
+      ]}
+      onChange={(tab) => {
+        const next = new URLSearchParams(params);
+        next.set('tab', tab);
+        setParams(next);
+      }}
+    />
+  );
+}
+
+function SibylAnswer({ turn }: { turn: Reply }) {
+  if (!turn.investigation_id) return <div className="sibyl-answer-text">{turn.answer}</div>;
+  let summary =
+    'The investigation response is retained with its source checks in the report workspace.';
+  try {
+    const parsed = JSON.parse(turn.answer);
+    if (typeof parsed.summary === 'string') summary = parsed.summary;
+  } catch {
+    /* Invalid structured responses remain inspectable in the report workspace. */
+  }
+  return (
+    <div className="sibyl-answer-text">
+      <p>{summary}</p>
+      <Link
+        className="text-link"
+        to={`/sibyl?tab=investigations&investigation=${turn.investigation_id}&run=${turn.request_id ?? ''}`}
+      >
+        Open investigation report
+        <ArrowUpRight size={13} />
+      </Link>
+      <details>
+        <summary>Original structured response</summary>
+        <pre>{turn.answer}</pre>
+      </details>
+    </div>
+  );
+}
+
+/** Sibyl chooses collaborators on the backend; the interface displays actual consultations. */
+function SibylChat() {
   const status = useResource<Status>('/sibyl', 30000);
   const catalog = useResource<Agent[]>('/agents');
   const chats = useResource<Chat[]>('/sibyl/conversations');
@@ -260,6 +338,7 @@ export function Sibyl() {
           </button>
         </div>
       </header>
+      <SibylTabs />
       {status.error && <ErrorState message={status.error} retry={status.retry} />}
       <div className="sibyl-room">
         <section className="sibyl-conversation" aria-label="Conversation with Sibyl">
@@ -384,7 +463,7 @@ export function Sibyl() {
                           {turn.mode === 'mock' ? ' · Simulated' : ''}
                         </span>
                       </div>
-                      <div className="sibyl-answer-text">{turn.answer}</div>
+                      <SibylAnswer turn={turn} />
                       <AgentRunDetails runId={turn.run_id} />
                       {turn.delegations.length > 0 && (
                         <details className="sibyl-consultations">
@@ -592,7 +671,7 @@ export function Sibyl() {
           <div className="sibyl-channel-note">
             <MessageCircle size={18} />
             <strong>Take the conversation with you.</strong>
-            <p>WhatsApp, Telegram & more are on the way.</p>
+            <p>Talk with Sibyl through Telegram. More channels are coming.</p>
             <Link to="/settings?tab=messaging">
               Explore channels
               <ArrowUpRight size={12} />

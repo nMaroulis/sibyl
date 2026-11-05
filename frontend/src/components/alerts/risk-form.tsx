@@ -328,7 +328,8 @@ export function RiskForm({
           {rule
             ? 'Changes save paused. Resume resets the peak and incident state.'
             : 'Starting a watch authorizes background spot-balance and quote reads, roughly once a minute.'}{' '}
-          Complete fresh valuation is required. No orders or external messages are sent.
+          Complete fresh valuation is required. No orders are submitted. Telegram delivery is
+          selected separately on each saved rule.
         </span>
       </div>
       {error && (

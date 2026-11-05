@@ -9,6 +9,8 @@ from uuid import uuid4
 
 import ccxt
 
+from sibyl.alerts.orders.events import schema
+from sibyl.alerts.orders.service import OrderAlerts
 from sibyl.exchanges.catalog import exchange_spec
 from sibyl.models import ExchangeOrderRequest
 from sibyl.services.markets.service import Market
@@ -39,6 +41,9 @@ class ExchangeTrading:
                 "CREATE TABLE IF NOT EXISTS exchange_orders ("
                 "id TEXT PRIMARY KEY, request_key TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)"
             )
+        with store.db() as db:
+            schema(db)
+        self.alerts = OrderAlerts(store)
         self.lifecycle = OrderLifecycle(self)
         self.recovery = OrderRecovery(self)
         self.reconciliation = OrderReconciliation(self)

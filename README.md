@@ -34,9 +34,9 @@ The interface pairs a floating navigation dock with focused workspaces, interact
 
 Bring multiple exchange accounts into a combined portfolio and switch between exchange and individual-account views. Inspect allocations, free and reserved balances, valuation history and conversion evidence, with filters and CSV exports.
 
-Balance checks compare saved starting quantities with retained trades, fees and eligible funding. Missing prices and incomplete history stay visible. Production holdings, test funds and Demo are kept distinct.
+Measured performance periods separate investment gain from external contributions/withdrawals using fresh valuations and explicit cash-flow coverage review. Balance checks compare saved starting quantities with retained trades, fees and eligible funding. Missing prices and incomplete history stay visible. Production holdings, test funds and Demo are kept distinct.
 
-[Account guide](docs/docs/guides/account.md) · [Balance checks](docs/docs/guides/balance-checks.md)
+[Account guide](docs/docs/guides/account.md) · [Investment performance](docs/docs/guides/account-returns.md) · [Balance checks](docs/docs/guides/balance-checks.md)
 
 ### Markets · Look beyond the price
 
@@ -71,7 +71,11 @@ Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Boll
 
 Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Saved conversations, live activity, consultation trails and run details make the work inspectable.
 
+Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional delivery to your private Telegram bot chat. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
+
 Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
+
+Developers can run [repeatable native agent checks](docs/docs/developers/agent-evaluation.md) against local models and compare actual tool evidence and scores. Recorded model limitations remain visible.
 
 | Agent | Focus |
 | --- | --- |
@@ -83,7 +87,7 @@ Each specialist has its own prompt, typed tools and page guidance. The **Ask** b
 | **Reporter** | Source-linked news, article excerpts and text sentiment |
 | **Technician** | Connections, settings, model setup and diagnostics |
 | **Wiki** | Crypto concepts and project profiles |
-| **Explorer** | Bitcoin transactions, address activity, fees, confirmations and recent blocks |
+| **Explorer** | Bitcoin transactions, output-spend checks, address activity, fees, confirmations and recent blocks |
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
@@ -103,13 +107,17 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 
 Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
 
-Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families, rolling evaluation and automated recalibration are pending.
+Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families and automated recalibration are pending.
+
+Inspect a saved recipe across successive periods with expanding or fixed training windows, pooled benchmark errors and per-fold charts. Rolling reports retain their exact inputs and fitting evidence; evaluation never deploys or replaces a model.
 
 [Forecasting guide](docs/docs/guides/forecasting.md) · [Engine contracts](docs/docs/developers/forecasting.md)
 
 ### Research · Understand the wider picture
 
-Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
+Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence and explicit output-spend checks, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
+
+Import PDFs, Markdown and text into **My research**, search uploads and retained news, and open exact cited passages. Add optional local Ollama embeddings for semantic or hybrid search with visible index coverage. Wiki and Reporter retrieve this evidence through native tools; keyword search and reading work without a model. [Research library](docs/docs/guides/research-library.md).
 
 Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
@@ -117,11 +125,13 @@ Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
 ### Alerts · Keep useful signals close
 
-Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. A persistent local inbox retains the triggering evidence and unread state.
+Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
 
 [Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 
 ### Settings & Coming soon · Make it yours
+
+Inspect actual background-worker activity and fault history, then preserve your workspace with passphrase-encrypted backups. Restore into a separate directory with automatic work paused for review. [Worker health](docs/docs/guides/worker-health.md) · [Backup and recovery](docs/docs/guides/workspace-backups.md).
 
 Manage **Exchanges, AI models, News, Market data, Messaging and Workspace** in one place. Exchange cards expose implementation coverage; source diagnostics distinguish observed connectivity from quote freshness. Ollama setup can detect the server and installed models, with explicit controls for a server started by Sibyl.
 
@@ -155,6 +165,7 @@ SQLite retains accounts, ledgers, research inputs, runs, conversations and alert
 | `src/sibyl/strategies/` | Signals, backtests, validation, paper and exchange runs |
 | `src/sibyl/market_data/`, `src/sibyl/news/` | Candle history, datasets and news collection |
 | `src/sibyl/agents/` | Agent declarations, prompts and tools; shared runtime/model helpers in `utils/` and page help in `guides/` |
+| `src/sibyl/investigations/` | Saved questions, structured research versions, calendar admission and report retention |
 | `src/sibyl/alerts/`, `src/sibyl/messaging/` | Alert rules, the local inbox and messaging clients |
 | `src/sibyl/services/` | Domain coordinators grouped into accounts, markets, portfolio, trading, funding, transfers, research, alerts and workspace packages |
 | `docs/` | Docusaurus user guides, API contracts and implementation checklist |

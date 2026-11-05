@@ -68,7 +68,7 @@ Saved choices take precedence over environment defaults. This tab also describes
 
 ## Workspace
 
-Open `/settings?tab=workspace` for the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
+Open `/settings?tab=workspace` for [background-worker activity](worker-health.md), [encrypted backup/recovery](workspace-backups.md), the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
 
 Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated exchange strategies additionally require `SIBYL_ALLOW_STRATEGY_EXECUTION` and an explicit account/budget approval; see [exchange strategy execution](strategy-execution.md). Paper strategy accounts always remain virtual. Workspace displays both permission states. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
 
@@ -78,7 +78,7 @@ Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated
 
 ## Messaging
 
-[Telegram](./telegram.md) is available: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
+[Telegram](./telegram.md) supports private chat and opt-in [scheduled briefing delivery](briefings.md). Setup: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
 
 | App      | Planned setup fields                                                                                                                                                    |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -26,6 +26,16 @@ Incoming updates are persisted before the polling checkpoint advances. Native up
 
 Interrupted inference is not replayed automatically. An already committed Sibyl answer can be recovered into the outbox after restart; otherwise the interrupted question remains visible in Settings and must be sent again. Pending replies resume only for the same enabled connection. A changed token/user or disconnect invalidates old work. **Pause Telegram** stops future polls and sends; a native send already in flight can still finish. Disconnect removes the local token while retaining conversation history. Run one API worker per bot, and stop other pollers using that bot token.
 
+## Scheduled briefings
+
+[Scheduled investigations](briefings.md) can deliver a summary or fuller report to this checked bot and private user. Select delivery explicitly in each investigation’s schedule editor. If this is an older saved connection, choose **Check bot** once to register its stable bot identity. No additional credentials are needed.
+
+Briefing deliveries have separate counters in Messaging and per-part outcomes in the investigation’s schedule history. Pause Telegram or the schedule to withdraw unsent briefings. Reports completed while Telegram is paused stay local; they do not form a delivery backlog. Changed bot/user identities require reviewing the schedule’s recipient again. The same uncertainty policy below applies to automated messages.
+
+## Alert notifications
+
+Use **Delivery** on any saved price, account-risk, strategy or connection rule to select this checked bot/private user. Telegram chat alone does not enable alerts. Alert delivery needs no model, applies to future events only and has its own cooldown and freshness window. **Alerts → Delivery** shows message-part confirmations, skipped events and failures; Messaging counts alerts separately from replies and research briefings. See [Telegram alert delivery](alert-delivery.md).
+
 ## Connection activity
 
 - **Messages received** counts accepted private messages and commands from the configured user, excluding ignored traffic.

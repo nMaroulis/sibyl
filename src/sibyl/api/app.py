@@ -1,10 +1,9 @@
 """Application factory, lifecycle ownership, and local API access controls."""
 
 import asyncio
-import logging
 import secrets
 import sqlite3
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 import ccxt
@@ -19,13 +18,19 @@ from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.accounting.funding.reviews import FundingReviewConflict
 from sibyl.agents.utils.model_selection import ModelConflict
 from sibyl.agents.utils.registry import AgentRegistry
+from sibyl.alerts.delivery.service import AlertDelivery
 from sibyl.api.dashboard import mount_dashboard
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
+from sibyl.investigations.scheduling.service import BriefingScheduler
+from sibyl.investigations.service import Investigations
 from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.messaging.service import TelegramService
+from sibyl.operations.archives import WorkspaceArchives
+from sibyl.operations.health import WorkerHealth
+from sibyl.research_library.service import ResearchLibrary
 from sibyl.services.accounts.service import Accounts
 from sibyl.services.accounts.sync import AccountSync
 from sibyl.services.alerts.service import AlertConflict, PriceAlerts
@@ -69,6 +74,12 @@ class Services:
     ollama: OllamaService
     balance_checks: BalanceChecks
     forecasts: ForecastModels
+    investigations: Investigations
+    briefings: BriefingScheduler
+    alert_delivery: AlertDelivery
+    library: ResearchLibrary
+    workers: WorkerHealth
+    archives: WorkspaceArchives
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -79,11 +90,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        nonlocal config
         store = Store(config.data_dir)
+        recovery = bool(store.data_profile("workspace-recovery").get("required"))
+        if recovery:
+            config = config.model_copy(
+                update={"allow_live_trading": False, "allow_strategy_execution": False}
+            )
         data_settings = DataSettings(config, store)
         data_settings.apply_startup()
         market = Market(config, store, data_settings)
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
+        library = ResearchLibrary(config.data_dir, research.news_service.repository)
+        workers = WorkerHealth(store)
+        workers.recovery_required = recovery
+        archives = WorkspaceArchives(store)
         strategies = Strategies(market, store)
         account_sync = AccountSync(market, store)
         funding_sync = FundingSync(market, store)
@@ -104,13 +125,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             transfers,
             balance_checks,
             forecasts,
+            library,
+            workers,
         )
         await agents.network.start()
+        investigations = Investigations(store, agents.network)
         messaging = TelegramService(store, agents.network)
+        briefings = BriefingScheduler(investigations, messaging)
         ollama = OllamaService(agents.models)
         trading = ExchangeTrading(market, store)
         strategies.attach_execution(trading)
         alerts = PriceAlerts(market, store)
+        alert_delivery = AlertDelivery(store, messaging)
         history = CandleHistory(market, store)
         app.state.services = Services(
             config,
@@ -134,111 +160,90 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ollama,
             balance_checks,
             forecasts,
+            investigations,
+            briefings,
+            alert_delivery,
+            library,
+            workers,
+            archives,
         )
 
         def background_call(method):
             with market.requests.background():
                 return method()
 
-        async def worker():
-            while True:
-                await asyncio.to_thread(background_call, strategies.tick)
-                await asyncio.sleep(30)
+        async def briefing_tick():
+            with market.requests.background():
+                await briefings.tick()
 
-        async def news_worker():
-            # This worker never shares the strategy loop or reads account credentials.
-            while True:
-                if research.news_service.default_mode == "live":
-                    await asyncio.to_thread(research.news_service.refresh)
-                await asyncio.sleep(30)
+        def news_tick():
+            if research.news_service.default_mode == "live":
+                research.news_service.refresh()
 
-        async def account_worker():
-            while True:
-                await asyncio.to_thread(background_call, account_sync.tick)
-                await asyncio.to_thread(background_call, funding_sync.tick)
-                await asyncio.sleep(1)
+        def account_tick():
+            for method in (account_sync.tick, funding_sync.tick):
+                background_call(method)
 
-        async def order_worker():
-            while True:
-                await asyncio.to_thread(background_call, trading.lifecycle.tick)
-                await asyncio.to_thread(background_call, trading.reconciliation.tick)
-                await asyncio.to_thread(background_call, trading.discovery.tick)
-                await asyncio.sleep(1)
+        def order_tick():
+            # Preserve the existing lifecycle → reconciliation → discovery order.
+            for method in (trading.lifecycle.tick, trading.reconciliation.tick, trading.discovery.tick):
+                background_call(method)
 
-        async def alert_worker():
-            while True:
-                await asyncio.to_thread(background_call, alerts.tick)
-                await asyncio.sleep(1)
-
-        async def strategy_alert_worker():
-            # Journal-only checks run independently of slow price-provider reads.
-            while True:
-                await asyncio.to_thread(strategies.alerts.tick)
-                await asyncio.sleep(1)
-
-        async def connection_alert_worker():
-            # Evidence-only checks stay independent of provider-backed workers.
-            while True:
-                await asyncio.to_thread(market.connection_alerts.tick)
-                await asyncio.sleep(1)
-
-        async def risk_alert_worker():
-            # Opt-in private reads never hold up local journal/inbox checks.
-            while True:
-                try:
-                    await asyncio.to_thread(background_call, portfolio.risk_alerts.tick)
-                except sqlite3.Error:
-                    logging.getLogger(__name__).warning(
-                        "Account risk storage unavailable; the worker will retry."
-                    )
-                await asyncio.sleep(1)
-
-        async def candle_worker():
-            while True:
-                await asyncio.to_thread(background_call, history.tick)
-                await asyncio.sleep(1)
-
-        messaging_task = asyncio.create_task(messaging.run())
-        task = asyncio.create_task(worker())
-        news_task = asyncio.create_task(news_worker())
-        account_task = asyncio.create_task(account_worker())
-        order_task = asyncio.create_task(order_worker())
-        alert_task = asyncio.create_task(alert_worker())
-        candle_task = asyncio.create_task(candle_worker())
-        strategy_alert_task = asyncio.create_task(strategy_alert_worker())
-        connection_alert_task = asyncio.create_task(connection_alert_worker())
-        risk_alert_task = asyncio.create_task(risk_alert_worker())
+        # One record per actual worker iteration; provider phases retain their ordering.
+        jobs = [
+            ("strategies", "Strategy execution", lambda: background_call(strategies.tick), 30, 120),
+            ("news", "News collection", news_tick, 30, 120),
+            ("accounts", "Account and funding imports", account_tick, 1, 120),
+            ("orders", "Order maintenance", order_tick, 1, 120),
+            ("prices", "Price alerts", lambda: background_call(alerts.tick), 1, 120),
+            ("strategy-alerts", "Strategy alerts", strategies.alerts.tick, 1, 60),
+            ("connection-alerts", "Connection alerts", market.connection_alerts.tick, 1, 60),
+            (
+                "risk-alerts",
+                "Account-risk alerts",
+                lambda: background_call(portfolio.risk_alerts.tick),
+                1,
+                120,
+            ),
+            ("execution-alerts", "Order and fill notifications", trading.alerts.tick, 1, 60),
+            ("forecast-observations", "Forecast outcomes", forecasts.forward.tick, 60, 120),
+            ("history", "Candle history", lambda: background_call(history.tick), 1, 120),
+            ("briefings", "Scheduled investigations", briefing_tick, 2, 120),
+            ("alert-delivery", "Alert delivery admission", alert_delivery.tick, 1, 60),
+            ("messaging", "Telegram messaging", messaging.tick, 0.5, 120),
+            ("library", "Retained-news search index", library.synchronize_news, 30, 120),
+        ]
+        for name, label, action, interval, deadline in jobs:
+            workers.start(
+                name,
+                label,
+                action,
+                interval=interval,
+                deadline=deadline,
+                retryable=(sqlite3.Error,)
+                if name
+                in {
+                    "risk-alerts",
+                    "briefings",
+                    "alert-delivery",
+                    "messaging",
+                    "library",
+                    "execution-alerts",
+                    "forecast-observations",
+                }
+                else (),
+                paused=recovery,
+            )
         try:
             yield
         finally:
-            for background in (
-                task,
-                news_task,
-                account_task,
-                order_task,
-                alert_task,
-                candle_task,
-                strategy_alert_task,
-                connection_alert_task,
-                risk_alert_task,
-                messaging_task,
-            ):
-                background.cancel()
-            for background in (
-                task,
-                news_task,
-                account_task,
-                order_task,
-                alert_task,
-                candle_task,
-                strategy_alert_task,
-                connection_alert_task,
-                risk_alert_task,
-                messaging_task,
-            ):
-                with suppress(asyncio.CancelledError):
-                    await background
+            await workers.close()
+            await asyncio.to_thread(alert_delivery.close)
+            await asyncio.to_thread(trading.alerts.close)
+            await asyncio.to_thread(forecasts.forward.close)
+            await briefings.close()
             await messaging.close()
+            await investigations.close()
             await asyncio.to_thread(ollama.close)
             await agents.network.close()
             await asyncio.to_thread(account_sync.close)
@@ -342,6 +347,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     for exception in (ccxt.BaseError, httpx.HTTPError):
         app.add_exception_handler(exception, provider_error)
 
+    from sibyl.api.account_returns import router as returns_router
+    from sibyl.api.order_alerts import router as order_alerts_router
+
+    app.include_router(returns_router)
+    app.include_router(order_alerts_router)
+    from sibyl.api.library import router as library_router
+    from sibyl.api.workspace import router as workspace_router
+
+    app.include_router(workspace_router)
+    app.include_router(library_router)
     from sibyl.api.routes import router
 
     app.include_router(router, prefix="/api/v1")
@@ -386,6 +401,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.bitcoin import router as bitcoin_router
 
     app.include_router(bitcoin_router)
+
+    from sibyl.api.investigations import router as investigations_router
+
+    app.include_router(investigations_router)
+
+    from sibyl.api.briefings import router as briefings_router
+
+    app.include_router(briefings_router)
+
+    from sibyl.api.alert_delivery import router as alert_delivery_router
+
+    app.include_router(alert_delivery_router)
 
     @app.get("/health", tags=["System"])
     def health():

@@ -22,7 +22,7 @@ test('Account is home and shows a sourced portfolio and working date ranges', as
   await expect(navigation.getByRole('link', { name: 'Connections', exact: true })).toHaveCount(0);
   await expect(navigation.getByRole('link', { name: 'Settings', exact: true })).toHaveCount(1);
   await expect(
-    page.locator('.summary-label').getByText('Portfolio value', { exact: true }),
+    page.locator('.account-overview-label').getByText('Portfolio value', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: '1W', exact: true }).click();
   await expect(page.getByRole('button', { name: '1W', exact: true })).toHaveClass(/selected/);

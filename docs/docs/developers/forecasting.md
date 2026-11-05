@@ -52,14 +52,45 @@ Training accepts `label`, `input_kind` (`current_feed`, `saved_dataset`, `demo`)
 
 ## Native Chronos integration
 
-`agents/chronos.py` declares `price_forecast`, `trained_models`, `model_report`, `forecast_method` and `page_help` as ordinary typed native tools. Page context may carry `forecast_model_id` and `forecast_run_id`. `price_forecast(model_id=...)` also supports discovered versions outside the page. Saved forecast identity is checked against its model; unavailable horizons are rejected.
+`agents/chronos.py` declares `price_forecast`, `trained_models`, `model_report`, `forecast_method`, `rolling_evaluation` and `page_help` as ordinary typed native tools. Page context may carry `forecast_model_id`, `forecast_run_id` and `forecast_evaluation_id`. `price_forecast(model_id=...)` also supports discovered versions outside the page. Saved forecast identity is checked against its model; unavailable horizons are rejected.
 
 Native tools only read persisted evidence or calculate from the original retained input, without saving outputs or fetching providers. Direct page requests use the registered specialist; Sibyl uses native discovery/delegation. Training and forecast persistence remain explicit application actions.
 
 ## Verification and remaining scope
 
-Tests cover causal features, purged partitions, isolation of test/calibration changes, benchmark math, constant markets, invalid/bounded inputs, fit failures, concurrent admission, JSON integrity, exact-input reruns, retention, API privacy and native Chronos evidence. Controlled data and successful provider retrieval do not establish predictive profitability. Neural/ARIMA families, rolling forward evaluation, calibrated drift monitoring, managed archive/import and automatic training remain pending.
+Tests cover causal features, purged partitions, isolation of test/calibration changes, benchmark math, constant markets, invalid/bounded inputs, fit failures, concurrent admission, JSON integrity, exact-input reruns, retention, API privacy and native Chronos evidence. Controlled data and successful provider retrieval do not establish predictive profitability. Prospective tracking now uses a separate [outcome service](performance-outcomes-alerts.md). Neural/ARIMA families, calibrated drift monitoring, managed archive/import and automatic training remain pending.
 
 An isolated October 29, 2026 acceptance run trained on 720 real Binance BTC/USDT daily candles, retained 137 seven-day test origins and produced a seven-point forecast. Its exact-input rerun reproduced the artifact fingerprint with zero additional provider reads. The transport admitted only credential-free GET requests to Binance's public spot `exchangeInfo` and `klines` endpoints (two requests); there were no private requests, account reads or orders. This establishes the observed data/fit/replay workflow, not forecast quality or other providers' history coverage.
 
 Trained forecast origins and chart targets use the daily candle close time, when the close becomes available. Raw dataset timestamps and partition boundaries retain the archive’s opening-time convention; a target close can equal the exclusive end boundary of the partition containing its candle.
+
+
+## Rolling evaluation `chronos-rolling-1`
+
+`rolling.py` evaluates one fixed saved ridge recipe, with shared `engine.fit_horizon` and `score_horizon` primitives. The existing `chronos-ridge-1` fitting/evaluation artifacts remain numerically unchanged. `evaluations.py` owns separate immutable receipts; no trained model version or forecast is overwritten. There is no automatic training, model selection, live forward evaluation or provider refresh.
+
+For `N` daily closes, `F` folds, test length `T`, calibration length `C` and horizon `h`, fold `i` starts testing at `s = N − F×T + i×T`. Its training ends at `s−C`; calibration covers `[s−C,s)` and testing `[s,s+T)`. Expanding training starts at zero; fixed-window training starts at `s−C−training_days`. Training origins start at `training_start + lags`, calibration/test origins start at their own boundaries, and each target index must stay strictly inside its partition. There must be at least `max(60,3×lags)` training samples and twenty calibration/test samples. Thus the minimum training duration is `lags + max(60,3×lags) + h`; calibration/test durations must each be at least `h+20`.
+
+Each fold estimates standardization, coefficients, feature ranges and drift on training data only. Calibration fixes the same nominal 90% radius as the original engine. Fits and widths remain fixed throughout a block; origin lag features use only closes observed by that origin. Prior test periods can enter later training/calibration after becoming historical observations. Later test prices cannot affect earlier fitted artifacts or traces. Multi-day return windows may overlap within blocks; boundary purging leaves unscored gaps between blocks. This is blocked historical rolling-origin research, not an independent holdout or continuous deployment simulation. See the authors' [time-series cross-validation discussion](https://otexts.com/fpp3/toolbox.html#time-series-cross-validation).
+
+Pooled metrics are calculated from concatenated matching target errors: RMSE is the square root of the pooled mean squared error, and skill is calculated from pooled model/naïve MAE. Fold percentages and RMSE values are not averaged. Undefined zero-error benchmark skill stays null. Reports retain per-fold parameters/scalers/coefficients/radius, training drift, explicit boundaries, all traces and benchmark metrics. JSON fingerprints reject non-finite values and cover result/provenance separately; they are consistency checks, not cryptographic signatures or provider-truth proofs.
+
+### Persistence, admission and HTTP
+
+`forecast_evaluations(id,model_id,payload)` lives in the existing workspace database and is covered by the ordinary encrypted workspace archive. The original saved dataset is resolved and its provenance checked before fitting. The existing nonblocking fit lock admits either training or one rolling evaluation; failure leaves no partial report and releases admission. Save/retention happen in one short SQLite transaction. The newest ten per model and one hundred workspace-wide are retained. Reads/exports do not require current source access or refit anything; missing/pruned reports are explicit 404s.
+
+| Method | Path below `/api/v1` | Behavior |
+| --- | --- | --- |
+| POST | `/forecast-models/{model_id}/evaluations` | Explicitly run and retain a recipe evaluation; 201 on success |
+| GET | `/forecast-models/{model_id}/evaluations` | Retained report headers and limits |
+| GET | `/forecast-models/evaluations/{evaluation_id}` | Exact saved report, including reproducibility artifacts and traces; used for export |
+
+Requests accept strict integer `horizon` (1–30), `folds` (2–8), `test_days` (21–180), `calibration_days` (21–365), `window` (`expanding`/`rolling`) and `training_days` (120–2000, required only for `rolling`). The horizon cannot exceed the saved recipe's maximum. The source dataset remains bounded at 5,000 candles, so at most eight refits and fewer than 1,440 test origins are scored. Existing workspace authorization/origin checks and no-store responses apply.
+
+### Native evidence and UI
+
+Chronos's ordinary typed `rolling_evaluation(model_id?,evaluation_id?)` tool lists headers or returns bounded per-fold metrics/boundaries, exact provenance and interpretation notes. It reads the private selected `forecast_evaluation_id` context. Foreign or missing selections receive native correctable rejections. Coefficients and full chart traces remain in explicit report/export endpoints; the agent tool does not refit or mutate. With no LLM, the selected evaluation is read through the native group handle and summarized deterministically. No custom execution wrapper or LLM router is added.
+
+The UI has progressive window settings, pinned recipe/source attribution, saved history, pooled metrics, fold selection, exact JSON export and an explicit separate rerun. It reuses the existing bounded chart with at most 400 displayed points and disables chart animation. Selecting a different model clears evaluation context; cross-model report URLs are rejected. Completing an old request after navigation cannot select its report into the new model's UI.
+
+Tests cover future-price perturbations, fixed-window isolation, later-fold admission of now-historical data, purged boundaries, pooled metrics, constant-price skill, strict input/budget failures, rollback/admission, retention, integrity, restarts, HTTP controls and native selected-report evidence without provider reads. Automatic recalibration, monitored drift, additional model families and live forward-performance monitoring remain pending.

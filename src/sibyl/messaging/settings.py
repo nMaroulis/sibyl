@@ -76,6 +76,8 @@ class MessagingSettings:
                             "has_token": bool(profile.get("bot_token")),
                             "allowed_user_id": profile.get("allowed_user_id"),
                             "bot_username": profile.get("bot_username"),
+                            "bot_id": profile.get("bot_id"),
+                            "briefings_ready": bool(profile.get("verified") and profile.get("bot_id")),
                             "last_checked_at": profile.get("last_checked_at"),
                             "last_poll_at": profile.get("last_poll_at"),
                             "error": profile.get("error"),

@@ -6,7 +6,7 @@ forecast model. Tool descriptions explain their purpose to the reasoning model.
 
 from typing import Annotated
 
-from protolink import Agent
+from protolink import Agent, ToolRejectedError
 from pydantic import Field
 
 from sibyl.agents.guides import read_guide
@@ -20,6 +20,8 @@ DESCRIPTION = (
     "Explain selected trained forecasts, model evaluation and baseline assumptions; guide Forecasting."
 )
 SYSTEM_PROMPT = (
+    "Use forecast_outcomes for live prospective scorecards, distinct from historical held-out or rolling evaluations. Missing future or archived targets remain missing; repeated horizon errors and selected forecast runs do not establish reliable future accuracy. "
+    "Use rolling_evaluation to inspect selected saved rolling reports or list evaluations for a model. These refit a fixed recipe over earlier windows; they do not evaluate the original saved weights. Disclose per-fold variation, pooled benchmark skill, overlapping targets and repeated-experiment limitations. Never claim a rolling run trained or deployed a production model. "
     "Use page_help for Forecasting controls and setup, forecast_method for conceptual methodology, "
     "and price_forecast for a selected trained result or baseline. Use trained_models and model_report "
     "to inspect registry versions, chronological evaluation, naive/drift benchmarks, calibration and data provenance. "
@@ -54,7 +56,14 @@ def create_agent(services: Services, **runtime) -> Agent:
         if identity:
             if not services.forecasts:
                 raise ValueError("Trained forecasting is unavailable in this workspace.")
-            model = services.forecasts.detail(identity)["model"]
+            try:
+                model = services.forecasts.detail(identity)["model"]
+            except LookupError as exc:
+                raise ToolRejectedError(
+                    "That trained model version is not retained in this workspace.",
+                    code="forecast_model_not_found",
+                    suggestion="Call trained_models() to find saved versions, or explain that the selected version is missing. Never silently replace it with the untrained baseline.",
+                ) from exc
             symbol = symbol or (
                 model["symbol"] if explicit_model else selected("symbol", None, model["symbol"])
             )
@@ -81,6 +90,60 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "source": market.source,
                 **forecast(market.candles(symbol, 180), horizon),
             }
+
+    def forecast_outcomes(model_id: str | None = None, run_id: str | None = None) -> dict:
+        """Compare saved prospective forecasts with later observed prices from their exact source.
+
+        Follow the selected trained model/run when IDs are omitted. With a model only,
+        return up to 20 compact tracked-output summaries and equal-horizon aggregates; with a run, inspect original
+        predictions, actuals, correction versions, missing targets and naïve/drift benchmarks.
+        Historical saved-input and Demo forecasts cannot establish live performance.
+        Overlapping/operator-selected forecasts are not an unbiased accuracy leaderboard.
+        This tool never refreshes prices, starts tracking, retrains or deploys a model.
+        """
+        identity = selected("forecast_model_id", model_id)
+        run = selected("forecast_run_id", run_id) if model_id is None else run_id
+        if not services.forecasts or not identity:
+            raise ToolRejectedError("Select a trained model first.", code="forecast_model_required")
+        try:
+            result = (
+                services.forecasts.forward.detail(run) if run else services.forecasts.forward.list(identity)
+            )
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That tracked forecast is not retained.",
+                code="forecast_tracking_not_found",
+                suggestion="Read the model's tracking list for current IDs.",
+            ) from exc
+        if run and result["model_id"] != identity:
+            raise ToolRejectedError(
+                "This tracked output belongs to another model.", code="forecast_tracking_not_found"
+            )
+        if not run:
+            all_items = result["items"]
+            result = {
+                **result,
+                "total": len(all_items),
+                "limit": 20,
+                "items": [
+                    {
+                        key: item[key]
+                        for key in (
+                            "id",
+                            "accepted_at",
+                            "status",
+                            "observed",
+                            "pending",
+                            "metrics",
+                            "naive",
+                            "coverage_pct",
+                            "mae_skill_vs_naive_pct",
+                        )
+                    }
+                    for item in all_items[:20]
+                ],
+            }
+        return {"kind": "forecast_outcomes", **result, "url": f"/forecast?tab=models&model={identity}"}
 
     def forecast_method() -> dict:
         """Explain trained autoregressive forecasts and the separate statistical baseline.
@@ -124,9 +187,83 @@ def create_agent(services: Services, **runtime) -> Agent:
         """
         identity = selected("forecast_model_id", model_id)
         if not identity or not services.forecasts:
-            raise ValueError("Select a trained model in Forecasting or choose an ID from trained_models.")
-        report = services.forecasts.detail(identity)
+            raise ToolRejectedError(
+                "No trained model is selected.",
+                code="forecast_model_required",
+                suggestion="Use trained_models() for saved versions or guide the user to Forecasting. An empty registry is not a trained forecast.",
+            )
+        try:
+            report = services.forecasts.detail(identity)
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That trained model version is not retained in this workspace.",
+                code="forecast_model_not_found",
+                suggestion="Use trained_models() for current model IDs; do not invent a version or substitute the baseline.",
+            ) from exc
         return {key: value for key, value in report.items() if key not in {"test_trace", "outputs"}}
+
+    def rolling_evaluation(
+        model_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
+        evaluation_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
+    ) -> dict:
+        """Read saved rolling forecast accuracy across successive historical test windows.
+
+        Omit IDs to use the selected model/evaluation. With only a model, list its
+        retained reports; supply an evaluation ID to inspect per-fold boundaries,
+        errors, naive/drift comparisons, band coverage and input provenance. Each fold
+        refits the saved recipe using earlier data; this evaluates the recipe rather
+        than the original coefficients. Results are dated research, not live forward
+        performance or investment returns. This tool cannot fit, rerun or deploy models.
+        """
+        identity = selected("forecast_model_id", model_id)
+        report_id = evaluation_id or (
+            selected("forecast_evaluation_id", None)
+            if model_id is None or model_id == selected("forecast_model_id", None)
+            else None
+        )
+        if not services.forecasts or not identity and not report_id:
+            raise ToolRejectedError(
+                "Choose a saved model or rolling evaluation first.",
+                code="forecast_model_required",
+                suggestion="Use trained_models() or open Forecasting → Trained models.",
+            )
+        try:
+            if not report_id:
+                return {
+                    "kind": "rolling_evaluations",
+                    "model_id": identity,
+                    **services.forecasts.evaluations.list(identity),
+                }
+            report = services.forecasts.evaluations.detail(report_id)
+        except LookupError as exc:
+            raise ToolRejectedError(
+                "That model or rolling evaluation is no longer retained.",
+                code="forecast_evaluation_not_found",
+                suggestion="List rolling_evaluation(model_id=...) for retained reports. Never substitute a different evaluation or baseline.",
+            ) from exc
+        if identity and report["model_id"] != identity:
+            raise ToolRejectedError(
+                "The evaluation belongs to a different model version.",
+                code="forecast_evaluation_not_found",
+                suggestion="Choose an evaluation retained for the selected model version.",
+            )
+        return {
+            "kind": "rolling_evaluation",
+            "report": {
+                **services.forecasts.evaluations.header(report),
+                "notes": report["result"]["notes"],
+                "folds": [
+                    {
+                        "index": fold["index"],
+                        "partitions": fold["partitions"],
+                        "evaluation": {
+                            key: value for key, value in fold["evaluation"].items() if key != "trace"
+                        },
+                    }
+                    for fold in report["result"]["folds"]
+                ],
+            },
+        }
 
     def page_help(topic: Topic = "overview") -> dict:
         """Explain Forecasting controls, input requirements, baseline intervals or model availability.
@@ -138,7 +275,15 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-chronos",
         description=DESCRIPTION,
-        tools=[price_forecast, forecast_method, page_help, trained_models, model_report],
+        tools=[
+            price_forecast,
+            forecast_method,
+            page_help,
+            trained_models,
+            model_report,
+            rolling_evaluation,
+            forecast_outcomes,
+        ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

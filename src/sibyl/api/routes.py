@@ -38,6 +38,7 @@ from sibyl.models import (
     OrderTracking,
     Timeframe,
 )
+from sibyl.research_library.semantic.contracts import SemanticNotReady
 from sibyl.services.accounts.sync import AccountSyncRequest
 from sibyl.services.alerts.service import PriceAlertAction, PriceAlertCreate, PriceAlertUpdate, alert_example
 from sibyl.services.funding.sync import FundingSyncRequest
@@ -1131,6 +1132,8 @@ async def ask_agent(body: AgentRequest, s: S):
     """Run a module's ProtoLink tool and optionally perform model inference."""
     try:
         return await s.agents.ask(body)
+    except SemanticNotReady as exc:
+        raise HTTPException(400, str(exc)) from exc
     except ContextLimitError as exc:
         raise HTTPException(409, str(exc)) from exc
     except TimeoutError as exc:

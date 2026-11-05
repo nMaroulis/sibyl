@@ -260,6 +260,7 @@ def test_monitor_routes_and_run_specific_broker_evidence(client):
     response = client.post("/api/v1/strategies/jobs", json={"symbol": "ETH/USDT"})
     assert response.status_code == 201
     job = response.json()
+    assert job["mode"] == "paper"
     detail = client.get(f"/api/v1/strategies/jobs/{job['id']}")
     assert detail.status_code == 200
     assert detail.json()["job"]["id"] == job["id"]

@@ -619,6 +619,11 @@ export type AgentContext = {
   transfer_example?: boolean;
   market_source?: string;
   crypto_id?: string;
+  library_document_id?: string;
+  library_passage_id?: string;
+  library_source_type?: 'all' | 'document' | 'news';
+  library_query?: string;
+  library_search_method?: 'keyword' | 'semantic' | 'hybrid';
   job_id?: string;
   timeframe?: Timeframe;
   limit?: number;
@@ -626,10 +631,14 @@ export type AgentContext = {
   equity_symbol?: string;
   horizon?: number;
   forecast_model_id?: string;
+  forecast_tracking?: boolean;
+  return_period_id?: string;
   forecast_run_id?: string;
+  forecast_evaluation_id?: string;
   bitcoin_txid?: string;
   bitcoin_address?: string;
   bitcoin_demo?: boolean;
+  bitcoin_output_offset?: number;
   parameters?: StrategyParams;
   article_id?: string;
   news_mode?: 'demo' | 'live';

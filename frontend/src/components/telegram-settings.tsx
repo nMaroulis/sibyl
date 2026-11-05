@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
+  BellRing,
   Check,
   Clock3,
+  CalendarClock,
   KeyRound,
   LoaderCircle,
   MessageCircle,
@@ -18,6 +21,7 @@ import {
 import { api, post, refresh } from '../lib/api';
 import { useToast } from './ui';
 import type { MessagingChannel, MessagingSettingsData } from './messaging-settings';
+import '../styles/briefings.css';
 
 type Action = 'save' | 'check' | 'enable' | 'pause' | 'disconnect';
 
@@ -435,6 +439,45 @@ export function TelegramSetup({
           </small>
         </div>
       </dl>
+      {!!health?.briefings && Object.keys(health.briefings).length > 0 && (
+        <div className="telegram-briefing-summary">
+          <CalendarClock size={15} />
+          <span>
+            <strong>{health.briefings.sent ?? 0} briefings delivered</strong>
+            <small>
+              {(health.briefings.pending ?? 0) +
+                (health.briefings.sending ?? 0) +
+                (health.briefings.retrying ?? 0)}{' '}
+              waiting · {(health.briefings.uncertain ?? 0) + (health.briefings.failed ?? 0)} need
+              attention
+            </small>
+          </span>
+          <Link to="/sibyl?tab=investigations">
+            Briefing history <ArrowUpRight size={12} />
+          </Link>
+        </div>
+      )}
+      {!!health?.alerts && Object.keys(health.alerts).length > 0 && (
+        <div className="telegram-briefing-summary">
+          <BellRing size={15} />
+          <span>
+            <strong>{health.alerts.sent ?? 0} alerts delivered</strong>
+            <small>
+              {(health.alerts.pending ?? 0) +
+                (health.alerts.sending ?? 0) +
+                (health.alerts.retrying ?? 0)}{' '}
+              waiting ·{' '}
+              {(health.alerts.uncertain ?? 0) +
+                (health.alerts.failed ?? 0) +
+                (health.alerts.partial ?? 0)}{' '}
+              need attention
+            </small>
+          </span>
+          <Link to="/alerts?tab=delivery">
+            Alert delivery <ArrowUpRight size={12} />
+          </Link>
+        </div>
+      )}
       {(!!delivery.uncertain ||
         !!delivery.failed ||
         !!delivery.blocked ||

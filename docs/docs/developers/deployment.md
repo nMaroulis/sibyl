@@ -41,7 +41,7 @@ Host `docs/build` as a static site. The configured public URL is `https://nmarou
 
 ### GitHub Pages
 
-The **Deploy documentation** workflow in `.github/workflows/docs.yml` builds Docusaurus and publishes **only `docs/build`**. It runs on documentation/package/workflow changes pushed to `main`, or manually through **Actions → Deploy documentation → Run workflow**. Select `main` for a manual deployment. Build and deployment are separate jobs; only the deployment job receives Pages/OIDC write permissions.
+The **Documentation deployment** workflow in `.github/workflows/docs.yml` builds Docusaurus and publishes **only `docs/build`**. It runs on documentation/package/workflow changes pushed to `main`, or manually through **Actions → Documentation deployment → Run workflow**. Select `main` for a manual deployment. Build and deployment are separate jobs; only the deployment job receives Pages/OIDC write permissions.
 
 One-time repository setup:
 
@@ -58,4 +58,4 @@ If the site displays the README in a GitHub theme, a Jekyll/branch publication i
 
 Use TLS, an authenticated reverse proxy, a strong workspace token, restricted browser origins, and a persistent protected data directory. Avoid logging credential payloads. The API is a single-user service, not a multi-tenant account system.
 
-Run **one API worker**. Paper-job scheduling is owned by that process, not a distributed queue. Back up state with the service stopped. An interrupted exchange submission may remain `submitting` or `unknown`; reconcile with the exchange before retrying through a new intent.
+Run **one API worker**. Paper-job scheduling is owned by that process, not a distributed queue. Use [managed encrypted archives](workspace-operations.md) for online per-database snapshots and separate-directory recovery. For an exact idle filesystem copy, stop the service and include every database and the vault key. An interrupted exchange submission may remain `submitting` or `unknown`; reconcile with the exchange before retrying through a new intent.

@@ -42,3 +42,20 @@ class ForecastRequest(Request):
 
     input_kind: Literal["saved_input", "current_feed"] = "saved_input"
     horizon: int = Field(default=14, ge=1, le=30, strict=True)
+
+
+class RollingEvaluationRequest(Request):
+    """Refit a fixed saved recipe across bounded successive historical test blocks."""
+
+    horizon: int = Field(default=7, ge=1, le=30, strict=True)
+    folds: int = Field(default=2, ge=2, le=8, strict=True)
+    test_days: int = Field(default=60, ge=21, le=180, strict=True)
+    calibration_days: int = Field(default=60, ge=21, le=365, strict=True)
+    window: Literal["expanding", "rolling"] = "expanding"
+    training_days: int | None = Field(default=None, ge=120, le=2000, strict=True)
+
+    @model_validator(mode="after")
+    def fixed_window(self):
+        if (self.window == "rolling") != (self.training_days is not None):
+            raise ValueError("Supply training_days only for a fixed rolling window.")
+        return self

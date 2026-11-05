@@ -72,6 +72,16 @@ def tool_arguments(request: AgentRequest) -> dict:
 
 def snapshot_answer(module: str, evidence) -> str:
     """Format actual tool output when language-model inference has not been configured."""
+    if isinstance(evidence, dict) and evidence.get("kind") == "account_return_period":
+        result = evidence["result"]
+        if result:
+            ratio = f"{result['return_pct']:.2f}%" if result["return_pct"] is not None else "unavailable"
+            return f"{evidence['label']}: gain {result['gain']:.2f} USDT, net external cash flow {result['net_external_flow']:.2f} USDT. Modified Dietz estimate: {ratio}.\n\n{evidence['note']}\n{evidence['url']}"
+        return "Return unavailable. " + " ".join(evidence["blockers"]) + "\n" + evidence["url"]
+    if isinstance(evidence, dict) and evidence.get("kind") == "forecast_outcomes":
+        if "points" in evidence:
+            return f"Live forecast outcomes: {evidence['observed']} targets observed, {evidence['pending']} awaiting actuals. Metrics are available only for observed targets.\n{evidence['note']}\n{evidence['url']}"
+        return f"{len(evidence['items'])} tracked prospective forecasts. Historical research and live observations stay separate.\n{evidence['url']}"
     if module in {"oracle", "accountant"}:
         if evidence.get("view") == "transfers":
             return (
@@ -134,6 +144,28 @@ def snapshot_answer(module: str, evidence) -> str:
             + " ".join(statistics["sample"]["warnings"])
             + " Higher bias means more bullish, not safer. These historical readings are not a trade recommendation."
         )
+    if (
+        module == "wiki"
+        and isinstance(evidence, dict)
+        and ("passages" in evidence or "document_id" in evidence)
+    ):
+        source = evidence.get("source", evidence)
+        items = evidence.get("passages", [evidence])
+        snippets = "\n\n".join(f"Page {part['page']}: {part['text']}\n{part['url']}" for part in items[:2])
+        return f"Retained source: {source.get('title', 'Research document')}.\n\n{snippets}\n\nThis is a source excerpt, not an AI interpretation or verified fact. Open the reader for more passages; configure a model in /settings?tab=models for a reasoned answer."
+    if module == "wiki" and isinstance(evidence, dict) and "retrieval" in evidence:
+        excerpts = "\n\n".join(
+            f"{item['source'].get('title', 'Retained source')} · page {item['page']}\n{item['text']}\n{item['url']}"
+            for item in evidence["items"]
+        )
+        return (
+            (
+                excerpts
+                or "No matching retained passages. An empty match does not establish that a claim is false."
+            )
+            + "\n\n"
+            + evidence.get("note", "Exact excerpts, not AI interpretation or verified facts.")
+        )
     if module == "wiki" and isinstance(evidence, dict):
         asset = evidence["asset"]
         profile, history = (evidence.get("profile") or {}, evidence.get("history") or {})
@@ -150,6 +182,16 @@ def snapshot_answer(module: str, evidence) -> str:
         return (
             "\n\n".join(f"{item['term']}: {item['text']}\n{item['url']}" for item in evidence)
             or "No glossary entries matched. Try RSI, diversification, backtesting, or API key permissions."
+        )
+    if module == "chronos" and evidence.get("kind") == "rolling_evaluation":
+        report = evidence["report"]
+        score = report["aggregate"]["mae_skill_vs_naive_pct"]
+        skill = "undefined" if score is None else f"{score:.2f}%"
+        return (
+            f"Saved rolling evaluation on {report['symbol']}: {len(report['folds'])} folds, "
+            f"{report['aggregate']['samples']} held-out targets and pooled MAE skill vs naive {skill}. "
+            f"Source: {report['source']}. Recorded: {report['created_at']}. "
+            "Each fold refits the recipe; historical accuracy is not investment return or live forward performance."
         )
     if module == "chronos":
         point = evidence["points"][-1]
@@ -182,10 +224,28 @@ def snapshot_answer(module: str, evidence) -> str:
     if module == "broker" and evidence.get("selected_run"):
         run = evidence["selected_run"]
         selected = evidence["selected_parameters"]
-        return f"{selected['strategy']} on {selected['symbol']}: {run['status']} · paper execution. Current equity {run['equity']:,.4f} {selected['symbol'].split('/')[1]}. {len(evidence['recent_events'])} recent events are included for inspection. Last worker check: {run['checked_at'] or 'pending'}."
+        mode = run.get("mode")
+        if mode not in {"paper", "exchange"}:
+            return f"{selected['strategy']} on {selected['symbol']}: {run['status']}. Execution mode is unavailable; inspect the retained monitor before treating these observations as paper or exchange activity."
+        if mode == "exchange":
+            environment = run.get("environment") or "unspecified environment"
+            equity = (
+                f"Retained strategy equity {run['equity']:,.4f}"
+                if run.get("equity") is not None
+                else "Strategy equity unavailable"
+            )
+            return (
+                f"{selected['strategy']} on {selected['symbol']}: {run['status']} · exchange execution · {environment}. "
+                f"{equity} {selected['symbol'].split('/')[1]}. "
+                f"{len(evidence['recent_events'])} recent events are included. "
+                f"Last worker check: {run.get('checked_at') or 'pending'}. "
+                "These are retained strategy observations, not a fresh exchange balance or proof that orders are settled. "
+                + ("Some native fees remain unvalued. " if run.get("unvalued_fees") else "")
+            )
+        return f"{selected['strategy']} on {selected['symbol']}: {run['status']} · paper execution. Current virtual equity {run['equity']:,.4f} {selected['symbol'].split('/')[1]}. {len(evidence['recent_events'])} recent events are included for inspection. Last worker check: {run['checked_at'] or 'pending'}."
     if module == "broker":
         selected = evidence["selected_parameters"]
-        return f"Selected: {selected['strategy']} on {selected['symbol']}, {selected['candles']} candles and {selected['capital']:,.2f} {selected['symbol'].split('/')[1]} virtual capital. {len(evidence['catalog'])} strategies are available. {len(evidence['paper_jobs'])} paper jobs and {len(evidence['backtests'])} recent backtests are recorded. Backtests use next-open fills with fees and slippage. Paper strategies use isolated virtual capital."
+        return f"Selected: {selected['strategy']} on {selected['symbol']}, {selected['candles']} candles and {selected['capital']:,.2f} {selected['symbol'].split('/')[1]} virtual capital. {len(evidence['catalog'])} strategies are available. {len(evidence['strategy_jobs'])} saved strategy runs and {len(evidence['backtests'])} recent backtests are recorded. Backtests use next-open fills with fees and slippage. Paper strategies use isolated virtual capital."
     if module == "reporter":
         selected = evidence.get("selected_article")
         items = [selected] if selected else evidence["items"][:3]

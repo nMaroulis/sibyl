@@ -1,16 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
   ArrowUpRight,
   Download,
   FlaskConical,
@@ -20,11 +10,13 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { AgentButton } from './agents';
+import { ForecastPlot } from './forecast-plot';
+import { ForecastForward } from './forecast-forward';
+import { ForecastRolling } from './forecast-rolling';
 import { Badge, Empty, ErrorState, Loading, Panel, PanelTitle, useToast } from './ui';
-import { api, number, post, shortDate } from '../lib/api';
+import { api, number, post } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type {
-  ForecastChartPoint,
   ForecastDataset,
   ForecastDetail,
   ForecastModel,
@@ -51,108 +43,13 @@ function researchDate(value: string) {
   });
 }
 
-/** Plot bounded view samples; server metrics always use the full held-out selection. */
-function ForecastPlot({
-  points,
-  testing = false,
-}: {
-  points: ForecastChartPoint[];
-  testing?: boolean;
-}) {
-  const stride = Math.max(1, Math.ceil((points.length - 1) / 399));
-  const plotted = points
-    .filter((_, index) => index % stride === 0 || index === points.length - 1)
-    .map((p) => ({
-      ...p,
-      prediction: p.predicted ?? p.value,
-      interval: p.lower == null ? undefined : [p.lower, p.upper],
-    }));
-  return (
-    <div
-      className="forecast-chart"
-      role="img"
-      aria-label={
-        testing
-          ? 'Held-out actual and predicted daily prices with naive benchmark'
-          : 'Observed prices and trained forecast with empirical bands'
-      }
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={plotted} margin={{ top: 15, right: 12, bottom: 8, left: 8 }}>
-          <CartesianGrid stroke="var(--chart-grid)" vertical={false} strokeDasharray="3 5" />
-          <XAxis
-            dataKey="timestamp"
-            tickFormatter={shortDate}
-            minTickGap={65}
-            tick={{ fontSize: 10, fill: 'var(--muted)' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            domain={['auto', 'auto']}
-            orientation="right"
-            width={85}
-            tickFormatter={(v) => number(Number(v), 2)}
-            tick={{ fontSize: 10, fill: 'var(--muted)' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip
-            labelFormatter={(v) => shortDate(String(v))}
-            contentStyle={{ borderRadius: 12, border: '1px solid var(--border)' }}
-            formatter={(v) =>
-              Array.isArray(v)
-                ? v.map((x) => number(Number(x), 4)).join(' – ')
-                : number(Number(v), 4)
-            }
-          />
-          <Area
-            type="linear"
-            dataKey="interval"
-            name="Nominal 90% empirical band"
-            fill="#809ce7"
-            fillOpacity={0.14}
-            stroke="none"
-            isAnimationActive={false}
-          />
-          <Line
-            dataKey="actual"
-            name="Observed close"
-            stroke="#516480"
-            strokeWidth={1.8}
-            dot={false}
-            isAnimationActive={false}
-          />
-          <Line
-            dataKey="prediction"
-            name="Trained model"
-            stroke="#607fda"
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-          {testing && (
-            <Line
-              dataKey="naive"
-              name="Naive last-close benchmark"
-              stroke="#bf9872"
-              strokeDasharray="4 4"
-              dot={false}
-              isAnimationActive={false}
-            />
-          )}
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
 /** Explicit train/evaluate/forecast steps; a saved model never starts trading. */
 export function ForecastWorkspace() {
   const [search, setSearch] = useSearchParams();
   const models = useResource<{ items: ForecastModel[] }>('/forecast-models');
   const selected = search.get('model') ?? models.data?.items[0]?.id ?? '';
   const metadata = models.data?.items.find((m) => m.id === selected);
+  const selectedEvaluation = search.get('evaluation') ?? '';
   const [horizon, setHorizon] = useState(7);
   const activeHorizon = Math.min(horizon, metadata?.parameters.max_horizon ?? 30);
   const detail = useResource<ForecastDetail>(
@@ -180,6 +77,7 @@ export function ForecastWorkspace() {
     setSearch((p) => {
       p.set('tab', 'models');
       p.set('model', id);
+      p.delete('evaluation');
       return p;
     });
     setOutput(undefined);
@@ -447,6 +345,9 @@ export function ForecastWorkspace() {
                         symbol: report.model.symbol,
                         horizon: activeHorizon,
                         forecast_model_id: selected,
+                        ...(selectedEvaluation
+                          ? { forecast_evaluation_id: selectedEvaluation }
+                          : {}),
                         ...(activeOutput ? { forecast_run_id: activeOutput.id } : {}),
                       }}
                     />
@@ -584,6 +485,21 @@ export function ForecastWorkspace() {
                   </p>
                 </Panel>
               )}
+              <ForecastForward key={selected} modelId={selected} outputs={report.outputs} />
+              <ForecastRolling
+                key={selected}
+                model={report.model}
+                evaluationId={selectedEvaluation}
+                disabled={!!busy}
+                select={(id) =>
+                  setSearch((p) => {
+                    p.set('tab', 'models');
+                    p.set('model', selected);
+                    id ? p.set('evaluation', id) : p.delete('evaluation');
+                    return p;
+                  })
+                }
+              />
               <Panel>
                 <PanelTitle
                   title="Produce a forecast"

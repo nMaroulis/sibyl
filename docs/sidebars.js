@@ -25,7 +25,7 @@ module.exports = {
         chapter(
           'Accounts and setup',
           'Connect exchanges, configure Sibyl and understand your balances.',
-          ['guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks'],
+          ['guides/account-returns', 'guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks'],
         ),
         chapter(
           'Markets and research',
@@ -35,8 +35,10 @@ module.exports = {
             'guides/market-statistics',
             'guides/market-history',
             'guides/research',
+            'guides/research-library',
             'guides/bitcoin-explorer',
             'guides/forecasting',
+            'guides/forecast-outcomes',
           ],
         ),
         chapter(
@@ -53,6 +55,8 @@ module.exports = {
         ),
         chapter('Sibyl and AI', 'Meet the AI team, connect Telegram and run a local model.', [
           'guides/sibyl',
+          'guides/investigations',
+          'guides/briefings',
           'guides/oracle',
           'guides/telegram',
           'guides/ollama',
@@ -60,7 +64,7 @@ module.exports = {
         chapter(
           'Alerts and workspace',
           'Set up alerts and understand privacy and feature coverage.',
-          ['guides/alerts', 'guides/account-risk', 'guides/security', 'guides/feature-coverage'],
+          ['guides/alerts', 'guides/execution-alerts', 'guides/alert-delivery', 'guides/account-risk', 'guides/worker-health', 'guides/workspace-backups', 'guides/security', 'guides/feature-coverage'],
         ),
       ],
     ),
@@ -82,6 +86,9 @@ module.exports = {
             'developers/deployment',
             'developers/distribution',
             'developers/backend-roadmap',
+            'developers/investigations',
+            'developers/briefings',
+            'developers/workspace-operations',
           ],
         ),
         chapter(
@@ -89,6 +96,7 @@ module.exports = {
           'Exchange adapters, synchronization, valuation and accounting evidence.',
           [
             'developers/accounts',
+            'developers/performance-outcomes-alerts',
             'developers/exchange-clients',
             'developers/exchange-acceptance',
             'developers/account-sync',
@@ -122,6 +130,7 @@ module.exports = {
             'developers/provider-control',
             'developers/candle-history',
             'developers/news',
+            'developers/research-library',
             'developers/forecasting',
             'developers/bitcoin-explorer',
           ],
@@ -134,6 +143,7 @@ module.exports = {
             'developers/strategy-controls',
             'developers/portfolio-limits',
             'developers/alerts',
+            'developers/alert-delivery',
             'developers/account-risk',
           ],
         ),
@@ -145,6 +155,7 @@ module.exports = {
             'developers/agent-models',
             'developers/protolink-metrics',
             'developers/agent-acceptance',
+            'developers/agent-evaluation',
           ],
         ),
       ],

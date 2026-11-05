@@ -11,6 +11,7 @@ from uuid import uuid4
 import ccxt
 from pydantic import Field, field_validator
 
+from sibyl.alerts.orders.events import order_changed
 from sibyl.exchanges.base import number
 from sibyl.exchanges.order_discovery import DAY_MS, DISCOVERY_PROVIDERS, OrderDiscoveryPage
 from sibyl.market_data.control import ProviderDeferred
@@ -151,7 +152,8 @@ class OrderDiscovery:
                     **connection.model_dump(mode="json"),
                     "environment": environment(connection),
                     "supported": connection.exchange in DISCOVERY_PROVIDERS,
-                    "history_requires_symbols": connection.exchange in {"binance", "binanceus", "binance-testnet"},
+                    "history_requires_symbols": connection.exchange
+                    in {"binance", "binanceus", "binance-testnet"},
                 }
                 for connection in self.store.connections()
             ],
@@ -308,6 +310,7 @@ class OrderDiscovery:
         if intent["status"] in TERMINAL:
             intent["tracking"] = False
         if not current:
+            order_changed(db, None, intent)
             db.execute(
                 "INSERT INTO exchange_orders VALUES(?,?,?)",
                 (identity, identity, json.dumps(intent, allow_nan=False)),

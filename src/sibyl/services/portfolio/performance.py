@@ -15,6 +15,7 @@ from sibyl.models import OrderRequest, Request
 from sibyl.services.accounts.ledger import ledger_fill
 from sibyl.services.markets.service import Market
 from sibyl.services.portfolio.fifo import decimal, fifo, public
+from sibyl.services.portfolio.returns.service import ReturnPeriods
 from sibyl.services.portfolio.valuation import MAX_SECONDS, Valuation
 from sibyl.services.transfers.basis import EVIDENCE_LIMIT, replay, snapshot
 from sibyl.storage import Store
@@ -63,6 +64,7 @@ class AccountPerformance:
 
     def __init__(self, market: Market, store: Store):
         self.market, self.store = market, store
+        self.returns = ReturnPeriods(market, store)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS opening_inventory (

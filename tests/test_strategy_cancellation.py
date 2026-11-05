@@ -449,7 +449,8 @@ def test_terminal_native_checks_are_bounded_and_lifecycle_events_export(executio
     assert matched[0]["cancellation_id"] and matched[0]["expires_at"] == intent["strategy_expires_at"]
 
 
-def test_http_stop_review_confirmation_and_monitor_event_filters(client, monkeypatch):
+def test_http_stop_review_confirmation_and_monitor_event_filters(manual_client, monkeypatch):
+    client = manual_client
     services = client.app.state.services
     services.settings.allow_live_trading = services.settings.allow_strategy_execution = True
     connection = services.store.add_connection(

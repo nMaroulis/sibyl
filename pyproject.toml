@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "sibyl"
 # Canonical version; use scripts/distribution/release.py set-version to synchronize mirrors and locks.
-version = "2.1.0"
+version = "2.2.0"
 description = "A local-first crypto workspace with a React dashboard and ProtoLink agents."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -22,6 +22,8 @@ dependencies = [
   "numpy>=2.2,<3",
   "pandas>=2.2,<4",
   "vadersentiment>=3.3.2,<4",
+  "tzdata>=2024.1",
+  "pypdf>=6.21.4,<7",
 ]
 
 [project.optional-dependencies]
@@ -49,6 +51,8 @@ include = ["src/sibyl", "hatch_build.py", "pyproject.toml", "uv.lock", "README.m
 path = "hatch_build.py"
 
 [tool.pytest.ini_options]
+# Repository development helpers (scripts/) are imported by checkout tests.
+pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 

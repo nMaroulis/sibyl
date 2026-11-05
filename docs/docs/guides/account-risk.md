@@ -2,7 +2,7 @@
 
 Open **More → Alerts → Account risk**, or choose **Risk alerts** on Account. Create a watch for one account or a fixed group of up to ten active accounts. Choose a reference pricing feed and your own limit. Expanding **Recovery & notification controls** reveals the recovery level, breach cooldown and optional recovery notices.
 
-Starting a watch authorizes background **read-only spot balance and price requests**. No LLM or trading permission is required. It never submits orders, closes positions, pauses a strategy or enforces an execution risk policy. Notifications appear in Sibyl's bell and shared Inbox; external alert delivery is not implemented.
+Starting a watch authorizes background **read-only spot balance and price requests**. No LLM or trading permission is required. It never submits orders, closes positions, pauses a strategy or enforces an execution risk policy. Notifications appear in Sibyl's bell and shared Inbox. Each rule can optionally select [Telegram delivery](alert-delivery.md) with its own cooldown and freshness window.
 
 ## Choose a limit
 

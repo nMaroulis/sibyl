@@ -377,7 +377,7 @@ def test_close_pipeline_covers_all_supported_execution_variants(execution, provi
     assert len(native.calls) == 2 and native.calls[-1][0] == "sell"
 
 
-def test_http_readiness_preview_confirmation_and_monitor(client, monkeypatch):
+def test_http_readiness_preview_confirmation_and_monitor(manual_client, monkeypatch):
     from types import SimpleNamespace
 
     import pandas as pd
@@ -386,6 +386,7 @@ def test_http_readiness_preview_confirmation_and_monitor(client, monkeypatch):
     from sibyl.models import ConnectionCreate
     from sibyl.strategies.execution import runner, venue
 
+    client = manual_client
     s = client.app.state.services
     s.settings.allow_live_trading = s.settings.allow_strategy_execution = True
     connection = s.store.add_connection(

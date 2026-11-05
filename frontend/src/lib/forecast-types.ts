@@ -81,3 +81,54 @@ export type ForecastOutput = {
   points: ForecastChartPoint[];
   observations: { candles: { timestamp: string; close: number }[] };
 };
+
+export type RollingRequest = {
+  horizon: number;
+  folds: number;
+  test_days: number;
+  calibration_days: number;
+  window: 'expanding' | 'rolling';
+  training_days?: number | null;
+};
+export type RollingAggregate = {
+  samples: number;
+  model: ForecastMetrics;
+  naive: ForecastMetrics;
+  drift: ForecastMetrics;
+  mae_skill_vs_naive_pct: number | null;
+  coverage_pct: number;
+  mean_interval_width_pct: number;
+  positive_skill_folds: number;
+};
+export type RollingHeader = {
+  id: string;
+  model_id: string;
+  model_version: number;
+  model_fingerprint: string;
+  label: string;
+  symbol: string;
+  source: string;
+  environment: string;
+  dataset: ForecastDataset;
+  created_at: string;
+  request: RollingRequest;
+  result_fingerprint: string;
+  fingerprint: string;
+  aggregate: RollingAggregate;
+};
+export type RollingReport = Omit<RollingHeader, 'aggregate'> & {
+  result: {
+    engine: string;
+    nominal_coverage: number;
+    aggregate: RollingAggregate;
+    folds: {
+      index: number;
+      partitions: Record<
+        string,
+        { start: string; end: string; candles: number; start_index: number; end_index: number }
+      >;
+      evaluation: ForecastEvaluation & { trace: ForecastChartPoint[] };
+    }[];
+    notes: string[];
+  };
+};

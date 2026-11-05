@@ -28,6 +28,7 @@ from sibyl.agents.utils.model_selection import readiness
 from sibyl.agents.utils.presentation import RunPresentation
 from sibyl.agents.utils.requests import SibylRequests, now
 from sibyl.models import AgentRequest
+from sibyl.research_library.semantic.contracts import SemanticNotReady
 
 
 class ModelRequired(ValueError):
@@ -64,7 +65,7 @@ class AgentNetwork:
             key: module.create_agent(owner.services, **self.options(key)) for key, module in modules.items()
         }
         self.agents["sibyl"] = sibyl.create_agent(
-            subagents=list(self.agents.values()), **self.options("sibyl")
+            owner.store, subagents=list(self.agents.values()), **self.options("sibyl")
         )
         self.group = AgentGroup(list(self.agents.values()), registry=self.registry, own_registry=True)
         self.cards = {key: agent.card for key, agent in self.agents.items()}
@@ -170,6 +171,37 @@ class AgentNetwork:
         if result.status == "canceled":
             raise asyncio.CancelledError()
         if result.status != "completed":
+            if configuration.get("provider") == "none" and any(
+                item.outcome == "rejected"
+                and isinstance(item.error, dict)
+                and item.error.get("code") in {"semantic_search_not_ready", "invalid_library_query"}
+                for item in result.tool_evidence
+            ):
+                raise SemanticNotReady(
+                    "Semantic search needs a configured local embedding model and indexed passages. "
+                    "Review My research → Semantic search, or select Keyword with a valid query."
+                )
+            if configuration.get("provider") == "none" and any(
+                item.outcome == "rejected"
+                and isinstance(item.error, dict)
+                and item.error.get("code")
+                in {
+                    "research_document_not_found",
+                    "research_passage_not_found",
+                    "article_not_found",
+                    "strategy_run_not_found",
+                    "forecast_model_not_found",
+                    "forecast_evaluation_not_found",
+                    "forecast_tracking_not_found",
+                    "return_period_not_found",
+                    "investigation_not_found",
+                    "briefing_not_found",
+                }
+                for item in result.tool_evidence
+            ):
+                # Direct tool mode has no reasoning loop to correct a missing record.
+                # Preserve the HTTP boundary without exposing native/private error text.
+                raise LookupError("Record not found.")
             failures = [result.error.get("code")] if isinstance(result.error, dict) else []
             for event in result.report.events:
                 error = event.payload.get("error") or event.payload.get("metadata", {}).get("error")
@@ -260,9 +292,9 @@ class AgentNetwork:
         self.states["sibyl"].conversation.clear_session(native_session)
         self.conversations.delete(session_id)
 
-    async def ask(self, request: SibylRequest) -> dict:
+    async def ask(self, request: SibylRequest, *, configuration: dict | None = None) -> dict:
         """Run the native coordinator with bounded UI admission and a frozen team snapshot."""
-        configuration = freeze(self.owner.models.for_turn("sibyl"))
+        configuration = freeze(configuration or self.owner.models.for_turn("sibyl"))
         status = self.status(configuration)
         if not status["ready"]:
             raise ModelRequired(status["reason"])
@@ -329,15 +361,18 @@ class AgentNetwork:
 
     async def _answer_sibyl(self, request: SibylRequest, configuration: dict) -> dict:
         """Use native session history, events and reports; retain only the UI chat projection."""
+        private = current_request_context()
+        page = private.get("page", {})
         with request_context(
-            {**current_request_context(), "models": configuration, "page": freeze({})},
+            {**private, "models": configuration, "page": freeze(page)},
             inherit=("models", "page"),
         ):
             execution = await self.send(
                 "sibyl",
                 Task.create_infer(
-                    request.message,
+                    private.get("response_instructions", "") + request.message,
                     session_id=self.session_key("sibyl", request.session_id, {}),
+                    output_schema=private.get("response_schema"),
                     budget=RunBudget(
                         max_steps=12, max_llm_calls=10, max_tool_calls=10, max_runtime_seconds=140
                     ),
@@ -350,7 +385,9 @@ class AgentNetwork:
                 "request_id": request.request_id,
                 "status": "completed",
                 "question": request.message,
-                "answer": str(execution.output),
+                "answer": execution.output
+                if isinstance(execution.output, str)
+                else json.dumps(execution.output),
                 "module": "sibyl",
                 "engine": "ProtoLink",
                 "provider": configuration["provider"],
@@ -359,5 +396,10 @@ class AgentNetwork:
                 "mode": "mock" if configuration["provider"] == "mock" else "llm",
                 "run_id": execution.report.context.run_id,
                 "delegations": self.requests.get(request.session_id, request.request_id)["delegations"],
+                **(
+                    {"investigation_id": private["investigation_id"]}
+                    if private.get("investigation_id")
+                    else {}
+                ),
             }
         )

@@ -19,7 +19,8 @@ def action(tool, **args):
 def use_model(client, monkeypatch, actions):
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     monkeypatch.setattr(
-        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=actions)
+        "sibyl.agents.utils.registry.create_llm",
+        lambda *a, **kw: create_llm("mock", sequential_responses=actions),
     )
 
 
@@ -35,6 +36,10 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
         "news_sources",
         "fear_and_greed",
         "page_help",
+        "search_research",
+        "research_search_status",
+        "read_research_document",
+        "read_research_passage",
         "read_context_artifact",
     }
     assert set(owner.agents["technician"].tools) == {
@@ -42,6 +47,7 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
         "connection_alerts",
         "settings_guide",
         "exchange_setup",
+        "workspace_operations",
         "read_context_artifact",
     }
     use_model(client, monkeypatch, ["A general explanation without account reads."])
@@ -425,7 +431,11 @@ def test_sibyl_automatically_sees_new_registry_agent_and_calls_its_advertised_to
         response = client.post("/api/v1/sibyl/ask", json={"message": "Read the new specialist's fact"})
         assert response.status_code == 200, response.text
         assert "[MOCK ERROR]" not in response.text
-        assert seen and set(network.agents["sibyl"].tools) == {"read_context_artifact"}
+        assert seen and set(network.agents["sibyl"].tools) == {
+            "read_context_artifact",
+            "investigation_reports",
+            "briefing_schedules",
+        }
         assert response.json()["delegations"][0]["evidence"] == {"fact": "native-registry-evidence"}
     finally:
         extra.stop()

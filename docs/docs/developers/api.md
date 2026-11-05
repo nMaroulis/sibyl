@@ -4,6 +4,8 @@ The versioned base path is `/api/v1`. See the running service's `/docs` and `/op
 
 ## Endpoints
 
+Saved investigation endpoints are documented in [Investigation reports](investigations.md#api), including explicit run admission, progress, source receipts, version exports and cancellation. [Briefing schedule contracts](briefings.md#api) cover daily/weekly calendars, revision-checked controls, missed occurrences and Telegram delivery history.
+
 | Method     | Path                                                | Purpose                                                                                    |
 | ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | GET        | `/health` (unversioned)                             | Process readiness and package version                                                      |
@@ -254,6 +256,8 @@ The `/market-history` routes expose local coverage, resumable reviewed imports, 
 `GET /exchange-orders/monitor` pages local submissions and read-only imported orders, filtering by account, exchange, origin and active/terminal status before the limit. `GET /exchange-orders/discovery` reads local progress; `POST` to that path starts/resumes bounded discovery with `account_id`, `symbols` and `days`. `POST /exchange-orders/discovery/{account_id}/pause` preserves the checkpoint and stops future pages. Imported rows cannot be submitted or canceled. See [coverage, response fields and durable scheduling](order-discovery.md).
 
 Price alerts also accept `condition: crosses_above/crosses_below`, `repeat: once/after_reset` and integer `cooldown_seconds` (60–86400). `POST /alerts/{id}/edit` takes complete rule settings and `revision`, saves paused and returns `409` for a stale editor. Recurring reset/cooldown state persists; past notifications retain the original rule evidence. See [alert state and edit contracts](alerts.md).
+
+Alert forwarding policies and receipt endpoints are documented in [Alert delivery contracts](alert-delivery.md#http-api).
 
 ## Sibyl and messaging setup
 

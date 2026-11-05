@@ -37,13 +37,29 @@ The **naïve** benchmark holds the origin's last close. The **drift** benchmark 
 
 Horizons above one day have overlapping targets, so observations are not independent trials. Outperformance in this historical test does not establish future forecast quality or trading profitability.
 
+## Rolling evaluation
+
+Select a saved model and open **Rolling evaluation** below its independent test results. This evaluates its fixed **recipe** (lags and ridge penalty) across successive historical periods. It refits coefficients and calibration bands for each period; the saved model version remains unchanged. The source, exact market, original dataset and recipe stay pinned, with no provider reads or new dependencies.
+
+1. Choose a supported horizon, two to eight successive test windows, test days and calibration days. Defaults use two 60-day test windows with 60 calibration days each.
+2. Optionally open **Training window**. **Expanding** uses all earlier training history; **Fixed window** retains only the chosen number of earlier training days.
+3. Select **Run rolling evaluation**. Invalid or undersized plans fail explicitly; the engine never silently shrinks a window. Training and rolling evaluation share one fit slot.
+4. Compare pooled model/naïve/drift errors and inspect the per-window table. **Inspect fold** shows that fold's training/calibration/test boundaries and actual/predicted prices with both benchmarks.
+5. Reopen a **Saved rolling evaluation**, **Export rolling evidence**, or **Rerun exact evaluation**. Reruns save a separate report with a reproducible result fingerprint. The latest ten reports per model and one hundred workspace-wide are retained, with older reports removed as new ones are saved.
+
+Each test block excludes forecast targets crossing its end, and training/calibration exclude targets crossing their own boundaries. This leaves gaps between scored test blocks. Lag features update from observations available at each daily forecast origin, while coefficients and band widths stay fixed within the fold. Earlier test periods may enter later calibration/training once those prices would have been observed. Multi-day targets can overlap **within** a fold.
+
+**Pooled MAE skill** and RMSE are recomputed from all retained target errors, rather than averaged percentages or per-fold RMSE. **Folds beating naïve MAE** reports variation across periods, not statistical significance. All errors use the pair's quote units; MAPE and band widths are percentages. The chart is a bounded visual view; metrics and exports retain the complete saved traces.
+
+These windows come from the original historical input, which the user may already have inspected while choosing a model. Rolling evaluation is not a new untouched holdout, live forward test, investment return or guarantee of future performance. It never chooses, deploys or automatically recalibrates a model. **Ask Chronos** includes the selected rolling report and reads its dated metrics through a native read-only tool, including when no LLM is configured.
+
 ## Empirical bands and input shift
 
 For each horizon, calibration collects absolute log-return prediction errors and chooses the ordered error at rank `ceil((n + 1) × 0.9)`. Predictions use that fixed symmetric log-error radius. Coefficients and widths are fixed before test scoring.
 
 This is empirical calibration at a nominal 90% level. Financial time series have dependence and changing distributions; these bands do not have a distribution-free future coverage guarantee. Their held-out coverage and width remain visible rather than being treated as known probabilities.
 
-The input-shift check counts lag features outside the training sample's observed minimum/maximum ranges. It is a descriptive diagnostic, not a calibrated drift detector, significance test or automatic reason to trade/retrain. Rolling evaluation, monitored drift and automatic recalibration remain pending.
+The input-shift check counts lag features outside the training sample's observed minimum/maximum ranges. It is a descriptive diagnostic, not a calibrated drift detector, significance test or automatic reason to trade/retrain. Monitored drift and automatic recalibration remain pending.
 
 ## Produce and reopen forecasts
 
@@ -58,6 +74,6 @@ The input-shift check counts lag features outside the training sample's observed
 
 ## Remaining work
 
-Additional model families, richer features, chronological rolling evaluation, automated recalibration, empirically evaluated drift monitoring, larger model lifecycle management and live forward-performance monitoring remain in the [planning checklist](../developers/backend-roadmap.md).
+The [Live forecast scorecard](forecast-outcomes.md) compares saved prospective predictions with actual closes. Additional model families, richer features, automated recalibration, empirically evaluated drift monitoring and larger model lifecycle management remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Trained forecast origins and chart targets use the daily candle close time, when the close becomes available. Raw dataset timestamps and partition boundaries retain the archive’s opening-time convention; a target close can equal the exclusive end boundary of the partition containing its candle.

@@ -22,10 +22,10 @@ AREAS = [
         "name": "Portfolio accounting",
         "status": "partial",
         "priority": "next",
-        "working": "Combined/per-account valuation, observed conversion routes, exact-market FIFO, opening basis and reviewed transfer carryover.",
+        "working": "Combined/per-account valuation, observed conversion routes, exact-market FIFO, opening basis and reviewed transfer carryover. New measured periods add fresh fixed-account opening/closing valuations, source-bound user/manual cash-flow review, coverage gates, approximate Modified Dietz returns, per-account/combined evidence and native Accountant tools.",
         "pending": [
             "Cross-market basis and historical third-currency/transfer-fee valuation.",
-            "Returns adjusted for external deposits/withdrawals and complete account P&L.",
+            "Provider-verified complete funding coverage, automatic historical flow conversion and complete account P&L beyond the new user-reviewed measured-period workflow.",
             "Split/merged transfers, broader fee/rebate cases and wallet types.",
         ],
     },
@@ -59,11 +59,11 @@ AREAS = [
         "name": "Alerts & local operations",
         "status": "partial",
         "priority": "next",
-        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations.",
+        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations. Opt-in per-rule Telegram delivery adds reviewed recipients, future-only admission, cooldown/expiry, durable receipts and pause controls. Per-account order/fill subscriptions add atomic observation receipts, future-only controls and existing Telegram delivery. Actual background-worker progress/fault/deadline monitoring, sanitized retained history, global UI notices and native Technician diagnostics are implemented. Passphrase-encrypted archives support inspection/download/import and validated separate-directory recovery with automation quarantined until review/restart.",
         "pending": [
-            "Broader risk metrics, optional fill/order policies and silent-worker outage detection; operational diagnostics. Shared strategy capital/exposure/daily-loss enforcement is a separate implemented policy; alerts never change it.",
-            "Optional external delivery with retries and delivery state.",
-            "General durable task scheduling, metrics/diagnostics and managed backup/restore.",
+            "Broader risk metrics, external uptime monitoring and richer operational metrics. Shared strategy capital/exposure/daily-loss enforcement is a separate implemented policy; alerts never change it.",
+            "Additional external alert channels and richer delivery review; real Telegram alert-delivery acceptance remains a deployment check.",
+            "General durable task scheduling, resource metrics, tracing and credential/key rotation beyond implemented encrypted backup/recovery.",
         ],
     },
     {
@@ -95,11 +95,11 @@ AREAS = [
         "name": "Sibyl & messaging",
         "status": "partial",
         "priority": "next",
-        "working": "Native ProtoLink discovery/delegation, saved chats, streamed tool/consultation activity, Stop/outcomes and on-demand native run details with available token/cost metrics, and a direct-HTTP Telegram client with private-user binding, encrypted configuration and durable delivery outcomes.",
+        "working": "Native ProtoLink discovery/delegation, saved chats, streamed consultation activity, Stop/outcomes and native run details; saved investigations with structured reports, actual tool-source receipts, frozen team models, versioned reruns, comparison and JSON export. Daily/weekly calendars add time zones, missed-run handling, retention and explicit Telegram briefings with durable part outcomes. Direct-HTTP Telegram supports private-user binding, encrypted configuration and durable delivery outcomes.",
         "pending": [
-            "User-facing token streaming, broader repeated/model-specific routing and grounding evaluation and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3).",
-            "Scheduled and resumable investigations; stopped or interrupted requests are not replayed.",
-            "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: live bot acceptance testing, richer media and delivery review controls; ambiguous sends are never auto-retried.",
+            "User-facing token streaming, broader provider/model and semantic-grounding evaluation and upstream owned-subagent usage metrics (unavailable in ProtoLink 0.8.3). Repeatable native evidence-contract checks and baseline comparisons are implemented; small-model coordinator failures remain documented.",
+            "Resumable multi-stage investigations; stopped or interrupted inference is not replayed. General-purpose durable jobs remain separate from implemented daily/weekly research calendars.",
+            "WhatsApp, Discord, Slack, Signal and Email clients remain unavailable. Telegram: real scheduled-briefing acceptance, richer media and delivery review controls; initial conversation acceptance is user-confirmed, and ambiguous sends are never auto-retried.",
         ],
     },
     {
@@ -107,10 +107,10 @@ AREAS = [
         "name": "ProtoLink workflows",
         "status": "partial",
         "priority": "later",
-        "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent provider/model selection, encrypted shared profiles and frozen delegated request snapshots; Broker reads saved experiments and bounded retained order/fill evidence. Ollama settings detect models, configure a shared context window aligned with native input budgets, and can manage an explicitly started local server. Initial real Gemma acceptance covers evidence, coordinator tool/inference consultations, memory, cancellation and persistence; broader reliability remains unproven.",
+        "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent model selection, encrypted profiles and frozen delegated snapshots; Broker reads saved experiments and retained order/fill evidence with accurate paper/exchange labels. Ollama settings detect models and manage an explicitly started local server. Native repeated evaluations compare actual tool/source selections, required readings/links, empty data and consultation receipts against saved score baselines. Recorded Gemma checks retain coordinator failures; broad answer reliability remains unproven.",
         "pending": [
             "Deeper domain investigation tools as features expand.",
-            "Evaluated tool/source selection, inspected internal traces and collaboration budgets.",
+            "Broader provider/model coverage, semantic claim grounding and adversarial examples beyond the implemented bounded native evidence-contract cases; complete upstream owned-subagent usage metrics.",
             "Explicit approvals and audit contracts before mutation tools.",
         ],
     },
@@ -119,10 +119,10 @@ AREAS = [
         "name": "Forecasting",
         "status": "partial",
         "priority": "later",
-        "working": "Versioned direct autoregressive ridge models, immutable daily inputs, chronological 60/20/20 training/calibration/test evidence, naive/drift benchmarks, empirical bands, explicit saved/current-input forecasts and read-only Chronos tools. The untrained baseline remains separate.",
+        "working": "Versioned direct autoregressive ridge models, immutable daily inputs, chronological 60/20/20 training/calibration/test evidence, naive/drift benchmarks, empirical bands, explicit saved/current-input forecasts, bounded historical expanding/fixed-window recipe evaluation with purged fold boundaries, pooled benchmarks, saved reports/reruns/exports and read-only Chronos tools. The untrained baseline remains separate. Prospective forecast tracking pins saved predictions to exact-source actuals, retains correction versions and compares equal-horizon model/naive/drift errors without inflating repeated target saves.",
         "pending": [
             "Neural/ARIMA and additional model families, broader assets and training inputs.",
-            "Rolling/repeated evaluation, calibrated drift monitoring, automatic recalibration and larger managed model lifecycles.",
+            "Calibrated drift monitoring, automatic recalibration and larger managed model lifecycles.",
         ],
     },
     {
@@ -130,9 +130,9 @@ AREAS = [
         "name": "Research & news",
         "status": "partial",
         "priority": "later",
-        "working": "Publisher feeds/website collection/NewsAPI, archived excerpts, source health, VADER sentiment, Fear & Greed and fetched crypto profiles.",
+        "working": "Publisher feeds/website collection/NewsAPI, archived excerpts, source health, VADER sentiment, Fear & Greed and fetched crypto profiles. Private PDF/text/Markdown imports, retained originals, exact page passages, BM25 search across uploads/news, source management and native Wiki/Reporter retrieval work without a chat LLM. Optional local Ollama embeddings add bounded checkpointed indexing, cosine search and hybrid rank fusion with actual coverage and exact citations.",
         "pending": [
-            "Document ingestion, chunking, embeddings, hybrid RAG and cited web search.",
+            "Broader real-model semantic relevance/grounding evaluation, calibrated no-answer thresholds, hosted embedding providers and cited web search; local semantic/hybrid retrieval and exact citations are implemented.",
             "Licensed full-article processing and evaluated entity/finance sentiment.",
             "Additional reviewed research integrations and credentials as needed.",
         ],
@@ -142,9 +142,9 @@ AREAS = [
         "name": "Explorer, equities & analytics",
         "status": "partial",
         "priority": "later",
-        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman correlations.",
+        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, explicit paged output-spend checks with spending-transaction links, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman correlations.",
         "pending": [
-            "Historical chain datasets, additional chains, wallet aggregation, output-spend tracking and local chain verification.",
+            "Historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.",
             "Public-official disclosure archives and advanced portfolio analytics.",
             "Distance/MIC/Granger/regression/SHAP with evaluated assumptions.",
         ],
@@ -167,10 +167,10 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-10-29",
+        "reviewed_on": "2026-11-05",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.1.0 adds trained Chronos models, Bitcoin transaction/address inspection and seeded finite random strategy search with recorded candidate plans and chronological evaluation. Native agents read the same evidence. Next work includes broader accounting/provider reconciliation, authenticated venue acceptance, rolling forecast evaluation and richer research workflows. Multi-user support stays deferred.",
+        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Alert rules also support explicit Telegram forwarding with cooldowns and freshness windows. Native repeated agent checks now include imported-source and empty-library cases. Research gains attributable document/news retrieval; Workspace gains worker monitoring and encrypted backup/recovery. Measured cash-flow-aware periods, live forecast scorecards and order/fill notifications are implemented. Remaining work includes broader model/semantic evaluation, hosted embedding providers, deeper accounting/provider reconciliation and calibrated forecast drift. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

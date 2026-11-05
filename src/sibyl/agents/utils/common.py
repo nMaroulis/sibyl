@@ -16,6 +16,8 @@ from protolink import current_request_context
 from sibyl.accounting.balance_checks import BalanceChecks
 from sibyl.config import Settings
 from sibyl.forecasting.service import ForecastModels
+from sibyl.operations.health import WorkerHealth
+from sibyl.research_library.service import ResearchLibrary
 from sibyl.services.accounts.sync import AccountSync
 from sibyl.services.funding.sync import FundingSync
 from sibyl.services.markets.service import Market
@@ -27,7 +29,7 @@ from sibyl.storage import Store
 from sibyl.strategies import Strategies
 
 COMMON_PROMPT = (
-    "You are a specialist in Sibyl, a local crypto workspace. Use your tools when you need workspace facts; "
+    "You work in Sibyl, a local crypto workspace. Use your tools when you need workspace facts; "
     "observations are not preloaded. Use your help tools for questions about using the app; do not "
     "read accounts or market data just to give navigation instructions. Distinguish instructions "
     "from observed workspace state, and include returned in-app links in practical answers. "
@@ -39,6 +41,8 @@ COMMON_PROMPT = (
     "send messages or monitor in the background. Never request or expose API keys, passwords or seed phrases. "
     "Use exact IDs returned by tools or page context rather than inventing identifiers. If evidence "
     "is unavailable, explain what is missing and the next useful step instead of substituting sample data. "
+    "For a rejected record selection, follow the tool's correction guidance or ask the user; do not "
+    "invent a replacement ID, silently change its source or present rejected evidence as a successful observation. "
     "Give concise, useful answers in plain language and cite returned sources where available. "
 )
 
@@ -59,6 +63,8 @@ class Services:
     transfers: TransferReconciliation | None = None
     balance_checks: BalanceChecks | None = None
     forecasts: ForecastModels | None = None
+    library: ResearchLibrary | None = None
+    workers: WorkerHealth | None = None
 
 
 def freeze(value):

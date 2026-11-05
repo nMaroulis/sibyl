@@ -64,6 +64,27 @@ def read(path):
         return str(TIP)
     if path.startswith("/tx/"):
         identity = path.removeprefix("/tx/")
+        if identity.endswith("/outspends"):
+            parent_id = identity.removesuffix("/outspends")
+            parent = next((row for row in confirmed + pending if row["txid"] == parent_id), None)
+            if parent is None:
+                raise LookupError("Unknown Demo transaction.")
+            observations = []
+            for index in range(len(parent["vout"])):
+                matches = [
+                    (row, vin)
+                    for row in confirmed + pending
+                    for vin, item in enumerate(row["vin"])
+                    if item.get("txid") == parent_id and item.get("vout") == index
+                ]
+                if matches:
+                    row, vin = matches[0]
+                    observations.append(
+                        {"spent": True, "txid": row["txid"], "vin": vin, "status": row["status"]}
+                    )
+                else:
+                    observations.append({"spent": False})
+            return observations
         match = next((row for row in confirmed + pending if row["txid"] == identity), None)
         if match:
             return match

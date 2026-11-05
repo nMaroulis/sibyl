@@ -9,6 +9,11 @@ __pycache__/
 .env.*
 !.env.example
 .sibyl/
+.sibyl-managed/
+.sibyl-backups/
+.sibyl-restored-*/
+*.sibylbackup
+vault.key
 node_modules/
 dist/
 build/

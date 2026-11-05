@@ -1,0 +1,139 @@
+.library-semantic {
+  margin: 0;
+}
+.library-semantic > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 22px;
+  cursor: pointer;
+  list-style: none;
+  background: linear-gradient(110deg, #f5f8ff, #fff 70%);
+}
+.library-semantic summary > div {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.library-semantic summary strong {
+  font-size: 13px;
+}
+.library-semantic summary span:not(.badge) {
+  font-size: 10px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.library-semantic-body {
+  padding: 0 22px 18px;
+}
+.library-semantic-body > p {
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+.library-semantic-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+.library-semantic label {
+  display: grid;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+}
+.library-semantic-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0;
+}
+.library-semantic-actions .text-button,
+.library-semantic-actions .text-link {
+  font-size: 11px;
+}
+.library-semantic-index {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+}
+.library-semantic-index-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+.library-semantic-index-heading span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.library-semantic-index label {
+  max-width: 370px;
+}
+.library-semantic-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 15px 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.library-semantic-progress small {
+  font-size: 10px;
+}
+.library-semantic-track {
+  height: 4px;
+  border-radius: 8px;
+  background: #e9eef7;
+  overflow: hidden;
+}
+.library-semantic-track > span {
+  display: block;
+  height: 100%;
+  background: #8ba8d6;
+  border-radius: inherit;
+}
+.library-semantic code {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .library-semantic-fields {
+    grid-template-columns: 1fr;
+  }
+  .library-semantic > details > summary {
+    padding: 14px;
+    flex-wrap: wrap;
+  }
+  .library-semantic-body {
+    padding: 0 14px 16px;
+  }
+}
+
+.library-semantic .footnote {
+  display: block;
+}
+
+@media (max-width: 650px) {
+  .research-library .library-search select {
+    flex-basis: 100%;
+    width: 100%;
+  }
+  .library-semantic > details > summary {
+    display: grid;
+    grid-template-columns: 12px 16px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .library-semantic > details > summary .badge {
+    grid-column: 3;
+    justify-self: start;
+  }
+}

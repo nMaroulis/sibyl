@@ -5,13 +5,33 @@ from typing import Literal
 from sibyl.agents.guides import Guide
 
 TradeTopic = Literal[
-    "overview", "accounts", "orders", "history", "executions", "tracking", "cancel", "recovery"
+    "notifications",
+    "overview",
+    "accounts",
+    "orders",
+    "history",
+    "executions",
+    "tracking",
+    "cancel",
+    "recovery",
 ]
 StrategyTopic = Literal[
     "overview", "backtest", "results", "validation", "paper", "exchange", "monitor", "stop", "halt", "limits"
 ]
 
 TRADE = {
+    "notifications": Guide(
+        "Watch order and fill observations",
+        "/alerts?tab=orders",
+        (
+            "Open Alerts → Orders & fills and create one subscription for a saved account.",
+            "Choose fill/correction, cancellation, problem or status categories; Telegram delivery is a separate per-rule opt-in.",
+            "Inspect Inbox, pause/resume or edit rules. Edits save paused and resume uses a fresh future-only baseline.",
+        ),
+        (
+            "These watches use existing observations and never enable exchange polling. Imported fills may be historical; cumulative totals and individual fills are separate evidence.",
+        ),
+    ),
     "overview": Guide(
         "Use the trading workspace",
         "/trade",

@@ -76,6 +76,7 @@ class Strategies:
             now = datetime.now(UTC).isoformat()
             job = {
                 "id": uuid4().hex,
+                "mode": "paper",
                 "parameters": request.model_dump(),
                 "status": "running",
                 "cash": request.capital,

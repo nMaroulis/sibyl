@@ -5,6 +5,7 @@ import json
 import re
 from datetime import UTC, datetime
 
+from sibyl.alerts.orders.events import fill_changed, schema
 from sibyl.exchanges.base import number
 from sibyl.exchanges.history import TradePage
 from sibyl.storage import Store
@@ -195,11 +196,13 @@ class AccountLedger:
         Only a new or changed execution advances its order's revision. Identical
         history/reconciliation pages do not restart downstream follow-up checks.
         """
+        schema(db)
         inserted, updated = 0, 0
         affected = set()
         for fill in fills:
             payload = json.dumps(fill, sort_keys=True, allow_nan=False)
             previous = db.execute("SELECT payload FROM account_fills WHERE id=?", (fill["id"],)).fetchone()
+            fill_changed(db, json.loads(previous[0]) if previous else None, fill)
             inserted += previous is None
             updated += previous is not None and previous[0] != payload
             if previous is None or previous[0] != payload:

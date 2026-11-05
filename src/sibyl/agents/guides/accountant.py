@@ -5,6 +5,7 @@ from typing import Literal
 from sibyl.agents.guides import Guide
 
 Topic = Literal[
+    "returns",
     "overview",
     "accounts",
     "valuation",
@@ -16,6 +17,18 @@ Topic = Literal[
     "balance_checks",
 ]
 GUIDES = {
+    "returns": Guide(
+        "Measure investment performance",
+        "/account",
+        (
+            "Open Investment performance in Account, choose the desired view and capture a fresh opening valuation.",
+            "Later capture closing values, import/review funding, and confirm complete nonduplicated coverage.",
+            "Review per-account and combined Modified Dietz estimates, blockers, source assertions and exports.",
+        ),
+        (
+            "Historical principal conversions and completeness are user assertions. Missing or stale evidence leaves returns unavailable; this is separate from market FIFO and raw account-value changes.",
+        ),
+    ),
     "balance_checks": Guide(
         "Compare balances with imported activity",
         "/account",
@@ -53,8 +66,10 @@ GUIDES = {
         "Understand prices and incomplete totals",
         "/account",
         (
+            "Account view selects which exchange or account supplies balances. Valuation price feed is the workspace-wide source of reference prices; selecting Coinbase does not switch a configured Binance price feed.",
+            "Select the source name in Valuation price feed, or open Settings → Market data, to select the reference feed used across account views.",
             "Inspect a holding's valuation details for its reference feed, conversion path and provider time.",
-            "Review unpriced assets and account errors; the displayed total only covers quantities that can be valued.",
+            "In the compact Account summary, Partial marks an incomplete value. Expand Details below the metrics to read pricing and account warnings, then View valuation notes for asset-level exclusion reasons.",
             "Use Export holdings to retain the displayed quantities and valuation evidence.",
         ),
         (
@@ -122,7 +137,7 @@ GUIDES = {
         (
             "Open Alerts → Account risk and pin a fixed set of active accounts in one environment plus a reference feed.",
             "Choose a value floor, asset concentration or observed-value drawdown threshold, then explicitly arm the rule.",
-            "Use View evidence for retained valuation details and Inbox for notices. Edits save paused; Resume starts a new observation window.",
+            "Use View evidence for retained valuation details and Inbox for notices. A rule’s Delivery control can opt into Telegram notifications with a checked private recipient, cooldown and freshness window. Edits save paused; Resume starts a new observation window.",
         ),
         (
             "Rules require complete usable valuation coverage. Drawdown includes cash movements and is not cash-flow-adjusted return. Alerts do not control trading.",
