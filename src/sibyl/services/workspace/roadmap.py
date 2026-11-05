@@ -130,9 +130,9 @@ AREAS = [
         "name": "Research & news",
         "status": "partial",
         "priority": "later",
-        "working": "Publisher feeds/website collection/NewsAPI, archived excerpts, source health, VADER sentiment, Fear & Greed and fetched crypto profiles. Private PDF/text/Markdown imports, retained originals, exact page passages, BM25 search across uploads/news, source management and native Wiki/Reporter retrieval work without an indexing LLM.",
+        "working": "Publisher feeds/website collection/NewsAPI, archived excerpts, source health, VADER sentiment, Fear & Greed and fetched crypto profiles. Private PDF/text/Markdown imports, retained originals, exact page passages, BM25 search across uploads/news, source management and native Wiki/Reporter retrieval work without a chat LLM. Optional local Ollama embeddings add bounded checkpointed indexing, cosine search and hybrid rank fusion with actual coverage and exact citations.",
         "pending": [
-            "Embeddings, evaluated semantic/hybrid RAG and cited web search; keyword retrieval and exact cited document/news passages are implemented.",
+            "Broader real-model semantic relevance/grounding evaluation, calibrated no-answer thresholds, hosted embedding providers and cited web search; local semantic/hybrid retrieval and exact citations are implemented.",
             "Licensed full-article processing and evaluated entity/finance sentiment.",
             "Additional reviewed research integrations and credentials as needed.",
         ],
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-11-02",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Alert rules also support explicit Telegram forwarding with cooldowns and freshness windows. Native repeated agent checks now include imported-source and empty-library cases. Research gains attributable document/news retrieval; Workspace gains worker monitoring and encrypted backup/recovery. Next work includes broader model/semantic evaluation, embeddings, accounting/provider reconciliation and live forecast monitoring. Multi-user support stays deferred.",
+        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Alert rules also support explicit Telegram forwarding with cooldowns and freshness windows. Native repeated agent checks now include imported-source and empty-library cases. Research gains attributable document/news retrieval; Workspace gains worker monitoring and encrypted backup/recovery. Next work includes broader model/semantic evaluation, hosted embedding providers, accounting/provider reconciliation and live forecast monitoring. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

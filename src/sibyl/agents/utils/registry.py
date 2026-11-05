@@ -154,6 +154,12 @@ class AgentRegistry:
                         "read_research_document",
                         {"document_id": request.context.library_document_id},
                     )
+                if (
+                    request.module == "wiki"
+                    and request.context.library_query
+                    and not (request.context.library_document_id or request.context.library_passage_id)
+                ):
+                    primary_tool, arguments = "search_research", {}
                 if request.module == "chronos" and request.context.forecast_evaluation_id:
                     primary_tool, arguments = "rolling_evaluation", {}
                 task = Task.create_tool_call(primary_tool, arguments, session_id=session_id)

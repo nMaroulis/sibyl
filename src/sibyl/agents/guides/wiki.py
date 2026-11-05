@@ -11,11 +11,11 @@ GUIDES = {
         "/research?tab=library",
         (
             "Add a text PDF, UTF-8 text or Markdown source, optionally naming its author, URL and publication date.",
-            "Search uploads and retained news by keyword, then open a match to read exact passages and page numbers. Synchronize news copies without fetching publishers.",
+            "Search uploads and retained news by keyword, then open exact passages/page numbers. Optionally expand Semantic search, check/save an installed local Ollama embedding model and explicitly index passages; choose Semantic or Hybrid next to the query. Check scoped coverage and continue missing batches when needed.",
             "Ask Wiki or Reporter to retrieve and cite passages. Reindex uploads from their retained originals; remove a source to delete its original and search entries.",
         ),
         (
-            "Imported passages can be sent to the configured model when requested; keep credentials out of files. Scans need OCR before import. Ranking is lexical relevance, not confidence or verified truth. Embeddings and web search remain pending.",
+            "Imported passages can be sent to the configured model when requested; keep credentials out of files. Scans need OCR before import. Ranks and cosine scores are relevance, not confidence or verified truth. Semantic search needs its separate local embedding setup and only covers indexed passages. Saving a model or reindexing a source clears relevant vectors. Cited web search and broader model quality evaluation remain pending.",
         ),
     ),
     "overview": Guide(
@@ -34,7 +34,7 @@ GUIDES = {
             "Ask Wiki to explain a concept plainly or compare the sourced definitions.",
         ),
         (
-            "This is a curated glossary. My research separately supports imported documents and retained-news passage search. Semantic embeddings and web search remain pending.",
+            "This is a curated glossary. My research separately supports imported documents and retained-news passage search. Optional local semantic/hybrid search is configured in My research, separately from chat models. Cited web search remains pending.",
         ),
     ),
     "profiles": Guide(

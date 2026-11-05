@@ -18,7 +18,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.   |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
 | Forecasting                    | partial       | Live forward monitoring, more model families, automatic recalibration and calibrated drift monitoring.   |
-| Research & news                | partial       | Document ingestion, chunking, embeddings, hybrid RAG and cited web search.                            |
+| Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                            |
 | Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.              |
 | Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                      |
 
@@ -192,8 +192,9 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 Crypto profiles/history are fetched by the backend. Knowledge search is a curated glossary. News has five publisher RSS/Atom adapters, retained excerpts, deduplication, source health, backend filters, extractive summaries, VADER distributions/trends and contextual Reporter tools. See the [news backend](news.md).
 
 - [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
-- [ ] Add embeddings and evaluated semantic retrieval. Keyword relevance is not semantic grounding.
-- [ ] Implement hybrid RAG with attributable citations and optional web-search tools.
+- [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
+- [ ] Evaluate semantic relevance and answer grounding across real models/corpora, add calibrated no-answer thresholds and support reviewed hosted embedding providers. Controlled-vector tests establish contracts, not real-model relevance.
+- [ ] Add cited web-search tools; local hybrid retrieval is implemented.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
 - [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.
 - [ ] Add configurable external research API credentials/endpoints where integrations need them.

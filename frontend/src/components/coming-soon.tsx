@@ -44,8 +44,8 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     },
     {
       module: 'knowledge',
-      title: 'Your research library',
-      text: 'Document ingestion, embeddings, hybrid RAG, citations, and optional web search. The current knowledge tool searches the curated glossary.',
+      title: 'Deeper research retrieval',
+      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, hosted embedding providers and cited web search. Private document/news ingestion, exact citations and optional local Ollama semantic/hybrid search are available now.',
     },
     {
       module: 'news',

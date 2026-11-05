@@ -11,6 +11,12 @@ from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
 from sibyl.api.uploads import bounded_body
+from sibyl.research_library.semantic.contracts import (
+    IndexBatch,
+    LocalEndpoint,
+    SemanticRevision,
+    SemanticSettings,
+)
 
 
 def private(response: Response):
@@ -58,9 +64,10 @@ def search(
     query: str = Query(min_length=1, max_length=300),
     kind: str = "all",
     limit: int = Query(8, ge=1, le=20),
+    method: str = "keyword",
 ):
-    """Find exact attributable passages with bounded keyword retrieval."""
-    return s.library.search(query, kind, limit)
+    """Find exact attributable passages with keyword, semantic or hybrid retrieval."""
+    return s.library.search(query, kind, limit, method)
 
 
 @router.get("/passages/{identifier}")
@@ -126,3 +133,40 @@ def reindex(identifier: str, s: S):
 def delete(identifier: str, s: S):
     """Remove an uploaded source, original and active search representation."""
     s.library.delete(identifier)
+
+
+@router.get("/semantic")
+def semantic_status(s: S):
+    """Read saved local configuration and actual index coverage without contacting Ollama."""
+    return s.library.semantic.status()
+
+
+@router.post("/semantic/models")
+def semantic_models(body: LocalEndpoint, s: S):
+    """List local Ollama model names; no document text is sent and no models are downloaded."""
+    with s.library.semantic.operation():
+        return s.library.semantic.provider.models(body.endpoint)
+
+
+@router.post("/semantic/settings")
+def semantic_settings(body: SemanticSettings, s: S):
+    """Check local embedding capability and save a fresh vector space with an empty index."""
+    return s.library.semantic.configure(body)
+
+
+@router.post("/semantic/index")
+def semantic_index(body: IndexBatch, s: S):
+    """Explicitly embed one bounded passage batch; publish only unchanged current sources."""
+    return s.library.semantic.build(body)
+
+
+@router.post("/semantic/clear")
+def semantic_clear(body: SemanticRevision, s: S):
+    """Remove semantic vectors and invalidate in-flight work, keeping source files and keywords."""
+    return s.library.semantic.clear(body.revision)
+
+
+@router.delete("/semantic")
+def semantic_disable(s: S, revision: int = Query(ge=0)):
+    """Disable semantic retrieval and discard its vectors; source files stay retained."""
+    return s.library.semantic.clear(revision, disable=True)

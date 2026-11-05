@@ -13,6 +13,8 @@ import {
 import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import { AgentButton } from './agents';
+import { LibrarySemantic } from './library-semantic';
+import type { SemanticStatus } from '../lib/semantic-types';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
 
 type Source = {
@@ -41,7 +43,12 @@ type Passage = {
 };
 type Document = Source & { passages: Passage[]; total_passages: number; offset: number };
 type Catalog = { items: Source[]; counts: Record<string, number> };
-type Matches = { items: Passage[]; note: string; retrieval: string };
+type Matches = {
+  items: Passage[];
+  note: string;
+  retrieval: string;
+  semantic?: { model: string; coverage: { indexed: number; total: number; partial: boolean } };
+};
 const date = (value: string) =>
   value
     ? new Date(value).toLocaleDateString('en-GB', {
@@ -56,13 +63,15 @@ export function ResearchLibrary() {
   const [params, setParams] = useSearchParams();
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
-  const [kind, setKind] = useState('all');
+  const [kind, setKind] = useState<'all' | 'document' | 'news'>('all');
+  const [method, setMethod] = useState<'keyword' | 'semantic' | 'hybrid'>('keyword');
+  const semantic = useResource<SemanticStatus>('/library/semantic', 5000);
   const [importing, setImporting] = useState(false);
   const [remove, setRemove] = useState<Source>();
   const [busy, setBusy] = useState('');
   const catalog = useResource<Catalog>('/library?kind=document');
   const matches = useResource<Matches>(
-    `/library/search?query=${encodeURIComponent(query)}&kind=${kind}`,
+    `/library/search?query=${encodeURIComponent(query)}&kind=${kind}&method=${method}`,
     0,
     !!query,
   );
@@ -115,6 +124,9 @@ export function ResearchLibrary() {
               context={{
                 library_document_id: document || undefined,
                 library_passage_id: passage || undefined,
+                library_query: query || undefined,
+                library_source_type: kind,
+                library_search_method: method,
               }}
             />
           }
@@ -140,11 +152,20 @@ export function ResearchLibrary() {
             <select
               aria-label="Research source type"
               value={kind}
-              onChange={(event) => setKind(event.target.value)}
+              onChange={(event) => setKind(event.target.value as typeof kind)}
             >
               <option value="all">All sources</option>
               <option value="document">My documents</option>
               <option value="news">Retained news</option>
+            </select>
+            <select
+              aria-label="Research search method"
+              value={method}
+              onChange={(event) => setMethod(event.target.value as typeof method)}
+            >
+              <option value="keyword">Keyword</option>
+              <option value="semantic">Semantic</option>
+              <option value="hybrid">Hybrid · keywords + meaning</option>
             </select>
             <button className="button primary" type="submit" disabled={!draft.trim()}>
               Search
@@ -160,11 +181,18 @@ export function ResearchLibrary() {
           credentials out of documents.
         </p>
       </Panel>
+      <LibrarySemantic state={semantic} retry={semantic.retry} />
       {query && (
         <Panel>
           <PanelTitle
             title={`Results for “${query}”`}
-            subtitle="Ranked keyword matches, with exact retained text"
+            subtitle={
+              method === 'keyword'
+                ? 'Keyword matches, with exact retained text'
+                : method === 'semantic'
+                  ? 'Meaning-based matches, with exact retained text'
+                  : 'Combined keyword and meaning-based matches'
+            }
             action={
               <button
                 className="button small"
@@ -183,8 +211,9 @@ export function ResearchLibrary() {
             <Loading />
           ) : !matches.data?.items.length ? (
             <Empty title="No matching passages">
-              Try another term, import a source, or synchronize the retained news archive. An empty
-              match does not establish that a claim is false.
+              Try another term, import a source, or synchronize the retained news archive. Semantic
+              searches also need indexed passages. An empty match does not establish that a claim is
+              false.
             </Empty>
           ) : (
             <div className="library-results">
@@ -208,6 +237,13 @@ export function ResearchLibrary() {
                 </button>
               ))}
             </div>
+          )}
+          {matches.data?.semantic && (
+            <p className="footnote">
+              {matches.data.semantic.model} · {matches.data.semantic.coverage.indexed} /{' '}
+              {matches.data.semantic.coverage.total} passages indexed for this source scope
+              {matches.data.semantic.coverage.partial ? ' · partial semantic coverage' : ''}.
+            </p>
           )}
           <p className="footnote">
             Relevance is not confidence or fact verification. Publisher excerpts and uploaded
@@ -298,7 +334,7 @@ export function ResearchLibrary() {
         <p className="footnote">
           PDF text extraction supports up to 100 pages and 8 MiB per file. Scans need OCR first. The
           library retains originals for reindexing; publisher news follows the archive's retention
-          policy. Semantic embeddings and web search remain pending.
+          policy. Local semantic search is optional; cited web search remains pending.
         </p>
       </Panel>
       {importing && (

@@ -117,7 +117,7 @@ Inspect a saved recipe across successive periods with expanding or fixed trainin
 
 Browse 20 familiar crypto projects with backend-fetched fundamentals, history excerpts and source links. Look up concepts in the glossary, inspect Bitcoin transactions and address activity with source-linked fee/confirmation evidence and explicit output-spend checks, or explore optional equity quotes, adjusted history and company information. [Bitcoin explorer guide](docs/docs/guides/bitcoin-explorer.md).
 
-Import PDFs, Markdown and text into **My research**, search uploads and retained news, and open exact cited passages. Wiki and Reporter can retrieve this evidence through native tools; keyword search and reading work without a model. [Research library](docs/docs/guides/research-library.md).
+Import PDFs, Markdown and text into **My research**, search uploads and retained news, and open exact cited passages. Add optional local Ollama embeddings for semantic or hybrid search with visible index coverage. Wiki and Reporter retrieve this evidence through native tools; keyword search and reading work without a model. [Research library](docs/docs/guides/research-library.md).
 
 Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 

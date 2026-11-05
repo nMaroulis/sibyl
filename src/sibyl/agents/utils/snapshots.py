@@ -143,6 +143,19 @@ def snapshot_answer(module: str, evidence) -> str:
         items = evidence.get("passages", [evidence])
         snippets = "\n\n".join(f"Page {part['page']}: {part['text']}\n{part['url']}" for part in items[:2])
         return f"Retained source: {source.get('title', 'Research document')}.\n\n{snippets}\n\nThis is a source excerpt, not an AI interpretation or verified fact. Open the reader for more passages; configure a model in /settings?tab=models for a reasoned answer."
+    if module == "wiki" and isinstance(evidence, dict) and "retrieval" in evidence:
+        excerpts = "\n\n".join(
+            f"{item['source'].get('title', 'Retained source')} · page {item['page']}\n{item['text']}\n{item['url']}"
+            for item in evidence["items"]
+        )
+        return (
+            (
+                excerpts
+                or "No matching retained passages. An empty match does not establish that a claim is false."
+            )
+            + "\n\n"
+            + evidence.get("note", "Exact excerpts, not AI interpretation or verified facts.")
+        )
     if module == "wiki" and isinstance(evidence, dict):
         asset = evidence["asset"]
         profile, history = (evidence.get("profile") or {}, evidence.get("history") or {})

@@ -68,7 +68,7 @@ The Equities tab has AAPL, MSFT, NVDA, and COIN fixtures in demo mode. In live m
 
 The view includes observed period return, sample high/low, annualized log-return volatility (252 sessions), and maximum drawdown. Available company profile fields include sector, industry, country, description, market capitalization, and trailing P/E. Fundamentals can fail independently of price history; the UI displays that limitation. Demo profiles are illustrative.
 
-Equity Analyst uses the selected ticker. Senator portfolio archives and disclosure filters are marked **Coming soon**. Document ingestion, hybrid retrieval, embeddings, and web search are also visible as planned additions in the Knowledge tab.
+Equity Analyst uses the selected ticker. Senator portfolio archives and disclosure filters are marked **Coming soon**. My research supports document ingestion and optional local semantic/hybrid retrieval now; cited web search remains planned.
 
 ## Your own sources
 

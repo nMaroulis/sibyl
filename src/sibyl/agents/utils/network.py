@@ -28,6 +28,7 @@ from sibyl.agents.utils.model_selection import readiness
 from sibyl.agents.utils.presentation import RunPresentation
 from sibyl.agents.utils.requests import SibylRequests, now
 from sibyl.models import AgentRequest
+from sibyl.research_library.semantic.contracts import SemanticNotReady
 
 
 class ModelRequired(ValueError):
@@ -170,6 +171,16 @@ class AgentNetwork:
         if result.status == "canceled":
             raise asyncio.CancelledError()
         if result.status != "completed":
+            if configuration.get("provider") == "none" and any(
+                item.outcome == "rejected"
+                and isinstance(item.error, dict)
+                and item.error.get("code") in {"semantic_search_not_ready", "invalid_library_query"}
+                for item in result.tool_evidence
+            ):
+                raise SemanticNotReady(
+                    "Semantic search needs a configured local embedding model and indexed passages. "
+                    "Review My research → Semantic search, or select Keyword with a valid query."
+                )
             if configuration.get("provider") == "none" and any(
                 item.outcome == "rejected"
                 and isinstance(item.error, dict)

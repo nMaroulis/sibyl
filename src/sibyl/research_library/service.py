@@ -11,12 +11,14 @@ from pathlib import Path
 from uuid import uuid4
 
 from sibyl.research_library.extraction import extract, passages
+from sibyl.research_library.semantic.service import SemanticIndex
 
 
 class ResearchLibrary:
     """Keep original uploads, extracted pages and search rows in one transactional database.
 
-    Retrieval is lexical BM25, not embeddings or semantic confidence. News is an
+    Keyword retrieval uses BM25; optional local embeddings add semantic/hybrid ranking.
+    Ranking does not establish confidence or source truth. News is an
     explicitly synchronized copy of the retained public archive, never a network
     refresh. Excerpts are untrusted source text, not agent instructions.
     """
@@ -43,6 +45,7 @@ class ResearchLibrary:
                 );
             """)
         self.path.chmod(0o600)
+        self.semantic = SemanticIndex(self)
 
     @contextmanager
     def db(self):
@@ -55,6 +58,10 @@ class ResearchLibrary:
             connection.close()
 
     def _replace(self, db, identifier, kind, fingerprint, metadata, original, pages):
+        db.execute(
+            "DELETE FROM semantic_vectors WHERE passage_id IN (SELECT id FROM passages WHERE document_id=?)",
+            (identifier,),
+        )
         db.execute("DELETE FROM passage_search WHERE document_id=?", (identifier,))
         db.execute("DELETE FROM passages WHERE document_id=?", (identifier,))
         db.execute(
@@ -216,8 +223,24 @@ class ResearchLibrary:
             "url": f"/research?tab=library&document={row['document_id']}&passage={row['id']}",
         }
 
-    def search(self, query, kind="all", limit=8):
-        """Rank matching passages and return exact text plus provenance; never infer an answer."""
+    def _lexical_rows(self, db, query, kind, limit):
+        """Use one caller-owned read transaction for coherent keyword or hybrid ranking."""
+        tokens = re.findall(r"[^\W_]+", query, re.UNICODE)[:12]
+        if not tokens:
+            return []
+        expression = " OR ".join('"' + word + '"' for word in tokens)
+        return db.execute(
+            """SELECT p.*,d.kind,d.metadata,d.fingerprint,bm25(passage_search,0,0,2,1) AS rank
+            FROM passage_search JOIN passages p ON p.id=passage_search.passage_id
+            JOIN documents d ON d.id=p.document_id WHERE passage_search MATCH ? AND (?='all' OR d.kind=?)
+            ORDER BY rank,p.id LIMIT ?""",
+            (expression, kind, kind, limit),
+        ).fetchall()
+
+    def search(self, query, kind="all", limit=8, method="keyword"):
+        """Rank exact passages by the selected retrieval method; never infer an answer."""
+        if method != "keyword":
+            return self.semantic.search(query, kind, limit, method)
         if kind not in {"all", "document", "news"}:
             raise ValueError("Choose documents, news or all sources.")
         tokens = re.findall(r"[^\W_]+", query, re.UNICODE)[:12]
@@ -228,15 +251,8 @@ class ResearchLibrary:
                 "retrieval": "lexical BM25",
                 "note": "Enter words to search.",
             }
-        expression = " OR ".join('"' + word + '"' for word in tokens)
         with self.db() as db:
-            rows = db.execute(
-                """SELECT p.*,d.kind,d.metadata,d.fingerprint,bm25(passage_search,0,0,2,1) AS rank
-                FROM passage_search JOIN passages p ON p.id=passage_search.passage_id
-                JOIN documents d ON d.id=p.document_id WHERE passage_search MATCH ? AND (?='all' OR d.kind=?)
-                ORDER BY rank,p.id LIMIT ?""",
-                (expression, kind, kind, limit),
-            ).fetchall()
+            rows = self._lexical_rows(db, query, kind, limit)
         return {
             "query": query,
             "retrieval": "lexical BM25",
@@ -264,6 +280,10 @@ class ResearchLibrary:
 
     @staticmethod
     def _delete(db, identifier):
+        db.execute(
+            "DELETE FROM semantic_vectors WHERE passage_id IN (SELECT id FROM passages WHERE document_id=?)",
+            (identifier,),
+        )
         db.execute("DELETE FROM passage_search WHERE document_id=?", (identifier,))
         db.execute("DELETE FROM passages WHERE document_id=?", (identifier,))
         db.execute("DELETE FROM documents WHERE id=?", (identifier,))
