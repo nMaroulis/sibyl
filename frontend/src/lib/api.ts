@@ -157,3 +157,33 @@ export async function downloadFile(path: string, filename: string) {
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Consume an authenticated read-only display stream; credentials never enter its URL. */
+export async function getStream<T>(path: string, onEvent: (event: T) => void, signal: AbortSignal) {
+  const response = await fetch(`/api/v1${path}`, {
+    signal,
+    headers: workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {},
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(typeof error.detail === 'string' ? error.detail : 'Live stream unavailable.');
+  }
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Live streaming is unavailable in this browser.');
+  const decoder = new TextDecoder();
+  let pending = '';
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      pending += decoder.decode(value, { stream: !done });
+      if (pending.length > 131072) throw new Error('Invalid market stream.');
+      const lines = pending.split('\n');
+      pending = lines.pop() ?? '';
+      for (const line of lines) if (line.trim()) onEvent(JSON.parse(line) as T);
+      if (done) break;
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}

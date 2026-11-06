@@ -30,6 +30,18 @@ The preview validates market availability, active spot status, base-quantity pre
 
 Review the reference notional and type the displayed confirmation, such as `BUY BTC`. Select **Market** or **Limit · GTC**, supply a limit price for a limit order, then confirm once. Real fills and exchange fees can differ from the reference quote; Sibyl does not impose a market-price slippage bound.
 
+## Conditional limits and linked OCO
+
+On Binance and Binance Testnet, choose **Stop-loss limit** or **Take-profit limit** and enter the native last-trade trigger and resulting limit price. For a sell, the stop is below the current price and take-profit above it; buy directions are reversed. Conditional limits can remain unfilled after their trigger, so a stop is not a guaranteed exit price.
+
+Expand **Linked take-profit & stop-loss** to review native OCO alternatives using the selected account, pair, side and base quantity. Enter a take-profit trigger/limit, stop trigger and stop limit, then type the displayed OCO phrase. The exchange links and reserves one alternative quantity. Inspect both **OCO leg** rows in Order monitor; activating or canceling a leg cancels its sibling, but partial execution and each observed status remain separate evidence. If the list response is uncertain, inspect/recover both saved child IDs rather than submitting another list.
+
+## Replace an unfilled limit
+
+An eligible open manual Binance/Testnet GTC limit shows **Replace…** in Order monitor. Enter the new **total base quantity** and limit price, review the account/environment and estimated released reservation, and type the new phrase. Partially filled, strategy-owned, imported and OCO orders are excluded.
+
+The native command refuses replacement if cancellation fails or the original fills first. It is still **not atomic**: cancellation can succeed while the new order fails. Inspect both records afterward. An unresolved compound command blocks another replacement and is never automatically replayed. Native instrument permissions apply; these features are unavailable on Demo and other current adapters. See [advanced order contracts](../developers/advanced-orders.md).
+
 ## Retry and uncertain outcomes
 
 Before contacting the exchange, Sibyl persists the intent as `submitting`. A repeated confirmation returns the persisted state and never creates a second order. Provider failures with an ambiguous outcome become `unknown`. A process crash can leave an intent as `submitting`, which also requires reconciliation.
@@ -70,7 +82,7 @@ The **Order monitor** in Trade and Executions lists submitted orders, cumulative
 
 Tracking reads status approximately every 20 seconds on the server, with increasing delays on errors. It survives restart, pauses for inactive accounts and can be paused/resumed per order. Pausing does not cancel a native order. Known-ID checks and reviewed cancellation remain available if new exchange execution is disabled. Execution checks share Account history's ledger, so importing through both paths does not duplicate a fill. Terminal orders receive three bounded follow-up passes for late fee updates. You can pause/resume fill checks or recheck later. A match compares available evidence and never guarantees final settlement. Demo fills appear only once in execution history. See [reconciliation details and limits](../developers/order-reconciliation.md).
 
-GTC remains open until filled or canceled; the 60-second deadline applies to the review, not the submitted order. Approved exchange strategies can separately authorize [best-effort local order expiry or Stop & cancel](strategy-execution.md#order-lifetime-and-cancellation); manual GTC orders have no automatic expiry. Stop/OCO, cancel/replace, post-only, iceberg and other native time-in-force choices remain **Coming soon**. See [order contracts, provider support and recovery](../developers/order-management.md).
+GTC remains open until filled or canceled; the 60-second deadline applies to the review, not the submitted order. Approved exchange strategies can separately authorize [best-effort local order expiry or Stop & cancel](strategy-execution.md#order-lifetime-and-cancellation); manual GTC orders have no automatic expiry. Binance/Testnet conditional limits, OCO and unfilled-only native replacement are available above. Additional-provider support, partial-order amendment, trailing, post-only, iceberg and other time-in-force choices remain **Coming soon**. See [order contracts, provider support and recovery](../developers/order-management.md).
 
 Strategy monitors also offer [Close position](strategy-execution.md#close-a-retained-position), a separate typed sell approval after stopping and reconciling. Its order is tagged as a strategy exit, uses the same native status/fill pipeline and can be inspected or manually canceled here. It never sells unrelated holdings or automatically replaces a partially filled exit.
 

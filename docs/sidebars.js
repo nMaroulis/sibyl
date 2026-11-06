@@ -111,6 +111,7 @@ module.exports = {
           'Order lifecycle, funding imports, recovery and transfer reconciliation.',
           [
             'developers/order-management',
+            'developers/advanced-orders',
             'developers/order-reconciliation',
             'developers/order-recovery',
             'developers/order-discovery',
@@ -127,6 +128,7 @@ module.exports = {
           'Market feeds, candle history, news, forecasting and Bitcoin research.',
           [
             'developers/market-data',
+            'developers/live-markets',
             'developers/provider-control',
             'developers/candle-history',
             'developers/news',

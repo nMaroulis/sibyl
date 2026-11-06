@@ -237,6 +237,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            await market.live.close()
             await workers.close()
             await asyncio.to_thread(alert_delivery.close)
             await asyncio.to_thread(trading.alerts.close)
@@ -348,8 +349,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.add_exception_handler(exception, provider_error)
 
     from sibyl.api.account_returns import router as returns_router
+    from sibyl.api.advanced_orders import router as advanced_orders_router
     from sibyl.api.order_alerts import router as order_alerts_router
 
+    app.include_router(advanced_orders_router)
     app.include_router(returns_router)
     app.include_router(order_alerts_router)
     from sibyl.api.library import router as library_router
@@ -357,9 +360,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(workspace_router)
     app.include_router(library_router)
+    from sibyl.api.market_streams import router as market_stream_router
     from sibyl.api.routes import router
 
     app.include_router(router, prefix="/api/v1")
+    app.include_router(market_stream_router, prefix="/api/v1")
     from sibyl.api.strategy_research import router as strategy_research_router
 
     app.include_router(strategy_research_router)

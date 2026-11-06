@@ -47,9 +47,34 @@ docker compose up --build
 
 ## Release notes
 
+## [2.3.0] - Unreleased
+
+:::note[Release summary]
+
+Markets gains live Binance price and candle previews with clear stream health and same-source REST fallback. Trade adds native conditional limits, linked OCO orders and reviewed unfilled-limit replacement for Binance and Binance Testnet. Analyst and Broker explain these workflows and inspect their actual evidence through native ProtoLink tools.
+
+:::
+
+### Added
+
+- Shared, on-demand Binance production/Testnet public ticker and candle WebSockets, bounded viewer queues, validated source/environment selection, reconnect/backoff, freshness states, background-tab cleanup and authenticated browser display streams. Closed-candle analysis and execution remain on their existing REST paths.
+- Native stop-loss and take-profit GTC limits, with separate trigger/limit validation and exact conditional recovery matching. Per-instrument permissions and the Settings capability inventory reflect implemented paths.
+- Durable native two-leg OCO reviews, one-quantity semantics, typed list confirmation, independent child status/fill reconciliation and exact child-ID recovery after uncertain list submission. Demo and other adapters do not emulate these orders.
+- Separately reviewed, wholly unfilled manual-limit replacement through native STOP_ON_FAILURE/ONLY_NEW requests. Retain both records, estimated reservation release, a durable compound-command latch and conservative uncertainty; cancellation and replacement are explicitly non-atomic.
+- Progressive OCO entry, conditional fields and eligible order-monitor replacement controls. Native read-only Analyst stream evidence and Broker OCO/trigger/replacement evidence, plus updated typed page help.
+- A bounded, opt-in native advanced-order Testnet acceptance runner with isolated encrypted state, endpoint/notional gates, controlled OCO response-loss recovery and optional fill/cancel observation. Deterministic tests cover concurrency, restart, partial-fill races, SDK request fields and stream lifecycle.
+
+### Fixed
+
+- Preserve newer verified native fill/status observations when a delayed or lost single-order/OCO submission acknowledgment arrives. Group uncertainty cannot overwrite an independently recovered child.
+
+### Verification
+
+On November 6, 2026, actual public ticker events were observed from production and Testnet streams. In a separate virtual-fund Testnet workspace, conditional limit submission/cancellation, OCO child recovery after deliberately discarding a successful response, sibling cancellation, native replacement and duplicate approval identity passed. A marketable limit filled before cancellation; this is not intermediate partial-fill or genuine outage acceptance. No production order was submitted.
+
 ## [2.2.0] - 2026-11-07
 
-:::note[Latest Release]
+:::note[Release summary]
 
 Sibyl gains saved investigations and scheduled AI briefings, with inspectable specialist evidence and optional Telegram delivery. A new research library supports document imports and optional local semantic search, while Account performance estimates, live forecast scorecards, rolling forecast evaluation and Bitcoin output-spend checks deepen the analysis tools.
 

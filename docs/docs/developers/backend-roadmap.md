@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — November 2, 2026
+## Audited snapshot — November 6, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -10,8 +10,8 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
 | Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.         |
 | Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
-| Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
-| Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
+| Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation. |
+| Market-data infrastructure     | partial       | Broader historical adapters, quota metrics and private/additional-provider WebSockets.      |
 | Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, resource metrics and more delivery channels.  |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.       |
 | Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
@@ -86,14 +86,17 @@ Known orders now import native execution pages into the shared Account history l
 
 - [ ] Review and enable execution for the remaining production providers; most added adapters are read-only.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
-- [ ] Add cancel/replace with venue-specific atomicity and reservation semantics.
-- [ ] Add stop, take-profit, trailing, OCO, additional time-in-force, post-only and iceberg support where the venue permits it.
+- [x] Add native Binance/Testnet unfilled-only manual GTC replacement with estimated reservation release, STOP_ON_FAILURE/ONLY_NEW, durable compound-command admission and retained non-atomic outcomes. See [advanced orders](advanced-orders.md).
+- [ ] Extend replacement to additional providers, partially filled orders and complete amendment/lifecycle history.
+- [x] Add native Binance/Testnet stop-loss/take-profit GTC limits and linked two-leg OCO, exact trigger validation, independent fill tracking and child-ID recovery after a lost response.
+- [ ] Add these advanced orders to more providers; implement trailing, additional time-in-force, post-only and iceberg support.
 - [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini detailed imports remain pending.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
 - [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
 - [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.
+- [x] Exercise real Testnet conditional open/cancel, native OCO with deliberately lost response, exact child recovery, sibling cancellation, unfilled cancel/replace, duplicate approval identities and a fill-winning marketable-limit observation. Intermediate partial fills, true outages, late fee corrections and other venues remain unaccepted.
 - [ ] Extend authenticated recovery to delayed indexing, external amendments, permissions, retention and additional providers.
 
 ### 4. Automated strategy execution — partial
@@ -124,7 +127,8 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 
 - [x] Persist exact-source OHLCV, reviewed resumable backfills, coverage gaps, manual retention and immutable research snapshots. See [candle history](candle-history.md).
 - [ ] Review historical pagination for the remaining providers and exercise authenticated provider acceptance.
-- [ ] Add WebSocket market and account/order subscriptions with reconnection handling.
+- [x] Add on-demand Binance production/Testnet public ticker/candle WebSockets, shared bounded queues, reconnect/freshness status, exact-source REST fallback and native Analyst evidence. See [live previews](live-markets.md).
+- [ ] Add private account/order streams, more public providers and persisted reconnect-gap recovery.
 - [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
 - [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
 - [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Live session counters reset on API restart.
@@ -156,6 +160,7 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [x] Add on-demand evidence tools, cached Reporter reads and practical Technician setup guides.
 - [x] Review model-facing tool docstrings; add typed, focused help/FAQ tools for every specialist, including Trade history, backtesting, chart controls and source setup. Keep instructions separate from observations and update guides with module changes.
 - [x] Let Broker inspect bounded, filtered retained order/fill evidence, with native ProtoLink correction for invalid record selections and no provider refresh or mutation.
+- [x] Add native Analyst live-stream evidence and Broker OCO/conditional/replacement evidence, with typed practical help and explicit read-only boundaries.
 - [ ] Expand investigations with deeper source-specific tools as domain features become available.
 - [x] Sibyl uses native ProtoLink discovery/delegation, with delegation disabled for specialists; saved chats include collaboration evidence.
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.

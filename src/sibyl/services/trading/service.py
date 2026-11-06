@@ -1,4 +1,4 @@
-"""Reviewed spot market/GTC limit intents with durable, at-most-once submission."""
+"""Reviewed native spot intents with durable, at-most-once submission."""
 
 import json
 import math
@@ -14,6 +14,8 @@ from sibyl.alerts.orders.service import OrderAlerts
 from sibyl.exchanges.catalog import exchange_spec
 from sibyl.models import ExchangeOrderRequest
 from sibyl.services.markets.service import Market
+from sibyl.services.trading.advanced.service import AdvancedOrders
+from sibyl.services.trading.advanced.validation import conditional_prices, replaceable
 from sibyl.services.trading.discovery import OrderDiscovery
 from sibyl.services.trading.lifecycle import OrderLifecycle
 from sibyl.services.trading.reconciliation import OrderReconciliation
@@ -48,6 +50,7 @@ class ExchangeTrading:
         self.recovery = OrderRecovery(self)
         self.reconciliation = OrderReconciliation(self)
         self.discovery = OrderDiscovery(self)
+        self.advanced = AdvancedOrders(self)
 
     def _enabled(self):
         if not self.market.settings.allow_live_trading:
@@ -144,6 +147,8 @@ class ExchangeTrading:
         strategy_job_id=None,
         strategy_close_review_id=None,
         strategy_expiry_seconds=None,
+        oco_group_id=None,
+        replacement_of=None,
     ) -> dict:
         """Validate exact precision, native spot limits and free funds without reserving them.
 
@@ -177,6 +182,8 @@ class ExchangeTrading:
                 intent.get("strategy_close_review_id"),
             ) != (strategy_job_id, strategy_close_review_id):
                 raise ValueError("This order key belongs to another strategy approval.")
+            if (intent.get("oco_group_id"), intent.get("replacement_of")) != (oco_group_id, replacement_of):
+                raise ValueError("This key belongs to another order workflow.")
             return intent
         with self.market.adapter(connection) as client:
             client.load_markets()
@@ -190,7 +197,7 @@ class ExchangeTrading:
                 raise ValueError(
                     f"Quantity exceeds market precision. Use {precise} or another valid quantity."
                 )
-            if request.order_type == "limit":
+            if request.order_type != "market":
                 price = request.limit_price
                 precise_price = client.price_to_precision(request.symbol, price)
                 if Decimal(precise_price) <= 0 or Decimal(precise_price) != Decimal(str(price)):
@@ -206,7 +213,7 @@ class ExchangeTrading:
             if not math.isfinite(notional):
                 raise ValueError("Order notional must be finite.")
             fields = [("amount", request.quantity), ("cost", notional)]
-            if request.order_type == "limit":
+            if request.order_type != "market":
                 fields.append(("price", price))
             for field, value in fields:
                 limits = (market.get("limits") or {}).get(field) or {}
@@ -214,7 +221,24 @@ class ExchangeTrading:
                     raise ValueError(f"Order is below the exchange minimum {field} of {limits['min']}.")
                 if limits.get("max") is not None and value > limits["max"]:
                     raise ValueError(f"Order exceeds the exchange maximum {field}.")
-            balances = client.fetch_balance().get("free", {})
+            if request.trigger_price is not None:
+                conditional_prices(client, request)
+            balances = dict(client.fetch_balance().get("free", {}))
+            if replacement_of:
+                with self.store.db() as db:
+                    original = self.lifecycle.read(db, replacement_of)
+                replaceable(original)
+                if (
+                    original["request"]["connection_id"] != connection.id
+                    or original["request"]["symbol"] != request.symbol
+                    or original["request"]["side"] != request.side
+                ):
+                    raise ValueError("Replacement account, pair or side differs.")
+                asset = request.symbol.split("/")[1 if request.side == "buy" else 0]
+                released = original["request"]["quantity"] * (
+                    original["request"]["limit_price"] if request.side == "buy" else 1
+                )
+                balances[asset] = float(balances.get(asset) or 0) + released
             client_order_id = client.format_client_order_id(str(uuid4()))
         base, quote = request.symbol.split("/")
         buffer = 1.001 if demo else 1.01
@@ -242,6 +266,12 @@ class ExchangeTrading:
             "client_order_id": client_order_id,
             "tracking": False,
         }
+        if oco_group_id:
+            intent.update(origin="oco", oco_group_id=oco_group_id)
+        if replacement_of:
+            intent.update(
+                origin="replacement", replacement_of=replacement_of, confirmation=f"REPLACE {request.symbol}"
+            )
         if strategy_job_id is not None:
             intent.update(
                 origin="strategy",
@@ -249,6 +279,8 @@ class ExchangeTrading:
                 strategy_action="close" if strategy_close_review_id else "signal",
                 strategy_close_review_id=strategy_close_review_id,
                 strategy_expiry_seconds=strategy_expiry_seconds,
+                oco_group_id=oco_group_id,
+                replacement_of=replacement_of,
             )
         try:
             with self.store.db() as db:
@@ -274,7 +306,11 @@ class ExchangeTrading:
         before_submit=None,
     ) -> dict:
         """Persist submitting before one native write; duplicate confirmations never resend."""
-        with self.lifecycle.lock(intent_id):
+        with self.store.db() as db:
+            initial = self.lifecycle.read(db, intent_id)
+        with self.lifecycle.lock(initial.get("replacement_of") or intent_id), self.lifecycle.lock(intent_id):
+            if initial.get("replacement_of") and initial["status"] == "preview":
+                replaceable(self.lifecycle.refresh(initial["replacement_of"]))
             return self._execute(
                 intent_id, confirmation, strategy_job_id=strategy_job_id, before_submit=before_submit
             )
@@ -291,6 +327,10 @@ class ExchangeTrading:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             intent = self.lifecycle.read(db, intent_id)
+            if intent.get("origin") == "oco":
+                raise ValueError(
+                    "OCO legs require confirmation of their linked list; they cannot be submitted separately."
+                )
             if intent.get("origin") == "strategy" and strategy_job_id != intent.get("strategy_job_id"):
                 raise ValueError("This order belongs to a strategy approval. Use the strategy controls.")
             if intent.get("origin") == "imported":
@@ -338,6 +378,11 @@ class ExchangeTrading:
                 # transaction, immediately before committing the native write boundary.
                 before_submit(db, intent)
             if refusal is None:
+                if intent.get("replacement_of"):
+                    original = self.lifecycle.read(db, intent["replacement_of"])
+                    replaceable(original)
+                    original.update(replace_state="submitting", replacement_id=intent["id"], next_check=0)
+                    self.lifecycle.write(db, original)
                 intent.update(
                     status="submitting",
                     tracking=True,
@@ -356,22 +401,55 @@ class ExchangeTrading:
         request = ExchangeOrderRequest(**intent["request"])
         try:
             with self.market.adapter(connection, write=True) as client:
-                kwargs = {"price": request.limit_price} if request.order_type == "limit" else {}
-                result = client.create_order(
-                    request.symbol,
-                    request.order_type,
-                    request.side,
-                    request.quantity,
-                    params={"clientOrderId": intent["client_order_id"]},
-                    **kwargs,
-                )
+                kwargs = {"price": request.limit_price} if request.order_type != "market" else {}
+                params = {"clientOrderId": intent["client_order_id"]}
+                if request.trigger_price is not None:
+                    params["triggerPrice"] = request.trigger_price
+                if intent.get("replacement_of"):
+                    with self.store.db() as db:
+                        original = self.lifecycle.read(db, intent["replacement_of"])
+                    # The original's persisted command latch prevents a second review
+                    # while this compound native write is in flight or uncertain.
+                    replacement = client.cancel_replace(
+                        request.symbol,
+                        original["exchange_order_id"],
+                        request.side,
+                        request.quantity,
+                        request.limit_price,
+                        intent["client_order_id"],
+                    )
+                    if replacement.get("cancel_result") == "SUCCESS":
+                        self.lifecycle.observe(original["id"], replacement["canceled"])
+                    if replacement.get("new_result") != "SUCCESS":
+                        raise ValueError("Replacement outcome needs native inspection.")
+                    result = replacement["order"]
+                else:
+                    result = client.create_order(
+                        request.symbol,
+                        request.order_type,
+                        request.side,
+                        request.quantity,
+                        params=params,
+                        **kwargs,
+                    )
             identity = result.get("id")
             if not isinstance(identity, str) or not identity or len(identity) > 200:
                 raise ValueError("Provider did not confirm a usable native order identity.")
-            intent.update(exchange_order_id=identity, status="submitted")
             with self.store.db() as db:
-                self.lifecycle.write(db, intent)
-            return self.lifecycle.observe(intent_id, result)
+                db.execute("BEGIN IMMEDIATE")
+                current = self.lifecycle.read(db, intent_id)
+                if current.get("exchange_order_id"):
+                    # Client-ID recovery may have observed actual fills before
+                    # this HTTP response returned. Never replace those facts with
+                    # an older submission acknowledgment.
+                    if current["exchange_order_id"] != identity:
+                        raise ValueError("Submission acknowledgment conflicts with recovered identity.")
+                    return current
+                current.update(exchange_order_id=identity, status="submitted")
+                # Identity and its validated observation commit together. A malformed
+                # acknowledgment must not attach an unverified native order ID.
+                self.lifecycle.merge_observation(db, current, result)
+            return current
         except (ccxt.NetworkError, TimeoutError):
             intent.update(
                 status="unknown",
@@ -380,9 +458,11 @@ class ExchangeTrading:
             )
         except ccxt.ExchangeError:
             intent.update(
-                status="rejected",
-                tracking=False,
-                message="The exchange rejected this order. Check account permissions and limits.",
+                status="unknown" if intent.get("replacement_of") else "rejected",
+                tracking=bool(intent.get("replacement_of")),
+                message="Replacement outcome is unresolved. Inspect both original and replacement at the exchange; no write is retried."
+                if intent.get("replacement_of")
+                else "The exchange rejected this order. Check account permissions and limits.",
             )
         except Exception:
             intent.update(
@@ -390,5 +470,20 @@ class ExchangeTrading:
                 message="Submission could not be confirmed. Check the exchange before placing another order.",
             )
         with self.store.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            current = self.lifecycle.read(db, intent_id)
+            if current.get("exchange_order_id") and current.get("refreshed_at"):
+                return current  # Verified observations outlive a missing HTTP acknowledgment.
+            if current.get("exchange_order_id"):
+                intent["exchange_order_id"] = current["exchange_order_id"]
+            if intent.get("replacement_of"):
+                original = self.lifecycle.read(db, intent["replacement_of"])
+                original.update(
+                    replace_state="unknown",
+                    replacement_id=intent["id"],
+                    next_check=0,
+                    replace_message="Inspect original and replacement client IDs. A compound write is unresolved and will not be retried.",
+                )
+                self.lifecycle.write(db, original)
             self.lifecycle.write(db, intent)
         return intent

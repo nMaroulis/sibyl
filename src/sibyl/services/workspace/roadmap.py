@@ -34,10 +34,10 @@ AREAS = [
         "name": "Order management",
         "status": "partial",
         "priority": "next",
-        "working": "Manual market/GTC limits and cancellation for eight production providers, Gemini limits, and test clients. Per-exchange support tabs; selected providers have fill reconciliation, recovery and discovery.",
+        "working": "Manual market/GTC limits and cancellation for eight production providers, Gemini limits, and test clients. Binance/Testnet add native conditional GTC limits, linked OCO, child-ID recovery and reviewed unfilled-only native replacement with non-atomic outcomes. Actual Testnet checks cover conditional open/cancel, deliberately lost OCO response recovery, sibling cancellation, replacement and a fill-winning order. Per-exchange support tabs and per-instrument permissions keep limits explicit.",
         "pending": [
             "Broader discovery/recovery adapters, external amendment handling and definitive fee/settlement reconciliation.",
-            "Cancel/replace, stop/OCO, trailing, post-only, iceberg and other time-in-force choices.",
+            "Conditional/OCO and replacement adapters for additional providers, partial-order amendment, trailing, post-only, iceberg and other time-in-force choices.",
             "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; broader authenticated venue acceptance beyond the initial Binance Testnet lifecycles.",
             "Detailed fill reconciliation and resumable imports for Bitstamp/Gemini; client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
         ],
@@ -47,11 +47,11 @@ AREAS = [
         "name": "Market-data infrastructure",
         "status": "partial",
         "priority": "next",
-        "working": "Exact-source REST data, descriptive market statistics and explainable technical bias, region zoom, retained OHLCV/backfills and immutable inputs; shared read controls and retained HTTP diagnostics.",
+        "working": "Exact-source REST data, descriptive market statistics and explainable technical bias, region zoom, retained OHLCV/backfills and immutable inputs; shared read controls and retained HTTP diagnostics; on-demand Binance production/Testnet public ticker/candle streams with bounded fanout, reconnect/freshness states and same-source REST fallback. Closed-candle analysis stays separate.",
         "pending": [
             "Review historical pagination for remaining providers and authenticated provider acceptance.",
             "Reviewed endpoint-weight/IP/account quotas, richer latency distributions and application-wide operational diagnostics.",
-            "WebSocket prices and private account/order streams with reconnect recovery.",
+            "Additional public-provider and private account/order WebSocket streams, and persisted reconnect-gap recovery.",
         ],
     },
     {
@@ -109,7 +109,7 @@ AREAS = [
         "priority": "later",
         "working": "Ten native specialists with purpose-focused tool descriptions, typed page-help topics and scoped evidence tools; ProtoLink 0.8.3 native worker admission, lazy request-local models, private context, AgentGroup lifecycle, SQLite conversations, run reports/evidence and invalid-selection correction. Per-agent model selection, encrypted profiles and frozen delegated snapshots; Broker reads saved experiments and retained order/fill evidence with accurate paper/exchange labels. Ollama settings detect models and manage an explicitly started local server. Native repeated evaluations compare actual tool/source selections, required readings/links, empty data and consultation receipts against saved score baselines. Recorded Gemma checks retain coordinator failures; broad answer reliability remains unproven.",
         "pending": [
-            "Deeper domain investigation tools as features expand.",
+            "Deeper domain investigation tools as features expand; native live-stream and conditional/OCO/replacement evidence/help are implemented.",
             "Broader provider/model coverage, semantic claim grounding and adversarial examples beyond the implemented bounded native evidence-contract cases; complete upstream owned-subagent usage metrics.",
             "Explicit approvals and audit contracts before mutation tools.",
         ],
@@ -167,10 +167,10 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-11-05",
+        "reviewed_on": "2026-11-06",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.2.0 adds saved investigations and daily/weekly research briefings with native specialist evidence, versioned reports, frozen team models and opt-in Telegram delivery. Alert rules also support explicit Telegram forwarding with cooldowns and freshness windows. Native repeated agent checks now include imported-source and empty-library cases. Research gains attributable document/news retrieval; Workspace gains worker monitoring and encrypted backup/recovery. Measured cash-flow-aware periods, live forecast scorecards and order/fill notifications are implemented. Remaining work includes broader model/semantic evaluation, hosted embedding providers, deeper accounting/provider reconciliation and calibrated forecast drift. Multi-user support stays deferred.",
+        "current_focus": "v2.3.0 adds on-demand Binance production/Testnet live market previews, native conditional/OCO orders, unfilled-only manual cancel/replace and matching native Analyst/Broker tools and guides. Actual Testnet lifecycle checks include controlled OCO response loss and exact child recovery, not intermediate partial-fill, late-correction or genuine outage acceptance. Remaining work includes broader provider/private streams, advanced-order adapters, accounting/reconciliation and model/semantic evaluation. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

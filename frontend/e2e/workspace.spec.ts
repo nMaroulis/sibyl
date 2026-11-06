@@ -107,8 +107,10 @@ test('knowledge search and exchange setup are accessible', async ({ page }) => {
   await expect(exchange).toBeVisible();
   await exchange.getByRole('tab', { name: 'Spot trading', exact: true }).click();
   await expect(exchange.getByText('Market buy & sell', { exact: true })).toBeVisible();
-  await expect(exchange.getByText('Stop / OCO / cancel-replace', { exact: true })).toBeVisible();
-  await expect(exchange.getByText('Not implemented', { exact: true })).toBeVisible();
+  await expect(
+    exchange.getByText('Conditional limits / OCO / cancel-replace', { exact: true }),
+  ).toBeVisible();
+  await expect(exchange.getByText(/Native stop-loss\/take-profit GTC limits/)).toBeVisible();
   await exchange.getByRole('button', { name: 'Connect Binance', exact: true }).click();
   await expect(page.getByLabel('API key', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Close dialog' }).click();

@@ -19,6 +19,7 @@ NAME = "Analyst"
 TAGLINE = "Find the signal"
 DESCRIPTION = "Interpret market prices, technical statistics and directional scores; explain Markets controls and indicator limitations."
 SYSTEM_PROMPT = (
+    "Use live_market_status for observed public-stream health and forming-candle evidence, never as a closed-candle signal or an account/order stream. An empty stream list means no active viewer, not an outage. "
     "Use page_help for Markets navigation, chart controls, source/pair selection, watchlists and history. "
     "Interpret market prices, trend, momentum, drawdowns, volatility, volume and levels. Call market_analysis for "
     "the requested symbol, timeframe and source. An omitted selection uses the current page; a "
@@ -70,6 +71,17 @@ def create_agent(services: Services, **runtime) -> Agent:
                 **{key: value for key, value in result.items() if key != "candles"},
             }
 
+    def live_market_status(source: str | None = None) -> dict:
+        """Inspect the selected market feed's live connection, freshness, interruptions and fallback status.
+
+        Omit source to follow the page. Returns observed public ticker/candle stream
+        activity and last previews for currently viewed markets. An empty list means
+        no active viewer; it does not prove an outage. Forming candles are separate
+        from the closed-candle statistics returned by market_analysis.
+        """
+        source = selected("market_source", source, "")
+        return market.live.snapshot(source or None)
+
     def analysis_help() -> dict:
         """Explain the available technical indicators and the directional score's weighting and limits.
 
@@ -110,7 +122,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-analyst",
         description=DESCRIPTION,
-        tools=[market_analysis, analysis_help, page_help],
+        tools=[market_analysis, live_market_status, analysis_help, page_help],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

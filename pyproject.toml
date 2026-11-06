@@ -5,13 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "sibyl"
 # Canonical version; use scripts/distribution/release.py set-version to synchronize mirrors and locks.
-version = "2.2.0"
+version = "2.3.0"
 description = "A local-first crypto workspace with a React dashboard and ProtoLink agents."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
   "anyio>=4,<5",
+  "aiohttp>=3.10,<4",
   "fastapi>=0.115.12,<1",
   "uvicorn>=0.34,<1",
   "pydantic-settings>=2.8,<3",

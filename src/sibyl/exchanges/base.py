@@ -124,6 +124,18 @@ class ExchangeClient(ABC):
         """Read one reviewed page of executions belonging to an exact native order."""
         raise ccxt.NotSupported("Order execution imports are not reviewed for this provider.")
 
+    def advanced_support(self, symbol: str) -> dict:
+        """Report only implemented native conditional/list/replacement paths for this market."""
+        return {"types": [], "oco": False, "replace": False}
+
+    def create_oco(self, *args) -> dict:
+        """Submit one linked native list only on reviewed providers; never emulate it locally."""
+        raise ccxt.NotSupported("Native OCO submission is unavailable for this provider.")
+
+    def cancel_replace(self, *args) -> dict:
+        """Submit one reviewed native replacement, without retry or implied atomic success."""
+        raise ccxt.NotSupported("Native replacement is unavailable for this provider.")
+
     def create_order(
         self,
         symbol: str,

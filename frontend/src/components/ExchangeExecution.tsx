@@ -6,6 +6,7 @@ import { number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { Connection, ExchangeCatalog, System } from '../lib/types';
 import { OrderMonitor, type ManagedOrder } from './order-monitor';
+import { OCOForm } from './trading/advanced-orders';
 
 /** Explicit review for native spot orders and the separate virtual GTC wallet. */
 export function ExchangeExecution({
@@ -29,9 +30,10 @@ export function ExchangeExecution({
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('0.001');
-  const [requestedOrderType, setOrderType] = useState<'market' | 'limit'>(
-    demo ? 'limit' : 'market',
-  );
+  const [requestedOrderType, setOrderType] = useState<
+    'market' | 'limit' | 'stop_loss_limit' | 'take_profit_limit'
+  >(demo ? 'limit' : 'market');
+  const [triggerPrice, setTriggerPrice] = useState('');
   const [limitPrice, setLimitPrice] = useState('50000');
   const [intent, setIntent] = useState<ManagedOrder>();
   const [confirmation, setConfirmation] = useState('');
@@ -43,7 +45,12 @@ export function ExchangeExecution({
     (provider) => provider.id === eligible.find((account) => account.id === accountId)?.exchange,
   );
   const orderType =
-    demo || selectedProvider?.market_orders === false ? 'limit' : requestedOrderType;
+    demo ||
+    selectedProvider?.market_orders === false ||
+    (!selectedProvider?.conditional_orders &&
+      ['stop_loss_limit', 'take_profit_limit'].includes(requestedOrderType))
+      ? 'limit'
+      : requestedOrderType;
   const reset = () => {
     setIntent(undefined);
     setConfirmation('');
@@ -62,7 +69,10 @@ export function ExchangeExecution({
               side,
               quantity: Number(quantity),
               order_type: orderType,
-              ...(orderType === 'limit' ? { limit_price: Number(limitPrice) } : {}),
+              ...(orderType !== 'market' ? { limit_price: Number(limitPrice) } : {}),
+              ...(['stop_loss_limit', 'take_profit_limit'].includes(orderType)
+                ? { trigger_price: Number(triggerPrice) }
+                : {}),
               idempotency_key: crypto.randomUUID(),
             });
       setIntent(result);
@@ -164,7 +174,7 @@ export function ExchangeExecution({
                       value={orderType}
                       disabled={busy || demo}
                       onChange={(event) => {
-                        setOrderType(event.target.value as 'market' | 'limit');
+                        setOrderType(event.target.value as typeof requestedOrderType);
                         reset();
                       }}
                     >
@@ -172,6 +182,12 @@ export function ExchangeExecution({
                         <option value="market">Market</option>
                       )}
                       <option value="limit">Limit · GTC</option>
+                      {selectedProvider?.conditional_orders && (
+                        <>
+                          <option value="stop_loss_limit">Stop-loss limit · GTC</option>
+                          <option value="take_profit_limit">Take-profit limit · GTC</option>
+                        </>
+                      )}
                     </select>
                   </label>
                   <label>
@@ -190,7 +206,7 @@ export function ExchangeExecution({
                     />
                   </label>
                 </div>
-                {orderType === 'limit' && (
+                {orderType !== 'market' && (
                   <label>
                     Limit price · {symbol.split('/')[1] || 'quote currency'}
                     <input
@@ -207,6 +223,27 @@ export function ExchangeExecution({
                     />
                   </label>
                 )}
+                {['stop_loss_limit', 'take_profit_limit'].includes(orderType) && (
+                  <label>
+                    Trigger price · {symbol.split('/')[1]}
+                    <input
+                      required
+                      type="number"
+                      min="0.00000001"
+                      step="any"
+                      value={triggerPrice}
+                      onChange={(event) => {
+                        setTriggerPrice(event.target.value);
+                        reset();
+                      }}
+                      disabled={busy}
+                    />
+                    <small>
+                      Native last-trade trigger. The resulting limit can remain unfilled; this is
+                      not a guaranteed exit.
+                    </small>
+                  </label>
+                )}
                 {intent?.status === 'preview' && (
                   <>
                     <div className="order-preview">
@@ -217,7 +254,7 @@ export function ExchangeExecution({
                         </strong>
                       </div>
                       <div>
-                        <span>{orderType === 'limit' ? 'Limit price' : 'Reference price'}</span>
+                        <span>{orderType !== 'market' ? 'Limit price' : 'Reference price'}</span>
                         <strong>
                           {intent.price == null ? '—' : number(intent.price, 8)}{' '}
                           {intent.request.symbol.split('/')[1]}
@@ -225,7 +262,7 @@ export function ExchangeExecution({
                       </div>
                       <div>
                         <span>
-                          {orderType === 'limit' ? 'Order notional' : 'Reference notional'}
+                          {orderType !== 'market' ? 'Order notional' : 'Reference notional'}
                         </span>
                         <strong>
                           {intent.notional == null ? '—' : number(intent.notional, 8)}{' '}
@@ -237,7 +274,7 @@ export function ExchangeExecution({
                           ? '0.1% paper fee. Available funds are reserved on confirmation.'
                           : 'Exchange fees apply. Buys require a 1% free-balance buffer.'}{' '}
                         Review expires at {new Date(intent.expires_at).toLocaleTimeString()}.{' '}
-                        {orderType === 'limit'
+                        {orderType !== 'market'
                           ? 'Once submitted, GTC remains open until filled or canceled.'
                           : 'Market fills may differ from this quote.'}
                       </small>
@@ -275,7 +312,7 @@ export function ExchangeExecution({
                     {busy
                       ? 'Working…'
                       : intent
-                        ? `Confirm ${demo ? 'paper' : 'exchange'} ${orderType} order`
+                        ? `Confirm ${demo ? 'paper' : 'exchange'} ${orderType.replaceAll('_', ' ')} order`
                         : `Review ${demo ? 'paper limit' : 'exchange'} order`}
                   </button>
                 )}
@@ -327,6 +364,15 @@ export function ExchangeExecution({
           </div>
         )}
       </Panel>
+      {enabled && selectedProvider?.oco_orders && accountId && (
+        <OCOForm
+          key={`${accountId}:${symbol}:${side}:${quantity}`}
+          accountId={accountId}
+          symbol={symbol.trim().toUpperCase()}
+          side={side}
+          quantity={quantity}
+        />
+      )}
       <OrderMonitor active={active} />
     </>
   );

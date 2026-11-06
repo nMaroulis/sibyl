@@ -28,9 +28,15 @@ Each source keeps its own list, including connected exchange/test environments. 
 
 Editing a watchlist changes what you follow on Markets. Account valuation uses its independent reference prices, so removing a watched asset does not remove or revalue a holding. Chart and Analyst selections also remain independent from list membership.
 
+## Live price and candle previews
+
+Choose Binance or a saved Binance/Testnet market source to see live prices and the forming candle. **Live** means valid stream messages are arriving. **Connecting**, **REST fallback** and **Paused** explain interruptions and background-tab behavior. The same-source REST snapshots remain available; another feed or Demo is never substituted.
+
+Changing the source, pair or interval clears the old preview. Background tabs release their stream and reconnect when visible. Indicators, statistics, correlations and Analyst's numerical analysis continue to use closed candles; the latest forming candle is not a new completed signal. Ask Analyst about the connection to inspect its observed stream evidence. Other exchanges and API feeds keep their REST updates. See [live-stream boundaries](../developers/live-markets.md).
+
 ## Chart controls
 
-Choose a supported exact market, a timeframe, and a sample size of up to 720 observations. Provider aggregation limits can reduce the choices. The API accepts 60–720 observations. Supported intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `12h`, `1d`, and `1w`, restricted to the live provider's available intervals. The currently forming candle is excluded. A provider may return fewer observations than requested.
+Choose a supported exact market, a timeframe, and a sample size of up to 720 observations. Provider aggregation limits can reduce the choices. The API accepts 60–720 observations. Supported intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `12h`, `1d`, and `1w`, restricted to the live provider's available intervals. The currently forming candle is excluded from analysis; supported live feeds show it as a separate chart preview. A provider may return fewer observations than requested.
 
 Switch between a line chart and OHLC candlesticks. Use range presets, +/− zoom, **drag-to-select region zoom**, explicit pan mode (or Shift+drag), volume controls and the history navigator; rendering is capped to 600 visible candles. Pointer movement and the keyboard-accessible inspection slider show each candle's timestamp, open, high, low, close, and volume. The indicator toggle adds Bollinger bands and EMA 9. Zoom/inspection reuse the loaded data without new provider reads. Export saves the supplied OHLCV sample, market, and timeframe.
 

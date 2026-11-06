@@ -1,9 +1,10 @@
 """Explicit spot clients: provider differences live here, not in domain services."""
 
+from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
 
 
-class BinanceClient(CCXTClient):
+class BinanceClient(BinanceAdvanced, CCXTClient):
     """Binance spot, including the separate testnet when explicitly selected."""
 
     id = "binance"
@@ -11,6 +12,12 @@ class BinanceClient(CCXTClient):
     options = {"fetchMarkets": {"types": ["spot"]}}
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50, 100)
+
+    def stream_symbol(self, symbol: str) -> str:
+        """Resolve the native public-stream identifier from this environment's spot catalog."""
+        with self.lock:
+            self.market(symbol)
+            return self._exchange.market(symbol)["id"]
 
 
 class BinanceTestnetClient(BinanceClient):

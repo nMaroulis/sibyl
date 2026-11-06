@@ -227,7 +227,7 @@ Performance consumes eligible confirmed transfers without creating fills. `GET /
 
 ## Managed spot orders
 
-The existing exchange order preview accepts `order_type` (`market` by default, or `limit`) and requires a positive `limit_price` exactly for limits. Native limits are GTC. Demo uses the same managed-limit workflow with its virtual wallet; its existing market route stays separate.
+The exchange order preview accepts `order_type` (`market`, `limit`, `stop_loss_limit` or `take_profit_limit`) and requires a positive `limit_price` for every non-market type. Conditional types also require `trigger_price` and an implemented Binance/Testnet instrument path. Native limits are GTC. Demo uses the same managed-limit workflow with its virtual wallet; its existing market route stays separate.
 
 `POST /exchange-orders/{id}/cancel/preview` reads native state and creates a 60-second review. Confirm through `POST /exchange-orders/{id}/cancel` with `cancel_id` and the displayed `confirmation`. `POST /exchange-orders/{id}/tracking` persists an `enabled` boolean. `GET /exchange-orders/example` is read-only illustrative data. `/paper/balances` reports available `balances`, `total` and `used` reservations. See [complete contracts and failure semantics](order-management.md).
 
@@ -297,3 +297,9 @@ Funding balance conventions have local GET/POST review and POST withdrawal endpo
 Pending status controls: `POST /connections/{account_id}/funding-refresh/{stream}` saves version-checked opt-in settings or queues a check of retained unfinished records. `GET /funding-sync` includes actual support and public pending-update progress. See [request fields, support and budgets](funding-pending-updates.md).
 
 Recent funding sync: version-checked opt-in controls at `POST /connections/{account_id}/funding-scans/{stream}`, lazy pass history at `GET /connections/{account_id}/funding-scans/{stream}/reports`, and observed source history at `GET /account-ledger/funding/{event_id}/versions`. See [controls, budgets and coverage semantics](funding-recent-sync.md).
+
+## Live previews and native advanced orders
+
+`GET /markets/live` leases an exact public Binance/Testnet display stream; `/markets/live/status` reads observed active-channel evidence without subscribing. These authenticated HTTP routes use NDJSON for display and JSON for status. See [bounds and reconnect behavior](live-markets.md).
+
+`POST /exchange-order-lists/preview`, `GET /exchange-order-lists/{id}` and `POST /exchange-order-lists/{id}/confirm` manage one native OCO list and its two tracked children. `POST /exchange-orders/{id}/replace/preview` reviews an unfilled manual limit replacement, confirmed through the existing new-intent confirmation endpoint. `GET /connections/{id}/order-capabilities` checks actual native per-market permission. See [request fields and non-atomic outcomes](advanced-orders.md).

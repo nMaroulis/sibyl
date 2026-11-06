@@ -40,7 +40,7 @@ Measured performance periods separate investment gain from external contribution
 
 ### Markets · Look beyond the price
 
-Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports.
+Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports. Binance feeds add live price and candle previews with visible connection health and REST fallback.
 
 Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics and correlations. An explainable technical-bias score shows its inputs and votes. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
 
@@ -48,7 +48,7 @@ Python calculates returns, trend and momentum, volatility, drawdowns, volume sta
 
 ### Trade · Follow an order through
 
-Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Monitor orders, partial fills and cancellation evidence. Recover uncertain submissions by client ID without blindly submitting again.
+Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Binance and Binance Testnet also support native conditional limits, linked OCO orders and reviewed unfilled-limit replacement. Monitor orders, partial fills and cancellation evidence. Recover uncertain submissions by client ID without blindly submitting again.
 
 Account history brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
 

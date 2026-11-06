@@ -4,8 +4,22 @@ from typing import Literal
 
 from sibyl.agents.guides import Guide
 
-Topic = Literal["overview", "sources", "pairs", "watchlist", "chart", "statistics", "correlation", "history"]
+Topic = Literal[
+    "live", "overview", "sources", "pairs", "watchlist", "chart", "statistics", "correlation", "history"
+]
 GUIDES = {
+    "live": Guide(
+        "Understand live market updates",
+        "/markets",
+        (
+            "Choose Binance or a saved Binance Testnet market source, a supported pair and interval.",
+            "The Live indicator confirms actual stream messages; Connecting, REST fallback or Paused explain interruptions and background-tab behavior.",
+            "The chart includes a forming candle preview. Statistics, technical bias and Analyst analysis continue to use closed REST candles.",
+        ),
+        (
+            "Sockets are shared while viewed, reconnect after interruptions and close when their last viewer leaves. Other feeds use REST; account/order streams are not implemented.",
+        ),
+    ),
     "overview": Guide(
         "Analyze a market",
         "/markets",

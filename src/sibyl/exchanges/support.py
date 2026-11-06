@@ -112,9 +112,11 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 ),
                 feature(
                     "advanced_orders",
-                    "Stop / OCO / cancel-replace",
-                    False,
-                    "These order types and amendments are not implemented in Sibyl, even where the exchange offers them.",
+                    "Conditional limits / OCO / cancel-replace",
+                    spec.id in {"binance", "binance-testnet"},
+                    "Native stop-loss/take-profit GTC limits, linked OCO limits and unfilled-only STOP_ON_FAILURE replacements. Instrument permissions are checked at review; replacement is not atomic. Trailing and other order types remain pending."
+                    if spec.id in {"binance", "binance-testnet"}
+                    else "Conditional orders, OCO and replacements are not implemented for this Sibyl adapter.",
                 ),
             ],
         },
@@ -217,8 +219,10 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "websocket",
                     "Live WebSocket streams",
-                    False,
-                    "Prices and account updates currently use REST; WebSocket streams are pending.",
+                    spec.id in {"binance", "binance-testnet"},
+                    "On-demand public ticker/candle streams, shared connections, reconnect and visible REST fallback. Account/order tracking remains REST-based."
+                    if spec.id in {"binance", "binance-testnet"}
+                    else "This source uses REST snapshots; streaming is not implemented for this adapter.",
                 ),
             ],
         },

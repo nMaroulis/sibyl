@@ -61,12 +61,16 @@ def validate_candidate(intent: dict, order: dict) -> None:
     amount = number(order.get("amount"))
     if amount is None or Decimal(str(amount)) != Decimal(str(request["quantity"])):
         raise ValueError("Recovery quantity differs.")
-    if request.get("order_type", "market") == "limit":
+    if request.get("order_type", "market") != "market":
         if order.get("timeInForce") not in {None, "GTC"}:
             raise ValueError("Recovery time in force differs.")
         price = number(order.get("price"))
         if price is None or Decimal(str(price)) != Decimal(str(request["limit_price"])):
             raise ValueError("Recovery limit price differs.")
+    if request.get("trigger_price") is not None:
+        trigger = number(order.get("triggerPrice"))
+        if trigger is None or Decimal(str(trigger)) != Decimal(str(request["trigger_price"])):
+            raise ValueError("Recovery trigger price differs.")
     start, end = window(intent)
     timestamp = number(order.get("timestamp"))
     if timestamp is None or not start <= timestamp < end:

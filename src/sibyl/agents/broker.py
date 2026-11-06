@@ -36,6 +36,7 @@ SYSTEM_PROMPT = (
     "Inspect the recorded search method, finite space, sampled candidates, seed and coverage. Random "
     "search evaluates only its recorded sample, not all possible combinations; seeds are not quality scores. "
     "Never call the best training score an out-of-sample result or imply that this proves future performance. "
+    "Use advanced_order_evidence and recorded_orders for native OCO leg states, conditional triggers and replacement links. OCO activation cancels its sibling, but conditional limits can remain unfilled. Replacement is unfilled-only and non-atomic; never infer both legs or commands succeeded from one acknowledgment. Instruments and providers differ. "
     "Call exchange_support for manual spot order support, permissions "
     "and provider-specific history/recovery limits. Inspect mode and environment: paper runs use virtual capital; "
     "approved exchange runs use actual/test exchange funds and native fills. Explain paused/uncertain orders, "
@@ -371,6 +372,9 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "exchange",
                         "environment",
                         "origin",
+                        "oco_group_id",
+                        "oco_list_id",
+                        "replacement_of",
                         "status",
                         "filled",
                         "remaining",
@@ -396,6 +400,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "quantity",
                         "order_type",
                         "limit_price",
+                        "trigger_price",
                     )
                 },
             }
@@ -432,6 +437,38 @@ def create_agent(services: Services, **runtime) -> Agent:
             "evidence_order_limit": 10,
         }
 
+    def advanced_order_evidence(list_id: str | None = None) -> dict:
+        """Inspect saved native OCO groups and each leg's observed status, trigger, fills and uncertainty.
+
+        Omit list_id to list up to ten saved groups. Use an exact group ID from
+        these results or recorded_orders to inspect its two legs. Returns retained
+        observations only; canceled siblings and partially filled active legs remain
+        separate facts. This tool cannot submit, replace, cancel or refresh orders.
+        """
+        execution = strategies.execution
+        if execution is None:
+            return {"items": [], "url": "/trade?tab=executions"}
+        trading = execution.trading
+        with store.db() as db:
+            ids = (
+                [list_id]
+                if list_id
+                else [
+                    row[0] for row in db.execute("SELECT id FROM order_groups ORDER BY rowid DESC LIMIT 10")
+                ]
+            )
+        try:
+            return {
+                "items": [trading.advanced.detail(identity) for identity in ids],
+                "url": "/trade?tab=executions",
+                "scope": "Retained native list and leg observations; inspect dates and unresolved outcomes.",
+            }
+        except LookupError as error:
+            raise ToolRejectedError(
+                "That OCO group is not saved. List groups first and use an exact returned ID.",
+                code="order_group_not_found",
+            ) from error
+
     def trade_help(topic: TradeTopic = "overview") -> dict:
         """Explain Trade workflows: accounts, spot orders, account history, executions, tracking, cancellation or recovery.
 
@@ -463,6 +500,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             validation_report,
             exit_readiness,
             recorded_orders,
+            advanced_order_evidence,
             trade_help,
             strategy_help,
             execution_alerts,

@@ -15,7 +15,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'sibyl',
       title: 'Deeper investigations',
-      text: 'Token-by-token answers, scheduled and resumable research, and evaluated collaboration. Per-agent models, live consultation progress, Stop and retained request outcomes are available now.',
+      text: 'Token-by-token answers, resumable research and broader evaluated collaboration. Saved investigations, daily/weekly briefings, per-agent models, live consultation progress and retained outcomes are available now.',
     },
     {
       module: 'markets',
@@ -35,7 +35,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'trade',
       title: 'Advanced exchange orders',
-      text: 'Stop, take-profit, trailing, OCO, cancel/replace, post-only, iceberg and additional time-in-force controls. Market and GTC limit orders with reviewed cancellation are available.',
+      text: 'More advanced-order providers, partial-order amendments, trailing, post-only, iceberg and additional time-in-force controls. Binance/Testnet now support native conditional limits, OCO and unfilled manual replacement; other current execution paths retain market/GTC orders and cancellation.',
     },
     {
       module: 'forecast',
@@ -65,7 +65,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'markets',
       title: 'Streaming markets',
-      text: 'WebSocket streams, reviewed endpoint-weight budgets and richer operational metrics. Shared read limits, cooldowns, saved HTTP read history, source diagnostics, retained candles and saved datasets are available now.',
+      text: 'Private account/order streams, more public WebSocket providers, exact endpoint-weight budgets and richer operational metrics. Binance/Testnet public ticker/candle previews, reconnect status, REST fallback, shared read controls, retained candles and saved datasets are available now.',
     },
     {
       module: 'alerts',

@@ -36,6 +36,7 @@ import { MarketSourcePicker } from '../components/market-source-picker';
 import { ComingSoon } from '../components/coming-soon';
 import { exportCSV, number } from '../lib/api';
 import { useResource } from '../lib/hooks';
+import { useLiveMarket, previewCandles } from '../lib/live-markets';
 import type {
   Analysis,
   MarketAsset,
@@ -131,6 +132,12 @@ function MarketsView({
     `/markets/analysis?symbol=${encodeURIComponent(symbol)}&timeframe=${timeframe}&limit=${limit}&${suffix}`,
     60000,
     hasCandles && pairs.length > 0,
+  );
+  const live = useLiveMarket(
+    sourceId,
+    symbol,
+    timeframe,
+    hasCandles && pairs.length > 0 && ['binance', 'binance-testnet'].includes(source.provider),
   );
   const corr = useResource<Correlation>(
     `/markets/correlation?symbols=${encodeURIComponent(comparisons)}&timeframe=${timeframe}&limit=${limit}&method=${method}&transform=${transform}&${suffix}`,
@@ -275,7 +282,26 @@ function MarketsView({
           <Panel>
             <PanelTitle
               title={symbol.replace('/', ' / ')}
-              subtitle={`Closed candles · ${source.name}`}
+              subtitle={`Closed-candle analysis · ${source.name}`}
+              action={
+                <span
+                  className={`market-live-state ${live.state}`}
+                  title={
+                    live.error || 'Live previews do not change the closed-candle analysis sample.'
+                  }
+                >
+                  <i aria-hidden="true" />
+                  {live.state === 'live'
+                    ? 'Live'
+                    : live.state === 'rest'
+                      ? 'REST snapshots'
+                      : live.state === 'connecting'
+                        ? 'Connecting'
+                        : live.state === 'paused'
+                          ? 'Paused'
+                          : 'REST fallback'}
+                </span>
+              }
             />
             <div className="workspace-controls">
               <TimeframeSelect value={timeframe} onChange={setTimeframe} catalog={catalog.data} />
@@ -315,7 +341,10 @@ function MarketsView({
                     <div className="market-chart-heading">
                       <div>
                         <strong>
-                          {number(analysis.data.price, analysis.data.price < 1 ? 6 : 2)}
+                          {number(
+                            live.state === 'live' && live.price ? live.price : analysis.data.price,
+                            analysis.data.price < 1 ? 6 : 2,
+                          )}
                         </strong>
                         <small>{symbol.split('/')[1]}</small>
                         <Badge
@@ -353,11 +382,21 @@ function MarketsView({
                       </div>
                     </div>
                     <Candlesticks
-                      data={analysis.data.candles}
+                      data={previewCandles(
+                        analysis.data.candles,
+                        live.state === 'live' ? live.candle : undefined,
+                      )}
                       bands={bands}
                       mode={view === 'line' ? 'line' : 'candles'}
                       intervalSeconds={frameSeconds[timeframe]}
                     />
+                    {live.state !== 'rest' && (
+                      <p className="footnote">
+                        {live.state === 'live'
+                          ? 'Live price and forming candle preview. Indicators and statistics use closed candles.'
+                          : 'Live updates are unavailable or paused; the chart uses periodic REST snapshots.'}
+                      </p>
+                    )}
                     <div className="chart-footnote">
                       <DataNote source={analysis.data.source} label={analysis.data.source_label} />
                       <button

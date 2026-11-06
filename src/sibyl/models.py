@@ -176,14 +176,18 @@ class ExchangeOrderRequest(OrderRequest):
     """Prepare an exchange order against an explicit saved account."""
 
     connection_id: str = Field(min_length=1, max_length=100)
-    order_type: Literal["market", "limit"] = "market"
+    order_type: Literal["market", "limit", "stop_loss_limit", "take_profit_limit"] = "market"
     limit_price: float | None = Field(default=None, gt=0, le=1e15)
+
+    trigger_price: float | None = Field(default=None, gt=0, le=1e15)
 
     @model_validator(mode="after")
     def price_for_type(self):
         """A GTC limit needs a price; market orders must not carry a hidden limit."""
-        if (self.order_type == "limit") != (self.limit_price is not None):
+        if (self.order_type != "market") != (self.limit_price is not None):
             raise ValueError("Set a limit price only for limit orders.")
+        if (self.order_type in {"stop_loss_limit", "take_profit_limit"}) != (self.trigger_price is not None):
+            raise ValueError("Set a trigger price only for conditional limit orders.")
         return self
 
 

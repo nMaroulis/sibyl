@@ -5,6 +5,8 @@ from typing import Literal
 from sibyl.agents.guides import Guide
 
 TradeTopic = Literal[
+    "advanced",
+    "replace",
     "notifications",
     "overview",
     "accounts",
@@ -20,6 +22,30 @@ StrategyTopic = Literal[
 ]
 
 TRADE = {
+    "advanced": Guide(
+        "Review conditional and linked orders",
+        "/trade",
+        (
+            "Select an active Binance or Binance Testnet account. Choose Stop-loss limit or Take-profit limit and enter both the trigger and executable limit price.",
+            "For linked alternatives, expand Linked take-profit & stop-loss. It uses the selected account, pair, side and base quantity; review both triggers/limits and type the OCO confirmation.",
+            "Find both saved OCO legs in Order monitor and inspect their independent fills, cancellation and reconciliation evidence. Canceling one native OCO leg also cancels the list.",
+        ),
+        (
+            "Instrument permissions and filters apply. A last-trade trigger creates a GTC limit; it may remain unfilled. OCO links alternatives and reserves one quantity, not twice the position. Unknown list outcomes recover each saved child ID without resubmission. Demo and other providers do not emulate these orders.",
+        ),
+    ),
+    "replace": Guide(
+        "Replace an unfilled manual limit",
+        "/trade?tab=executions",
+        (
+            "Choose Replace… on an open, wholly unfilled manual Binance/Testnet GTC limit.",
+            "Enter the new TOTAL base quantity and limit price, review the estimated released reservation and new requirements, and type the replacement phrase.",
+            "Inspect both the original and replacement records afterward. A fill before native cancellation makes the unfilled-only replacement fail.",
+        ),
+        (
+            "STOP_ON_FAILURE prevents a new submission if cancellation fails, but cancellation can succeed while the new order fails. No compound write is retried; uncertain results require native inspection. Strategies, imported orders, OCO legs and partially filled orders are excluded.",
+        ),
+    ),
     "notifications": Guide(
         "Watch order and fill observations",
         "/alerts?tab=orders",
@@ -56,7 +82,7 @@ TRADE = {
         "Review a spot order",
         "/trade",
         (
-            "Choose the account, exact spot pair, side and base quantity. Select Market or a supported Limit · GTC and enter the limit price.",
+            "Choose the account, exact spot pair, side and base quantity. Select Market, Limit · GTC or an implemented conditional limit and enter its required prices. Linked OCO entry is in the disclosure below.",
             "Review the environment, reference notional, precision and funds checks, then type the displayed confirmation phrase.",
             "The review expires after 60 seconds. After submission, inspect the order monitor for actual status, fills and fees.",
         ),

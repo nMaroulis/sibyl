@@ -135,7 +135,8 @@ def test_broker_how_to_answer_uses_help_without_reading_account_history(client, 
         "Open [Trade → Account history](/trade?tab=history), then Fills & imports and Sync market history.",
     ]
     monkeypatch.setattr(
-        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
+        "sibyl.agents.utils.registry.create_llm",
+        lambda *a, **kw: create_llm("mock", sequential_responses=steps),
     )
     response = client.post(
         "/api/v1/agents/ask",
@@ -161,7 +162,8 @@ def test_sibyl_can_call_discovered_help_using_native_delegation(client, monkeypa
         "Reporter explains source configuration in [Settings → News](/settings?tab=news).",
     ]
     monkeypatch.setattr(
-        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
+        "sibyl.agents.utils.registry.create_llm",
+        lambda *a, **kw: create_llm("mock", sequential_responses=steps),
     )
     response = client.post("/api/v1/sibyl/ask", json={"message": "How do I choose news sources?"})
     assert response.status_code == 200, response.text
@@ -266,7 +268,8 @@ def test_native_tool_rejection_allows_model_to_correct_an_unknown_order_id(clien
         "There are no retained orders to inspect. Open Trade → Executions.",
     ]
     monkeypatch.setattr(
-        "sibyl.agents.utils.registry.create_llm", lambda *a, **kw: create_llm("mock", sequential_responses=steps)
+        "sibyl.agents.utils.registry.create_llm",
+        lambda *a, **kw: create_llm("mock", sequential_responses=steps),
     )
     response = client.post("/api/v1/agents/ask", json={"module": "broker", "message": "Check my order"})
     assert response.status_code == 200, response.text
@@ -298,3 +301,49 @@ def test_exchange_setup_keeps_actionable_guidance_in_native_bounded_context(clie
     assert response.status_code == 200, response.text
     assert len(step) == 2
     assert response.json()["evidence"]["exchange"]["support"]  # Full receipt survives the preview.
+
+
+@pytest.mark.parametrize(
+    "module,tool,topic,url,phrase",
+    [
+        ("analyst", "page_help", "live", "/markets", "closed"),
+        ("broker", "trade_help", "advanced", "/trade", "OCO"),
+        ("broker", "trade_help", "replace", "/trade?tab=executions", "TOTAL"),
+    ],
+)
+def test_native_live_and_advanced_help_needs_no_provider_access(
+    client, monkeypatch, module, tool, topic, url, phrase
+):
+    forbid_reads(client, monkeypatch)
+    evidence = tool_call(client, module, tool, topic=topic)
+    assert evidence["url"] == url
+    assert phrase in " ".join(evidence["steps"])
+
+
+def test_native_analyst_live_evidence_distinguishes_no_viewer_from_an_outage(client, monkeypatch):
+    forbid_reads(client, monkeypatch)
+    evidence = tool_call(client, "analyst", "live_market_status")
+    assert evidence["items"] == [] and "viewed" in evidence["scope"]
+
+
+def test_native_broker_oco_tool_reads_group_and_individual_leg_evidence(manual_client, monkeypatch):
+    from test_advanced_orders import Venue, linked
+
+    from sibyl.models import ConnectionCreate
+
+    owner = manual_client.app.state.services
+    owner.settings.allow_live_trading = True
+    connection = owner.store.add_connection(
+        ConnectionCreate(exchange="binance-testnet", label="Test evidence", api_key="FAKE", secret="FAKE")
+    )
+    owner.market._clients[connection.id] = Venue()
+    group = owner.trading.advanced.preview(linked(connection))
+    group = owner.trading.advanced.execute(group["id"], group["confirmation"])
+    forbid_reads(manual_client, monkeypatch)
+    evidence = tool_call(manual_client, "broker", "advanced_order_evidence", list_id=group["id"])
+    assert evidence["items"][0]["id"] == group["id"]
+    assert len(evidence["items"][0]["orders"]) == 2
+    assert {order["request"]["order_type"] for order in evidence["items"][0]["orders"]} == {
+        "stop_loss_limit",
+        "take_profit_limit",
+    }

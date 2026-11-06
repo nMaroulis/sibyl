@@ -827,6 +827,9 @@ export type ExchangeSupportGroup = {
   }[];
 };
 export type ExchangeProvider = {
+  conditional_orders: boolean;
+  oco_orders: boolean;
+  replace_orders: boolean;
   id: string;
   name: string;
   note: string;
