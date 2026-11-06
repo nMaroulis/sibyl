@@ -91,9 +91,9 @@ class ForecastBundles:
             data["candles"],
         )
         body = TrainForecast(**model["request"])
-        if metadata["engine"] != engine_for(body.feature_set) or artifact["engine"] != engine_for(
-            body.feature_set
-        ):
+        if metadata["engine"] != engine_for(body.feature_set, body.family) or artifact[
+            "engine"
+        ] != engine_for(body.feature_set, body.family):
             raise ValueError("This forecast engine is not supported by the installed app.")
         expected_parameters = parameters(body)
         if (

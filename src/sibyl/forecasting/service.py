@@ -179,6 +179,11 @@ class ForecastModels:
             "model": model["metadata"],
             "partitions": artifact["partitions"],
             "notes": artifact["notes"],
+            **(
+                {"training": [{"horizon": row["horizon"], **row["training"]} for row in artifact["models"]]}
+                if artifact["parameters"].get("family") == "mlp"
+                else {}
+            ),
             "evaluation": [
                 {key: value for key, value in item.items() if key != "trace"}
                 for item in artifact["evaluation"]

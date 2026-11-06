@@ -234,7 +234,12 @@ class BriefingScheduler:
                     occurrence["id"],
                     schedule,
                     run,
-                    briefing_text(definition["title"], run, schedule["delivery_format"]),
+                    briefing_text(
+                        definition["title"],
+                        run,
+                        schedule["delivery_format"],
+                        document=schedule.get("telegram_format") == "document",
+                    ),
                     now,
                 )
                 delivery_id = delivery["id"]

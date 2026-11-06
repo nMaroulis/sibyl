@@ -19,6 +19,7 @@ class BriefingSchedule(Request):
     weekday: int = Field(default=0, ge=0, le=6, strict=True)
     telegram: bool = Field(default=False, strict=True)
     telegram_target: TelegramTarget | None = None
+    telegram_format: Literal["text", "document"] = "text"
     delivery_format: Literal["summary", "full"] = "summary"
     keep_reports: int = Field(default=20, ge=5, le=40, strict=True)
 

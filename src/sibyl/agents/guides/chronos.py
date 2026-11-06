@@ -16,7 +16,7 @@ GUIDES = {
             "Archive model hides the version from the default picker and disables new forecasts. Show archived versions → Restore model makes it selectable again. Outputs, evaluations and existing outcome monitors stay retained; archiving does not free storage or stop monitors.",
         ),
         (
-            "16 MiB per bundle, known ridge engine, 360–5,000 closed consecutive daily candles and existing workspace budgets apply. Bundles include price research, not API credentials or chat models.",
+            "16 MiB per bundle, known ridge/neural engine, 360–5,000 closed consecutive daily candles and existing workspace budgets apply. Bundles include price research, not API credentials or chat models.",
         ),
     ),
     "outcomes": Guide(
@@ -86,7 +86,7 @@ GUIDES = {
             "Edit model settings explicitly for another experiment. AI model selection changes the assistant, not the numerical forecast model.",
         ),
         (
-            "Trained autoregressive ridge is available. Neural/ARIMA models, automated recalibration and calibrated drift monitoring remain pending.",
+            "Ridge is the default. Model settings & assumptions → Numerical model offers a trained 8-unit tanh network with 120 fixed Adam steps, training-only scaling and a 1,000-candle / 14-day cap. Inspect Neural training evidence and independent test benchmarks. ARIMA, other neural families and automated recalibration remain pending.",
         ),
     ),
 }

@@ -10,7 +10,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'sibyl',
       title: 'Sibyl beyond the dashboard',
-      text: 'WhatsApp, Discord, Slack, Signal and Email clients, plus richer Telegram media and delivery controls. Telegram private text chats are available now in Settings → Messaging.',
+      text: 'WhatsApp, Discord, Slack, Signal and Email clients, plus incoming Telegram media. Private text chats, opt-in outgoing text documents and actual delivery review are available now in Settings → Messaging.',
     },
     {
       module: 'sibyl',
@@ -40,7 +40,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'forecast',
       title: 'More forecasting models and evaluation',
-      text: 'Neural/ARIMA models, automatic recalibration and calibrated drift monitoring. Live prospective outcome tracking is implemented. Versioned autoregressive ridge models, chronological and historical rolling evaluation, empirical bands and saved forecasts are available now.',
+      text: 'ARIMA, other neural families, automatic recalibration and calibrated drift monitoring. Live prospective outcome tracking is implemented. Versioned ridge and bounded small neural models, chronological and historical rolling evaluation, empirical bands and saved forecasts are available now.',
     },
     {
       module: 'knowledge',
@@ -70,7 +70,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'alerts',
       title: 'More signals, more ways to hear',
-      text: 'Broader risk metrics, silent-worker outage detection and optional external delivery. Value-floor, concentration and observed-value drawdown watches, price/crossing rules, strategy/connection alerts and the persistent in-app inbox are available now.',
+      text: 'Broader risk enforcement, silent-worker outage detection and more delivery channels. Hourly basket volatility/expected-shortfall alerts, value-floor, concentration and observed-value drawdown watches, price/crossing rules, strategy/connection alerts, opt-in Telegram delivery and the persistent in-app inbox are available now.',
     },
     {
       module: 'workspace',

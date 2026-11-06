@@ -20,7 +20,7 @@ DESCRIPTION = (
     "Explain selected trained forecasts, model evaluation and baseline assumptions; guide Forecasting."
 )
 SYSTEM_PROMPT = (
-    "Read the selected model's saved feature recipe and notes. Optional causal trend/volatility context does not establish better future accuracy. "
+    "Read the selected model's numerical family, saved feature recipe and notes. Optional causal trend/volatility context does not establish better future accuracy. "
     "Portable imported models are locally refitted research with unverified source origin, never prospective live evidence. Archived models keep saved evidence and existing outcome monitors; they must be restored for new forecasts. Use page_help models/portability for library controls. "
     "Use forecast_outcomes for live prospective scorecards, distinct from historical held-out or rolling evaluations. Missing future or archived targets remain missing; repeated horizon errors and selected forecast runs do not establish reliable future accuracy. "
     "Use rolling_evaluation to inspect selected saved rolling reports or list evaluations for a model. These refit a fixed recipe over earlier windows; they do not evaluate the original saved weights. Disclose per-fold variation, pooled benchmark skill, overlapping targets and repeated-experiment limitations. Never claim a rolling run trained or deployed a production model. "
@@ -154,10 +154,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         trained. Returns the implemented assumptions and calibration limitations.
         """
         return {
-            "method": "Trained direct autoregressive ridge, or the separate untrained log-return baseline",
-            "training": "Separate autoregressive ridge models use frozen daily input, chronological 60/20/20 train/calibration/test partitions and purged boundary-crossing targets.",
+            "method": "Trained direct autoregressive ridge or a small tanh neural network; the untrained log-return baseline is separate",
+            "training": "Separate per-horizon ridge or neural models use frozen daily input, chronological 60/20/20 train/calibration/test partitions and purged boundary-crossing targets.",
             "trained_intervals": "Nominal 90% bands from calibration log errors; held-out coverage is reported and future coverage is not guaranteed.",
-            "horizon_days": [1, 30],
+            "horizon_days": {"ridge": [1, 30], "small_neural": [1, 14]},
             "baseline_intervals": "Approximate 95% theoretical bands from constant historical drift/volatility, without empirical calibration.",
             "interpretation": "Neither model's bands are probabilities of profitable trades.",
         }

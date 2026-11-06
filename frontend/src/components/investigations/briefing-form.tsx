@@ -48,6 +48,7 @@ export function BriefingForm({
     timezone: initial?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC',
     weekday: initial?.weekday ?? 0,
     telegram: initial?.telegram ?? false,
+    telegram_format: initial?.telegram_format ?? 'text',
     delivery_format: initial?.delivery_format ?? 'summary',
     keep_reports: initial?.keep_reports ?? 20,
   });
@@ -205,6 +206,26 @@ export function BriefingForm({
         {targetNotice && <p className="footnote">{targetNotice}</p>}
         {values.telegram ? (
           <>
+            <label className="briefing-format">
+              Telegram delivery
+              <select
+                value={values.telegram_format}
+                disabled={busy}
+                onChange={(e) =>
+                  setValues({
+                    ...values,
+                    telegram_format: e.target.value as BriefingInput['telegram_format'],
+                  })
+                }
+              >
+                <option value="text">Text messages</option>
+                <option value="document">One text document · up to 64 KiB</option>
+              </select>
+              <small>
+                Documents preserve the complete selected content. Oversized documents stay local
+                with a delivery error; they are never silently truncated.
+              </small>
+            </label>
             <label className="briefing-format">
               Message content
               <select

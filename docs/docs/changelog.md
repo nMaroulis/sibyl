@@ -51,11 +51,15 @@ docker compose up --build
 
 :::note[Latest Release]
 
-Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, continuous position-carrying replay, portable forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout.
+Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout.
 
 :::
 
 ### Added
+
+- Optional trained small neural forecasts: an eight-unit tanh network fitted locally with fixed-seed Adam, training-only normalization, chronological calibration and independent test/rolling benchmarks. The UI exposes real training loss, numerical family and bounded portable refits; ridge remains the default.
+- Opt-in hourly historical basket-risk watches for annualized volatility and daily 95% expected shortfall, using up to eight currently held assets, exact-source conversion history, complete fresh valuation, clear subset labels, hysteresis and retained inputs. These descriptive watches never enforce trading policy or guarantee future losses.
+- Optional Telegram `.txt` documents for long conversation replies and scheduled research briefings, sent with direct HTTP multipart uploads. Complete UTF-8 content is capped at 64 KiB; actual confirmations, uncertainty, rate limits, original recipient binding and unsent withdrawal reuse the existing durable outboxes.
 
 - Coinbase Advanced Trade public ticker previews and native five-minute candles through the existing bounded stream lifecycle. Exact spot IDs, connection-wide sequence checks including subscription acknowledgments, sanitized rejection, public USDC-alias refusal and same-source REST fallback preserve attribution. A bounded actual unauthenticated BTC-USD ticker/candle observation passed through the production transport/parser.
 - Optional continuous single-market walk-forward deployment replay carrying cash, units and entry cost through parameter updates, with actual fills/fees, global trade cap, transition balances, fixed-setting comparison and retained independent-window scores. This historical replay starts no live strategy.

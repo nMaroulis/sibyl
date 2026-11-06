@@ -18,6 +18,8 @@ def alert_text(notice):
         ]
     elif kind == "risk":
         metric = {
+            "volatility": "Basket annualized historical volatility",
+            "tail_loss": "Basket historical daily 95% expected shortfall",
             "value_floor": "Account value floor",
             "concentration": "Asset concentration",
             "drawdown": "Observed-value drawdown",
@@ -36,6 +38,14 @@ def alert_text(notice):
             f"Observed: {notice['metric_value']:g} {unit}",
             f"Limit: {notice['threshold']:g} · recovery: {notice['reset_threshold']:g} {unit}",
         ]
+        if notice.get("basket_assets"):
+            evidence = notice["basket"]
+            lines += [
+                "Selected basket: " + ", ".join(notice["basket_assets"]),
+                f"{evidence['observations']} daily returns · {evidence['tail_observations']} tail observations · {notice['history_days']} requested days",
+                f"History: {evidence['start']} → {evidence['end']} (end exclusive)",
+                evidence["coverage_note"],
+            ]
         if notice.get("asset"):
             lines.append("Asset: " + notice["asset"])
         lines.append("Accounts: " + ", ".join(account["label"] for account in notice["accounts"]))

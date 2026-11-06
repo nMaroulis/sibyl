@@ -120,6 +120,26 @@ export function RiskEvidence({
               </div>
             </>
           )}
+          {sample.basket && (
+            <div className="notice">
+              <strong>Historical basket · {sample.basket.selected_assets.join(' + ')}</strong>
+              <p>{sample.basket.coverage_note}</p>
+              <p className="footnote">
+                {sample.basket.observations} daily returns · {sample.basket.tail_observations} tail
+                observations · {date(sample.basket.start)} → {date(sample.basket.end)} (end
+                exclusive) · {number(sample.basket.share_of_account_value_pct, 1)}% of current
+                account value.
+              </p>
+              <p className="footnote">
+                {sample.basket.assets
+                  .map((a) => `${a.asset} ${number(a.weight_pct, 1)}%`)
+                  .join(' · ')}{' '}
+                · annualized volatility {number(sample.basket.annualized_volatility_pct, 2)}% ·
+                daily 95% expected shortfall {number(sample.basket.expected_shortfall_95_pct, 2)}%.
+              </p>
+              <code>{sample.basket.fingerprint.slice(0, 16)}…</code>
+            </div>
+          )}
           {metric === 'drawdown' && (
             <p className="footnote">
               Observed peak <span className="monetary">{number(sample.peak ?? 0, 2)} USDT</span> ·{' '}

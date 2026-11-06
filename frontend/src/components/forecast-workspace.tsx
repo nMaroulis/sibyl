@@ -70,6 +70,7 @@ export function ForecastWorkspace() {
   const [datasetId, setDatasetId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [lags, setLags] = useState(14);
+  const [family, setFamily] = useState<'ridge' | 'mlp'>('ridge');
   const [alpha, setAlpha] = useState(1);
   const [featureSet, setFeatureSet] = useState<'returns' | 'returns_context'>('returns');
   const [maxHorizon, setMaxHorizon] = useState(30);
@@ -89,8 +90,9 @@ export function ForecastWorkspace() {
     setError('');
   };
   const availableDatasets =
-    datasets.data?.items.filter((d) => d.timeframe === '1d' && d.count >= 360 && d.count <= 5000) ??
-    [];
+    datasets.data?.items.filter(
+      (d) => d.timeframe === '1d' && d.count >= 360 && d.count <= (family === 'mlp' ? 1000 : 5000),
+    ) ?? [];
   const doTrain = async (demo = false) => {
     setBusy('train');
     setError('');
@@ -103,6 +105,7 @@ export function ForecastWorkspace() {
         symbol: input === 'saved_dataset' && !demo ? dataset?.symbol : symbol.toUpperCase().trim(),
         candles: input === 'saved_dataset' && !demo ? dataset?.count : candles,
         lags,
+        family,
         alpha,
         max_horizon: maxHorizon,
         feature_set: featureSet,
@@ -164,7 +167,7 @@ export function ForecastWorkspace() {
     <Panel className="forecast-training-panel">
       <PanelTitle
         title="Train a daily model"
-        subtitle="Direct autoregressive ridge · no additional ML dependencies"
+        subtitle="Train a numerical price model · no LLM or additional ML dependencies"
         action={<Badge>60 / 20 / 20</Badge>}
       />
       <p className="footnote">
@@ -196,7 +199,7 @@ export function ForecastWorkspace() {
             </select>
             <small>
               {datasets.error ||
-                'Uses the entire immutable dataset. Only 360–5,000 consecutive daily candles are eligible.'}
+                'Uses the entire immutable dataset. Ridge accepts 360–5,000 consecutive daily candles; the small neural model accepts up to 1,000.'}
             </small>
           </label>
         ) : (
@@ -226,6 +229,21 @@ export function ForecastWorkspace() {
         <summary>Model settings & assumptions</summary>
         <div className="forecast-training-grid">
           <label>
+            Numerical model
+            <select
+              value={family}
+              onChange={(e) => {
+                const next = e.target.value as typeof family;
+                setFamily(next);
+                if (next === 'mlp') setMaxHorizon((h) => Math.min(h, 14));
+                setDatasetId('');
+              }}
+            >
+              <option value="ridge">Ridge · linear autoregression</option>
+              <option value="mlp">Small neural network · 8 tanh units</option>
+            </select>
+          </label>
+          <label>
             Price features
             <select
               value={featureSet}
@@ -246,7 +264,7 @@ export function ForecastWorkspace() {
             </select>
           </label>
           <label>
-            Ridge penalty
+            Regularization penalty
             <input
               type="number"
               min="0.01"
@@ -259,7 +277,7 @@ export function ForecastWorkspace() {
           <label>
             Maximum forecast horizon
             <select value={maxHorizon} onChange={(e) => setMaxHorizon(Number(e.target.value))}>
-              {[7, 14, 30].map((n) => (
+              {(family === 'mlp' ? [7, 14] : [7, 14, 30]).map((n) => (
                 <option key={n} value={n}>
                   {n} days
                 </option>
@@ -270,9 +288,11 @@ export function ForecastWorkspace() {
         <p className="footnote">
           Optional context adds mean return, volatility, downside RMS, positive-return share,
           drawdown and distance from the trailing mean, using only the same past window. Extra
-          features are not guaranteed to improve results. Each horizon is fitted separately. No
-          final full-data refit or automatic best-model selection. Repeated experiments can overfit
-          the test period.
+          features are not guaranteed to improve results. The optional neural model uses 8 tanh
+          units, a fixed seed and 120 full-batch Adam steps, with training-only scaling and a
+          1,000-candle / 14-day limit. It may perform worse than ridge or the naïve baseline. Each
+          horizon is fitted separately. No final full-data refit or automatic best-model selection.
+          Repeated experiments can overfit the test period.
         </p>
       </details>
       <div className="forecast-workspace-actions">
@@ -419,6 +439,41 @@ export function ForecastWorkspace() {
                     {report.model.fingerprint.slice(0, 14)}…
                   </code>
                 </div>
+                {report.training && (
+                  <details className="forecast-advanced">
+                    <summary>Neural training evidence</summary>
+                    <p className="footnote">
+                      Training objective only · lower loss does not establish held-out skill. Fixed
+                      iterations; the test window never chooses weights.
+                    </p>
+                    <div className="table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Horizon</th>
+                            <th>Architecture</th>
+                            <th>Optimizer</th>
+                            <th>Initial loss</th>
+                            <th>Final loss</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {report.training.map((fit) => (
+                            <tr key={fit.horizon}>
+                              <td>{fit.horizon}d</td>
+                              <td>{fit.hidden_units} tanh units</td>
+                              <td>
+                                {fit.epochs} steps · {fit.optimizer}
+                              </td>
+                              <td>{number(fit.initial_loss, 5)}</td>
+                              <td>{number(fit.final_loss, 5)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                )}
                 <div className="forecast-partitions">
                   {Object.entries(report.partitions).map(([key, value]) => (
                     <div key={key}>
@@ -515,7 +570,10 @@ export function ForecastWorkspace() {
                             <td>
                               {
                                 {
-                                  model: 'Trained ridge model',
+                                  model:
+                                    report.model.parameters.family === 'mlp'
+                                      ? 'Trained neural model'
+                                      : 'Trained ridge model',
                                   naive: 'Naïve · last close',
                                   drift: 'Training-mean log drift',
                                 }[method]

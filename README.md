@@ -71,7 +71,7 @@ Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Boll
 
 Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Saved conversations, live activity, consultation trails and run details make the work inspectable.
 
-Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional delivery to your private Telegram bot chat. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
+Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional text-message or document delivery to your private Telegram bot chat. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
 
 Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
 
@@ -91,7 +91,7 @@ Developers can run [repeatable native agent checks](docs/docs/developers/agent-e
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
-Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot. WhatsApp, Discord, Slack, Signal and Email setup previews are marked unavailable.
+Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot, with optional text documents for long replies. WhatsApp, Discord, Slack, Signal and Email setup previews are marked unavailable.
 
 [Sibyl guide](docs/docs/guides/sibyl.md) · [Model setup](docs/docs/guides/settings.md) · [Telegram](docs/docs/guides/telegram.md)
 
@@ -105,11 +105,11 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 
 ### Forecast · Train, evaluate, inspect
 
-Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
+Fit lightweight daily ridge models or an optional small neural network from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
 
 Move models between workspaces with bounded JSON bundles that verify inputs and refit locally, with imported sources clearly labeled unverified. Archive and restore versions without deleting saved evidence.
 
-Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families and automated recalibration are pending.
+Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; ARIMA, other neural families and automated recalibration are pending.
 
 Inspect a saved recipe across successive periods with expanding or fixed training windows, pooled benchmark errors and per-fold charts. Rolling reports retain their exact inputs and fitting evidence; evaluation never deploys or replaces a model.
 
@@ -127,7 +127,7 @@ Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
 ### Alerts · Keep useful signals close
 
-Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
+Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Hourly historical basket watches also track annualized volatility and daily 95% expected shortfall, with explicit asset selection and dated evidence. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
 
 [Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 

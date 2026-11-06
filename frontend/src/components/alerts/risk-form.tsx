@@ -67,6 +67,9 @@ export function RiskForm({
         : initialSources.find((s) => s.available)?.id || ''),
   );
   const [metric, setMetric] = useState<RiskMetric>(rule?.metric || 'value_floor');
+  const [basket, setBasket] = useState(rule?.basket_assets?.join(', ') || '');
+  const [days, setDays] = useState(rule?.history_days || 90);
+  const historical = metric === 'volatility' || metric === 'tail_loss';
   const [asset, setAsset] = useState(rule?.asset || '');
   const [threshold, setThreshold] = useState(rule ? String(rule.threshold) : '');
   const [reset, setReset] = useState(rule ? String(rule.reset_threshold) : '');
@@ -107,6 +110,8 @@ export function RiskForm({
             account_ids: ids,
             source,
             metric,
+            basket_assets: historical ? basket.split(/[ ,]+/).filter(Boolean) : [],
+            history_days: days,
             threshold: Number(threshold),
             ...(reset !== '' ? { reset_threshold: Number(reset) } : {}),
             asset: metric === 'concentration' ? asset : '',
@@ -213,9 +218,38 @@ export function RiskForm({
           <option value="concentration">An asset reaching an allocation limit</option>
           <option value="hhi">Overall asset concentration · HHI</option>
           <option value="top_three">Top three assets reaching a combined allocation limit</option>
+          <option value="volatility">Basket annualized historical volatility</option>
+          <option value="tail_loss">Basket historical 95% expected shortfall · daily</option>
           <option value="drawdown">Account value falling from an observed peak</option>
         </select>
       </label>
+      {historical && (
+        <div className="form-row">
+          <label>
+            Basket assets · up to 8
+            <input
+              required
+              value={basket}
+              placeholder="BTC, ETH, USDT"
+              maxLength={110}
+              onChange={(e) => setBasket(e.target.value.toUpperCase())}
+            />
+            <small>
+              Currently held assets, separated by commas. Unselected holdings are excluded.
+            </small>
+          </label>
+          <label>
+            Daily history
+            <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+              {[60, 90, 180].map((n) => (
+                <option key={n} value={n}>
+                  {n} days
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <div className="form-row">
         {metric === 'concentration' && (
           <label>
@@ -232,20 +266,24 @@ export function RiskForm({
           </label>
         )}
         <label>
-          {metric === 'value_floor'
-            ? 'Value floor · USDT'
-            : metric === 'concentration'
-              ? 'Allocation limit · %'
-              : metric === 'hhi'
-                ? 'HHI limit · 0–100'
-                : metric === 'top_three'
-                  ? 'Top-three allocation limit · %'
-                  : 'Drawdown limit · %'}
+          {historical
+            ? metric === 'volatility'
+              ? 'Annualized volatility limit · %'
+              : 'Daily expected shortfall limit · %'
+            : metric === 'value_floor'
+              ? 'Value floor · USDT'
+              : metric === 'concentration'
+                ? 'Allocation limit · %'
+                : metric === 'hhi'
+                  ? 'HHI limit · 0–100'
+                  : metric === 'top_three'
+                    ? 'Top-three allocation limit · %'
+                    : 'Drawdown limit · %'}
           <input
             type="number"
             required
             min="0.00000001"
-            max={metric === 'value_floor' ? 1e15 : 100}
+            max={metric === 'value_floor' ? 1e15 : metric === 'volatility' ? 10000 : 100}
             step="any"
             placeholder="Enter your limit"
             value={threshold}
@@ -255,13 +293,15 @@ export function RiskForm({
         </label>
       </div>
       <p className="footnote">
-        {metric === 'hhi' || metric === 'top_three'
-          ? 'Uses every valued asset in the fixed account set, including cash and stablecoins. HHI measures squared value weights on a 0–100 scale; top-three adds the three largest weights. This is value concentration, not correlation-adjusted risk.'
-          : metric === 'drawdown'
-            ? 'The first positive complete check establishes the peak. Deposits and withdrawals affect this account-value metric; it is not investment return.'
-            : metric === 'concentration'
-              ? 'Allocation uses the complete selected account value. An unheld asset has 0% weight; an empty wallet has no percentage assessment.'
-              : 'Values use observed conversion rates into USDT; USD and other stablecoins are not assumed equal.'}
+        {historical
+          ? 'Hourly checks use current basket weights and closed daily returns from the pinned source. At least 31 common consecutive closes, history at most two days behind and complete fresh account valuation are required. Volatility uses √365; expected shortfall averages the observed worst 5% daily tail, including ties. These describe a hypothetical rebalanced basket, not actual account returns or a future maximum loss.'
+          : metric === 'hhi' || metric === 'top_three'
+            ? 'Uses every valued asset in the fixed account set, including cash and stablecoins. HHI measures squared value weights on a 0–100 scale; top-three adds the three largest weights. This is value concentration, not correlation-adjusted risk.'
+            : metric === 'drawdown'
+              ? 'The first positive complete check establishes the peak. Deposits and withdrawals affect this account-value metric; it is not investment return.'
+              : metric === 'concentration'
+                ? 'Allocation uses the complete selected account value. An unheld asset has 0% weight; an empty wallet has no percentage assessment.'
+                : 'Values use observed conversion rates into USDT; USD and other stablecoins are not assumed equal.'}
       </p>
       <details className="risk-advanced">
         <summary>Recovery & notification controls</summary>
@@ -272,7 +312,7 @@ export function RiskForm({
             <input
               type="number"
               min="0"
-              max={metric === 'value_floor' ? 1e16 : 100}
+              max={metric === 'value_floor' ? 1e16 : metric === 'volatility' ? 10000 : 100}
               step="any"
               value={reset}
               disabled={busy}
@@ -336,7 +376,9 @@ export function RiskForm({
         <span>
           {rule
             ? 'Changes save paused. Resume resets the peak and incident state.'
-            : 'Starting a watch authorizes background spot-balance and quote reads, roughly once a minute.'}{' '}
+            : historical
+              ? 'Starting this watch authorizes hourly balance, quote and daily-history reads.'
+              : 'Starting a watch authorizes background spot-balance and quote reads, roughly once a minute.'}{' '}
           Complete fresh valuation is required. No orders are submitted. Telegram delivery is
           selected separately on each saved rule.
         </span>
@@ -350,7 +392,12 @@ export function RiskForm({
         <button
           className="button primary"
           disabled={
-            busy || !ids.length || !source || !threshold || (metric === 'concentration' && !asset)
+            busy ||
+            (historical && !basket.trim()) ||
+            !ids.length ||
+            !source ||
+            !threshold ||
+            (metric === 'concentration' && !asset)
           }
         >
           <ShieldAlert size={15} />

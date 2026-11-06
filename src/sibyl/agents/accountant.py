@@ -136,14 +136,18 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "AND (?='' OR rule_id=?) ORDER BY created_at DESC,rowid DESC LIMIT 10",
                 (rule_id, rule_id),
             ).fetchall()
+        evidence = portfolio.risk_alerts.journal.evidence(rule_id) if rule_id else None
+        if evidence and (evidence.get("sample") or {}).get("basket"):
+            # Full converted observations remain in the UI journal, outside the model context.
+            evidence["sample"]["basket"].pop("converted_closes", None)
         return {
             "rules": portfolio.risk_alerts.rules(),
             "recent_notifications": [
                 {**json.loads(row["payload"]), "created_at": row["created_at"]} for row in rows
             ],
-            "evidence": portfolio.risk_alerts.journal.evidence(rule_id) if rule_id else None,
+            "evidence": evidence,
             "url": "/alerts?tab=risk",
-            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. This tool cannot change rules, trade or send messages. Optional Telegram delivery is selected separately for each rule.",
+            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. Historical basket watches use current weights, dated consecutive daily history and empirical tails, never future loss guarantees. This tool cannot change rules, trade or send messages. Optional Telegram delivery is selected separately for each rule.",
         }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:

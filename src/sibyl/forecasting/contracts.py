@@ -16,6 +16,7 @@ class TrainForecast(Request):
     symbol: str = Field(default="BTC/USDT", pattern=r"^[A-Z0-9]{1,12}/[A-Z0-9]{1,12}$")
     candles: int = Field(default=720, ge=360, le=5000, strict=True)
     lags: Literal[5, 14, 30] = 14
+    family: Literal["ridge", "mlp"] = "ridge"
     feature_set: Literal["returns", "returns_context"] = "returns"
     max_horizon: int = Field(default=30, ge=1, le=30, strict=True)
     alpha: float = Field(default=1.0, ge=0.01, le=1000, strict=True)
@@ -35,6 +36,8 @@ class TrainForecast(Request):
             raise ValueError(
                 "Current and Demo pages support at most 720 candles. Use a saved dataset for more."
             )
+        if self.family == "mlp" and (self.candles > 1000 or self.max_horizon > 14):
+            raise ValueError("The small neural model supports at most 1,000 candles and 14 forecast days.")
         return self
 
 

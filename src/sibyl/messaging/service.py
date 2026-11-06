@@ -9,6 +9,7 @@ from uuid import uuid4
 import httpx
 
 from sibyl.agents.utils.conversations import SibylRequest
+from sibyl.messaging.documents import add_document_columns, document_bytes
 from sibyl.messaging.outbound import NotificationOutbox, chunks
 from sibyl.messaging.reply_review import ReplyReview, record_reply
 from sibyl.messaging.settings import MessagingSettings
@@ -45,6 +46,7 @@ class TelegramService:
                     UNIQUE(revision,update_id,part)
                 );
             """)
+            add_document_columns(db, "telegram_outbox")
             db.execute(
                 "UPDATE telegram_outbox SET state='uncertain',error='Delivery was interrupted. Check Telegram before deciding to resend.' WHERE state='sending'"
             )
@@ -245,6 +247,7 @@ class TelegramService:
                             "received_at": time.time(),
                             "bot_id": profile.get("bot_id"),
                             "bot_username": profile.get("bot_username"),
+                            "long_reply_document": profile.get("long_reply_document", False),
                         }
                         if accepted
                         else {}
@@ -264,12 +267,27 @@ class TelegramService:
     def _complete(db, revision, identity, chat, answer):
         """Persist response chunks and completion atomically before any provider send."""
         text = str(answer)
-        if len(text) > 40_000:
+        saved = db.execute(
+            "SELECT payload FROM telegram_updates WHERE revision=? AND update_id=?", (revision, identity)
+        ).fetchone()
+        as_document = bool(
+            saved
+            and json.loads(saved[0]).get("long_reply_document")
+            and len(text.encode("utf-16-le")) // 2 > 4000
+        )
+        filename = f"sibyl-reply-{identity}.txt" if as_document else None
+        if as_document:
+            try:
+                document_bytes(text, filename)
+            except ValueError:
+                text = "This answer exceeds Sibyl's 64 KiB text attachment limit. Read the complete answer in Sibyl → Sibyl conversations. No attachment was sent."
+                as_document, filename = False, None
+        elif len(text) > 40_000:
             text = text[:39_900] + "\n[Answer shortened. Read the full answer in Sibyl.]"
-        for part, chunk in enumerate(chunks(text)):
+        for part, chunk in enumerate([text] if as_document else chunks(text)):
             db.execute(
-                "INSERT OR IGNORE INTO telegram_outbox(revision,update_id,part,chat_id,text,state) VALUES(?,?,?,?,?,'pending')",
-                (revision, identity, part, chat, chunk),
+                "INSERT OR IGNORE INTO telegram_outbox(revision,update_id,part,chat_id,text,state,format,filename) VALUES(?,?,?,?,?,'pending',?,?)",
+                (revision, identity, part, chat, chunk, "document" if as_document else "text", filename),
             )
         record_reply(db, revision, identity, chat)
         db.execute(
@@ -360,7 +378,12 @@ class TelegramService:
                 "UPDATE telegram_outbox SET state='sending',attempts=attempts+1 WHERE id=?", (row["id"],)
             )
         try:
-            native = await self.client(profile).send(row["chat_id"], row["text"])
+            client = self.client(profile)
+            native = (
+                await client.send_document(row["chat_id"], row["text"], row["filename"])
+                if row["format"] == "document"
+                else await client.send(row["chat_id"], row["text"])
+            )
             with self.store.db() as db:
                 db.execute(
                     "UPDATE telegram_outbox SET state='sent',native_id=? WHERE id=?", (native, row["id"])

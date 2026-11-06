@@ -4,6 +4,7 @@ export type BriefingInput = {
   timezone: string;
   weekday: number;
   telegram: boolean;
+  telegram_format: 'text' | 'document';
   delivery_format: 'summary' | 'full';
   keep_reports: number;
 };

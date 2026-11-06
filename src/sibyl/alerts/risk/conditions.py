@@ -51,6 +51,9 @@ def assess_risk(rule: dict, sample: dict, now: float) -> str | None:
             )
             sample.update(metric_value=None, peak=rule["peak"], peak_at=rule["peak_at"])
             return None
+    elif rule["metric"] in {"volatility", "tail_loss"}:
+        key = "annualized_volatility_pct" if rule["metric"] == "volatility" else "expected_shortfall_95_pct"
+        value = sample["basket"][key]
     elif rule["metric"] == "drawdown":
         if rule["peak"] <= 0:
             rule["evaluation_note"] = "Waiting for a positive observed account value to establish a peak."

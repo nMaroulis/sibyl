@@ -15,6 +15,8 @@ export type MessageDelivery = {
   reviews?: { decision: string; note: string; at: string; native_confirmation: false }[];
   error: string | null;
   parts: {
+    format?: 'text' | 'document';
+    filename?: string | null;
     part: number;
     state: string;
     attempts: number;
@@ -72,7 +74,9 @@ export function DeliveryReceipt({ delivery }: { delivery: MessageDelivery }) {
         {delivery.preview.length >= 240 && <small>Message preview · first 240 characters</small>}
         {delivery.parts.map((part) => (
           <div key={part.part} className="message-delivery-part">
-            <span>Part {part.part + 1}</span>
+            <span>
+              {part.format === 'document' ? `Document · ${part.filename}` : `Part ${part.part + 1}`}
+            </span>
             <Badge>{part.state}</Badge>
             <small>
               {part.attempts} attempt{part.attempts === 1 ? '' : 's'}

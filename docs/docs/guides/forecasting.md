@@ -93,3 +93,9 @@ In **Train model → Model settings & assumptions**, choose **Returns + trend & 
 The recipe is shown beside the saved model's engine and parameters. Training-only scaling, purged chronological train/calibration/test boundaries, empirical calibration bands and naive/drift comparisons still apply. Compare recorded held-out results; extra features can make performance worse. This is an optional ridge recipe, not a neural model or automatic feature selection.
 
 Exact reruns, rolling studies, saved/current-input forecasts, portable bundle imports and prospective tracking keep that model's feature recipe. Older returns-only artifacts remain supported unchanged. Chronos can explain which recipe a selected model actually uses.
+
+## Try a small neural model
+
+Open **Train model → Model settings & assumptions → Numerical model** and choose **Small neural network**. Ridge stays the default. The optional network learns eight tanh hidden units from the same causal return features, with a fixed seed and 120 Adam steps. It needs no LLM, GPU or extra ML package. Inputs are limited to 360–1,000 closed consecutive daily candles and forecasts to 14 days; current/Demo pages retain their 720-candle limit.
+
+**Neural training evidence** shows actual initial/final training objective and architecture per horizon. A lower training loss is not proof of predictive skill: compare the independent test results with naive/drift, inspect calibrated coverage, and run rolling evaluation. The calibration/test data never choose weights, training normalization or iteration count. The selected family is retained through exact-input reruns, saved forecasts, portable local refits and Chronos evidence. Demo prices remain explicitly synthetic. Other neural families and ARIMA are pending.

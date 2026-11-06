@@ -45,7 +45,8 @@ class DeliveryReview:
         return [
             dict(row)
             for row in db.execute(
-                "SELECT part,text FROM message_delivery_parts WHERE delivery_id=? ORDER BY part", (identity,)
+                "SELECT part,text,format,filename FROM message_delivery_parts WHERE delivery_id=? ORDER BY part",
+                (identity,),
             )
         ]
 

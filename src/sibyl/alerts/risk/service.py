@@ -70,6 +70,7 @@ class RiskAlerts:
             page_size=50,
             limit=self.limit,
             check_interval_seconds=60,
+            historical_check_interval_seconds=3600,
             max_accounts=10,
             delivery="in_app",
             requires_running_server=True,
@@ -182,6 +183,25 @@ class RiskAlerts:
             threshold=rule["threshold"],
             reset_threshold=rule["reset_threshold"],
             action=action,
+            **(
+                {
+                    "basket_assets": rule["basket_assets"],
+                    "history_days": rule["history_days"],
+                    "basket": {
+                        key: sample["basket"][key]
+                        for key in (
+                            "observations",
+                            "start",
+                            "end",
+                            "tail_observations",
+                            "share_of_account_value_pct",
+                            "coverage_note",
+                        )
+                    },
+                }
+                if "basket" in sample
+                else {}
+            ),
             metric_value=sample["metric_value"],
             total=sample["total"],
             currency=sample["currency"],
@@ -247,6 +267,10 @@ class RiskAlerts:
                 sample["policy"] = {
                     key: current[key] for key in ("metric", "asset", "threshold", "reset_threshold", "label")
                 }
+                if "basket" in sample:
+                    sample["policy"].update(
+                        basket_assets=current["basket_assets"], history_days=current["history_days"]
+                    )
                 current["last_sample_id"] = self.journal.append(db, current, sample, self.clock())
                 current.update(
                     last_observation={
@@ -254,7 +278,7 @@ class RiskAlerts:
                         for key in ("total", "currency", "metric_value", "peak", "peak_at", "as_of")
                     },
                     failures=0,
-                    next_check=self.clock() + 60,
+                    next_check=self.clock() + (3600 if "basket" in sample else 60),
                 )
                 if action:
                     self._notify(db, current, sample, action)

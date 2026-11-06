@@ -1,4 +1,4 @@
-"""Direct multi-horizon ridge models with chronological train/calibration/test splits.
+"""Direct multi-horizon numerical models with chronological train/calibration/test splits.
 
 Features contain only daily log returns observed at the forecast origin. Every
 horizon excludes targets crossing a partition boundary. Scalers, coefficients and
@@ -12,22 +12,29 @@ import math
 
 import numpy as np
 
+from sibyl.forecasting.families.neural import TinyMLP
 from sibyl.market_data.archive import iso, milliseconds, now_ms, step_ms
 
 ENGINE = "chronos-ridge-1"
 CONTEXT_ENGINE = "chronos-ridge-context-1"
 
 
-def engine_for(feature_set="returns"):
+def engine_for(feature_set="returns", family="ridge"):
     """Keep the legacy engine exact and identify the optional richer causal recipe separately."""
     if feature_set not in {"returns", "returns_context"}:
         raise ValueError("Unsupported forecast feature recipe.")
+    if family not in {"ridge", "mlp"}:
+        raise ValueError("Unsupported numerical forecast family.")
+    if family == "mlp":
+        return "chronos-mlp-context-1" if feature_set == "returns_context" else "chronos-mlp-1"
     return CONTEXT_ENGINE if feature_set == "returns_context" else ENGINE
 
 
 def parameters(request):
     """Preserve legacy artifact parameters byte-for-byte when richer features are not selected."""
     values = {key: getattr(request, key) for key in ("lags", "alpha", "max_horizon")}
+    if request.family != "ridge":
+        values["family"] = request.family
     if request.feature_set != "returns":
         values["feature_set"] = request.feature_set
     return values
@@ -107,8 +114,8 @@ def metrics(actual, predicted):
     return result
 
 
-def fit_horizon(logs, x, lags, alpha, horizon, training, calibration):
-    """Fit one causal ridge model and calibrate it using only the supplied earlier partitions."""
+def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ridge"):
+    """Fit one causal numerical model and calibrate it using only the supplied earlier partitions."""
     if len(training) < max(60, 3 * x.shape[1]) or len(calibration) < 20:
         raise ValueError("Use more training and calibration observations for this horizon.")
     raw = x[training - lags]
@@ -116,13 +123,21 @@ def fit_horizon(logs, x, lags, alpha, horizon, training, calibration):
     scale = np.where(scale < 1e-12, 1, scale)
     z = (raw - mean) / scale
     y = logs[training + horizon] - logs[training]
-    intercept = float(y.mean())
-    try:
-        coefficients = np.linalg.solve(z.T @ z + alpha * np.eye(x.shape[1]), z.T @ (y - intercept))
-    except np.linalg.LinAlgError:
-        raise ValueError("This numerical fit did not converge. Choose another dataset or penalty.") from None
-
-    predictions = intercept + ((x - mean) / scale) @ coefficients
+    if family == "mlp":
+        fitted = TinyMLP.fit(z, y, alpha, horizon)
+        predictions = TinyMLP.predict(fitted, (x - mean) / scale)
+    elif family == "ridge":
+        intercept = float(y.mean())
+        try:
+            coefficients = np.linalg.solve(z.T @ z + alpha * np.eye(x.shape[1]), z.T @ (y - intercept))
+        except np.linalg.LinAlgError:
+            raise ValueError(
+                "This numerical fit did not converge. Choose another dataset or penalty."
+            ) from None
+        fitted = {"coefficients": coefficients.tolist(), "intercept": intercept}
+        predictions = intercept + ((x - mean) / scale) @ coefficients
+    else:
+        raise ValueError("Unsupported forecast family.")
     residuals = np.abs(logs[calibration + horizon] - logs[calibration] - predictions[calibration - lags])
     rank = math.ceil((len(residuals) + 1) * COVERAGE)
     if rank > len(residuals):
@@ -132,8 +147,7 @@ def fit_horizon(logs, x, lags, alpha, horizon, training, calibration):
         "horizon": horizon,
         "mean": mean.tolist(),
         "scale": scale.tolist(),
-        "coefficients": coefficients.tolist(),
-        "intercept": intercept,
+        **fitted,
         "radius": radius,
         "training_samples": len(training),
         "calibration_samples": len(calibration),
@@ -185,6 +199,8 @@ def train(candles, request):
     """Fit independently for each horizon and retain reproducible artifacts and test evidence."""
     logs, times = validate(candles, 360)
     n, lags = len(logs), request.lags
+    if request.family == "mlp" and (n > 1000 or request.max_horizon > 14):
+        raise ValueError("Neural training is limited to 1,000 candles and 14 forecast days.")
     train_end, calibration_end = math.floor(n * 0.6), math.floor(n * 0.8)
     x = features(logs, lags, request.feature_set)
     fitted, evaluation = [], []
@@ -195,11 +211,13 @@ def train(candles, request):
         test = np.arange(calibration_end, n - horizon)
         if len(training) < max(60, 3 * lags) or min(len(calibration), len(test)) < 20:
             raise ValueError("The selected horizon needs more training/calibration/test observations.")
-        model, predictions = fit_horizon(logs, x, lags, request.alpha, horizon, training, calibration)
+        model, predictions = fit_horizon(
+            logs, x, lags, request.alpha, horizon, training, calibration, request.family
+        )
         fitted.append(model)
         evaluation.append(score_horizon(logs, times, predictions, model, test, drift, lags))
     artifact = {
-        "engine": engine_for(request.feature_set),
+        "engine": engine_for(request.feature_set, request.family),
         "numpy_version": np.__version__,
         "algorithm": "Direct autoregressive ridge on daily log returns",
         "parameters": parameters(request),
@@ -240,13 +258,20 @@ def train(candles, request):
         artifact["notes"].append(
             "Six context features use only the same trailing lag window; they add no volume, external signals or automatic feature/model selection. More features do not establish better future accuracy."
         )
+    if request.family == "mlp":
+        artifact["algorithm"] = "Direct small tanh neural network on causal daily price features"
+        artifact["notes"].append(
+            "A fixed eight-unit tanh network uses 120 full-batch Adam steps per horizon, with training-only input/target scaling and deterministic seeds. No early stopping, architecture search or final refit uses calibration/test data. Additional flexibility can worsen future accuracy."
+        )
     fingerprint(artifact)  # Reject any non-finite persisted artifact.
     return artifact
 
 
 def predict(artifact, candles, horizon):
     """Apply unchanged trained coefficients to a closed causal window, with a descriptive shift check."""
-    if artifact["engine"] != engine_for(artifact["parameters"].get("feature_set", "returns")):
+    if artifact["engine"] != engine_for(
+        artifact["parameters"].get("feature_set", "returns"), artifact["parameters"].get("family", "ridge")
+    ):
         raise ValueError("This forecast engine version is not supported by the installed application.")
     lags = artifact["parameters"]["lags"]
     logs, times = validate(candles, lags + 1)
@@ -256,7 +281,12 @@ def predict(artifact, candles, horizon):
     points, shifts = [], []
     for model in artifact["models"][:horizon]:
         z = (vector - np.asarray(model["mean"])) / np.asarray(model["scale"])
-        center = float(logs[-1] + model["intercept"] + z @ np.asarray(model["coefficients"]))
+        predicted = (
+            TinyMLP.predict(model, z)
+            if model.get("family") == "mlp"
+            else model["intercept"] + z @ np.asarray(model["coefficients"])
+        )
+        center = float(logs[-1] + predicted)
         low, value, high = prices([center - model["radius"], center, center + model["radius"]])
         points.append(
             {

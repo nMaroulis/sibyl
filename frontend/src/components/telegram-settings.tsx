@@ -38,6 +38,7 @@ export function TelegramSetup({
 }) {
   const [editing, setEditing] = useState(!channel.has_token);
   const [token, setToken] = useState('');
+  const [documentReply, setDocumentReply] = useState(channel.long_reply_document ?? false);
   const [user, setUser] = useState(String(channel.allowed_user_id ?? ''));
   const [busy, setBusy] = useState<Action | ''>('');
   const [error, setError] = useState('');
@@ -79,8 +80,11 @@ export function TelegramSetup({
   const working = enabled && ((updates.processing ?? 0) > 0 || (delivery.sending ?? 0) > 0);
 
   useEffect(() => {
-    if (!editing) setUser(String(channel.allowed_user_id ?? ''));
-  }, [channel.allowed_user_id, editing]);
+    if (!editing) {
+      setUser(String(channel.allowed_user_id ?? ''));
+      setDocumentReply(channel.long_reply_document ?? false);
+    }
+  }, [channel.allowed_user_id, channel.long_reply_document, editing]);
 
   const action = async (kind: Action) => {
     if (busy) return;
@@ -102,6 +106,7 @@ export function TelegramSetup({
       if (kind === 'save') {
         await post('/settings/messaging/telegram', {
           allowed_user_id: userId,
+          long_reply_document: documentReply,
           ...(token.trim() ? { bot_token: token.trim() } : {}),
         });
         setEditing(false);
@@ -241,6 +246,11 @@ export function TelegramSetup({
           <div>
             <strong>Credentials saved</strong>
             <small>
+              {channel.long_reply_document
+                ? 'Long replies → text document'
+                : 'Replies → text messages'}
+            </small>
+            <small>
               Encrypted bot token · private user ••••{' '}
               {String(channel.allowed_user_id ?? '').slice(-4)}
             </small>
@@ -346,6 +356,20 @@ export function TelegramSetup({
               </small>
             </label>
           </div>
+          <label className="alert-archive-toggle">
+            <input
+              type="checkbox"
+              checked={documentReply}
+              disabled={enabled || !!busy}
+              onChange={(e) => setDocumentReply(e.target.checked)}
+            />
+            Send long replies as a text document
+          </label>
+          <p className="footnote">
+            Optional: answers longer than one message arrive as a single .txt file, up to 64 KiB.
+            Short replies remain text. Larger answers remain in Sibyl with a Telegram notice. No
+            incoming files are downloaded.
+          </p>
           <details className="telegram-id-help">
             <summary>Where do I find my personal user ID?</summary>
             <p>

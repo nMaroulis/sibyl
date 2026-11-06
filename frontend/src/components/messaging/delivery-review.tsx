@@ -9,7 +9,12 @@ type Detail = MessageDelivery & {
   recipient_id?: number;
   can_withdraw: boolean;
   can_acknowledge: boolean;
-  text_parts: { part: number; text: string }[];
+  text_parts: {
+    part: number;
+    text: string;
+    format?: 'text' | 'document';
+    filename?: string | null;
+  }[];
   review_token: string;
   note: string;
 };
@@ -67,7 +72,11 @@ export function DeliveryInspector({ id, onClose }: { id: string; onClose: () => 
           {delivery.error && <p className="inline-alert">{delivery.error}</p>}
           {delivery.text_parts.map((part) => (
             <section key={part.part}>
-              <strong>Part {part.part + 1}</strong>
+              <strong>
+                {part.format === 'document'
+                  ? `Text document · ${part.filename}`
+                  : `Part ${part.part + 1}`}
+              </strong>
               <pre>{part.text}</pre>
               <small>
                 {delivery.parts.find((p) => p.part === part.part)?.state} · Telegram message{' '}

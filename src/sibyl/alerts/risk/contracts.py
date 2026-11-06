@@ -1,5 +1,6 @@
 """Explicit account sets and user-defined limits; no execution or credential fields."""
 
+import re
 from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
@@ -13,7 +14,9 @@ class RiskAlertCreate(Request):
 
     account_ids: list[str] = Field(min_length=1, max_length=10)
     source: str = Field(min_length=1, max_length=120, pattern=r"^[a-z0-9:-]+$")
-    metric: Literal["value_floor", "concentration", "drawdown", "hhi", "top_three"]
+    metric: Literal["value_floor", "concentration", "drawdown", "hhi", "top_three", "volatility", "tail_loss"]
+    basket_assets: list[str] = Field(default_factory=list, max_length=8)
+    history_days: Literal[60, 90, 180] = 90
     threshold: float = Field(gt=0, le=1e15, strict=True)
     reset_threshold: float | None = Field(default=None, ge=0, le=1e16, strict=True)
     asset: str = Field(default="", max_length=24, pattern=r"^[A-Z0-9]*$")
@@ -39,7 +42,16 @@ class RiskAlertCreate(Request):
     @model_validator(mode="after")
     def limits(self):
         """Keep reset levels on the clear side, expressed in the metric's own units."""
-        if self.metric != "value_floor" and self.threshold > 100:
+        historical = self.metric in {"volatility", "tail_loss"}
+        if historical != bool(self.basket_assets):
+            raise ValueError("Choose a basket only for a historical volatility or tail-loss watch.")
+        if len(set(self.basket_assets)) != len(self.basket_assets) or any(
+            not re.fullmatch(r"[A-Z0-9]{1,12}", asset) for asset in self.basket_assets
+        ):
+            raise ValueError("Choose up to eight distinct asset symbols, using uppercase letters and digits.")
+        if self.metric == "volatility" and self.threshold > 10000:
+            raise ValueError("Annualized volatility limits must be at most 10,000%.")
+        if self.metric not in {"value_floor", "volatility"} and self.threshold > 100:
             raise ValueError("Percentage and HHI limits must be at most 100.")
         if (self.metric == "concentration") != bool(self.asset):
             raise ValueError("Choose an asset only for a concentration rule.")

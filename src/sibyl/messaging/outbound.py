@@ -9,6 +9,7 @@ import time
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from sibyl.messaging.documents import add_document_columns, document_bytes
 from sibyl.messaging.review import DeliveryReview
 from sibyl.messaging.telegram import TelegramError
 
@@ -49,6 +50,7 @@ class NotificationOutbox:
                     UNIQUE(delivery_id,part)
                 );
             """)
+            add_document_columns(db, "message_delivery_parts")
             sending = db.execute(
                 "SELECT DISTINCT delivery_id FROM message_delivery_parts WHERE state='sending'"
             ).fetchall()
@@ -79,6 +81,9 @@ class NotificationOutbox:
 
     def enqueue(self, origin_id, schedule, run, text, now):
         """Queue one completed report once, without making any HTTP request."""
+        filename = (
+            f"sibyl-briefing-{run['id']}.txt" if schedule.get("telegram_format") == "document" else None
+        )
         return self.enqueue_message(
             origin_id,
             schedule.get("telegram_binding") or {},
@@ -93,15 +98,23 @@ class NotificationOutbox:
                 "run_id": run["id"],
                 "report_version": run.get("version"),
             },
+            filename=filename,
         )
 
-    def enqueue_message(self, origin_id, binding, text, now, expiry, metadata, *, error=None, db=None):
+    def enqueue_message(
+        self, origin_id, binding, text, now, expiry, metadata, *, error=None, db=None, filename=None
+    ):
         """Persist explicitly authorized text, optionally in the caller's cursor transaction.
 
         Metadata identifies its domain policy. It must contain no credentials.
         The shared sender rechecks that policy and connection before every send.
         """
         profile = self.settings.profile()
+        if filename:
+            try:
+                document_bytes(text, filename)
+            except ValueError as exc:
+                error = str(exc)
         if not error:
             if (profile.get("bot_id"), profile.get("allowed_user_id")) != (
                 binding.get("bot_id"),
@@ -114,6 +127,15 @@ class NotificationOutbox:
                 error = "This notification's delivery window expired. Briefings expire after one hour."
         item = {
             **metadata,
+            **(
+                {
+                    "format": "document",
+                    "filename": filename,
+                    "file_bytes": len(text.encode("utf-8", errors="replace")),
+                }
+                if filename
+                else {}
+            ),
             "id": uuid4().hex,
             "origin_id": origin_id,
             "preview": text[:240],
@@ -170,8 +192,11 @@ class NotificationOutbox:
             db.execute("DELETE FROM message_deliveries WHERE id=?", (old[0],))
         if item["status"] == "pending":
             db.executemany(
-                "INSERT INTO message_delivery_parts(delivery_id,part,text,state) VALUES(?,?,?,'pending')",
-                [(item["id"], index, part) for index, part in enumerate(chunks(text))],
+                "INSERT INTO message_delivery_parts(delivery_id,part,text,state,format,filename) VALUES(?,?,?,'pending',?,?)",
+                [
+                    (item["id"], index, part, item.get("format", "text"), item.get("filename"))
+                    for index, part in enumerate([text] if item.get("format") == "document" else chunks(text))
+                ],
             )
         return self._public(db, item["id"])
 
@@ -199,7 +224,7 @@ class NotificationOutbox:
         if row is None:
             raise LookupError("Notification delivery not found.")
         parts = db.execute(
-            "SELECT part,state,attempts,next_attempt,error,native_id FROM message_delivery_parts WHERE delivery_id=? ORDER BY part",
+            "SELECT part,state,attempts,next_attempt,error,native_id,format,filename FROM message_delivery_parts WHERE delivery_id=? ORDER BY part",
             (identity,),
         ).fetchall()
         return {
@@ -287,7 +312,12 @@ class NotificationOutbox:
             )
             self._state(db, delivery["id"], "sending")
         try:
-            native_id = await self.client(current).send(delivery["recipient_id"], row["text"])
+            native = self.client(current)
+            native_id = (
+                await native.send_document(delivery["recipient_id"], row["text"], row["filename"])
+                if row["format"] == "document"
+                else await native.send(delivery["recipient_id"], row["text"])
+            )
             with self.store.db() as db:
                 db.execute("BEGIN IMMEDIATE")
                 db.execute(

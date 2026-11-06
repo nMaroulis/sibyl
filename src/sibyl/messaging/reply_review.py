@@ -59,7 +59,7 @@ class ReplyReview(DeliveryReview):
         parts = [
             dict(p)
             for p in db.execute(
-                "SELECT part,state,attempts,next_attempt,error,native_id FROM telegram_outbox WHERE revision=? AND update_id=? ORDER BY part",
+                "SELECT part,state,attempts,next_attempt,error,native_id,format,filename FROM telegram_outbox WHERE revision=? AND update_id=? ORDER BY part",
                 (row["revision"], row["update_id"]),
             )
         ]
@@ -91,7 +91,7 @@ class ReplyReview(DeliveryReview):
         return [
             dict(p)
             for p in db.execute(
-                "SELECT part,text FROM telegram_outbox WHERE revision=? AND update_id=? ORDER BY part",
+                "SELECT part,text,format,filename FROM telegram_outbox WHERE revision=? AND update_id=? ORDER BY part",
                 (row["revision"], row["update_id"]),
             )
         ]

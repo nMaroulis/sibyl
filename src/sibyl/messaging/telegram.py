@@ -6,6 +6,7 @@ import re
 import httpx
 
 from sibyl.messaging.base import MessagingClient
+from sibyl.messaging.documents import document_bytes
 
 
 class _TokenFilter(logging.Filter):
@@ -43,6 +44,11 @@ class TelegramClient(MessagingClient):
             )
         except httpx.HTTPError:
             raise TelegramError("Telegram did not confirm the request.", ambiguous=write) from None
+        return self._result(response, write=write)
+
+    @staticmethod
+    def _result(response, *, write):
+        """Share sanitized native outcomes between JSON messages and multipart documents."""
         try:
             body = response.json()
         except ValueError:
@@ -116,4 +122,25 @@ class TelegramClient(MessagingClient):
             or result["message_id"] <= 0
         ):
             raise TelegramError("Telegram did not confirm message delivery.", ambiguous=True)
+        return result["message_id"]
+
+    async def send_document(self, chat_id: int, text: str, filename: str) -> int:
+        """Upload one complete bounded UTF-8 reply/report as a protected text document."""
+        data = document_bytes(text, filename)
+        try:
+            response = await self.http.post(
+                f"https://api.telegram.org/bot{self._token}/sendDocument",
+                data={"chat_id": str(chat_id), "protect_content": "true"},
+                files={"document": (filename, data, "text/plain; charset=utf-8")},
+                timeout=25,
+            )
+        except httpx.HTTPError:
+            raise TelegramError("Telegram did not confirm the document request.", ambiguous=True) from None
+        result = self._result(response, write=True)
+        if (
+            not isinstance(result, dict)
+            or type(result.get("message_id")) is not int
+            or result["message_id"] <= 0
+        ):
+            raise TelegramError("Telegram did not confirm document delivery.", ambiguous=True)
         return result["message_id"]

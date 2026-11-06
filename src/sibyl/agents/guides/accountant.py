@@ -149,7 +149,7 @@ GUIDES = {
         "/alerts?tab=risk",
         (
             "Open Alerts → Account risk and pin a fixed set of active accounts in one environment plus a reference feed.",
-            "Choose a value floor, asset concentration, HHI/top-three concentration or observed-value drawdown threshold, then explicitly arm the rule.",
+            "Choose a value floor, asset/top-three/HHI concentration, observed-value drawdown, or hourly historical basket volatility/95% daily expected shortfall. For historical watches choose up to eight currently held assets and 60/90/180 days, then arm the rule. Evidence retains dated basket weights and subset coverage; it is not account performance or a future loss guarantee.",
             "Use View evidence for retained valuation details and Inbox for notices. A rule’s Delivery control can opt into Telegram notifications with a checked private recipient, cooldown and freshness window. Edits save paused; Resume starts a new observation window.",
         ),
         (

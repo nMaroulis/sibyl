@@ -183,7 +183,8 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [x] Retain initial user-confirmed Telegram conversation acceptance. Automated briefing delivery is tested with a mock HTTP transport; real scheduled-delivery acceptance remains a deployment check.
 - [x] Add app-origin Telegram delivery review with exact text/target inspection, unsent withdrawal and separate user acknowledgments preserving native outcomes.
 - [x] Add grouped conversation-reply receipts, original-target metadata, exact text inspection, atomic unsent withdrawal, separate user acknowledgments and UTF-16-safe chunking.
-- [ ] Add Telegram media. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
+- [x] Add opt-in outgoing UTF-8 text documents for long replies and scheduled briefings, with bounded complete content, original recipient binding and durable native outcomes.
+- [ ] Add incoming Telegram documents, audio/photos and broader media. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
 ### 8. Forecasting / Chronos — partial
@@ -200,7 +201,8 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Add bounded portable JSON model/input bundles with integrity validation, offline local refitting, unverified imported namespaces and deduplication; archive/restore model versions without deleting evidence or silently stopping monitors.
 - [ ] Add calibrated drift monitoring, automated recalibration and larger managed lifecycles.
 - [x] Add an optional causal returns-plus-context ridge recipe with six trailing-price features, retained through rolling evaluation, predictions and portable refits.
-- [ ] Add neural/ARIMA and other model families, additional inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
+- [x] Add a small fixed-seed NumPy tanh neural model with training-only normalization, purged chronological calibration/testing, actual training-loss evidence, rolling refits and portable recipe validation.
+- [ ] Add ARIMA and other neural/model families, additional inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 
@@ -256,7 +258,8 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add per-account order/fill subscriptions over atomic local observation receipts, future-only controls, retained inbox and optional existing Telegram delivery.
 - [x] Add whole-basket HHI/effective-asset/largest/top-three value concentration and optional HHI/top-three alerts, gated on complete fresh valuations.
 - [x] Add saved explicit current-holding basket studies with observed historical conversion routes, consecutive sample covariance/correlations, volatility, empirical tails, variance contributions, full input export and native Accountant evidence.
-- [ ] Add correlation-aware alerts/enforcement and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
+- [x] Add hourly current-weight basket volatility and historical 95% daily expected-shortfall alerts, explicit asset/window selection, complete fresh valuation, exact observed history and retained scope/input evidence.
+- [ ] Add broader correlation-aware enforcement and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
 - [x] Add opt-in Telegram delivery per price/risk/strategy/connection rule, reviewed recipients, future-only cursors, transactional admission, cooldown suppression, expiry and actual part outcomes. See [contracts](alert-delivery.md).
 - [x] Add app-origin delivery text/target inspection, queued-remainder withdrawal and separate user review history with optimistic evidence tokens.
 - [x] Extend the review contract to grouped conversation replies while preserving native delivery outcomes and unknown legacy bot identities.
