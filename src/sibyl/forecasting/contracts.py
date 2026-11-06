@@ -59,3 +59,10 @@ class RollingEvaluationRequest(Request):
         if (self.window == "rolling") != (self.training_days is not None):
             raise ValueError("Supply training_days only for a fixed rolling window.")
         return self
+
+
+class ArchiveModel(Request):
+    """Organize the registry; retained outputs and outcome monitors remain separate."""
+
+    archived: bool
+    revision: int = Field(default=0, ge=0, strict=True)

@@ -18,7 +18,17 @@ TradeTopic = Literal[
     "recovery",
 ]
 StrategyTopic = Literal[
-    "overview", "backtest", "results", "validation", "paper", "exchange", "monitor", "stop", "halt", "limits"
+    "overview",
+    "backtest",
+    "results",
+    "validation",
+    "paper",
+    "exchange",
+    "monitor",
+    "stop",
+    "halt",
+    "limits",
+    "benchmarks",
 ]
 
 TRADE = {
@@ -152,6 +162,18 @@ TRADE = {
 }
 
 STRATEGIES = {
+    "benchmarks": Guide(
+        "Compare cost-aware reference portfolios",
+        "/strategies",
+        (
+            "Run a backtest and open Reference portfolios below the execution chart. Buy & hold, cash, scheduled installments and 50/50 asset/cash use exactly the same evaluation window and initial capital.",
+            "Execution assumptions → Reference portfolio cadence sets the candle spacing for installment purchases and 50/50 rebalances. Capital is present from the start; uninvested cash earns zero. It is not new periodic income.",
+            "Choose Equity & benchmark, then Reference portfolio, to compare paths. The table reports return, drawdown, Sharpe, actual simulated fees and fill count with final-close liquidation.",
+        ),
+        (
+            "These are fixed single-asset research references with configured costs, not optimized or deployed multi-asset strategies. Saved older runs without reference evidence remain readable; rerun explicitly to calculate new references.",
+        ),
+    ),
     "limits": Guide(
         "Set shared strategy limits",
         "/strategies",

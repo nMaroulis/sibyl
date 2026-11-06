@@ -42,3 +42,9 @@ Passphrases use private request bodies and are never exposed to native agent too
 Managed backup/recovery directories include a local Git ignore rule. The source checkout also ignores default backup/recovery folders, encrypted archive files and vault keys. Keep runtime data out of source control; forced Git additions and copies outside these directories still need deliberate care.
 
 The managed subtree is excluded from archive creation, including existing archives and recovered workspaces. Keeping it inside the writable data volume supports the non-root Docker image and preserves files across container replacement.
+
+## Lightweight process resources
+
+Workspace settings and `GET /workspace/health` include current Python API process CPU, RSS memory, thread count, database plus WAL bytes, free workspace-volume bytes and process uptime. `operations/resources.py` uses [psutil](https://psutil.readthedocs.io/) process counters, with a five-second snapshot cache and no separate sampler/history. CPU is the change in process user+system seconds divided by monotonic elapsed wall time; one busy CPU is 100%, so a multithreaded process can exceed 100%. The first observation has no CPU percentage.
+
+The scope excludes Ollama, browsers, other processes and machine/external uptime. Unsupported/denied counters are explicitly unavailable; diagnostics never inspect command lines, environments or credentials. These observations do not establish provider readiness or order completion. Native Technician `workspace_operations` returns the same scoped evidence.

@@ -38,6 +38,16 @@ export type ProviderReadHistory = {
   start: string;
   hours: number;
   retention_days: number;
+  latency_distribution?: {
+    status: string;
+    samples: number;
+    coverage_pct: number | null;
+    p50_upper_ms: number | null;
+    p95_upper_ms: number | null;
+    overflow_samples: number;
+    buckets: { upper_ms: number | null; samples: number }[];
+    method: string;
+  };
   totals: {
     requests: number;
     successes: number;

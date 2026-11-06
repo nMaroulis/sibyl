@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { ForecastPortability } from './forecast-portability';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -46,7 +47,10 @@ function researchDate(value: string) {
 /** Explicit train/evaluate/forecast steps; a saved model never starts trading. */
 export function ForecastWorkspace() {
   const [search, setSearch] = useSearchParams();
-  const models = useResource<{ items: ForecastModel[] }>('/forecast-models');
+  const [showArchived, setShowArchived] = useState(false);
+  const models = useResource<{ items: ForecastModel[] }>(
+    `/forecast-models?include_archived=${showArchived}`,
+  );
   const selected = search.get('model') ?? models.data?.items[0]?.id ?? '';
   const metadata = models.data?.items.find((m) => m.id === selected);
   const selectedEvaluation = search.get('evaluation') ?? '';
@@ -140,6 +144,9 @@ export function ForecastWorkspace() {
     }
   };
   const report = detail.data;
+  useEffect(() => {
+    if (report?.model.archived) setShowArchived(true);
+  }, [report?.model.id, report?.model.archived]);
   const evaluation = report?.evaluation.find((e) => e.horizon === activeHorizon);
   const activeOutput = output?.model_id === selected ? output : undefined;
   const forecastPoints = activeOutput
@@ -306,6 +313,7 @@ export function ForecastWorkspace() {
             <select value={selected} onChange={(e) => choose(e.target.value)}>
               {models.data.items.map((m) => (
                 <option key={m.id} value={m.id}>
+                  {m.archived ? 'Archived · ' : ''}
                   {m.label} · v{m.version} · {m.symbol} ·{' '}
                   {m.environment === 'demo' ? 'Demo' : m.dataset.source_label} ·{' '}
                   {new Date(m.created_at).toLocaleString()}
@@ -314,12 +322,34 @@ export function ForecastWorkspace() {
             </select>
           </label>
         ) : (
-          <Empty title="No trained models yet">
+          <Empty title="No models in this view">
             Choose a daily dataset or your current feed to fit a model and see its independent
-            evaluation. A language model is not required.
+            evaluation, or show archived versions from Model library. A language model is not
+            required.
           </Empty>
         )}
       </Panel>
+      <ForecastPortability
+        model={report?.model}
+        showArchived={showArchived}
+        setShowArchived={(value) => {
+          setShowArchived(value);
+          if (!value && report?.model.archived) {
+            setSearch((p) => {
+              p.delete('model');
+              p.delete('evaluation');
+              return p;
+            });
+            setOutput(undefined);
+          }
+        }}
+        changed={(id) => {
+          models.retry();
+          datasets.retry();
+          detail.retry();
+          if (id) choose(id);
+        }}
+      />
       {(trainingOpen || !models.data?.items.length) && training}
       {error && (
         <p className="form-error" role="alert">
@@ -355,9 +385,13 @@ export function ForecastWorkspace() {
                 />
                 <div className="forecast-model-attribution">
                   <Badge tone={report.model.environment === 'demo' ? 'amber' : 'blue'}>
-                    {report.model.environment === 'demo'
-                      ? 'Demo · synthetic training input'
-                      : 'Trained · research model'}
+                    {report.model.archived
+                      ? 'Archived model'
+                      : report.model.environment === 'imported'
+                        ? 'Imported · unverified source'
+                        : report.model.environment === 'demo'
+                          ? 'Demo · synthetic training input'
+                          : 'Trained · research model'}
                   </Badge>
                   <span>
                     {report.model.engine} · lags {report.model.parameters.lags} · penalty{' '}
@@ -485,6 +519,13 @@ export function ForecastWorkspace() {
                   </p>
                 </Panel>
               )}
+              {report.model.environment === 'imported' && (
+                <p className="notice">
+                  {report.model.imported_from?.method ??
+                    'Imported source origin remains unverified after local refitting.'}{' '}
+                  Imported models use saved input only and cannot become live tracking evidence.
+                </p>
+              )}
               <ForecastForward key={selected} modelId={selected} outputs={report.outputs} />
               <ForecastRolling
                 key={selected}
@@ -509,7 +550,7 @@ export function ForecastWorkspace() {
                 <div className="forecast-workspace-actions">
                   <button
                     className="button primary"
-                    disabled={!!busy}
+                    disabled={!!busy || report.model.archived}
                     onClick={() => void action('saved_input')}
                   >
                     <Play size={14} />
@@ -517,7 +558,9 @@ export function ForecastWorkspace() {
                   </button>
                   <button
                     className="button secondary"
-                    disabled={!!busy}
+                    disabled={
+                      !!busy || report.model.archived || report.model.environment === 'imported'
+                    }
                     onClick={() => void action('current_feed')}
                   >
                     <RefreshCw size={14} />

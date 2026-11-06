@@ -79,7 +79,7 @@ def inject(service, rule, at, *, kind="price", **values):
     }
     with service.store.db() as db:
         db.execute(
-            "INSERT INTO alert_notifications VALUES(?,?,?,?,NULL,?)",
+            "INSERT INTO alert_notifications(id,rule_id,cycle,created_at,read_at,payload) VALUES(?,?,?,?,NULL,?)",
             (identity, rule["id"], int(uuid4().hex[:12], 16), at.isoformat(), json.dumps(payload)),
         )
     return identity

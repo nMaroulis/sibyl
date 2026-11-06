@@ -55,3 +55,11 @@ Completed results commit atomically to `strategy_validations`, with compact meta
 | GET    | `/strategies/validations?demo=true`  | Latest 50 compact summaries; optional Demo boundary           |
 | GET    | `/strategies/validations/{id}`       | Complete retained study, also usable as a JSON export         |
 | POST   | `/strategies/validations/{id}/rerun` | Recompute exact original input/settings and retain the parent |
+
+## Cost-aware reference portfolios
+
+`strategies/research/benchmarks.py` implements `reference-portfolios-1`. Ordinary backtests attach `benchmarks` alongside the unchanged legacy `benchmark_pct` and `benchmark_curve`. References cover `candles[request.warmup:]` and share initial capital, timeframe, costs and final liquidation. `benchmark_interval` is an integer from 1–365 (default 20); changing it cannot change strategy fills or equity. Validation suffix runs do not generate this additional reference set.
+
+Cash stays at initial capital. Installment tranches divide it by `ceil(evaluated_bars / cadence)`; purchases consume fees within their available cash budget. The 50/50 reference targets half of current pre-trade NAV at scheduled opens and never borrows or shorts. Final-close liquidation pays the same sell costs. All curves include entry and exit costs in comparable equity observations; Sharpe/drawdown include initial capital through the common metric implementation. Undefined ratios remain unavailable.
+
+Broker’s `backtest_report` returns compact recorded reference metrics without large curves/fill arrays. `strategy_help(topic="benchmarks")` explains navigation and assumptions. Neither tool runs a new experiment or deploys a reference portfolio.

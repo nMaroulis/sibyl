@@ -10,6 +10,7 @@ from typing import Literal
 from protolink import Agent
 
 from sibyl.agents.utils.common import COMMON_PROMPT, Services
+from sibyl.alerts.history.service import NotificationHistory
 from sibyl.exchanges.catalog import CATALOG, exchange_spec
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.services.workspace.llm_settings import ModelSettings
@@ -18,6 +19,7 @@ NAME = "Technician"
 TAGLINE = "Keep everything connected"
 DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging and alerts; explain saved diagnostics."
 SYSTEM_PROMPT = (
+    "Use notification_history for retained inbox cleanup policy, protections and actual receipts; never clear history for the user. "
     "Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
     "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace "
@@ -109,12 +111,14 @@ GUIDES = {
             "Read counters reset on session/profile changes, recording gaps or more than five minutes between reads. No observations means no connection-status conclusion. Recovery describes successful transport reads, not fully validated data or verified current credentials. Pausing/resuming begins a new observation window.",
             "Account risk tab: select a fixed set of up to ten active accounts in one environment and a reference feed. Choose a value floor in USDT, asset concentration or observed-value drawdown limit. Arming authorizes background balance/quote reads. New connections are not automatically included; deactivate a pinned account and the watch waits for complete coverage.",
             "Recovery levels prevent repeated notices near a limit. Edits save paused; Resume resets the observed peak and incident state. Drawdown includes deposits and withdrawals, so it is not investment return. View evidence reads retained valuation details without fetching accounts.",
+            "Inbox → History export & retention exports JSON/CSV with kind and UTC date filters (up to 2,000 newest notices). Automatic cleanup is off by default; saving an opt-in age policy clears only old read notices in bounded batches. Unread notices and unfinished delivery evidence are protected. Disabling the policy stops later automatic deletion; rules, financial records and delivery receipts remain separate.",
             "No AI model is required. A rule’s Delivery button selects optional Telegram messages to the checked bot and private user. Every save starts from future events; existing inbox entries stay local. Cooldowns suppress extra messages and delivery windows reject stale observations. Alerts never trade, stop strategies, cancel orders or detect silent-worker outages.",
         ],
     },
     "workspace": {
         "url": "/settings?tab=workspace",
         "steps": [
+            "Workspace displays Python process CPU (one busy CPU = 100%), resident memory, threads, database/WAL bytes, free workspace-volume space and process uptime. CPU requires two observations at least five seconds apart; Ollama/browser/other processes are excluded. Provider saved read history exposes latency histogram upper bounds and sample coverage, not external uptime.",
             "Inspect server configuration, actual background-worker progress/faults, encrypted backup controls and documentation links in Workspace. Use workspace_operations for current diagnostics. A worker heartbeat does not prove provider readiness or successful trades.",
             "Complete release wheels include the dashboard and can run with sibyl --open-browser, without Node.js. Use sibyl --version or --help for launcher options. Public wheel URLs require a published GitHub Release. Homebrew, PyPI and prebuilt registry images remain optional future work; no new repository is needed for the Python package.",
             "Source checkouts keep their repository .sibyl workspace. Installed apps default to per-user application data: macOS Application Support/Sibyl, Windows Local AppData/Sibyl or Linux XDG data/sibyl. Use --data-dir or SIBYL_DATA_DIR to open an existing workspace; no installer moves or deletes it.",
@@ -233,10 +237,23 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent.card.capabilities.delegation = False
 
     @agent.tool
+    def notification_history() -> dict:
+        """Inspect the saved inbox retention policy, eligible counts and recent cleanup receipts.
+
+        Explains which old read notices are eligible, and which unread or unfinished
+        delivery records are protected. Includes the export/retention controls link.
+        This tool cannot acknowledge, export or delete notices or change the policy.
+        """
+        return {**NotificationHistory.read_status(services.store), "url": "/alerts?tab=inbox"}
+
+    @agent.tool
     def workspace_operations() -> dict:
         """Inspect background-worker progress and explain encrypted backup and recovery controls.
 
-        Returns observed iteration times, faults and overdue work, not provider readiness
+        Returns observed iteration times, faults, overdue work and current Python process
+        CPU/memory/threads, database size and free workspace-volume space. CPU uses
+        an elapsed observation window; other processes and external uptime are excluded.
+        These counters do not establish provider readiness
         or proof that orders completed. You can explain a failed worker but cannot
         restart workers, create/decrypt backups or authorize recovery. Never ask for a
         backup passphrase in chat; it belongs only in the Workspace settings form.

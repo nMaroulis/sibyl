@@ -113,6 +113,11 @@ def main() -> None:
                 assert matches["items"][0]["document_id"] == document["id"]
                 workers = request_json("/workspace/health")
                 assert any(worker["id"] == "library" for worker in workers["workers"])
+                assert "rss_bytes" in workers["resources"] and "cpu_percent" in workers["resources"]
+                retention = request_json("/notifications/retention")
+                assert not retention["policy"]["enabled"], "Installation enabled automatic notification deletion."
+                assert retention["preview"]["eligible"] == 0
+                assert request_json("/notifications/export")["items"] == []
                 passphrase = "isolated installation archive passphrase"
                 archive = request_json("/workspace/backups", {"passphrase": passphrase})
                 inspected = request_json(

@@ -47,10 +47,10 @@ AREAS = [
         "name": "Market-data infrastructure",
         "status": "partial",
         "priority": "next",
-        "working": "Exact-source REST data, descriptive market statistics and explainable technical bias, region zoom, retained OHLCV/backfills and immutable inputs; shared read controls and retained HTTP diagnostics; on-demand Binance production/Testnet public ticker/candle streams with bounded fanout, reconnect/freshness states and same-source REST fallback. Closed-candle analysis stays separate.",
+        "working": "Exact-source REST data, descriptive market statistics and explainable technical bias, region zoom, retained OHLCV/backfills and immutable inputs; shared read controls and retained HTTP diagnostics; on-demand Binance production/Testnet public ticker/candle streams with bounded fanout, reconnect/freshness states and same-source REST fallback. Closed-candle analysis stays separate. Retained fixed latency histograms report p50/p95 upper bounds and actual sample coverage, including legacy gaps.",
         "pending": [
             "Review historical pagination for remaining providers and authenticated provider acceptance.",
-            "Reviewed endpoint-weight/IP/account quotas, richer latency distributions and application-wide operational diagnostics.",
+            "Reviewed endpoint-weight/IP/account quotas, distributed tracing and broader host diagnostics. Fixed latency histograms and current-process resource metrics are implemented.",
             "Additional public-provider and private account/order WebSocket streams, and persisted reconnect-gap recovery.",
         ],
     },
@@ -59,11 +59,11 @@ AREAS = [
         "name": "Alerts & local operations",
         "status": "partial",
         "priority": "next",
-        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations. Opt-in per-rule Telegram delivery adds reviewed recipients, future-only admission, cooldown/expiry, durable receipts and pause controls. Per-account order/fill subscriptions add atomic observation receipts, future-only controls and existing Telegram delivery. Actual background-worker progress/fault/deadline monitoring, sanitized retained history, global UI notices and native Technician diagnostics are implemented. Passphrase-encrypted archives support inspection/download/import and validated separate-directory recovery with automation quarantined until review/restart.",
+        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations. Opt-in per-rule Telegram delivery adds reviewed recipients, future-only admission, cooldown/expiry, durable receipts and pause controls. Per-account order/fill subscriptions add atomic observation receipts, future-only controls and existing Telegram delivery. Actual background-worker progress/fault/deadline monitoring, sanitized retained history, global UI notices and native Technician diagnostics are implemented. Passphrase-encrypted archives support inspection/download/import and validated separate-directory recovery with automation quarantined until review/restart. Workspace exposes bounded current-process resource counters; notification exports and opt-in old-read retention protect unread/delivery evidence and monotonic cursors.",
         "pending": [
             "Broader risk metrics, external uptime monitoring and richer operational metrics. Shared strategy capital/exposure/daily-loss enforcement is a separate implemented policy; alerts never change it.",
             "Additional external alert channels and richer delivery review; real Telegram alert-delivery acceptance remains a deployment check.",
-            "General durable task scheduling, resource metrics, tracing and credential/key rotation beyond implemented encrypted backup/recovery.",
+            "General durable task scheduling, tracing and credential/key rotation beyond implemented encrypted backup/recovery. Current-process resources, filtered inbox exports and opt-in bounded read-history retention are implemented.",
         ],
     },
     {
@@ -83,9 +83,9 @@ AREAS = [
         "name": "Strategy research",
         "status": "partial",
         "priority": "later",
-        "working": "Six configurable algorithms, cost-aware backtests and paper runs; bounded grid or seeded finite random search with explicit budgets, recorded plans/coverage/fingerprints, chronological holdout/expanding walk-forward tests, fixed-setting/buy-and-hold comparisons, saved rankings/test executions, checked exact-study replay and read-only Broker evidence.",
+        "working": "Six configurable algorithms, cost-aware backtests and paper runs; bounded grid or seeded finite random search with explicit budgets, recorded plans/coverage/fingerprints, chronological holdout/expanding walk-forward tests, fixed-setting/buy-and-hold comparisons, saved rankings/test executions, checked exact-study replay and read-only Broker evidence. Ordinary backtests add exact-window cost-aware cash/hold/installment/50-50 references, comparison metrics and selectable equity overlays.",
         "pending": [
-            "Additional benchmarks, continuous rebalanced deployment simulation, nested validation and Bayesian/distribution-based optimization.",
+            "Continuous rebalanced deployment simulation, nested validation and Bayesian/distribution-based optimization. Fixed cost-aware cash, hold, installment and 50/50 research references are implemented.",
             "Custom strategy plugins, optional Freqtrade and multi-asset allocation.",
             "Separate ML/RL training and evaluation pipelines.",
         ],
@@ -119,7 +119,7 @@ AREAS = [
         "name": "Forecasting",
         "status": "partial",
         "priority": "later",
-        "working": "Versioned direct autoregressive ridge models, immutable daily inputs, chronological 60/20/20 training/calibration/test evidence, naive/drift benchmarks, empirical bands, explicit saved/current-input forecasts, bounded historical expanding/fixed-window recipe evaluation with purged fold boundaries, pooled benchmarks, saved reports/reruns/exports and read-only Chronos tools. The untrained baseline remains separate. Prospective forecast tracking pins saved predictions to exact-source actuals, retains correction versions and compares equal-horizon model/naive/drift errors without inflating repeated target saves.",
+        "working": "Versioned direct autoregressive ridge models, immutable daily inputs, chronological 60/20/20 training/calibration/test evidence, naive/drift benchmarks, empirical bands, explicit saved/current-input forecasts, bounded historical expanding/fixed-window recipe evaluation with purged fold boundaries, pooled benchmarks, saved reports/reruns/exports and read-only Chronos tools. The untrained baseline remains separate. Prospective forecast tracking pins saved predictions to exact-source actuals, retains correction versions and compares equal-horizon model/naive/drift errors without inflating repeated target saves. Portable JSON bundles verify inputs and refit offline in an unverified import namespace; archive/restore keeps saved evidence and independent monitors intact.",
         "pending": [
             "Neural/ARIMA and additional model families, broader assets and training inputs.",
             "Calibrated drift monitoring, automatic recalibration and larger managed model lifecycles.",
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-11-06",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.3.0 adds on-demand Binance production/Testnet live market previews, native conditional/OCO orders, unfilled-only manual cancel/replace and matching native Analyst/Broker tools and guides. Actual Testnet lifecycle checks include controlled OCO response loss and exact child recovery, not intermediate partial-fill, late-correction or genuine outage acceptance. Remaining work includes broader provider/private streams, advanced-order adapters, accounting/reconciliation and model/semantic evaluation. Multi-user support stays deferred.",
+        "current_focus": "v2.3.0 adds on-demand Binance production/Testnet live market previews, native conditional/OCO orders, unfilled-only manual cancel/replace and matching native Analyst/Broker tools and guides. Actual Testnet lifecycle checks include controlled OCO response loss and exact child recovery, not intermediate partial-fill, late-correction or genuine outage acceptance. Remaining work includes broader provider/private streams, advanced-order adapters, accounting/reconciliation and model/semantic evaluation. Additional research/operations work adds comparable reference portfolios, portable and archived forecast research, protected inbox retention/export and scoped process/latency diagnostics. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

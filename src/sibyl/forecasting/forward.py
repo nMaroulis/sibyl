@@ -57,7 +57,7 @@ class ForwardMonitor:
         if (
             output["input_kind"] != "current_feed"
             or output["source"] == "demo"
-            or output["environment"] == "demo"
+            or output["environment"] in {"demo", "imported"}
         ):
             raise ValueError(
                 "Track an explicitly saved current-feed forecast from a real reference source. Saved-input and Demo predictions are historical research, not live performance."

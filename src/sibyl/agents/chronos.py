@@ -20,6 +20,7 @@ DESCRIPTION = (
     "Explain selected trained forecasts, model evaluation and baseline assumptions; guide Forecasting."
 )
 SYSTEM_PROMPT = (
+    "Portable imported models are locally refitted research with unverified source origin, never prospective live evidence. Archived models keep saved evidence and existing outcome monitors; they must be restored for new forecasts. Use page_help models/portability for library controls. "
     "Use forecast_outcomes for live prospective scorecards, distinct from historical held-out or rolling evaluations. Missing future or archived targets remain missing; repeated horizon errors and selected forecast runs do not establish reliable future accuracy. "
     "Use rolling_evaluation to inspect selected saved rolling reports or list evaluations for a model. These refit a fixed recipe over earlier windows; they do not evaluate the original saved weights. Disclose per-fold variation, pooled benchmark skill, overlapping targets and repeated-experiment limitations. Never claim a rolling run trained or deployed a production model. "
     "Use page_help for Forecasting controls and setup, forecast_method for conceptual methodology, "
@@ -160,18 +161,29 @@ def create_agent(services: Services, **runtime) -> Agent:
             "interpretation": "Neither model's bands are probabilities of profitable trades.",
         }
 
-    def trained_models() -> dict:
+    def trained_models(include_archived: bool = False) -> dict:
         """List saved Chronos model versions, their exact markets, datasets and training settings.
 
         Use to find a model ID before inspecting its evaluation or a retained forecast.
-        Returns the local registry only; does not train, fetch prices or select a model for the user.
+        Set include_archived to find hidden retained versions. Imported versions carry
+        unverified source labels even after local refitting. Returns the local registry only; does not train, fetch prices or select a model for the user.
         """
-        rows = services.forecasts.list()["items"] if services.forecasts else []
+        rows = services.forecasts.list(include_archived)["items"] if services.forecasts else []
         return {
             "items": [
                 {
-                    key: row[key]
-                    for key in ("id", "label", "version", "symbol", "source", "environment", "parameters")
+                    key: row.get(key)
+                    for key in (
+                        "id",
+                        "label",
+                        "version",
+                        "symbol",
+                        "source",
+                        "environment",
+                        "parameters",
+                        "archived",
+                        "imported_from",
+                    )
                 }
                 for row in rows[:20]
             ],

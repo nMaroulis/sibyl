@@ -189,6 +189,7 @@ export type StrategyParams = {
   candles: number;
   fee_bps: number;
   slippage_bps: number;
+  benchmark_interval?: number;
   window: number;
   timeframe?: Timeframe;
   fast_period?: number;
@@ -240,6 +241,23 @@ export type Backtest = Source & {
     low: number;
     volume: number;
   }[];
+  benchmarks?: Record<
+    string,
+    {
+      label: string;
+      kind: string;
+      return_pct: number;
+      final_equity: number;
+      max_drawdown: number;
+      sharpe: number | null;
+      fees: number;
+      execution_count: number;
+      cadence_bars: number | null;
+      assumptions: string;
+      curve: Point[];
+      fills: Fill[];
+    }
+  >;
   benchmark_curve?: Point[];
   engine_revision?: string;
   round_trips?: {

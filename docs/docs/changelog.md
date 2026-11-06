@@ -47,11 +47,11 @@ docker compose up --build
 
 ## Release notes
 
-## [2.3.0] - Unreleased
+## [2.3.0] - 2026-11-10
 
-:::note[Release summary]
+:::note[Latest Release]
 
-Markets gains live Binance price and candle previews with clear stream health and same-source REST fallback. Trade adds native conditional limits, linked OCO orders and reviewed unfilled-limit replacement for Binance and Binance Testnet. Analyst and Broker explain these workflows and inspect their actual evidence through native ProtoLink tools.
+Markets gains live Binance price and candle previews with clear stream health and same-source REST fallback. Trade adds native conditional limits, linked OCO orders and reviewed unfilled-limit replacement for Binance and Binance Testnet. Analyst and Broker explain these workflows and inspect their actual evidence through native ProtoLink tools. Strategy experiments gain four comparable cost-aware reference portfolios. Forecast models can move between workspaces through locally verified JSON bundles and be archived without losing evidence. Inbox exports, opt-in retention, process counters and provider latency distributions make local research and operation easier to manage.
 
 :::
 
@@ -63,6 +63,12 @@ Markets gains live Binance price and candle previews with clear stream health an
 - Separately reviewed, wholly unfilled manual-limit replacement through native STOP_ON_FAILURE/ONLY_NEW requests. Retain both records, estimated reservation release, a durable compound-command latch and conservative uncertainty; cancellation and replacement are explicitly non-atomic.
 - Progressive OCO entry, conditional fields and eligible order-monitor replacement controls. Native read-only Analyst stream evidence and Broker OCO/trigger/replacement evidence, plus updated typed page help.
 - A bounded, opt-in native advanced-order Testnet acceptance runner with isolated encrypted state, endpoint/notional gates, controlled OCO response-loss recovery and optional fill/cancel observation. Deterministic tests cover concurrency, restart, partial-fill races, SDK request fields and stream lifecycle.
+
+- Cost-aware buy-and-hold, cash, scheduled-installment and 50/50 asset/cash backtest references over the exact strategy evaluation window, with a selectable equity overlay, configurable candle cadence, fees, returns, drawdowns and disclosed assumptions. Older saved runs remain readable.
+- Portable bounded JSON forecast bundles containing the full frozen input and recipe. Imports verify integrity, refit locally, deduplicate and retain an explicitly unverified import namespace; forecasts and prospective outcomes are not copied. Model archive/restore retains outputs and evaluations and does not silently stop existing monitors.
+- Authenticated inbox JSON/CSV exports with kind and UTC date filters, explicit truncation, and opt-in age retention for read notices. Bounded cleanup protects unread records, unfinished delivery evidence and unprocessed enabled delivery cursors. Monotonic notification sequences preserve future delivery admission after cleanup.
+- Lightweight current-Python-process CPU, resident memory, thread count, database/WAL size, free workspace-volume space and process uptime in Workspace. Saved provider read history adds fixed latency histograms, p50/p95 upper bounds and sample coverage across restarts; historical reads without buckets remain visibly partial.
+- Native read-only Broker/Chronos/Technician evidence and page help for the new research, library and history controls.
 
 ### Fixed
 

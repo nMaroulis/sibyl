@@ -10,6 +10,7 @@ import threading
 from uuid import uuid4
 
 from sibyl import __version__
+from sibyl.forecasting.bundles import ForecastBundles
 from sibyl.forecasting.contracts import ForecastRequest, TrainForecast
 from sibyl.forecasting.engine import ENGINE, fingerprint, predict, train
 from sibyl.forecasting.evaluations import RollingEvaluations
@@ -36,6 +37,7 @@ class ForecastModels:
                 CREATE INDEX IF NOT EXISTS forecast_outputs_model ON forecast_outputs(model_id);
             """)
 
+        self.bundles = ForecastBundles(self)
         self.evaluations = RollingEvaluations(self)
         self.forward = ForwardMonitor(self)
 
@@ -104,6 +106,8 @@ class ForecastModels:
                     "parameters": artifact["parameters"],
                     "parent_id": parent_id,
                 }
+                if parent and parent["metadata"].get("imported_from"):
+                    metadata["imported_from"] = parent["metadata"]["imported_from"]
                 payload = {"metadata": metadata, "artifact": artifact, "request": body.model_dump()}
                 db.execute(
                     "INSERT INTO forecast_models VALUES(?,?,?,?,?)",
@@ -131,11 +135,37 @@ class ForecastModels:
             raise ValueError("Saved model integrity check failed.")
         return result
 
-    def list(self):
+    def list(self, include_archived=False):
         """Return all bounded registry metadata without reading providers or constructing LLMs."""
         with self.store.db() as db:
-            rows = db.execute("SELECT metadata FROM forecast_models ORDER BY rowid DESC LIMIT 100").fetchall()
+            rows = db.execute(
+                "SELECT metadata FROM forecast_models WHERE ? OR COALESCE(json_extract(metadata,'$.archived'),0)=0 ORDER BY rowid DESC LIMIT 100",
+                (include_archived,),
+            ).fetchall()
         return {"items": [json.loads(row[0]) for row in rows], "limit": 100}
+
+    def archive(self, identity, archived, revision):
+        """Hide/restore a model version without deleting evidence or silently stopping its monitors."""
+        self._load(identity)
+        with self.store.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            payload = json.loads(
+                db.execute("SELECT payload FROM forecast_models WHERE id=?", (identity,)).fetchone()[0]
+            )
+            metadata = payload["metadata"]
+            if bool(metadata.get("archived")) != archived:
+                if metadata.get("archive_revision", 0) != revision:
+                    raise ValueError("Model archive state changed. Refresh before editing it.")
+                metadata.update(
+                    archived=archived,
+                    archived_at=iso(now_ms()) if archived else None,
+                    archive_revision=revision + 1,
+                )
+                db.execute(
+                    "UPDATE forecast_models SET metadata=?,payload=? WHERE id=?",
+                    (json.dumps(metadata), json.dumps(payload, allow_nan=False), identity),
+                )
+        return self.detail(identity)
 
     def detail(self, identity, horizon=None):
         """Read all compact metrics and only the requested horizon's test trace."""
@@ -228,6 +258,14 @@ class ForecastModels:
         """Retain one explicit forecast; current input must match the model's exact source and environment."""
         model = self._load(identity)
         metadata = model["metadata"]
+        if metadata.get("archived"):
+            raise ValueError(
+                "Restore this archived model before creating a new forecast. Existing evidence remains readable."
+            )
+        if metadata["environment"] == "imported" and body.input_kind != "saved_input":
+            raise ValueError(
+                "Imported model source is unverified. Use saved-input research, not a current provider feed."
+            )
         if body.input_kind == "saved_input":
             result = self.preview(identity, body.horizon)
         else:
@@ -245,6 +283,13 @@ class ForecastModels:
         result["result_fingerprint"] = fingerprint(result)
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
+            latest = json.loads(
+                db.execute("SELECT metadata FROM forecast_models WHERE id=?", (identity,)).fetchone()[0]
+            )
+            if latest.get("archived"):
+                raise ValueError(
+                    "This model was archived while forecasting. Restore it before creating new outputs."
+                )
             db.execute(
                 "INSERT INTO forecast_outputs VALUES(?,?,?)",
                 (result["id"], identity, json.dumps(result, allow_nan=False)),

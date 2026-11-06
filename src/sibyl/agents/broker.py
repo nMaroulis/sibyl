@@ -24,8 +24,9 @@ SYSTEM_PROMPT = (
     "the user's saved order status and reconciliation evidence. Its order_id is Sibyl's record ID, "
     "not a venue ID; ask or list records if unclear. This tool reads retained observations, not current "
     "exchange state. Never suggest an uncertain order is safe to resubmit. "
-    "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. Call "
-    "strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
+    "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. "
+    "Use backtest_report for recorded reference portfolio metrics and strategy_help benchmarks for their assumptions. "
+    "Use strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
     "supported rules and assumptions. Call backtest_report for a saved or selected historical run: "
     "explain actual simulated fills, costs, input provenance and metrics. Never describe a backtest "
     "as predictive or confuse synthetic Demo input with observed exchange prices. "
@@ -228,7 +229,9 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Inspect a saved backtest's metrics, costs, input provenance and ten recent round trips.
 
         Supply a known run_id or omit it for the selected experiment. Use to explain
-        actual historical simulation results; strategy_help covers running or rerunning one.
+        actual historical simulation results, including recorded cash, hold, installment
+        and 50/50 reference returns, costs and assumptions when available. strategy_help
+        covers running or rerunning an experiment; older reports may lack reference evidence.
         """
         import json
 
@@ -242,7 +245,12 @@ def create_agent(services: Services, **runtime) -> Agent:
             **{
                 key: value
                 for key, value in result.items()
-                if key not in {"curve", "price_series", "benchmark_curve", "fills", "round_trips"}
+                if key
+                not in {"curve", "price_series", "benchmark_curve", "benchmarks", "fills", "round_trips"}
+            },
+            "benchmarks": {
+                name: {key: value for key, value in item.items() if key not in {"curve", "fills"}}
+                for name, item in result.get("benchmarks", {}).items()
             },
             "recent_round_trips": result.get("round_trips", [])[-10:],
             "evidence_trade_limit": 10,

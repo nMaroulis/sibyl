@@ -119,6 +119,7 @@ class BacktestRequest(Request):
     candles: int = Field(default=180, ge=60, le=720)
     fee_bps: float = Field(default=10, ge=0, le=200)
     slippage_bps: float = Field(default=5, ge=0, le=200)
+    benchmark_interval: int = Field(default=20, ge=1, le=365, strict=True)
     window: int = Field(default=20, ge=5, le=120)
     timeframe: Timeframe = "1d"
     fast_period: int = Field(default=9, ge=2, le=100)

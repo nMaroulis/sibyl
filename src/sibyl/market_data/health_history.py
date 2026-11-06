@@ -11,6 +11,7 @@ from contextlib import closing
 from datetime import UTC, datetime, timedelta
 
 from sibyl.market_data.control import MESSAGES
+from sibyl.market_data.latency import bucket, distribution
 from sibyl.market_data.read_events import ProviderReadEvents
 from sibyl.storage import Store
 
@@ -53,6 +54,13 @@ class ProviderHistory:
                 );
                 CREATE INDEX IF NOT EXISTS provider_errors_source ON provider_read_errors(source_id, at);
             """)
+            db.execute("BEGIN IMMEDIATE")
+            if "latency_buckets" not in {
+                row[1] for row in db.execute("PRAGMA table_info(provider_read_hours)")
+            }:
+                db.execute(
+                    "ALTER TABLE provider_read_hours ADD COLUMN latency_buckets TEXT NOT NULL DEFAULT '{}'"
+                )
             self._prune(db)
 
     def _prune(self, db):
@@ -138,6 +146,11 @@ class ProviderHistory:
                         hour,
                     ),
                 )
+                path = f'$."{bucket(latency_ms)}"'
+                db.execute(
+                    "UPDATE provider_read_hours SET latency_buckets=json_set(latency_buckets,?,COALESCE(json_extract(latency_buckets,?),0)+1) WHERE source_id=? AND generation=? AND hour=?",
+                    (path, path, source["id"], generation, hour),
+                )
                 if failed:
                     db.execute(
                         "INSERT INTO provider_read_errors(source_id,generation,at,kind) VALUES (?,?,?,?)",
@@ -185,6 +198,13 @@ class ProviderHistory:
                 "ORDER BY at DESC,id DESC LIMIT 20",
                 (source_id, start.isoformat(), now.isoformat()),
             ).fetchall()
+            histograms = [
+                row[0]
+                for row in db.execute(
+                    "SELECT latency_buckets FROM provider_read_hours WHERE source_id=? AND hour>=? AND hour<=?",
+                    (source_id, start.isoformat(), now.isoformat()),
+                )
+            ]
         by_hour = {row["hour"]: dict(row) for row in rows}
         count = sum(row["requests"] for row in rows)
         success = sum(row["successes"] for row in rows)
@@ -195,6 +215,7 @@ class ProviderHistory:
             "start": start.isoformat(),
             "hours": hours,
             "retention_days": RETENTION_DAYS,
+            "latency_distribution": distribution(histograms, count),
             "totals": {
                 "requests": count,
                 "successes": success,

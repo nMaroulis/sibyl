@@ -5,6 +5,7 @@ import pandas as pd
 from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.models import BacktestRequest
 from sibyl.services.markets.analytics import performance_metrics
+from sibyl.strategies.research.benchmarks import references
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
 
 
@@ -224,6 +225,8 @@ class BacktestEngine:
                 "end": candles[-1]["timestamp"],
             },
         )
+        if evaluation_start is None:
+            result["benchmarks"] = references(candles, request, start, benchmark)
         return result
 
 

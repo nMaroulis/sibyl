@@ -6,21 +6,21 @@ This is an audit of the current Python backend, not a release schedule. **The ma
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
 
-| Area                           | Current state | Next missing foundation                                                                               |
-| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
-| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.         |
-| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
-| Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation. |
-| Market-data infrastructure     | partial       | Broader historical adapters, quota metrics and private/additional-provider WebSockets.      |
-| Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, resource metrics and more delivery channels.  |
-| Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.       |
-| Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
-| Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.   |
-| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
-| Forecasting                    | partial       | More model families, automatic recalibration and calibrated drift monitoring; prospective outcome tracking is implemented.   |
-| Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                            |
-| Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.              |
-| Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                      |
+| Area                           | Current state | Next missing foundation                                                                                                    |
+| ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.                              |
+| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                                                   |
+| Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
+| Market-data infrastructure     | partial       | Broader historical adapters, quota metrics and private/additional-provider WebSockets.                                     |
+| Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, tracing and more delivery channels.                                      |
+| Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
+| Strategy research              | partial       | Continuous deployment simulation, nested validation and broader optimization.                                              |
+| Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.                       |
+| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.                                   |
+| Forecasting                    | partial       | More model families, automatic recalibration and calibrated drift monitoring; prospective outcome tracking is implemented. |
+| Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                         |
+| Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.                                  |
+| Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                                           |
 
 ## Working foundations
 
@@ -133,7 +133,7 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 - [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
 - [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Live session counters reset on API restart.
 - [x] Persist bounded hourly HTTP read outcomes, success rate, mean/peak response time and sanitized errors; inspect 24-hour/7-day windows across restart. History never establishes current credential readiness or uptime. See [retained read history](provider-control.md#retained-read-history).
-- [ ] Add richer latency distributions and application-wide operational metrics. Continuous availability monitoring remains a separate future capability.
+- [x] Add fixed provider latency histograms with p50/p95 upper bounds and legacy sample coverage, plus current-process CPU/memory/threads, database/WAL and free-volume metrics. External uptime and distributed tracing remain pending.
 - [x] Support held-asset valuation and editable watchlists beyond the six defaults with bounded provider reads; broader aggregator discovery remains future work.
 
 ### 6. Strategy research — partial
@@ -144,7 +144,7 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 - [x] Add reproducible seeded finite random search with an explicit candidate budget, full-space validation, coverage/fingerprints, saved plans, exact-study replay checks and native Broker evidence.
 - [ ] Add nested validation, continuous rebalanced deployment simulations and Bayesian/distribution-based optimization; repeated user experiments can still overfit.
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
-- [ ] Add additional explicit benchmarks and strategy-version comparisons.
+- [x] Add exact-window cost-aware cash, buy-and-hold, scheduled-installment and 50/50 asset/cash references, selectable equity overlays and actual cost/metric summaries. Saved same-input strategy comparisons remain available; continuous deployment simulation is separate.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
 - [ ] Define a plugin contract for custom strategies and optional Freqtrade integration.
 - [ ] Implement the planned ML/RL strategies with their own training/evaluation pipeline.
@@ -191,7 +191,8 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Expose descriptive lag-feature departures from training ranges without claiming a calibrated drift detector.
 - [x] Add bounded expanding/fixed-window historical rolling evaluation of a saved recipe, with causal refits/calibration, purged test boundaries, pooled benchmark metrics, immutable reports/reruns, per-fold charts/exports and native Chronos evidence. This is historical research, not live forward performance.
 - [x] Add prospective exact-source outcome tracking with original-save-time eligibility, corrected actual receipts, equal-horizon benchmarks, pause/resume, explicit refresh and native evidence.
-- [ ] Add calibrated drift monitoring, automated recalibration and managed model archive/import beyond the bounded registry.
+- [x] Add bounded portable JSON model/input bundles with integrity validation, offline local refitting, unverified imported namespaces and deduplication; archive/restore model versions without deleting evidence or silently stopping monitors.
+- [ ] Add calibrated drift monitoring, automated recalibration and larger managed lifecycles.
 - [ ] Add neural/ARIMA and other model families, richer features and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
@@ -249,9 +250,11 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [ ] Add other external alert channels and richer review controls; live alert-delivery acceptance remains a deployment check.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
-- [ ] Add resource metrics, tracing, external uptime monitoring and richer latency distributions.
+- [x] Add lightweight process resource counters and fixed latency histograms with scoped, honest coverage.
+- [ ] Add tracing, broader host diagnostics and external uptime monitoring.
 - [x] Add passphrase-encrypted managed archives, authenticated inspection/download/import and validated separate-directory restore. Recovery quarantines automatic work and requires explicit review/restart.
-- [ ] Add notification retention/export and credential/key rotation tools beyond encrypted backup/restore.
+- [x] Add private filtered notification JSON/CSV exports and opt-in bounded read-history retention, protected unread/delivery evidence, cleanup receipts and monotonic cursor-safe notification sequences.
+- [ ] Add credential/key rotation tools beyond encrypted backup/restore.
 
 ### 12. Hosted/multi-user product — deferred
 

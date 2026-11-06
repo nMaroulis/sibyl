@@ -441,3 +441,125 @@
   grid-column: 1 / -1;
   margin-top: 0;
 }
+
+/* Compact research and operational controls share the existing quiet panel language. */
+.benchmark-comparison {
+  margin: 16px 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.benchmark-comparison summary,
+.research-transfer summary,
+.notification-history-controls summary,
+.latency-distribution summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.benchmark-comparison td small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 3px;
+}
+.research-transfer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.inline-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.inline-check input {
+  width: auto;
+  margin: 0;
+}
+.history-control-grid,
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.history-retention-settings {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.history-retention-settings input[type='number'] {
+  max-width: 110px;
+}
+.notification-history-controls summary svg {
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.resource-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--border);
+}
+.resource-grid > div {
+  background: var(--surface, #fff);
+  display: grid;
+  gap: 5px;
+  padding: 13px 16px;
+}
+.resource-grid small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.resource-grid strong {
+  font-size: 16px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.latency-distribution {
+  margin: 14px 0;
+}
+.latency-buckets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 16px;
+}
+.latency-buckets > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.latency-buckets span {
+  min-width: 65px;
+}
+.latency-buckets meter {
+  flex: 1;
+  min-width: 30px;
+  height: 8px;
+}
+.latency-buckets strong {
+  min-width: 20px;
+}
+@media (max-width: 650px) {
+  .history-control-grid {
+    grid-template-columns: 1fr;
+  }
+  .resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .latency-buckets {
+    grid-template-columns: 1fr;
+  }
+}

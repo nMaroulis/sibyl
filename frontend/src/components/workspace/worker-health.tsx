@@ -25,9 +25,25 @@ type Health = {
   recovery_required: boolean;
   recovery_reviewed: boolean;
   scope: string;
+  resources?: {
+    cpu_percent: number | null;
+    sample_seconds: number | null;
+    rss_bytes: number | null;
+    threads: number | null;
+    database_bytes: number | null;
+    volume_free_bytes: number | null;
+    uptime_seconds: number;
+    status: string;
+    scope: string;
+    unavailable: string[];
+  };
   workers: Worker[];
   events: { id: number; name: string; kind: string; at: string; error: string | null }[];
 };
+const bytes = (value: number | null) =>
+  value == null
+    ? '—'
+    : `${(value / 1024 / 1024).toLocaleString(undefined, { maximumFractionDigits: 1 })} MiB`;
 const issue = (state: string) =>
   ['failed', 'stalled', 'overdue', 'retrying', 'stopped'].includes(state);
 const time = (value: string | null) => (value ? new Date(value).toLocaleTimeString() : 'Not yet');
@@ -140,6 +156,39 @@ export function WorkerHealthPanel() {
                 )}
               </div>
             </div>
+          )}
+          {data?.resources && (
+            <section className="process-resources" aria-label="Python process resources">
+              <div className="resource-grid">
+                {[
+                  [
+                    'CPU · one CPU = 100%',
+                    data.resources.cpu_percent == null
+                      ? data.resources.unavailable.includes('process_counters')
+                        ? 'Unavailable'
+                        : 'Collecting…'
+                      : `${data.resources.cpu_percent}%`,
+                  ],
+                  ['Resident memory', bytes(data.resources.rss_bytes)],
+                  ['Threads', data.resources.threads ?? '—'],
+                  ['Database + WAL', bytes(data.resources.database_bytes)],
+                  ['Free workspace volume', bytes(data.resources.volume_free_bytes)],
+                  ['Process uptime', `${Math.floor(data.resources.uptime_seconds / 60)} min`],
+                ].map(([name, value]) => (
+                  <div key={name}>
+                    <small>{name}</small>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+              <p className="footnote">
+                {data.resources.scope}{' '}
+                {data.resources.sample_seconds != null &&
+                  `CPU window: ${data.resources.sample_seconds}s.`}
+                {data.resources.unavailable.length > 0 &&
+                  ` Unavailable: ${data.resources.unavailable.join(', ')}.`}
+              </p>
+            </section>
           )}
           <details className="worker-details" open={data?.issue_count ? true : undefined}>
             <summary>Inspect {data?.workers.length ?? 0} supervised workers</summary>

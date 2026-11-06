@@ -84,3 +84,11 @@ Each source permits one non-archived rule, with a separate budget of 50 connecti
 ## Account risk watches
 
 **Alerts → Account risk** adds opt-in fixed-account value floors, asset concentration and observed-value drawdown limits. Complete fresh spot valuation is required; notices do not control orders or strategies. See [setup, formulas and limits](account-risk.md).
+
+## Export and retain inbox history
+
+Open **Inbox → History export & retention**. Export JSON or CSV, optionally filtered by kind and UTC dates (inclusive **From**, exclusive **Before**). Each export contains up to 2,000 newest matching notices; use smaller date ranges for larger histories. JSON includes matching/exported counts and an explicit truncation flag. Exporting does not mark notices read. Files can contain private account evidence.
+
+Automatic cleanup is **off by default**. Choose an age of at least seven days, then save the policy to enable it. Only older **read** notices are eligible; unread notices, unfinished delivery receipts and records not yet processed by enabled delivery rules stay protected. The preview shows the actual cutoff and counts. Saving a policy schedules later cleanup; **Clear up to 500 eligible read notices** explicitly performs one bounded pass immediately, even with automatic cleanup disabled. Pending unsaved edits must be saved or discarded first.
+
+Disabling the policy prevents later automatic passes; it cannot restore deleted notices. Cleanup never removes alert rules, financial ledgers, conversations or the separate messaging delivery history. Recent cleanup receipts remain visible. Restored workspaces keep automatic workers paused until recovery review and restart.

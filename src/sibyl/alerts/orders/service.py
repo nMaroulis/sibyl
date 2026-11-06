@@ -233,7 +233,7 @@ class OrderAlerts:
                             cycle=event["id"],
                         )
                         db.execute(
-                            "INSERT INTO alert_notifications VALUES(?,?,?,?,NULL,?)",
+                            "INSERT INTO alert_notifications(id,rule_id,cycle,created_at,read_at,payload) VALUES(?,?,?,?,NULL,?)",
                             (
                                 uuid4().hex,
                                 rule["id"],

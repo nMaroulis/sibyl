@@ -48,6 +48,7 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
         "settings_guide",
         "exchange_setup",
         "workspace_operations",
+        "notification_history",
         "read_context_artifact",
     }
     use_model(client, monkeypatch, ["A general explanation without account reads."])

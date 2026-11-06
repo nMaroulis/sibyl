@@ -25,13 +25,13 @@ Repeatedly trying settings after looking at test results can still overfit that 
 
 Choose a horizon to see the corresponding held-out targets and chart:
 
-| Evidence | Interpretation |
-| --- | --- |
-| MAE | Mean absolute price error, in the pair's quote units. Lower is better. |
-| RMSE | Root mean squared price error, also in quote units; emphasizes larger errors. |
-| MAPE | Mean absolute percentage price error. It is not investment return. |
-| MAE skill vs naïve | `100 × (1 − model MAE / naïve MAE)`. Positive means lower model error; negative means the naïve forecast did better. Undefined when naïve MAE is effectively zero. |
-| Observed band coverage | Share of held-out targets inside the empirical band, compared with nominal 90%. |
+| Evidence               | Interpretation                                                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| MAE                    | Mean absolute price error, in the pair's quote units. Lower is better.                                                                                             |
+| RMSE                   | Root mean squared price error, also in quote units; emphasizes larger errors.                                                                                      |
+| MAPE                   | Mean absolute percentage price error. It is not investment return.                                                                                                 |
+| MAE skill vs naïve     | `100 × (1 − model MAE / naïve MAE)`. Positive means lower model error; negative means the naïve forecast did better. Undefined when naïve MAE is effectively zero. |
+| Observed band coverage | Share of held-out targets inside the empirical band, compared with nominal 90%.                                                                                    |
 
 The **naïve** benchmark holds the origin's last close. The **drift** benchmark uses the mean daily log return from the training partition. All methods use the same test origins and targets. The chart displays at most 400 samples, while metrics and JSON exports retain the full bounded selection.
 
@@ -77,3 +77,11 @@ The input-shift check counts lag features outside the training sample's observed
 The [Live forecast scorecard](forecast-outcomes.md) compares saved prospective predictions with actual closes. Additional model families, richer features, automated recalibration, empirically evaluated drift monitoring and larger model lifecycle management remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Trained forecast origins and chart targets use the daily candle close time, when the close becomes available. Raw dataset timestamps and partition boundaries retain the archive’s opening-time convention; a target close can equal the exclusive end boundary of the partition containing its candle.
+
+## Move and organize models
+
+**Model library → Export portable bundle** downloads a JSON package with the training recipe, recorded numerical evidence and complete immutable daily input. In another workspace, expand **Import a model from another workspace**, choose the file and select **Import & verify**. Sibyl verifies the data and hashes, then fits the recipe locally; uploaded coefficients and scores never become trusted computed results.
+
+Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the known ridge engine, 360–5,000 consecutive closed daily candles and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
+
+**Archive model** hides a version from the default picker and disables new saved forecasts. **Show archived versions → Restore model** brings it back. Saved outputs, evaluations and any existing outcome monitors remain intact; archiving neither deletes storage nor silently pauses monitors. Pause outcome tracking separately if needed. Read-only Chronos help explains these controls and can inspect archived versions on request.

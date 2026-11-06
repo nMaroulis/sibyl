@@ -206,6 +206,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 120,
             ),
             ("execution-alerts", "Order and fill notifications", trading.alerts.tick, 1, 60),
+            ("notification-retention", "Read-notification retention", alerts._inbox.history.tick, 60, 60),
             ("forecast-observations", "Forecast outcomes", forecasts.forward.tick, 60, 120),
             ("history", "Candle history", lambda: background_call(history.tick), 1, 120),
             ("briefings", "Scheduled investigations", briefing_tick, 2, 120),
@@ -239,6 +240,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             await market.live.close()
             await workers.close()
+            await asyncio.to_thread(alerts._inbox.history.close)
             await asyncio.to_thread(alert_delivery.close)
             await asyncio.to_thread(trading.alerts.close)
             await asyncio.to_thread(forecasts.forward.close)
@@ -350,11 +352,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     from sibyl.api.account_returns import router as returns_router
     from sibyl.api.advanced_orders import router as advanced_orders_router
+    from sibyl.api.notification_history import router as notification_history_router
     from sibyl.api.order_alerts import router as order_alerts_router
 
     app.include_router(advanced_orders_router)
     app.include_router(returns_router)
     app.include_router(order_alerts_router)
+    app.include_router(notification_history_router)
     from sibyl.api.library import router as library_router
     from sibyl.api.workspace import router as workspace_router
 

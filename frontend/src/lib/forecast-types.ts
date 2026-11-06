@@ -26,6 +26,14 @@ export type ForecastModel = {
   engine: string;
   app_version: string;
   parent_id: string | null;
+  archived?: boolean;
+  archive_revision?: number;
+  imported_from?: {
+    verified: false;
+    claimed_source: string;
+    method: string;
+    recorded_fit_matches_local: boolean;
+  };
   parameters: { lags: number; alpha: number; max_horizon: number };
 };
 export type ForecastMetrics = { mae: number; rmse: number; mape_pct: number };

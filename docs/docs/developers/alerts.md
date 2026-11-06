@@ -112,3 +112,11 @@ All paths use the `/api/v1` prefix, workspace authorization and `Cache-Control: 
 ## Account risk subscriptions
 
 `Portfolio.risk_alerts` evaluates fixed active-account sets with source-pinned complete fresh valuation. Value floors, concentration and observed-value drawdown, recovery/cooldown, revision-checked controls and bounded snapshots share the inbox with `kind: risk`. These are notification policies, separate from execution protection. See [contracts and concurrency boundaries](account-risk.md).
+
+## Inbox exports and opt-in retention
+
+`alerts/history/` owns separate contracts, schema upgrade and history service. The existing inbox adopts `sequence INTEGER PRIMARY KEY AUTOINCREMENT` while preserving prior rowids, IDs, rule/cycle uniqueness and payloads in one transaction. A removed tail can never cause later notifications to reuse a delivery cursor value. New writes name their columns; delivery reads alias `rowid AS rowid` for SQLite’s integer-primary-key naming behavior.
+
+`GET /notifications/export?format=json|csv&kind=all|price|risk|strategy|connection|order&start=...&end=...` reads a consistent bounded selection. Time bounds require timezone-aware ISO dates; start is inclusive and end exclusive. JSON reports total/exported/limit/truncated. CSV uses explicit quoting and spreadsheet-formula neutralization; total/truncated also appear in response headers. All history endpoints use normal workspace authorization and `Cache-Control: no-store`.
+
+`GET/POST /notifications/retention` reads or revision-checks the opt-in policy; `POST /notifications/retention/clear` requires the reviewed revision and clears at most 500 eligible notices. The supervised `notification-retention` worker checks once a minute, with empty-pass spacing. Each deletion transaction rereads policy and guards old read notices against unprocessed enabled delivery cursors and nonterminal message deliveries. Sent/skipped/failed/partial deliveries are terminal; pending/retrying/sending/blocked/uncertain or unknown states protect their inbox evidence. Up to 100 cleanup receipts are retained (latest ten displayed). Recovery pauses the worker, and shutdown drains an admitted batch. Technician’s native `notification_history` tool reads status only.

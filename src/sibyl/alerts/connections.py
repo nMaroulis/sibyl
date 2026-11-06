@@ -238,7 +238,7 @@ class ConnectionAlerts:
             cycle=event["id"],
         )
         db.execute(
-            "INSERT INTO alert_notifications VALUES(?,?,?,?,NULL,?)",
+            "INSERT INTO alert_notifications(id,rule_id,cycle,created_at,read_at,payload) VALUES(?,?,?,?,NULL,?)",
             (uuid4().hex, rule["id"], event["id"], checked, json.dumps(payload, allow_nan=False)),
         )
         rule.update(notifications=rule["notifications"] + 1, last_notified_at=checked)

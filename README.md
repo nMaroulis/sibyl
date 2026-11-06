@@ -60,7 +60,7 @@ Execution, imports and recovery vary by provider. Each exchange card in Settings
 
 Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Bollinger Surge, Impulse Breakout and Quantum Momentum**. Start with a simple configuration, then expand indicator, risk and execution settings.
 
-- **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against buy-and-hold, drawdowns and trade-level metrics.
+- **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against cost-aware buy-and-hold, cash, installment and 50/50 references, drawdowns and trade-level metrics.
 - **Validate:** compare a small grid or sample a larger parameter space with a reproducible seed, then run chronological holdouts and expanding walk-forward tests. Inspect candidate coverage, save inputs and rerun exact studies.
 - **Monitor:** follow paper or separately approved exchange runs through charts, execution markers and a persistent decision journal.
 - **Control:** use account-bound budgets, order limits, a global strategy halt and optional shared exposure and observed daily-loss controls.
@@ -106,6 +106,8 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 ### Forecast · Train, evaluate, inspect
 
 Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
+
+Move models between workspaces with bounded JSON bundles that verify inputs and refit locally, with imported sources clearly labeled unverified. Archive and restore versions without deleting saved evidence.
 
 Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families and automated recalibration are pending.
 
@@ -221,5 +223,7 @@ npm run build
 For release preparation, use the single version command documented in [distribution and releases](docs/docs/developers/distribution.md). It synchronizes package metadata and locks without upgrading dependencies.
 
 Start with the [user guides](https://nmaroulis.github.io/sibyl/), explore the [Python architecture](docs/docs/developers/architecture.md), or use the [extension guide](docs/docs/developers/extending.md) to add a client, strategy or agent tool. The [pending checklist](docs/docs/developers/backend-roadmap.md) tracks work beyond the v2.0.0 baseline.
+
+Inbox history supports filtered private JSON/CSV exports and opt-in cleanup of old read notices, with unread and unfinished delivery evidence protected. Workspace settings exposes scoped Python process resources; saved provider history shows latency distributions and actual sample coverage.
 
 Sibyl is released under the [Apache License 2.0](LICENSE).
