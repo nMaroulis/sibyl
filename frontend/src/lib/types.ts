@@ -1,6 +1,7 @@
 /** JSON contracts shared by the typed API client and dashboard screens. */
 export type Source = {
   source: string;
+  provider?: string;
   source_label?: string;
   as_of?: string;
   environment?: string;
@@ -64,6 +65,7 @@ export type MarketAsset = Omit<Asset, 'price'> & {
   observed_at: string | null;
 };
 export type Portfolio = Source & {
+  diversification?: import('../components/portfolio-diversification').Diversification;
   mode: AccountSelection['mode'];
   total: number;
   active: boolean;
@@ -617,6 +619,9 @@ export type Run = {
 
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
+  comparison_symbols?: string[];
+  correlation_method?: 'pearson' | 'spearman' | 'distance';
+  correlation_transform?: 'log_returns' | 'prices' | 'changes';
   backtest_id?: string;
   validation_id?: string;
   portfolio_scope?: string;

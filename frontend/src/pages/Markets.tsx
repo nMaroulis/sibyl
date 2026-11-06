@@ -1,3 +1,4 @@
+import { ReturnRelationships, type Regression } from '../components/markets/relationships';
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -46,7 +47,14 @@ import type {
   Timeframe,
 } from '../lib/types';
 
-type Correlation = Source & { symbols: string[]; matrix: number[][]; observations: number };
+type Correlation = Source & {
+  symbols: string[];
+  matrix: (number | null)[][];
+  observations: number;
+  available_observations: number;
+  note: string;
+  regression?: Regression;
+};
 export function Markets() {
   const [params, setParams] = useSearchParams();
   const settings = useResource<MarketSettings>('/settings/market');
@@ -137,7 +145,12 @@ function MarketsView({
     sourceId,
     symbol,
     timeframe,
-    hasCandles && pairs.length > 0 && ['binance', 'binance-testnet'].includes(source.provider),
+    hasCandles &&
+      pairs.length > 0 &&
+      (['binance', 'binance-testnet'].includes(source.provider) ||
+        (source.provider === 'kraken' &&
+          source.environment === 'production' &&
+          ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'].includes(timeframe))),
   );
   const corr = useResource<Correlation>(
     `/markets/correlation?symbols=${encodeURIComponent(comparisons)}&timeframe=${timeframe}&limit=${limit}&method=${method}&transform=${transform}&${suffix}`,
@@ -150,7 +163,19 @@ function MarketsView({
     next.delete('asset');
     setParams(next);
   };
-  const context = { symbol, timeframe, limit, market_source: sourceId };
+  const context = {
+    symbol,
+    timeframe,
+    limit,
+    market_source: sourceId,
+    ...(tab === 'correlation' && corr.data
+      ? {
+          comparison_symbols: corr.data.symbols,
+          correlation_method: method as 'pearson' | 'spearman' | 'distance',
+          correlation_transform: transform as 'log_returns' | 'prices' | 'changes',
+        }
+      : {}),
+  };
   return (
     <>
       <PageTitle
@@ -287,12 +312,17 @@ function MarketsView({
                 <span
                   className={`market-live-state ${live.state}`}
                   title={
-                    live.error || 'Live previews do not change the closed-candle analysis sample.'
+                    live.error ||
+                    (source.provider === 'kraken'
+                      ? 'Kraken OHLC and untimestamped tickers use local receipt time; this does not prove last-trade freshness. Preview only; analysis stays on closed REST candles.'
+                      : 'Live previews do not change the closed-candle analysis sample.')
                   }
                 >
                   <i aria-hidden="true" />
                   {live.state === 'live'
-                    ? 'Live'
+                    ? live.time_basis === 'receipt'
+                      ? 'Live · receipt timed'
+                      : 'Live'
                     : live.state === 'rest'
                       ? 'REST snapshots'
                       : live.state === 'connecting'
@@ -461,6 +491,7 @@ function MarketsView({
                         <select value={method} onChange={(e) => setMethod(e.target.value)}>
                           <option value="pearson">Pearson</option>
                           <option value="spearman">Spearman ranks</option>
+                          <option value="distance">Distance · nonlinear</option>
                         </select>
                       </label>
                       <label>
@@ -503,10 +534,10 @@ function MarketsView({
                                   <td
                                     key={j}
                                     style={{
-                                      background: `rgba(${v >= 0 ? '91,143,211' : '197,108,128'},${0.05 + Math.abs(v) * 0.35})`,
+                                      background: `rgba(${(v ?? 0) >= 0 ? '91,143,211' : '197,108,128'},${0.05 + Math.abs(v ?? 0) * 0.35})`,
                                     }}
                                   >
-                                    {v.toFixed(2)}
+                                    {v == null ? '—' : v.toFixed(2)}
                                   </td>
                                 ))}
                               </tr>
@@ -515,9 +546,15 @@ function MarketsView({
                         </table>
                       </div>
                       <p className="footnote">
-                        Correlation changes with the window and transformation. Association does not
-                        establish causation.
+                        {corr.data.note}{' '}
+                        {corr.data.available_observations > corr.data.observations &&
+                          `Using ${corr.data.observations} of ${corr.data.available_observations} aligned observations.`}
                       </p>
+                      <ReturnRelationships
+                        data={corr.data.regression}
+                        source={corr.data}
+                        timeframe={timeframe}
+                      />
                       <DataNote source={corr.data.source} label={corr.data.source_label} />
                     </div>
                   )}

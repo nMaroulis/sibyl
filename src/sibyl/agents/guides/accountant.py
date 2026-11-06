@@ -46,6 +46,7 @@ GUIDES = {
         "/account",
         (
             "Open Account for holdings, allocation and valuation across active exchange accounts.",
+            "Expand Diversification in Allocation for HHI, effective asset count, largest asset and top-three value weight. Incomplete valuation means unavailable metrics. This measures value spread, including cash/stablecoins separately, not independent risk factors.",
             "Choose all accounts, one exchange or one account in the account selector; inspect pricing warnings before interpreting totals.",
             "For imported fills, accounting and funding, open Trade → Account history.",
         ),
@@ -136,7 +137,7 @@ GUIDES = {
         "/alerts?tab=risk",
         (
             "Open Alerts → Account risk and pin a fixed set of active accounts in one environment plus a reference feed.",
-            "Choose a value floor, asset concentration or observed-value drawdown threshold, then explicitly arm the rule.",
+            "Choose a value floor, asset concentration, HHI/top-three concentration or observed-value drawdown threshold, then explicitly arm the rule.",
             "Use View evidence for retained valuation details and Inbox for notices. A rule’s Delivery control can opt into Telegram notifications with a checked private recipient, cooldown and freshness window. Edits save paused; Resume starts a new observation window.",
         ),
         (

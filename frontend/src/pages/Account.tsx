@@ -1,3 +1,4 @@
+import { PortfolioDiversification } from '../components/portfolio-diversification';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -252,6 +253,7 @@ function PortfolioWorkspace({
               </div>
             )}
           </ExpandableRows>
+          <PortfolioDiversification data={data.diversification} />
         </Panel>
       </div>
       <div className="dashboard-lower-grid">

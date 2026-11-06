@@ -211,6 +211,8 @@ export function RiskForm({
         >
           <option value="value_floor">Account value at or below a floor</option>
           <option value="concentration">An asset reaching an allocation limit</option>
+          <option value="hhi">Overall asset concentration · HHI</option>
+          <option value="top_three">Top three assets reaching a combined allocation limit</option>
           <option value="drawdown">Account value falling from an observed peak</option>
         </select>
       </label>
@@ -234,7 +236,11 @@ export function RiskForm({
             ? 'Value floor · USDT'
             : metric === 'concentration'
               ? 'Allocation limit · %'
-              : 'Drawdown limit · %'}
+              : metric === 'hhi'
+                ? 'HHI limit · 0–100'
+                : metric === 'top_three'
+                  ? 'Top-three allocation limit · %'
+                  : 'Drawdown limit · %'}
           <input
             type="number"
             required
@@ -249,17 +255,20 @@ export function RiskForm({
         </label>
       </div>
       <p className="footnote">
-        {metric === 'drawdown'
-          ? 'The first positive complete check establishes the peak. Deposits and withdrawals affect this account-value metric; it is not investment return.'
-          : metric === 'concentration'
-            ? 'Allocation uses the complete selected account value. An unheld asset has 0% weight; an empty wallet has no percentage assessment.'
-            : 'Values use observed conversion rates into USDT; USD and other stablecoins are not assumed equal.'}
+        {metric === 'hhi' || metric === 'top_three'
+          ? 'Uses every valued asset in the fixed account set, including cash and stablecoins. HHI measures squared value weights on a 0–100 scale; top-three adds the three largest weights. This is value concentration, not correlation-adjusted risk.'
+          : metric === 'drawdown'
+            ? 'The first positive complete check establishes the peak. Deposits and withdrawals affect this account-value metric; it is not investment return.'
+            : metric === 'concentration'
+              ? 'Allocation uses the complete selected account value. An unheld asset has 0% weight; an empty wallet has no percentage assessment.'
+              : 'Values use observed conversion rates into USDT; USD and other stablecoins are not assumed equal.'}
       </p>
       <details className="risk-advanced">
         <summary>Recovery & notification controls</summary>
         <div className="form-row">
           <label>
-            Recovery level · {metric === 'value_floor' ? 'USDT' : '%'}
+            Recovery level ·{' '}
+            {metric === 'value_floor' ? 'USDT' : metric === 'hhi' ? 'HHI · 0–100' : '%'}
             <input
               type="number"
               min="0"

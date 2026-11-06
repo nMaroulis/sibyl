@@ -216,6 +216,9 @@ class AgentContext(Request):
 
     symbol: str | None = None
     market_source: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
+    comparison_symbols: list[str] | None = Field(default=None, min_length=2, max_length=8)
+    correlation_method: Literal["pearson", "spearman", "distance"] | None = None
+    correlation_transform: Literal["log_returns", "prices", "changes"] | None = None
     portfolio_scope: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
     performance_view: bool | None = None
     performance_account_id: str | None = Field(default=None, max_length=100)
@@ -274,6 +277,16 @@ class AgentContext(Request):
     def valid_symbol(cls, value: str | None) -> str | None:
         """Apply the same canonical market validation used by trading and backtests."""
         return OrderRequest.valid_symbol(value) if value is not None else None
+
+    @field_validator("comparison_symbols")
+    @classmethod
+    def exact_comparison_symbols(cls, values):
+        if values is None:
+            return values
+        result = [OrderRequest.valid_symbol(value) for value in values]
+        if len(set(result)) != len(result):
+            raise ValueError("Choose each comparison market once.")
+        return result
 
     @field_validator("bitcoin_address")
     @classmethod

@@ -42,7 +42,7 @@ A paper strategy can consume live prices while still using virtual funds. Its ru
 
 ### 1. Account synchronization — partial
 
-There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports for eleven clients/environments, with provider retention shown in the UI. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
+There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports including Bitstamp and Gemini, with provider retention shown in the UI. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
 
 - [x] Persist normalized fills, native order references, fee currencies and rebates in a shared ledger.
 - [x] Add explicit observed balance checkpoints and per-asset quantity comparisons across imported markets, native fees/rebates and eligible funding, with gap/timing/scope checks, saved reports, CSV export and read-only Accountant evidence. See [balance checks](balance-checks.md). This does not establish complete account history or settlement.
@@ -90,7 +90,7 @@ Known orders now import native execution pages into the shared Account history l
 - [ ] Extend replacement to additional providers, partially filled orders and complete amendment/lifecycle history.
 - [x] Add native Binance/Testnet stop-loss/take-profit GTC limits and linked two-leg OCO, exact trigger validation, independent fill tracking and child-ID recovery after a lost response.
 - [ ] Add these advanced orders to more providers; implement trailing, additional time-in-force, post-only and iceberg support.
-- [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini detailed imports remain pending.
+- [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini now also have bounded native imports and exact-order reconciliation, with explicit saturation/reversal/retention limits.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
 - [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
 - [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.
@@ -128,6 +128,7 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 - [x] Persist exact-source OHLCV, reviewed resumable backfills, coverage gaps, manual retention and immutable research snapshots. See [candle history](candle-history.md).
 - [ ] Review historical pagination for the remaining providers and exercise authenticated provider acceptance.
 - [x] Add on-demand Binance production/Testnet public ticker/candle WebSockets, shared bounded queues, reconnect/freshness status, exact-source REST fallback and native Analyst evidence. See [live previews](live-markets.md).
+- [x] Add Kraken v2 public ticker/OHLC previews with exact symbols, native interval filtering, explicit receipt timing and shared lifecycle/fallback.
 - [ ] Add private account/order streams, more public providers and persisted reconnect-gap recovery.
 - [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
 - [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
@@ -209,13 +210,14 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 
 ### 10. Explorer, equities and advanced analytics — partial
 
-Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman correlation exist.
+Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman/distance dependence and descriptive return regressions exist.
 
 - [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
 - [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools. No spendability proof or durable watch is claimed.
 - [ ] Add historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
-- [ ] Add distance correlation, MIC, Granger causality, regression and SHAP only with clear statistical assumptions.
+- [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
+- [ ] Add MIC, Granger and SHAP with evaluated statistical assumptions.
 
 ## Cross-cutting and optional expansion
 
@@ -245,7 +247,8 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add connection read-failure/recovery rules per operation, bounded credential-free evidence, atomic cursor/inbox commits, restart catch-up and revision-checked controls. No polling/uptime claim; see [connection alerts](alerts.md#connection-read-subscriptions).
 - [x] Add fixed-account-set value floors, asset concentration and observed-value drawdown watches with complete fresh valuation, recovery/cooldown, atomic evidence/inbox commits and read-only Accountant tools. See [account risk](account-risk.md).
 - [x] Add per-account order/fill subscriptions over atomic local observation receipts, future-only controls, retained inbox and optional existing Telegram delivery.
-- [ ] Add broader risk metrics and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
+- [x] Add whole-basket HHI/effective-asset/largest/top-three value concentration and optional HHI/top-three alerts, gated on complete fresh valuations.
+- [ ] Add return/correlation-aware risk metrics and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
 - [x] Add opt-in Telegram delivery per price/risk/strategy/connection rule, reviewed recipients, future-only cursors, transactional admission, cooldown suppression, expiry and actual part outcomes. See [contracts](alert-delivery.md).
 - [ ] Add other external alert channels and richer review controls; live alert-delivery acceptance remains a deployment check.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
@@ -282,3 +285,10 @@ Multi-user hosting is deferred. No user accounts, permissions, tenant isolation 
 The [feature coverage table](../guides/feature-coverage.md) tracks current user-facing scope. The [exchange reference](./exchange-clients.md) contains the provider matrix and exchange-specific backlog.
 
 Prospective forecast tracking, measured cash-flow review and execution notifications are described together in [their domain contracts](performance-outcomes-alerts.md). Real forward forecast skill, broad authenticated execution acceptance and complete provider funding accounting remain deployment/evaluation work.
+
+### Additional v2.3.0 scope
+
+- [x] Add native Bitstamp/Gemini spot-history checkpoints and exact-order fee evidence; native retention/saturation/reversal limits stay explicit and private authenticated acceptance is pending. See [import scope](account-sync.md#bitstamp-and-gemini).
+- [x] Add Kraken public live previews through the shared runtime; private-account streams and persisted gap recovery remain pending.
+- [x] Add distance dependence and contemporaneous return-regression evidence; MIC/Granger/SHAP and out-of-sample inference remain outside this feature.
+- [x] Add whole-basket value-concentration metrics and HHI/top-three alerts; broader return/correlation-aware risk and enforcement policies remain separate.

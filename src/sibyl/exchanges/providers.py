@@ -74,6 +74,12 @@ class KrakenClient(CCXTClient):
     id = "kraken"
     history_kind = "kraken-cursor"
 
+    def stream_symbol(self, symbol: str) -> str:
+        """Use Kraken v2's canonical BTC/DOGE names after validating the exact spot market."""
+        with self.lock:
+            self.market(symbol)
+            return self._exchange.market(symbol)["symbol"]
+
 
 class OKXClient(CCXTClient):
     """OKX trading wallet, passphrase signing, and explicit simulated-trading mode."""
@@ -176,12 +182,14 @@ class BitstampClient(CCXTClient):
     """Bitstamp spot account with key/secret authentication."""
 
     id = "bitstamp"
+    history_kind = "bitstamp-transactions"
 
 
 class GeminiClient(CCXTClient):
     """Gemini spot and sandbox reads; native market orders are not supported here."""
 
     id = "gemini"
+    history_kind = "gemini-trades"
 
 
 class BitfinexClient(CCXTClient):

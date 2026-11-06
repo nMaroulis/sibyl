@@ -2,7 +2,7 @@ import type { Inbox } from '../components/notifications';
 import type { Connection, MarketSource } from './types';
 import { number } from './api';
 
-export type RiskMetric = 'value_floor' | 'concentration' | 'drawdown';
+export type RiskMetric = 'value_floor' | 'concentration' | 'drawdown' | 'hhi' | 'top_three';
 export type RiskAccount = Omit<Connection, 'active'>;
 export type RiskSource = {
   source: string;
@@ -96,9 +96,13 @@ export const riskLabel = (metric: RiskMetric, asset = '') =>
     value_floor: 'Account value floor',
     concentration: `${asset || 'Asset'} concentration`,
     drawdown: 'Observed-value drawdown',
+    hhi: 'Asset concentration HHI',
+    top_three: 'Top-three asset concentration',
   })[metric];
 export const riskValue = (value: number | null | undefined, metric: RiskMetric) =>
-  value == null ? '—' : `${number(value, 2)}${metric === 'value_floor' ? ' USDT' : '%'}`;
+  value == null
+    ? '—'
+    : `${number(value, 2)}${metric === 'value_floor' ? ' USDT' : metric === 'hhi' ? ' / 100' : '%'}`;
 export const riskURL = (id: string, sampleId?: number) =>
   `/alerts?tab=risk&rule_id=${encodeURIComponent(id)}${sampleId ? `&sample_id=${sampleId}` : ''}`;
 export const fundsEnvironment = (account: Pick<Connection, 'exchange' | 'sandbox'>) =>

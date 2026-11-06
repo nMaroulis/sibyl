@@ -12,12 +12,12 @@ GUIDES = {
         "Understand live market updates",
         "/markets",
         (
-            "Choose Binance or a saved Binance Testnet market source, a supported pair and interval.",
+            "Choose Binance, a saved Binance Testnet source or Kraken production, a supported pair and interval.",
             "The Live indicator confirms actual stream messages; Connecting, REST fallback or Paused explain interruptions and background-tab behavior.",
             "The chart includes a forming candle preview. Statistics, technical bias and Analyst analysis continue to use closed REST candles.",
         ),
         (
-            "Sockets are shared while viewed, reconnect after interruptions and close when their last viewer leaves. Other feeds use REST; account/order streams are not implemented.",
+            "Sockets are shared while viewed, reconnect after interruptions and close when their last viewer leaves. Kraken supports native intervals; OHLC and untimestamped tickers carry local receipt timing, which does not prove last-trade freshness. Other feeds use REST; account/order streams are not implemented.",
         ),
     ),
     "overview": Guide(
@@ -85,9 +85,10 @@ GUIDES = {
         "/markets",
         (
             "Choose exact provider pairs from the same feed in the correlation section.",
-            "Select Pearson or Spearman and log returns, prices or changes; compare the aligned sample and missing data.",
+            "Select Pearson, Spearman ranks or unsigned distance dependence and log returns, prices or changes. Distance uses at most the latest 360 aligned observations; undefined constant-series results show a dash.",
         ),
         (
+            "Expand Return regression to compare contemporaneous log returns against the first selected market. Inspect beta, per-candle intercept, R², residual error and the pair plot; export the evidence. The intercept is not CAPM alpha and these are in-sample descriptions.",
             "Correlation describes the observed sample, not causation. Price-level correlation can be misleading; log-return comparisons are usually easier to interpret.",
         ),
     ),

@@ -6,11 +6,11 @@ Starting a watch authorizes background **read-only spot balance and price reques
 
 ## Choose a limit
 
-| Watch | Calculation | Alert condition | Recovery |
-| --- | --- | --- | --- |
-| Account value floor | Complete selected holdings valued in USDT | Value at or below your floor | At or above a higher recovery value |
-| Asset concentration | Selected asset value / complete account-set value × 100 | Weight at or above your percentage | At or below a lower recovery percentage |
-| Observed-value drawdown | (Observed peak − current value) / observed peak × 100 | Decline at or above your percentage | At or below a lower recovery percentage |
+| Watch                   | Calculation                                             | Alert condition                     | Recovery                                |
+| ----------------------- | ------------------------------------------------------- | ----------------------------------- | --------------------------------------- |
+| Account value floor     | Complete selected holdings valued in USDT               | Value at or below your floor        | At or above a higher recovery value     |
+| Asset concentration     | Selected asset value / complete account-set value × 100 | Weight at or above your percentage  | At or below a lower recovery percentage |
+| Observed-value drawdown | (Observed peak − current value) / observed peak × 100   | Decline at or above your percentage | At or below a lower recovery percentage |
 
 A value floor or allocation limit can notify on its first complete check. Drawdown first needs a positive observed value to establish its peak. Peaks grow only from complete fresh checks while the rule is armed; there is no historical backfill. An unheld asset has 0% allocation; a zero-value wallet has no allocation percentage. A zero-value wallet after a positive peak is a 100% observed-value drawdown.
 
@@ -54,3 +54,9 @@ Choose **View evidence** on a rule or **View valuation evidence** in its Inbox n
 Up to 120 complete samples per rule are retained within a 14-day, 2,000-sample workspace budget. Sample details may expire sooner under the caps. Notifications retain their original metric, value, limits, account/source attribution, peak, observation/receipt times and sample ID even after sample expiry or edits. Marking a notice read never deletes it.
 
 See [backend contracts](../developers/account-risk.md) and the [remaining-work checklist](../developers/backend-roadmap.md).
+
+## Whole-basket concentration
+
+Choose **Overall asset concentration · HHI** to watch `100 × sum(asset_value_weight²)` on a 0–100 scale, or **Top three assets reaching a combined allocation limit** for the three largest weights in percent. Neither requires an individual asset symbol. Set a lower recovery level and optional cooldown/delivery as for other rules.
+
+The account set stays fixed, and every balance/price must pass the existing complete fresh valuation checks. Cash and different stablecoins count separately; identical assets across accounts combine. Empty or incomplete baskets produce no concentration assessment. These are passive value-concentration notices, not correlation-adjusted risk, automatic rebalancing or trading controls. Account’s Allocation panel exposes the same HHI/effective-asset definitions.

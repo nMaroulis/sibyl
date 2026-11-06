@@ -10,7 +10,7 @@ AREAS = [
         "name": "Account synchronization",
         "status": "partial",
         "priority": "next",
-        "working": "Durable selected-market fills for eleven clients/environments; incremental sync and available-history rescans with correction counts and retained ranges; Binance/Kraken funding and Bybit on-chain withdrawals; reviewed transfers and fee allocations. Explicit per-account balance checkpoints compare observed native quantities with cross-market imported fills, native fees and eligible funding; saved reports expose gaps, timing ambiguity and wallet-scope changes. Funding effects support documented Kraken ledger fees, Binance wallet/completion facts and audited local wallet/fee-convention reviews with stale-source protection. Opt-in pending updates and Binance/Kraken/Bybit rolling recent-history scans resume saved pages, preserve manual ranges, track observed funding revisions and retain fetched-window gap warnings.",
+        "working": "Durable selected-market fills including Bitstamp/Gemini with native ID/millisecond-edge checkpoints and explicit saturation/reversal limits; incremental sync and available-history rescans with correction counts and retained ranges; Binance/Kraken funding and Bybit on-chain withdrawals; reviewed transfers and fee allocations. Explicit per-account balance checkpoints compare observed native quantities with cross-market imported fills, native fees and eligible funding; saved reports expose gaps, timing ambiguity and wallet-scope changes. Funding effects support documented Kraken ledger fees, Binance wallet/completion facts and audited local wallet/fee-convention reviews with stale-source protection. Opt-in pending updates and Binance/Kraken/Bybit rolling recent-history scans resume saved pages, preserve manual ranges, track observed funding revisions and retain fetched-window gap warnings.",
         "pending": [
             "Import pagination and funding support for remaining providers; fiat, staking and subaccounts.",
             "Older funding outside selected lookbacks, native bust/removal handling and versioned fill/order correction audits and complete order/fill/funding/balance reconciliation beyond bounded observed checkpoints; additional provider fee rules, earn/staking and wallet coverage remain incomplete.",
@@ -22,7 +22,7 @@ AREAS = [
         "name": "Portfolio accounting",
         "status": "partial",
         "priority": "next",
-        "working": "Combined/per-account valuation, observed conversion routes, exact-market FIFO, opening basis and reviewed transfer carryover. New measured periods add fresh fixed-account opening/closing valuations, source-bound user/manual cash-flow review, coverage gates, approximate Modified Dietz returns, per-account/combined evidence and native Accountant tools.",
+        "working": "Combined/per-account valuation, observed conversion routes, exact-market FIFO, opening basis and reviewed transfer carryover. New measured periods add fresh fixed-account opening/closing valuations, source-bound user/manual cash-flow review, coverage gates, approximate Modified Dietz returns, per-account/combined evidence and native Accountant tools. Whole-basket value HHI, effective asset count and largest/top-three weights require complete valuation coverage.",
         "pending": [
             "Cross-market basis and historical third-currency/transfer-fee valuation.",
             "Provider-verified complete funding coverage, automatic historical flow conversion and complete account P&L beyond the new user-reviewed measured-period workflow.",
@@ -39,7 +39,7 @@ AREAS = [
             "Broader discovery/recovery adapters, external amendment handling and definitive fee/settlement reconciliation.",
             "Conditional/OCO and replacement adapters for additional providers, partial-order amendment, trailing, post-only, iceberg and other time-in-force choices.",
             "Execution adapters for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit; broader authenticated venue acceptance beyond the initial Binance Testnet lifecycles.",
-            "Detailed fill reconciliation and resumable imports for Bitstamp/Gemini; client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
+            "Client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
         ],
     },
     {
@@ -47,7 +47,7 @@ AREAS = [
         "name": "Market-data infrastructure",
         "status": "partial",
         "priority": "next",
-        "working": "Exact-source REST data, descriptive market statistics and explainable technical bias, region zoom, retained OHLCV/backfills and immutable inputs; shared read controls and retained HTTP diagnostics; on-demand Binance production/Testnet public ticker/candle streams with bounded fanout, reconnect/freshness states and same-source REST fallback. Closed-candle analysis stays separate. Retained fixed latency histograms report p50/p95 upper bounds and actual sample coverage, including legacy gaps.",
+        "working": "Exact-source REST data, descriptive market statistics and explainable technical bias, region zoom, retained OHLCV/backfills and immutable inputs; shared read controls and retained HTTP diagnostics; on-demand Binance production/Testnet and Kraken production public ticker/candle streams with bounded fanout, reconnect/freshness states and same-source REST fallback. Closed-candle analysis stays separate. Retained fixed latency histograms report p50/p95 upper bounds and actual sample coverage, including legacy gaps.",
         "pending": [
             "Review historical pagination for remaining providers and authenticated provider acceptance.",
             "Reviewed endpoint-weight/IP/account quotas, distributed tracing and broader host diagnostics. Fixed latency histograms and current-process resource metrics are implemented.",
@@ -59,9 +59,9 @@ AREAS = [
         "name": "Alerts & local operations",
         "status": "partial",
         "priority": "next",
-        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, concentration and observed-value drawdown watches with complete fresh valuations. Opt-in per-rule Telegram delivery adds reviewed recipients, future-only admission, cooldown/expiry, durable receipts and pause controls. Per-account order/fill subscriptions add atomic observation receipts, future-only controls and existing Telegram delivery. Actual background-worker progress/fault/deadline monitoring, sanitized retained history, global UI notices and native Technician diagnostics are implemented. Passphrase-encrypted archives support inspection/download/import and validated separate-directory recovery with automation quarantined until review/restart. Workspace exposes bounded current-process resource counters; notification exports and opt-in old-read retention protect unread/delivery evidence and monotonic cursors.",
+        "working": "Editable source-pinned price/crossing rules, per-run strategy journal subscriptions and per-operation connection read-failure/recovery watches; revision checks, bounded evidence, atomic cursors, restart catch-up and a shared local inbox; fixed-account-set value-floor, asset/HHI/top-three concentration and observed-value drawdown watches with complete fresh valuations. Opt-in per-rule Telegram delivery adds reviewed recipients, future-only admission, cooldown/expiry, durable receipts and pause controls. Per-account order/fill subscriptions add atomic observation receipts, future-only controls and existing Telegram delivery. Actual background-worker progress/fault/deadline monitoring, sanitized retained history, global UI notices and native Technician diagnostics are implemented. Passphrase-encrypted archives support inspection/download/import and validated separate-directory recovery with automation quarantined until review/restart. Workspace exposes bounded current-process resource counters; notification exports and opt-in old-read retention protect unread/delivery evidence and monotonic cursors.",
         "pending": [
-            "Broader risk metrics, external uptime monitoring and richer operational metrics. Shared strategy capital/exposure/daily-loss enforcement is a separate implemented policy; alerts never change it.",
+            "Return/correlation-aware risk metrics, external uptime monitoring and richer operational metrics. Shared strategy capital/exposure/daily-loss enforcement is a separate implemented policy; alerts never change it.",
             "Additional external alert channels and richer delivery review; real Telegram alert-delivery acceptance remains a deployment check.",
             "General durable task scheduling, tracing and credential/key rotation beyond implemented encrypted backup/recovery. Current-process resources, filtered inbox exports and opt-in bounded read-history retention are implemented.",
         ],
@@ -142,11 +142,11 @@ AREAS = [
         "name": "Explorer, equities & analytics",
         "status": "partial",
         "priority": "later",
-        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, explicit paged output-spend checks with spending-transaction links, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman correlations.",
+        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, explicit paged output-spend checks with spending-transaction links, JSON exports, independent Demo and native Explorer tools; recent blocks, optional equity research and Pearson/Spearman/distance dependence with descriptive same-interval return regression.",
         "pending": [
             "Historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.",
             "Public-official disclosure archives and advanced portfolio analytics.",
-            "Distance/MIC/Granger/regression/SHAP with evaluated assumptions.",
+            "MIC, Granger and SHAP with evaluated assumptions; distance dependence and descriptive OLS are implemented without significance or causal claims.",
         ],
     },
     {
@@ -170,7 +170,7 @@ def implementation_status() -> dict:
         "reviewed_on": "2026-11-06",
         "scope": "Local single-user workspace",
         "areas": AREAS,
-        "current_focus": "v2.3.0 adds on-demand Binance production/Testnet live market previews, native conditional/OCO orders, unfilled-only manual cancel/replace and matching native Analyst/Broker tools and guides. Actual Testnet lifecycle checks include controlled OCO response loss and exact child recovery, not intermediate partial-fill, late-correction or genuine outage acceptance. Remaining work includes broader provider/private streams, advanced-order adapters, accounting/reconciliation and model/semantic evaluation. Additional research/operations work adds comparable reference portfolios, portable and archived forecast research, protected inbox retention/export and scoped process/latency diagnostics. Multi-user support stays deferred.",
+        "current_focus": "v2.3.0 adds on-demand Binance production/Testnet live market previews, native conditional/OCO orders, unfilled-only manual cancel/replace and matching native Analyst/Broker tools and guides. Actual Testnet lifecycle checks include controlled OCO response loss and exact child recovery, not intermediate partial-fill, late-correction or genuine outage acceptance. Remaining work includes broader provider/private streams, advanced-order adapters, accounting/reconciliation and model/semantic evaluation. Additional research/operations work adds comparable reference portfolios, portable and archived forecast research, protected inbox retention/export and scoped process/latency diagnostics. This batch also adds Bitstamp/Gemini fill imports/reconciliation, native Kraken public previews, bounded nonlinear relationships/return regression and value diversification metrics/alerts. Multi-user support stays deferred.",
         "execution_note": "Paper strategies remain the default. Supported exchange strategies require explicit scoped approval and both backend execution flags. Agents remain read-only. Initial Binance Testnet strategy acceptance passed; broader failure-case/venue acceptance and production execution acceptance remain outstanding.",
         "release_dates": None,
     }

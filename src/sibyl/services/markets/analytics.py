@@ -144,30 +144,31 @@ def forecast(candles: list[dict], horizon: int = 14) -> dict:
 
 
 def correlation(
-    histories: dict[str, list[dict]], method: str = "pearson", transform: str = "log_returns"
+    histories: dict[str, list[dict]], method: str = "pearson", transform: str = "log_returns", *, seconds=None
 ) -> dict:
-    """Align timestamps, transform observations, and calculate Pearson or ranked correlation."""
-    series = {
-        symbol: pd.Series({c["timestamp"]: c["close"] for c in candles})
-        for symbol, candles in histories.items()
-    }
-    prices = pd.DataFrame(series).sort_index()
-    if transform == "prices":
-        observations = prices.dropna()
-    elif transform == "changes":
-        observations = prices.diff().dropna()
+    """Measure same-window association with explicit undefined values and bounded nonlinear work."""
+    from sibyl.market_data.analysis.relationships import aligned, distance_matrix, regressions
+
+    observations = aligned(histories, transform, seconds=seconds)
+    available = len(observations)
+    if method == "distance":
+        observations, matrix = distance_matrix(observations)
+    elif method in {"pearson", "spearman"}:
+        frame = (observations.rank() if method == "spearman" else observations).corr()
+        matrix = [[float(value) if np.isfinite(value) else None for value in row] for row in frame.values]
     else:
-        observations = np.log(prices).diff().dropna()
-    if method not in {"pearson", "spearman"}:
-        raise ValueError("Choose Pearson or Spearman correlation.")
-    # Ranking before Pearson avoids a SciPy dependency for Spearman's rank correlation.
-    matrix = (observations.rank() if method == "spearman" else observations).corr().fillna(0)
+        raise ValueError("Choose Pearson, Spearman or distance correlation.")
     return {
-        "symbols": list(matrix.columns),
-        "matrix": matrix.values.tolist(),
+        "symbols": list(observations.columns),
+        "matrix": matrix,
         "observations": len(observations),
+        "available_observations": available,
         "method": method,
         "transform": transform,
+        "start": observations.index[0].isoformat() if len(observations) else None,
+        "end": observations.index[-1].isoformat() if len(observations) else None,
+        "regression": regressions(histories, seconds=seconds),
+        "note": "Distance correlation is unsigned empirical dependence on at most 360 recent observations; small samples have upward bias. Constant series are unavailable, not zero association. Price-level relationships can be spurious; no causality or significance is established.",
     }
 
 

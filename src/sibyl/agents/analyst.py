@@ -4,7 +4,7 @@ ProtoLink derives tool descriptions and argument schemas from these functions;
 page instructions are retrieved separately from prices and statistical evidence.
 """
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from protolink import Agent
 from pydantic import Field
@@ -12,13 +12,14 @@ from pydantic import Field
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.analyst import GUIDES, Topic
 from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
-from sibyl.services.markets.analytics import analyze
+from sibyl.services.markets.analytics import analyze, correlation
 from sibyl.services.markets.service import TIMEFRAMES
 
 NAME = "Analyst"
 TAGLINE = "Find the signal"
 DESCRIPTION = "Interpret market prices, technical statistics and directional scores; explain Markets controls and indicator limitations."
 SYSTEM_PROMPT = (
+    "Use market_relationships for observed Pearson/rank/distance dependence and descriptive return regression; disclose the exact shared sample and gaps. Distance dependence is unsigned, sample-biased and capped, not proof of independence. Regression is contemporaneous log-return OLS, not causality, CAPM alpha or prediction. "
     "Use live_market_status for observed public-stream health and forming-candle evidence, never as a closed-candle signal or an account/order stream. An empty stream list means no active viewer, not an outage. "
     "Use page_help for Markets navigation, chart controls, source/pair selection, watchlists and history. "
     "Interpret market prices, trend, momentum, drawdowns, volatility, volume and levels. Call market_analysis for "
@@ -71,6 +72,52 @@ def create_agent(services: Services, **runtime) -> Agent:
                 **{key: value for key, value in result.items() if key != "candles"},
             }
 
+    def market_relationships(
+        symbols: Annotated[list[str] | None, Field(min_length=2, max_length=8)] = None,
+        method: Literal["pearson", "spearman", "distance"] | None = None,
+        transform: Literal["log_returns", "prices", "changes"] | None = None,
+        timeframe: str | None = None,
+        limit: Annotated[int | None, Field(ge=30, le=720)] = None,
+        source: str | None = None,
+    ) -> dict:
+        """Compare spot-market return dependence and descriptive regression against the first market.
+
+        Supply two to eight exact BASE/QUOTE symbols in reference-first order. With
+        no symbols, use the correlation page's ordered pairs, or compare the selected
+        pair with a distinct benchmark. Returned symbols identify the actual reference.
+        Method/transform follow the
+        correlation page; regression always uses log returns. Other omitted arguments
+        follow the page. Returns same-source aligned Pearson/rank/distance coefficients and compact OLS beta/intercept/R²/errors.
+        Distance uses at most 360 recent observations. Missing/constant inputs stay
+        unavailable; no significance, causality or out-of-sample accuracy is inferred.
+        """
+        from sibyl.models import OrderRequest
+
+        symbol = selected("symbol", None, "BTC/USDT")
+        symbols = selected("comparison_symbols", symbols) or [
+            symbol,
+            "ETH/USDT" if symbol == "BTC/USDT" else "BTC/USDT",
+        ]
+        method = selected("correlation_method", method, "pearson")
+        transform = selected("correlation_transform", transform, "log_returns")
+        symbols = list(dict.fromkeys(OrderRequest.valid_symbol(item) for item in symbols))
+        timeframe = selected("timeframe", timeframe, "1d")
+        limit = selected("limit", limit, 180)
+        if not 2 <= len(symbols) <= 8 or timeframe not in TIMEFRAMES or not 30 <= limit <= 720:
+            raise ValueError(
+                "Choose two to eight distinct spot pairs, a supported timeframe and 30–720 candles."
+            )
+        with market.snapshot(selected("market_source", source, None)):
+            for pair in symbols:
+                market.client().market(pair)
+            histories = {pair: market.candles(pair, limit, timeframe) for pair in symbols}
+            result = correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe])
+            result["regression"]["items"] = [
+                {key: value for key, value in row.items() if key != "points"}
+                for row in result["regression"]["items"]
+            ]
+            return {**market.metadata(), "timeframe": timeframe, **result, "url": "/markets?tab=correlation"}
+
     def live_market_status(source: str | None = None) -> dict:
         """Inspect the selected market feed's live connection, freshness, interruptions and fallback status.
 
@@ -122,7 +169,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-analyst",
         description=DESCRIPTION,
-        tools=[market_analysis, live_market_status, analysis_help, page_help],
+        tools=[market_analysis, market_relationships, live_market_status, analysis_help, page_help],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

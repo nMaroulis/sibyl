@@ -51,7 +51,7 @@ docker compose up --build
 
 :::note[Latest Release]
 
-Markets gains live Binance price and candle previews with clear stream health and same-source REST fallback. Trade adds native conditional limits, linked OCO orders and reviewed unfilled-limit replacement for Binance and Binance Testnet. Analyst and Broker explain these workflows and inspect their actual evidence through native ProtoLink tools. Strategy experiments gain four comparable cost-aware reference portfolios. Forecast models can move between workspaces through locally verified JSON bundles and be archived without losing evidence. Inbox exports, opt-in retention, process counters and provider latency distributions make local research and operation easier to manage.
+Markets gains live Binance price and candle previews with clear stream health and same-source REST fallback. Trade adds native conditional limits, linked OCO orders and reviewed unfilled-limit replacement for Binance and Binance Testnet. Analyst and Broker explain these workflows and inspect their actual evidence through native ProtoLink tools. Strategy experiments gain four comparable cost-aware reference portfolios. Forecast models can move between workspaces through locally verified JSON bundles and be archived without losing evidence. Inbox exports, opt-in retention, process counters and provider latency distributions make local research and operation easier to manage. Kraken gains native public live previews, and Bitstamp/Gemini gain bounded fill imports and exact-order reconciliation. Distance dependence, return-regression evidence and whole-basket concentration measurements extend Markets and Account, with optional HHI/top-three alerts.
 
 :::
 
@@ -70,8 +70,14 @@ Markets gains live Binance price and candle previews with clear stream health an
 - Lightweight current-Python-process CPU, resident memory, thread count, database/WAL size, free workspace-volume space and process uptime in Workspace. Saved provider read history adds fixed latency histograms, p50/p95 upper bounds and sample coverage across restarts; historical reads without buckets remain visibly partial.
 - Native read-only Broker/Chronos/Technician evidence and page help for the new research, library and history controls.
 
+- Bitstamp selected-market imports using native transaction IDs and Gemini millisecond-boundary imports with retained edge identities, durable restart checkpoints and native-currency fees. Embedded native order details feed exact-order reconciliation for both. Saturated Gemini timestamp groups, reversal flags and missing identity/side evidence stop for review instead of inventing complete coverage. Settings reflects implemented support; private-account acceptance remains outstanding.
+- Kraken v2 public ticker/OHLC previews through the shared bounded stream lifecycle, supported native intervals, explicit provider/receipt timing, historical-snapshot rejection and rejection/REST-fallback states. Receipt timing does not establish last-trade freshness; no execution or indicator path consumes forming candles.
+- Unsigned sample distance correlation with a 360-observation work bound, explicit undefined coefficients, and same-interval log-return OLS beta/intercept/R²/residual summaries, scatter inspection and export. Analyst receives exact comparison selections through native request context and offers compact typed relationship evidence.
+- Whole-basket asset HHI, effective asset count and largest/top-three value shares in Account, with no score for incomplete coverage. Optional fixed-account HHI/top-three alerts reuse fresh complete valuations, hysteresis, cooldowns, saved evidence and existing Telegram delivery. Accountant/Technician explain the implemented scope.
+
 ### Fixed
 
+- Constant-series correlations now remain unavailable instead of displaying fabricated zero coefficients. Return comparisons require adjacent selected intervals and never bridge missing candles.
 - Preserve newer verified native fill/status observations when a delayed or lost single-order/OCO submission acknowledgment arrives. Group uncertainty cannot overwrite an independently recovered child.
 
 ### Verification

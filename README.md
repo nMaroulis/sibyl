@@ -40,9 +40,9 @@ Measured performance periods separate investment gain from external contribution
 
 ### Markets · Look beyond the price
 
-Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports. Binance feeds add live price and candle previews with visible connection health and REST fallback.
+Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports. Binance/Testnet and Kraken feeds add live price and candle previews with visible connection health and REST fallback.
 
-Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics and correlations. An explainable technical-bias score shows its inputs and votes. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
+Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics, linear/rank/distance dependence and descriptive log-return regressions. An explainable technical-bias score shows its inputs and votes. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
 
 [Markets guide](docs/docs/guides/markets.md) · [Statistics and score](docs/docs/guides/market-statistics.md) · [History and datasets](docs/docs/guides/market-history.md)
 
@@ -50,7 +50,7 @@ Python calculates returns, trend and momentum, volatility, drawdowns, volume sta
 
 Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Binance and Binance Testnet also support native conditional limits, linked OCO orders and reviewed unfilled-limit replacement. Monitor orders, partial fills and cancellation evidence. Recover uncertain submissions by client ID without blindly submitting again.
 
-Account history brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
+Account history, including bounded Bitstamp/Gemini imports and exact-order reconciliation, brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
 
 Execution, imports and recovery vary by provider. Each exchange card in Settings shows the capabilities actually implemented for that provider and environment.
 
@@ -224,6 +224,6 @@ For release preparation, use the single version command documented in [distribut
 
 Start with the [user guides](https://nmaroulis.github.io/sibyl/), explore the [Python architecture](docs/docs/developers/architecture.md), or use the [extension guide](docs/docs/developers/extending.md) to add a client, strategy or agent tool. The [pending checklist](docs/docs/developers/backend-roadmap.md) tracks work beyond the v2.0.0 baseline.
 
-Inbox history supports filtered private JSON/CSV exports and opt-in cleanup of old read notices, with unread and unfinished delivery evidence protected. Workspace settings exposes scoped Python process resources; saved provider history shows latency distributions and actual sample coverage.
+Inbox history supports filtered private JSON/CSV exports and opt-in cleanup of old read notices, with unread and unfinished delivery evidence protected. Account adds whole-basket HHI/effective asset and top-three concentration measurements, with optional fresh-valuation alerts. Workspace settings exposes scoped Python process resources; saved provider history shows latency distributions and actual sample coverage.
 
 Sibyl is released under the [Apache License 2.0](LICENSE).

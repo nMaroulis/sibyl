@@ -47,7 +47,7 @@ Watchlist quotes cache for 30 seconds, adapter quote batches for up to 60 second
 
 Only closed candles enter analysis. CryptoCompare requests direct pairs with `tryConversion=false`; it validates OHLCV, preserves base-asset volume and omits empty zero-price placeholder bars. Aggregation is restricted to at most 2,000 underlying intervals per request. `/markets/symbols` returns per-timeframe `candle_limits`, which the UI uses to constrain sample choices. Provider plan limits can be stricter.
 
-Live errors stay errors; there is no automatic Demo fallback. Closed candle pages now persist in the exact-source archive. Reviewed historical imports, gap inspection, retention and immutable backtest inputs are implemented; see [candle history](candle-history.md). Market-owned clients now share local read admission, transport spacing, cooldowns and observed diagnostics; see [provider control](provider-control.md). Private/additional-provider WebSockets, reviewed endpoint-weight budgets, durable operational history, broader historical adapters and automatic source failover remain future work. Tests use mocked native responses and isolated Demo stores; authenticated provider acceptance testing still needs user-supplied accounts.
+Live errors stay errors; there is no automatic Demo fallback. Closed candle pages now persist in the exact-source archive. Reviewed historical imports, gap inspection, retention and immutable backtest inputs are implemented; see [candle history](candle-history.md). Market-owned clients now share local read admission, transport spacing, cooldowns and observed diagnostics; see [provider control](provider-control.md). Additional/private WebSockets, reviewed endpoint-weight budgets, broader historical adapters and automatic source failover remain future work. Bounded retained read history and process diagnostics are implemented. Tests use mocked native responses and isolated Demo stores; authenticated provider acceptance testing still needs user-supplied accounts.
 
 ## Persisted watchlists
 
@@ -76,3 +76,11 @@ Each exact quote has its own source/credential-scoped cache. Reordering reuses c
 ## Public live previews
 
 [Binance public streams](live-markets.md) now deliver exact-source/environment ticker and candle previews through an authenticated bounded NDJSON endpoint. Shared sockets start only while viewed, reconnect with backoff, expose observed health and stop when unused. REST snapshots remain the fallback on the same source. Closed-candle analysis, history and execution are unchanged; private account/order streams remain pending.
+
+## Descriptive relationships
+
+`analysis/relationships.py` validates positive finite closes and timezone-aware unique timestamps, aligns the same source’s symbols without interpolation, and excludes nonadjacent returns for the selected timeframe. `/markets/correlation` now accepts `method=distance` alongside Pearson/Spearman and retains its existing transforms. Constant series return `null`, including their diagonals.
+
+The distance statistic double-centers absolute pairwise distances and normalizes their empirical covariance. At most 360 most recent aligned observations bound quadratic work and memory. It is the biased unsigned sample statistic, not an independence/significance test. See the [original authors’ method](https://mariarizzo.github.io/energy/reference/dcov.html).
+
+The response also includes OLS summaries against the first ordered symbol on contemporaneous log returns: beta, intercept per interval, R² and residual RMS. No p-values or causal/predictive claims are computed. All aligned returns fit the coefficients; only the latest 360 scatter points are retained. There must be at least 30 returns and nonconstant reference variation; constant targets have undefined R². No new statistical dependency is required. Native Analyst `market_relationships` exposes compact evidence without scatter arrays. `AgentContext` validates/freezes ordered comparison symbols, matrix method and transform using ProtoLink’s existing private request context.

@@ -18,7 +18,7 @@ Open **Trade → Account history**, or **Settings → Exchanges → Connected ac
 | KuCoin classic                       | HF endpoint `lastId`, frozen `startAt`/`endAt`                                     | Last seven days; inactive orders have a seven-day retention limit; no abandoned endpoint fallback |
 | Bitget classic                       | `idLessThan` using the returned `tradeId`, frozen `startTime`/`endTime`            | Last 89 days within 90-day retention; no UTA/margin substitution                                  |
 
-Other clients retain balance, order and bounded-fill reads. Durable imports explicitly show **Coming soon**. CCXT's `fetchMyTrades` capability alone does not establish safe historical pagination. The provider catalog reports `history_import` separately.
+Bitstamp and Gemini now also have the reviewed contracts below. Other clients retain balance, order and bounded-fill reads; their unimplemented durable imports explicitly show **Coming soon**. CCXT's `fetchMyTrades` capability alone does not establish safe historical pagination. The provider catalog reports `history_import` separately.
 
 Subsequent Coinbase, Kraken, OKX, Bybit, KuCoin and Bitget passes overlap one day to pick up late/corrected observations. Binance and Demo resume native identity checkpoints. Native IDs deduplicate or update existing records. Coinbase's custom `sort_by` is omitted because its documentation warns about unstable pagination for sorted results.
 
@@ -78,3 +78,12 @@ All paths use `/api/v1` and normal workspace access controls.
 Ledger filters: `account_id`, optional exact `symbol`, `side` (`buy`/`sell`), `environment` (`demo`/`test`/`production`), `limit` (1–100, default 50), and `offset` (0–1,000,000). Sort is execution time and stable local ID, newest first. New imports may shift offset page boundaries. Caller-supplied provider cursors, arbitrary endpoints and CCXT parameters are not accepted.
 
 Run `uv run pytest tests/test_account_sync.py tests/test_extended_account_history.py` for offline pagination, parser, retention, rescan races, recovery, fee, isolation and API tests.
+
+## Bitstamp and Gemini
+
+`exchanges/venue_history.py` adds both native adapters while preserving the existing at-most-100-fill page commit, checkpoint transaction, restart and rescan behavior.
+
+- **Bitstamp:** requests ascending selected-market user transactions from `since_id`. The provider can return 1,000 records; each app page consumes at most 100 native records and advances their IDs, including nontrade records. Only spot trade rows become ledger fills. Native transaction IDs and signed amounts preserve fill identity, side and reported quote fees. Resume starts at the next ID; explicit rescan revisits older corrections.
+- **Gemini:** requests selected-market trades from an inclusive millisecond boundary and retains IDs already consumed at that edge. A native batch has at most 500 trades; app commits stay within 100. Fully saturated timestamp groups stop for review rather than skipping unseen same-time fills. Reversal/bust flags stop because complete settlement reversal accounting is not implemented. Master-key subaccount routing is outside this adapter; use an account-scoped key.
+
+Caught up means available pages were exhausted, not complete account history. Exact-order reconciliation uses each venue’s embedded native trade list; see [order reconciliation](order-reconciliation.md). SDK/parser tests cover native IDs/fees, tied timestamps, saturation, restart and malformed pages. Authenticated Bitstamp/Gemini acceptance remains pending. Contracts: [Bitstamp API](https://www.bitstamp.net/api/), [Gemini past trades](https://developer.gemini.com/trading/rest-api/orders/list-past-trades).

@@ -20,7 +20,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'markets',
       title: 'Deeper relationships',
-      text: 'Granger causality, distance correlation, MIC, regression, and SHAP explanations.',
+      text: 'Granger causality, MIC and SHAP with evaluated assumptions. Distance dependence and descriptive return regression are available in Markets.',
     },
     {
       module: 'strategies',

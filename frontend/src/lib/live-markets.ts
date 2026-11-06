@@ -7,6 +7,7 @@ type Event = {
   source: string;
   state?: string;
   observed_at?: string;
+  time_basis?: string;
   candle?: ChartCandle;
   price?: number;
   closed?: boolean;
@@ -16,6 +17,7 @@ type Live = {
   candle?: ChartCandle;
   price?: number;
   observed_at?: string;
+  time_basis?: string;
   error?: string;
 };
 
@@ -46,6 +48,7 @@ export function useLiveMarket(source: string, symbol: string, timeframe: string,
                     ...previous,
                     state: 'live',
                     observed_at: event.observed_at,
+                    time_basis: event.time_basis,
                     ...(event.candle ? { candle: event.candle, price: event.candle.close } : {}),
                     ...(event.price ? { price: event.price } : {}),
                     error: undefined,

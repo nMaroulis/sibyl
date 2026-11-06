@@ -33,6 +33,21 @@ ExchangeId = Literal[
 
 ConnectionExchangeId = ExchangeId | Literal["demo", "binance-testnet", "coinbase-sandbox"]
 
+# Read/import capability alone never grants automated order submission.
+STRATEGY_EXECUTION_PROVIDERS = frozenset(
+    {
+        "binance",
+        "binanceus",
+        "binance-testnet",
+        "coinbase",
+        "coinbase-sandbox",
+        "kraken",
+        "okx",
+        "bybit",
+        "kucoin",
+    }
+)
+
 
 @dataclass(frozen=True)
 class ExchangeSpec:

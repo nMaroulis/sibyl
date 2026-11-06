@@ -95,9 +95,9 @@ export function RiskRules({
         <div className="strategy-alert-intro">
           <ShieldAlert size={19} />
           <p>
-            Keep your own limits in view. Watch a value floor, an asset’s allocation or a decline
-            from an observed account-value peak. Choose one account or a fixed group. Only complete,
-            fresh valuations can produce notices.
+            Keep your own limits in view. Watch a value floor, asset/top-three allocation, overall
+            HHI concentration or a decline from an observed account-value peak. Choose one account
+            or a fixed group. Only complete, fresh valuations can produce notices.
           </p>
         </div>
         <div className="strategy-alert-filters">

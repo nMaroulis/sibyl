@@ -13,7 +13,7 @@ class RiskAlertCreate(Request):
 
     account_ids: list[str] = Field(min_length=1, max_length=10)
     source: str = Field(min_length=1, max_length=120, pattern=r"^[a-z0-9:-]+$")
-    metric: Literal["value_floor", "concentration", "drawdown"]
+    metric: Literal["value_floor", "concentration", "drawdown", "hhi", "top_three"]
     threshold: float = Field(gt=0, le=1e15, strict=True)
     reset_threshold: float | None = Field(default=None, ge=0, le=1e16, strict=True)
     asset: str = Field(default="", max_length=24, pattern=r"^[A-Z0-9]*$")
@@ -40,7 +40,7 @@ class RiskAlertCreate(Request):
     def limits(self):
         """Keep reset levels on the clear side, expressed in the metric's own units."""
         if self.metric != "value_floor" and self.threshold > 100:
-            raise ValueError("Percentage limits must be at most 100.")
+            raise ValueError("Percentage and HHI limits must be at most 100.")
         if (self.metric == "concentration") != bool(self.asset):
             raise ValueError("Choose an asset only for a concentration rule.")
         if self.reset_threshold is None:
@@ -51,7 +51,7 @@ class RiskAlertCreate(Request):
             if self.reset_threshold <= self.threshold:
                 raise ValueError("The recovery value must be above the value floor.")
         elif self.reset_threshold >= self.threshold:
-            raise ValueError("The recovery percentage must be below the alert limit.")
+            raise ValueError("The recovery level must be below the alert limit.")
         return self
 
 

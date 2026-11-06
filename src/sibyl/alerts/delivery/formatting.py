@@ -21,8 +21,16 @@ def alert_text(notice):
             "value_floor": "Account value floor",
             "concentration": "Asset concentration",
             "drawdown": "Observed-value drawdown",
+            "hhi": "Asset concentration HHI",
+            "top_three": "Top-three asset concentration",
         }[notice["metric"]]
-        unit = notice.get("currency", "USDT") if notice["metric"] == "value_floor" else "%"
+        unit = (
+            notice.get("currency", "USDT")
+            if notice["metric"] == "value_floor"
+            else "/ 100"
+            if notice["metric"] == "hhi"
+            else "%"
+        )
         lines += [
             f"{metric} · {notice['action']}",
             f"Observed: {notice['metric_value']:g} {unit}",

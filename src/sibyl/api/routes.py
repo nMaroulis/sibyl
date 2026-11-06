@@ -261,7 +261,7 @@ def correlations(
     symbols: str = Query("BTC/USDT,ETH/USDT,SOL/USDT,LINK/USDT", max_length=350),
     timeframe: Timeframe = "1d",
     limit: int = Query(90, ge=30, le=720),
-    method: Literal["pearson", "spearman"] = "pearson",
+    method: Literal["pearson", "spearman", "distance"] = "pearson",
     transform: Literal["log_returns", "prices", "changes"] = "log_returns",
     source: MarketSource | None = None,
 ):
@@ -277,7 +277,11 @@ def correlations(
         for symbol in selected:
             s.market.client().market(symbol)
         histories = {symbol: s.market.candles(symbol, limit, timeframe) for symbol in selected}
-        return {**s.market.metadata(), "timeframe": timeframe, **correlation(histories, method, transform)}
+        return {
+            **s.market.metadata(),
+            "timeframe": timeframe,
+            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe]),
+        }
 
 
 @router.get("/markets/symbols", tags=["Analyst"])

@@ -62,9 +62,9 @@ The technical-bias card shows a disclosed directional score with an expandable w
 
 ## Correlations
 
-Enter 2–8 comma-separated canonical symbols. Choose Pearson or Spearman ranks and price levels, absolute price changes, or log returns. Candles align by timestamp before calculation. The selected chart timeframe and sample size also govern the matrix. The view shows the actual aligned observation count. Undefined constant-series coefficients display zero.
+Enter 2–8 comma-separated canonical symbols. Choose Pearson, Spearman ranks or unsigned distance dependence and price levels, absolute price changes, or log returns. Candles align by timestamp before calculation. The selected chart timeframe and sample size also govern the matrix. The view shows the actual aligned observation count. Undefined constant-series coefficients display a dash. Return observations require adjacent selected intervals; missing candles are not bridged. Distance uses at most the latest 360 aligned observations to keep work bounded, with the used/available count shown.
 
-Spearman ranks each aligned series and computes Pearson on those ranks. No causal interpretation is implied. Distance correlation, MIC, Granger, regression, and SHAP remain planned.
+Spearman ranks each aligned series and computes Pearson on those ranks. No causal interpretation is implied. Distance correlation measures empirical nonlinear dependence, without a sign or a significance claim; finite samples can inflate it. MIC, Granger and SHAP remain planned.
 
 ## Analyst agent
 
@@ -77,3 +77,9 @@ Use **Price alerts** to open the alert manager with this exact pair/feed presele
 ## Retained candles and research inputs
 
 Open **History & datasets** to inspect exact-source coverage, import older candles, pause/resume/rescan progress, review gaps and manage mutable retention. Save complete intervals as immutable inputs for offline backtests and full JSON export. See [market history and saved datasets](market-history.md) for provider limitations and chart keyboard controls.
+
+## Return regression
+
+Expand **Return regression** below the correlation matrix. The first comparison symbol is the reference; each other symbol is a target. The backend fits `target log return = intercept + beta × reference log return` on the same aligned closed intervals, regardless of the matrix’s display transform.
+
+Read beta, intercept per candle in percent, R² and residual RMS. Select a target for a lightweight scatter plot and fitted line, or export the regression evidence. Fitting uses all aligned returns; the plot/export point sample retains at most the latest 360. At least 30 aligned returns are needed; constant references and undefined R² stay unavailable. The intercept is not risk-free-adjusted CAPM alpha. These are in-sample descriptions, not forecasts, significance tests or causal conclusions. Outliers, serial dependence and window selection matter. **Ask Analyst** follows the visible ordered pairs/method/transform.

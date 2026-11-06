@@ -106,6 +106,7 @@ TRADE = {
         (
             "Open Trade → Account history → Fills & imports.",
             "Choose an active supported account and exact spot market, then Sync market history; saved progress supports pause/resume and later Sync again.",
+            "Bitstamp and Gemini support resumable selected-market fills and exact-order fee reconciliation. Bitstamp uses transaction IDs and retains closed-order status for 30 days; Gemini preserves millisecond-boundary IDs and stops on saturated groups or reversals needing review. Neither adds client-ID recovery or complete settlement accounting.",
             "Filter retained fills and inspect native IDs and fees. Pause active work before Rescan available history to revisit older available fills and corrections.",
             "Use Performance for retained market FIFO, Funding for deposits/withdrawals, and Reconcile transfers within Funding for own-account links.",
         ),
