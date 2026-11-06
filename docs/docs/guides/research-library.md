@@ -58,3 +58,17 @@ Keyword search uses SQLite FTS5/BM25 ranking. Semantic search compares local emb
 Library data, including saved vectors, is private workspace content, stored locally with restricted file permissions. It is not separately encrypted like exchange credentials. When you ask an AI agent, retrieved passages can be sent to your configured model provider. Keep API keys, passwords, seed phrases and backup passphrases out of research files. Source text is treated as untrusted evidence, never as agent instructions.
 
 Deleting a source is not secure disk erasure and does not remove copies already retained in investigation reports, exports, backups or model-provider history. Use [encrypted workspace backups](workspace-backups.md) to preserve the library with its source metadata.
+
+## Evaluate retrieval with your questions
+
+Expand **Retrieval quality lab** in My research. Open an actual source, use **Copy passage ID**, and label the passages you judge relevant to a question. Save a titled suite with up to eight distinct questions and up to ten relevant passages per question; choose uploads, retained news or all sources. Labels come from you, not an LLM. Include representative paraphrases and enough relevant passages to avoid penalizing good matches just because your judgments were incomplete.
+
+Select **Keyword**, or also **Semantic/Hybrid** after explicitly configuring and indexing a local embedding model. Choose a top-1/3/5/10 cutoff and **Run comparison**. One query/method runs per background iteration; no model is downloaded or paid provider contacted. Keyword needs no model. Only one evaluation is active at once.
+
+Completed reports show macro-averaged precision, recall, reciprocal rank, binary nDCG, hit rate and observed latency. Precision divides by the chosen cutoff even if fewer results are returned; recall divides by all labeled relevant passages. Empty results score zero. Open **Inspect query rankings and citations** for the exact ranked passages, then export full JSON evidence or ask Wiki/Reporter to explain it.
+
+Every run pins the corpus and optional embedding-index fingerprint and records partial coverage. Changing a source or index during a run fails the comparison instead of mixing evidence. **Stop evaluation** discards a late result from an admitted query; a backend restart marks unfinished runs interrupted, without replaying them. Start another run explicitly for fresh evidence. Partial/failed runs retain their evidence but have no full aggregate comparison.
+
+Keep up to 20 suites and 100 reports. **Delete suite & reports** removes that suite's stored judgments and evaluations, preserving the source library. Removing a source does not erase excerpts already retained in these reports. These workspace records are private local data, not separately encrypted credentials.
+
+This lab measures retrieval against your judgments. It does not grade factual answers, prove broad model quality or implement calibrated no-answer thresholds. Semantic search still returns nearest passages when no source truly answers a question.

@@ -25,7 +25,7 @@ module.exports = {
         chapter(
           'Accounts and setup',
           'Connect exchanges, configure Sibyl and understand your balances.',
-          ['guides/account-returns', 'guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks'],
+          ['guides/account-returns', 'guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks', 'guides/basket-risk'],
         ),
         chapter(
           'Markets and research',
@@ -96,6 +96,7 @@ module.exports = {
           'Exchange adapters, synchronization, valuation and accounting evidence.',
           [
             'developers/accounts',
+            'developers/basket-risk',
             'developers/performance-outcomes-alerts',
             'developers/exchange-clients',
             'developers/exchange-acceptance',

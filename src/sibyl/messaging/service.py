@@ -9,7 +9,8 @@ from uuid import uuid4
 import httpx
 
 from sibyl.agents.utils.conversations import SibylRequest
-from sibyl.messaging.outbound import NotificationOutbox
+from sibyl.messaging.outbound import NotificationOutbox, chunks
+from sibyl.messaging.reply_review import ReplyReview, record_reply
 from sibyl.messaging.settings import MessagingSettings
 from sibyl.messaging.telegram import TelegramClient, TelegramError
 
@@ -47,6 +48,9 @@ class TelegramService:
             db.execute(
                 "UPDATE telegram_outbox SET state='uncertain',error='Delivery was interrupted. Check Telegram before deciding to resend.' WHERE state='sending'"
             )
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS telegram_reply_receipts(id TEXT PRIMARY KEY,revision TEXT NOT NULL,update_id INTEGER NOT NULL,payload TEXT NOT NULL,UNIQUE(revision,update_id))"
+            )
             # Inference is not replayed on restart. Recover an already committed
             # native Sibyl answer when available, otherwise surface interruption.
             for row in db.execute(
@@ -64,6 +68,8 @@ class TelegramService:
                         "UPDATE telegram_updates SET state='interrupted' WHERE revision=? AND update_id=?",
                         (row[0], row[1]),
                     )
+
+        self.replies = ReplyReview(store)
 
     def client(self, profile):
         """Construct a transport bound to exactly one encrypted connection revision."""
@@ -237,6 +243,8 @@ class TelegramService:
                             "text": text.strip(),
                             "request_id": uuid4().hex,
                             "received_at": time.time(),
+                            "bot_id": profile.get("bot_id"),
+                            "bot_username": profile.get("bot_username"),
                         }
                         if accepted
                         else {}
@@ -258,11 +266,12 @@ class TelegramService:
         text = str(answer)
         if len(text) > 40_000:
             text = text[:39_900] + "\n[Answer shortened. Read the full answer in Sibyl.]"
-        for part, start in enumerate(range(0, len(text), 4000)):
+        for part, chunk in enumerate(chunks(text)):
             db.execute(
                 "INSERT OR IGNORE INTO telegram_outbox(revision,update_id,part,chat_id,text,state) VALUES(?,?,?,?,?,'pending')",
-                (revision, identity, part, chat, text[start : start + 4000]),
+                (revision, identity, part, chat, chunk),
             )
+        record_reply(db, revision, identity, chat)
         db.execute(
             "UPDATE telegram_updates SET state='completed' WHERE revision=? AND update_id=?",
             (revision, identity),
@@ -332,7 +341,13 @@ class TelegramService:
 
     async def deliver(self, profile):
         """Claim one chunk; retry only explicit rate-limit rejections, never ambiguous writes."""
-        with self.store.db() as db:
+        with self._lock, self.store.db() as db:
+            current = self.settings.profile()
+            if not self._current(profile["revision"]) or current.get("control_id") != profile.get(
+                "control_id"
+            ):
+                return False
+            db.execute("BEGIN IMMEDIATE")
             row = db.execute(
                 "SELECT * FROM telegram_outbox WHERE revision=? AND state='pending' ORDER BY update_id,part LIMIT 1",
                 (profile["revision"],),

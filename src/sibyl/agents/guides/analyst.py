@@ -12,7 +12,7 @@ GUIDES = {
         "Understand live market updates",
         "/markets",
         (
-            "Choose Binance, a saved Binance Testnet source or Kraken production, a supported pair and interval.",
+            "Choose Binance, a saved Binance Testnet source, Coinbase production or Kraken production, a supported pair and interval.",
             "The Live indicator confirms actual stream messages; Connecting, REST fallback or Paused explain interruptions and background-tab behavior.",
             "The chart includes a forming candle preview. Statistics, technical bias and Analyst analysis continue to use closed REST candles.",
         ),

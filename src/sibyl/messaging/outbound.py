@@ -9,6 +9,7 @@ import time
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from sibyl.messaging.review import DeliveryReview
 from sibyl.messaging.telegram import TelegramError
 
 
@@ -34,6 +35,7 @@ class NotificationOutbox:
         self.store, self.settings = store, settings
         self.client, self.on_error = client, on_error
         self.authorizers = {}
+        self.review = DeliveryReview(self)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS message_deliveries (

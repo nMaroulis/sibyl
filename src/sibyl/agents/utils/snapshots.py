@@ -72,6 +72,15 @@ def tool_arguments(request: AgentRequest) -> dict:
 
 def snapshot_answer(module: str, evidence) -> str:
     """Format actual tool output when language-model inference has not been configured."""
+    if isinstance(evidence, dict) and evidence.get("kind") == "basket_risk_study":
+        if "observations" not in evidence:
+            return f"{len(evidence.get('items', []))} saved historical basket risk studies. Calculate a new study explicitly in Account.\n{evidence['url']}"
+        return f"Historical basket risk: {evidence['observations']} consecutive daily returns. Annualized volatility {evidence['annualized_volatility_pct']:.2f}%; empirical daily 95% VaR {evidence['historical_var_95_pct']:.2f}%.\n{evidence['coverage_note']}\nCurrent-weight hypothetical basket, not measured account performance or a forecast.\n{evidence['url']}"
+    if isinstance(evidence, dict) and evidence.get("kind") == "retrieval_evaluation":
+        if "state" not in evidence:
+            return f"{len(evidence.get('items', []))} saved retrieval evaluations. Open Retrieval quality lab to label passages or inspect a report.\n{evidence['url']}"
+        methods = ", ".join(evidence["methods"])
+        return f"{evidence['title']}: {evidence['state']} · {evidence['completed']}/{evidence['total']} queries · top {evidence['k']} · {methods}.\n\n{evidence['note']}\n{evidence['url']}"
     if isinstance(evidence, dict) and evidence.get("kind") == "account_return_period":
         result = evidence["result"]
         if result:

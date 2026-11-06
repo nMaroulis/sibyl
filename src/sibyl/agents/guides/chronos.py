@@ -82,6 +82,7 @@ GUIDES = {
         (
             "Each JSON artifact keeps its input fingerprint, source, engine, coefficients, train/calibration/test dates and complete evidence.",
             "Rerun exact training input saves a new numbered version without overwriting the old result or fetching prices.",
+            "Model settings & assumptions offers return lags only or Returns + trend & volatility, adding six causal trailing-price statistics. The richer recipe is retained through rolling studies, predictions and portable refits; extra features do not establish better accuracy.",
             "Edit model settings explicitly for another experiment. AI model selection changes the assistant, not the numerical forecast model.",
         ),
         (

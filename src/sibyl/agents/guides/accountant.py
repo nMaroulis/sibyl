@@ -5,6 +5,7 @@ from typing import Literal
 from sibyl.agents.guides import Guide
 
 Topic = Literal[
+    "basket_risk",
     "returns",
     "overview",
     "accounts",
@@ -17,6 +18,17 @@ Topic = Literal[
     "balance_checks",
 ]
 GUIDES = {
+    "basket_risk": Guide(
+        "Explore historical basket risk",
+        "/account",
+        (
+            "Expand Historical basket risk, select up to eight priced current holdings and a history window, then Calculate & save risk study. Multiple connected accounts follow the current Account scope; Demo/reference sources stay labeled.",
+            "Inspect annualized volatility, empirical daily VaR/shortfall, sample size, subset coverage and historical dates. Expand correlations/variance contributions or the hypothetical basket path; open saved studies without provider reads or export their full inputs.",
+        ),
+        (
+            "Current weights are renormalized within the selected basket and hypothetically rebalanced daily without costs. This is not measured account performance, an optimized allocation or a forecast. All conversion legs require common consecutive closed daily history; unpriced/failed accounts or excluded holdings can materially change whole-account risk.",
+        ),
+    ),
     "returns": Guide(
         "Measure investment performance",
         "/account",

@@ -244,6 +244,8 @@ class AgentContext(Request):
     )
     library_document_id: str | None = Field(default=None, pattern=r"^(?:news-)?[a-f0-9]{32}$")
     library_source_type: Literal["all", "document", "news"] | None = None
+    risk_study_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    retrieval_evaluation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     library_query: str | None = Field(default=None, min_length=1, max_length=300)
     library_search_method: Literal["keyword", "semantic", "hybrid"] | None = None
     library_passage_id: str | None = Field(

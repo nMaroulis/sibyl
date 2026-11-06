@@ -110,6 +110,10 @@ class WalkForwardRequest(Request):
     initial_train_pct: int = Field(default=60, ge=40, le=80, strict=True)
     objective: Literal["return_pct", "sharpe", "max_drawdown"] = "return_pct"
     min_train_trades: int = Field(default=0, ge=0, le=100, strict=True)
+    continuous: bool = Field(default=False, strict=True)
+    selection: Literal["training", "nested"] = "training"
+    inner_folds: int = Field(default=2, ge=2, le=4, strict=True)
+    inner_train_pct: int = Field(default=60, ge=40, le=80, strict=True)
 
     @model_validator(mode="after")
     def valid_grid(self):
@@ -161,6 +165,8 @@ class WalkForwardEngine:
             "min_test_bars": MIN_TEST_BARS,
             "max_work_bars": MAX_WORK_BARS,
             "search_methods": ["grid", "random"],
+            "selection_methods": ["training", "nested"],
+            "nested": {"max_inner_folds": 4, "min_inner_bars": 20, "default_inner_train_pct": 60},
             "random": {
                 "max_axes": MAX_RANDOM_AXES,
                 "max_values": MAX_RANDOM_VALUES,
@@ -189,17 +195,33 @@ class WalkForwardEngine:
             raise ValueError(
                 "Each test window needs at least 20 bars. Use fewer windows or a longer dataset."
             )
-        work = sum(len(candidates) * a + 2 * b for a, b in windows)
+        from sibyl.strategies.research import nested
+
+        inner_windows = (
+            {start: nested.windows(start, request, warmup) for start, _ in windows}
+            if request.selection == "nested"
+            else {}
+        )
+        work = sum(
+            len(candidates) * (sum(b for _, b in inner_windows[a]) if inner_windows else a) + 2 * b
+            for a, b in windows
+        )
+        if request.continuous:
+            work += sum(end for _, end in windows) + 2 * n
         if work > MAX_WORK_BARS:
             raise ValueError(
                 "This search exceeds 60,000 processed bars. Reduce candidates, windows or dataset size."
             )
 
-        engine, folds = BacktestEngine(), []
+        engine, folds, deployment_schedule = BacktestEngine(), [], []
         for index, (start, end) in enumerate(windows, 1):
             leaders = []
             for candidate in candidates:
-                training = engine.run(candles[:start], candidate["parameters"], evaluation_start=warmup)
+                training = (
+                    nested.score(engine, candles, candidate["parameters"], inner_windows[start])
+                    if inner_windows
+                    else engine.run(candles[:start], candidate["parameters"], evaluation_start=warmup)
+                )
                 leaders.append(
                     {
                         "candidate_id": candidate["id"],
@@ -207,6 +229,7 @@ class WalkForwardEngine:
                         "overrides": candidate["overrides"],
                         "eligible": training["trades"] >= request.min_train_trades,
                         **self._metrics(training),
+                        **({"inner_results": training["inner_results"]} if inner_windows else {}),
                     }
                 )
             sign = 1 if request.objective == "max_drawdown" else -1
@@ -218,6 +241,7 @@ class WalkForwardEngine:
                     f"No candidate meets the minimum training trades in window {index}. Choose a longer input or lower the minimum."
                 )
             chosen = candidates[leaders[0]["candidate_id"] - 1]
+            deployment_schedule.append((start, end, chosen["parameters"]))
             test = engine.run(candles[:end], chosen["parameters"], evaluation_start=start)
             fixed = engine.run(candles[:end], request.parameters, evaluation_start=start)
             folds.append(
@@ -227,7 +251,9 @@ class WalkForwardEngine:
                         "start": candles[0]["timestamp"],
                         "end": candles[start]["timestamp"],
                         "bars": start,
-                        "scored_bars": start - warmup,
+                        "scored_bars": sum(b - a for a, b in inner_windows[start])
+                        if inner_windows
+                        else start - warmup,
                     },
                     "test": {
                         "start": candles[start]["timestamp"],
@@ -241,13 +267,25 @@ class WalkForwardEngine:
                         "parameters": chosen["parameters"].model_dump(),
                     },
                     "training_ranking": leaders,
+                    **(
+                        {
+                            "selection": {
+                                "mode": "nested",
+                                "initial_context_bars": inner_windows[start][0][0],
+                                "scored_bars": sum(b - a for a, b in inner_windows[start]),
+                                "method": "Mean inner return/Sharpe or worst inner drawdown; trade eligibility sums inner windows. Each inner validation resets cash; outer test remains untouched.",
+                            }
+                        }
+                        if inner_windows
+                        else {}
+                    ),
                     "out_of_sample": test,
                     "fixed_parameters": self._metrics(fixed),
                 }
             )
         returns = [f["out_of_sample"]["return_pct"] for f in folds]
-        return {
-            "method": self.version,
+        result = {
+            "method": "nested-next-open-v1" if inner_windows else self.version,
             "engine_revision": engine.version,
             "engine_version": __version__,
             "request": request.model_dump(),
@@ -267,7 +305,9 @@ class WalkForwardEngine:
                 "trades": sum(f["out_of_sample"]["trades"] for f in folds),
             },
             "assumptions": [
-                "Expanding chronological training windows; parameter selection never reads its later test window.",
+                "Nested chronological selection uses only inner validation blocks inside the outer training prefix. The outer test never selects settings."
+                if inner_windows
+                else "Expanding chronological training windows; parameter selection never reads its later test window.",
                 "All candidates share the same initial training warm-up and scored period. Equal scores use candidate order.",
                 "Each test starts flat with the same virtual capital and liquidates at its final close, including costs. Returns are independent, not compounded.",
                 "Earlier test windows become training history for later windows. Repeated user experiments can overfit; these are not untouched final holdouts or forecasts.",
@@ -275,6 +315,20 @@ class WalkForwardEngine:
                 "Candidate plans are fixed before scoring and reused across windows. Random search samples explicit finite choices without replacement; untested combinations may perform differently. A seed is reproducibility metadata, not a quality guarantee.",
             ],
         }
+
+        if request.continuous:
+            result["deployment"] = {
+                "method": "continuous-next-open-v1",
+                "adaptive": engine.run(
+                    candles,
+                    request.parameters,
+                    evaluation_start=initial,
+                    parameter_schedule=deployment_schedule,
+                ),
+                "fixed": engine.run(candles, request.parameters, evaluation_start=initial),
+                "note": "One long-only cash/asset account carries positions and entry cost across parameter updates. The newly selected settings can act at the first next open using the preceding close. No boundary liquidation or fresh capital is injected; costs apply on actual fills, max-trade count is global, and only the final close forces liquidation. This single-market historical replay assumes immediate parameter updates and no venue liquidity constraints. It is not live execution or a multi-asset rebalance.",
+            }
+        return result
 
     @staticmethod
     def _metrics(result: dict) -> dict:

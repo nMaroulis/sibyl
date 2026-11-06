@@ -39,6 +39,12 @@ class CoinbaseClient(CCXTClient):
     history_kind = "coinbase-cursor"
     balance_params = {"type": "spot"}
 
+    def stream_symbol(self, symbol: str) -> str:
+        """Resolve an exact production spot product before subscribing without credentials."""
+        with self.lock:
+            self.market(symbol)
+            return self._exchange.market(symbol)["id"]
+
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
         """Preserve the reviewed base quantity and ID in Coinbase's native IOC fields.
 

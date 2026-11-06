@@ -13,12 +13,15 @@ from sibyl.agents.utils.common import COMMON_PROMPT, Services
 from sibyl.alerts.history.service import NotificationHistory
 from sibyl.exchanges.catalog import CATALOG, exchange_spec
 from sibyl.exchanges.registry import provider_catalog
+from sibyl.messaging.reply_review import reply_evidence
+from sibyl.messaging.review import delivery_evidence
 from sibyl.services.workspace.llm_settings import ModelSettings
 
 NAME = "Technician"
 TAGLINE = "Keep everything connected"
 DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging and alerts; explain saved diagnostics."
 SYSTEM_PROMPT = (
+    "Use telegram_delivery_review to explain actual app-origin delivery outcomes and separate user acknowledgments. It cannot read private message bodies or send/review messages. "
     "Use notification_history for retained inbox cleanup policy, protections and actual receipts; never clear history for the user. "
     "Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
@@ -97,6 +100,7 @@ GUIDES = {
         "url": "/settings?tab=messaging",
         "steps": [
             "Messaging lets you talk to Sibyl through another app. Telegram is implemented; WhatsApp, Discord, Slack, Signal and Email are unavailable previews. Telegram can also receive explicitly selected scheduled briefings and per-rule alerts; enabling chat alone does not enable these deliveries.",
+            "Review Telegram deliveries opens actual queued text, the recorded private target and part outcomes. Withdraw queued remainders or record separate received/dismissed user reviews; admitted sends must finish first, and review never resends or changes native confirmation.",
             "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. Other channels remain unavailable previews.",
         ],
     },
@@ -262,6 +266,19 @@ def create_agent(services: Services, **runtime) -> Agent:
             "health": services.workers.snapshot() if services.workers else {"available": False},
             "url": "/settings?tab=workspace",
             "backup_help": "Create a passphrase-encrypted archive in Settings → Workspace. It contains local databases, documents and the vault key inside encryption. Download it and keep the passphrase separately. Restore creates a separate workspace with automatic work paused. Launch the returned directory, review connections/orders, complete recovery and restart. Accounts remain inactive until explicitly enabled.",
+        }
+
+    @agent.tool
+    def telegram_delivery_review() -> dict:
+        """Inspect Telegram notification/reply outcomes without private text or credentials.
+
+        Explain Settings → Messaging review controls: unsent withdrawal and separate
+        user acknowledgments. Reviews never resend or replace native confirmation.
+        """
+        return {
+            **delivery_evidence(services.store),
+            "reply_items": reply_evidence(services.store),
+            "note": "App-origin and conversation outcomes remain separate. Settings → Messaging → Review Telegram deliveries inspects exact queued text and targets; user acknowledgment never changes native confirmation or resends a message.",
         }
 
     return agent

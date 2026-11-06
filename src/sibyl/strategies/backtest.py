@@ -9,15 +9,20 @@ from sibyl.strategies.research.benchmarks import references
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
 
 
-def _simulate(candles: list[dict], request: BacktestRequest, start: int) -> dict:
+def _simulate(candles: list[dict], request: BacktestRequest, start: int, schedule=None) -> dict:
     """Run a long-only simulation with previous-close signals and next-open fills.
 
     Fee and slippage apply on both sides. The last position is liquidated at the
     final close. Sharpe uses candle equity returns, timeframe annualization, and a zero risk-free
     rate. Drawdown is reported as a nonnegative percentage from the running peak.
     """
-    frame = strategy_indicators(candles, request)
-    signal = signals(frame, request.strategy, request)
+    frame = pd.DataFrame(candles) if schedule else strategy_indicators(candles, request)
+    signal = None if schedule else signals(frame, request.strategy, request)
+    selected = []
+    for left, right, parameters in schedule or []:
+        context = strategy_indicators(candles[:right], parameters)
+        selected.append((left, right, parameters, context, signals(context, parameters.strategy, parameters)))
+    segment, transitions = 0, []
     cash, quantity = request.capital, 0.0
     fee, slip = request.fee_bps / 10_000, request.slippage_bps / 10_000
     fills, curve, completed_returns = [], [], []
@@ -25,14 +30,35 @@ def _simulate(candles: list[dict], request: BacktestRequest, start: int) -> dict
     warmup = start
     for i in range(warmup, len(frame)):
         row = frame.iloc[i]
-        direction = int(signal.iloc[i - 1])
-        reason = exit_reason(float(frame.iloc[i - 1]["close"]), entry_price, request) if quantity else None
+        parameters, active_frame, active_signal = request, frame, signal
+        if selected:
+            if segment + 1 < len(selected) and i >= selected[segment + 1][0]:
+                segment += 1
+            left, _, parameters, active_frame, active_signal = selected[segment]
+            if i == left:
+                transitions.append(
+                    {
+                        "index": segment + 1,
+                        "timestamp": row["timestamp"],
+                        "cash": cash,
+                        "quantity": quantity,
+                        "entry_price": entry_price if quantity else None,
+                        "equity_at_open": cash + quantity * float(row["open"]),
+                        "parameters": parameters.model_dump(exclude={"dataset_id"}),
+                    }
+                )
+        direction = int(active_signal.iloc[i - 1])
+        reason = (
+            exit_reason(float(active_frame.iloc[i - 1]["close"]), entry_price, parameters)
+            if quantity
+            else None
+        )
         if reason:
             direction = -1
         if (
             direction == 1
             and quantity == 0
-            and (request.max_trades is None or len(completed_returns) < request.max_trades)
+            and (parameters.max_trades is None or len(completed_returns) < parameters.max_trades)
         ):
             price = float(row["open"]) * (1 + slip)
             quantity = cash / (price * (1 + fee))
@@ -87,6 +113,7 @@ def _simulate(candles: list[dict], request: BacktestRequest, start: int) -> dict
     benchmark = request.capital / (float(frame.iloc[warmup]["open"]) * (1 + slip) * (1 + fee))
     benchmark *= float(frame.iloc[-1]["close"]) * (1 - slip) * (1 - fee)
     return {
+        **({"transitions": transitions} if schedule else {}),
         "strategy": request.strategy,
         "symbol": request.symbol,
         "initial_capital": request.capital,
@@ -121,7 +148,12 @@ class BacktestEngine:
     version = "next-open-v2"
 
     def run(
-        self, candles: list[dict], request: BacktestRequest, *, evaluation_start: int | None = None
+        self,
+        candles: list[dict],
+        request: BacktestRequest,
+        *,
+        evaluation_start: int | None = None,
+        parameter_schedule: list[tuple[int, int, BacktestRequest]] | None = None,
     ) -> dict:
         """Simulate a suffix, using its earlier prefix only for causal indicator context.
 
@@ -146,7 +178,37 @@ class BacktestEngine:
             for key in ("open", "high", "low", "close")
         ):
             raise ValueError("Backtest prices must be finite and positive.")
-        result = _simulate(candles, request, start)
+        if parameter_schedule:
+            expected = start
+            fixed_fields = (
+                "strategy",
+                "symbol",
+                "timeframe",
+                "capital",
+                "fee_bps",
+                "slippage_bps",
+                "max_trades",
+                "stop_loss_pct",
+                "take_profit_pct",
+            )
+            for left, right, parameters in parameter_schedule:
+                if (
+                    type(left) is not int
+                    or type(right) is not int
+                    or left != expected
+                    or not parameters.warmup <= left < right <= len(candles)
+                ):
+                    raise ValueError(
+                        "A deployment schedule must cover the chronological test suffix without gaps."
+                    )
+                if any(getattr(parameters, field) != getattr(request, field) for field in fixed_fields):
+                    raise ValueError(
+                        "Continuous selection may change indicator settings, not the market, costs, capital or risk policy."
+                    )
+                expected = right
+            if expected != len(candles):
+                raise ValueError("A deployment schedule must cover the entire test suffix.")
+        result = _simulate(candles, request, start, parameter_schedule)
         fills, trades = result["fills"], []
         for index in range(0, len(fills), 2):
             entry, exit = fills[index : index + 2]

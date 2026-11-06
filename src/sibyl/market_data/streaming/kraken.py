@@ -9,28 +9,10 @@ import math
 import time
 from datetime import UTC, datetime
 
+from sibyl.market_data.streaming.common import SubscriptionRejected, number, timestamp
+
 ENDPOINT = "wss://ws.kraken.com/v2"
 INTERVALS = {"1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440, "1w": 10080}
-
-
-class SubscriptionRejected(ConnectionError):
-    """A native subscription was rejected; REST remains available without reconnect churn."""
-
-
-def number(value, *, positive=False):
-    if isinstance(value, bool):
-        raise ValueError("Invalid public stream number.")
-    value = float(value)
-    if not math.isfinite(value) or value < 0 or (positive and value == 0):
-        raise ValueError("Invalid public stream number.")
-    return value
-
-
-def timestamp(value):
-    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if parsed.tzinfo is None:
-        raise ValueError("Missing stream timezone.")
-    return parsed.timestamp()
 
 
 async def subscribe(socket, native, timeframe):

@@ -71,6 +71,7 @@ export function ForecastWorkspace() {
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [lags, setLags] = useState(14);
   const [alpha, setAlpha] = useState(1);
+  const [featureSet, setFeatureSet] = useState<'returns' | 'returns_context'>('returns');
   const [maxHorizon, setMaxHorizon] = useState(30);
   const [candles, setCandles] = useState(720);
   const [output, setOutput] = useState<ForecastOutput>();
@@ -104,6 +105,7 @@ export function ForecastWorkspace() {
         lags,
         alpha,
         max_horizon: maxHorizon,
+        feature_set: featureSet,
       });
       models.retry();
       datasets.retry();
@@ -224,6 +226,16 @@ export function ForecastWorkspace() {
         <summary>Model settings & assumptions</summary>
         <div className="forecast-training-grid">
           <label>
+            Price features
+            <select
+              value={featureSet}
+              onChange={(e) => setFeatureSet(e.target.value as typeof featureSet)}
+            >
+              <option value="returns">Daily return lags</option>
+              <option value="returns_context">Returns + trend &amp; volatility</option>
+            </select>
+          </label>
+          <label>
             Daily return lags
             <select value={lags} onChange={(e) => setLags(Number(e.target.value))}>
               {[5, 14, 30].map((n) => (
@@ -256,8 +268,11 @@ export function ForecastWorkspace() {
           </label>
         </div>
         <p className="footnote">
-          Each horizon is fitted separately. No final full-data refit or automatic best-model
-          selection. Repeated experiments can overfit the test period.
+          Optional context adds mean return, volatility, downside RMS, positive-return share,
+          drawdown and distance from the trailing mean, using only the same past window. Extra
+          features are not guaranteed to improve results. Each horizon is fitted separately. No
+          final full-data refit or automatic best-model selection. Repeated experiments can overfit
+          the test period.
         </p>
       </details>
       <div className="forecast-workspace-actions">
@@ -395,7 +410,10 @@ export function ForecastWorkspace() {
                   </Badge>
                   <span>
                     {report.model.engine} · lags {report.model.parameters.lags} · penalty{' '}
-                    {report.model.parameters.alpha}
+                    {report.model.parameters.alpha} ·{' '}
+                    {report.model.parameters.feature_set === 'returns_context'
+                      ? 'Returns + 6 context features'
+                      : 'Return lags only'}
                   </span>
                   <code title={report.model.fingerprint}>
                     {report.model.fingerprint.slice(0, 14)}…
@@ -593,7 +611,7 @@ export function ForecastWorkspace() {
                     <ForecastPlot points={forecastPoints} />
                     <p className="footnote">
                       {activeOutput.shift.outside_training_range} of {activeOutput.shift.features}{' '}
-                      lag features fall outside observed training ranges. This is a descriptive
+                      model features fall outside observed training ranges. This is a descriptive
                       shift check, not a calibrated regime detector. {activeOutput.note}
                     </p>
                     <button

@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from sibyl import __version__
 from sibyl.forecasting.contracts import TrainForecast
-from sibyl.forecasting.engine import ENGINE, fingerprint, train, validate
+from sibyl.forecasting.engine import engine_for, fingerprint, parameters, train, validate
 from sibyl.market_data.archive import FIELDS, iso, milliseconds, now_ms, step_ms, validated_rows
 
 MAX_BUNDLE = 16 * 1024 * 1024
@@ -91,12 +91,14 @@ class ForecastBundles:
             data["candles"],
         )
         body = TrainForecast(**model["request"])
-        if metadata["engine"] != ENGINE or artifact["engine"] != ENGINE:
+        if metadata["engine"] != engine_for(body.feature_set) or artifact["engine"] != engine_for(
+            body.feature_set
+        ):
             raise ValueError("This forecast engine is not supported by the installed app.")
-        parameters = {key: getattr(body, key) for key in ("lags", "alpha", "max_horizon")}
+        expected_parameters = parameters(body)
         if (
-            metadata["parameters"] != parameters
-            or artifact["parameters"] != parameters
+            metadata["parameters"] != expected_parameters
+            or artifact["parameters"] != expected_parameters
             or metadata["dataset"] != dataset
         ):
             raise ValueError("Model recipe and retained input do not agree.")
@@ -219,7 +221,7 @@ class ForecastBundles:
                 "source": source,
                 "environment": "imported",
                 "dataset": dataset,
-                "engine": ENGINE,
+                "engine": artifact["engine"],
                 "app_version": __version__,
                 "fingerprint": fingerprint({"dataset": dataset, "artifact": artifact}),
                 "parameters": artifact["parameters"],

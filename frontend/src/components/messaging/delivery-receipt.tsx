@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { DeliveryInspector } from './delivery-review';
 import { Badge } from '../ui';
 
 export type MessageDelivery = {
@@ -10,6 +12,7 @@ export type MessageDelivery = {
   sent_parts: number;
   total_parts: number;
   preview: string;
+  reviews?: { decision: string; note: string; at: string; native_confirmation: false }[];
   error: string | null;
   parts: {
     part: number;
@@ -32,6 +35,7 @@ const labels: Record<string, string> = {
 
 /** Display provider-confirmed outcomes, never treating queue admission as successful delivery. */
 export function DeliveryReceipt({ delivery }: { delivery: MessageDelivery }) {
+  const [review, setReview] = useState(false);
   return (
     <div className="message-delivery-receipt">
       {delivery.kind === 'alert' && (
@@ -78,6 +82,11 @@ export function DeliveryReceipt({ delivery }: { delivery: MessageDelivery }) {
           </div>
         ))}
       </details>
+      {!!delivery.reviews?.length && <small>User reviewed · native outcome retained</small>}
+      <button className="text-button" onClick={() => setReview(true)}>
+        Review delivery →
+      </button>
+      {review && <DeliveryInspector id={delivery.id} onClose={() => setReview(false)} />}
     </div>
   );
 }

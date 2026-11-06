@@ -13,6 +13,7 @@ import {
 import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import { AgentButton } from './agents';
+import { LibraryEvaluations } from './library-evaluations';
 import { LibrarySemantic } from './library-semantic';
 import type { SemanticStatus } from '../lib/semantic-types';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
@@ -182,6 +183,9 @@ export function ResearchLibrary() {
         </p>
       </Panel>
       <LibrarySemantic state={semantic} retry={semantic.retry} />
+      <LibraryEvaluations
+        semanticReady={!!semantic.data?.configured && !!semantic.data.coverage.all.indexed}
+      />
       {query && (
         <Panel>
           <PanelTitle
@@ -383,6 +387,7 @@ function DocumentReader({
   onClose: () => void;
 }) {
   const [offset, setOffset] = useState(0);
+  const toast = useToast();
   const result = useResource<Document>(`/library/documents/${identity}?offset=${offset}`);
   const exact = useResource<Passage>(`/library/passages/${selectedPassage}`, 0, !!selectedPassage);
   const data = result.data;
@@ -437,6 +442,17 @@ function DocumentReader({
                   </div>
                   <p>{part.text}</p>
                   <small>{part.id}</small>
+                  <button
+                    className="text-button"
+                    onClick={() =>
+                      void navigator.clipboard
+                        .writeText(part.id)
+                        .then(() => toast('Passage ID copied.'))
+                        .catch(() => toast('Select and copy the passage ID shown above.'))
+                    }
+                  >
+                    Copy passage ID
+                  </button>
                 </section>
               ))}
             </div>

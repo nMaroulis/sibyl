@@ -4,7 +4,7 @@ This is an audit of the current Python backend, not a release schedule. **The ma
 
 ## Audited snapshot — November 6, 2026
 
-The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
+The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Unchecked entries bundle broad follow-up scopes and acceptance work; completing an extension does not necessarily close its whole parent entry. Multi-user work is deferred and excluded from the local implementation sequence.
 
 | Area                           | Current state | Next missing foundation                                                                                                    |
 | ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -14,7 +14,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Market-data infrastructure     | partial       | Broader historical adapters, quota metrics and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, tracing and more delivery channels.                                      |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
-| Strategy research              | partial       | Continuous deployment simulation, nested validation and broader optimization.                                              |
+| Strategy research              | partial       | Continuous deployment simulation and broader optimization; nested chronological selection is implemented.                                              |
 | Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.                       |
 | ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.                                   |
 | Forecasting                    | partial       | More model families, automatic recalibration and calibrated drift monitoring; prospective outcome tracking is implemented. |
@@ -129,7 +129,8 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 - [ ] Review historical pagination for the remaining providers and exercise authenticated provider acceptance.
 - [x] Add on-demand Binance production/Testnet public ticker/candle WebSockets, shared bounded queues, reconnect/freshness status, exact-source REST fallback and native Analyst evidence. See [live previews](live-markets.md).
 - [x] Add Kraken v2 public ticker/OHLC previews with exact symbols, native interval filtering, explicit receipt timing and shared lifecycle/fallback.
-- [ ] Add private account/order streams, more public providers and persisted reconnect-gap recovery.
+- [x] Add Coinbase production public tickers and native five-minute candle previews, connection-wide sequence checks, exact-product alias rejection and REST fallback.
+- [ ] Add private account/order streams, additional public providers and persisted reconnect-gap recovery.
 - [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
 - [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
 - [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Live session counters reset on API restart.
@@ -143,7 +144,9 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 
 - [x] Add bounded grid search, chronological holdout/expanding walk-forward evaluation, fixed-settings comparisons, recorded training rankings/test executions, exact-study reruns and Broker evidence tools. See [validation](../guides/strategy-validation.md).
 - [x] Add reproducible seeded finite random search with an explicit candidate budget, full-space validation, coverage/fingerprints, saved plans, exact-study replay checks and native Broker evidence.
-- [ ] Add nested validation, continuous rebalanced deployment simulations and Bayesian/distribution-based optimization; repeated user experiments can still overfit.
+- [x] Add optional nested chronological candidate selection, retained inner metrics, bounded work and independent outer tests.
+- [x] Add continuous single-market walk-forward replay carrying one cash/asset balance and entry cost across chosen-parameter windows, with actual fills, transition balances, fixed-setting comparison and native Broker evidence.
+- [ ] Add multi-asset deployment/rebalancing and Bayesian/distribution-based optimization; repeated user experiments can still overfit.
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
 - [x] Add exact-window cost-aware cash, buy-and-hold, scheduled-installment and 50/50 asset/cash references, selectable equity overlays and actual cost/metric summaries. Saved same-input strategy comparisons remain available; continuous deployment simulation is separate.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
@@ -178,7 +181,9 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [ ] Add user-facing token streaming, broader provider/model and semantic-grounding evaluation and fix the [upstream owned-subagent metrics gap](protolink-metrics.md). Activity streaming does not expose raw model chunks or internal action JSON. Narrow contract checks do not establish general answer reliability.
 - [x] Implement direct-HTTP Telegram polling, private-user binding, encrypted credentials, conversation mapping and durable delivery outcomes. Explicit rate limits retry; ambiguous sends never auto-retry.
 - [x] Retain initial user-confirmed Telegram conversation acceptance. Automated briefing delivery is tested with a mock HTTP transport; real scheduled-delivery acceptance remains a deployment check.
-- [ ] Add Telegram media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
+- [x] Add app-origin Telegram delivery review with exact text/target inspection, unsent withdrawal and separate user acknowledgments preserving native outcomes.
+- [x] Add grouped conversation-reply receipts, original-target metadata, exact text inspection, atomic unsent withdrawal, separate user acknowledgments and UTF-16-safe chunking.
+- [ ] Add Telegram media. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
 ### 8. Forecasting / Chronos — partial
@@ -194,7 +199,8 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Add prospective exact-source outcome tracking with original-save-time eligibility, corrected actual receipts, equal-horizon benchmarks, pause/resume, explicit refresh and native evidence.
 - [x] Add bounded portable JSON model/input bundles with integrity validation, offline local refitting, unverified imported namespaces and deduplication; archive/restore model versions without deleting evidence or silently stopping monitors.
 - [ ] Add calibrated drift monitoring, automated recalibration and larger managed lifecycles.
-- [ ] Add neural/ARIMA and other model families, richer features and larger evaluation studies. Historical held-out results do not establish future profitability.
+- [x] Add an optional causal returns-plus-context ridge recipe with six trailing-price features, retained through rolling evaluation, predictions and portable refits.
+- [ ] Add neural/ARIMA and other model families, additional inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 
@@ -202,6 +208,7 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 
 - [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
 - [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
+- [x] Add owner-labeled saved retrieval evaluations over pinned corpora/indexes, exact rankings/citations and precision/recall/MRR/nDCG/hit-rate reports.
 - [ ] Evaluate semantic relevance and answer grounding across real models/corpora, add calibrated no-answer thresholds and support reviewed hosted embedding providers. Controlled-vector tests establish contracts, not real-model relevance.
 - [ ] Add cited web-search tools; local hybrid retrieval is implemented.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
@@ -248,9 +255,12 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add fixed-account-set value floors, asset concentration and observed-value drawdown watches with complete fresh valuation, recovery/cooldown, atomic evidence/inbox commits and read-only Accountant tools. See [account risk](account-risk.md).
 - [x] Add per-account order/fill subscriptions over atomic local observation receipts, future-only controls, retained inbox and optional existing Telegram delivery.
 - [x] Add whole-basket HHI/effective-asset/largest/top-three value concentration and optional HHI/top-three alerts, gated on complete fresh valuations.
-- [ ] Add return/correlation-aware risk metrics and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
+- [x] Add saved explicit current-holding basket studies with observed historical conversion routes, consecutive sample covariance/correlations, volatility, empirical tails, variance contributions, full input export and native Accountant evidence.
+- [ ] Add correlation-aware alerts/enforcement and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
 - [x] Add opt-in Telegram delivery per price/risk/strategy/connection rule, reviewed recipients, future-only cursors, transactional admission, cooldown suppression, expiry and actual part outcomes. See [contracts](alert-delivery.md).
-- [ ] Add other external alert channels and richer review controls; live alert-delivery acceptance remains a deployment check.
+- [x] Add app-origin delivery text/target inspection, queued-remainder withdrawal and separate user review history with optimistic evidence tokens.
+- [x] Extend the review contract to grouped conversation replies while preserving native delivery outcomes and unknown legacy bot identities.
+- [ ] Add other external alert channels; live alert-delivery acceptance remains a deployment check.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
 - [x] Add lightweight process resource counters and fixed latency histograms with scoped, honest coverage.

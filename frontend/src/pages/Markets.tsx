@@ -148,6 +148,9 @@ function MarketsView({
     hasCandles &&
       pairs.length > 0 &&
       (['binance', 'binance-testnet'].includes(source.provider) ||
+        (source.provider === 'coinbase' &&
+          source.environment === 'production' &&
+          (!symbol.endsWith('/USDC') || ['USDT/USDC', 'EURC/USDC'].includes(symbol))) ||
         (source.provider === 'kraken' &&
           source.environment === 'production' &&
           ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'].includes(timeframe))),
@@ -313,16 +316,22 @@ function MarketsView({
                   className={`market-live-state ${live.state}`}
                   title={
                     live.error ||
-                    (source.provider === 'kraken'
-                      ? 'Kraken OHLC and untimestamped tickers use local receipt time; this does not prove last-trade freshness. Preview only; analysis stays on closed REST candles.'
-                      : 'Live previews do not change the closed-candle analysis sample.')
+                    (source.provider === 'coinbase'
+                      ? timeframe === '5m'
+                        ? 'Coinbase native five-minute candle preview and ticker; provider envelope time is not last-trade time. Analysis uses closed REST candles.'
+                        : 'Coinbase live ticker; this chart interval stays on closed REST candles. Native live candles are five-minute buckets only.'
+                      : source.provider === 'kraken'
+                        ? 'Kraken OHLC and untimestamped tickers use local receipt time; this does not prove last-trade freshness. Preview only; analysis stays on closed REST candles.'
+                        : 'Live previews do not change the closed-candle analysis sample.')
                   }
                 >
                   <i aria-hidden="true" />
                   {live.state === 'live'
-                    ? live.time_basis === 'receipt'
-                      ? 'Live · receipt timed'
-                      : 'Live'
+                    ? source.provider === 'coinbase' && timeframe !== '5m'
+                      ? 'Live price · REST candles'
+                      : live.time_basis === 'receipt'
+                        ? 'Live · receipt timed'
+                        : 'Live'
                     : live.state === 'rest'
                       ? 'REST snapshots'
                       : live.state === 'connecting'

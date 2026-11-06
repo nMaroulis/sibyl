@@ -15,6 +15,24 @@ import numpy as np
 from sibyl.market_data.archive import iso, milliseconds, now_ms, step_ms
 
 ENGINE = "chronos-ridge-1"
+CONTEXT_ENGINE = "chronos-ridge-context-1"
+
+
+def engine_for(feature_set="returns"):
+    """Keep the legacy engine exact and identify the optional richer causal recipe separately."""
+    if feature_set not in {"returns", "returns_context"}:
+        raise ValueError("Unsupported forecast feature recipe.")
+    return CONTEXT_ENGINE if feature_set == "returns_context" else ENGINE
+
+
+def parameters(request):
+    """Preserve legacy artifact parameters byte-for-byte when richer features are not selected."""
+    values = {key: getattr(request, key) for key in ("lags", "alpha", "max_horizon")}
+    if request.feature_set != "returns":
+        values["feature_set"] = request.feature_set
+    return values
+
+
 COVERAGE = 0.9
 
 
@@ -43,10 +61,27 @@ def validate(candles, minimum=31):
     return np.log(np.asarray([row["close"] for row in candles], dtype=float)), times
 
 
-def features(log_prices, lags):
-    """Return causal lag vectors; row t contains returns through close t and no later prices."""
+def features(log_prices, lags, feature_set="returns"):
+    """Build features through close t only; all trend/volatility windows fit inside the lag context."""
+    engine_for(feature_set)
     returns = np.diff(log_prices)
-    return np.asarray([returns[t - lags : t][::-1] for t in range(lags, len(log_prices))])
+    lagged = np.asarray([returns[t - lags : t][::-1] for t in range(lags, len(log_prices))])
+    if feature_set == "returns":
+        return lagged
+    context = []
+    for t, row in zip(range(lags, len(log_prices)), lagged, strict=True):
+        past = log_prices[t - lags : t + 1]
+        context.append(
+            [
+                float(row.mean()),
+                float(row.std()),
+                float(np.sqrt(np.mean(np.minimum(row, 0) ** 2))),
+                float(np.mean(row > 0)),
+                float(log_prices[t] - past.max()),
+                float(log_prices[t] - past.mean()),
+            ]
+        )
+    return np.column_stack((lagged, np.asarray(context)))
 
 
 def prices(log_prices):
@@ -74,7 +109,7 @@ def metrics(actual, predicted):
 
 def fit_horizon(logs, x, lags, alpha, horizon, training, calibration):
     """Fit one causal ridge model and calibrate it using only the supplied earlier partitions."""
-    if len(training) < max(60, 3 * lags) or len(calibration) < 20:
+    if len(training) < max(60, 3 * x.shape[1]) or len(calibration) < 20:
         raise ValueError("Use more training and calibration observations for this horizon.")
     raw = x[training - lags]
     mean, scale = raw.mean(axis=0), raw.std(axis=0)
@@ -83,7 +118,7 @@ def fit_horizon(logs, x, lags, alpha, horizon, training, calibration):
     y = logs[training + horizon] - logs[training]
     intercept = float(y.mean())
     try:
-        coefficients = np.linalg.solve(z.T @ z + alpha * np.eye(lags), z.T @ (y - intercept))
+        coefficients = np.linalg.solve(z.T @ z + alpha * np.eye(x.shape[1]), z.T @ (y - intercept))
     except np.linalg.LinAlgError:
         raise ValueError("This numerical fit did not converge. Choose another dataset or penalty.") from None
 
@@ -151,7 +186,7 @@ def train(candles, request):
     logs, times = validate(candles, 360)
     n, lags = len(logs), request.lags
     train_end, calibration_end = math.floor(n * 0.6), math.floor(n * 0.8)
-    x = features(logs, lags)
+    x = features(logs, lags, request.feature_set)
     fitted, evaluation = [], []
     drift = float(np.diff(logs[:train_end]).mean())
     for horizon in range(1, request.max_horizon + 1):
@@ -164,10 +199,10 @@ def train(candles, request):
         fitted.append(model)
         evaluation.append(score_horizon(logs, times, predictions, model, test, drift, lags))
     artifact = {
-        "engine": ENGINE,
+        "engine": engine_for(request.feature_set),
         "numpy_version": np.__version__,
         "algorithm": "Direct autoregressive ridge on daily log returns",
-        "parameters": {"lags": lags, "alpha": request.alpha, "max_horizon": request.max_horizon},
+        "parameters": parameters(request),
         "nominal_coverage": COVERAGE,
         "models": fitted,
         "partitions": {
@@ -192,19 +227,32 @@ def train(candles, request):
             "Repeated user experiments can overfit the retained test window. Negative skill means the naive forecast performed better.",
         ],
     }
+    if request.feature_set != "returns":
+        artifact["algorithm"] = "Direct ridge on lagged returns and causal trend/volatility context"
+        artifact["feature_names"] = [f"return_lag_{i + 1}" for i in range(lags)] + [
+            "mean_return",
+            "return_volatility",
+            "downside_rms",
+            "positive_fraction",
+            "log_distance_from_peak",
+            "log_trend_deviation",
+        ]
+        artifact["notes"].append(
+            "Six context features use only the same trailing lag window; they add no volume, external signals or automatic feature/model selection. More features do not establish better future accuracy."
+        )
     fingerprint(artifact)  # Reject any non-finite persisted artifact.
     return artifact
 
 
 def predict(artifact, candles, horizon):
     """Apply unchanged trained coefficients to a closed causal window, with a descriptive shift check."""
-    if artifact["engine"] != ENGINE:
+    if artifact["engine"] != engine_for(artifact["parameters"].get("feature_set", "returns")):
         raise ValueError("This forecast engine version is not supported by the installed application.")
     lags = artifact["parameters"]["lags"]
     logs, times = validate(candles, lags + 1)
     if not 1 <= horizon <= len(artifact["models"]):
         raise ValueError("Choose a horizon supported by this trained model.")
-    vector = features(logs, lags)[-1]
+    vector = features(logs, lags, artifact["parameters"].get("feature_set", "returns"))[-1]
     points, shifts = [], []
     for model in artifact["models"][:horizon]:
         z = (vector - np.asarray(model["mean"])) / np.asarray(model["scale"])
@@ -229,8 +277,12 @@ def predict(artifact, candles, horizon):
         "nominal_coverage": COVERAGE,
         "shift": {
             "outside_training_range": max(shifts),
-            "features": lags,
-            "note": "Lag features outside observed training ranges; a descriptive warning, not a calibrated regime-change test.",
+            "features": len(vector),
+            "note": (
+                "Model features outside observed training ranges; a descriptive warning, not a calibrated regime-change test."
+                if artifact["parameters"].get("feature_set") == "returns_context"
+                else "Lag features outside observed training ranges; a descriptive warning, not a calibrated regime-change test."
+            ),
         },
         "note": "A fitted research model with empirical calibration. Future coverage and profitable trades are not guaranteed.",
     }

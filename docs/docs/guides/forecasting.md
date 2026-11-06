@@ -85,3 +85,11 @@ Trained forecast origins and chart targets use the daily candle close time, when
 Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the known ridge engine, 360–5,000 consecutive closed daily candles and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
 
 **Archive model** hides a version from the default picker and disables new saved forecasts. **Show archived versions → Restore model** brings it back. Saved outputs, evaluations and any existing outcome monitors remain intact; archiving neither deletes storage nor silently pauses monitors. Pause outcome tracking separately if needed. Read-only Chronos help explains these controls and can inspect archived versions on request.
+
+## Optional trend and volatility features
+
+In **Train model → Model settings & assumptions**, choose **Returns + trend & volatility**. Alongside the selected daily-return lags, this adds six statistics over exactly the same preceding price window: mean log return, population return volatility, downside RMS around zero, positive-return share, log drawdown from the trailing maximum, and distance from the trailing log-price mean. There are no volume, order-book or external inputs.
+
+The recipe is shown beside the saved model's engine and parameters. Training-only scaling, purged chronological train/calibration/test boundaries, empirical calibration bands and naive/drift comparisons still apply. Compare recorded held-out results; extra features can make performance worse. This is an optional ridge recipe, not a neural model or automatic feature selection.
+
+Exact reruns, rolling studies, saved/current-input forecasts, portable bundle imports and prospective tracking keep that model's feature recipe. Older returns-only artifacts remain supported unchanged. Chronos can explain which recipe a selected model actually uses.

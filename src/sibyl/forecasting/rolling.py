@@ -9,7 +9,7 @@ import numpy as np
 
 from sibyl.forecasting.engine import (
     COVERAGE,
-    ENGINE,
+    engine_for,
     features,
     fingerprint,
     fit_horizon,
@@ -31,7 +31,9 @@ def evaluate(candles, recipe, request):
     if min(request.test_days, request.calibration_days) - h < 20:
         raise ValueError("Calibration and test windows each need at least horizon + 20 days.")
     first = n - request.folds * request.test_days
-    minimum_training = lags + max(60, 3 * lags) + h
+    minimum_training = (
+        lags + max(60, 3 * (lags + (6 if recipe.get("feature_set") == "returns_context" else 0))) + h
+    )
     earliest_end = first - request.calibration_days
     available = earliest_end if request.window == "expanding" else request.training_days
     if earliest_end < minimum_training or available < minimum_training:
@@ -42,7 +44,7 @@ def evaluate(candles, recipe, request):
         raise ValueError(
             "The fixed training window starts before the saved input. Use fewer training days or fewer folds."
         )
-    x, folds = features(logs, lags), []
+    x, folds = features(logs, lags, recipe.get("feature_set", "returns")), []
 
     def partition(start, end):
         return {
@@ -100,7 +102,7 @@ def evaluate(candles, recipe, request):
     )
     result = {
         "engine": ROLLING_ENGINE,
-        "ridge_engine": ENGINE,
+        "ridge_engine": engine_for(recipe.get("feature_set", "returns")),
         "numpy_version": np.__version__,
         "parameters": request.model_dump(),
         "recipe": recipe,

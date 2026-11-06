@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from sibyl.research_library.evaluations.service import RetrievalEvaluations
 from sibyl.research_library.extraction import extract, passages
 from sibyl.research_library.semantic.service import SemanticIndex
 
@@ -46,6 +47,7 @@ class ResearchLibrary:
             """)
         self.path.chmod(0o600)
         self.semantic = SemanticIndex(self)
+        self.evaluations = RetrievalEvaluations(self)
 
     @contextmanager
     def db(self):

@@ -228,7 +228,9 @@ STRATEGIES = {
         (
             "Expand Validate on unseen data and choose the bounded parameter search and chronological holdout/walk-forward windows.",
             "Choose a small exhaustive grid, fixed settings, or a seeded sample of a larger finite parameter space. For random search, inspect the evaluated count, coverage, seed and recorded candidate plan.",
-            "Inspect training rankings separately from later test-window metrics and fixed-settings/buy-and-hold comparisons.",
+            "Selection rules & limits optionally enables inner chronological validation inside each outer training prefix. Mean inner return/Sharpe or worst inner drawdown selects fixed candidates, with separate cash per inner episode and no outer-test prices.",
+            "Inspect training or inner-validation rankings separately from later test-window metrics and fixed-settings/buy-and-hold comparisons.",
+            "Optionally enable Also replay continuous deployment in Selection rules & limits. The replay carries one balance and entry cost through parameter updates, with no boundary liquidation, and shows actual fills plus fixed-setting comparison. Its cumulative return differs from independent fold means.",
             "Open a saved study to inspect each window, reuse its exact input or export evidence.",
         ),
         (

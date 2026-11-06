@@ -1,6 +1,6 @@
 # Live market previews
 
-Binance public spot feeds, saved Binance/Testnet market sources and Kraken production support on-demand ticker and candle streams. Other feeds keep their existing REST snapshots. Account/order subscriptions and streaming execution decisions are not implemented.
+Binance public spot feeds, saved Binance/Testnet market sources, Coinbase production and Kraken production support on-demand ticker and candle streams. Other feeds keep their existing REST snapshots. Account/order subscriptions and streaming execution decisions are not implemented.
 
 ## Ownership and transport
 
@@ -44,3 +44,13 @@ Provider references: [Binance public streams](https://github.com/binance/binance
 Ticker provider timestamps are validated when present. Untimestamped tickers and OHLC use explicitly labeled local receipt time; that clock cannot establish last-trade freshness. OHLC snapshots can contain older rows: only the native interval containing receipt time becomes a forming preview, with no invented close flag. Native weekly anchors are preserved. Invalid rows cannot become market evidence. Subscription rejection becomes an unavailable/fallback state without reconnect churn; network failures use the shared bounded backoff. Heartbeats do not refresh market observation age.
 
 A November 6, 2026 isolated acceptance run received real BTC/USD ticker and current one-minute candle snapshots with zero rejects; the ticker had provider time and OHLC had receipt time. Only credential-free public market metadata and the public socket were accessed. This does not establish private-account streams or continuous availability. Provider contracts: [ticker](https://docs.kraken.com/exchange/api-reference/spot-websocket-v2/ticker), [OHLC](https://docs.kraken.com/exchange/api-reference/spot-websocket-v2/ohlc).
+
+## Coinbase Advanced Trade public adapter
+
+`market_data/streaming/coinbase.py` uses fixed `wss://advanced-trade-ws.coinbase.com` with no JWT or account credentials. The spot catalog resolves exact native product IDs. Separate ticker, heartbeat and (only at a selected 5m interval) candle subscriptions share the owned socket. Other chart intervals receive ticker updates and keep their REST candles; five-minute candles are never relabeled as another interval.
+
+Connection-wide native sequence numbers include subscription acknowledgments and heartbeats. Duplicate/out-of-order sequences are ignored; a missing message reconnects with existing bounded backoff and REST fallback. Heartbeats keep an idle subscription open but do not freshen a price. Envelope time is explicitly distinguished from last-trade time. Only the current aligned native five-minute bucket can become a forming preview; analysis and persisted closed history remain REST-based. This does not implement persisted gap recovery.
+
+Coinbase's public feed aliases most `-USDC` products to the corresponding USD feed. Sibyl rejects those streams; the documented `USDT-USDC` and `EURC-USDC` exceptions stay eligible. Selecting USD is explicit. Sandbox/private channels remain unsupported. Subscription errors expose sanitized unavailability, not native response bodies.
+
+Actual unauthenticated BTC-USD ticker and candle observations passed through Sibyl's production transport/parser on November 6, 2026. This is a bounded public observation, not an uptime or private-account guarantee. References: [official endpoints and alias limits](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/websocket/websocket-endpoints), [official channel schemas](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/advanced-trade-asyncapi.json).

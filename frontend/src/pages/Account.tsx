@@ -1,3 +1,4 @@
+import { PortfolioRisk } from '../components/portfolio-risk';
 import { PortfolioDiversification } from '../components/portfolio-diversification';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -189,6 +190,7 @@ function PortfolioWorkspace({
       <PortfolioScope selection={selection} scope={scope} onChange={select} />
       <PortfolioAccounts portfolio={data} select={select} />
       <AccountOverview portfolio={data} runningStrategies={activeJobs} />
+      <PortfolioRisk key={scope} portfolio={data} scope={scope} />
       <div className="dashboard-chart-grid">
         <Panel className="performance-panel">
           <PanelTitle

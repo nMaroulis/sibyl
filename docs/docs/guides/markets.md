@@ -83,3 +83,9 @@ Open **History & datasets** to inspect exact-source coverage, import older candl
 Expand **Return regression** below the correlation matrix. The first comparison symbol is the reference; each other symbol is a target. The backend fits `target log return = intercept + beta × reference log return` on the same aligned closed intervals, regardless of the matrix’s display transform.
 
 Read beta, intercept per candle in percent, R² and residual RMS. Select a target for a lightweight scatter plot and fitted line, or export the regression evidence. Fitting uses all aligned returns; the plot/export point sample retains at most the latest 360. At least 30 aligned returns are needed; constant references and undefined R² stay unavailable. The intercept is not risk-free-adjusted CAPM alpha. These are in-sample descriptions, not forecasts, significance tests or causal conclusions. Outliers, serial dependence and window selection matter. **Ask Analyst** follows the visible ordered pairs/method/transform.
+
+## Coinbase live previews
+
+Coinbase production now supports public live tickers. With **5m** selected, the chart also previews its native forming five-minute candle. At other intervals, the price updates live while candles and analysis stay on their exact-source closed REST snapshot. Provider envelope time is not last-trade time; an idle market can stay visibly stale even while socket heartbeats arrive.
+
+Most public USDC product streams alias USD prices, so those previews remain on REST rather than silently changing denomination. The native USDT/USDC and EURC/USDC exceptions are eligible. Sequence gaps reconnect; this never rewrites history or places an order. See [live protocol scope](../developers/live-markets.md#coinbase-advanced-trade-public-adapter).

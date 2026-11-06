@@ -21,7 +21,7 @@ ENDPOINTS = {
     "production": "wss://data-stream.binance.vision/stream",
     "test": "wss://stream.testnet.binance.vision/stream",
 }
-PROVIDERS = {"binance", "binance-testnet", "kraken"}
+PROVIDERS = {"binance", "binance-testnet", "kraken", "coinbase"}
 
 
 def numeric(value, *, positive=False):
@@ -128,19 +128,29 @@ class LiveMarkets:
                 from sibyl.market_data.streaming.kraken import INTERVALS
 
                 supported = identity["environment"] == "production" and timeframe in INTERVALS
+            if identity["provider"] == "coinbase":
+                supported = identity["environment"] == "production"
             if not supported:
                 raise ValueError(
-                    "Live streaming is available for Binance/Testnet and supported Kraken production intervals. This feed uses REST snapshots."
+                    "Live streaming is available for Binance/Testnet, Coinbase production and supported Kraken production intervals. This feed uses REST snapshots."
                 )
             client = self.market.client()
             if timeframe not in client.timeframes:
                 raise ValueError("This interval is unavailable on the selected feed.")
             native = client.stream_symbol(symbol)
             if not isinstance(native, str) or not re.fullmatch(
-                r"[A-Z0-9]{1,12}/[A-Z0-9]{1,12}" if identity["provider"] == "kraken" else r"[A-Z0-9]{2,48}",
+                r"[A-Z0-9]{1,12}/[A-Z0-9]{1,12}"
+                if identity["provider"] == "kraken"
+                else r"[A-Z0-9]{1,12}-[A-Z0-9]{1,12}"
+                if identity["provider"] == "coinbase"
+                else r"[A-Z0-9]{2,48}",
                 native,
             ):
                 raise ValueError("Invalid native spot stream identifier.")
+            if identity["provider"] == "coinbase":
+                from sibyl.market_data.streaming.coinbase import exact_product
+
+                exact_product(native)
             return {
                 key: identity[key] for key in ("source", "source_label", "provider", "environment")
             }, native
@@ -181,11 +191,14 @@ class LiveMarkets:
     async def _run(self, channel):
         attempt = 0
         streams = f"{channel.native_symbol.lower()}@ticker/{channel.native_symbol.lower()}@kline_{channel.timeframe}"
-        from sibyl.market_data.streaming import kraken
+        from sibyl.market_data.streaming import coinbase, kraken
 
+        is_coinbase = channel.identity["provider"] == "coinbase"
         is_kraken = channel.identity["provider"] == "kraken"
         url = (
-            kraken.ENDPOINT
+            coinbase.ENDPOINT
+            if is_coinbase
+            else kraken.ENDPOINT
             if is_kraken
             else f"{ENDPOINTS[channel.identity['environment']]}?streams={streams}"
         )
@@ -194,18 +207,29 @@ class LiveMarkets:
                 channel.state = "connecting" if not channel.reconnects else "reconnecting"
                 channel.publish(channel.status())
                 async with self.connect(url) as socket:
-                    if is_kraken:
-                        await kraken.subscribe(socket, channel.native_symbol, channel.timeframe)
+                    feed = coinbase.PublicFeed() if is_coinbase else None
+                    if is_kraken or is_coinbase:
+                        await (coinbase if is_coinbase else kraken).subscribe(
+                            socket, channel.native_symbol, channel.timeframe
+                        )
                     while True:
                         message = await asyncio.wait_for(socket.receive(), 30)
                         if message.type != aiohttp.WSMsgType.TEXT:
                             raise ConnectionError("Stream closed.")
                         try:
                             payload = json.loads(message.data)
-                            if not is_kraken and payload.get("data", payload).get("e") == "serverShutdown":
+                            if (
+                                not is_kraken
+                                and not is_coinbase
+                                and payload.get("data", payload).get("e") == "serverShutdown"
+                            ):
                                 raise ConnectionError("Provider rotating connection.")
                             events = (
-                                kraken.observations(
+                                feed.observations(
+                                    payload, channel.native_symbol, channel.symbol, channel.timeframe
+                                )
+                                if feed
+                                else kraken.observations(
                                     payload, channel.native_symbol, channel.symbol, channel.timeframe
                                 )
                                 if is_kraken
@@ -256,7 +280,7 @@ class LiveMarkets:
                 for channel in tuple(self.channels.values())
                 if not source or channel.identity["source"] == source
             ],
-            "scope": "Only viewed Binance/Testnet and Kraken public market streams. Kraken receipt-timed data does not prove last-trade freshness. Account/order tracking and analysis remain REST-based.",
+            "scope": "Only viewed Binance/Testnet, Coinbase and Kraken public market streams. Coinbase candles are native 5m only; envelope timing does not prove last-trade freshness. Kraken receipt-timed data does not prove last-trade freshness. Account/order tracking and analysis remain REST-based.",
         }
 
     async def close(self):

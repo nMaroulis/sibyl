@@ -19,6 +19,8 @@ NAME = "Broker"
 TAGLINE = "Build with discipline"
 DESCRIPTION = "Explain Trade and Strategies: recorded orders/fills, backtests, monitored runs, execution support and practical page help."
 SYSTEM_PROMPT = (
+    "Continuous replay carries one balance between parameter windows; distinguish its cumulative return from independent-window means and live execution. "
+    "Nested validation scores candidates only within outer training prefixes; disclose its recorded aggregation rule and repeated-experiment bias. "
     "For how-to questions choose trade_help or strategy_help with the matching topic; "
     "instructions alone do not require reading account/order records. Use recorded_orders for "
     "the user's saved order status and reconciliation evidence. Its order_id is Sibyl's record ID, "
@@ -274,7 +276,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def validation_report(validation_id: str = "", window: int = 1) -> dict:
-        """Inspect a saved validation study's training rankings and independent test-window evidence.
+        """Inspect saved parameter-selection rankings and independent test-window evidence, including nested validation.
 
         Supply a known validation_id or omit it for the selected study. window is the
         one-based test-window number. Returns retained settings, comparisons, metrics
@@ -289,6 +291,24 @@ def create_agent(services: Services, **runtime) -> Agent:
             return {"note": "Choose one of the study's recorded test windows."}
         fold = result["folds"][window - 1]
         return {
+            **(
+                {
+                    "deployment": {
+                        "method": result["deployment"]["method"],
+                        "note": result["deployment"]["note"],
+                        "adaptive": {
+                            key: result["deployment"]["adaptive"][key]
+                            for key in ("return_pct", "trades", "fees", "max_drawdown", "transitions")
+                        },
+                        "fixed": {
+                            key: result["deployment"]["fixed"][key]
+                            for key in ("return_pct", "trades", "fees", "max_drawdown")
+                        },
+                    }
+                }
+                if result.get("deployment")
+                else {}
+            ),
             "search": result.get("search"),
             **{
                 key: result[key]
@@ -309,6 +329,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "selected_window": {
                 "index": window,
                 "training_ranking": fold["training_ranking"],
+                "selection": fold.get("selection", {"mode": "training"}),
                 "recent_test_round_trips": fold["out_of_sample"]["round_trips"][-10:],
             },
             "simulation": True,

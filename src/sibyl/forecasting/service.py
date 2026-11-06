@@ -12,7 +12,7 @@ from uuid import uuid4
 from sibyl import __version__
 from sibyl.forecasting.bundles import ForecastBundles
 from sibyl.forecasting.contracts import ForecastRequest, TrainForecast
-from sibyl.forecasting.engine import ENGINE, fingerprint, predict, train
+from sibyl.forecasting.engine import fingerprint, predict, train
 from sibyl.forecasting.evaluations import RollingEvaluations
 from sibyl.forecasting.forward import ForwardMonitor
 from sibyl.market_data.archive import iso, milliseconds, now_ms, step_ms
@@ -100,7 +100,7 @@ class ForecastModels:
                     "source": document["dataset"]["source"],
                     "environment": document["dataset"]["environment"],
                     "dataset": document["dataset"],
-                    "engine": ENGINE,
+                    "engine": artifact["engine"],
                     "app_version": __version__,
                     "fingerprint": digest,
                     "parameters": artifact["parameters"],
@@ -126,6 +126,7 @@ class ForecastModels:
         metadata = result["metadata"]
         if (
             metadata["id"] != identity
+            or metadata["engine"] != result["artifact"]["engine"]
             or metadata["parameters"] != result["artifact"]["parameters"]
             or any(metadata[key] != metadata["dataset"][key] for key in ("symbol", "source", "environment"))
         ):

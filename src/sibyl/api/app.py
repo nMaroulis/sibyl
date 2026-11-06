@@ -213,6 +213,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ("alert-delivery", "Alert delivery admission", alert_delivery.tick, 1, 60),
             ("messaging", "Telegram messaging", messaging.tick, 0.5, 120),
             ("library", "Retained-news search index", library.synchronize_news, 30, 120),
+            ("retrieval-evaluations", "Research retrieval evaluations", library.evaluations.tick, 1, 120),
         ]
         for name, label, action, interval, deadline in jobs:
             workers.start(
@@ -229,6 +230,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "alert-delivery",
                     "messaging",
                     "library",
+                    "retrieval-evaluations",
                     "execution-alerts",
                     "forecast-observations",
                 }
@@ -240,6 +242,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             await market.live.close()
             await workers.close()
+            await asyncio.to_thread(library.evaluations.close)
             await asyncio.to_thread(alerts._inbox.history.close)
             await asyncio.to_thread(alert_delivery.close)
             await asyncio.to_thread(trading.alerts.close)
@@ -359,6 +362,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(returns_router)
     app.include_router(order_alerts_router)
     app.include_router(notification_history_router)
+    from sibyl.api.account_risk import router as account_risk_router
+
+    app.include_router(account_risk_router)
     from sibyl.api.library import router as library_router
     from sibyl.api.workspace import router as workspace_router
 

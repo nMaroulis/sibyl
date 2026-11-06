@@ -34,7 +34,12 @@ export type ForecastModel = {
     method: string;
     recorded_fit_matches_local: boolean;
   };
-  parameters: { lags: number; alpha: number; max_horizon: number };
+  parameters: {
+    lags: number;
+    alpha: number;
+    max_horizon: number;
+    feature_set?: 'returns' | 'returns_context';
+  };
 };
 export type ForecastMetrics = { mae: number; rmse: number; mape_pct: number };
 export type ForecastEvaluation = {

@@ -16,6 +16,7 @@ NAME = "Accountant"
 TAGLINE = "Know what you own"
 DESCRIPTION = "Explain account holdings, valuation, retained fills, FIFO performance, funding and transfers; guide Account workflows."
 SYSTEM_PROMPT = (
+    "Use basket_risk for saved current-weight historical covariance/tail studies. These are frictionless daily-rebalanced basket descriptions, not measured account performance, optimized allocations or future risk probabilities. Disclose subset coverage, dates and sample size. "
     "Use investment_returns for cash-flow-adjusted measured periods. Source-bound values and completeness reviews are user assertions, not audited provider guarantees. Missing coverage, stale reviews or ambiguous boundaries mean the return is unavailable; do not substitute raw value growth or FIFO profit. "
     "For how-to or navigation questions call page_help; instructions do not require reading balances. "
     "Read holdings and accounting reports through accountant_snapshot. Page-selected funding, "
@@ -443,5 +444,32 @@ def create_agent(services: Services, **runtime) -> Agent:
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )
+
+    @agent.tool
+    def basket_risk(study_id: str | None = None) -> dict:
+        """Read or list saved historical basket-risk studies using study_id/page scope.
+
+        Explain volatility, correlations, variance contributions and historical tails.
+        Disclose weights, coverage, dates and assumptions: these are neither measured
+        account returns nor future-loss guarantees. Setup: page_help(basket_risk).
+        """
+        identity = selected("risk_study_id", study_id, "")
+        if not identity:
+            return {
+                "kind": "basket_risk_study",
+                **portfolio.risk.list(selected("portfolio_scope", None, "all")),
+                "url": "/account",
+            }
+        result = portfolio.risk.get(identity)
+        return {
+            "kind": "basket_risk_study",
+            **{
+                key: value
+                for key, value in result.items()
+                if key not in {"inputs", "valuation", "daily_returns", "accounts"}
+            },
+            "url": "/account",
+        }
+
     agent.card.capabilities.delegation = False
     return agent
