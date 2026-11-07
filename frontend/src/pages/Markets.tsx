@@ -1,3 +1,4 @@
+import { GrangerAnalysis } from '../components/markets/granger';
 import { ReturnRelationships, type Regression } from '../components/markets/relationships';
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -119,7 +120,13 @@ function MarketsView({
   const hasCandles = !!catalog.data?.capabilities?.candles && frames.length > 0;
   const [bands, setBands] = useState(true);
   const [view, setView] = useState('candles');
-  const [tab, setTab] = useState('technical');
+  const tab = params.get('tab') === 'correlation' ? 'correlation' : 'technical';
+  const setTab = (value: string) =>
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      value === 'correlation' ? next.set('tab', value) : next.delete('tab');
+      return next;
+    });
   const [method, setMethod] = useState('pearson');
   const [transform, setTransform] = useState('log_returns');
   const [draft, setDraft] = useState('');
@@ -559,6 +566,13 @@ function MarketsView({
                         {corr.data.available_observations > corr.data.observations &&
                           `Using ${corr.data.observations} of ${corr.data.available_observations} aligned observations.`}
                       </p>
+                      <GrangerAnalysis
+                        key={`${corr.data.source}:${corr.data.symbols.join(',')}:${timeframe}:${limit}`}
+                        symbols={corr.data.symbols}
+                        source={corr.data}
+                        timeframe={timeframe}
+                        limit={limit}
+                      />
                       <ReturnRelationships
                         data={corr.data.regression}
                         source={corr.data}

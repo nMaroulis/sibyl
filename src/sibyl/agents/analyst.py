@@ -20,7 +20,7 @@ TAGLINE = "Find the signal"
 DESCRIPTION = "Interpret market prices, technical statistics and directional scores; explain Markets controls and indicator limitations."
 SYSTEM_PROMPT = (
     "Coinbase public previews use exact production products and native five-minute candles only; other intervals retain REST candles. Most USDC aliases are refused to avoid silently relabeling USD quotes. Envelope time is not last-trade time; a sequence gap reconnects without rewriting closed history. "
-    "Use market_relationships for observed Pearson/rank/distance dependence and descriptive return regression; disclose the exact shared sample and gaps. Distance dependence is unsigned, sample-biased and capped, not proof of independence. Regression is contemporaneous log-return OLS, not causality, CAPM alpha or prediction. "
+    "Use market_relationships for dependence/regression and optional fixed-order Granger lag research. Granger p-values assume stable linear errors, correct only this request, and do not imply causation or profit; distinguish earlier-fit inference from later-target error. For descriptive regression, disclose the exact shared sample and gaps. Distance dependence is unsigned, sample-biased and capped, not proof of independence. Regression is contemporaneous log-return OLS, not causality, CAPM alpha or prediction. "
     "Use live_market_status for observed public-stream health and forming-candle evidence, never as a closed-candle signal or an account/order stream. An empty stream list means no active viewer, not an outage. "
     "Use page_help for Markets navigation, chart controls, source/pair selection, watchlists and history. "
     "Interpret market prices, trend, momentum, drawdowns, volatility, volume and levels. Call market_analysis for "
@@ -80,17 +80,14 @@ def create_agent(services: Services, **runtime) -> Agent:
         timeframe: str | None = None,
         limit: Annotated[int | None, Field(ge=30, le=720)] = None,
         source: str | None = None,
+        lags: Annotated[int | None, Field(ge=1, le=5)] = None,
     ) -> dict:
-        """Compare spot-market return dependence and descriptive regression against the first market.
+        """Compare exact spot-pair dependence and reference-first return regressions.
 
-        Supply two to eight exact BASE/QUOTE symbols in reference-first order. With
-        no symbols, use the correlation page's ordered pairs, or compare the selected
-        pair with a distinct benchmark. Returned symbols identify the actual reference.
-        Method/transform follow the
-        correlation page; regression always uses log returns. Other omitted arguments
-        follow the page. Returns same-source aligned Pearson/rank/distance coefficients and compact OLS beta/intercept/R²/errors.
-        Distance uses at most 360 recent observations. Missing/constant inputs stay
-        unavailable; no significance, causality or out-of-sample accuracy is inferred.
+        Omitted settings follow Markets. Set lags (1–5) for bidirectional Granger
+        tests on consecutive log returns: training-only classical F/adjusted p,
+        held-out errors and assumption flags. Low p is not causation or profit.
+        Returns compact same-source evidence; constants and gaps stay explicit.
         """
         from sibyl.models import OrderRequest
 
@@ -113,6 +110,13 @@ def create_agent(services: Services, **runtime) -> Agent:
                 market.client().market(pair)
             histories = {pair: market.candles(pair, limit, timeframe) for pair in symbols}
             result = correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe])
+            order = selected("granger_lags", lags)
+            if order is not None:
+                from sibyl.market_data.analysis.granger import granger
+
+                result["granger"] = granger(histories, seconds=TIMEFRAMES[timeframe], lags=order)
+                for item in result["granger"]["items"]:
+                    item.pop("models", None)
             result["regression"]["items"] = [
                 {key: value for key, value in row.items() if key != "points"}
                 for row in result["regression"]["items"]

@@ -378,6 +378,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.strategy_research import router as strategy_research_router
 
     app.include_router(strategy_research_router)
+    from sibyl.api.market_relationships import router as market_relationships_router
+
+    app.include_router(market_relationships_router)
     from sibyl.api.strategy_execution import router as strategy_execution_router
 
     app.include_router(strategy_execution_router)

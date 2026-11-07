@@ -612,3 +612,32 @@
   font-weight: 550;
   font-variant-numeric: tabular-nums;
 }
+
+/* Keep lag evidence inside its panel; wide comparison tables scroll locally. */
+.lag-analysis {
+  min-width: 0;
+}
+.lag-analysis .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.lag-analysis .workspace-controls {
+  margin: 14px 0;
+}
+.lag-analysis td small {
+  display: block;
+  max-width: 25ch;
+  white-space: normal;
+}
+.lag-analysis .workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.custom-strategy-research .workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+}

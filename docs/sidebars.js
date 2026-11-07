@@ -33,6 +33,7 @@ module.exports = {
           [
             'guides/markets',
             'guides/market-statistics',
+            'guides/lag-analysis',
             'guides/market-history',
             'guides/research',
             'guides/research-library',
@@ -129,6 +130,7 @@ module.exports = {
           'Market feeds, candle history, news, forecasting and Bitcoin research.',
           [
             'developers/market-data',
+            'developers/lag-analysis',
             'developers/live-markets',
             'developers/provider-control',
             'developers/candle-history',
@@ -143,6 +145,7 @@ module.exports = {
           'Research engines, execution controls, limits and persistent alerts.',
           [
             'developers/strategy-research',
+            'developers/strategy-plugins',
             'developers/strategy-controls',
             'developers/portfolio-limits',
             'developers/alerts',

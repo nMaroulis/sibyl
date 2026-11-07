@@ -150,7 +150,8 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
 - [x] Add exact-window cost-aware cash, buy-and-hold, scheduled-installment and 50/50 asset/cash references, selectable equity overlays and actual cost/metric summaries. Saved same-input strategy comparisons remain available; continuous deployment simulation is separate.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
-- [ ] Define a plugin contract for custom strategies and optional Freqtrade integration.
+- [x] Add an explicitly enabled installed-Python research plugin contract, bounded numeric controls, causal prefix observations, source pins, actual cost-aware backtests, saved inputs/signals, exact reruns, charts/exports and Broker evidence.
+- [ ] Extend custom plugins to validation/jobs when reviewed; optional Freqtrade integration remains pending.
 - [ ] Implement the planned ML/RL strategies with their own training/evaluation pipeline.
 
 ## AI and research work
@@ -226,7 +227,8 @@ Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity q
 - [ ] Add historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
 - [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
-- [ ] Add MIC, Granger and SHAP with evaluated statistical assumptions.
+- [x] Add bounded fixed-order Granger tests with training-only classical inference, request-family adjustment, residual qualifications, independent later-target errors and exact-source UI/agent evidence.
+- [ ] Add MIC, SHAP, robust/nonlinear causal inference and broader real-data/model evaluation.
 
 ## Cross-cutting and optional expansion
 

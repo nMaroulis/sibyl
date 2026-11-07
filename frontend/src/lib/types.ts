@@ -620,6 +620,7 @@ export type Run = {
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
   comparison_symbols?: string[];
+  granger_lags?: number;
   correlation_method?: 'pearson' | 'spearman' | 'distance';
   correlation_transform?: 'log_returns' | 'prices' | 'changes';
   backtest_id?: string;

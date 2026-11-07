@@ -110,48 +110,62 @@ test('conversation reply review keeps the original unconfirmed outcome', async (
   expect(detail.reviews.at(-1).native_confirmation).toBe(false);
 });
 
-test('Coinbase UI subscribes with the exact selected interval while REST fixtures remain offline', async ({
-  page,
-  request,
-}) => {
-  // This is a browser protocol fixture. No Coinbase REST or socket traffic leaves the test.
-  await page.route('**/api/v1/**', async (route) => {
-    const url = new URL(route.request().url());
-    if (url.searchParams.get('source') !== 'coinbase') {
-      await route.continue();
-      return;
+for (const timeframe of ['5m', '1h']) {
+  test(`Coinbase UI subscribes with the exact ${timeframe} interval while REST fixtures remain offline`, async ({
+    page,
+    request,
+  }) => {
+    // Prepare exact offline responses before opening the page. A delayed proxy fetch
+    // can outlive React's canceled request and try to fulfill an already closed route.
+    const fixtures = new Map<string, unknown>();
+    for (const path of [
+      '/markets/symbols',
+      '/markets/watchlist',
+      '/markets',
+      '/markets/analysis',
+    ]) {
+      const response = await request.get(
+        `/api/v1${path}?source=demo&symbol=BTC%2FUSDT&limit=180&timeframe=${timeframe}`,
+      );
+      expect(response.ok()).toBeTruthy();
+      fixtures.set(`/api/v1${path}`, await response.json());
     }
-    if (url.pathname === '/api/v1/markets/live') {
+    // This is a browser protocol fixture. No Coinbase REST or socket traffic leaves the test.
+    await page.route('**/api/v1/**', async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('source') !== 'coinbase') {
+        await route.continue();
+        return;
+      }
+      if (url.pathname === '/api/v1/markets/live') {
+        await route.fulfill({
+          contentType: 'application/x-ndjson',
+          body:
+            JSON.stringify({
+              type: 'ticker',
+              source: 'coinbase',
+              price: 123.45,
+              time_basis: 'provider_envelope',
+              observed_at: new Date().toISOString(),
+            }) + '\n',
+        });
+        return;
+      }
+      const body = fixtures.get(url.pathname);
       await route.fulfill({
-        contentType: 'application/x-ndjson',
-        body:
-          JSON.stringify({
-            type: 'ticker',
-            source: 'coinbase',
-            price: 123.45,
-            time_basis: 'provider_envelope',
-            observed_at: new Date().toISOString(),
-          }) + '\n',
+        status: body ? 200 : 503,
+        json: body ?? {
+          detail: 'No observation for this endpoint in the offline protocol fixture.',
+        },
       });
-      return;
-    }
-    url.searchParams.set('source', 'demo');
-    const response = await request.get(url.toString());
-    await route.fulfill({ response });
+    });
+    const subscribe = page.waitForRequest(
+      (r) => new URL(r.url()).pathname === '/api/v1/markets/live',
+    );
+    await page.goto(`/markets?source=coinbase&symbol=BTC%2FUSDT&timeframe=${timeframe}`);
+    const first = new URL((await subscribe).url());
+    expect(first.searchParams.get('source')).toBe('coinbase');
+    expect(first.searchParams.get('timeframe')).toBe(timeframe);
+    await expect(page.locator('.market-live-state')).not.toHaveText('REST snapshots');
   });
-  const subscribe = page.waitForRequest(
-    (r) => new URL(r.url()).pathname === '/api/v1/markets/live',
-  );
-  await page.goto('/markets?source=coinbase&symbol=BTC%2FUSDT&timeframe=5m');
-  const first = new URL((await subscribe).url());
-  expect(first.searchParams.get('source')).toBe('coinbase');
-  expect(first.searchParams.get('timeframe')).toBe('5m');
-  await expect(page.locator('.market-live-state')).not.toHaveText('REST snapshots');
-  const next = page.waitForRequest(
-    (r) =>
-      new URL(r.url()).pathname === '/api/v1/markets/live' &&
-      new URL(r.url()).searchParams.get('timeframe') === '1h',
-  );
-  await page.goto('/markets?source=coinbase&symbol=BTC%2FUSDT&timeframe=1h');
-  expect(new URL((await next).url()).searchParams.get('source')).toBe('coinbase');
-});
+}

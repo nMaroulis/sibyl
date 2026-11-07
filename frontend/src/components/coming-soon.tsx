@@ -20,12 +20,12 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'markets',
       title: 'Deeper relationships',
-      text: 'Granger causality, MIC and SHAP with evaluated assumptions. Distance dependence and descriptive return regression are available in Markets.',
+      text: 'MIC, SHAP and robust/nonlinear inference with evaluated assumptions. Markets already offers distance dependence, descriptive return regression and fixed-order Granger research with training/holdout evidence and explicit limits.',
     },
     {
       module: 'strategies',
       title: 'More ways to test an idea',
-      text: 'Nested validation, Bayesian/distribution-based optimization, Freqtrade integration and ML/RL strategies. Bounded grid/seeded random search and chronological walk-forward tests are available now.',
+      text: 'Bayesian/distribution-based optimization, custom plugin validation/jobs, Freqtrade integration and ML/RL strategies. Custom Python backtests, nested selection, continuous replay and bounded grid/seeded random chronological tests are available now.',
     },
     {
       module: 'strategies',

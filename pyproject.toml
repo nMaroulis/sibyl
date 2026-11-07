@@ -21,6 +21,7 @@ dependencies = [
   "protolink[http]>=0.8.3,<0.9",
   "ccxt>=4.5,<5",
   "numpy>=2.2,<3",
+  "scipy>=1.14,<2",
   "pandas>=2.2,<4",
   "vadersentiment>=3.3.2,<4",
   "tzdata>=2024.1",
@@ -47,7 +48,7 @@ sibyl = "sibyl.__main__:main"
 packages = ["src/sibyl"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/sibyl", "hatch_build.py", "pyproject.toml", "uv.lock", "README.md", "LICENSE"]
+include = ["examples/strategy-plugin", "src/sibyl", "hatch_build.py", "pyproject.toml", "uv.lock", "README.md", "LICENSE"]
 
 [tool.hatch.build.hooks.custom]
 path = "hatch_build.py"

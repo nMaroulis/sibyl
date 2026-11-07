@@ -21,6 +21,7 @@ DESCRIPTION = "Explain Trade and Strategies: recorded orders/fills, backtests, m
 SYSTEM_PROMPT = (
     "Continuous replay carries one balance between parameter windows; distinguish its cumulative return from independent-window means and live execution. "
     "Nested validation scores candidates only within outer training prefixes; disclose its recorded aggregation rule and repeated-experiment bias. "
+    "Custom backtests are trusted installed research plugins, not paper/exchange jobs. Read their pinned implementation/decisions through backtest_report; never run or install them. "
     "For how-to questions choose trade_help or strategy_help with the matching topic; "
     "instructions alone do not require reading account/order records. Use recorded_orders for "
     "the user's saved order status and reconciliation evidence. Its order_id is Sibyl's record ID, "
@@ -154,6 +155,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         return {
             "selected_parameters": simulation.model_dump(),
             "catalog": CATALOG,
+            "custom_research": strategies.plugins.registry.catalog(),
             "recent_paper_orders": store.orders()[:10],
             "strategy_jobs": strategies.jobs(),
             "backtests": [
@@ -239,7 +241,9 @@ def create_agent(services: Services, **runtime) -> Agent:
 
         run_id = selected("backtest_id", run_id or None, "")
         with store.db() as db:
-            row = db.execute("SELECT payload FROM runs WHERE id=? AND kind='backtest'", (run_id,)).fetchone()
+            row = db.execute(
+                "SELECT payload FROM runs WHERE id=? AND kind IN ('backtest','plugin_backtest')", (run_id,)
+            ).fetchone()
         if not row:
             return {"note": "Choose a saved backtest first.", "url": "/strategies"}
         result = json.loads(row[0])
@@ -248,7 +252,15 @@ def create_agent(services: Services, **runtime) -> Agent:
                 key: value
                 for key, value in result.items()
                 if key
-                not in {"curve", "price_series", "benchmark_curve", "benchmarks", "fills", "round_trips"}
+                not in {
+                    "curve",
+                    "price_series",
+                    "benchmark_curve",
+                    "benchmarks",
+                    "fills",
+                    "round_trips",
+                    "plugin_signals",
+                }
             },
             "benchmarks": {
                 name: {key: value for key, value in item.items() if key not in {"curve", "fills"}}

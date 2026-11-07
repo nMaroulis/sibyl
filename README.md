@@ -42,7 +42,7 @@ Measured performance periods separate investment gain from external contribution
 
 Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports. Binance/Testnet and Kraken feeds add live price and candle previews with visible connection health and REST fallback.
 
-Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics, linear/rank/distance dependence and descriptive log-return regressions. An explainable technical-bias score shows its inputs and votes. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
+Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics, linear/rank/distance dependence and descriptive log-return regressions. An explainable technical-bias score shows its inputs and votes. Optional Granger lag research separates training-only inference from later-target error, with explicit assumptions. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
 
 [Markets guide](docs/docs/guides/markets.md) · [Statistics and score](docs/docs/guides/market-statistics.md) · [History and datasets](docs/docs/guides/market-history.md)
 
@@ -102,6 +102,8 @@ Follow CoinDesk, Cointelegraph, Decrypt, The Block and CryptoSlate through publi
 Tone and trend views describe the wording of headlines and excerpts. The separately attributed Alternative.me Fear & Greed index adds broader market context. Reporter can explain the selected stories and their sources.
 
 [News and sentiment](docs/docs/guides/research.md#reporter-news-and-insights)
+
+Custom Python strategies can also be installed and explicitly enabled for research-only backtests, with bounded controls, pinned sources, saved inputs and actual execution charts. See the [plugin contract and momentum example](docs/docs/developers/strategy-plugins.md).
 
 ### Forecast · Train, evaluate, inspect
 

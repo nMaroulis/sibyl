@@ -14,7 +14,17 @@ import type { Backtest } from '../../lib/types';
 import { number } from '../../lib/api';
 
 /** Inspect exact historical prices and executions; no smoothing between trade markers. */
-export function BacktestChart({ result, comparison }: { result: Backtest; comparison?: Backtest }) {
+type ChartInput = Pick<
+  Backtest,
+  'price_series' | 'curve' | 'metrics' | 'symbol' | 'fills' | 'benchmark_curve' | 'benchmarks'
+>;
+export function BacktestChart<T extends ChartInput>({
+  result,
+  comparison,
+}: {
+  result: T;
+  comparison?: Backtest;
+}) {
   const [mode, setMode] = useState<'price' | 'equity' | 'drawdown'>(
     result.price_series ? 'price' : 'equity',
   );

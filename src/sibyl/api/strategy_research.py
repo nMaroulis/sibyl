@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from sibyl.api.routes import S
 from sibyl.market_data.research import current_backtest, rerun_backtest
 from sibyl.models import BacktestRequest
+from sibyl.strategies.plugins.contracts import PluginBacktest
 from sibyl.strategies.validation import WalkForwardEngine, WalkForwardRequest
 
 router = APIRouter(prefix="/api/v1/strategies", tags=["Broker"])
@@ -57,3 +58,35 @@ def validation_detail(identity: str, s: S):
 def rerun_validation(identity: str, s: S):
     """Replay the original immutable input and verified candidate plan; retain the old study."""
     return s.strategies.validation.rerun(identity)
+
+
+@router.get("/plugins")
+def plugins(s: S):
+    """List discovered extensions; only locally allowlisted packages were imported."""
+    return s.strategies.plugins.registry.catalog()
+
+
+@router.post("/plugins/backtests", status_code=201)
+def plugin_backtest(body: PluginBacktest, s: S):
+    """Run one trusted research-only extension on exact current or saved input."""
+    return s.strategies.plugins.run(body)
+
+
+@router.get("/plugins/backtests")
+def plugin_runs(s: S):
+    return s.strategies.plugins.list()
+
+
+@router.get("/plugins/backtests/{identity}")
+def plugin_result(identity: str, s: S):
+    return s.strategies.plugins.get(identity)
+
+
+@router.post("/plugins/backtests/{identity}/rerun", status_code=201)
+def plugin_rerun(identity: str, s: S):
+    return s.strategies.plugins.rerun(identity)
+
+
+@router.delete("/plugins/backtests/{identity}", status_code=204)
+def plugin_delete(identity: str, s: S):
+    s.strategies.plugins.delete(identity)

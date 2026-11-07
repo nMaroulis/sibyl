@@ -204,6 +204,7 @@ STRATEGIES = {
         (
             "Choose current feed or an immutable saved dataset under Research input, then configure the strategy and trading costs.",
             "Run the backtest and inspect the retained input provenance, fingerprint and engine version.",
+            "Custom Python strategies expands research-only installed plugins with separate controls, source revisions, saved results and exact-input reruns. Install reviewed code in the backend environment, explicitly set SIBYL_STRATEGY_PLUGINS and restart; plugin jobs/optimization remain unavailable.",
             "Rerun exact input recomputes the same saved data/settings with the current engine; Load settings lets you edit a new experiment.",
         ),
         (

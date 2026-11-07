@@ -1,3 +1,4 @@
+import { CustomStrategies } from '../components/strategies/custom-strategies';
 import { BenchmarkComparison } from '../components/strategies/benchmark-comparison';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -1096,6 +1097,7 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
         ) : (
           <StrategyList jobs={jobs.data ?? []} catalog={catalog.data ?? []} />
         )}
+        <CustomStrategies params={params} datasetId={datasetId} demo={demoInput} />
         <ComingSoon module="strategies" />
       </SectionPanel>
     </>

@@ -51,11 +51,14 @@ docker compose up --build
 
 :::note[Latest Release]
 
-Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout.
+Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, custom Python research plugins, Granger lag analysis, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout.
 
 :::
 
 ### Added
+
+- Trusted local Python strategy plugins for historical backtests: explicit installed entry-point allowlists, bounded manifests/controls, immutable prefix-only observations, shared next-open cost simulation, source-revision pins, retained inputs/decision fingerprints, offline reruns, charts/exports and native read-only Broker evidence. An installable momentum example is included; plugin jobs/optimization and Freqtrade remain pending.
+- Markets Granger lag analysis with an explicit one-to-five lag order, reference-first bidirectional tests, consecutive return windows, training-only classical F/Bonferroni evidence, independent later-target MAE comparisons, residual diagnostics, source-labeled UI/JSON export and native Analyst context. Inference assumptions and the distinction between lag predictability and causation remain explicit.
 
 - Optional trained small neural forecasts: an eight-unit tanh network fitted locally with fixed-seed Adam, training-only normalization, chronological calibration and independent test/rolling benchmarks. The UI exposes real training loss, numerical family and bounded portable refits; ridge remains the default.
 - Opt-in hourly historical basket-risk watches for annualized volatility and daily 95% expected shortfall, using up to eight currently held assets, exact-source conversion history, complete fresh valuation, clear subset labels, hysteresis and retained inputs. These descriptive watches never enforce trading policy or guarantee future losses.
@@ -90,6 +93,8 @@ Markets adds live Binance, Kraken and Coinbase previews, with clear source/inter
 - Whole-basket asset HHI, effective asset count and largest/top-three value shares in Account, with no score for incomplete coverage. Optional fixed-account HHI/top-three alerts reuse fresh complete valuations, hysteresis, cooldowns, saved evidence and existing Telegram delivery. Accountant/Technician explain the implemented scope.
 
 ### Fixed
+
+- Correlations deep links now select the requested panel. Factual Ask dialogs follow the selected Granger order or saved custom/built-in backtest instead of returning unrelated market or default-strategy summaries.
 
 - Constant-series correlations now remain unavailable instead of displaying fabricated zero coefficients. Return comparisons require adjacent selected intervals and never bridge missing candles.
 - Preserve newer verified native fill/status observations when a delayed or lost single-order/OCO submission acknowledgment arrives. Group uncertainty cannot overwrite an independently recovered child.

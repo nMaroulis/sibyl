@@ -9,15 +9,27 @@ from sibyl.strategies.research.benchmarks import references
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
 
 
-def _simulate(candles: list[dict], request: BacktestRequest, start: int, schedule=None) -> dict:
+def _simulate(
+    candles: list[dict], request: BacktestRequest, start: int, schedule=None, signal_override=None
+) -> dict:
     """Run a long-only simulation with previous-close signals and next-open fills.
 
     Fee and slippage apply on both sides. The last position is liquidated at the
     final close. Sharpe uses candle equity returns, timeframe annualization, and a zero risk-free
     rate. Drawdown is reported as a nonnegative percentage from the running peak.
     """
-    frame = pd.DataFrame(candles) if schedule else strategy_indicators(candles, request)
-    signal = None if schedule else signals(frame, request.strategy, request)
+    frame = (
+        pd.DataFrame(candles)
+        if schedule or signal_override is not None
+        else strategy_indicators(candles, request)
+    )
+    signal = (
+        pd.Series(signal_override, index=frame.index)
+        if signal_override is not None
+        else None
+        if schedule
+        else signals(frame, request.strategy, request)
+    )
     selected = []
     for left, right, parameters in schedule or []:
         context = strategy_indicators(candles[:right], parameters)
@@ -154,6 +166,7 @@ class BacktestEngine:
         *,
         evaluation_start: int | None = None,
         parameter_schedule: list[tuple[int, int, BacktestRequest]] | None = None,
+        signal_override: list[int] | None = None,
     ) -> dict:
         """Simulate a suffix, using its earlier prefix only for causal indicator context.
 
@@ -208,7 +221,13 @@ class BacktestEngine:
                 expected = right
             if expected != len(candles):
                 raise ValueError("A deployment schedule must cover the entire test suffix.")
-        result = _simulate(candles, request, start, parameter_schedule)
+        if signal_override is not None and (
+            parameter_schedule
+            or len(signal_override) != len(candles)
+            or any(type(v) is not int or v not in {-1, 0, 1} for v in signal_override)
+        ):
+            raise ValueError("Use one valid direction per candle, without a parameter schedule.")
+        result = _simulate(candles, request, start, parameter_schedule, signal_override)
         fills, trades = result["fills"], []
         for index in range(0, len(fills), 2):
             entry, exit = fills[index : index + 2]

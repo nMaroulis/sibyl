@@ -36,6 +36,9 @@ class Strategies:
         self.alerts = StrategyAlerts(store)
         self.validation = StrategyValidation(store, market.archive)
         self.execution = None
+        from sibyl.strategies.plugins.service import PluginResearch
+
+        self.plugins = PluginResearch(market, store)
 
     def attach_execution(self, trading):
         """Attach account execution after the shared order pipeline is constructed."""
