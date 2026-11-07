@@ -269,6 +269,7 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
 - [x] Add lightweight process resource counters and fixed latency histograms with scoped, honest coverage.
+- [x] Add explicit read-only bounded SQLite quick checks and privacy-allowlisted downloadable workspace health reports, with passive native Technician evidence.
 - [ ] Add tracing, broader host diagnostics and external uptime monitoring.
 - [x] Add passphrase-encrypted managed archives, authenticated inspection/download/import and validated separate-directory restore. Recovery quarantines automatic work and requires explicit review/restart.
 - [x] Add private filtered notification JSON/CSV exports and opt-in bounded read-history retention, protected unread/delivery evidence, cleanup receipts and monotonic cursor-safe notification sequences.

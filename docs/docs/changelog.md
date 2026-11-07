@@ -51,11 +51,13 @@ docker compose up --build
 
 :::note[Latest Release]
 
-Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, custom Python research plugins, Granger lag analysis, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout.
+Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, custom Python research plugins, Granger lag analysis, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics, content-free workspace health reports and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout.
 
 :::
 
 ### Added
+
+- Workspace health reports: an explicit bounded read-only SQLite quick check, allowlisted runtime/resource/worker summaries, JSON download without credentials or private content, and passive Technician access to the last report.
 
 - Trusted local Python strategy plugins for historical backtests: explicit installed entry-point allowlists, bounded manifests/controls, immutable prefix-only observations, shared next-open cost simulation, source-revision pins, retained inputs/decision fingerprints, offline reruns, charts/exports and native read-only Broker evidence. An installable momentum example is included; plugin jobs/optimization and Freqtrade remain pending.
 - Markets Granger lag analysis with an explicit one-to-five lag order, reference-first bidirectional tests, consecutive return windows, training-only classical F/Bonferroni evidence, independent later-target MAE comparisons, residual diagnostics, source-labeled UI/JSON export and native Analyst context. Inference assumptions and the distinction between lag predictability and causation remain explicit.

@@ -24,6 +24,9 @@ class WorkerHealth:
 
     def __init__(self, store, *, clock=time.monotonic):
         self.store, self.clock = store, clock
+        from sibyl.operations.diagnostics import WorkspaceDiagnostics
+
+        self.diagnostics = WorkspaceDiagnostics(store, self)
         self.workers, self.tasks = {}, []
         self.inflight = set()
         self.recovery_required = False

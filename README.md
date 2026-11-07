@@ -226,6 +226,6 @@ For release preparation, use the single version command documented in [distribut
 
 Start with the [user guides](https://nmaroulis.github.io/sibyl/), explore the [Python architecture](docs/docs/developers/architecture.md), or use the [extension guide](docs/docs/developers/extending.md) to add a client, strategy or agent tool. The [pending checklist](docs/docs/developers/backend-roadmap.md) tracks work beyond the v2.0.0 baseline.
 
-Inbox history supports filtered private JSON/CSV exports and opt-in cleanup of old read notices, with unread and unfinished delivery evidence protected. Account adds whole-basket HHI/effective asset and top-three concentration measurements, with optional fresh-valuation alerts. Workspace settings exposes scoped Python process resources; saved provider history shows latency distributions and actual sample coverage.
+Inbox history supports filtered private JSON/CSV exports and opt-in cleanup of old read notices, with unread and unfinished delivery evidence protected. Account adds whole-basket HHI/effective asset and top-three concentration measurements, with optional fresh-valuation alerts. Workspace settings exposes scoped Python process resources and an explicit read-only database quick check with a content-free health-report download; saved provider history shows latency distributions and actual sample coverage.
 
 Sibyl is released under the [Apache License 2.0](LICENSE).

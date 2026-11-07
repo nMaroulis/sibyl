@@ -98,3 +98,9 @@ Email groups its previews into **Mailbox**, **Incoming · IMAP** and **Outgoing 
 ## Ollama server controls
 
 When choosing Local → Ollama, inspect actual server status, installed and loaded models, and choose an installed model. You can start an installed local Ollama server and stop only a server started by Sibyl. Installation and model downloads remain separate, with instructions in the panel. See [Ollama setup](ollama.md).
+
+### Workspace health report
+
+Choose **Run health check** in Workspace to run a read-only SQLite quick check and collect content-free runtime diagnostics. **Download health report** exports the last completed report; neither opening Settings nor downloading reruns the check. Versions, numeric process/storage counters, aggregate worker states and generic check outcomes are included. Credentials, account identifiers/balances, chats, articles, paths, hostnames, plugin code and raw SQLite messages are excluded. Review the JSON before sharing.
+
+A passed quick check is not a full integrity check, a credential test or proof that account data is correct. Interrupted, busy or inaccessible checks make no integrity conclusion. The check has a two-second execution budget plus a short lock wait; it never repairs data. Reports stay in memory until restart. Technician can read an existing report but cannot start a check or download it.
