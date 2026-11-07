@@ -5,85 +5,12 @@ import json
 import threading
 
 import pytest
-from protolink import RedactionPolicy, create_llm, current_request_context
-from protolink.core.events import RunEvent
+from protolink import create_llm, current_request_context
 from protolink.llms.actions import FinalAction, LLMActionResult
 
 from sibyl.agents.utils.conversations import SibylRequest
-from sibyl.agents.utils.streaming import AnswerStream, stream_reply
+from sibyl.agents.utils.streaming import stream_reply
 from sibyl.models import AgentRequest
-
-
-def event(kind, content=None, *, task="root", **extra):
-    return RunEvent(
-        type="llm.stream",
-        task_id=task,
-        run_id="run",
-        payload={"llm_event_type": kind, **({"content": content} if content is not None else {}), **extra},
-    )
-
-
-def collect(preview, fragments):
-    frames = [frame for text in fragments if (frame := preview.consume(event("llm_chunk", text)))]
-    text = ""
-    for frame in frames:
-        text = frame["text"] if frame["operation"] == "replace" else text + frame["text"]
-    return text, frames
-
-
-def test_json_actions_are_never_parsed_by_the_application():
-    for action in (
-        {"thought": "PRIVATE REASONING", "type": "final", "content": "Final answer"},
-        {"type": "tool_call", "tool": "page_help", "args": {"content": "PRIVATE"}},
-        {"type": "agent_call", "agent": "sibyl-reporter", "prompt": "PRIVATE"},
-    ):
-        preview = AnswerStream("root", RedactionPolicy())
-        assert collect(preview, list(json.dumps(action))) == ("", [])
-        assert preview.consume(event("llm_final", "Final answer"))["text"] == "Final answer"
-
-
-@pytest.mark.parametrize("native", [False, True])
-def test_children_reasoning_wrappers_and_repaired_json_wait_for_native_final(native):
-    for text in (
-        '<think>PRIVATE</think>{"type":"final","content":"Answer"}',
-        '```json\n{"type":"final","content":"Answer"}\n```',
-    ):
-        preview = AnswerStream("root", RedactionPolicy())
-        preview.native = native
-        assert collect(preview, list(text)) == ("", [])
-        assert preview.consume(event("llm_final", "PRIVATE", task="child")) is None
-        assert preview.consume(event("llm_final", "Answer"))["text"] == "Answer"
-
-
-def test_native_text_uses_public_content_and_is_replaced_after_tool_actions_or_parse_correction():
-    preview = AnswerStream("root", RedactionPolicy())
-    preview.native = True
-    assert preview.consume(event("llm_chunk", "Checking the sources"))["text"] == "Checking the sources"
-    assert preview.consume(event("llm_action", action="tool_call")) == {
-        "type": "answer",
-        "operation": "replace",
-        "text": "",
-    }
-    assert preview.consume(event("llm_chunk", "A provisional answer"))
-    assert preview.consume(event("llm_parse_error"))["operation"] == "replace"
-    assert preview.consume(event("llm_final", "Corrected final answer"))["text"] == "Corrected final answer"
-
-
-@pytest.mark.parametrize("secret", ["PRIVATE-KEY", "abcabc"])
-def test_configured_credentials_are_masked_across_native_text_chunk_boundaries(secret):
-    preview = AnswerStream("root", RedactionPolicy(sensitive_values=frozenset({secret})))
-    preview.native = True
-    text, frames = collect(preview, list("Result " + secret + " end"))
-    assert text == "Result [REDACTED] end"
-    assert secret not in json.dumps(frames)
-    assert all(not frame["text"].endswith(secret[:4]) for frame in frames)
-
-
-def test_preview_bound_still_accepts_the_native_final_and_no_plain_text_for_unknown_protocol():
-    preview = AnswerStream("root", RedactionPolicy())
-    assert preview.consume(event("llm_chunk", "PRIVATE TEXT")) is None
-    assert preview.consume(event("llm_chunk", "x" * 130_000)) is None
-    assert preview.consume(event("llm_final", "Native validated answer"))["text"] == "Native validated answer"
 
 
 @pytest.mark.parametrize("native", [False, True])
@@ -141,13 +68,15 @@ def test_real_native_handle_yields_answer_before_generation_finishes_and_cancels
 
     stream = client.portal.call(start)
     try:
-        assert json.loads(client.portal.call(anext, stream))["status"] == "queued"
+        frame = json.loads(client.portal.call(anext, stream))
         assert entered.wait(timeout=2)
-        if native:
+        frames = [frame]
+        while frame["type"] != "answer":
             frame = json.loads(client.portal.call(anext, stream))
-            assert frame["type"] == "answer" and frame["text"] == "## Forecast\n\nA **clear"
-        else:
-            frame = {"type": "status", "status": "queued"}
+            frames.append(frame)
+        assert frame["update"]["type"] == "delta"
+        assert frame["update"]["content"] == "## Forecast\n\nA **clear"
+        assert "PRIVATE" not in json.dumps(frames)
         assert client.get("/health").status_code == 200
         assert saved() == []
         if cancel:
@@ -175,7 +104,7 @@ def test_real_native_handle_yields_answer_before_generation_finishes_and_cancels
         assert saved() == []
 
 
-def test_owned_specialists_cannot_set_the_roots_protocol_or_stream_their_answer(client, monkeypatch):
+def test_native_answers_exclude_children_without_private_display_dependencies(client, monkeypatch):
     client.post("/api/v1/settings/llm", json={"provider": "mock"})
     factories = []
 
@@ -200,7 +129,7 @@ def test_owned_specialists_cannot_set_the_roots_protocol_or_stream_their_answer(
     ]
     assert frames[-1]["reply"]["answer"] == "Root answer"
     assert frames[-1]["reply"]["delegations"][0]["answer"] == "Child answer stays in consultation"
-    assert ("sibyl", True) in factories and ("reporter", False) in factories
+    assert ("sibyl", False) in factories and ("reporter", False) in factories
     assert "Child answer" not in json.dumps([frame for frame in frames if frame["type"] == "answer"])
 
 

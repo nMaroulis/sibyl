@@ -51,13 +51,13 @@ docker compose up --build
 
 :::note[Latest Release]
 
-Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, custom Python research plugins, Granger lag analysis, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics, content-free workspace health reports and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout.
+Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, custom Python research plugins, Granger lag analysis, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics, content-free workspace health reports and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout. ProtoLink 0.8.4 adds safe streamed answers, native progress and usage rollups, bounded admission and retained run subscriptions.
 
 :::
 
 ### Added
 
-- Progressive native-provider text replies in Sibyl and module chats, with shared Markdown formatting, a replying state, batched browser updates, root-only text, Stop and saved final answers. JSON-mode/internal action chunks remain hidden until native final output; no application action parser or LLM wrapper is added.
+- ProtoLink 0.8.4 native answer-only streaming for API/local JSON-mode and native providers, typed public activity, shared Markdown, replacement/final updates and authoritative saved replies. Remove Sibyl's answer projector, model-protocol flag, raw activity classifier and semaphore. Native FIFO admission bounds roots/waiters and exposes queue state; native usage separates reported/estimated/unknown root and child calls. Retained read-only subscriptions add independent cursors, explicit gaps and deletion guards; group submission IDs remain process-local, without exactly-once or durable-resumption claims.
 
 - Workspace health reports: an explicit bounded read-only SQLite quick check, allowlisted runtime/resource/worker summaries, JSON download without credentials or private content, and passive Technician access to the last report.
 

@@ -15,24 +15,25 @@ async function startWaiting(page: import('@playwright/test').Page) {
         start(controller) {
           const send = (value: unknown) =>
             controller.enqueue(encoder.encode(JSON.stringify(value) + '\n'));
-          send({
-            type: 'activity',
-            id: 'forecast-step',
-            run_id: 'fixture',
-            agent: 'sibyl-chronos',
-            kind: 'tool',
-            label: 'price_forecast',
-            status: 'running',
-          });
-          send({
-            type: 'activity',
-            id: 'forecast-step',
-            run_id: 'fixture',
-            agent: 'sibyl-chronos',
-            kind: 'tool',
-            label: 'price_forecast',
-            status: 'completed',
-          });
+          const activity = (status: 'started' | 'completed') =>
+            send({
+              type: 'activity',
+              update: {
+                type: 'tool',
+                status,
+                activity_id: 'forecast-step',
+                event_id: status,
+                run_id: 'fixture',
+                task_id: 'fixture-task',
+                agent_name: 'sibyl-chronos',
+                name: 'price_forecast',
+                sequence: status === 'started' ? 1 : 2,
+                summary: `Tool ${status}`,
+                timestamp: new Date().toISOString(),
+              },
+            });
+          activity('started');
+          activity('completed');
           window.addEventListener(
             'release-agent-reply',
             () => {

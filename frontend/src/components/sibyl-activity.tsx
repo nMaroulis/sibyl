@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, ChevronDown, LoaderCircle, Square, X } from 'lucide-react';
 import { Badge, ErrorState, Loading } from './ui';
 import { useResource } from '../lib/hooks';
+import type { AgentActivity } from '../lib/types';
 
 export type Consultation = {
   agent_id: string;
@@ -52,13 +53,16 @@ export function SibylProgress({
   stopping,
   stop,
   streaming = false,
+  items = [],
 }: {
   activity?: SibylActivity | null;
   streaming?: boolean;
+  items?: AgentActivity[];
   stopping: boolean;
   stop?: () => void;
 }) {
   const status = activity?.status;
+  const queued = items.some((item) => item.type === 'run' && item.status === 'queued');
   return (
     <div className="sibyl-live-progress" role="status" aria-live="polite">
       <div className="sibyl-progress-heading">
@@ -66,9 +70,11 @@ export function SibylProgress({
           <LoaderCircle size={13} className="spin" />
           {stopping
             ? 'Stopping this request'
-            : streaming
-              ? 'Sibyl is replying'
-              : (labels[activity?.phase ?? 'thinking'] ?? 'Sibyl is thinking')}
+            : queued
+              ? 'Waiting for an available slot'
+              : streaming
+                ? 'Sibyl is replying'
+                : (labels[activity?.phase ?? 'thinking'] ?? 'Sibyl is thinking')}
         </span>
         {stop && (
           <button type="button" onClick={stop} disabled={stopping || status === 'cancelling'}>

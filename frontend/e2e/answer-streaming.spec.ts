@@ -19,29 +19,32 @@ async function start(page: Page, sibyl = false) {
               // Deliberately split NDJSON and UTF-8, independently of Markdown tokens.
               for (let i = 0; i < bytes.length; i += 3) controller.enqueue(bytes.slice(i, i + 3));
             };
-            send({ type: 'status', status: 'queued' });
-            send({ type: 'answer', operation: 'append', text: '## Live forecast\n\nA **clear' });
+            let sequence = 0;
+            const sendAnswer = (type: 'delta' | 'replacement' | 'completed', content: string) =>
+              send({
+                type: 'answer',
+                update: {
+                  type,
+                  content,
+                  sequence: ++sequence,
+                  task_id: 'stream-task',
+                  run_id: 'stream-run',
+                  provisional: type !== 'completed',
+                },
+              });
+            sendAnswer('delta', '## Live forecast\n\nA **clear');
             window.addEventListener(
               'stream-more',
               () => {
                 if (!closed)
-                  send({
-                    type: 'answer',
-                    operation: 'append',
-                    text: answer.slice('## Live forecast\n\nA **clear'.length),
-                  });
+                  sendAnswer('delta', answer.slice('## Live forecast\n\nA **clear'.length));
               },
               { once: true },
             );
             window.addEventListener(
               'stream-reset',
               () => {
-                if (!closed)
-                  send({
-                    type: 'answer',
-                    operation: 'replace',
-                    text: '## Corrected draft\n\n**Still working**',
-                  });
+                if (!closed) sendAnswer('replacement', '## Corrected draft\n\n**Still working**');
               },
               { once: true },
             );
@@ -50,6 +53,7 @@ async function start(page: Page, sibyl = false) {
               () => {
                 if (closed) return;
                 closed = true;
+                sendAnswer('completed', answer);
                 send({
                   type: 'reply',
                   reply: {

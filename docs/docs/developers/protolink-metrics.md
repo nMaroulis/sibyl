@@ -1,54 +1,20 @@
-# ProtoLink 0.8.3 owned-agent metrics
+# Native ProtoLink model usage
 
-Verified against the installed PyPI release `protolink==0.8.3`. This is an upstream limitation, not an application token estimate.
-
-A root with owned subagents uses the SDK's managed unary execution path. Its native `llm.call.completed` event retains provider, model and latency metadata but has `metrics: null`. Direct specialist streaming supplies usage metrics. The same difference occurs before making any consultation: adding an owned child is sufficient. Enabling the LLM's metrics flag does not override the unary engine's explicit `event_metrics=False` selection.
-
-## Minimal offline reproducer
-
-Run with Python 3.12 and ProtoLink 0.8.3. The Mock provider performs no network requests, requires no credentials and incurs no provider charge.
+Sibyl uses ProtoLink 0.8.4's native report metrics and usage summaries. The earlier owned-agent metrics omission is resolved; no application telemetry shim or token estimator is needed.
 
 ```python
-import asyncio
-from uuid import uuid4
-from protolink import Agent, AgentGroup, Task, create_llm
-
-
-async def check(owned):
-    prefix = f"runtime://metrics-{uuid4().hex}"
-    child = Agent(name="child", transport="runtime", url=f"{prefix}/child", verbosity=0)
-    root = Agent(
-        name="root", transport="runtime", url=f"{prefix}/root", verbosity=0,
-        llm_factory=lambda: create_llm("mock", default_response="Hello"),
-        subagents=[child] if owned else [],
-    )
-    group = AgentGroup([root, child])
-    await group.start()
-    try:
-        handle = group.run(root, Task.create_infer("Say hello"))
-        async for _ in handle.events():
-            pass
-        assert (await handle.result()).status == "completed"
-        calls = [e for e in handle.report.events if e.type == "llm.call.completed"]
-        print("owned=", owned, "metrics=", calls[0].payload["metadata"]["metrics"])
-    finally:
-        await group.close()
-
-
-async def main():
-    await check(False)
-    await check(True)
-
-asyncio.run(main())
+result = await handle.result()
+tree = result.report.usage(scope="tree")
+root = result.report.usage(scope="root")
+children = result.report.usage(scope="children")
 ```
 
-Expected observation on 0.8.3:
+`tree` includes observed root and descendant model calls. `root` and `children` split them without counting delegation envelopes as additional calls. The SDK pairs dedicated metric events with call-completion receipts and deduplicates replayed event identities. Sibyl also uses `RunReport.from_events()` to normalize historical reports with the current SDK before displaying a summary.
 
-```text
-owned= False metrics= {'usage': {..., 'estimated': True, 'source': 'estimate'}, ...}
-owned= True metrics= None
-```
+Each `RunUsage` distinguishes provider-reported calls, estimated calls and calls whose usage is unknown. Input/output/total counts can remain `None` when coverage is incomplete. Costs retain their currency and estimated/reported flag; unpriced calls are counted separately. Missing remote observations cannot be inferred from a local report. These values are observations, not a billing guarantee.
 
-In `protolink/agents/engine.py`, `run_task_streaming` takes the managed `run_task` branch for owned subagents; `_run_infer` enables event metrics only for `self.telemetry or event_callback`. That branch has no direct event callback despite having a native run event sink. An upstream fix should preserve native metrics through this path, including inferred owned-child calls, without requiring application telemetry or synthetic usage.
+**Run details** displays separate reported and estimated token counts, missing usage, root/delegated call counts and per-call prices. It never replaces a missing price with zero or adds currencies together. The API also exposes the native currency-grouped rollups. Prompts, model chunks and tool arguments/results are excluded from these summaries.
 
-Sibyl displays missing usage/cost as **unavailable** and retains the native call timing/model attribution. It does not mutate the SDK, attach dummy telemetry, estimate tokens itself or treat missing prices as zero. `tests/test_agent_streaming.py` checks this behavior. Update that acceptance expectation when a verified SDK release supplies the metrics.
+The full native report remains a sensitive diagnostic artifact; its availability does not make its entire contents appropriate for a progress view. Streaming uses `answer_events()` and `presentation_events()` instead.
+
+`tests/test_agent_streaming.py` checks actual coordinator usage, native estimate labels, unknown values and currency separation. `tests/test_agent_replay.py` and the browser checks cover authoritative answers, progress and display. Earlier real-model acceptance records retain the SDK/model versions that were actually tested.

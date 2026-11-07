@@ -1,6 +1,5 @@
 """Wire the module declarations to existing services and preserve the HTTP response contract."""
 
-import asyncio
 import json
 from uuid import uuid4
 
@@ -78,7 +77,6 @@ class AgentRegistry:
             library,
             workers,
         )
-        self._semaphore = asyncio.Semaphore(2)
         self.network = AgentNetwork(self, MODULES)
         self.agents = {key: self.network.agents[key] for key in MODULES}
 
@@ -102,10 +100,7 @@ class AgentRegistry:
         private = current_request_context()
         configuration = private.get("models") or freeze(self.models.for_turn(module))
         with request_context({**private, "agent_id": module}):
-            model = self.make_model(configuration["_agents"][module])
-            if preview := private.get("answer_stream"):
-                preview.native = bool(model.uses_native_action_prompt)
-            return model
+            return self.make_model(configuration["_agents"][module])
 
     def catalog(self) -> list[dict]:
         """Expose real native tool names and runtime URLs without provider credentials."""

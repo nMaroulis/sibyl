@@ -26,15 +26,18 @@ export function AgentWorking({
     seconds < 60
       ? `${seconds}s`
       : `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
-  const actions = items.filter((item) => item.type === 'activity');
-  const running = actions.some((item) => item.status === 'running');
-  const label = streaming
-    ? `${name} is replying`
-    : running
-      ? `${name} is using tools`
-      : actions.length
-        ? `${name} is preparing your answer`
-        : `${name} is working on your request`;
+  const actions = items.filter((item) => item.type === 'tool' || item.type === 'consultation');
+  const running = actions.some((item) => item.status === 'started');
+  const queued = items.some((item) => item.type === 'run' && item.status === 'queued');
+  const label = queued
+    ? `${name} is waiting for an available slot`
+    : streaming
+      ? `${name} is replying`
+      : running
+        ? `${name} is using tools`
+        : actions.length
+          ? `${name} is preparing your answer`
+          : `${name} is working on your request`;
   return (
     <div className="agent-working">
       <div className="agent-working-heading">
@@ -47,13 +50,15 @@ export function AgentWorking({
         </time>
       </div>
       <p>
-        {streaming
-          ? 'Your reply is arriving live. It is saved when the agent finishes.'
-          : actions.length && !running
-            ? 'The tool steps have finished so far; the reply is still being prepared. More checks may follow.'
-            : running
-              ? 'Tool activity appears below. Your reply is not finished yet.'
-              : 'Waiting for the agent’s reply. Tool activity will appear below when available.'}
+        {queued
+          ? 'Your request is queued. You can stop it before a model is called.'
+          : streaming
+            ? 'Your reply is arriving live. It is saved when the agent finishes.'
+            : actions.length && !running
+              ? 'The tool steps have finished so far; the reply is still being prepared. More checks may follow.'
+              : running
+                ? 'Tool activity appears below. Your reply is not finished yet.'
+                : 'Waiting for the agent’s reply. Tool activity will appear below when available.'}
       </p>
       {seconds >= 30 && (
         <small>Some models take longer between steps. You can stop this request at any time.</small>

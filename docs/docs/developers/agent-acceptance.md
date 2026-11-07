@@ -48,7 +48,7 @@ Earlier checks deliberately remain part of the findings: Gemma invented links wh
 
 ## Remaining ProtoLink feedback
 
-The [owned-agent usage metrics gap](protolink-metrics.md) remains. Two additional useful SDK improvements are a compact native discovery representation for small models and bounded correction for unavailable context-artifact IDs. Sibyl continues to use automatic discovery and the SDK's own context retrieval tool.
+The historical owned-agent usage metrics omission is resolved in ProtoLink 0.8.4; see [native usage contracts](protolink-metrics.md). The model observations above retain their originally tested versions. Two additional SDK improvements identified during that earlier pass are a compact native discovery representation for small models and bounded correction for unavailable context-artifact IDs. Sibyl continues to use automatic discovery and the SDK's own context retrieval tool.
 
 The following offline reproducer shows the artifact behavior on 0.8.3. A missing ID is a fatal `RuntimeError` wrapping `ValueError`, so the scripted recovery answer is never reached. An upstream improvement could classify invalid/evicted IDs as recoverable rejections under the existing correction budget. Do not override the SDK tool inside Sibyl.
 

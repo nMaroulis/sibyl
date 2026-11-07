@@ -16,6 +16,11 @@ class RunPresentation:
         self.rows: dict[str, dict] = {}
         self.saved: set[str] = set()
 
+    async def follow(self):
+        """Retain application consultation cards from the native execution evidence."""
+        async for event in self.handle.events():
+            self.consume(event)
+
     def progress(self):
         """Persist only UI progress, never chunks, raw prompts or private model context."""
         self.network.requests.update(

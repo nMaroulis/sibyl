@@ -539,9 +539,9 @@ function AgentDialog({
                   startedAt={thread.pendingStartedAt}
                   streaming={Boolean(thread.answer)}
                 />
-                {thread.activity?.some((item) => item.type === 'activity') && (
-                  <AgentActivityTrail items={thread.activity} />
-                )}
+                {thread.activity?.some(
+                  (item) => item.type === 'tool' || item.type === 'consultation',
+                ) && <AgentActivityTrail items={thread.activity} />}
               </div>
               <button className="button" onClick={onStop}>
                 <Square size={12} /> Stop

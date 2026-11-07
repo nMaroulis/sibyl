@@ -5,7 +5,7 @@ description: Repeatable native ProtoLink evaluations with actual specialist tool
 
 # Agent reliability checks
 
-Sibyl's developer evaluation command runs its actual registered agents through ProtoLink 0.8.3's native `evaluate()`. It checks specific evidence contracts: who read the data, which market or source was selected, whether required facts and links appear, and whether Sibyl actually consulted a specialist.
+Sibyl's developer evaluation command runs its actual registered agents through ProtoLink's native `evaluate()` (currently 0.8.4). It checks specific evidence contracts: who read the data, which market or source was selected, whether required facts and links appear, and whether Sibyl actually consulted a specialist.
 
 :::note[What a pass means]
 

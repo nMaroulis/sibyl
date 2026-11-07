@@ -10,7 +10,9 @@ from protolink import (
     AgentGroup,
     ContextLimitError,
     ContextPolicy,
+    GroupLimits,
     RedactionPolicy,
+    RunAdmissionError,
     RunBudget,
     SQLiteRunStore,
     Task,
@@ -28,7 +30,7 @@ from sibyl.agents.utils.conversations import Conversations, SibylRequest
 from sibyl.agents.utils.model_selection import readiness
 from sibyl.agents.utils.presentation import RunPresentation
 from sibyl.agents.utils.requests import SibylRequests, now
-from sibyl.agents.utils.streaming import AnswerStream, public_activity
+from sibyl.agents.utils.streaming import run_updates
 from sibyl.models import AgentRequest
 from sibyl.research_library.semantic.contracts import SemanticNotReady
 
@@ -55,7 +57,6 @@ class AgentNetwork:
         self.namespace = f"runtime://sibyl-{uuid4().hex}"
         self.registry = Registry(transport="runtime", url=f"{self.namespace}/registry", verbosity=0)
         self.client = AgentClient("runtime", url=f"{self.namespace}/client")
-        self.ready = False
         self._active_requests: dict[str, dict] = {}
         self._chat_locks: dict[str, asyncio.Lock] = {}
         self.database = owner.settings.data_dir / "agent-runtime.sqlite"
@@ -69,10 +70,22 @@ class AgentNetwork:
         self.agents["sibyl"] = sibyl.create_agent(
             owner.store, subagents=list(self.agents.values()), **self.options("sibyl")
         )
-        self.group = AgentGroup(list(self.agents.values()), registry=self.registry, own_registry=True)
+        self.group = AgentGroup(
+            list(self.agents.values()),
+            registry=self.registry,
+            own_registry=True,
+            limits=GroupLimits(max_concurrent_runs=2, max_queued_runs=16, queue_timeout=30),
+            event_buffer_size=4096,
+            max_retained_runs=20,
+        )
         self.cards = {key: agent.card for key, agent in self.agents.items()}
         for key, card in self.cards.items():
             card.tags = ["coordinator" if key == "sibyl" else "specialist", key]
+
+    @property
+    def ready(self) -> bool:
+        """Read registration readiness from the native group without provider probes."""
+        return self.group.snapshot().state == "ready"
 
     def options(self, module: str) -> dict:
         """Native factories, worker limits, evidence and session storage; no LLM adapter."""
@@ -96,11 +109,9 @@ class AgentNetwork:
         if not self.ready:
             self.requests.recover()
             await self.group.start()
-            self.ready = True
 
     async def close(self) -> None:
         """Cancel UI queue waiters; AgentGroup cancels/drains native runs and owned resources."""
-        self.ready = False
         active = list(self._active_requests.values())
         for entry in active:
             entry["task"].cancel()
@@ -140,39 +151,40 @@ class AgentNetwork:
         AgentClient request crosses a transport boundary and resolves its model
         in the receiving application, without inheriting caller credentials.
         """
-        configuration = current_request_context().get("models", {})
-        progress = current_request_context().get("progress")
+        private = current_request_context()
+        configuration = private.get("models", {})
+        progress = private.get("progress")
         secrets = frozenset(
             row["api_key"] for row in configuration.get("_agents", {}).values() if row.get("api_key")
         )
         policy = RedactionPolicy(sensitive_values=secrets)
-        answer = AnswerStream(task.id, policy) if progress else None
-        private = current_request_context()
-        # The lazy root model factory identifies its actual native protocol. This
-        # display dependency is deliberately not inherited by owned specialists.
-        with request_context(
-            {**private, "answer_stream": answer},
-            inherit=tuple(key for key in ("models", "page") if key in private),
-        ):
-            handle = self.group.run(
-                self.agents[module],
-                task,
-                store=SQLiteRunStore(self.database, redaction_policy=policy),
-                redaction_policy=policy,
-            )
+        handle = self.group.run(
+            self.agents[module],
+            task,
+            request_id=f"sibyl:{request.session_id}:{request.request_id}" if request else None,
+            store=SQLiteRunStore(self.database, redaction_policy=policy),
+            redaction_policy=policy,
+        )
         view = RunPresentation(self, handle, configuration, request) if request else None
         if request:
             self.requests.update(request.request_id, run_id=handle.context.run_id)
         try:
-            async for event in handle.events():
+            async with asyncio.TaskGroup() as observers:
                 if view:
-                    view.consume(event)
-                if progress:
-                    if activity := public_activity(event):
-                        await progress(activity)
-                    if not private.get("response_schema") and (frame := answer.consume(event)):
-                        await progress(frame)
-            result = await handle.result()
+                    observers.create_task(view.follow())
+                if progress or request:
+                    async for frame in run_updates(
+                        handle, answers=bool(progress) and not private.get("response_schema")
+                    ):
+                        event = frame["update"]
+                        if request and frame["type"] == "activity" and event["type"] == "run":
+                            if event["task_id"] == handle.task.id and event["status"] == "running":
+                                self.requests.update(
+                                    request.request_id, status="running", phase="thinking", started_at=now()
+                                )
+                        if progress:
+                            await progress(frame)
+                result = await handle.result()
         except BaseException:
             await handle.cancel("Caller stopped waiting")
             result = await handle.result()
@@ -220,6 +232,12 @@ class AgentNetwork:
                 error = event.payload.get("error") or event.payload.get("metadata", {}).get("error")
                 if isinstance(error, dict):
                     failures.append(error.get("code"))
+            if "queue_full" in failures:
+                raise RunAdmissionError("queue_full", "The agent queue is full. Try again shortly.")
+            if "queue_timeout" in failures:
+                raise RunAdmissionError(
+                    "queue_timeout", "The request expired while waiting for an agent slot."
+                )
             if "ContextLimitError" in failures:
                 raise ContextLimitError(
                     "The configured model context window cannot fit this request. "
@@ -231,16 +249,18 @@ class AgentNetwork:
             if "TimeoutError" in failures:
                 raise TimeoutError("Agent request timed out.")
             raise RuntimeError("The agent could not complete this request.")
-        if isinstance(result.output, str):
-            result = replace(result, output=policy.redact(result.output))
+        # Use the same native authoritative text for saved/JSON replies, not
+        # raw provider output that can still contain a private reasoning prefix.
+        async for answer in handle.answer_events():
+            if answer.type == "completed":
+                result = replace(result, output=answer.content)
         return result
 
     async def ask_module(self, request: AgentRequest) -> dict:
         """A page runs its registered specialist through a native group handle."""
         configuration = freeze(self.owner.models.for_turn(request.module))
-        async with self.owner._semaphore:
-            async with asyncio.timeout(95):
-                return await self.owner._answer(request, configuration)
+        async with asyncio.timeout(95):
+            return await self.owner._answer(request, configuration)
 
     def status(self, configuration: dict | None = None) -> dict:
         """Return setup readiness without probing a provider or revealing credentials."""
@@ -249,6 +269,7 @@ class AgentNetwork:
         return {
             "ready": self.ready and (not reason),
             "network_ready": self.ready,
+            "runtime": self.group.snapshot().to_dict(),
             "reason": reason or ("The agent network is starting." if not self.ready else ""),
             "provider": configuration["provider"],
             "model": configuration["model"],
@@ -334,11 +355,7 @@ class AgentNetwork:
                 entry = {"id": record["id"], "cancel_requested": False}
 
                 async def execute():
-                    async with self.owner._semaphore:
-                        self.requests.update(
-                            record["id"], status="running", phase="thinking", started_at=now()
-                        )
-                        return await self._answer_sibyl(request, configuration)
+                    return await self._answer_sibyl(request, configuration)
 
                 work = asyncio.create_task(execute())
                 entry["task"] = work

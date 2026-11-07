@@ -418,18 +418,40 @@ export type Agent = {
   model_ready?: boolean;
   model_reason?: string;
 };
-export type AgentActivity =
-  | { type: 'status'; status: 'queued' }
-  | {
-      type: 'activity';
-      id: string;
-      run_id: string;
-      task_id: string;
-      agent: string;
-      kind: 'tool' | 'consultation';
-      label: string;
-      status: 'running' | 'completed' | 'failed' | 'rejected' | 'cancelled';
-    };
+/** ProtoLink 0.8.4 PresentationEvent fields consumed by the chat UI. */
+export type AgentActivity = {
+  type: 'model' | 'tool' | 'consultation' | 'approval' | 'action' | 'run';
+  status:
+    | 'requested'
+    | 'started'
+    | 'completed'
+    | 'retrying'
+    | 'failed'
+    | 'rejected'
+    | 'denied'
+    | 'canceled'
+    | 'required'
+    | 'approved'
+    | 'submitted'
+    | 'working'
+    | 'input-required'
+    | 'queued'
+    | 'running'
+    | 'expired'
+    | 'unknown';
+  summary: string;
+  name: string | null;
+  activity_id: string | null;
+  event_id: string;
+  run_id: string | null;
+  task_id: string | null;
+  agent_name: string | null;
+  sequence: number | null;
+  action_id?: string | null;
+  delegation_id?: string | null;
+  timestamp: string;
+  final?: boolean;
+};
 /** Public answer snapshots are separate from native tool/consultation activity. */
 export type AgentStreamEvent = AgentActivity | { type: 'answer'; text: string };
 export type AgentReply = {

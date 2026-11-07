@@ -535,6 +535,7 @@ function SibylChat() {
                     )}
                     {pending && live?.session === session && <StreamingAnswer text={live.answer} />}
                     <SibylProgress
+                      items={pending && live?.session === session ? live.items : []}
                       streaming={Boolean(pending && live?.session === session && live.answer)}
                       activity={visibleActivity}
                       stopping={stopping}

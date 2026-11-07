@@ -75,10 +75,10 @@ export async function postStream<T>(
     if (event.type === 'reply') {
       reply = event.reply as T;
       received = true;
-    } else if (event.type === 'answer' && typeof event.text === 'string') {
-      if (event.operation !== 'append' && event.operation !== 'replace')
+    } else if (event.type === 'answer' && typeof event.update?.content === 'string') {
+      if (!['delta', 'replacement', 'completed'].includes(event.update.type))
         throw new Error('Invalid answer stream.');
-      answer = event.operation === 'replace' ? event.text : answer + event.text;
+      answer = event.update.type === 'delta' ? answer + event.update.content : event.update.content;
       if (answer.length > 1_000_000) throw new Error('The answer exceeded the stream limit.');
       // Coalesce token bursts into one Markdown update per browser paint.
       if (!paint)
@@ -86,7 +86,7 @@ export async function postStream<T>(
           paint = 0;
           if (!signal?.aborted) onEvent({ type: 'answer', text: answer });
         });
-    } else if (event.type === 'activity' || event.type === 'status') onEvent(event);
+    } else if (event.type === 'activity') onEvent(event.update);
   };
   try {
     while (true) {

@@ -2,16 +2,15 @@
 
 import json
 import threading
-from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
-from protolink import create_llm
+from protolink import PresentationEvent, RunContext, RunReport, create_llm
 from protolink.core.events import RunEvent
 from pydantic import SecretStr
 
 from sibyl.agents.utils.reporting import run_details
-from sibyl.agents.utils.streaming import public_activity, stream_reply
+from sibyl.agents.utils.streaming import stream_reply
 from sibyl.api.app import create_app
 from sibyl.models import AgentRequest
 
@@ -20,10 +19,12 @@ def test_module_ndjson_uses_native_activity_and_one_saved_reply(client):
     response = client.post("/api/v1/agents/ask/stream", json={"module": "reporter", "message": "Show news"})
     assert response.status_code == 200 and response.headers["content-type"].startswith("application/x-ndjson")
     frames = [json.loads(line) for line in response.text.splitlines()]
-    assert frames[0] == {"type": "status", "status": "queued"}
-    actions = [row for row in frames if row["type"] == "activity"]
-    assert [row["status"] for row in actions] == ["running", "completed"]
-    assert all(row["label"] == "news_briefing" for row in actions)
+    assert frames[0]["update"]["type"] == "run"
+    actions = [
+        row["update"] for row in frames if row["type"] == "activity" and row["update"]["type"] == "tool"
+    ]
+    assert [row["status"] for row in actions if row["status"] != "requested"] == ["started", "completed"]
+    assert all(row["name"] == "news_briefing" for row in actions)
     assert all("result" not in row and "arguments" not in row for row in actions)
     assert frames[-1]["type"] == "reply" and frames[-1]["reply"]["mode"] == "tools"
     assert len(client.get("/api/v1/runs?kind=agent").json()) == 1
@@ -50,14 +51,15 @@ def test_sibyl_stream_propagates_native_consultations_and_only_returns_the_root_
     response = client.post("/api/v1/sibyl/ask/stream", json={"message": "Help with news sources"})
     frames = [json.loads(line) for line in response.text.splitlines()]
     assert frames[-1]["reply"]["answer"] == "Root final answer"
-    activities = [row for row in frames if row["type"] == "activity"]
-    assert any(row["kind"] == "consultation" for row in activities)
-    assert any(row["kind"] == "tool" and row["label"] == "page_help" for row in activities)
+    activities = [row["update"] for row in frames if row["type"] == "activity"]
+    assert any(row["type"] == "consultation" for row in activities)
+    assert any(row["type"] == "tool" and row["name"] == "page_help" for row in activities)
     assert len([row for row in frames if row["type"] == "reply"]) == 1
     reply = frames[-1]["reply"]
     summary = client.get(f"/api/v1/agents/runs/{reply['run_id']}/summary").json()
     assert summary["calls"] and summary["calls"][0]["provider"] == "mock"
-    assert summary["tokens"]["total"] is None  # Native owned-subagent branch omits metrics in 0.8.3.
+    assert summary["usage"]["tree"]["estimated"]["total_tokens"] > 0
+    assert summary["usage"]["root"]["calls"] == 2
     assert all(row["cost"] is None for row in summary["calls"])
     assert all("arguments" not in row and "result" not in row for row in summary["tools"])
 
@@ -71,7 +73,8 @@ def test_direct_specialist_summary_keeps_native_estimated_token_labels(client, m
     response = client.post("/api/v1/agents/ask/stream", json={"module": "reporter", "message": "Hello"})
     reply = json.loads(response.text.splitlines()[-1])["reply"]
     summary = client.get(f"/api/v1/agents/runs/{reply['run_id']}/summary").json()
-    assert summary["tokens"]["estimated"] and summary["tokens"]["total"] > 0
+    assert summary["usage"]["tree"]["estimated_calls"] == 1
+    assert summary["usage"]["tree"]["estimated"]["total_tokens"] > 0
     assert all(row["source"] == "estimate" and row["cost"] is None for row in summary["calls"])
 
 
@@ -110,9 +113,14 @@ def test_live_activity_arrives_before_a_blocking_tool_and_disconnect_prevents_la
 
     stream = client.portal.call(start)
     try:
-        assert json.loads(client.portal.call(anext, stream))["status"] == "queued"
-        action = json.loads(client.portal.call(anext, stream))
-        assert action["type"] == "activity" and action["status"] == "running"
+        while True:
+            frame = json.loads(client.portal.call(anext, stream))
+            if (
+                frame["type"] == "activity"
+                and frame["update"]["type"] == "tool"
+                and frame["update"]["status"] == "started"
+            ):
+                break
         assert entered.wait(timeout=2) and client.get("/health").status_code == 200
         client.portal.call(stream.aclose)
         records = owner.network.run_store.list_report_records()
@@ -126,7 +134,7 @@ def test_live_activity_arrives_before_a_blocking_tool_and_disconnect_prevents_la
 
 def test_activity_projection_never_exposes_raw_chunks_prompts_errors_or_results():
     assert (
-        public_activity(
+        PresentationEvent.from_run_event(
             RunEvent(
                 type="llm.stream",
                 run_id="root",
@@ -145,7 +153,7 @@ def test_activity_projection_never_exposes_raw_chunks_prompts_errors_or_results(
             "result": "PRIVATE",
         },
     )
-    assert "PRIVATE" not in json.dumps(public_activity(event))
+    assert "PRIVATE" not in json.dumps(PresentationEvent.from_run_event(event).to_dict())
 
 
 @pytest.mark.parametrize("value", [None, True, float("nan"), -1])
@@ -155,10 +163,10 @@ def test_metrics_keep_unknown_usage_and_cost_unavailable(value):
         run_id="root",
         payload={"metrics": {"usage": {"total_tokens": value}, "cost": {"total_cost": value}}},
     )
-    summary = run_details(
-        SimpleNamespace(events=[event], context=SimpleNamespace(run_id="root"), tool_evidence=[])
+    summary = run_details(RunReport.from_events([event], context=RunContext(run_id="root")))
+    assert (
+        summary["usage"]["tree"]["reported"]["total_tokens"] is None and summary["calls"][0]["cost"] is None
     )
-    assert summary["tokens"]["total"] is None and summary["calls"][0]["cost"] is None
 
 
 def test_metrics_do_not_duplicate_events_sum_currencies_or_hide_partial_coverage():
@@ -176,13 +184,10 @@ def test_metrics_do_not_duplicate_events_sum_currencies_or_hide_partial_coverage
         )
 
     first, second = event("first", 0), event("second", None, "EUR")
-    summary = run_details(
-        SimpleNamespace(
-            events=[first, first, second], context=SimpleNamespace(run_id="root"), tool_evidence=[]
-        )
-    )
+    summary = run_details(RunReport.from_events([first, first, second], context=RunContext(run_id="root")))
     assert len(summary["calls"]) == 2
-    assert summary["tokens"] == {"total": 0, "known_calls": 1, "calls": 2, "estimated": False}
+    assert summary["usage"]["tree"]["reported"]["total_tokens"] == 0
+    assert summary["usage"]["tree"]["unknown_calls"] == 1
     assert [row["cost"]["currency"] for row in summary["calls"]] == ["USD", "EUR"]
 
 
