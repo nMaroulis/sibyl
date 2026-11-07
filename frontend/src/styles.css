@@ -11315,3 +11315,113 @@ details[open] > summary {
 .continuous-option { display:flex !important; align-items:center; gap:.5rem; margin:1rem 0; }
 .continuous-option input { width:auto; }
 @media(max-width:700px) { .portfolio-risk .form-row { grid-template-columns:1fr; } .risk-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* Shared prose for module dialogs, coordinator replies and consultations. */
+.chat-markdown {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.chat-markdown > :first-child {
+  margin-top: 0;
+}
+.chat-markdown > :last-child {
+  margin-bottom: 0;
+}
+.chat-markdown p {
+  margin: 0.7em 0;
+  white-space: normal;
+}
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3,
+.chat-markdown h4,
+.chat-markdown h5,
+.chat-markdown h6 {
+  margin: 1.25em 0 0.5em;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+.chat-markdown h1 {
+  font-size: 1.4em;
+}
+.chat-markdown h2 {
+  font-size: 1.25em;
+}
+.chat-markdown h3,
+.chat-markdown h4,
+.chat-markdown h5,
+.chat-markdown h6 {
+  font-size: 1.1em;
+}
+.chat-markdown ul,
+.chat-markdown ol {
+  margin: 0.7em 0;
+  padding-left: 1.7em;
+}
+.chat-markdown li {
+  margin: 0.3em 0;
+}
+.chat-markdown li > p {
+  margin: 0.3em 0;
+}
+.chat-markdown blockquote {
+  margin: 1em 0;
+  padding: 0.4em 1em;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+.chat-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1em 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  white-space: pre;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.chat-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.chat-markdown :not(pre) > code {
+  background: rgba(110, 140, 190, 0.1);
+  border-radius: 5px;
+  padding: 0.12em 0.35em;
+}
+.chat-markdown a {
+  color: var(--accent, #436fb4);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.chat-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.chat-markdown th,
+.chat-markdown td {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: inherit;
+}
+.chat-markdown hr {
+  margin: 1.2em 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.chat-markdown input[type='checkbox'] {
+  width: auto;
+  margin-right: 0.5em;
+}
+.chat-image-description {
+  color: var(--muted);
+  font-style: italic;
+}

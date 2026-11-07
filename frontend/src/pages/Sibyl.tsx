@@ -1,3 +1,4 @@
+import { ChatMarkdown } from '../components/chat-markdown';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -112,7 +113,7 @@ function SibylTabs() {
 }
 
 function SibylAnswer({ turn }: { turn: Reply }) {
-  if (!turn.investigation_id) return <div className="sibyl-answer-text">{turn.answer}</div>;
+  if (!turn.investigation_id) return <ChatMarkdown>{turn.answer}</ChatMarkdown>;
   let summary =
     'The investigation response is retained with its source checks in the report workspace.';
   try {
@@ -123,7 +124,7 @@ function SibylAnswer({ turn }: { turn: Reply }) {
   }
   return (
     <div className="sibyl-answer-text">
-      <p>{summary}</p>
+      <ChatMarkdown>{summary}</ChatMarkdown>
       <Link
         className="text-link"
         to={`/sibyl?tab=investigations&investigation=${turn.investigation_id}&run=${turn.request_id ?? ''}`}
@@ -501,7 +502,7 @@ function SibylChat() {
                                   {item.provider === 'mock' ? ' · Simulated' : ''}
                                 </p>
                                 <p className="muted">{item.question}</p>
-                                <p>{item.answer || item.error}</p>
+                                <ChatMarkdown>{item.answer || item.error || ''}</ChatMarkdown>
                                 {item.evidence !== undefined && (
                                   <details>
                                     <summary>Source observations</summary>

@@ -96,6 +96,8 @@ Markets adds live Binance, Kraken and Coinbase previews, with clear source/inter
 
 ### Fixed
 
+- Agent dialogs, Sibyl replies and consultation answers now render Markdown headings, lists, tables, links and code instead of showing raw formatting. Raw HTML is excluded and generated images are not fetched automatically.
+
 - Correlations deep links now select the requested panel. Factual Ask dialogs follow the selected Granger order or saved custom/built-in backtest instead of returning unrelated market or default-strategy summaries.
 
 - Constant-series correlations now remain unavailable instead of displaying fabricated zero coefficients. Return comparisons require adjacent selected intervals and never bridge missing candles.

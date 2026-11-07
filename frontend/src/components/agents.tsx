@@ -1,3 +1,4 @@
+import { ChatMarkdown } from './chat-markdown';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowUp, ArrowUpRight, Braces, History, Plus, Sparkles, Square } from 'lucide-react';
@@ -470,7 +471,7 @@ function AgentDialog({
                   {reply.mode === 'tools' ? 'Tool snapshot' : reply.provider}
                 </Badge>
               </div>
-              <p>{reply.answer}</p>
+              <ChatMarkdown>{reply.answer}</ChatMarkdown>
               {reply.mode === 'llm' && reply.observations?.length === 0 ? (
                 <small className="muted">Answered without reading workspace data.</small>
               ) : (
