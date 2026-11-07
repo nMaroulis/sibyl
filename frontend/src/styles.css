@@ -11425,3 +11425,16 @@ details[open] > summary {
   color: var(--muted);
   font-style: italic;
 }
+
+
+/* A tool finishing does not finish the agent's request. */
+.agent-working-stack { flex: 1; min-width: 0; }
+.agent-working-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); }
+.agent-working-heading > span { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; }
+.agent-working-heading time { color: var(--muted); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.agent-working p, .agent-working small { display: block; margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+.agent-working-stack .agent-run-activity { margin-top: 12px; }
+.agent-working-glow { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #86a6dc; box-shadow: 0 0 0 4px #86a6dc18, 0 0 13px #86a6dc55; animation: agent-working-breathe 2.4s ease-in-out infinite; }
+.agent-thinking > button { align-self: flex-start; }
+@keyframes agent-working-breathe { 0%,100% { opacity: .55; box-shadow: 0 0 0 3px #86a6dc12, 0 0 9px #86a6dc33; } 50% { opacity: 1; box-shadow: 0 0 0 5px #86a6dc18, 0 0 16px #86a6dc66; } }
+@media (prefers-reduced-motion: reduce) { .agent-working-glow { animation: none; } }

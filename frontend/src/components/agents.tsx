@@ -1,3 +1,4 @@
+import { AgentWorking } from './agent-working';
 import { ChatMarkdown } from './chat-markdown';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -14,6 +15,7 @@ type Thread = {
   draft: string;
   sessionId?: string;
   pending?: string;
+  pendingStartedAt?: number;
   error?: string;
   activity?: AgentActivity[];
 };
@@ -136,7 +138,13 @@ export function AgentProvider({ children }: { children: ReactNode }) {
     pending.current.add(target);
     const controller = new AbortController();
     controllers.current.set(target, controller);
-    update(target, { pending: message, draft: '', error: '', activity: [] });
+    update(target, {
+      pending: message,
+      pendingStartedAt: Date.now(),
+      draft: '',
+      error: '',
+      activity: [],
+    });
     try {
       const reply = await postStream<AgentReply>(
         '/agents/ask/stream',
@@ -505,8 +513,17 @@ function AgentDialog({
         {thread.pending && (
           <div className="agent-dialog-turn">
             <div className="agent-question">{thread.pending}</div>
-            <div className="agent-thinking" role="status">
-              <AgentActivityTrail items={thread.activity ?? []} />
+            <div className="agent-thinking">
+              <div className="agent-working-stack">
+                <AgentWorking
+                  name={name}
+                  items={thread.activity ?? []}
+                  startedAt={thread.pendingStartedAt}
+                />
+                {thread.activity?.some((item) => item.type === 'activity') && (
+                  <AgentActivityTrail items={thread.activity} />
+                )}
+              </div>
               <button className="button" onClick={onStop}>
                 <Square size={12} /> Stop
               </button>
