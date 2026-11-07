@@ -6,7 +6,7 @@ page instructions are retrieved separately from prices and statistical evidence.
 
 from typing import Annotated, Literal
 
-from protolink import Agent
+from protolink import Agent, Tool
 from pydantic import Field
 
 from sibyl.agents.guides import read_guide
@@ -31,7 +31,18 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Analyst's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     market = services.market
 
     def market_analysis(
@@ -174,7 +185,13 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-analyst",
         description=DESCRIPTION,
-        tools=[market_analysis, market_relationships, live_market_status, analysis_help, page_help],
+        tools=[
+            market_analysis,
+            market_relationships,
+            live_market_status,
+            Tool.from_callable(analysis_help, sync_execution="inline"),
+            Tool.from_callable(page_help, sync_execution="inline"),
+        ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

@@ -53,6 +53,7 @@ in `guides/`.
 | `utils/model_selection.py`, `utils/providers.py` | Model assignments, provider catalog and passive readiness                       |
 | `utils/presentation.py`                          | Format native events and `ToolEvidence` into consultation cards                 |
 | `utils/reporting.py`, `utils/streaming.py`       | Public run summaries and streaming response formatting                          |
+| `utils/retrieval.py`                             | Shared native Wiki/Reporter research tools, schemas and source-evidence reads     |
 | `utils/snapshots.py`                             | Deterministic factual formatting when no model is selected                      |
 | `utils/conversations.py`, `utils/requests.py`    | UI chat cards, queued-request IDs, progress and durable outcomes                |
 
@@ -103,6 +104,14 @@ def create_agent(services: Services, **runtime) -> Agent:
 
 ProtoLink infers schemas/descriptions from the original annotations and docstrings, validates and authorizes calls, then admits blocking functions to its worker pool. Async tools are awaited directly. No agent has order submission, cancellation, credential, shell, file or messaging tools. The model chooses domain reads; nothing preloads balances, prices or news just to answer a conceptual or navigation question.
 
+## Per-tool execution and reusable tools
+
+Agent factories return unstarted native `Agent` objects; `AgentGroup` supplies lifecycle and runtime options. Domain reads inherit `sync_execution="thread"` and four bounded workers. Static guides and methodology use native `Tool.from_callable(..., sync_execution="inline")`, so they do not consume those workers. Inline tools still obey validation, policy and applicable group admission; they must remain short and free of blocking I/O. New database, provider or computational work should use the default worker policy.
+
+Wiki and Reporter register the same five research capabilities from `utils/retrieval.py` through `research_tools(library)`. These are ordinary typed functions adapted by native `Tool.from_callable`, with original names/docstrings and private page defaults. There is no callable decorator wrapper or second dispatcher. Each specialist still owns its prompt and module-specific tools. A shared definition keeps research citations, corrections and schemas consistent between them.
+
+`Annotated`/Pydantic `Field` bounds describe research query lengths, result limits, document offsets and accounting flow pagination. ProtoLink validates explicit arguments before domain execution and supplies its native inference correction loop. Dynamic selections and unavailable retained records remain domain checks using `ToolRejectedError`; operational failures retain their ordinary failure behavior. For retrieval evaluations, omitting `evaluation_id` follows the page while `evaluation_id=''` lists reports, allowing a missing selection to be corrected without inventing another report.
+
 ## Readiness and native runs
 
 All eleven agents register in a workspace-specific `protolink.discovery.Registry` with `runtime://` URLs. `AgentGroup` owns registry startup, registration readiness, partial-start rollback, native run cancellation and resource shutdown. Startup never constructs a provider through the model factory or runs inference.
@@ -143,7 +152,7 @@ The handle/store use a request-specific `RedactionPolicy` including known config
 
 ## Events, evidence and cancellation
 
-`RunPresentation` consumes `handle.events()` solely to format consultation/progress cards. Native child identifiers, delegation IDs and final answers drive the cards. `result.tool_evidence` / `handle.report.tool_evidence` supply validated arguments, actual returned values, timing and outcomes. Failed, rejected, canceled or omitted results are never presented as completed observations. The executing agents explicitly enable `expose_tool_results=True`; every tool must therefore return only data appropriate for the authorized workspace UI.
+`RunPresentation` consumes `handle.events()` solely to format saved consultation cards. Native `PresentationEvent` supplies lifecycle classification; child final text and questions remain application display policy. Cards update only on meaningful changes, so raw model chunks do not produce SQLite writes. Native child identifiers, delegation IDs and final answers drive the cards. `result.tool_evidence` / `handle.report.tool_evidence` supply validated arguments, actual returned values, timing and outcomes. Failed, rejected, canceled or omitted results are never presented as completed observations. The executing agents explicitly enable `expose_tool_results=True`; every tool must therefore return only data appropriate for the authorized workspace UI.
 
 Native evidence retains the actual JSON-safe return before history hooks or context truncation. No function wrapper records evidence. Consultation envelopes are not counted as tool executions, and native deduplication prevents a forwarded live event plus final receipt becoming two observations.
 
@@ -200,5 +209,7 @@ Tool docstrings should lead with the question answered and information returned,
 `tests/test_agent_streaming.py` additionally checks native activity and correlated summaries, early progress during a blocked tool, disconnect cancellation without late success, sanitized failures, missing/estimated usage, partial coverage and per-currency costs. Browser fixtures cover NDJSON parsing and uncertain connection outcomes without automatic retries.
 
 `tests/test_agent_answer_streaming.py` checks real native text/JSON-mode generation before completion, cancellation and root/child isolation. `tests/test_agent_replay.py` checks native cursor replay/gaps, viewer detachment, queue bounds, idempotent handles, authoritative saved text after hooks, and deletion privacy. Browser tests verify incremental/replaced/final Markdown, Unicode boundaries, Stop, activity phases and native usage labels.
+
+`tests/test_agent_tool_contracts.py` exercises native pre-execution schema rejection/correction, concurrent shared research defaults, static help with all evidence workers occupied, missing-report recovery and token-free consultation persistence.
 
 No paid provider, actual exchange order or external message is used for these checks. Broader real-model routing/grounding and venue acceptance remain separate work. Existing daily/weekly research calendars are unchanged. Retained handles are process-local observations; they do not enable durable workflow resumption.

@@ -57,6 +57,8 @@ Markets adds live Binance, Kraken and Coinbase previews, with clear source/inter
 
 ### Added
 
+- Shared native Wiki/Reporter research tools, schema-driven query/pagination bounds and correctable missing evaluation selections. Static guides/methodology use ProtoLink inline execution while domain reads keep bounded workers. Consultation cards use native lifecycle classification and avoid per-token database writes; agent factories and tool contracts have clearer docstrings.
+
 - ProtoLink 0.8.4 native answer-only streaming for API/local JSON-mode and native providers, typed public activity, shared Markdown, replacement/final updates and authoritative saved replies. Remove Sibyl's answer projector, model-protocol flag, raw activity classifier and semaphore. Native FIFO admission bounds roots/waiters and exposes queue state; native usage separates reported/estimated/unknown root and child calls. Retained read-only subscriptions add independent cursors, explicit gaps and deletion guards; group submission IDs remain process-local, without exactly-once or durable-resumption claims.
 
 - Workspace health reports: an explicit bounded read-only SQLite quick check, allowlisted runtime/resource/worker summaries, JSON download without credentials or private content, and passive Technician access to the last report.

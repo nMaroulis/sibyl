@@ -164,6 +164,7 @@ Sibyl and the ten specialists start through ProtoLink 0.8.4 `AgentGroup` with re
 - [x] Split each agent into its own native declaration with prompt and typed tools; remove consult gateways and per-request Agent construction.
 - [x] Add on-demand evidence tools, cached Reporter reads and practical Technician setup guides.
 - [x] Review model-facing tool docstrings; add typed, focused help/FAQ tools for every specialist, including Trade history, backtesting, chart controls and source setup. Keep instructions separate from observations and update guides with module changes.
+- [x] Reuse native shared research tools and schema validation, run static help inline through per-tool SDK overrides, and use native consultation classification without per-token persistence. Retained document and evaluation failures remain correctable or explicitly unavailable.
 - [x] Let Broker inspect bounded, filtered retained order/fill evidence, with native ProtoLink correction for invalid record selections and no provider refresh or mutation.
 - [x] Add native Analyst live-stream evidence and Broker OCO/conditional/replacement evidence, with typed practical help and explicit read-only boundaries.
 - [ ] Expand investigations with deeper source-specific tools as domain features become available.

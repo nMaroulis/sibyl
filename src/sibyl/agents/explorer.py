@@ -6,7 +6,7 @@ instructions. ProtoLink reads their docstrings as model-facing descriptions.
 
 from typing import Annotated
 
-from protolink import Agent
+from protolink import Agent, Tool
 from pydantic import Field
 
 from sibyl.agents.guides import read_guide
@@ -32,7 +32,18 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Explorer's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     research = services.research
 
     def bitcoin_lookup(
@@ -152,8 +163,8 @@ def create_agent(services: Services, **runtime) -> Agent:
             bitcoin_address_history,
             bitcoin_output_spends,
             bitcoin_blocks,
-            blockchain_help,
-            page_help,
+            Tool.from_callable(blockchain_help, sync_execution="inline"),
+            Tool.from_callable(page_help, sync_execution="inline"),
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

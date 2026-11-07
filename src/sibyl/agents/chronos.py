@@ -6,7 +6,7 @@ forecast model. Tool descriptions explain their purpose to the reasoning model.
 
 from typing import Annotated
 
-from protolink import Agent, ToolRejectedError
+from protolink import Agent, Tool, ToolRejectedError
 from pydantic import Field
 
 from sibyl.agents.guides import read_guide
@@ -35,7 +35,18 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Chronos's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     market = services.market
 
     def price_forecast(
@@ -290,8 +301,8 @@ def create_agent(services: Services, **runtime) -> Agent:
         description=DESCRIPTION,
         tools=[
             price_forecast,
-            forecast_method,
-            page_help,
+            Tool.from_callable(forecast_method, sync_execution="inline"),
+            Tool.from_callable(page_help, sync_execution="inline"),
             trained_models,
             model_report,
             rolling_evaluation,

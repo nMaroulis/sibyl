@@ -6,7 +6,7 @@ retrieve focused UI instructions. No tool grants order or strategy control.
 
 from typing import Literal
 
-from protolink import Agent, ToolRejectedError
+from protolink import Agent, Tool, ToolRejectedError
 
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.broker import STRATEGIES, TRADE, StrategyTopic, TradeTopic
@@ -85,7 +85,18 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Broker's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     strategies, store = (services.strategies, services.store)
 
     def strategy_context(
@@ -532,7 +543,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         description=DESCRIPTION,
         tools=[
             strategy_context,
-            strategy_guide,
+            Tool.from_callable(strategy_guide, sync_execution="inline"),
             execution_controls,
             portfolio_limits,
             strategy_alerts,
@@ -542,8 +553,8 @@ def create_agent(services: Services, **runtime) -> Agent:
             exit_readiness,
             recorded_orders,
             advanced_order_evidence,
-            trade_help,
-            strategy_help,
+            Tool.from_callable(trade_help, sync_execution="inline"),
+            Tool.from_callable(strategy_help, sync_execution="inline"),
             execution_alerts,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,

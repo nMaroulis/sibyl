@@ -5,8 +5,10 @@ tool retrieves user instructions without accessing funds or changing records.
 """
 
 import json
+from typing import Annotated
 
-from protolink import Agent, ToolRejectedError
+from protolink import Agent, Tool, ToolRejectedError
+from pydantic import Field
 
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.accountant import GUIDES, Topic
@@ -58,11 +60,24 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Accountant's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     portfolio = services.portfolio
     performance, funding, transfers = services.performance, services.funding, services.transfers
 
-    def investment_returns(period_id: str | None = None, flow_offset: int = 0) -> dict:
+    def investment_returns(
+        period_id: str | None = None, flow_offset: Annotated[int, Field(ge=0, le=2000)] = 0
+    ) -> dict:
         """Explain a measured account return using its saved valuations and reviewed cash flows.
 
         Omit period_id to follow the selected Account performance period, or list periods
@@ -78,10 +93,6 @@ def create_agent(services: Services, **runtime) -> Agent:
         if not identity:
             return performance.returns.list(selected("portfolio_scope", None, "all"))
         try:
-            if not 0 <= flow_offset <= 2000:
-                raise ToolRejectedError(
-                    "Use a flow offset between zero and 2,000.", code="invalid_period_offset"
-                )
             report = performance.returns.detail(identity)
             result = {
                 key: report[key]
@@ -442,7 +453,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             balance_check_report,
             account_history,
             risk_alerts,
-            page_help,
+            Tool.from_callable(page_help, sync_execution="inline"),
             investment_returns,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,

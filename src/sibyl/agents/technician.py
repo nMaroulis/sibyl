@@ -7,7 +7,7 @@ provide instructions; status tools report saved metadata, not verified credentia
 import json
 from typing import Literal
 
-from protolink import Agent
+from protolink import Agent, Tool
 
 from sibyl.agents.utils.common import COMMON_PROMPT, Services
 from sibyl.alerts.history.service import NotificationHistory
@@ -135,7 +135,18 @@ GUIDES = {
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Define Technician's read-only diagnostic and setup tools."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
 
     def connection_status() -> dict:
         """Inspect configured accounts, active/Demo flags, model setup and history-import progress.
@@ -232,7 +243,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         tools=[
             connection_status,
             connection_alerts,
-            settings_guide,
+            Tool.from_callable(settings_guide, sync_execution="inline"),
             exchange_setup,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,

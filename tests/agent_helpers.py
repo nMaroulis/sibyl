@@ -72,7 +72,7 @@ def coordinator_factory(monkeypatch, factory):
 def busy_agents(client, monkeypatch):
     """Occupy native root slots with gated read-only tools, without contacting a model."""
     network = client.app.state.services.agents.network
-    tool = network.agents["reporter"].tools["page_help"]
+    tool = network.agents["reporter"].tools["news_briefing"]
     original = tool.func
     entered = [threading.Event(), threading.Event()]
     release = threading.Event()
@@ -92,7 +92,9 @@ def busy_agents(client, monkeypatch):
 
     async def start():
         return [
-            network.group.run(network.agents["reporter"], Task.create_tool_call("page_help"))
+            network.group.run(
+                network.agents["reporter"], Task.create_tool_call("news_briefing", {"mode": "demo"})
+            )
             for _ in entered
         ]
 
@@ -102,10 +104,10 @@ def busy_agents(client, monkeypatch):
         assert network.group.snapshot().active_runs == 2
         yield handles
     finally:
+        monkeypatch.setattr(tool, "func", original)
         release.set()
 
         async def finish():
             await asyncio.gather(*(handle.result() for handle in handles))
 
         client.portal.call(finish)
-        monkeypatch.setattr(tool, "func", original)
