@@ -29,7 +29,7 @@ The model decides whether to use a specialist. The interface never invents consu
 
 ## Follow or stop a request
 
-While Sibyl works, the chat receives live tool and specialist consultation activity with working/completed states. Reopened running chats check progress about once a second. The final answer appears when complete; private model reasoning and internal action JSON are never displayed as answer text.
+While Sibyl works, the chat receives live tool and specialist consultation activity with working/completed states. Reopened running chats check progress about once a second. With native text providers, the answer appears progressively with Markdown formatting and a **replying** status. Some local/JSON-mode providers show activity until their complete answer is available: their raw stream contains internal actions and stays private. Text is saved only when the request completes. Private model reasoning and internal action JSON are never displayed as answer text.
 
 Expand **Run details** under an answer for recorded tool outcomes, timing and model calls. Token counts are labeled reported or estimated; missing usage and costs say unavailable. Partial token totals identify how many calls reported usage. These figures are not a billing record. Some coordinator runs currently have unavailable usage because of a ProtoLink 0.8.3 limitation.
 

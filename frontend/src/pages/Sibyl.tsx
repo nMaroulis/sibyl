@@ -1,4 +1,5 @@
 import { ChatMarkdown } from '../components/chat-markdown';
+import { StreamingAnswer } from '../components/streaming-answer';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -156,7 +157,7 @@ function SibylChat() {
   const [following, setFollowing] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [requestId, setRequestId] = useState('');
-  const [live, setLive] = useState<{ session: string; items: AgentActivity[] }>();
+  const [live, setLive] = useState<{ session: string; items: AgentActivity[]; answer: string }>();
   const controller = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => controller.current?.abort(), []);
   const activity = useResource<SibylActivity | null>(
@@ -214,7 +215,7 @@ function SibylChat() {
         target = chat.id;
         setParams({ chat: target });
       }
-      setLive({ session: target, items: [] });
+      setLive({ session: target, items: [], answer: '' });
       const reply = await postStream<
         Reply | { status: 'cancelled'; request_id: string; session_id: string }
       >(
@@ -227,7 +228,14 @@ function SibylChat() {
         (event) => {
           setLive((old) => ({
             session: target,
-            items: mergeActivity(old?.session === target ? old.items : [], event),
+            items:
+              event.type === 'answer'
+                ? old?.session === target
+                  ? old.items
+                  : []
+                : mergeActivity(old?.session === target ? old.items : [], event),
+            answer:
+              event.type === 'answer' ? event.text : old?.session === target ? old.answer : '',
           }));
         },
         stream.signal,
@@ -525,7 +533,9 @@ function SibylChat() {
                         <p>{pending || currentActivity?.question}</p>
                       </div>
                     )}
+                    {pending && live?.session === session && <StreamingAnswer text={live.answer} />}
                     <SibylProgress
+                      streaming={Boolean(pending && live?.session === session && live.answer)}
                       activity={visibleActivity}
                       stopping={stopping}
                       stop={

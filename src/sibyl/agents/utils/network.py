@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from dataclasses import replace
 from hashlib import sha256
 from uuid import uuid4
 
@@ -27,6 +28,7 @@ from sibyl.agents.utils.conversations import Conversations, SibylRequest
 from sibyl.agents.utils.model_selection import readiness
 from sibyl.agents.utils.presentation import RunPresentation
 from sibyl.agents.utils.requests import SibylRequests, now
+from sibyl.agents.utils.streaming import AnswerStream, public_activity
 from sibyl.models import AgentRequest
 from sibyl.research_library.semantic.contracts import SemanticNotReady
 
@@ -144,12 +146,20 @@ class AgentNetwork:
             row["api_key"] for row in configuration.get("_agents", {}).values() if row.get("api_key")
         )
         policy = RedactionPolicy(sensitive_values=secrets)
-        handle = self.group.run(
-            self.agents[module],
-            task,
-            store=SQLiteRunStore(self.database, redaction_policy=policy),
-            redaction_policy=policy,
-        )
+        answer = AnswerStream(task.id, policy) if progress else None
+        private = current_request_context()
+        # The lazy root model factory identifies its actual native protocol. This
+        # display dependency is deliberately not inherited by owned specialists.
+        with request_context(
+            {**private, "answer_stream": answer},
+            inherit=tuple(key for key in ("models", "page") if key in private),
+        ):
+            handle = self.group.run(
+                self.agents[module],
+                task,
+                store=SQLiteRunStore(self.database, redaction_policy=policy),
+                redaction_policy=policy,
+            )
         view = RunPresentation(self, handle, configuration, request) if request else None
         if request:
             self.requests.update(request.request_id, run_id=handle.context.run_id)
@@ -158,7 +168,10 @@ class AgentNetwork:
                 if view:
                     view.consume(event)
                 if progress:
-                    await progress(event)
+                    if activity := public_activity(event):
+                        await progress(activity)
+                    if not private.get("response_schema") and (frame := answer.consume(event)):
+                        await progress(frame)
             result = await handle.result()
         except BaseException:
             await handle.cancel("Caller stopped waiting")
@@ -218,6 +231,8 @@ class AgentNetwork:
             if "TimeoutError" in failures:
                 raise TimeoutError("Agent request timed out.")
             raise RuntimeError("The agent could not complete this request.")
+        if isinstance(result.output, str):
+            result = replace(result, output=policy.redact(result.output))
         return result
 
     async def ask_module(self, request: AgentRequest) -> dict:

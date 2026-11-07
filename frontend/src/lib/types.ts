@@ -430,6 +430,8 @@ export type AgentActivity =
       label: string;
       status: 'running' | 'completed' | 'failed' | 'rejected' | 'cancelled';
     };
+/** Public answer snapshots are separate from native tool/consultation activity. */
+export type AgentStreamEvent = AgentActivity | { type: 'answer'; text: string };
 export type AgentReply = {
   run_id?: string;
   context?: AgentContext;

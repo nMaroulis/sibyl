@@ -42,7 +42,7 @@ export const post = <T>(path: string, body?: unknown) =>
 export async function postStream<T>(
   path: string,
   body: unknown,
-  onEvent: (event: import('./types').AgentActivity) => void,
+  onEvent: (event: import('./types').AgentStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<T> {
   const response = await fetch(`/api/v1${path}`, {
@@ -66,6 +66,8 @@ export async function postStream<T>(
   let buffer = '',
     received = false,
     reply: T | undefined;
+  let answer = '',
+    paint = 0;
   const readLine = (line: string) => {
     if (!line.trim() || received) return;
     const event = JSON.parse(line);
@@ -73,6 +75,17 @@ export async function postStream<T>(
     if (event.type === 'reply') {
       reply = event.reply as T;
       received = true;
+    } else if (event.type === 'answer' && typeof event.text === 'string') {
+      if (event.operation !== 'append' && event.operation !== 'replace')
+        throw new Error('Invalid answer stream.');
+      answer = event.operation === 'replace' ? event.text : answer + event.text;
+      if (answer.length > 1_000_000) throw new Error('The answer exceeded the stream limit.');
+      // Coalesce token bursts into one Markdown update per browser paint.
+      if (!paint)
+        paint = requestAnimationFrame(() => {
+          paint = 0;
+          if (!signal?.aborted) onEvent({ type: 'answer', text: answer });
+        });
     } else if (event.type === 'activity' || event.type === 'status') onEvent(event);
   };
   try {
@@ -94,6 +107,7 @@ export async function postStream<T>(
       );
     return reply as T;
   } finally {
+    cancelAnimationFrame(paint);
     await reader.cancel().catch(() => {});
     reader.releaseLock();
   }

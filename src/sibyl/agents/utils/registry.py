@@ -102,7 +102,10 @@ class AgentRegistry:
         private = current_request_context()
         configuration = private.get("models") or freeze(self.models.for_turn(module))
         with request_context({**private, "agent_id": module}):
-            return self.make_model(configuration["_agents"][module])
+            model = self.make_model(configuration["_agents"][module])
+            if preview := private.get("answer_stream"):
+                preview.native = bool(model.uses_native_action_prompt)
+            return model
 
     def catalog(self) -> list[dict]:
         """Expose real native tool names and runtime URLs without provider credentials."""

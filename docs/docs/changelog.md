@@ -57,6 +57,8 @@ Markets adds live Binance, Kraken and Coinbase previews, with clear source/inter
 
 ### Added
 
+- Progressive native-provider text replies in Sibyl and module chats, with shared Markdown formatting, a replying state, batched browser updates, root-only text, Stop and saved final answers. JSON-mode/internal action chunks remain hidden until native final output; no application action parser or LLM wrapper is added.
+
 - Workspace health reports: an explicit bounded read-only SQLite quick check, allowlisted runtime/resource/worker summaries, JSON download without credentials or private content, and passive Technician access to the last report.
 
 - Trusted local Python strategy plugins for historical backtests: explicit installed entry-point allowlists, bounded manifests/controls, immutable prefix-only observations, shared next-open cost simulation, source-revision pins, retained inputs/decision fingerprints, offline reruns, charts/exports and native read-only Broker evidence. An installable momentum example is included; plugin jobs/optimization and Freqtrade remain pending.

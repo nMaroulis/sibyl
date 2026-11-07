@@ -8,10 +8,12 @@ export function AgentWorking({
   name,
   items,
   startedAt,
+  streaming = false,
 }: {
   name: string;
   items: AgentActivity[];
   startedAt?: number;
+  streaming?: boolean;
 }) {
   const [mountedAt] = useState(Date.now);
   const [now, setNow] = useState(Date.now);
@@ -26,11 +28,13 @@ export function AgentWorking({
       : `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
   const actions = items.filter((item) => item.type === 'activity');
   const running = actions.some((item) => item.status === 'running');
-  const label = running
-    ? `${name} is using tools`
-    : actions.length
-      ? `${name} is preparing your answer`
-      : `${name} is working on your request`;
+  const label = streaming
+    ? `${name} is replying`
+    : running
+      ? `${name} is using tools`
+      : actions.length
+        ? `${name} is preparing your answer`
+        : `${name} is working on your request`;
   return (
     <div className="agent-working">
       <div className="agent-working-heading">
@@ -43,11 +47,13 @@ export function AgentWorking({
         </time>
       </div>
       <p>
-        {actions.length && !running
-          ? 'The tool steps have finished so far; the reply is still being prepared. More checks may follow.'
-          : running
-            ? 'Tool activity appears below. Your reply is not finished yet.'
-            : 'Waiting for the agent’s reply. Tool activity will appear below when available.'}
+        {streaming
+          ? 'Your reply is arriving live. It is saved when the agent finishes.'
+          : actions.length && !running
+            ? 'The tool steps have finished so far; the reply is still being prepared. More checks may follow.'
+            : running
+              ? 'Tool activity appears below. Your reply is not finished yet.'
+              : 'Waiting for the agent’s reply. Tool activity will appear below when available.'}
       </p>
       {seconds >= 30 && (
         <small>Some models take longer between steps. You can stop this request at any time.</small>

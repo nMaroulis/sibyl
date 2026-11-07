@@ -51,8 +51,10 @@ export function SibylProgress({
   activity,
   stopping,
   stop,
+  streaming = false,
 }: {
   activity?: SibylActivity | null;
+  streaming?: boolean;
   stopping: boolean;
   stop?: () => void;
 }) {
@@ -64,7 +66,9 @@ export function SibylProgress({
           <LoaderCircle size={13} className="spin" />
           {stopping
             ? 'Stopping this request'
-            : (labels[activity?.phase ?? 'thinking'] ?? 'Sibyl is thinking')}
+            : streaming
+              ? 'Sibyl is replying'
+              : (labels[activity?.phase ?? 'thinking'] ?? 'Sibyl is thinking')}
         </span>
         {stop && (
           <button type="button" onClick={stop} disabled={stopping || status === 'cancelling'}>

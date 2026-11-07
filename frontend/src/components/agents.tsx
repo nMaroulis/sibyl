@@ -1,5 +1,6 @@
 import { AgentWorking } from './agent-working';
 import { ChatMarkdown } from './chat-markdown';
+import { StreamingAnswer } from './streaming-answer';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowUp, ArrowUpRight, Braces, History, Plus, Sparkles, Square } from 'lucide-react';
@@ -16,6 +17,7 @@ type Thread = {
   sessionId?: string;
   pending?: string;
   pendingStartedAt?: number;
+  answer?: string;
   error?: string;
   activity?: AgentActivity[];
 };
@@ -144,6 +146,7 @@ export function AgentProvider({ children }: { children: ReactNode }) {
       draft: '',
       error: '',
       activity: [],
+      answer: '',
     });
     try {
       const reply = await postStream<AgentReply>(
@@ -159,7 +162,9 @@ export function AgentProvider({ children }: { children: ReactNode }) {
             ...old,
             [target]: {
               ...(old[target] ?? emptyThread()),
-              activity: mergeActivity(old[target]?.activity ?? [], event),
+              ...(event.type === 'answer'
+                ? { answer: event.text }
+                : { activity: mergeActivity(old[target]?.activity ?? [], event) }),
             },
           })),
         controller.signal,
@@ -171,6 +176,7 @@ export function AgentProvider({ children }: { children: ReactNode }) {
           replies: [...(old[target]?.replies ?? []), reply],
           sessionId: reply.session_id,
           pending: undefined,
+          answer: '',
           error: '',
         },
       }));
@@ -178,6 +184,7 @@ export function AgentProvider({ children }: { children: ReactNode }) {
     } catch (reason) {
       update(target, {
         pending: undefined,
+        answer: '',
         draft: message,
         error: controller.signal.aborted
           ? 'Stopped waiting. Any completed answer remains in recent conversations.'
@@ -263,18 +270,20 @@ function AgentDialog({
   onStop: () => void;
 }) {
   const body = useRef<HTMLDivElement>(null);
+  const follow = useRef(true);
   const name = agent?.name ?? names[selection.module];
   const context = selection.context;
   useEffect(() => {
     const element = body.current;
-    if (element)
+    if (element && (!thread.answer || follow.current))
       element.scrollTo({
         top: element.scrollHeight,
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          ? 'instant'
-          : 'smooth',
+        behavior:
+          thread.answer || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'instant'
+            : 'smooth',
       });
-  }, [thread.replies.length, thread.pending]);
+  }, [thread.replies.length, thread.pending, thread.answer]);
   return (
     <Modal
       title={`Ask ${name}`}
@@ -390,7 +399,15 @@ function AgentDialog({
           </span>
         )}
       </div>
-      <div className="agent-dialog-body" ref={body}>
+      <div
+        className="agent-dialog-body"
+        ref={body}
+        onScroll={() => {
+          const element = body.current;
+          if (element)
+            follow.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
+        }}
+      >
         {catalogError && <ErrorState message={catalogError} retry={retry} />}
         {!thread.replies.length && !thread.pending && (
           <div className="agent-dialog-welcome">
@@ -513,12 +530,14 @@ function AgentDialog({
         {thread.pending && (
           <div className="agent-dialog-turn">
             <div className="agent-question">{thread.pending}</div>
+            <StreamingAnswer text={thread.answer ?? ''} />
             <div className="agent-thinking">
               <div className="agent-working-stack">
                 <AgentWorking
                   name={name}
                   items={thread.activity ?? []}
                   startedAt={thread.pendingStartedAt}
+                  streaming={Boolean(thread.answer)}
                 />
                 {thread.activity?.some((item) => item.type === 'activity') && (
                   <AgentActivityTrail items={thread.activity} />
