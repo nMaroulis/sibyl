@@ -54,7 +54,7 @@ Quantity and known cost are conserved across source remainder, credited lots and
 
 Performance includes `transfer_fee_quantity`, `transfer_fee_known_inventory_cost` and `transfer_fee_unknown_quantity` per account/market. Each applied link has `movement`, `outgoing_fee_evidence` and `incoming_fee_evidence`, including bounded original fee-lot slices. CSV summaries include these quantities/costs.
 
-**Historical fee market valuation is not implemented.** Nonzero transfer fees therefore keep final net matched results and current marks provisional under the existing coverage guard. Trading-only `realized_before_other_fees`, received inventory and known acquisition cost remain inspectable. Historical inventory cost is not the fee's market value, a complete expense figure, a tax result or a funding-adjusted account return.
+**This By market pair report does not perform historical fee market valuation.** Across pairs now has a separate [dated valuation contract](cross-pair-accounting.md). Nonzero transfer fees therefore keep final net matched results and current marks provisional under the existing coverage guard. Trading-only `realized_before_other_fees`, received inventory and known acquisition cost remain inspectable. Historical inventory cost is not the fee's market value, a complete expense figure, a tax result or a funding-adjusted account return.
 
 ## API and persistence
 
@@ -98,4 +98,6 @@ The Accountant's fixed read-only ProtoLink snapshot reads the same evidence. `pe
 
 `tests/test_transfer_allocation.py` covers all four amount-convention combinations, distinct-charge acknowledgment, missing/known/foreign fee rules, precision limits, version checks, atomic audit rollback, allocation edits, fee/received-lot conservation, unknown fee-unit cost, chained transfers, isolated examples and ProtoLink agreement.
 
-Remaining work includes historical fee/flow valuation, other fee currencies and rebates, split/merged allocations, cross-market basis, reviewed external-funding classification and cash-flow-adjusted account returns.
+Remaining work includes wider funding-fee currencies/rebates and policies, independently established external-flow classifications and complete history. Across pairs now supports dated conversions, cross-market basis and explicit split/merged groups; measured-period returns remain separately reviewed and coverage-gated.
+
+Split/merged movements now have a separate [group allocation workflow](transfer-groups.md) in Across pairs. This page describes the narrower pair contract.

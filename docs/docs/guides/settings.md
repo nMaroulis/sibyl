@@ -80,20 +80,20 @@ Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated
 
 [Telegram](./telegram.md) supports private chat and opt-in [scheduled briefing delivery](briefings.md). Setup: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
 
-| App      | Planned setup fields                                                                                                                                                    |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WhatsApp | Cloud API access token, business phone number ID, Meta app secret, webhook verification token, and your personal WhatsApp number                                        |
-| Telegram | Bot token from BotFather and your numeric Telegram user ID                                                                                                              |
-| Discord  | Bot token, application ID, and your numeric Discord user ID                                                                                                             |
-| Slack    | Bot user OAuth token, app-level token for Socket Mode, and your member ID                                                                                               |
-| Signal   | Local signal-cli HTTP bridge URL, linked Signal account (phone number or ACI), and your allowed sender ACI                                                              |
-| Email    | Sibyl mailbox and allowed sender addresses; IMAP host/port, encryption, username, password/app password and folder; SMTP host/port, encryption and separate credentials |
+| App | Setup |
+| --- | --- |
+| Telegram | BotFather token and your numeric user ID |
+| Discord | Bot token, application ID and numeric private user ID; direct DM polling |
+| Slack | Bot token, Socket Mode app token and private member ID |
+| WhatsApp | Graph version, access token, business phone ID, app secret, webhook verification token and your personal number |
+| Signal | Loopback signal-cli origin, separately linked account and personal sender ACI |
+| Email | Dedicated TLS IMAP/SMTP mailbox, fixed personal sender and a private subject pairing phrase |
 
-Telegram enforces your private user ID now; other sender fields describe planned integrations. WhatsApp will also require a public HTTPS callback URL; the planned Telegram polling, Discord Gateway and Slack Socket Mode connections do not need a public webhook. The setup links on each card lead to the providers’ documentation. Only Telegram accepts and encrypts credentials today.
+Every implemented connection encrypts credentials locally and starts paused. Check its identity, then enable private replies. Setup works without an LLM; questions receive model guidance until one is active. Saved secrets remain hidden; Edit requires complete replacement credentials. Pause stays available during a model request. Receipts show actual acceptance/uncertainty rather than claiming the person read a reply.
 
-Signal's planned route uses the **unofficial [signal-cli](https://github.com/AsamK/signal-cli)** JSON-RPC HTTP daemon, linked separately; it does not use a Signal bot API key or collect a Signal PIN. The sender ACI is the stable UUID in received message envelopes. No bridge is started, account linked or Signal message read/sent by Sibyl.
+WhatsApp requires a signed public HTTPS webhook. Discord polls only your checked private DM; Slack uses native Socket Mode. Signal requires the separately linked **unofficial signal-cli** daemon; Sibyl never collects a Signal PIN or links an account. Email uses verified TLS, read-only IMAP UID cursors and a fixed reply address; each subject must start with `[Sibyl:YOUR_PAIRING_PHRASE]`, because From alone is not authentication. Provider OAuth mail sign-in is not implemented.
 
-Email groups its previews into **Mailbox**, **Incoming · IMAP** and **Outgoing · SMTP**. Expand each group to inspect its fields. TLS and STARTTLS choices are shown without a plaintext option. This preview targets password/app-password IMAP/SMTP accounts; provider-specific OAuth sign-in remains future work. No mailbox is accessed or email sent. Server settings come from your mail provider; see [manual mail configuration](https://support.mozilla.org/en-US/kb/manual-account-configuration).
+See [complete channel setup and boundaries](../developers/private-messaging.md) and [Telegram controls](telegram.md).
 
 ## Ollama server controls
 

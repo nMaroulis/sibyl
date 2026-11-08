@@ -90,7 +90,7 @@ export function NotificationHistoryControls({ changed }: { changed: () => void }
           <label>
             Notification kind
             <select value={kind} onChange={(e) => setKind(e.target.value)}>
-              {['all', 'price', 'risk', 'strategy', 'connection', 'order'].map((k) => (
+              {['all', 'price', 'risk', 'strategy', 'connection', 'order', 'workspace'].map((k) => (
                 <option key={k} value={k}>
                   {k === 'all' ? 'All kinds' : k}
                 </option>

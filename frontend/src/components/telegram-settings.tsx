@@ -1,3 +1,4 @@
+import { TelegramAttachments } from './messaging/telegram-attachments';
 import { TelegramDeliveryReview } from './messaging/delivery-review';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -527,6 +528,8 @@ export function TelegramSetup({
           {!!updates.failed && <span>{updates.failed} requests could not be answered.</span>}
         </div>
       )}
+      <TelegramAttachments />
+
       <TelegramDeliveryReview />
       <div className="messaging-card-footer telegram-footer">
         <p>

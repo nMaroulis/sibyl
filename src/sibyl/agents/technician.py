@@ -23,7 +23,7 @@ DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, da
 SYSTEM_PROMPT = (
     "Use telegram_delivery_review to explain actual app-origin delivery outcomes and separate user acknowledgments. It cannot read private message bodies or send/review messages. "
     "Use notification_history for retained inbox cleanup policy, protections and actual receipts; never clear history for the user. "
-    "Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
+    "Use worker_incidents for saved stalls, observation gaps and confirmed resumption of progress; observation_ended means recovery is unknown. It cannot establish external uptime or restart a worker. Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
     "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace "
     "(including installation and launcher help); "
@@ -34,7 +34,7 @@ SYSTEM_PROMPT = (
     "active by default; Demo is an explicit preview and turns off when an actual account is active. "
     "Never ask users to paste secrets into chat. Do not claim connectivity was verified by listing "
     "metadata. Explain provider-specific credential fields from the tool. Telegram is available with encrypted bot credentials, one allowed private user, "
-    "explicit connection checks and enable/pause. Other messaging channels are unavailable previews. Agents cannot connect accounts or "
+    "explicit connection checks and enable/pause. Discord private HTTP DMs, Slack Socket Mode, signed WhatsApp Cloud API webhooks, paired IMAP/SMTP email and the separately linked local Signal bridge are also implemented. Agents cannot connect accounts or "
     "mutate settings for the user. For saved read-failure alerts and notifications call connection_alerts; "
     "these are transport observations, not uptime checks, full data validation or verification of current credentials. "
 )
@@ -62,8 +62,9 @@ GUIDES = {
         "steps": [
             "Choose an exchange, give the account a label and enter its required credentials in Settings, never in chat.",
             "Inspect the exchange feature tabs before connecting. Use balance/order-history read permissions; add spot trading permission only for supported manual orders or explicitly approved exchange strategies. Keep withdrawals and wallet transfers disabled; restrict IPs where supported.",
-            "Save the connection and use its connection check to verify it. Saving metadata alone is not verification.",
+            "Save the connection and use its connection check to verify it. Saving metadata alone is not verification. Optional Live order updates supports Binance/Testnet, Coinbase Advanced and Kraken private signals; activate that account and Enable signals. It only wakes separately enabled REST order/fill/discovery readers, preserves pauses and never trades. Signal and scheduling timestamps do not prove reconciliation.",
             "Open Account after activating the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
+            "To replace API credentials for the same account, use Saved accounts → Update keys, deactivate the connection, enter a complete key set and confirm the same-account assertion/phrase. Check access and reactivate explicitly. History remains attached to this account ID. Use a new connection for a different account; existing venue orders are not cancelled.",
             "For a preview, explicitly enable Demo. Actual active accounts turn Demo off; test environments remain clearly labeled.",
             "For automated spot strategies, open Strategies and expand Run on a connected exchange. Both SIBYL_ALLOW_LIVE_TRADING and SIBYL_ALLOW_STRATEGY_EXECUTION must be enabled on the backend. Review the exact account, pair, budget and limits, then type the confirmation. Start with test funds. Pause/Stop do not cancel venue orders or liquidate holdings.",
         ],
@@ -99,9 +100,9 @@ GUIDES = {
     "messaging": {
         "url": "/settings?tab=messaging",
         "steps": [
-            "Messaging lets you talk to Sibyl through another app. Telegram is implemented; WhatsApp, Discord, Slack, Signal and Email are unavailable previews. Telegram can optionally send long replies and scheduled briefings as bounded UTF-8 text documents; incoming media remains unsupported. Telegram can also receive explicitly selected scheduled briefings and per-rule alerts; enabling chat alone does not enable these deliveries.",
+            "Messaging lets you talk to Sibyl through another app. Telegram, Discord private HTTP DMs, Slack Socket Mode, signed WhatsApp webhooks, paired IMAP/SMTP email and a local unofficial Signal bridge are implemented. Telegram can optionally send long replies and scheduled briefings as bounded UTF-8 text documents; incoming media remains unsupported. Telegram can also receive explicitly selected scheduled briefings and per-rule alerts; enabling chat alone does not enable these deliveries.",
             "Review Telegram deliveries opens actual queued text, the recorded private target and part outcomes. Withdraw queued remainders or record separate received/dismissed user reviews; admitted sends must finish first, and review never resends or changes native confirmation.",
-            "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. Other channels remain unavailable previews.",
+            "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. WhatsApp needs a Meta business phone, explicit Graph version, signed public HTTPS callback /api/v1/webhooks/whatsapp and messages subscription. Email needs a dedicated TLS mailbox plus private pairing phrase in each subject; From alone is not authorization. For implemented channels save the private recipient and complete credentials, Check connection, then Enable private replies. Pause remains available during a model request; editing/removal requires pause. Sent receipts mean provider acceptance, not human receipt. Telegram attachments are separate opt-in preferences: PDF/text/Markdown import to My research, photo text needs local Tesseract and voice/audio needs local FFmpeg plus whisper-cli and a .bin model. No model/program is downloaded. Documents are retained; media originals are discarded after uncertain OCR/transcription. Native Wiki/Reporter tools read the retained citations. No group chats are processed.",
         ],
     },
     "alerts": {
@@ -128,6 +129,8 @@ GUIDES = {
             "Source checkouts keep their repository .sibyl workspace. Installed apps default to per-user application data: macOS Application Support/Sibyl, Windows Local AppData/Sibyl or Linux XDG data/sibyl. Use --data-dir or SIBYL_DATA_DIR to open an existing workspace; no installer moves or deletes it.",
             "Use --env-file for an explicit configuration file, --no-env-file to ignore .env, and --port for a different listening port. Use Workspace backups for encrypted online SQLite snapshots, inspection/download and separate-directory restore. Keep the archive passphrase outside agent chat. For manual filesystem copies, stop the app and copy its databases and vault key together.",
             "If workspace access is token-protected, enter the server's configured access token in the browser's access field, never in agent chat.",
+            "Local jobs in Workspace saves paused health-check, retained accounting or pinned forecast-training tasks. Run once queues explicit work; Enable schedule starts future occurrences. Pausing stops scheduling, Cancel targets one run, and Archive also withdraws queued/run interest. Inspect/download actual receipts; read-only interrupted work can retry, while training is never automatically repeated after interruption.",
+            "Credential vault rotates only local wrapping encryption with an explicit phrase and interruption recovery. It never revokes provider tokens or shares key files with agents. Keep recovery key files until completion, preserve matching backups and review credential-bound funding sync controls after rotation.",
             "This is a local workspace. Hosted multi-user accounts and tenant isolation are deferred.",
         ],
     },
@@ -200,22 +203,19 @@ def create_agent(services: Services, **runtime) -> Agent:
             "workspace",
         ] = "overview",
     ) -> dict:
-        """Get step-by-step setup instructions and links for a Sibyl settings or operations section.
-
-        Choose models for API/Local providers, per-agent models or Ollama; exchanges
-        for account activation; news/market for data sources; messaging for Telegram;
-        alerts or strategies for their controls; workspace for installation, launch options,
-        data directories and local access settings.
-        overview lists the settings sections. This tool explains setup without changing it.
+        """Explain setup steps and controls for a settings section. overview lists sections; choose
+        exchanges, models, news, market, messaging, alerts, strategies or workspace. Returns
+        practical instructions and exact in-app links. Never changes settings or needs credentials
+        in chat.
         """
         return {"section": section, **GUIDES[section], "sections": list(GUIDES)}
 
-    def exchange_setup(exchange: str = "binance") -> dict:
+    def exchange_setup(exchange: str = "binance", feature_details: bool = False) -> dict:
         """Explain how to connect a particular exchange and which features Sibyl implements for it.
 
         Supply the catalog exchange ID, such as binance, kraken, okx or demo. Returns
-        required form fields, the implemented support matrix, local key-storage details,
-        environment labels and steps to connect/activate accounts. Never paste credentials in chat.
+        required form fields, feature statuses, local key-storage details,
+        environment labels and setup steps. Set feature_details for each feature's full limitations. Never paste credentials in chat.
         """
         if exchange not in CATALOG:
             return {"error": "Choose a supported exchange.", "exchanges": list(CATALOG)}
@@ -226,6 +226,28 @@ def create_agent(services: Services, **runtime) -> Agent:
         if spec.uid:
             fields.append("uid (API memo)")
         catalog = provider_catalog()
+        exchange_info = dict(next(item for item in catalog["items"] if item["id"] == exchange))
+        if not feature_details:
+            exchange_info["support"] = [
+                {
+                    "id": group["id"],
+                    "label": group["label"],
+                    "summary": group["summary"],
+                    "features": {feature["id"]: feature["status"] for feature in group["features"]},
+                }
+                for group in exchange_info["support"]
+            ]
+            exchange_info = {
+                key: exchange_info[key]
+                for key in (
+                    "id",
+                    "name",
+                    "account",
+                    "market_orders",
+                    "limit_orders",
+                    "support",
+                )
+            }
         return {
             # Put setup guidance before the matrix so native context previews retain it.
             **GUIDES["exchanges"],
@@ -234,7 +256,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "manual_execution_enabled": services.settings.allow_live_trading,
             "note": "Demo accepts no credentials." if spec.simulated else spec.note,
             "test_environment": spec.test_environment,
-            "exchange": next(item for item in catalog["items"] if item["id"] == exchange),
+            "exchange": exchange_info,
         }
 
     agent = Agent(
@@ -263,21 +285,44 @@ def create_agent(services: Services, **runtime) -> Agent:
 
     @agent.tool
     def workspace_operations() -> dict:
-        """Inspect background-worker progress and explain encrypted backup and recovery controls.
-
-        Returns observed iteration times, faults, overdue work and current Python process
-        CPU/memory/threads, storage space and the last explicit content-free database check. CPU uses
-        an elapsed observation window; other processes and external uptime are excluded.
-        These counters do not establish provider readiness
-        or proof that orders completed. You can explain a failed worker but cannot
-        restart workers, create/decrypt backups or authorize recovery. Never ask for a
-        backup passphrase in chat; it belongs only in the Workspace settings form.
+        """Inspect worker progress, Python process resources, the last explicit database check and
+        local job outcomes. Explain encrypted backup/restore controls. Counts do not prove provider
+        readiness or completed trades. Never restarts workers, decrypts archives or asks for
+        passphrases in chat.
         """
         return {
             "health": services.workers.snapshot() if services.workers else {"available": False},
             "last_health_report": services.workers.diagnostics.last() if services.workers else None,
+            "jobs": {
+                "run_counts": services.workers.jobs.state()["run_counts"],
+                "items": [
+                    {key: row[key] for key in ("id", "label", "kind", "state", "next_due", "latest_run")}
+                    for row in services.workers.jobs.state()["items"][:12]
+                ],
+                "limit": 12,
+            }
+            if services.workers and services.workers.jobs
+            else {"available": False},
             "url": "/settings?tab=workspace",
             "backup_help": "Create a passphrase-encrypted archive in Settings → Workspace. It contains local databases, documents and the vault key inside encryption. Download it and keep the passphrase separately. Restore creates a separate workspace with automatic work paused. Launch the returned directory, review connections/orders, complete recovery and restart. Accounts remain inactive until explicitly enabled.",
+        }
+
+    @agent.tool
+    def worker_incidents() -> dict:
+        """Read five recent worker stalls, observer freshness and sample gaps. First detection is
+        sampled; recovery requires a later successful iteration. Observation ending leaves recovery
+        unknown. Local incidents do not establish host/exchange uptime or authorize worker
+        restart/cancellation.
+        """
+        if not services.workers:
+            return {"available": False}
+        result = services.workers.watchdog.snapshot()
+        return {
+            **result,
+            "items": result["items"][:5],
+            "gaps": result["gaps"][:5],
+            "limit": 5,
+            "url": "/settings?tab=workspace",
         }
 
     @agent.tool

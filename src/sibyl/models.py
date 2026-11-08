@@ -221,6 +221,8 @@ class AgentContext(Request):
     correlation_method: Literal["pearson", "spearman", "distance"] | None = None
     correlation_transform: Literal["log_returns", "prices", "changes"] | None = None
     portfolio_scope: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
+    account_books_view: bool | None = None
+    account_books_currency: str | None = Field(default=None, pattern=r"^[A-Z0-9][A-Z0-9.]{0,19}$")
     performance_view: bool | None = None
     performance_account_id: str | None = Field(default=None, max_length=100)
     performance_environment: Literal["", "demo", "test", "production"] | None = None
@@ -267,6 +269,8 @@ class AgentContext(Request):
     job_id: str | None = Field(default=None, min_length=1, max_length=100)
     backtest_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     validation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    adaptive_study_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    adaptive_window: int | None = Field(default=None, ge=1, le=5)
     article_id: str | None = Field(default=None, max_length=100)
     news_mode: Literal["demo", "live"] | None = None
     news_publisher: str | None = Field(default=None, max_length=40)

@@ -18,7 +18,8 @@ import { api, post } from '../../lib/api';
 import { InvestigationForm } from './form';
 import { InvestigationReport } from './report';
 import { Briefings } from './briefings';
-import { running, runLabel } from './types';
+import { WorkflowControls } from './workflow';
+import { pending, running, runLabel } from './types';
 import type { Investigation, ResearchRun } from './types';
 import '../../styles/investigations.css';
 
@@ -52,13 +53,14 @@ export function Investigations() {
     30000,
   );
   const [creating, setCreating] = useState(false);
+  const [checkpoints, setCheckpoints] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const toast = useToast();
   const item = definition.data?.id === selected ? definition.data : undefined;
   const run = result.data?.id === runId ? result.data : undefined;
-  const active = item?.runs.find(running);
+  const active = item?.runs.find(pending);
   const ready = Boolean(status.data?.ready);
   const refreshReports = useCallback(() => {
     definition.retry();
@@ -67,7 +69,11 @@ export function Investigations() {
   useEffect(
     () =>
       setFollowing(
-        Boolean(library.data?.some((entry) => entry.runs.some(running)) || active || running(run)),
+        Boolean(
+          library.data?.some((entry) => entry.runs.some(running)) ||
+          running(active) ||
+          running(run),
+        ),
       ),
     [library.data, active?.id, active?.status, run?.status],
   );
@@ -95,6 +101,7 @@ export function Investigations() {
     try {
       const next = await post<ResearchRun>(`/investigations/${identity}/runs`, {
         request_id: crypto.randomUUID().replaceAll('-', ''),
+        checkpoints,
       });
       navigate(identity, next.id);
       setFollowing(true);
@@ -313,6 +320,16 @@ export function Investigations() {
                   refreshReports();
                 }}
               />
+              <label className="checkbox-label workflow-mode">
+                <input
+                  type="checkbox"
+                  checked={checkpoints}
+                  disabled={!!active}
+                  onChange={(event) => setCheckpoints(event.target.checked)}
+                />
+                Native checkpoints · questions, optional approved local notes and explicit
+                continuation
+              </label>
               <div className="investigation-toolbar">
                 <div>
                   {item.runs.length > 0 && (
@@ -383,7 +400,7 @@ export function Investigations() {
                   )}
                 </div>
               </div>
-              {active && (
+              {running(active) && (
                 <SibylProgress
                   activity={running(run) ? run?.activity : undefined}
                   stopping={busy === 'stop'}
@@ -424,7 +441,18 @@ export function Investigations() {
                       {run.error}
                     </p>
                   )}
-                  {!run.report && !running(run) && (
+                  {run.durable && (
+                    <WorkflowControls
+                      key={run.id + ':' + (run.workflow?.interruption?.request_id ?? run.status)}
+                      run={run}
+                      onChanged={() => {
+                        result.retry();
+                        refreshReports();
+                        setFollowing(true);
+                      }}
+                    />
+                  )}
+                  {!run.report && !pending(run) && (
                     <Empty title={runLabel(run.status)}>
                       No completed report was saved. Previous versions remain available; rerun
                       explicitly when you’re ready.

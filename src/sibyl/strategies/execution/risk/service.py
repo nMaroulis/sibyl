@@ -7,16 +7,17 @@ parallel reservation ledger. No risk action submits, cancels or liquidates an or
 """
 
 import json
+from datetime import datetime, timedelta
 
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.controls import ControlConflict
-from sibyl.strategies.execution.risk import prices
+from sibyl.strategies.execution.risk import prices, windows
 from sibyl.strategies.execution.risk.contracts import (
     RELEASE_CONFIRMATION,
     SAVE_CONFIRMATION,
     LimitPolicy,
 )
-from sibyl.strategies.execution.risk.ledger import MAX_RUNS, positions, totals
+from sibyl.strategies.execution.risk.ledger import MAX_RUNS, concentration_refusal, positions, totals
 
 
 def load(db, environment):
@@ -25,7 +26,9 @@ def load(db, environment):
     ).fetchone()
     if row is None:
         raise ExecutionGuard("Shared strategy controls are unavailable. No automatic order was admitted.")
-    return json.loads(row[0])
+    state = json.loads(row[0])
+    state["policy"] = LimitPolicy(**state["policy"]).model_dump()
+    return state
 
 
 def write(db, state):
@@ -49,6 +52,7 @@ class PortfolioLimits:
                     id INTEGER PRIMARY KEY AUTOINCREMENT, environment TEXT NOT NULL, payload TEXT NOT NULL
                 );
             """)
+            windows.initialize(db)
             for environment in ("production", "test"):
                 state = dict(
                     environment=environment,
@@ -224,10 +228,14 @@ class PortfolioLimits:
             "period_started_at": period["started_at"],
             "daily_pnl": daily_pnl,
             "daily_loss": max(0.0, -daily_pnl),
+            **windows.measure(
+                db, state["environment"], current, prices.utcnow(), state["policy"]["loss_window_hours"]
+            ),
         }
 
     def _record(self, db, state, sample):
         state.update(sample=sample, error=None)
+        windows.record(db, state["environment"], sample)
         if not state["locked"] and sample["daily_loss"] >= state["policy"]["max_daily_loss"]:
             state.update(locked=True, tripped_day=sample["day"], revision=state["revision"] + 1)
             reason = (
@@ -235,6 +243,19 @@ class PortfolioLimits:
             )
             paused = self._pause(db, state["environment"], reason)
             self._audit(db, state, "daily_loss_locked", reason, paused)
+        cap = state["policy"].get("max_window_loss")
+        if not state["locked"] and cap is not None and sample["window_loss"] >= cap:
+            state.update(
+                locked=True,
+                tripped_day=sample["day"],
+                revision=state["revision"] + 1,
+                window_locked_until=(
+                    prices.utcnow() + timedelta(hours=state["policy"]["loss_window_hours"])
+                ).isoformat(),
+            )
+            reason = "Shared rolling-loss limit reached. Automatic strategy orders are locked for this environment."
+            paused = self._pause(db, state["environment"], reason)
+            self._audit(db, state, "window_loss_locked", reason, paused)
         write(db, state)
 
     def require(self, environment, revision=None):
@@ -337,10 +358,18 @@ class PortfolioLimits:
             sample = self._metrics(db, state, state["sample"])
             self._record(db, state, sample)
             if state["locked"]:
-                return "Shared daily-loss limit reached. No automatic order was submitted."
+                return (
+                    "Shared rolling-loss limit reached. No automatic order was submitted."
+                    if state.get("window_locked_until")
+                    else "Shared daily-loss limit reached. No automatic order was submitted."
+                )
             projected = self._metrics(db, state, sample, candidate=intent)
-            if intent["request"]["side"] == "buy" and projected["exposure"] > state["policy"]["max_exposure"]:
-                return "This buy exceeds shared strategy exposure, including outstanding buys."
+            if intent["request"]["side"] == "buy":
+                if projected["exposure"] > state["policy"]["max_exposure"]:
+                    return "This buy exceeds shared strategy exposure, including outstanding buys."
+                refusal = concentration_refusal(projected, state["policy"])
+                if refusal:
+                    return refusal
         except ExecutionGuard as error:
             state["error"] = str(error)
             paused = self._pause(db, state["environment"], str(error))
@@ -360,7 +389,12 @@ class PortfolioLimits:
             raise ControlConflict("Shared limits changed. Refresh before releasing.")
         if not initial["locked"]:
             return self.state()
-        if initial["tripped_day"] >= prices.utcnow().date().isoformat():
+        if initial.get("window_locked_until"):
+            if prices.utcnow() < datetime.fromisoformat(initial["window_locked_until"]):
+                raise ExecutionGuard(
+                    "The rolling-loss lock cannot be released before its recorded window expires."
+                )
+        elif initial["tripped_day"] >= prices.utcnow().date().isoformat():
             raise ExecutionGuard("Today's daily-loss lock cannot be released before the next UTC day.")
         self.check(environment)
         with self.runner.lock, self.store.db() as db:
@@ -371,7 +405,16 @@ class PortfolioLimits:
             sample = self._metrics(db, state, state["sample"])
             if sample["daily_loss"] >= state["policy"]["max_daily_loss"]:
                 raise ExecutionGuard("The new UTC day's observed loss also exceeds its limit.")
-            state.update(locked=False, tripped_day=None, revision=state["revision"] + 1, sample=sample)
+            cap = state["policy"].get("max_window_loss")
+            if cap is not None and sample["window_loss"] >= cap:
+                raise ExecutionGuard("The observed rolling-window loss still exceeds its limit.")
+            state.update(
+                locked=False,
+                tripped_day=None,
+                window_locked_until=None,
+                revision=state["revision"] + 1,
+                sample=sample,
+            )
             self._audit(
                 db, state, "released", "Previous UTC day's daily-loss lock released. Runs remain paused."
             )

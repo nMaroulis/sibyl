@@ -168,6 +168,8 @@ class AgentRegistry:
                     )
                 ):
                     primary_tool, arguments = "search_research", {}
+                if request.module == "accountant" and request.context.account_books_view:
+                    primary_tool, arguments = "account_asset_books", {}
                 if request.module == "accountant" and request.context.risk_study_id:
                     primary_tool, arguments = "basket_risk", {}
                 if request.module == "accountant" and request.context.return_period_id:

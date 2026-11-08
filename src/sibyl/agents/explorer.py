@@ -52,13 +52,9 @@ def create_agent(services: Services, **runtime) -> Agent:
         input_offset: Annotated[int, Field(ge=0, le=9999)] = 0,
         output_offset: Annotated[int, Field(ge=0, le=9999)] = 0,
     ) -> dict:
-        """Inspect a Bitcoin transaction or address, including confirmation, fee and value evidence.
-
-        Supply one exact mainnet transaction_id or checksummed address. Omit both to
-        use the selected Explorer reference, or recent blocks if nothing is selected.
-        Transactions include twenty inputs/outputs per page; use returned next offsets
-        for more. Address reports separate confirmed totals from pending deltas and
-        include the first twenty-five confirmed transactions. Values are satoshis.
+        """Inspect a Bitcoin transaction/address or follow the Explorer selection. Returns attributable
+        on-chain observations, confirmations and availability. An address is not a verified
+        identity; mempool data can change. Never requests keys, signs or broadcasts transactions.
         """
         page = page_context()
         if transaction_id and address:
@@ -83,12 +79,9 @@ def create_agent(services: Services, **runtime) -> Agent:
         cursor: Annotated[str | None, Field(pattern=r"^[a-f0-9]{64}$")] = None,
         pending: bool = False,
     ) -> dict:
-        """Read an address's confirmed transaction page or its currently observed pending transactions.
-
-        Omit address to use the selected page. Confirmed pages contain up to twenty-five
-        rows; pass the returned next_cursor to continue. Pending returns at most fifty
-        rows and has no cursor. Net amounts concern this address only, not an owner's
-        whole wallet or income. Pages are separate observations, not an atomic history.
+        """Read a bounded page of a Bitcoin address's transaction history and source coverage. Omit
+        address/cursor to follow the page. Provider limits and unconfirmed activity remain explicit;
+        this is not complete wallet accounting or proof of ownership. Never moves funds.
         """
         page = page_context()
         selected_address = address or page.get("bitcoin_address")
@@ -102,13 +95,9 @@ def create_agent(services: Services, **runtime) -> Agent:
         transaction_id: Annotated[str | None, Field(pattern=r"^[a-fA-F0-9]{64}$")] = None,
         output_offset: Annotated[int | None, Field(ge=0, le=9999)] = None,
     ) -> dict:
-        """Inspect whether transaction outputs are spent and find their spending transaction/input.
-
-        Omit transaction_id for the selected Explorer transaction, or supply an exact
-        ID from the user or observed evidence. Returns twenty outputs and next_offset,
-        indexer-reported unspent/pending/confirmed/unknown states, timestamps and source.
-        Missing spend details remain unknown. Unspent is not a spendability or ownership
-        guarantee; pending spends and confirmations may change. This creates no watch.
+        """Read which outputs of a selected Bitcoin transaction are observed spent, with spender
+        identities and source freshness. Omit transaction_id for the page selection. Unspent/mempool
+        observations can change; spendability remains unknown. They do not prove ownership. Never broadcasts a transaction.
         """
         page = page_context()
         identity = transaction_id or page.get("bitcoin_txid")

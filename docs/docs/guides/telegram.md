@@ -42,7 +42,7 @@ Use **Delivery** on any saved price, account-risk, strategy or connection rule t
 - **Replies delivered** counts a reply only after all its message parts are confirmed sent. The smaller **message parts sent** count explains how a long answer can produce several Telegram messages.
 - **In progress** combines queued requests, a currently processing request and replies still waiting to finish delivery. Pausing retains this work for resumption.
 
-Connection errors, failed/blocked or uncertain message parts, and interrupted requests stay visible. The animation reflects an enabled connection without a currently reported error; it is not an uptime guarantee. The last poll is a successful Telegram read, while **Bot checked** refers to the explicit identity check. A successful bot check does not establish end-to-end AI delivery. Automated tests replace the HTTP transport and native agent boundary; real-bot acceptance remains a deployment check. WhatsApp, Discord, Slack, Signal and Email are still unavailable previews.
+Connection errors, failed/blocked or uncertain message parts, and interrupted requests stay visible. The animation reflects an enabled connection without a currently reported error; it is not an uptime guarantee. The last poll is a successful Telegram read, while **Bot checked** refers to the explicit identity check. A successful bot check does not establish end-to-end AI delivery. Automated tests replace the HTTP transport and native agent boundary; real-bot acceptance remains a deployment check. Discord, Slack, WhatsApp, Signal and Email have their own private text connections; see [channel setup](../developers/private-messaging.md).
 
 ## Review alert and briefing delivery
 
@@ -59,3 +59,8 @@ Conversation review never reruns a Sibyl question, changes its chat turn, or ret
 Pause Telegram, choose **Edit credentials**, and enable **Send long replies as a text document** if you prefer one file for answers longer than a single message. Save and enable the connection again. Short replies remain plain text. Each accepted question keeps its chosen reply format; changing settings does not rewrite an older queued answer. A generated `.txt` attachment contains the complete UTF-8 answer up to 64 KiB. Larger answers stay in Sibyl and receive a short Telegram notice.
 
 An investigation schedule independently offers **Telegram delivery → One text document**, alongside its summary/full content choice. A document preserves the entire selected content; an oversized report stays local with an explicit delivery error. Text messages keep their existing bounded chunking/shortening behavior. These files may contain private research, just like messages; they use the same reviewed bot/private recipient. Receipts and **Review delivery** show the actual filename, content and native confirmation. A queued file is not a confirmed send, and uncertain uploads never retry automatically. Incoming documents, photos and audio remain unsupported.
+
+
+## Incoming attachments
+
+Open **Telegram attachments** in Messaging settings to opt in separately to documents, photo text or voice/audio. Imported content appears in **Research → My research**. Photo OCR and speech transcription need separately installed local processors; all three types start off. Read [attachment setup, limits and retention](../developers/telegram-attachments.md).

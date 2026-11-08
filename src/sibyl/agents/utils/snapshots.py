@@ -72,6 +72,9 @@ def tool_arguments(request: AgentRequest) -> dict:
 
 def snapshot_answer(module: str, evidence) -> str:
     """Format actual tool output when language-model inference has not been configured."""
+    if isinstance(evidence, dict) and evidence.get("kind") == "account_asset_books":
+        assets = sum(row["asset_count"] for row in evidence["reports"])
+        return f"Cross-pair FIFO: {evidence['fill_count']} retained dependency fills across {assets} account/asset books, reported in {evidence['currency']}.\n\n{evidence['note']}\n{evidence['url']}"
     if isinstance(evidence, dict) and evidence.get("kind") == "basket_risk_study":
         if "observations" not in evidence:
             return f"{len(evidence.get('items', []))} saved historical basket risk studies. Calculate a new study explicitly in Account.\n{evidence['url']}"
@@ -241,6 +244,16 @@ def snapshot_answer(module: str, evidence) -> str:
             + f"{evidence['trades']} simulated round trips and {evidence['fees']:.4f} fees. "
             + "These are saved simulated fills, not live account performance or established future profitability."
         )
+    if module == "broker" and evidence.get("selected_adaptive"):
+        study = evidence["selected_adaptive"]
+        summary = study["summary"]
+        result = summary["mean_return_pct"]
+        performance = (
+            f"Mean independent-window return: {result:.2f}%."
+            if result is not None
+            else "No eligible candidate produced an independent test result."
+        )
+        return f"Recorded {study['sampler']['name']} study on {study['dataset']['symbol']}. {summary['evaluated_windows']} tested windows. {performance} Training-only suggestions and later cash-reset tests are historical research, not a forecast or live deployment. Open the retained trial evidence in Strategies."
     if module == "broker" and evidence.get("selected_validation"):
         study = evidence["selected_validation"]
         plan = study.get("search")

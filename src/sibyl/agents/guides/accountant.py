@@ -105,7 +105,8 @@ GUIDES = {
         "Review retained FIFO performance",
         "/trade?tab=history",
         (
-            "Choose Performance in Account history and select an account, exact market and environment.",
+            "Choose Performance in Account history. By market retains exact-pair reports; Across pairs combines acquisition lots for each account/asset in a chosen reporting unit, with separate environments.",
+            "Across pairs uses retained closed candles for dated conversion, at most 24 hours old, and reported execution ratios. Import missing conversion history in Market history; no stablecoin parity or missing acquisition basis is assumed. Opening asset saves an audited assertion before retained executions.",
             "Expand Calculation details for matched results, fees, exclusions and disposal calculations; Export summary retains the report.",
             "Use Opening inventory only for holdings acquired before retained fills, with an asserted quantity, optional cost and acquisition date.",
             "Recalculate uses local history. Refresh current marks separately reads active account balances and reference prices.",
@@ -139,6 +140,7 @@ GUIDES = {
             "From Funding, choose Reconcile transfers and inspect a suggestion or use Match records.",
             "Compare both source records before Confirm own-account transfer; unusual timing or differing amounts require a review note.",
             "For fee-bearing links use Review amount & fee allocation. Recalculate Performance to inspect carried lots and unapplied links.",
+            "For splits/merges open Split & merged transfers → Create group. Select 3–16 same-asset funding records, explain fee inclusion, enter the principal matrix and preview its exact conservation. Confirm ownership, configured-wallet scope and your evidence note before saving. Use Performance → Across pairs for group lot carryover; open Review for changed facts or withdraw the group to release records.",
         ),
         (
             "Suggestions are heuristics and confirmations are user assertions. Changed sources need review; an unmatched deposit is not automatically external cash flow or known basis.",

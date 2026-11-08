@@ -75,7 +75,7 @@ Each exact quote has its own source/credential-scoped cache. Reordering reuses c
 
 ## Public live previews
 
-[Binance public streams](live-markets.md) now deliver exact-source/environment ticker and candle previews through an authenticated bounded NDJSON endpoint. Shared sockets start only while viewed, reconnect with backoff, expose observed health and stop when unused. REST snapshots remain the fallback on the same source. Closed-candle analysis, history and execution are unchanged; private account/order streams remain pending.
+[Binance public streams](live-markets.md) now deliver exact-source/environment ticker and candle previews through an authenticated bounded NDJSON endpoint. Shared sockets start only while viewed, reconnect with backoff, expose observed health and stop when unused. REST snapshots remain the fallback on the same source. Closed-candle analysis, history and execution are unchanged; optional [private order signals](private-order-streams.md) are implemented for Binance/Testnet, Coinbase Advanced and Kraken; broader balance/account streams remain pending.
 
 ## Descriptive relationships
 

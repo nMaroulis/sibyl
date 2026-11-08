@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { AgentButton } from './agents';
 import { ForecastPlot } from './forecast-plot';
+import { ForecastDrift } from './forecast-drift';
 import { ForecastForward } from './forecast-forward';
 import { ForecastRolling } from './forecast-rolling';
 import { Badge, Empty, ErrorState, Loading, Panel, PanelTitle, useToast } from './ui';
@@ -602,6 +603,7 @@ export function ForecastWorkspace() {
                   Imported models use saved input only and cannot become live tracking evidence.
                 </p>
               )}
+              <ForecastDrift key={`drift:${selected}`} modelId={selected} />
               <ForecastForward key={selected} modelId={selected} outputs={report.outputs} />
               <ForecastRolling
                 key={selected}

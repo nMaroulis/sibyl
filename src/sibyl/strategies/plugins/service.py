@@ -2,14 +2,14 @@
 
 import json
 import threading
-from types import MappingProxyType
 
 from sibyl import __version__
 from sibyl.forecasting.engine import fingerprint
 from sibyl.market_data.archive import iso, milliseconds, step_ms
 from sibyl.models import BacktestRequest
 from sibyl.strategies.backtest import BacktestEngine
-from sibyl.strategies.plugins.contracts import PluginBacktest, StrategyPlugin
+from sibyl.strategies.plugins.contracts import PluginBacktest
+from sibyl.strategies.plugins.engine import plugin_signals
 from sibyl.strategies.plugins.registry import PluginRegistry
 
 KIND = "plugin_backtest"
@@ -94,25 +94,7 @@ class PluginResearch:
             )
             if spec.warmup >= len(candles):
                 raise ValueError("Choose more closed candles than this plugin's warmup.")
-            # Copy only domain observations. Each call receives a prefix, never later bars.
-            bars = tuple(
-                MappingProxyType({k: row[k] for k in ("timestamp", "open", "high", "low", "close", "volume")})
-                for row in candles
-            )
-            try:
-                plugin = factory()
-                if not isinstance(plugin, StrategyPlugin) or plugin.spec.model_dump() != spec.model_dump():
-                    raise ValueError("The plugin manifest changed.")
-                directions = [0] * len(candles)
-                for index in range(spec.warmup - 1, len(candles) - 1):
-                    value = plugin.signal(bars[: index + 1], MappingProxyType(values.copy()))
-                    if type(value) is not int or value not in {-1, 0, 1}:
-                        raise ValueError("Invalid plugin signal.")
-                    directions[index] = value
-            except Exception:
-                raise ValueError(
-                    "The custom strategy failed or returned an invalid signal. No result or order was saved. Check the trusted plugin implementation."
-                ) from None
+            directions = plugin_signals(factory, spec, values, candles)
             signal_hash = fingerprint(directions)
             if previous and previous["signal_fingerprint"] != signal_hash:
                 raise ValueError(
@@ -152,7 +134,7 @@ class PluginResearch:
                     {"timestamp": row["timestamp"], "signal": value}
                     for row, value in zip(candles, directions, strict=True)
                 ],
-                note="Trusted local custom strategy, historical research only. Previous-close signals fill next open with costs; no real orders, jobs, optimization or profitability guarantee.",
+                note="Trusted local custom strategy, historical research only. Previous-close signals fill next open with costs; no live orders, automatic deployment or profitability guarantee. Pinned queued research and adaptive studies are separate explicit actions.",
             )
             if previous:
                 result["rerun_of"] = previous["id"]

@@ -83,7 +83,12 @@ type Movement = {
   balance_effect?: FundingEffect;
   first_seen_at?: string;
   last_seen_at?: string;
-  reconciliation?: { status: string; link_id: string; counterpart_account: string } | null;
+  reconciliation?: {
+    status: string;
+    link_id: string;
+    group?: boolean;
+    counterpart_account: string;
+  } | null;
 };
 type Funding = {
   example?: boolean;
@@ -615,7 +620,12 @@ export function FundingHistory({ active }: { active: boolean }) {
                                   onClick={() =>
                                     change({
                                       fund_view: 'transfers',
-                                      fund_link: row.reconciliation!.link_id,
+                                      fund_link: row.reconciliation!.group
+                                        ? ''
+                                        : row.reconciliation!.link_id,
+                                      fund_group: row.reconciliation!.group
+                                        ? row.reconciliation!.link_id
+                                        : '',
                                     })
                                   }
                                 >

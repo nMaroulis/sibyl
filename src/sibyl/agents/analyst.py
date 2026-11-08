@@ -51,14 +51,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         limit: Annotated[int | None, Field(ge=60, le=720)] = None,
         source: str | None = None,
     ) -> dict:
-        """Analyze a spot market's price, trend, momentum, volatility, risk, volume and technical bias.
-
-        Use for questions about actual market conditions. Omitted arguments follow the
-        selected pair, timeframe, observation count and source on Markets; otherwise
-        defaults are BTC/USDT, 1d and 180 candles. Specify an exact BASE/QUOTE symbol
-        when the user asks for another market. Returns calculated statistics, score votes,
-        sample coverage and source labels; quotes-only providers return a quote instead.
-        Chart zoom does not change this calculation's sample.
+        """Analyze closed candles for an exact pair, interval and source, or follow the Markets page.
+        Returns indicators, descriptive statistics, assessment components and coverage. A score
+        summarizes historical conditions, not future returns or a recommendation. Disclose stale or
+        short inputs.
         """
         symbol = selected("symbol", symbol, "BTC/USDT")
         timeframe = selected("timeframe", timeframe, "1d")

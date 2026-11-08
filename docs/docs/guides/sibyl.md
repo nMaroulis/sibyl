@@ -55,7 +55,7 @@ The gradient **Ask** buttons on module pages still open the corresponding specia
 
 [Telegram](./telegram.md) is implemented. Configure your bot token and numeric private user ID in **Settings → Messaging**, check the bot and explicitly enable it. Messages use the same ProtoLink Sibyl coordinator and saved conversations as the dashboard. Connection setup, enabling and help/status commands work without an AI model; AI questions need a configured model and receive setup guidance until one is active. The Python backend must be running. Delivery outcomes and interruption limits are described in the guide.
 
-WhatsApp, Discord, Slack, Signal and Email remain unavailable setup previews. Their disabled fields do not collect credentials. Signal uses a planned unofficial signal-cli bridge; Email previews IMAP/SMTP requirements.
+Discord private bot DMs, Slack Socket Mode, signed WhatsApp Cloud API webhooks, a local unofficial Signal bridge and paired TLS email are also implemented. Save the private recipient and complete credentials, check the connection, then enable replies. See [private channel setup](../developers/private-messaging.md) for each transport.
 
 ## What your model receives
 
@@ -66,3 +66,8 @@ Sibyl and its specialists have read-only tools. They cannot place trades, withdr
 Optional **Agent models** settings let Sibyl and each specialist use a different saved provider/model without changing the workspace default. See [per-agent setup](settings.md#choose-models-per-agent).
 
 Sibyl can also use each specialist's page-help tools. Ask “How do I import account history?” or “How do I change news sources?” for steps and a workspace link. These instructions are separate from observed account or market evidence and do not perform the action. See [module help](oracle.md#help-with-the-page).
+
+
+## Research that can wait for you
+
+In **Sibyl → Investigations**, save a question and enable **Native checkpoints** before running it. Sibyl can pause for your answer or save a checkpoint between research slices. Return to the same version and continue explicitly; pending waits survive restart without another model call. If you ask to retain a research note, the complete local AI draft appears for approval before it is written to My research. Ordinary chat remains read-only. See [workflow limits and recovery](../developers/native-research-workflows.md).

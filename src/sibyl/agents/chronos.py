@@ -21,6 +21,7 @@ DESCRIPTION = (
 )
 SYSTEM_PROMPT = (
     "Read the selected model's numerical family, saved feature recipe and notes. Optional causal trend/volatility context does not establish better future accuracy. "
+    "Drift compares training returns with later non-overlapping retained observations, using descriptive Jensen–Shannon divergence. Saved policies can retain candidates through local jobs; candidates never replace a model automatically. Missing recent days are not evidence of stability. "
     "Portable imported models are locally refitted research with unverified source origin, never prospective live evidence. Archived models keep saved evidence and existing outcome monitors; they must be restored for new forecasts. Use page_help models/portability for library controls. "
     "Use forecast_outcomes for live prospective scorecards, distinct from historical held-out or rolling evaluations. Missing future or archived targets remain missing; repeated horizon errors and selected forecast runs do not establish reliable future accuracy. "
     "Use rolling_evaluation to inspect selected saved rolling reports or list evaluations for a model. These refit a fixed recipe over earlier windows; they do not evaluate the original saved weights. Disclose per-fold variation, pooled benchmark skill, overlapping targets and repeated-experiment limitations. Never claim a rolling run trained or deployed a production model. "
@@ -54,15 +55,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         horizon: Annotated[int | None, Field(ge=1, le=30)] = None,
         model_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
     ) -> dict:
-        """Read the page's saved trained forecast, or calculate its selected statistical baseline.
-
-        Omit symbol and horizon to use the Forecasting page selection (otherwise
-        BTC/USDT and 14 days). Supply an exact BASE/QUOTE pair for another market.
-        Supply model_id from trained_models to choose a saved version outside this page.
-        Returns the path, last price, source and relevant uncertainty evidence.
-        When a trained model is selected, returns that version's retained result or an
-        offline calculation from its frozen input, with empirical bands and provenance.
-        Otherwise uses the untrained log-return baseline and theoretical interval.
+        """Read the selected trained forecast, or a labeled statistical baseline when no model is
+        selected. Supply exact source/pair/horizon or follow the page. Distinguish fitted evaluation
+        from future uncertainty; interval coverage is empirical, not a guarantee. Never trains a
+        model.
         """
         explicit_model = model_id is not None
         identity = selected("forecast_model_id", model_id)
@@ -105,14 +101,9 @@ def create_agent(services: Services, **runtime) -> Agent:
             }
 
     def forecast_outcomes(model_id: str | None = None, run_id: str | None = None) -> dict:
-        """Compare saved prospective forecasts with later observed prices from their exact source.
-
-        Follow the selected trained model/run when IDs are omitted. With a model only,
-        return up to 20 compact tracked-output summaries and equal-horizon aggregates; with a run, inspect original
-        predictions, actuals, correction versions, missing targets and naïve/drift benchmarks.
-        Historical saved-input and Demo forecasts cannot establish live performance.
-        Overlapping/operator-selected forecasts are not an unbiased accuracy leaderboard.
-        This tool never refreshes prices, starts tracking, retrains or deploys a model.
+        """Read retained real-time forecast-vs-outcome evaluations for the selected model and source.
+        Returns observed horizons, errors, interval coverage, missing/stale candles and samples.
+        Missing outcomes are not zero errors. Never fetches prices, fits or promotes a model.
         """
         identity = selected("forecast_model_id", model_id)
         run = selected("forecast_run_id", run_id) if model_id is None else run_id
@@ -224,20 +215,26 @@ def create_agent(services: Services, **runtime) -> Agent:
                 code="forecast_model_not_found",
                 suggestion="Use trained_models() for current model IDs; do not invent a version or substitute the baseline.",
             ) from exc
-        return {key: value for key, value in report.items() if key not in {"test_trace", "outputs"}}
+        evidence = {key: value for key, value in report.items() if key not in {"test_trace", "outputs"}}
+        drift = services.forecasts.drift.state(identity)
+        evidence["drift"] = {key: drift[key] for key in ("revision", "policy", "assessment", "note")}
+        evidence["recalibration_candidates"] = [
+            {
+                key: row[key]
+                for key in ("status", "created_at", "candidate_id", "candidate_version")
+                if key in row
+            }
+            for row in drift["history"][:5]
+        ]
+        return evidence
 
     def rolling_evaluation(
         model_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
         evaluation_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
     ) -> dict:
-        """Read saved rolling forecast accuracy across successive historical test windows.
-
-        Omit IDs to use the selected model/evaluation. With only a model, list its
-        retained reports; supply an evaluation ID to inspect per-fold boundaries,
-        errors, naive/drift comparisons, band coverage and input provenance. Each fold
-        refits the saved recipe using earlier data; this evaluates the recipe rather
-        than the original coefficients. Results are dated research, not live forward
-        performance or investment returns. This tool cannot fit, rerun or deploy models.
+        """Read a saved chronological forecast evaluation and its independent folds. Omit evaluation_id
+        for the page selection. Returns source pins, training/test boundaries, model/baseline errors
+        and interval coverage. Repeated research can overfit; this tool never runs training.
         """
         identity = selected("forecast_model_id", model_id)
         report_id = evaluation_id or (

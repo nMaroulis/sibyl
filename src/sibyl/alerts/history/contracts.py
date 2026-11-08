@@ -6,7 +6,7 @@ from pydantic import Field
 
 from sibyl.models import Request
 
-Kind = Literal["all", "price", "risk", "strategy", "connection", "order"]
+Kind = Literal["all", "price", "risk", "strategy", "connection", "order", "workspace"]
 
 
 class RetentionPolicy(Request):

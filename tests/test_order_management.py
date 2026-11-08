@@ -480,12 +480,11 @@ def test_native_limit_and_cancel_adapter_contract(monkeypatch, identity):
         "upbit",
     ],
 )
-def test_read_only_provider_rejects_new_limit_and_cancel(monkeypatch, identity):
+def test_limit_only_provider_keeps_market_execution_disabled(monkeypatch, identity):
     client = fake_client(monkeypatch, identity)
+    assert client.spec.limit_only and not client.spec.market_orders
     with pytest.raises(ccxt.NotSupported):
-        client.create_order("BTC/USDT", "limit", "buy", 0.01, {"clientOrderId": "reviewed-id"}, price=50000)
-    with pytest.raises(ccxt.NotSupported):
-        client.cancel_order("native", "BTC/USDT")
+        client.create_order("BTC/USDT", "market", "buy", 0.01, {"clientOrderId": "reviewed-id"})
 
 
 def test_http_workflow_and_no_mutation_example(client):

@@ -649,7 +649,11 @@ export type AgentContext = {
   correlation_transform?: 'log_returns' | 'prices' | 'changes';
   backtest_id?: string;
   validation_id?: string;
+  adaptive_study_id?: string;
+  adaptive_window?: number;
   portfolio_scope?: string;
+  account_books_view?: boolean;
+  account_books_currency?: string;
   performance_view?: boolean;
   performance_account_id?: string;
   performance_environment?: '' | 'demo' | 'test' | 'production';

@@ -217,10 +217,14 @@ class CCXTClient(ExchangeClient):
         """Preserve unknown values and the provider's update-time hint for strict balance checks."""
         return self._balance_snapshot(strict=True)
 
+    def balance_parameters(self) -> dict:
+        """Return a fresh provider wallet selection for one private balance read."""
+        return deepcopy(self.balance_params)
+
     def _balance_snapshot(self, *, strict):
         with self.lock:
             self._require("fetchBalance", private=True)
-            row = self._exchange.fetch_balance(params=deepcopy(self.balance_params))
+            row = self._exchange.fetch_balance(params=self.balance_parameters())
             result = {
                 kind: {
                     asset: None if strict and isinstance(value, bool) else number(value)

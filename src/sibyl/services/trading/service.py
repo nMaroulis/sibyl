@@ -284,6 +284,15 @@ class ExchangeTrading:
             )
         try:
             with self.store.db() as db:
+                db.execute("BEGIN IMMEDIATE")
+                collision = db.execute(
+                    "SELECT 1 FROM exchange_orders WHERE json_extract(payload,'$.request.connection_id')=? AND json_extract(payload,'$.client_order_id')=?",
+                    (request.connection_id, client_order_id),
+                ).fetchone()
+                if collision:
+                    raise ValueError(
+                        "A native client order ID collision was detected before submission. Prepare a new review."
+                    )
                 db.execute(
                     "INSERT INTO exchange_orders VALUES (?, ?, ?)",
                     (intent["id"], request.idempotency_key, json.dumps(intent, allow_nan=False)),

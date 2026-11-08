@@ -11,6 +11,7 @@ from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS
 from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS
 from sibyl.exchanges.spot_history import history_note
+from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
 
 KEY_STORAGE = (
     "API keys are stored locally and encrypted on the machine running Sibyl's Python backend. "
@@ -125,6 +126,14 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
             "id": "history",
             "label": "History & synchronization",
             "features": [
+                feature(
+                    "private_orders",
+                    "Private order signals",
+                    spec.id in PRIVATE_STREAM_PROVIDERS,
+                    "Opt-in native private order signals wake separately enabled REST status/fill/discovery readers; no direct ledger writes or execution."
+                    if spec.id in PRIVATE_STREAM_PROVIDERS
+                    else "Private account/order streams are not implemented for this adapter.",
+                ),
                 read(
                     "order_status",
                     "Order status & partial fills",
@@ -220,9 +229,9 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "websocket",
                     "Live WebSocket streams",
-                    spec.id in {"binance", "binance-testnet", "kraken"},
-                    "On-demand public ticker/candle streams, shared connections, reconnect and visible REST fallback. Kraken supports native intervals and labels local receipt timing; account/order tracking remains REST-based."
-                    if spec.id in {"binance", "binance-testnet", "kraken"}
+                    spec.id in {"binance", "binance-testnet", "coinbase", "kraken"},
+                    "On-demand public ticker/candle streams, shared connections, reconnect and visible REST fallback. Kraken supports native intervals and labels local receipt timing; Coinbase candles are native 5m only. Financial order/fill evidence remains REST-based."
+                    if spec.id in {"binance", "binance-testnet", "coinbase", "kraken"}
                     else "This source uses REST snapshots; streaming is not implemented for this adapter.",
                 ),
             ],

@@ -12,6 +12,7 @@ class ExecutionGuard(ValueError):
 class ExecutionRisk(Request):
     """Limits on new orders; these do not guarantee a maximum market loss."""
 
+    risk_per_entry_pct: float | None = Field(default=None, gt=0, le=10, strict=True)
     max_order_quote: float = Field(default=500, gt=0, le=10_000_000)
     max_loss_pct: float = Field(default=10, gt=0, le=90)
     max_orders_per_day: int = Field(default=6, ge=1, le=100)
@@ -36,6 +37,8 @@ class ExchangeStrategyRequest(Request):
 
     @model_validator(mode="after")
     def bounded_order(self):
+        if self.risk.risk_per_entry_pct is not None and not self.parameters.stop_loss_pct:
+            raise ValueError("Risk sizing requires the algorithm's stop-loss distance.")
         if self.risk.max_order_quote > self.parameters.capital:
             raise ValueError("Maximum order value cannot exceed the strategy quote budget.")
         return self

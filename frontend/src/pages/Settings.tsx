@@ -1,3 +1,5 @@
+import { WorkspaceVault } from '../components/workspace/vault';
+import { WorkspaceJobs } from '../components/workspace/jobs';
 import { WorkspaceDiagnostics } from '../components/workspace/diagnostics';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -291,6 +293,8 @@ function WorkspaceSettings({ system }: { system?: System }) {
           <WorkerHealthPanel />
           <WorkspaceBackups />
           <WorkspaceDiagnostics />
+          <WorkspaceJobs />
+          <WorkspaceVault />
         </div>
         <Panel className="settings-resources">
           <PanelTitle title="Built to be understood" subtitle="Documentation and developer tools" />

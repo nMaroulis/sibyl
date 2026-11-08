@@ -1,5 +1,6 @@
 """Telegram Bot API over HTTPX; no Telegram SDK, webhooks or arbitrary endpoints."""
 
+import asyncio
 import logging
 import re
 
@@ -40,7 +41,10 @@ class TelegramClient(MessagingClient):
         """Bound requests and normalize API rejections without reflecting tokens or raw text."""
         try:
             response = await self.http.post(
-                f"https://api.telegram.org/bot{self._token}/{method}", json=payload, timeout=25
+                f"https://api.telegram.org/bot{self._token}/{method}",
+                json=payload,
+                timeout=25,
+                follow_redirects=False,
             )
         except httpx.HTTPError:
             raise TelegramError("Telegram did not confirm the request.", ambiguous=write) from None
@@ -103,6 +107,53 @@ class TelegramClient(MessagingClient):
         if not isinstance(result, list) or len(result) > 20:
             raise TelegramError("Telegram returned invalid updates.")
         return result
+
+    async def download(self, file_id: str, *, max_bytes: int) -> bytes:
+        """Download a bounded file from Telegram's fixed origin, never a user-supplied URL.
+
+        getFile paths are validated as relative ASCII segments; local Bot API
+        paths, traversal, redirects and oversized/empty responses are rejected.
+        The token-bearing URL and native diagnostics never leave this transport.
+        """
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,512}", file_id):
+            raise TelegramError("Invalid Telegram file identity.")
+        try:
+            async with asyncio.timeout(30):
+                metadata = await self.call("getFile", {"file_id": file_id})
+                path = metadata.get("file_path") if isinstance(metadata, dict) else None
+                size = metadata.get("file_size") if isinstance(metadata, dict) else None
+                if (
+                    not isinstance(path, str)
+                    or len(path) > 512
+                    or not re.fullmatch(r"[A-Za-z0-9_-]+(?:/[A-Za-z0-9_.-]+)+", path)
+                    or any(part in {".", ".."} for part in path.split("/"))
+                ):
+                    raise TelegramError("Telegram did not provide a supported download path.")
+                if size is not None and (type(size) is not int or not 0 < size <= max_bytes):
+                    raise TelegramError("This Telegram file exceeds Sibyl's 8 MiB limit.")
+                async with self.http.stream(
+                    "GET",
+                    f"https://api.telegram.org/file/bot{self._token}/{path}",
+                    timeout=20,
+                    follow_redirects=False,
+                ) as response:
+                    if response.status_code != 200:
+                        raise TelegramError("Telegram did not provide the attachment. Send it again.")
+                    declared = response.headers.get("content-length")
+                    if declared is not None and (
+                        not declared.isdecimal() or not 0 < int(declared) <= max_bytes
+                    ):
+                        raise TelegramError("The Telegram attachment exceeds its download limit.")
+                    data = bytearray()
+                    async for chunk in response.aiter_bytes(65536):
+                        if len(data) + len(chunk) > max_bytes:
+                            raise TelegramError("The Telegram attachment exceeds its download limit.")
+                        data.extend(chunk)
+                    if not data:
+                        raise TelegramError("Telegram returned an empty attachment.")
+                    return bytes(data)
+        except (httpx.HTTPError, TimeoutError):
+            raise TelegramError("Telegram attachment download did not finish. Send the file again.") from None
 
     async def send(self, chat_id: int, text: str) -> int:
         """Send plain text, without previews, forwarding permissions or model-generated markup."""

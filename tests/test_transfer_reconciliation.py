@@ -468,6 +468,7 @@ def test_accountant_transfer_evidence_is_read_only_and_scoped(client, monkeypatc
     [
         ("accountant_snapshot", {"transfer_view": False, "account_id": "another-account", "example": False}),
         ("balance_check_report", {"account_id": "another-account"}),
+        ("account_asset_books", {"source": "binance", "currency": "BTC"}),
     ],
 )
 def test_transfer_inference_cannot_change_selection_or_confirm_links(client, monkeypatch, tool, arguments):
@@ -503,6 +504,7 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
     assert set(registry.agents["accountant"].tools) == {
         "accountant_snapshot",
         "investment_returns",
+        "account_asset_books",
         "account_history",
         "balance_check_report",
         "basket_risk",

@@ -10,6 +10,7 @@ from decimal import Decimal
 import ccxt
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
+from sibyl.accounting.executions.service import AccountBooksService
 from sibyl.exchanges.base import number
 from sibyl.models import OrderRequest, Request
 from sibyl.services.accounts.ledger import ledger_fill
@@ -65,6 +66,7 @@ class AccountPerformance:
     def __init__(self, market: Market, store: Store):
         self.market, self.store = market, store
         self.returns = ReturnPeriods(market, store)
+        self.account_books = AccountBooksService(store)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS opening_inventory (
@@ -403,7 +405,7 @@ class AccountPerformance:
             "transfer_summary": {
                 "applied": sum(item["status"] == "applied" for item in selected_transfers),
                 "unapplied": sum(item["status"] != "applied" for item in selected_transfers),
-                "note": "Current zero-fee pairs or explicitly reviewed, balanced same-asset fee allocations. Fee inventory cost stays separate; full account returns and cross-market basis remain unavailable.",
+                "note": "Current zero-fee pairs or explicitly reviewed, balanced same-asset fee allocations. Fee inventory cost stays separate. This By market view does not carry split/merged groups or cross-market basis; use Across pairs for those. Complete account returns require separate coverage.",
             },
             "totals": [
                 {

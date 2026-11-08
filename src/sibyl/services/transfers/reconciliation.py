@@ -269,6 +269,26 @@ def memberships(db, identities: list[str]) -> dict[str, dict]:
                     "status": link["status"],
                     "counterpart_account": link["reviewed"][other]["account"],
                 }
+    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='transfer_groups'").fetchone():
+        from sibyl.services.transfers.groups.service import group_view
+
+        groups = db.execute(
+            "SELECT DISTINCT g.* FROM transfer_groups g JOIN transfer_members m ON m.link_id=g.id WHERE m.event_id IN ("
+            + ",".join("?" for _ in identities)
+            + ")",
+            identities,
+        ).fetchall()
+        for record in groups:
+            group = group_view(db, record)
+            for side in ("outgoing", "incoming"):
+                for leg in group["reviewed"][side]:
+                    if leg["event"]["id"] in identities:
+                        result[leg["event"]["id"]] = {
+                            "link_id": group["id"],
+                            "group": True,
+                            "status": group["status"],
+                            "counterpart_account": "Transfer group",
+                        }
     return result
 
 
@@ -293,6 +313,10 @@ class TransferReconciliation:
                     created_at TEXT NOT NULL, payload TEXT NOT NULL
                 );
             """)
+
+        from sibyl.services.transfers.groups.service import TransferGroups
+
+        self.groups = TransferGroups(store)
 
     def preview(self, request: TransferPair) -> dict:
         """Prepare an exact source-version review without persisting a link."""
@@ -537,9 +561,19 @@ class TransferReconciliation:
                 )
             ]
             membership = memberships(db, [row["id"] for row in rows])
+            from sibyl.accounting.funding.reviews import FundingReviews
+            from sibyl.services.transfers.groups.planning import source_version
+
+            enriched = FundingReviews.enrich(db, rows)
+            group_versions = {row["id"]: source_version(row) for row in enriched}
         return {
             "items": [
-                {**row, "fingerprint": fingerprint(row), "reconciliation": membership.get(row["id"])}
+                {
+                    **row,
+                    "fingerprint": fingerprint(row),
+                    "group_fingerprint": group_versions[row["id"]],
+                    "reconciliation": membership.get(row["id"]),
+                }
                 for row in rows
             ],
             "total": total,

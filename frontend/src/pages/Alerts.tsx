@@ -569,15 +569,22 @@ export function Alerts() {
                     <div className="notification-copy">
                       <NotificationText item={item} />
                       <small>
-                        {item.kind === 'risk'
-                          ? `Valuation sample ${item.sample_id}`
-                          : item.kind === 'strategy'
-                            ? `Journal event ${item.event_id}`
-                            : item.kind === 'connection'
-                              ? `Transport read ${item.event_id}`
-                              : `Price cycle ${item.cycle}`}{' '}
+                        {item.kind === 'workspace'
+                          ? 'Local worker observation'
+                          : item.kind === 'risk'
+                            ? `Valuation sample ${item.sample_id}`
+                            : item.kind === 'strategy'
+                              ? `Journal event ${item.event_id}`
+                              : item.kind === 'connection'
+                                ? `Transport read ${item.event_id}`
+                                : `Price cycle ${item.cycle}`}{' '}
                         · observed {new Date(item.observed_at).toLocaleString()}
                       </small>
+                      {item.kind === 'workspace' && !example && (
+                        <Link className="text-button" to="/settings?tab=workspace">
+                          View incident evidence <ArrowUpRight size={12} />
+                        </Link>
+                      )}
                       {item.kind === 'risk' && !example && (
                         <Link className="text-button" to={riskURL(item.rule_id, item.sample_id)}>
                           View valuation evidence <ArrowUpRight size={12} />

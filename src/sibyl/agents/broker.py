@@ -21,7 +21,9 @@ DESCRIPTION = "Explain Trade and Strategies: recorded orders/fills, backtests, m
 SYSTEM_PROMPT = (
     "Continuous replay carries one balance between parameter windows; distinguish its cumulative return from independent-window means and live execution. "
     "Nested validation scores candidates only within outer training prefixes; disclose its recorded aggregation rule and repeated-experiment bias. "
+    "Use adaptive_report for saved native Optuna TPE/distribution studies, including trusted plugins: only training scores guide suggestions, tests reset cash, and a seed/version is reproducibility metadata rather than quality. No study is deployed. "
     "Custom backtests are trusted installed research plugins, not paper/exchange jobs. Read their pinned implementation/decisions through backtest_report; never run or install them. "
+    "Use private_order_signals for retained optional private stream observations and REST wakeup counts. Signals never prove a fill or execute an order; paused REST trackers stay paused. Setup belongs in Settings → Exchanges → Live order updates. "
     "For how-to questions choose trade_help or strategy_help with the matching topic; "
     "instructions alone do not require reading account/order records. Use recorded_orders for "
     "the user's saved order status and reconciliation evidence. Its order_id is Sibyl's record ID, "
@@ -69,7 +71,7 @@ SYSTEM_PROMPT = (
     "An admitted native request can complete before a halt returns. This is not liquidation or a "
     "confirmed venue cancellation; paper runs are unaffected. You cannot halt or release it. "
     "Use portfolio_limits for shared allocated-capital, gross-exposure and observed UTC daily-loss "
-    "policies across exchange strategies. Production and test funds are separate. Exposure includes "
+    "policies across exchange strategies. Optional account/base-asset caps include pending buys; rolling losses use retained observations and a recorded release time. Modeled entry-risk sizing is not a native protective stop.  Production and test funds are separate. Exposure includes "
     "unfilled buys and retained stopped positions, without netting pending sells. P&L uses dated "
     "reference USDT prices and native fills, not whole-account returns. Missing fees, uncertain writes "
     "or stale prices block automatic orders. A daily-loss lock pauses its environment, survives restart "
@@ -102,12 +104,10 @@ def create_agent(services: Services, **runtime) -> Agent:
     def strategy_context(
         symbol: str | None = None, parameters: dict | None = None, job_id: str | None = None
     ) -> dict:
-        """Inspect a strategy run's parameters, status, observations, events and execution evidence.
-
-        Use a known job_id or omit it to follow the selected monitor. Without a selected
-        job, reads a selected validation study when present, otherwise the simulation parameters and recent
-        saved experiments/jobs. symbol is an exact BASE/QUOTE pair; parameters contains
-        the requested backtest settings. This is evidence, not an instruction to run a strategy.
+        """Inspect a selected strategy monitor, study or simulation settings. Omit job_id to follow the
+        page; an empty ID lists current runs. Returns status, observations, events and execution
+        evidence. symbol is BASE/QUOTE; parameters overrides simulation defaults. Never starts a
+        strategy.
         """
         job_id = selected("job_id", job_id, "")
         symbol = selected("symbol", symbol, "BTC/USDT")
@@ -159,6 +159,9 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "recent_events": strategies.journal.events(job_id, 20)["items"],
                 "alert_rules": strategies.alerts.rules(job_id=job_id),
             }
+        adaptive_id = selected("adaptive_study_id", None, "")
+        if adaptive_id and parameters is None:
+            return {"selected_adaptive": adaptive_report(adaptive_id)}
         validation_id = selected("validation_id", None, "")
         if validation_id and parameters is None:
             return {"selected_validation": validation_report(validation_id)}
@@ -241,12 +244,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def backtest_report(run_id: str = "") -> dict:
-        """Inspect a saved backtest's metrics, costs, input provenance and ten recent round trips.
-
-        Supply a known run_id or omit it for the selected experiment. Use to explain
-        actual historical simulation results, including recorded cash, hold, installment
-        and 50/50 reference returns, costs and assumptions when available. strategy_help
-        covers running or rerunning an experiment; older reports may lack reference evidence.
+        """Read a saved historical backtest or the page-selected result, including trusted plugin
+        revisions. Returns source, fees, metrics, assumptions and bounded simulated executions.
+        These are historical tests, not predictions or live fills. Never reruns or deploys a
+        strategy.
         """
         import json
 
@@ -298,13 +299,66 @@ def create_agent(services: Services, **runtime) -> Agent:
             "note": "Manual orders require per-order review. Supported automated strategies require their own fixed-scope account/budget approval and execution flags. Agents cannot submit or approve orders. Private account acceptance is pending.",
         }
 
-    def validation_report(validation_id: str = "", window: int = 1) -> dict:
-        """Inspect saved parameter-selection rankings and independent test-window evidence, including nested validation.
+    def adaptive_report(study_id: str | None = None, window: int | None = None) -> dict:
+        """Read a saved Bayesian/distribution study's training trials and independent test evidence.
+        Omit study_id/window for page selections; '' lists recent studies. Windows are one-based.
+        Returns source/version pins, eligibility, metrics and ten test round trips. Never runs or
+        deploys research.
+        """
+        identity = selected("adaptive_study_id", study_id, "")
+        window = selected("adaptive_window", window, 1)
+        if not identity:
+            return {"items": strategies.adaptive.list()["items"][:5], "url": "/strategies"}
+        try:
+            result = strategies.adaptive.get(identity)
+        except LookupError as error:
+            raise ToolRejectedError(
+                "That adaptive study is no longer retained. List current studies first.",
+                code="adaptive_study_not_found",
+            ) from error
+        if not 1 <= window <= len(result["folds"]):
+            raise ToolRejectedError(
+                "Choose a recorded one-based study window.", code="adaptive_window_invalid"
+            )
+        fold = result["folds"][window - 1]
+        test = fold["out_of_sample"]
+        return {
+            **{
+                key: result[key]
+                for key in (
+                    "id",
+                    "status",
+                    "dataset",
+                    "source",
+                    "environment",
+                    "method",
+                    "sampler",
+                    "summary",
+                    "note",
+                )
+            },
+            "plugin": {key: result["plugin"][key] for key in ("id", "revision", "implementation")}
+            if result.get("plugin")
+            else None,
+            "window": {
+                **{key: value for key, value in fold.items() if key != "out_of_sample"},
+                "test": {
+                    key: test[key]
+                    for key in ("return_pct", "max_drawdown", "sharpe", "trades", "fees", "benchmark_pct")
+                }
+                if test
+                else None,
+                "recent_test_round_trips": test["round_trips"][-10:] if test else [],
+            },
+            "simulation": True,
+            "url": "/strategies",
+        }
 
-        Supply a known validation_id or omit it for the selected study. window is the
-        one-based test-window number. Returns retained settings, comparisons, metrics
-        and up to ten round trips. New studies also expose the candidate plan, seed,
-        search-space coverage and fingerprints. This never runs a parameter search.
+    def validation_report(validation_id: str = "", window: int = 1) -> dict:
+        """Read a saved walk-forward study's training rankings, selected parameters and later test
+        metrics. Omit validation_id for the page selection; window is one-based. Includes nested
+        selection, search-plan provenance and ten round trips. Never runs a search or deploys
+        settings.
         """
         validation_id = selected("validation_id", validation_id or None, "")
         if not validation_id:
@@ -400,13 +454,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         status: Literal["", "active", "terminal"] = "",
         order_id: str = "",
     ) -> dict:
-        """Inspect retained exchange/Demo order status, partial fills, fees and reconciliation gaps.
-
-        List up to ten submitted records, optionally filtered by account_id and active
-        or terminal status. To inspect one order and ten retained fills, pass its Sibyl
-        record order_id from this list (not the exchange's native order ID).
-        Returns observation dates, account/environment labels and evidence limitations.
-        These are saved observations; use Trade's Check exchange/Check executions for new checks.
+        """Read retained order/fill evidence for an exact order ID or the selected Trade
+        account/filter. Returns dates, native cumulative quantities, reconciliation and recovery
+        limits. These observations can be stale; Trade's explicit checks refresh them. Never submits
+        or cancels orders.
         """
         execution = strategies.execution
         if execution is None:
@@ -521,6 +572,18 @@ def create_agent(services: Services, **runtime) -> Agent:
                 code="order_group_not_found",
             ) from error
 
+    def private_order_signals() -> dict:
+        """Read saved Binance/Testnet, Coinbase and Kraken private order signal health and REST wakeup
+        counts. These are optional read hints, not verified fills or completed reconciliation. Setup
+        lives in Settings → Exchanges; this tool cannot subscribe or change work.
+        """
+        execution = strategies.execution
+        owner = getattr(execution.trading, "account_streams", None) if execution else None
+        if owner is None:
+            return {"available": False, "url": "/settings?tab=exchanges"}
+        result = owner.snapshot()
+        return {**result, "accounts": result["accounts"][:8], "url": "/settings?tab=exchanges"}
+
     def trade_help(topic: TradeTopic = "overview") -> dict:
         """Explain Trade workflows: accounts, spot orders, account history, executions, tracking, cancellation or recovery.
 
@@ -550,9 +613,11 @@ def create_agent(services: Services, **runtime) -> Agent:
             exchange_support,
             backtest_report,
             validation_report,
+            adaptive_report,
             exit_readiness,
             recorded_orders,
             advanced_order_evidence,
+            private_order_signals,
             Tool.from_callable(trade_help, sync_execution="inline"),
             Tool.from_callable(strategy_help, sync_execution="inline"),
             execution_alerts,

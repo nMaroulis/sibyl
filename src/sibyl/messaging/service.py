@@ -10,6 +10,7 @@ import httpx
 
 from sibyl.agents.utils.conversations import SibylRequest
 from sibyl.messaging.documents import add_document_columns, document_bytes
+from sibyl.messaging.media.service import TelegramMedia
 from sibyl.messaging.outbound import NotificationOutbox, chunks
 from sibyl.messaging.reply_review import ReplyReview, record_reply
 from sibyl.messaging.settings import MessagingSettings
@@ -24,9 +25,10 @@ class TelegramService:
     since Telegram does not supply an idempotency key for sendMessage.
     """
 
-    def __init__(self, store, network, http=None):
+    def __init__(self, store, network, http=None, *, library=None):
         self.store, self.network = store, network
         self.settings = MessagingSettings(store)
+        self.media = TelegramMedia(store, library)
         self.http = http or httpx.AsyncClient(follow_redirects=False)
         self._lock = threading.RLock()
         self._tick_lock = asyncio.Lock()
@@ -206,10 +208,14 @@ class TelegramService:
         profile = self.settings.profile()
         return profile.get("revision") == revision and profile.get("enabled")
 
+    def _same_generation(self, profile):
+        current = self.settings.profile()
+        return self._current(profile["revision"]) and current.get("control_id") == profile.get("control_id")
+
     def ingest(self, profile, updates):
-        """Accept only the bound human's ordinary private text; store no ignored content."""
+        """Accept bound private text or explicitly opted-in attachments; ignore other senders."""
         with self._lock:
-            if not self._current(profile["revision"]):
+            if not self._same_generation(profile):
                 return
             offset = profile.get("offset", 0)
             with self.store.db() as db:
@@ -231,11 +237,19 @@ class TelegramService:
                         and not message.get("via_bot")
                     )
                     date = message.get("date")
-                    accepted = (
+                    fresh = (
                         authorized
                         and type(date) is int
-                        and date >= int(profile.get("enabled_at", time.time()))
-                        and isinstance(text, str)
+                        and int(profile.get("enabled_at", time.time())) <= date <= time.time() + 120
+                    )
+                    media = self.media.descriptor(message) if fresh else None
+                    if media is not None:
+                        text = message.get("caption", "")
+                        if not isinstance(text, str) or len(text) > 3000:
+                            media, text = {"error": "Use a caption of at most 3,000 characters."}, ""
+                    accepted = fresh and (
+                        media is not None
+                        or isinstance(text, str)
                         and bool(text.strip())
                         and len(text) <= 4000
                     )
@@ -243,6 +257,7 @@ class TelegramService:
                         {
                             "chat_id": allowed,
                             "text": text.strip(),
+                            **({"attachment": media} if media is not None else {}),
                             "request_id": uuid4().hex,
                             "received_at": time.time(),
                             "bot_id": profile.get("bot_id"),
@@ -309,32 +324,10 @@ class TelegramService:
                 (profile["revision"], row[0]),
             )
         message = json.loads(row[1])
-        text = message["text"]
         try:
-            session = profile.get("session_id")
-            if text.split()[0] in {"/start", "/help"}:
-                answer = "Hello, I’m Sibyl. Ask about your workspace, markets or strategies. /new starts a fresh conversation; /status shows model readiness. Only your configured private user can talk to me. Replies may contain workspace information and use your selected AI provider."
-            elif text == "/new":
-                session = self.network.conversations.create()["id"]
-                self._update(profile["revision"], session_id=session)
-                answer = "Started a new Sibyl conversation."
-            elif text == "/status":
-                state = self.network.status()
-                answer = f"Sibyl is {'ready' if state['ready'] else 'not ready'}. Model: {state.get('provider', 'none')} / {state.get('model', 'not configured')}."
-            elif not self.network.status()["ready"]:
-                answer = (
-                    "Configure an AI model in Sibyl → Settings → AI models, then send your question again."
-                )
-            else:
-                if not session:
-                    session = self.network.conversations.create()["id"]
-                    self._update(profile["revision"], session_id=session)
-                result = await self.network.ask(
-                    SibylRequest(message=text, session_id=session, request_id=message["request_id"])
-                )
-                answer = result.get("answer") or "This request did not finish. Please ask again in Sibyl."
+            answer = await self.answer(profile, message, row[0])
             with self._lock:
-                if self._current(profile["revision"]):
+                if self._same_generation(profile):
                     with self.store.db() as db:
                         self._complete(db, profile["revision"], row[0], message["chat_id"], answer)
                 else:
@@ -356,6 +349,57 @@ class TelegramService:
                 error="Sibyl could not finish a Telegram answer. Check your model and send the question again.",
             )
         return True
+
+    async def answer(self, profile, message, identity):
+        """Prepare any opted-in source, then use ordinary native Sibyl requests and tools."""
+        text, receipt = message["text"], None
+        if "attachment" in message:
+            try:
+                receipt = await self.media.prepare(
+                    self.client(profile), message["attachment"], lambda: self._same_generation(profile)
+                )
+            except (ValueError, TelegramError) as error:
+                return str(error)
+            message["attachment_receipt"] = receipt
+            # The receipt survives inference failure; there is no automatic retry.
+            with self.store.db() as db:
+                db.execute(
+                    "UPDATE telegram_updates SET payload=? WHERE revision=? AND update_id=?",
+                    (json.dumps(message), profile["revision"], identity),
+                )
+            if not self._same_generation(profile):
+                return "The attachment was retained in My research. Telegram was paused before reasoning."
+            text = self.media.question(text, receipt)
+        session = profile.get("session_id")
+        if text.split()[0] in {"/start", "/help"}:
+            return "Hello, I’m Sibyl. Ask about your workspace, markets or strategies. /new starts a fresh conversation; /status shows model readiness. Optional documents, photo OCR and speech transcription are configured in Settings → Messaging → Telegram attachments. Only your configured private user can talk to me. Replies may contain workspace information and use your selected AI provider."
+        if text == "/new":
+            session = self.network.conversations.create()["id"]
+            self._update(profile["revision"], session_id=session)
+            return "Started a new Sibyl conversation."
+        if text == "/status":
+            state = self.network.status()
+            return f"Sibyl is {'ready' if state['ready'] else 'not ready'}. Model: {state.get('provider', 'none')} / {state.get('model', 'not configured')}."
+        if not self.network.status()["ready"]:
+            return (
+                f"Attachment retained in My research. Document ID: {receipt['document_id']}. "
+                if receipt
+                else ""
+            ) + "Configure an AI model in Sibyl → Settings → AI models, then send your question again."
+        if not self._same_generation(profile):
+            return "The connection was paused before reasoning."
+        if not session:
+            session = self.network.conversations.create()["id"]
+            self._update(profile["revision"], session_id=session)
+        result = await self.network.ask(
+            SibylRequest(message=text, session_id=session, request_id=message["request_id"])
+        )
+        answer = result.get("answer") or "This request did not finish. Please ask again in Sibyl."
+        if receipt:
+            answer += (
+                f"\n\nAttachment retained in Research → My research. Document ID: {receipt['document_id']}."
+            )
+        return answer
 
     async def deliver(self, profile):
         """Claim one chunk; retry only explicit rate-limit rejections, never ambiguous writes."""

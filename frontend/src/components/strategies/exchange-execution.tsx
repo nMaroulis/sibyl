@@ -8,6 +8,7 @@ import type { Connection, Job, StrategyParams } from '../../lib/types';
 import type { LimitPolicy } from '../../lib/portfolio-limits';
 
 type Risk = {
+  risk_per_entry_pct?: number | null;
   max_order_quote: number;
   max_loss_pct: number;
   max_orders_per_day: number;
@@ -263,6 +264,27 @@ export function ExchangeStrategySetup({
             </p>
             <details className="advanced-options">
               <summary>Execution limits</summary>
+              <label>
+                Modeled entry risk · % of strategy equity · optional
+                <input
+                  type="number"
+                  min="0.01"
+                  max="10"
+                  step="any"
+                  value={risk.risk_per_entry_pct ?? ''}
+                  onChange={(event) =>
+                    setRisk({
+                      ...risk,
+                      risk_per_entry_pct: event.target.value ? Number(event.target.value) : null,
+                    })
+                  }
+                />
+              </label>
+              <p className="footnote">
+                Requires an algorithm stop-loss distance. Entry size is reduced using that distance
+                and the fee reserve, within the order cap. It does not place a protective stop;
+                gaps, spread and fills can exceed the modeled loss.
+              </p>
               {(
                 [
                   ['max_orders_per_day', 'Orders per rolling 24 hours', 1, 100],
@@ -355,7 +377,14 @@ export function ExchangeStrategySetup({
               Loss pause {review.request.risk.max_loss_pct}% · spread limit{' '}
               {review.request.risk.max_spread_bps} bps · price allowance{' '}
               {review.request.risk.price_limit_bps} bps · fee reserve{' '}
-              {review.request.risk.fee_reserve_bps} bps. {review.execution}
+              {review.request.risk.fee_reserve_bps} bps.{' '}
+              {review.request.risk.risk_per_entry_pct != null && (
+                <>
+                  Modeled entry risk: {review.request.risk.risk_per_entry_pct}% of strategy equity
+                  using the algorithm stop distance.{' '}
+                </>
+              )}
+              {review.execution}
             </p>
             <p className="monitor-notice">
               This approval allows future orders within this fixed scope without confirming each

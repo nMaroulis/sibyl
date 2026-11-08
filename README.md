@@ -91,7 +91,7 @@ Developers can run [repeatable native agent checks](docs/docs/developers/agent-e
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
-Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot, with optional text documents for long replies. WhatsApp, Discord, Slack, Signal and Email setup previews are marked unavailable.
+Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot, with optional text documents for long replies. Discord private DMs, Slack Socket Mode, signed WhatsApp Cloud API webhooks, paired TLS email and a local Signal bridge add private text connections with encrypted setup and durable send outcomes. Native checkpoint investigations can ask questions and retain an explicitly approved local AI note; ordinary chats stay read-only.
 
 [Sibyl guide](docs/docs/guides/sibyl.md) · [Model setup](docs/docs/guides/settings.md) · [Telegram](docs/docs/guides/telegram.md)
 
