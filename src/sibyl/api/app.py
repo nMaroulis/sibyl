@@ -144,6 +144,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise
         messaging = TelegramService(store, agents.network, library=library)
         private_channels = PrivateChannels(store, agents.network)
+        messaging.notifications.use_channels(private_channels)
         briefings = BriefingScheduler(investigations, messaging)
         ollama = OllamaService(agents.models)
         trading = ExchangeTrading(market, store)
@@ -485,6 +486,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.alert_delivery import router as alert_delivery_router
 
     app.include_router(alert_delivery_router)
+
+    from sibyl.api.message_deliveries import router as message_deliveries_router
+
+    app.include_router(message_deliveries_router)
 
     @app.get("/health", tags=["System"])
     def health():

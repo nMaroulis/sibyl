@@ -212,15 +212,15 @@ class EmailClient:
     async def acknowledge(self, batch):
         """Only local UID progression is committed; no mailbox flags or messages are changed."""
 
-    def _send(self, target, text):
+    def _send(self, target, text, notification=False):
         if target != self.profile["allowed_sender"]:
             raise ChannelError("The saved private recipient changed.")
         message = EmailMessage()
         message["From"] = self.profile["email_address"]
         message["To"] = target
-        message["Subject"] = "Sibyl reply"
+        message["Subject"] = "Sibyl notification" if notification else "Sibyl reply"
         message["Message-ID"] = make_msgid(domain=self.profile["email_address"].split("@")[1])
-        message["Auto-Submitted"] = "auto-replied"
+        message["Auto-Submitted"] = "auto-generated" if notification else "auto-replied"
         message.set_content(text)
         try:
             with self.smtp() as server:
@@ -237,15 +237,19 @@ class EmailClient:
             smtplib.SMTPAuthenticationError,
         ):
             raise ChannelError(
-                "SMTP explicitly rejected the reply. Check the mailbox and private recipient."
+                "SMTP explicitly rejected the message. Check the mailbox and private recipient."
             ) from None
         except (smtplib.SMTPException, OSError):
             raise ChannelError(
-                "SMTP did not confirm reply acceptance. Check the mailbox before resending.", ambiguous=True
+                "SMTP did not confirm message acceptance. Check the mailbox before resending.", ambiguous=True
             ) from None
 
     async def send(self, target, text):
         return await self._thread(self._send, target, text)
+
+    async def send_notification(self, target, text):
+        """Submit a user-selected app notice to the bound SMTP recipient, without pairing secrets."""
+        return await self._thread(self._send, target, text, True)
 
     async def close(self):
         """Drain standard-library calls; cancellation cannot kill an admitted SMTP thread."""

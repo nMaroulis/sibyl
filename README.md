@@ -129,7 +129,7 @@ Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
 ### Alerts · Keep useful signals close
 
-Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Hourly historical basket watches also track annualized volatility and daily 95% expected shortfall, with explicit asset selection and dated evidence. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
+Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Hourly historical basket watches also track annualized volatility and daily 95% expected shortfall, with explicit asset selection and dated evidence. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram, Discord, Slack, Signal, WhatsApp or email per rule for future alerts, with checked private destinations, cooldowns, freshness windows and inspectable native outcomes. WhatsApp requires an open private reply window.
 
 [Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 
@@ -155,7 +155,7 @@ Adapters share an `ExchangeClient` contract and explicit provider subclasses ove
 
 ![Sibyl architecture: React connects to FastAPI; Python domains and the ProtoLink agent team share local persistence and connect to exchanges, research sources and configured models.](docs/static/img/architecture.svg)
 
-The Python application owns the dashboard API and the optional Telegram worker. Domain modules own calculations and state; native ProtoLink agents call their read-only functions. Sibyl uses registry discovery and native delegation to consult specialists. Exchange writes go through the separate reviewed trading pipeline.
+The Python application owns the dashboard API and the optional private messaging workers. Domain modules own calculations and state; native ProtoLink agents call their read-only functions. Sibyl uses registry discovery and native delegation to consult specialists. Exchange writes go through the separate reviewed trading pipeline.
 
 SQLite retains accounts, ledgers, research inputs, runs, conversations and alerts. A local Fernet vault encrypts credentials. Ordinary typed Python tools, lazy model factories, private request context and native run reports keep the AI layer close to ProtoLink's API.
 

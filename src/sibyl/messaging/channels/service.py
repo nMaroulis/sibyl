@@ -42,6 +42,8 @@ class PrivateChannels:
         self.http = http or httpx.AsyncClient(follow_redirects=False, trust_env=False)
         self.lock = threading.RLock()
         self.clients = {}
+        self.notifications = None
+        self.notification_steps = {key: 0 for key in CLIENTS}
         self.locks = {key: asyncio.Lock() for key in CLIENTS}
         with store.db() as db:
             db.executescript("""
@@ -110,6 +112,11 @@ class PrivateChannels:
                 if key in profile and field.annotation is not SecretStr
             },
             has_credentials=bool(profile.get("revision")),
+            notifications=self.notifications.summary(
+                profile.get("revision", ""), kind="alert", channel=channel
+            )
+            if self.notifications
+            else {},
         )
 
     def _update(self, channel, revision, **changes):
@@ -157,6 +164,12 @@ class PrivateChannels:
         return self.public(channel)
 
     def _invalidate(self, channel, revision):
+        if self.notifications:
+            self.notifications.invalidate(
+                channel=channel,
+                connection_revision=revision,
+                reason="The private connection was paused or replaced before notification delivery.",
+            )
         with self.store.db() as db:
             db.execute(
                 "UPDATE channel_outbox SET state='withdrawn',error='The saved connection was paused or replaced before sending.' WHERE channel=? AND revision=? AND state='pending'",
@@ -480,6 +493,16 @@ class PrivateChannels:
             try:
                 if await self.deliver(channel, profile) or await self.process(channel, profile):
                     return
+                if (
+                    self.notifications
+                    and self.notification_steps[channel] < 4
+                    and await self.notifications.deliver(
+                        self.notifications.routes.profile(channel), channel=channel
+                    )
+                ):
+                    self.notification_steps[channel] += 1
+                    return
+                self.notification_steps[channel] = 0
                 if channel == "whatsapp":
                     return  # Webhooks own actual receive timing; idle ticks are not fake polls.
                 client = await self.client(channel, profile)

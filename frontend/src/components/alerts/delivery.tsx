@@ -1,13 +1,55 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { BellRing, History } from 'lucide-react';
+import { BellRing, History, Send, Check, Mail } from 'lucide-react';
 import { ErrorState, Loading, Modal, useToast } from '../ui';
 import { useResource } from '../../lib/hooks';
 import { post, refresh } from '../../lib/api';
-import type { MessagingChannel, MessagingSettingsData } from '../messaging-settings';
 import { DeliveryReceipt, type MessageDelivery } from '../messaging/delivery-receipt';
 import '../../styles/alert-delivery.css';
 
+type Channel = 'telegram' | 'discord' | 'slack' | 'signal' | 'whatsapp' | 'email';
+type Target = {
+  channel: Channel;
+  label: string;
+  checked: boolean;
+  enabled: boolean;
+  account_label: string;
+  recipient: string;
+  window_open: boolean;
+  note: string;
+  target: {
+    bot_id: number | string;
+    user_id?: number;
+    channel?: Channel;
+    revision?: string;
+    recipient_id?: string;
+    target_id?: string;
+  } | null;
+};
+const channelName = (value: string) =>
+  value === 'whatsapp' ? 'WhatsApp' : value[0].toUpperCase() + value.slice(1);
+const targetKey = (row: Target) =>
+  row.target
+    ? JSON.stringify([
+        row.channel,
+        String(row.target.bot_id),
+        String(row.target.user_id ?? row.target.recipient_id),
+        row.target.revision || '',
+        row.target.target_id || '',
+      ])
+    : '';
+const policyKey = (policy: Policy) => {
+  const binding = policy.delivery_binding || policy.telegram_binding;
+  return binding
+    ? JSON.stringify([
+        policy.channel || 'telegram',
+        String(binding.bot_id),
+        String(binding.recipient_id),
+        'connection_revision' in binding ? binding.connection_revision || '' : '',
+        'target_id' in binding ? binding.target_id || '' : '',
+      ])
+    : '';
+};
 type Kind = 'price' | 'risk' | 'strategy' | 'connection' | 'order';
 type Policy = {
   rule_id: string;
@@ -16,6 +58,13 @@ type Policy = {
   revision: number;
   cooldown_seconds: number;
   expiry_seconds: number;
+  channel: Channel;
+  delivery_binding: {
+    bot_id: number | string;
+    recipient_id: number | string;
+    target_id?: string;
+    connection_revision?: string;
+  } | null;
   telegram_binding: { bot_id: number; recipient_id: number; bot_username: string } | null;
 };
 type HistoryData = { items: MessageDelivery[]; total: number; offset: number; limit: number };
@@ -24,14 +73,15 @@ type Detail = {
   rule: { id: string; revision: number; status: string; label: string };
   history: HistoryData;
 };
-const DeliveryContext = createContext<{ rule_id: string; kind: Kind; enabled: boolean }[]>([]);
+const DeliveryContext = createContext<
+  { rule_id: string; kind: Kind; enabled: boolean; channel: Channel }[]
+>([]);
 
 /** One bounded indicators request for all visible rules; editors load private details on demand. */
 export function AlertDeliveryScope({ children }: { children: ReactNode }) {
-  const policies = useResource<{ rule_id: string; kind: Kind; enabled: boolean }[]>(
-    '/alert-delivery/policies',
-    5000,
-  );
+  const policies = useResource<
+    { rule_id: string; kind: Kind; enabled: boolean; channel: Channel }[]
+  >('/alert-delivery/policies', 5000);
   return (
     <DeliveryContext.Provider value={policies.data ?? []}>{children}</DeliveryContext.Provider>
   );
@@ -47,7 +97,7 @@ export function AlertDeliveryButton({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const active = useContext(DeliveryContext).some(
+  const active = useContext(DeliveryContext).find(
     (item) => item.rule_id === rule && item.kind === kind && item.enabled,
   );
   return (
@@ -58,8 +108,19 @@ export function AlertDeliveryButton({
         aria-label={`Delivery settings for ${kind} alert`}
         onClick={() => setOpen(true)}
       >
-        <img src="/messaging/telegram.svg" alt="" width="13" height="13" />
-        {active ? 'Telegram selected' : 'Delivery'}
+        {active?.channel === 'email' ? (
+          <Mail size={13} />
+        ) : active ? (
+          <img
+            src={`/messaging/${active.channel || 'telegram'}.svg`}
+            alt=""
+            width="13"
+            height="13"
+          />
+        ) : (
+          <Send size={13} />
+        )}
+        {active ? `${channelName(active.channel || 'telegram')} selected` : 'Delivery'}
       </button>
       {open && <DeliveryDialog kind={kind} rule={rule} onClose={() => setOpen(false)} />}
     </>
@@ -76,8 +137,7 @@ function DeliveryDialog({
   onClose: () => void;
 }) {
   const detail = useResource<Detail>(`/alert-delivery/${kind}/${rule}`);
-  const settings = useResource<MessagingSettingsData>('/settings/messaging');
-  const channel = settings.data?.channels.find((item) => item.id === 'telegram');
+  const settings = useResource<{ items: Target[] }>('/alert-delivery/targets');
   return (
     <Modal title="Alert delivery" onClose={onClose} className="alert-delivery-dialog">
       {detail.error || settings.error ? (
@@ -88,13 +148,13 @@ function DeliveryDialog({
             settings.retry();
           }}
         />
-      ) : !detail.data || !channel ? (
+      ) : !detail.data || !settings.data ? (
         <Loading />
       ) : (
         <DeliveryEditor
           key={detail.data.policy.revision}
           detail={detail.data}
-          channel={channel}
+          targets={settings.data.items}
           onChanged={() => {
             detail.retry();
             settings.retry();
@@ -108,22 +168,16 @@ function DeliveryDialog({
 
 function DeliveryEditor({
   detail,
-  channel,
+  targets,
   onChanged,
 }: {
   detail: Detail;
-  channel: MessagingChannel;
+  targets: Target[];
   onChanged: () => void;
 }) {
   const { policy, rule } = detail;
-  const [enabled, setEnabled] = useState(policy.enabled);
-  const [target, setTarget] = useState(
-    policy.telegram_binding
-      ? `${policy.telegram_binding.bot_id}:${policy.telegram_binding.recipient_id}`
-      : '',
-  );
-  const current = channel.briefings_ready ? `${channel.bot_id}:${channel.allowed_user_id}` : '';
-  const selected = enabled && !!current && target === current;
+  const [key, setKey] = useState(policy.enabled ? policyKey(policy) : '');
+  const selected = targets.find((row) => !!row.target && targetKey(row) === key);
   const [cooldown, setCooldown] = useState(policy.cooldown_seconds / 60);
   const [expiry, setExpiry] = useState(policy.expiry_seconds / 60);
   const [busy, setBusy] = useState(false);
@@ -135,21 +189,25 @@ function DeliveryEditor({
     setBusy(true);
     setError('');
     try {
-      const turnOn = !pause && selected;
+      if (!pause && key && !selected)
+        throw new Error(
+          'The checked recipient changed. Select its current card or choose Local only.',
+        );
+      const choice = pause ? undefined : selected;
       await post(`/alert-delivery/${policy.kind}/${policy.rule_id}`, {
         revision: policy.revision,
         rule_revision: rule.revision,
-        enabled: turnOn,
-        telegram_target: turnOn
-          ? { bot_id: channel.bot_id, user_id: channel.allowed_user_id }
-          : null,
+        enabled: !!choice,
+        channel: choice?.channel || policy.channel || 'telegram',
+        telegram_target: choice?.channel === 'telegram' ? choice.target : null,
+        private_target: choice && choice.channel !== 'telegram' ? choice.target : null,
         cooldown_seconds: cooldown * 60,
         expiry_seconds: expiry * 60,
       });
       toast(
-        turnOn
-          ? 'Telegram selected for future alerts. Existing notices stay local.'
-          : 'Telegram delivery paused. In-app alerts stay on.',
+        choice
+          ? `${choice.label} selected for future alerts. Existing notices stay local.`
+          : 'External delivery paused. In-app alerts stay on.',
       );
       onChanged();
     } catch (reason) {
@@ -161,8 +219,8 @@ function DeliveryEditor({
   return (
     <>
       <p className="muted">
-        In-app notifications always stay on. Choose Telegram for future events from this rule,
-        including later rule edits.
+        Keep every alert in Sibyl and optionally send future events from this rule to one checked
+        private connection. No AI model is required.
       </p>
       <div className="alert-local-delivery">
         <BellRing size={17} />
@@ -178,36 +236,90 @@ function DeliveryEditor({
           void save();
         }}
       >
-        <label className={`alert-telegram-selection ${selected ? 'selected' : ''}`}>
-          <img src="/messaging/telegram.svg" alt="" width="27" height="27" />
-          <span>
-            <strong>Telegram</strong>
-            <small>
-              {channel.briefings_ready
-                ? `@${channel.bot_username} · private user ${channel.allowed_user_id}`
-                : 'Save and check a bot in Messaging settings first.'}
-            </small>
-          </span>
-          <input
-            type="checkbox"
-            checked={selected}
-            disabled={busy || (!channel.briefings_ready && !selected) || rule.status === 'archived'}
-            onChange={(event) => {
-              setEnabled(event.target.checked);
-              setTarget(current);
-            }}
-          />
-        </label>
-        {policy.enabled && (!current || target !== current) && (
+        <div className="alert-target-heading">
+          <strong>Optional private destination</strong>
+          <button type="button" className="text-link" disabled={busy} onClick={() => setKey('')}>
+            {key ? 'Use local only' : 'Local only selected'}
+          </button>
+        </div>
+        <div
+          className="alert-destination-grid"
+          role="radiogroup"
+          aria-label="Private alert destination"
+          onKeyDown={(event) => {
+            if (
+              !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(
+                event.key,
+              )
+            )
+              return;
+            const buttons = [
+              ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                'button[role="radio"]:not(:disabled)',
+              ),
+            ];
+            if (!buttons.length) return;
+            const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+            const next =
+              event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? buttons.length - 1
+                  : (index +
+                      (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1) +
+                      buttons.length) %
+                    buttons.length;
+            event.preventDefault();
+            buttons[next].focus();
+            buttons[next].click();
+          }}
+        >
+          {targets.map((row) => (
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!!row.target && key === targetKey(row)}
+              className={`alert-destination ${row.target && key === targetKey(row) ? 'selected' : ''}`}
+              key={row.channel}
+              disabled={busy || !row.checked || rule.status === 'archived'}
+              onClick={() => setKey(targetKey(row))}
+            >
+              {row.channel === 'email' ? (
+                <Mail size={25} />
+              ) : (
+                <img src={`/messaging/${row.channel}.svg`} alt="" width="25" height="25" />
+              )}
+              <span>
+                <strong>{row.label}</strong>
+                <small>{row.checked ? row.account_label : 'Set up & check in Messaging'}</small>
+                {row.checked && <small className="alert-recipient">{row.recipient}</small>}
+              </span>
+              {row.checked && key === targetKey(row) ? (
+                <Check size={15} />
+              ) : (
+                row.checked && (
+                  <em>{!row.enabled ? 'Paused' : !row.window_open ? 'Window closed' : 'Ready'}</em>
+                )
+              )}
+            </button>
+          ))}
+        </div>
+        {key && !selected && (
           <p className="inline-alert">
-            The checked Telegram recipient changed. Select and save the current recipient to resume
+            The checked connection changed. Review and select its current recipient to resume
             delivery.
           </p>
         )}
-        {selected && !channel.enabled && (
+        {selected && !selected.enabled && (
           <p className="inline-alert">
-            Telegram is paused. Enable it in Messaging settings; alerts recorded while paused stay
-            local.
+            {selected.label} is paused. Enable it in Messaging settings; alerts recorded while
+            paused stay local.
+          </p>
+        )}
+        {selected?.channel === 'whatsapp' && (
+          <p className="inline-alert">
+            {selected.note}
+            {!selected.window_open && ' The reply window is currently closed.'}
           </p>
         )}
         {rule.status !== 'armed' && (
@@ -230,7 +342,7 @@ function DeliveryEditor({
               disabled={busy}
               onChange={(event) => setCooldown(Number(event.target.value))}
             />
-            <small>Minutes between queued Telegram alerts</small>
+            <small>Minutes between queued messages</small>
           </label>
           <label>
             Delivery window
@@ -248,12 +360,12 @@ function DeliveryEditor({
           </label>
         </div>
         <p className="footnote">
-          Cooldown suppresses extra messages; it does not delay them. Existing inbox entries are
-          never sent when enabling or resuming. Private account research may pass through Telegram.
-          No LLM is required.
+          Cooldown suppresses extra messages rather than delaying them. Enabling or resuming never
+          sends existing inbox entries. Selected alert content may include private account research
+          and passes through the chosen provider.
         </p>
         <Link className="text-link" to="/settings?tab=messaging">
-          Manage Telegram ↗
+          Manage messaging connections ↗
         </Link>
         {error && (
           <p className="inline-alert" role="alert">
@@ -271,17 +383,21 @@ function DeliveryEditor({
               disabled={busy}
               onClick={() => void save(true)}
             >
-              Pause Telegram delivery
+              Pause external delivery
             </button>
           )}
-          <button className="button primary" type="submit" disabled={busy}>
+          <button
+            className="button primary"
+            type="submit"
+            disabled={busy || (rule.status === 'archived' && !!key)}
+          >
             {busy ? 'Saving…' : 'Save delivery'}
           </button>
         </div>
       </form>
       <button className="text-button alert-history-toggle" onClick={() => setHistory(!history)}>
         <History size={14} />
-        {history ? 'Hide' : 'Show'} delivery history · {detail.history.total}
+        {history ? 'Hide' : 'Show'} delivery history
       </button>
       {history && <AlertDeliveryHistory ruleId={policy.rule_id} />}
     </>
@@ -309,7 +425,8 @@ export function AlertDeliveryHistory({ ruleId }: { ruleId?: string }) {
         ))
       ) : (
         <p className="muted">
-          No delivery attempts yet. Only future events with Telegram selected appear here.
+          No delivery attempts yet. Only future events with a private destination selected appear
+          here.
         </p>
       )}
       {data.data.total > 20 && (

@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Mail } from 'lucide-react';
 import { DeliveryInspector } from './delivery-review';
 import { Badge } from '../ui';
 
 export type MessageDelivery = {
   id: string;
   kind?: string;
+  channel?: string;
   rule_id?: string;
   alert_kind?: string;
   created_at?: string;
@@ -21,14 +23,15 @@ export type MessageDelivery = {
     state: string;
     attempts: number;
     native_id: number | null;
+    provider_id?: string | null;
     error: string | null;
   }[];
 };
 const labels: Record<string, string> = {
-  sent: 'Delivered',
+  sent: 'Sent',
   pending: 'Queued',
   sending: 'Sending',
-  retrying: 'Waiting for Telegram',
+  retrying: 'Rate limited',
   uncertain: 'Unconfirmed',
   failed: 'Failed',
   partial: 'Partially delivered',
@@ -46,6 +49,21 @@ export function DeliveryReceipt({ delivery }: { delivery: MessageDelivery }) {
         </strong>
       )}
       <header>
+        <span className="message-delivery-channel">
+          {delivery.channel === 'email' ? (
+            <Mail size={13} />
+          ) : (
+            <img
+              src={`/messaging/${delivery.channel || 'telegram'}.svg`}
+              alt=""
+              width="13"
+              height="13"
+            />
+          )}
+          {delivery.channel === 'whatsapp'
+            ? 'WhatsApp'
+            : (delivery.channel || 'telegram').replace(/^./, (value) => value.toUpperCase())}
+        </span>
         <Badge
           tone={
             delivery.status === 'sent'
@@ -80,7 +98,11 @@ export function DeliveryReceipt({ delivery }: { delivery: MessageDelivery }) {
             <Badge>{part.state}</Badge>
             <small>
               {part.attempts} attempt{part.attempts === 1 ? '' : 's'}
-              {part.native_id ? ` · Telegram ${part.native_id}` : ''}
+              {part.provider_id
+                ? ` · Provider ID ${part.provider_id}`
+                : part.native_id
+                  ? ` · Telegram ${part.native_id}`
+                  : ''}
             </small>
             {part.error && <p>{part.error}</p>}
           </div>

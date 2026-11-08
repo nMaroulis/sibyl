@@ -156,7 +156,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             ],
             "evidence": evidence,
             "url": "/alerts?tab=risk",
-            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. Historical basket watches use current weights, dated consecutive daily history and empirical tails, never future loss guarantees. This tool cannot change rules, trade or send messages. Optional Telegram delivery is selected separately for each rule.",
+            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. Historical basket watches use current weights, dated consecutive daily history and empirical tails, never future loss guarantees. This tool cannot change rules, trade or send messages. Optional Telegram, Discord, Slack, Signal, WhatsApp or email delivery is selected separately for each rule with a checked private recipient.",
         }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:

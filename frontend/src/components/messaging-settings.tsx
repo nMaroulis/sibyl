@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useResource } from '../lib/hooks';
 import { Badge, ErrorState, Loading } from './ui';
 import { PrivateChannelSetup } from './messaging/private-channel-settings';
+import { MessageDeliveryReview } from './messaging/delivery-review';
 import { TelegramSetup } from './telegram-settings';
 
 export type MessagingChannel = {
@@ -81,7 +82,8 @@ export function MessagingSettings() {
       <p className="messaging-unavailable-note" id="messaging-unavailable-note">
         Telegram, Discord, Slack, WhatsApp, email and a local Signal bridge are implemented. Private
         messaging can relay workspace information through the selected service and AI provider; bind
-        only your own private recipient.
+        only your own private recipient. Choose alert destinations separately through each rule’s
+        Delivery control.
       </p>
       {resource.loading ? (
         <Loading />
@@ -108,6 +110,7 @@ export function MessagingSettings() {
             )}
         </div>
       )}
+      <MessageDeliveryReview />
       {resource.data?.telegram?.llm_ready && (
         <p className="footnote">
           Messaging will use Sibyl’s configured AI model.{' '}

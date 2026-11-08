@@ -94,7 +94,10 @@ def test_technician_has_complete_settings_orientation_without_account_reads(clie
     messaging = tool_call(client, "technician", "settings_guide", section="messaging")
     assert "Telegram" in messaging["steps"][0] and "are implemented" in messaging["steps"][0]
     assert "IMAP/SMTP" in messaging["steps"][0] and "signed WhatsApp" in messaging["steps"][0]
-    assert "incoming media remains unsupported" in messaging["steps"][0]
+    assert (
+        "incoming documents, local photo OCR and bounded speech transcription are opt-in"
+        in messaging["steps"][0]
+    )
 
 
 def test_registry_advertises_actual_docstrings_and_typed_help_schemas(client):

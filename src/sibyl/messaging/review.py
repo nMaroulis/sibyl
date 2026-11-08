@@ -1,7 +1,7 @@
 """Explicit review of app-origin delivery evidence, with no resending or inference.
 
 Provider acknowledgments remain authoritative for native outcomes. A user's
-receipt acknowledgment is stored separately and cannot manufacture a Telegram
+receipt acknowledgment is stored separately and cannot manufacture a provider
 message ID. Optimistic tokens reject reviews based on stale in-flight evidence.
 """
 
@@ -38,7 +38,7 @@ class DeliveryReview:
             "can_acknowledge": not busy
             and delivery["status"] in {"uncertain", "failed", "partial"}
             and len(delivery.get("reviews", [])) < 10,
-            "note": "Review covers app-origin alerts and briefings, not conversation replies. User acknowledgments do not change Telegram-confirmed part outcomes. Nothing here resends a message.",
+            "note": "Review covers app-origin alerts and briefings, not conversation replies. User acknowledgments do not change provider-confirmed part outcomes. Nothing here resends a message.",
         }
 
     def _parts(self, db, identity):
@@ -112,7 +112,7 @@ def delivery_evidence(store):
             ).fetchall()
             items.append(
                 {
-                    **{key: item.get(key) for key in ("id", "kind", "status", "created_at")},
+                    **{key: item.get(key) for key in ("id", "kind", "channel", "status", "created_at")},
                     "confirmed_parts": sum(p[0] == "sent" for p in parts),
                     "total_parts": len(parts),
                     "user_review": [

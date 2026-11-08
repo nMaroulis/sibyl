@@ -61,7 +61,7 @@ TRADE = {
         "/alerts?tab=orders",
         (
             "Open Alerts → Orders & fills and create one subscription for a saved account.",
-            "Choose fill/correction, cancellation, problem or status categories; Telegram delivery is a separate per-rule opt-in.",
+            "Choose fill/correction, cancellation, problem or status categories; Private delivery to a checked Telegram, Discord, Slack, Signal, WhatsApp or email connection is a separate per-rule opt-in; WhatsApp requires an open reply window.",
             "Inspect Inbox, pause/resume or edit rules. Edits save paused and resume uses a fresh future-only baseline.",
         ),
         (

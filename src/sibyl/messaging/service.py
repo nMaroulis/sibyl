@@ -189,6 +189,7 @@ class TelegramService:
             self._update(profile["revision"], enabled=False, control_id=uuid4().hex)
             self.notifications.invalidate(
                 connection_revision=profile["revision"],
+                channel="telegram",
                 reason="Telegram was paused before this notification was sent.",
             )
         return self.public()
@@ -200,7 +201,9 @@ class TelegramService:
             self.store.save_data_profile("messaging:telegram", {})
             if revision:
                 self.notifications.invalidate(
-                    connection_revision=revision, reason="The Telegram connection was removed."
+                    connection_revision=revision,
+                    channel="telegram",
+                    reason="The Telegram connection was removed.",
                 )
         return self.public()
 

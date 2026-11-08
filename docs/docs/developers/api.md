@@ -314,3 +314,7 @@ Recent funding sync: version-checked opt-in controls at `POST /connections/{acco
 ### Transfer groups
 
 `/api/v1/account-ledger/transfer-groups` provides paged private reads, exact-version previews, explicit confirmations, audited re-review/restoration and revision-bound withdrawal. Groups reserve funding records against the existing pair reviews. See the [full contract](transfer-groups.md); group cost carryover is available through `/api/v1/account-books`.
+
+### Private alert routing
+
+`GET /api/v1/alert-delivery/targets` reads checked private destinations without probing a provider. Rule policies can select one of six channels, with exact private connection-revision/identity consent. `/api/v1/message-deliveries/{id}` and its `/review` action expose provider-neutral queued-text review without resending or altering native outcomes. See [alert delivery contracts](alert-delivery.md).

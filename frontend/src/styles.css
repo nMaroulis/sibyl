@@ -13107,3 +13107,44 @@ details[open] > summary {
   font-size: 12px;
   line-height: 1.6;
 }
+
+/* Shared private message review lives outside any individual connection card. */
+.message-history-review {
+  margin: 20px 0 0;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.message-history-review > summary {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.message-history-review > .footnote {
+  margin: 12px 0;
+}
+.message-history-review > label {
+  display: grid;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  margin: 15px 0;
+}
+.message-history-review > label select {
+  width: 100%;
+  font-size: 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafcff;
+  color: var(--text);
+}
+.message-history-review .delivery-review-row strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.message-history-review .delivery-review-row > span:last-child {
+  font-size: 11px;
+  color: var(--accent);
+}

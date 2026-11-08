@@ -100,8 +100,8 @@ GUIDES = {
     "messaging": {
         "url": "/settings?tab=messaging",
         "steps": [
-            "Messaging lets you talk to Sibyl through another app. Telegram, Discord private HTTP DMs, Slack Socket Mode, signed WhatsApp webhooks, paired IMAP/SMTP email and a local unofficial Signal bridge are implemented. Telegram can optionally send long replies and scheduled briefings as bounded UTF-8 text documents; incoming media remains unsupported. Telegram can also receive explicitly selected scheduled briefings and per-rule alerts; enabling chat alone does not enable these deliveries.",
-            "Review Telegram deliveries opens actual queued text, the recorded private target and part outcomes. Withdraw queued remainders or record separate received/dismissed user reviews; admitted sends must finish first, and review never resends or changes native confirmation.",
+            "Messaging lets you talk to Sibyl through another app. Telegram, Discord private HTTP DMs, Slack Socket Mode, signed WhatsApp webhooks, paired IMAP/SMTP email and a local unofficial Signal bridge are implemented. Telegram can optionally send long replies and scheduled briefings as bounded UTF-8 text documents; incoming documents, local photo OCR and bounded speech transcription are opt-in with optional local processors. Scheduled briefings currently use Telegram; per-rule alerts can select any of the six checked private text channels; enabling chat alone does not enable these deliveries.",
+            "Review message delivery opens actual queued text, the recorded private target and part outcomes. Withdraw queued remainders or record separate received/dismissed user reviews; admitted sends must finish first, and review never resends or changes native confirmation.",
             "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. WhatsApp needs a Meta business phone, explicit Graph version, signed public HTTPS callback /api/v1/webhooks/whatsapp and messages subscription. Email needs a dedicated TLS mailbox plus private pairing phrase in each subject; From alone is not authorization. For implemented channels save the private recipient and complete credentials, Check connection, then Enable private replies. Pause remains available during a model request; editing/removal requires pause. Sent receipts mean provider acceptance, not human receipt. Telegram attachments are separate opt-in preferences: PDF/text/Markdown import to My research, photo text needs local Tesseract and voice/audio needs local FFmpeg plus whisper-cli and a .bin model. No model/program is downloaded. Documents are retained; media originals are discarded after uncertain OCR/transcription. Native Wiki/Reporter tools read the retained citations. No group chats are processed.",
         ],
     },
@@ -117,7 +117,7 @@ GUIDES = {
             "Account risk tab: select a fixed set of up to ten active accounts in one environment and a reference feed. Choose a value floor in USDT, asset/top-three concentration, overall HHI concentration (0–100), observed-value drawdown, or hourly historical basket volatility/95% daily expected shortfall (up to eight held assets and 60/90/180 days). Arming authorizes background balance/quote reads. New connections are not automatically included; deactivate a pinned account and the watch waits for complete coverage.",
             "Recovery levels prevent repeated notices near a limit. Edits save paused; Resume resets the observed peak and incident state. Drawdown includes deposits and withdrawals, so it is not investment return. View evidence reads retained valuation details without fetching accounts.",
             "Inbox → History export & retention exports JSON/CSV with kind and UTC date filters (up to 2,000 newest notices). Automatic cleanup is off by default; saving an opt-in age policy clears only old read notices in bounded batches. Unread notices and unfinished delivery evidence are protected. Disabling the policy stops later automatic deletion; rules, financial records and delivery receipts remain separate.",
-            "No AI model is required. A rule’s Delivery button selects optional Telegram messages to the checked bot and private user. Every save starts from future events; existing inbox entries stay local. Cooldowns suppress extra messages and delivery windows reject stale observations. Alerts never trade, stop strategies, cancel orders or detect silent-worker outages.",
+            "No AI model is required. A rule’s Delivery button selects Telegram, Discord, Slack, Signal, WhatsApp or email to its checked private recipient. WhatsApp requires an open private 24-hour reply window; no templates are sent. A changed connection revision or recipient requires selecting the checked target again. Every save starts from future events; existing inbox entries stay local. Cooldowns suppress extra messages and delivery windows reject stale observations. Alerts never trade, stop strategies or cancel orders. Worker incidents are observed separately and do not prove external host uptime.",
         ],
     },
     "workspace": {
@@ -187,7 +187,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                 {**json.loads(row["payload"]), "created_at": row["created_at"]} for row in rows
             ],
             "url": "/alerts?tab=connections",
-            "scope": "Recorded transport reads only; no continuous uptime or credential verification. Optional Telegram delivery is selected separately for each alert rule.",
+            "scope": "Recorded transport reads only; no continuous uptime or credential verification. Optional private delivery through any of the six checked text channels is selected separately for each alert rule.",
         }
 
     def settings_guide(
@@ -327,7 +327,7 @@ def create_agent(services: Services, **runtime) -> Agent:
 
     @agent.tool
     def telegram_delivery_review() -> dict:
-        """Inspect Telegram notification/reply outcomes without private text or credentials.
+        """Inspect app-origin notification outcomes by channel and Telegram reply outcomes, without private text or targets.
 
         Explain Settings → Messaging review controls: unsent withdrawal and separate
         user acknowledgments. Reviews never resend or replace native confirmation.
@@ -335,7 +335,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         return {
             **delivery_evidence(services.store),
             "reply_items": reply_evidence(services.store),
-            "note": "App-origin and conversation outcomes remain separate. Settings → Messaging → Review Telegram deliveries inspects exact queued text and targets; user acknowledgment never changes native confirmation or resends a message.",
+            "note": "App-origin and conversation outcomes remain separate. Alert delivery history → Review delivery inspects exact app-origin text/targets; Settings → Messaging reviews Telegram conversation replies; user acknowledgment never changes native confirmation or resends a message.",
         }
 
     return agent
