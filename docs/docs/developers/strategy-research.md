@@ -55,3 +55,23 @@ Completed results commit atomically to `strategy_validations`, with compact meta
 | GET    | `/strategies/validations?demo=true`  | Latest 50 compact summaries; optional Demo boundary           |
 | GET    | `/strategies/validations/{id}`       | Complete retained study, also usable as a JSON export         |
 | POST   | `/strategies/validations/{id}/rerun` | Recompute exact original input/settings and retain the parent |
+
+## Cost-aware reference portfolios
+
+`strategies/research/benchmarks.py` implements `reference-portfolios-1`. Ordinary backtests attach `benchmarks` alongside the unchanged legacy `benchmark_pct` and `benchmark_curve`. References cover `candles[request.warmup:]` and share initial capital, timeframe, costs and final liquidation. `benchmark_interval` is an integer from 1–365 (default 20); changing it cannot change strategy fills or equity. Validation suffix runs do not generate this additional reference set.
+
+Cash stays at initial capital. Installment tranches divide it by `ceil(evaluated_bars / cadence)`; purchases consume fees within their available cash budget. The 50/50 reference targets half of current pre-trade NAV at scheduled opens and never borrows or shorts. Final-close liquidation pays the same sell costs. All curves include entry and exit costs in comparable equity observations; Sharpe/drawdown include initial capital through the common metric implementation. Undefined ratios remain unavailable.
+
+Broker’s `backtest_report` returns compact recorded reference metrics without large curves/fill arrays. `strategy_help(topic="benchmarks")` explains navigation and assumptions. Neither tool runs a new experiment or deploys a reference portfolio.
+
+## Nested chronological selection
+
+`WalkForwardRequest.selection` defaults to `training`, preserving existing behavior. `nested` uses `inner_folds` (2–4) and `inner_train_pct` (40–80). `strategies/research/nested.py` partitions each outer training prefix into initial causal context and disjoint later scoring blocks. Every block needs at least 20 bars; the initial context must cover the common warm-up plus 20 bars. Candidate settings, search plan and outer tests remain unchanged.
+
+Each candidate is evaluated with the actual next-open cost-aware engine on every inner block. Aggregate selection is mean return/Sharpe or maximum inner drawdown; trade eligibility sums inner round trips. Inner timestamps, full metrics, independent-cash semantics and the `nested-next-open-v1` method are persisted. Work admission includes every repeated inner prefix and both outer simulations before any engine call. Broker reads this evidence using the existing native `validation_report` tool. Future-price perturbation, real-score equivalence, budget rejection and replay tests protect chronology.
+
+## Continuous parameter deployment replay
+
+`WalkForwardRequest.continuous` defaults to false. When enabled, the fixed, chronological selected-candidate plan feeds `BacktestEngine.run(parameter_schedule=...)` over the full outer test suffix. Each scheduled segment computes its own causal indicator context through that segment's end; no test result changes its previously recorded selection. A validated schedule covers the complete suffix without gaps and cannot change the market, capital, costs, risk policy or global trade cap.
+
+The shared simulator retains cash, units, entry price/cost and completed trades across changes. Opening transitions preserve actual carried balances; only the final close liquidates. The existing fill-derived round trips, equity, fees, drawdown, benchmark and statistics therefore describe one account path. A separate fixed-parameter suffix replay is retained for comparison. Independent folds keep their original reset-cash semantics. Additional repeated prefixes and full replays are admitted against the 60,000-bar work bound before simulation. Saved reruns/exports and native Broker evidence retain the complete plan and outcomes. This is not live execution or multi-asset allocation.

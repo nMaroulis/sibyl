@@ -1,8 +1,11 @@
 """Script provider I/O while keeping native ProtoLink discovery/delegation real."""
 
+import asyncio
 import json
+import threading
+from contextlib import contextmanager
 
-from protolink import create_llm, current_request_context
+from protolink import Task, create_llm, current_request_context
 
 PRIMARY = {
     "oracle": "portfolio_snapshot",
@@ -63,3 +66,48 @@ def coordinator_factory(monkeypatch, factory):
         return create_llm("mock", response_callback=respond)
 
     monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", build)
+
+
+@contextmanager
+def busy_agents(client, monkeypatch):
+    """Occupy native root slots with gated read-only tools, without contacting a model."""
+    network = client.app.state.services.agents.network
+    tool = network.agents["reporter"].tools["news_briefing"]
+    original = tool.func
+    entered = [threading.Event(), threading.Event()]
+    release = threading.Event()
+    lock = threading.Lock()
+    calls = 0
+
+    def hold(**_kwargs):
+        nonlocal calls
+        with lock:
+            index = calls
+            calls += 1
+        entered[index].set()
+        assert release.wait(timeout=10)
+        return {"held": True}
+
+    monkeypatch.setattr(tool, "func", hold)
+
+    async def start():
+        return [
+            network.group.run(
+                network.agents["reporter"], Task.create_tool_call("news_briefing", {"mode": "demo"})
+            )
+            for _ in entered
+        ]
+
+    handles = client.portal.call(start)
+    try:
+        assert all(event.wait(timeout=3) for event in entered)
+        assert network.group.snapshot().active_runs == 2
+        yield handles
+    finally:
+        monkeypatch.setattr(tool, "func", original)
+        release.set()
+
+        async def finish():
+            await asyncio.gather(*(handle.result() for handle in handles))
+
+        client.portal.call(finish)

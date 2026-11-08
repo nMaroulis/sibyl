@@ -5,6 +5,7 @@ from typing import Literal
 from sibyl.agents.guides import Guide
 
 Topic = Literal[
+    "basket_risk",
     "returns",
     "overview",
     "accounts",
@@ -17,6 +18,17 @@ Topic = Literal[
     "balance_checks",
 ]
 GUIDES = {
+    "basket_risk": Guide(
+        "Explore historical basket risk",
+        "/account",
+        (
+            "Expand Historical basket risk, select up to eight priced current holdings and a history window, then Calculate & save risk study. Multiple connected accounts follow the current Account scope; Demo/reference sources stay labeled.",
+            "Inspect annualized volatility, empirical daily VaR/shortfall, sample size, subset coverage and historical dates. Expand correlations/variance contributions or the hypothetical basket path; open saved studies without provider reads or export their full inputs.",
+        ),
+        (
+            "Current weights are renormalized within the selected basket and hypothetically rebalanced daily without costs. This is not measured account performance, an optimized allocation or a forecast. All conversion legs require common consecutive closed daily history; unpriced/failed accounts or excluded holdings can materially change whole-account risk.",
+        ),
+    ),
     "returns": Guide(
         "Measure investment performance",
         "/account",
@@ -46,6 +58,7 @@ GUIDES = {
         "/account",
         (
             "Open Account for holdings, allocation and valuation across active exchange accounts.",
+            "Expand Diversification in Allocation for HHI, effective asset count, largest asset and top-three value weight. Incomplete valuation means unavailable metrics. This measures value spread, including cash/stablecoins separately, not independent risk factors.",
             "Choose all accounts, one exchange or one account in the account selector; inspect pricing warnings before interpreting totals.",
             "For imported fills, accounting and funding, open Trade → Account history.",
         ),
@@ -136,7 +149,7 @@ GUIDES = {
         "/alerts?tab=risk",
         (
             "Open Alerts → Account risk and pin a fixed set of active accounts in one environment plus a reference feed.",
-            "Choose a value floor, asset concentration or observed-value drawdown threshold, then explicitly arm the rule.",
+            "Choose a value floor, asset/top-three/HHI concentration, observed-value drawdown, or hourly historical basket volatility/95% daily expected shortfall. For historical watches choose up to eight currently held assets and 60/90/180 days, then arm the rule. Evidence retains dated basket weights and subset coverage; it is not account performance or a future loss guarantee.",
             "Use View evidence for retained valuation details and Inbox for notices. A rule’s Delivery control can opt into Telegram notifications with a checked private recipient, cooldown and freshness window. Edits save paused; Resume starts a new observation window.",
         ),
         (

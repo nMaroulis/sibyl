@@ -4,6 +4,7 @@ import math
 import time
 from datetime import UTC, datetime
 
+from sibyl.alerts.risk.historical import HISTORICAL, basket_sample
 from sibyl.exchanges.base import number
 from sibyl.services.portfolio.valuation import CURRENCY, Valuation
 
@@ -137,6 +138,9 @@ class RiskObservations:
         with self.market.snapshot(rule["source"]):
             with self.store.db() as db:
                 self.current(rule, guard, db)
+            historical = rule.get("metric") in HISTORICAL
+            if historical and not self.market.metadata()["capabilities"]["candles"]:
+                raise RiskReadError("Choose a reference feed with daily historical candles for this watch.")
             valuation = Valuation(self.market)
             holdings = []
             for asset, quantity in quantities.items():
@@ -153,8 +157,20 @@ class RiskObservations:
                         "A reference holding value is invalid; no risk assessment was recorded."
                     )
                 holdings.append(
-                    dict(asset=asset, value=value, path=quote["path"], observed_at=quote["observed_at"])
+                    dict(
+                        asset=asset,
+                        value=value,
+                        path=quote["path"],
+                        observed_at=quote["observed_at"],
+                        **({"route": quote["route"]} if historical else {}),
+                    )
                 )
+            basket = None
+            if historical:
+                try:
+                    basket = basket_sample(self.market, rule, holdings)
+                except ValueError as exc:
+                    raise RiskReadError(str(exc)) from None
         total = math.fsum(row["value"] for row in holdings)
         if not math.isfinite(total):
             raise RiskReadError("The account total is invalid; no risk assessment was recorded.")
@@ -170,5 +186,7 @@ class RiskObservations:
             as_of=datetime.fromtimestamp(self.clock(), UTC).isoformat(),
             complete=True,
         )
+        if basket is not None:
+            sample["basket"] = basket
         self.fresh(sample)
         return sample, guard

@@ -15,7 +15,7 @@ GUIDES = {
             "Ask Wiki or Reporter to retrieve and cite passages. Reindex uploads from their retained originals; remove a source to delete its original and search entries.",
         ),
         (
-            "Imported passages can be sent to the configured model when requested; keep credentials out of files. Scans need OCR before import. Ranks and cosine scores are relevance, not confidence or verified truth. Semantic search needs its separate local embedding setup and only covers indexed passages. Saving a model or reindexing a source clears relevant vectors. Cited web search and broader model quality evaluation remain pending.",
+            "Imported passages can be sent to the configured model when requested; keep credentials out of files. Scans need OCR before import. Ranks and cosine scores are relevance, not confidence or verified truth. Semantic search needs its separate local embedding setup and only covers indexed passages. Saving a model or reindexing a source clears relevant vectors. Retrieval quality lab saves your relevant passage labels, compares keyword/semantic/hybrid rankings on a pinned corpus, and reports precision/recall/MRR/nDCG at a cutoff. Scores do not grade factual answers. Cited web search, calibrated no-answer thresholds and broad model quality evaluation remain pending.",
         ),
     ),
     "overview": Guide(

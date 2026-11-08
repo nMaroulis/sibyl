@@ -35,6 +35,10 @@ export function ValidationWorkspace({
   const [seed, setSeed] = useState(42);
   const [axes, setAxes] = useState<{ key: string; values: string }[]>([]);
   const [folds, setFolds] = useState(3);
+  const [continuous, setContinuous] = useState(false);
+  const [selection, setSelection] = useState<'training' | 'nested'>('training');
+  const [innerFolds, setInnerFolds] = useState(2);
+  const [innerPct, setInnerPct] = useState(60);
   const [trainPct, setTrainPct] = useState(60);
   const [objective, setObjective] =
     useState<ValidationSummary['request']['objective']>('return_pct');
@@ -99,6 +103,10 @@ export function ValidationWorkspace({
         initial_train_pct: trainPct,
         objective,
         min_train_trades: minimum,
+        continuous,
+        selection,
+        inner_folds: innerFolds,
+        inner_train_pct: innerPct,
       });
     });
   return (
@@ -330,9 +338,72 @@ export function ValidationWorkspace({
             )}
             <details className="advanced-options">
               <summary>Selection rules &amp; limits</summary>
+              <label className="continuous-option">
+                <input
+                  type="checkbox"
+                  checked={continuous}
+                  onChange={(e) => setContinuous(e.target.checked)}
+                />{' '}
+                Also replay continuous deployment
+              </label>
+              {continuous && (
+                <p>
+                  Carry one cash/asset balance across parameter updates, with no forced boundary
+                  liquidation. Independent window tests stay separate. This uses additional work
+                  within the same 60,000-bar budget and does not start a live strategy.
+                </p>
+              )}
+              <label>
+                Score candidates on
+                <select
+                  value={selection}
+                  onChange={(e) => setSelection(e.target.value as typeof selection)}
+                >
+                  <option value="training">Earlier training period</option>
+                  <option value="nested">Inner chronological validation windows</option>
+                </select>
+              </label>
+              {selection === 'nested' && (
+                <>
+                  <div className="form-row">
+                    <label>
+                      Inner validation windows
+                      <select
+                        value={innerFolds}
+                        onChange={(e) => setInnerFolds(Number(e.target.value))}
+                      >
+                        {[2, 3, 4].map((n) => (
+                          <option key={n} value={n}>
+                            {n} windows
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Initial inner context
+                      <select
+                        value={innerPct}
+                        onChange={(e) => setInnerPct(Number(e.target.value))}
+                      >
+                        {[40, 50, 60, 70, 80].map((n) => (
+                          <option key={n} value={n}>
+                            {n}% of each outer training period
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <p>
+                    Each candidate is scored on later blocks inside the outer training period.
+                    Selection uses mean inner return/Sharpe, or worst inner drawdown. Every inner
+                    test resets cash. The outer test stays unseen; nesting does not remove
+                    repeated-experiment bias. Longer datasets may be needed.
+                  </p>
+                </>
+              )}
               <div className="form-row">
                 <label>
-                  Training objective
+                  Selection objective
                   <select
                     value={objective}
                     onChange={(e) => setObjective(e.target.value as typeof objective)}
@@ -343,7 +414,7 @@ export function ValidationWorkspace({
                   </select>
                 </label>
                 <label>
-                  Minimum training round trips
+                  Minimum selection round trips
                   <input
                     type="number"
                     min={0}

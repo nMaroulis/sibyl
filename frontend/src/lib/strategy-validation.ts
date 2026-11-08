@@ -1,3 +1,4 @@
+import type { Deployment } from '../components/strategies/continuous-replay';
 import type { Backtest, StrategyParams } from './types';
 import type { Dataset } from './market-history';
 
@@ -58,6 +59,10 @@ export type ValidationSummary = {
     initial_train_pct: number;
     objective: 'return_pct' | 'sharpe' | 'max_drawdown';
     min_train_trades: number;
+    continuous?: boolean;
+    selection?: 'training' | 'nested';
+    inner_folds?: number;
+    inner_train_pct?: number;
   };
   summary: {
     mean_return_pct: number;
@@ -72,11 +77,13 @@ export type ValidationSummary = {
 };
 export type ValidationReport = ValidationSummary & {
   rerun_of?: string;
+  deployment?: Deployment;
   assumptions: string[];
   common_warmup: number;
   processed_bars: number;
   folds: {
     index: number;
+    selection?: { mode: string; scored_bars: number; initial_context_bars: number; method: string };
     train: { start: string; end: string; bars: number; scored_bars: number };
     test: { start: string; end: string; bars: number };
     selected: {
@@ -90,6 +97,7 @@ export type ValidationReport = ValidationSummary & {
       space_index?: number;
       overrides: Record<string, number>;
       eligible: boolean;
+      inner_results?: (ValidationMetrics & { start: string; last_candle: string; bars: number })[];
     })[];
     out_of_sample: Omit<Backtest, 'id' | 'source'>;
     fixed_parameters: ValidationMetrics;

@@ -221,7 +221,7 @@ class AlertDelivery:
             policy = json.loads(row[0])
             rule = self._rule(db, policy["kind"], policy["rule_id"])
             notices = db.execute(
-                "SELECT rowid,id,created_at,payload FROM alert_notifications WHERE rule_id=? AND rowid>? ORDER BY rowid LIMIT 20",
+                "SELECT rowid AS rowid,id,created_at,payload FROM alert_notifications WHERE rule_id=? AND rowid>? ORDER BY rowid LIMIT 20",
                 (policy["rule_id"], policy["cursor"]),
             ).fetchall()
             for row in notices:

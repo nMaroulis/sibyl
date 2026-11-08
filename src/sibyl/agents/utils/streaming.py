@@ -1,7 +1,7 @@
-"""Thin NDJSON bridge from native run events to browser-safe activity.
+"""HTTP presentation of native ProtoLink streams; no model/action protocol handling.
 
-ProtoLink remains the execution owner. This bridge forwards labels/outcomes,
-never raw model chunks, prompts, tool arguments, results or provider errors.
+The SDK owns answer extraction, privacy, activity classification and execution.
+Sibyl adds bounded NDJSON delivery and commits its application chat records.
 """
 
 import asyncio
@@ -9,61 +9,79 @@ import json
 
 import anyio
 from fastapi import HTTPException
-from protolink import request_context
+from protolink import StreamGapError, current_request_context, request_context
 
 
-def public_activity(event) -> dict | None:
-    """Project one native action lifecycle without exposing its input/output text."""
-    payload = event.payload
-    data = {**payload.get("metadata", {}), **payload}
-    kind = payload.get("llm_event_type", "")
-    action = data.get("action")
-    action = action if isinstance(action, dict) else {}
-    consultation = kind.startswith("agent_call_") or action.get("kind") == "agent.call"
-    if event.type not in {
-        "action.started",
-        "action.completed",
-        "action.failed",
-        "action.rejected",
-        "action.canceled",
-        "action.denied",
-    }:
-        return None
-    name = data.get("agent") if consultation else data.get("tool")
-    name = name or action.get("name")
-    if not name:
-        return None
-    return {
-        "type": "activity",
-        "id": event.action_id or event.event_id,
-        "run_id": event.run_id,
-        "task_id": event.task_id,
-        "agent": event.agent_name,
-        "kind": "consultation" if consultation else "tool",
-        "label": str(name)[:120],
-        "status": {
-            "action.started": "running",
-            "action.completed": "completed",
-            "action.failed": "failed",
-            "action.rejected": "rejected",
-            "action.canceled": "cancelled",
-            "action.denied": "rejected",
-        }[event.type],
-    }
+async def run_updates(handle, *, after: int = 0, answer_after: int = 0, answers: bool = True):
+    """Multiplex native presentation/answer subscriptions without taking run ownership.
+
+    Their cursors are independent. Closing this iterator only stops its readers;
+    an initiating request decides whether to cancel the run on disconnect.
+    """
+    queue = asyncio.Queue(maxsize=32)
+
+    async def publish(kind, events):
+        try:
+            async for event in events:
+                await queue.put({"type": kind, "update": event.to_dict()})
+            await queue.put(None)
+        except Exception as exc:
+            await queue.put(exc)
+
+    streams = [("activity", handle.presentation_events(after=after))]
+    if answers:
+        streams.append(("answer", handle.answer_events(after=answer_after)))
+    readers = [asyncio.create_task(publish(kind, events)) for kind, events in streams]
+    try:
+        remaining = len(readers)
+        while remaining:
+            item = await queue.get()
+            if item is None:
+                remaining -= 1
+            elif isinstance(item, Exception):
+                raise item
+            else:
+                yield item
+    finally:
+        with anyio.CancelScope(shield=True):
+            for reader in readers:
+                reader.cancel()
+            await asyncio.gather(*readers, return_exceptions=True)
+
+
+async def retained_run(handle, *, after: int = 0, answer_after: int = 0, answers: bool = True):
+    """Observe retained work; never resubmit or cancel it when a viewer disconnects."""
+    try:
+        async for update in run_updates(handle, after=after, answer_after=answer_after, answers=answers):
+            yield json.dumps(update, allow_nan=False) + "\n"
+        result = await handle.result()
+        yield json.dumps({"type": "result", "status": result.status}) + "\n"
+    except StreamGapError as exc:
+        yield (
+            json.dumps(
+                {
+                    "type": "gap",
+                    "after": exc.after,
+                    "first_available": exc.first_available,
+                    "latest": exc.latest,
+                }
+            )
+            + "\n"
+        )
+    except ValueError:
+        yield json.dumps({"type": "error", "status": 400, "message": "Invalid run stream cursor."}) + "\n"
 
 
 async def stream_reply(invoke):
-    """Stream an existing API operation exactly once; cancel/drain it on disconnect."""
+    """Stream one API operation; the initiating connection cancels/drains on disconnect."""
     queue = asyncio.Queue(maxsize=32)
 
-    async def progress(event):
-        if activity := public_activity(event):
-            await queue.put(activity)
+    async def progress(frame):
+        await queue.put(frame)
 
     async def produce():
         try:
-            await queue.put({"type": "status", "status": "queued"})
-            with request_context({"progress": progress}):
+            with request_context({**current_request_context(), "progress": progress}):
                 reply = await invoke()
             await queue.put({"type": "reply", "reply": reply})
         except asyncio.CancelledError:

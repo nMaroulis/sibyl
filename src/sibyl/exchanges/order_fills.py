@@ -12,6 +12,8 @@ ORDER_FILL_KINDS = {
     "okx-bill",
     "bybit-execution",
     "kucoin-hf",
+    "bitstamp-transactions",
+    "gemini-trades",
 }
 
 
@@ -24,6 +26,11 @@ def fetch_order_fill_page(
     twenty IDs per page. Other providers filter by the exact order at source.
     Cursors are private server state and a new pass starts from the beginning.
     """
+    from sibyl.exchanges.venue_history import KINDS as VENUES
+    from sibyl.exchanges.venue_history import fetch_venue_order_page
+
+    if kind in VENUES:
+        return fetch_venue_order_page(exchange, kind, order_id, symbol, cursor, limit)
     market = exchange.market(symbol)
     if kind in {"okx-bill", "bybit-execution", "kucoin-hf"}:
         from sibyl.exchanges.spot_history import fetch_spot_page

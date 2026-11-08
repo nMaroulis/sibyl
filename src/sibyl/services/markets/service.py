@@ -20,6 +20,7 @@ from sibyl.exchanges.data import STABLES, TIMEFRAMES
 from sibyl.market_data.archive import CandleArchive
 from sibyl.market_data.control import ProviderControl, ProviderDeferred
 from sibyl.market_data.health_history import ProviderHistory
+from sibyl.market_data.streams import LiveMarkets
 from sibyl.models import Candle, Connection
 from sibyl.services.research.crypto_library import ASSETS as RESEARCH_ASSETS
 from sibyl.services.workspace.data_settings import DataSettings
@@ -59,6 +60,7 @@ class Market:
         self._lock = threading.RLock()
         self._clients: dict[str, ExchangeClient] = {}
         self._local = threading.local()
+        self.live = LiveMarkets(self)
 
     @contextmanager
     def snapshot(self, source: str | None = None):

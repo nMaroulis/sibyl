@@ -6,7 +6,7 @@ import time
 from uuid import uuid4
 
 import pytest
-from agent_helpers import coordinator_factory, delegate
+from agent_helpers import busy_agents, coordinator_factory, delegate
 from fastapi.testclient import TestClient
 from protolink import Task, create_llm, current_request_context
 
@@ -217,15 +217,14 @@ def test_model_choices_are_frozen_before_queue_and_profiles_remain_private(clien
     definition = create(client)
 
     async def queued():
-        async with owner._semaphore:
-            async with owner._semaphore:
-                run = await client.app.state.services.investigations.start(
-                    definition["id"], InvestigationRun(request_id=uuid4().hex)
-                )
-                owner.models.save(ModelSettingsRequest(provider="none"))
+        run = await client.app.state.services.investigations.start(
+            definition["id"], InvestigationRun(request_id=uuid4().hex)
+        )
+        owner.models.save(ModelSettingsRequest(provider="none"))
         return run
 
-    run = client.portal.call(queued)
+    with busy_agents(client, monkeypatch):
+        run = client.portal.call(queued)
     saved = wait(client, definition, run)
     assert saved["status"] == "completed", saved
     assert seen == [("mock", "mock")]
@@ -328,15 +327,13 @@ def test_cancelling_before_a_slot_is_available_never_calls_a_provider(client, mo
     coordinator_factory(monkeypatch, lambda *a, **kw: pytest.fail("Cancelled queue waiter called a model"))
     definition = create(client)
     service = client.app.state.services.investigations
-    owner = client.app.state.services.agents
 
     async def stop_queued():
-        async with owner._semaphore:
-            async with owner._semaphore:
-                run = await service.start(definition["id"], InvestigationRun(request_id=uuid4().hex))
-                return await service.cancel(definition["id"], run["id"])
+        run = await service.start(definition["id"], InvestigationRun(request_id=uuid4().hex))
+        return await service.cancel(definition["id"], run["id"])
 
-    saved = client.portal.call(stop_queued)
+    with busy_agents(client, monkeypatch):
+        saved = client.portal.call(stop_queued)
     assert saved["status"] == "cancelled" and saved["report"] is None
     assert not service._tasks
 

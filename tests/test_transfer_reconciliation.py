@@ -505,6 +505,7 @@ def test_transfer_inference_cannot_change_selection_or_confirm_links(client, mon
         "investment_returns",
         "account_history",
         "balance_check_report",
+        "basket_risk",
         "risk_alerts",
         "page_help",
         "read_context_artifact",

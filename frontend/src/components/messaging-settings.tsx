@@ -17,6 +17,7 @@ export type MessagingChannel = {
   last_checked_at?: number;
   last_poll_at?: number;
   has_token?: boolean;
+  long_reply_document?: boolean;
   allowed_user_id?: number;
   bot_username?: string;
   bot_id?: number;

@@ -33,6 +33,21 @@ ExchangeId = Literal[
 
 ConnectionExchangeId = ExchangeId | Literal["demo", "binance-testnet", "coinbase-sandbox"]
 
+# Read/import capability alone never grants automated order submission.
+STRATEGY_EXECUTION_PROVIDERS = frozenset(
+    {
+        "binance",
+        "binanceus",
+        "binance-testnet",
+        "coinbase",
+        "coinbase-sandbox",
+        "kraken",
+        "okx",
+        "bybit",
+        "kucoin",
+    }
+)
+
 
 @dataclass(frozen=True)
 class ExchangeSpec:
@@ -60,6 +75,8 @@ class ExchangeSpec:
 
     def supports_order(self, order_type: str) -> bool:
         """Keep domain and adapter execution gates aligned, including limit-only venues."""
+        if order_type in {"stop_loss_limit", "take_profit_limit"}:
+            return self.id in {"binance", "binance-testnet"}
         if order_type == "limit":
             return self.spot_trading
         return order_type == "market" and self.market_orders
@@ -72,6 +89,9 @@ class ExchangeSpec:
             "verification": "Adapter-tested; verify this account separately with Check access.",
             "limit_orders": self.spot_trading,
             "cancel_orders": self.spot_trading,
+            "conditional_orders": self.id in {"binance", "binance-testnet"},
+            "oco_orders": self.id in {"binance", "binance-testnet"},
+            "replace_orders": self.id in {"binance", "binance-testnet"},
         }
 
 

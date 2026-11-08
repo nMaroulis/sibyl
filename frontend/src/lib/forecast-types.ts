@@ -26,7 +26,21 @@ export type ForecastModel = {
   engine: string;
   app_version: string;
   parent_id: string | null;
-  parameters: { lags: number; alpha: number; max_horizon: number };
+  archived?: boolean;
+  archive_revision?: number;
+  imported_from?: {
+    verified: false;
+    claimed_source: string;
+    method: string;
+    recorded_fit_matches_local: boolean;
+  };
+  parameters: {
+    family?: 'ridge' | 'mlp';
+    lags: number;
+    alpha: number;
+    max_horizon: number;
+    feature_set?: 'returns' | 'returns_context';
+  };
 };
 export type ForecastMetrics = { mae: number; rmse: number; mape_pct: number };
 export type ForecastEvaluation = {
@@ -55,6 +69,14 @@ export type ForecastDetail = {
   nominal_coverage: number;
   notes: string[];
   partitions: Record<string, { start: string; end: string; candles: number }>;
+  training?: {
+    horizon: number;
+    epochs: number;
+    hidden_units: number;
+    optimizer: string;
+    initial_loss: number;
+    final_loss: number;
+  }[];
   evaluation: ForecastEvaluation[];
   test_trace: ForecastChartPoint[];
   trace_horizon: number;

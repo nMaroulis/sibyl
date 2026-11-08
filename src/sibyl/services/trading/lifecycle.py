@@ -105,6 +105,11 @@ class OrderLifecycle:
         if intent["status"] == "closed":
             status = "closed"
         intent["status"] = status
+        if intent.get("replace_state") and status in TERMINAL:
+            intent.update(
+                replace_state="original_terminal",
+                replace_message="Original order is terminal. Inspect its linked replacement record for the separate submission outcome.",
+            )
         if intent.get("cancel_state"):
             if status == "canceled":
                 intent.update(

@@ -1,9 +1,10 @@
 """Explicit spot clients: provider differences live here, not in domain services."""
 
+from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
 
 
-class BinanceClient(CCXTClient):
+class BinanceClient(BinanceAdvanced, CCXTClient):
     """Binance spot, including the separate testnet when explicitly selected."""
 
     id = "binance"
@@ -11,6 +12,12 @@ class BinanceClient(CCXTClient):
     options = {"fetchMarkets": {"types": ["spot"]}}
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50, 100)
+
+    def stream_symbol(self, symbol: str) -> str:
+        """Resolve the native public-stream identifier from this environment's spot catalog."""
+        with self.lock:
+            self.market(symbol)
+            return self._exchange.market(symbol)["id"]
 
 
 class BinanceTestnetClient(BinanceClient):
@@ -31,6 +38,12 @@ class CoinbaseClient(CCXTClient):
     id = "coinbase"
     history_kind = "coinbase-cursor"
     balance_params = {"type": "spot"}
+
+    def stream_symbol(self, symbol: str) -> str:
+        """Resolve an exact production spot product before subscribing without credentials."""
+        with self.lock:
+            self.market(symbol)
+            return self._exchange.market(symbol)["id"]
 
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
         """Preserve the reviewed base quantity and ID in Coinbase's native IOC fields.
@@ -66,6 +79,12 @@ class KrakenClient(CCXTClient):
 
     id = "kraken"
     history_kind = "kraken-cursor"
+
+    def stream_symbol(self, symbol: str) -> str:
+        """Use Kraken v2's canonical BTC/DOGE names after validating the exact spot market."""
+        with self.lock:
+            self.market(symbol)
+            return self._exchange.market(symbol)["symbol"]
 
 
 class OKXClient(CCXTClient):
@@ -169,12 +188,14 @@ class BitstampClient(CCXTClient):
     """Bitstamp spot account with key/secret authentication."""
 
     id = "bitstamp"
+    history_kind = "bitstamp-transactions"
 
 
 class GeminiClient(CCXTClient):
     """Gemini spot and sandbox reads; native market orders are not supported here."""
 
     id = "gemini"
+    history_kind = "gemini-trades"
 
 
 class BitfinexClient(CCXTClient):

@@ -1,4 +1,4 @@
-"""Acceptance contracts for Sibyl's native ProtoLink 0.8.3 integration.
+"""Acceptance contracts for Sibyl's native ProtoLink 0.8.4 integration.
 
 Use actual registry/handles, worker admission, context isolation and SQLite
 history/reports. Only provider responses and blocking domain reads are scripted.
@@ -9,9 +9,9 @@ import json
 import threading
 
 import pytest
-from agent_helpers import delegate
+from agent_helpers import busy_agents, delegate
 from fastapi.testclient import TestClient
-from protolink import Task, create_llm, current_request_context, request_context
+from protolink import RunHandle, Task, create_llm, current_request_context, request_context
 
 from sibyl.agents.utils.common import freeze
 from sibyl.api.app import create_app
@@ -85,16 +85,10 @@ def test_queued_request_keeps_the_accepted_team_configuration(client, monkeypatc
         return create_llm("mock", default_response="The accepted model answered")
 
     monkeypatch.setattr("sibyl.agents.utils.registry.create_llm", model)
-    semaphore = owner._semaphore
-    client.portal.call(semaphore.acquire)
-    client.portal.call(semaphore.acquire)
-    future = client.portal.start_task_soon(owner.ask, AgentRequest(module="reporter", message="Queued"))
-    try:
+    with busy_agents(client, monkeypatch):
+        future = client.portal.start_task_soon(owner.ask, AgentRequest(module="reporter", message="Queued"))
         assert accepted.wait(timeout=2)
         owner.models.save(ModelSettingsRequest(provider="mock", model="later"))
-    finally:
-        client.portal.call(semaphore.release)
-        client.portal.call(semaphore.release)
     assert future.result(timeout=3)["model"] == "accepted"
     assert selected == [("reporter", "accepted")]
 
@@ -174,7 +168,7 @@ def test_native_worker_capacity_remains_occupied_after_cancellation_without_late
 
     async def start():
         return [
-            network.group.run(
+            RunHandle.start(
                 network.agents["reporter"], Task.create_tool_call("news_briefing", {"mode": "demo"})
             )
             for _ in range(5)

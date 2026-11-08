@@ -3,49 +3,51 @@ import { Check, ChevronDown, Circle, LoaderCircle, Timer, X } from 'lucide-react
 import { useResource } from '../lib/hooks';
 import type { AgentActivity } from '../lib/types';
 
-export const mergeActivity = (items: AgentActivity[], next: AgentActivity) =>
-  [
-    ...items.filter(
-      (item) =>
-        item.type !== next.type ||
-        (item.type === 'activity' && next.type === 'activity' && item.id !== next.id),
-    ),
-    next,
-  ].slice(-8);
+export const mergeActivity = (items: AgentActivity[], next: AgentActivity) => {
+  const id = (item: AgentActivity) => item.activity_id ?? item.event_id;
+  return [...items.filter((item) => id(item) !== id(next)), next].slice(-12);
+};
 
+/** Render SDK-classified actions; approved/requested actions are not completed effects. */
 export function AgentActivityTrail({ items }: { items: AgentActivity[] }) {
-  const actions = items.filter((item) => item.type === 'activity');
+  const actions = items.filter((item) => item.type === 'tool' || item.type === 'consultation');
   return (
     <div className="agent-run-activity" aria-label="Agent activity" aria-live="polite">
-      {!actions.length && (
-        <span>
-          <LoaderCircle size={13} className="spin" /> Waiting for an answer…
-        </span>
-      )}
       {actions.map((item) => (
-        <span key={item.id} data-status={item.status}>
-          {item.status === 'running' ? (
+        <span key={item.activity_id ?? item.event_id} data-status={item.status}>
+          {item.status === 'started' ? (
             <LoaderCircle size={13} className="spin" />
           ) : item.status === 'completed' ? (
             <Check size={13} />
+          ) : item.status === 'requested' ? (
+            <Circle size={13} />
           ) : (
             <X size={13} />
           )}
-          <strong>{item.agent?.replace(/^sibyl-/, '')}</strong>
+          <strong>{item.agent_name?.replace(/^sibyl-/, '')}</strong>
           <span>
-            {item.kind === 'consultation'
-              ? `Consultation · ${item.label.replace(/^sibyl-/, '').replaceAll('_', ' ')}`
-              : item.label.replaceAll('_', ' ')}
+            {item.type === 'consultation' ? 'Consultation · ' : ''}
+            {(item.name ?? item.summary).replace(/^sibyl-/, '').replaceAll('_', ' ')}
           </span>
-          <small>{item.status === 'running' ? 'Working' : item.status}</small>
+          <small>{item.status === 'started' ? 'Working' : item.status}</small>
         </span>
       ))}
     </div>
   );
 }
 
+type Usage = {
+  calls: number;
+  reported_calls: number;
+  estimated_calls: number;
+  unknown_calls: number;
+  reported: { total_tokens: number | null };
+  estimated: { total_tokens: number | null };
+  unpriced_calls: number;
+};
+
 type Details = {
-  tokens: { total: number | null; known_calls: number; calls: number; estimated: boolean };
+  usage: { tree: Usage; root: Usage; children: Usage };
   calls: {
     agent: string;
     provider: string | null;
@@ -96,13 +98,15 @@ export function AgentRunDetails({ runId }: { runId?: string }) {
               <p className="footnote">
                 {data.calls.length ? (
                   <>
-                    {data.calls.length} model calls ·{' '}
-                    {data.tokens.total === null
-                      ? 'Token usage unavailable'
-                      : `${count(data.tokens.total)} ${data.tokens.estimated ? 'estimated tokens' : 'reported tokens'}`}
-                    {data.tokens.known_calls < data.tokens.calls
-                      ? ` · Partial coverage (${data.tokens.known_calls}/${data.tokens.calls} calls)`
-                      : ''}
+                    {data.usage.tree.calls} model calls
+                    {data.usage.tree.reported_calls > 0 &&
+                      ` · ${count(data.usage.tree.reported.total_tokens)} provider-reported tokens (${data.usage.tree.reported_calls} calls)`}
+                    {data.usage.tree.estimated_calls > 0 &&
+                      ` · ${count(data.usage.tree.estimated.total_tokens)} estimated tokens (${data.usage.tree.estimated_calls} calls)`}
+                    {data.usage.tree.unknown_calls > 0 &&
+                      ` · Usage unavailable for ${data.usage.tree.unknown_calls} calls`}
+                    {' · '}
+                    {data.usage.root.calls} root / {data.usage.children.calls} delegated calls
                   </>
                 ) : (
                   'No completed model calls were recorded.'

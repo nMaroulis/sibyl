@@ -11,6 +11,7 @@ from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
 from sibyl.api.uploads import bounded_body
+from sibyl.research_library.evaluations.contracts import EvaluationRun, EvaluationSuite
 from sibyl.research_library.semantic.contracts import (
     IndexBatch,
     LocalEndpoint,
@@ -170,3 +171,39 @@ def semantic_clear(body: SemanticRevision, s: S):
 def semantic_disable(s: S, revision: int = Query(ge=0)):
     """Disable semantic retrieval and discard its vectors; source files stay retained."""
     return s.library.semantic.clear(revision, disable=True)
+
+
+@router.get("/evaluations")
+def evaluations(s: S):
+    """List owner-labeled suites and saved evaluation progress without starting inference."""
+    return s.library.evaluations.catalog()
+
+
+@router.post("/evaluations/suites", status_code=201)
+def evaluation_suite(body: EvaluationSuite, s: S):
+    """Pin explicit relevant passages; labels are local user judgments, not model scores."""
+    return s.library.evaluations.save(body)
+
+
+@router.post("/evaluations/suites/{identity}/runs", status_code=202)
+def evaluation_start(identity: str, body: EvaluationRun, s: S):
+    """Queue a bounded comparison against the current fixed corpus and index."""
+    return s.library.evaluations.start(identity, body)
+
+
+@router.get("/evaluations/runs/{identity}")
+def evaluation_report(identity: str, s: S):
+    """Read saved query rankings, citations, relevance metrics and timings."""
+    return s.library.evaluations.get(identity)
+
+
+@router.post("/evaluations/runs/{identity}/stop")
+def evaluation_stop(identity: str, s: S):
+    """Stop future queries and discard any late result from the current query."""
+    return s.library.evaluations.stop(identity)
+
+
+@router.delete("/evaluations/suites/{identity}", status_code=204)
+def evaluation_delete(identity: str, s: S):
+    """Explicitly remove an inactive suite and its saved reports, keeping sources."""
+    s.library.evaluations.delete(identity)

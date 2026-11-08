@@ -1,9 +1,12 @@
 """Explicit trained-forecast research controls and read-only saved evidence."""
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
+from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
-from sibyl.forecasting.contracts import ForecastRequest, RollingEvaluationRequest, TrainForecast
+from sibyl.api.uploads import bounded_body
+from sibyl.forecasting.bundles import MAX_BUNDLE
+from sibyl.forecasting.contracts import ArchiveModel, ForecastRequest, RollingEvaluationRequest, TrainForecast
 from sibyl.forecasting.forward import ForwardAction
 
 
@@ -18,9 +21,9 @@ router = APIRouter(
 
 
 @router.get("")
-def registry(s: S):
+def registry(s: S, include_archived: bool = False):
     """Read model-version metadata; no training or provider requests."""
-    return s.forecasts.list()
+    return s.forecasts.list(include_archived)
 
 
 @router.post("", status_code=201)
@@ -51,6 +54,25 @@ def rolling_history(identity: str, s: S):
 def rolling_evaluate(identity: str, body: RollingEvaluationRequest, s: S):
     """Explicitly refit the saved recipe over earlier windows and retain later test evidence."""
     return s.forecasts.evaluations.run(identity, body)
+
+
+@router.post("/import", status_code=201)
+async def import_model(request: Request, s: S):
+    """Read a bounded JSON bundle, refit its recipe offline and label its source as unverified imported research."""
+    content = await bounded_body(request, MAX_BUNDLE)
+    return await run_in_threadpool(s.forecasts.bundles.import_bundle, content)
+
+
+@router.get("/{identity}/bundle")
+def bundle(identity: str, s: S):
+    """Export the trained recipe, recorded evidence and full immutable daily input in portable JSON."""
+    return s.forecasts.bundles.export(identity)
+
+
+@router.post("/{identity}/archive")
+def archive(identity: str, body: ArchiveModel, s: S):
+    """Archive/restore a model without deleting outputs, evaluations or stopping outcome monitors."""
+    return s.forecasts.archive(identity, body.archived, body.revision)
 
 
 @router.get("/{identity}")

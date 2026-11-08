@@ -47,9 +47,75 @@ docker compose up --build
 
 ## Release notes
 
-## [2.2.0] - 2026-11-07
+## [2.3.0] - 2026-11-10
 
 :::note[Latest Release]
+
+Markets adds live Binance, Kraken and Coinbase previews, with clear source/interval limits and REST fallback. Trade gains reviewed native Binance conditional/OCO orders and unfilled replacement. Research expands with comparable strategy references, nested validation, custom Python research plugins, Granger lag analysis, continuous position-carrying replay, portable ridge/neural forecasts with optional causal features, and saved retrieval-quality evaluations. Account adds observed-history basket risk and hourly volatility/tail watches alongside concentration metrics. Bitstamp/Gemini fill imports, protected inbox retention/export, process/latency diagnostics, content-free workspace health reports and Telegram notification/conversation review extend local operations. Native read-only ProtoLink tools explain the saved evidence and controls throughout. ProtoLink 0.8.4 adds safe streamed answers, native progress and usage rollups, bounded admission and retained run subscriptions.
+
+:::
+
+### Added
+
+- Shared native Wiki/Reporter research tools, schema-driven query/pagination bounds and correctable missing evaluation selections. Static guides/methodology use ProtoLink inline execution while domain reads keep bounded workers. Consultation cards use native lifecycle classification and avoid per-token database writes; agent factories and tool contracts have clearer docstrings.
+
+- ProtoLink 0.8.4 native answer-only streaming for API/local JSON-mode and native providers, typed public activity, shared Markdown, replacement/final updates and authoritative saved replies. Remove Sibyl's answer projector, model-protocol flag, raw activity classifier and semaphore. Native FIFO admission bounds roots/waiters and exposes queue state; native usage separates reported/estimated/unknown root and child calls. Retained read-only subscriptions add independent cursors, explicit gaps and deletion guards; group submission IDs remain process-local, without exactly-once or durable-resumption claims.
+
+- Workspace health reports: an explicit bounded read-only SQLite quick check, allowlisted runtime/resource/worker summaries, JSON download without credentials or private content, and passive Technician access to the last report.
+
+- Trusted local Python strategy plugins for historical backtests: explicit installed entry-point allowlists, bounded manifests/controls, immutable prefix-only observations, shared next-open cost simulation, source-revision pins, retained inputs/decision fingerprints, offline reruns, charts/exports and native read-only Broker evidence. An installable momentum example is included; plugin jobs/optimization and Freqtrade remain pending.
+- Markets Granger lag analysis with an explicit one-to-five lag order, reference-first bidirectional tests, consecutive return windows, training-only classical F/Bonferroni evidence, independent later-target MAE comparisons, residual diagnostics, source-labeled UI/JSON export and native Analyst context. Inference assumptions and the distinction between lag predictability and causation remain explicit.
+
+- Optional trained small neural forecasts: an eight-unit tanh network fitted locally with fixed-seed Adam, training-only normalization, chronological calibration and independent test/rolling benchmarks. The UI exposes real training loss, numerical family and bounded portable refits; ridge remains the default.
+- Opt-in hourly historical basket-risk watches for annualized volatility and daily 95% expected shortfall, using up to eight currently held assets, exact-source conversion history, complete fresh valuation, clear subset labels, hysteresis and retained inputs. These descriptive watches never enforce trading policy or guarantee future losses.
+- Optional Telegram `.txt` documents for long conversation replies and scheduled research briefings, sent with direct HTTP multipart uploads. Complete UTF-8 content is capped at 64 KiB; actual confirmations, uncertainty, rate limits, original recipient binding and unsent withdrawal reuse the existing durable outboxes.
+
+- Coinbase Advanced Trade public ticker previews and native five-minute candles through the existing bounded stream lifecycle. Exact spot IDs, connection-wide sequence checks including subscription acknowledgments, sanitized rejection, public USDC-alias refusal and same-source REST fallback preserve attribution. A bounded actual unauthenticated BTC-USD ticker/candle observation passed through the production transport/parser.
+- Optional continuous single-market walk-forward deployment replay carrying cash, units and entry cost through parameter updates, with actual fills/fees, global trade cap, transition balances, fixed-setting comparison and retained independent-window scores. This historical replay starts no live strategy.
+- Explicit saved Account basket-risk studies with current-value weights, observed inverse/bridge history, a common consecutive daily suffix, sample covariance/correlation, volatility, historical VaR/shortfall, variance contributions, hypothetical paths, bounded work/storage and full input export. Subset coverage and dated evidence stay visible; Accountant reads saved results through native ProtoLink tools.
+- Telegram conversation-reply review reusing the notification review contract: grouped chunks, original recorded targets, unknown legacy identity disclosure, exact text inspection, atomic unsent withdrawal and separate bounded user acknowledgments. No review action resends or reruns inference. Emoji chunks now respect native UTF-16 limits.
+
+- Optional nested strategy validation scores fixed candidates across inner chronological windows wholly inside each outer training prefix, retaining per-window metrics, deterministic selection, work budgets, independent outer tests and native Broker evidence.
+- A richer causal forecast recipe adds six trailing-price trend/volatility statistics to return lags. Train-only scaling, purged evaluation, rolling studies, exact reruns, prospective forecasts and portable refits retain the selected recipe; legacy returns-only artifacts remain unchanged.
+- An owner-labeled Research retrieval-quality lab with saved suites, keyword/semantic/hybrid comparisons, pinned corpus/index evidence, precision/recall/MRR/nDCG/hit-rate metrics, query rankings, exact citations, export, Stop and restart interruption. Wiki/Reporter read saved results through native ProtoLink tools; scores do not establish answer confidence.
+- Telegram alert/briefing delivery review with explicit queued-text/target inspection, withdrawal of unsent remainders, stale-review protection and separate bounded user acknowledgments. Confirmed native outcomes are preserved; no review action resends a message. Technician receives compact read-only outcomes without private message bodies.
+
+- Shared, on-demand Binance production/Testnet public ticker and candle WebSockets, bounded viewer queues, validated source/environment selection, reconnect/backoff, freshness states, background-tab cleanup and authenticated browser display streams. Closed-candle analysis and execution remain on their existing REST paths.
+- Native stop-loss and take-profit GTC limits, with separate trigger/limit validation and exact conditional recovery matching. Per-instrument permissions and the Settings capability inventory reflect implemented paths.
+- Durable native two-leg OCO reviews, one-quantity semantics, typed list confirmation, independent child status/fill reconciliation and exact child-ID recovery after uncertain list submission. Demo and other adapters do not emulate these orders.
+- Separately reviewed, wholly unfilled manual-limit replacement through native STOP_ON_FAILURE/ONLY_NEW requests. Retain both records, estimated reservation release, a durable compound-command latch and conservative uncertainty; cancellation and replacement are explicitly non-atomic.
+- Progressive OCO entry, conditional fields and eligible order-monitor replacement controls. Native read-only Analyst stream evidence and Broker OCO/trigger/replacement evidence, plus updated typed page help.
+- A bounded, opt-in native advanced-order Testnet acceptance runner with isolated encrypted state, endpoint/notional gates, controlled OCO response-loss recovery and optional fill/cancel observation. Deterministic tests cover concurrency, restart, partial-fill races, SDK request fields and stream lifecycle.
+
+- Cost-aware buy-and-hold, cash, scheduled-installment and 50/50 asset/cash backtest references over the exact strategy evaluation window, with a selectable equity overlay, configurable candle cadence, fees, returns, drawdowns and disclosed assumptions. Older saved runs remain readable.
+- Portable bounded JSON forecast bundles containing the full frozen input and recipe. Imports verify integrity, refit locally, deduplicate and retain an explicitly unverified import namespace; forecasts and prospective outcomes are not copied. Model archive/restore retains outputs and evaluations and does not silently stop existing monitors.
+- Authenticated inbox JSON/CSV exports with kind and UTC date filters, explicit truncation, and opt-in age retention for read notices. Bounded cleanup protects unread records, unfinished delivery evidence and unprocessed enabled delivery cursors. Monotonic notification sequences preserve future delivery admission after cleanup.
+- Lightweight current-Python-process CPU, resident memory, thread count, database/WAL size, free workspace-volume space and process uptime in Workspace. Saved provider read history adds fixed latency histograms, p50/p95 upper bounds and sample coverage across restarts; historical reads without buckets remain visibly partial.
+- Native read-only Broker/Chronos/Technician evidence and page help for the new research, library and history controls.
+
+- Bitstamp selected-market imports using native transaction IDs and Gemini millisecond-boundary imports with retained edge identities, durable restart checkpoints and native-currency fees. Embedded native order details feed exact-order reconciliation for both. Saturated Gemini timestamp groups, reversal flags and missing identity/side evidence stop for review instead of inventing complete coverage. Settings reflects implemented support; private-account acceptance remains outstanding.
+- Kraken v2 public ticker/OHLC previews through the shared bounded stream lifecycle, supported native intervals, explicit provider/receipt timing, historical-snapshot rejection and rejection/REST-fallback states. Receipt timing does not establish last-trade freshness; no execution or indicator path consumes forming candles.
+- Unsigned sample distance correlation with a 360-observation work bound, explicit undefined coefficients, and same-interval log-return OLS beta/intercept/R²/residual summaries, scatter inspection and export. Analyst receives exact comparison selections through native request context and offers compact typed relationship evidence.
+- Whole-basket asset HHI, effective asset count and largest/top-three value shares in Account, with no score for incomplete coverage. Optional fixed-account HHI/top-three alerts reuse fresh complete valuations, hysteresis, cooldowns, saved evidence and existing Telegram delivery. Accountant/Technician explain the implemented scope.
+
+### Fixed
+
+- Module chats retain a clear request-level working status after tools complete, with elapsed time, subtle activity indication and an explanation that the final reply is still pending.
+
+- Agent dialogs, Sibyl replies and consultation answers now render Markdown headings, lists, tables, links and code instead of showing raw formatting. Raw HTML is excluded and generated images are not fetched automatically.
+
+- Correlations deep links now select the requested panel. Factual Ask dialogs follow the selected Granger order or saved custom/built-in backtest instead of returning unrelated market or default-strategy summaries.
+
+- Constant-series correlations now remain unavailable instead of displaying fabricated zero coefficients. Return comparisons require adjacent selected intervals and never bridge missing candles.
+- Preserve newer verified native fill/status observations when a delayed or lost single-order/OCO submission acknowledgment arrives. Group uncertainty cannot overwrite an independently recovered child.
+
+### Verification
+
+On November 6, 2026, actual public ticker events were observed from production and Testnet streams. In a separate virtual-fund Testnet workspace, conditional limit submission/cancellation, OCO child recovery after deliberately discarding a successful response, sibling cancellation, native replacement and duplicate approval identity passed. A marketable limit filled before cancellation; this is not intermediate partial-fill or genuine outage acceptance. No production order was submitted.
+
+## [2.2.0] - 2026-11-07
+
+:::note[Release summary]
 
 Sibyl gains saved investigations and scheduled AI briefings, with inspectable specialist evidence and optional Telegram delivery. A new research library supports document imports and optional local semantic search, while Account performance estimates, live forecast scorecards, rolling forecast evaluation and Bitcoin output-spend checks deepen the analysis tools.
 

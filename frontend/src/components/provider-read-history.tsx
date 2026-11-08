@@ -79,6 +79,42 @@ export function ProviderReadHistory({ source, demo }: { source: string; demo: bo
                     <strong>{data.totals.failures.toLocaleString()}</strong>
                   </div>
                 </div>
+                {data.latency_distribution && (
+                  <details className="latency-distribution">
+                    <summary>
+                      Response-time distribution · {data.latency_distribution.samples} samples
+                    </summary>
+                    <p className="footnote">
+                      p50{' '}
+                      {data.latency_distribution.p50_upper_ms != null
+                        ? `≤ ${ms(data.latency_distribution.p50_upper_ms)}`
+                        : 'unavailable / above 30s'}{' '}
+                      · p95{' '}
+                      {data.latency_distribution.p95_upper_ms != null
+                        ? `≤ ${ms(data.latency_distribution.p95_upper_ms)}`
+                        : 'unavailable / above 30s'}{' '}
+                      · coverage {data.latency_distribution.coverage_pct ?? '—'}% of retained reads
+                      · {data.latency_distribution.status}
+                    </p>
+                    <div className="latency-buckets">
+                      {data.latency_distribution.buckets.map((b, i) => (
+                        <div key={i}>
+                          <span>{b.upper_ms == null ? '> 30s' : `≤ ${b.upper_ms}ms`}</span>
+                          <meter
+                            min={0}
+                            max={Math.max(
+                              1,
+                              ...data.latency_distribution!.buckets.map((x) => x.samples),
+                            )}
+                            value={b.samples}
+                          />
+                          <strong>{b.samples}</strong>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="footnote">{data.latency_distribution.method}</p>
+                  </details>
+                )}
                 <div className="provider-history-chart">
                   <svg
                     viewBox={`0 0 ${data.series.length * 8} 68`}

@@ -273,7 +273,7 @@ def test_shared_inbox_acknowledgment_and_legacy_price_rows(setup):
     alerts.tick()
     with alerts.store.db() as db:
         db.execute(
-            "INSERT INTO alert_notifications VALUES(?,?,?,?,NULL,?)",
+            "INSERT INTO alert_notifications(id,rule_id,cycle,created_at,read_at,payload) VALUES(?,?,?,?,NULL,?)",
             ("old", "old-rule", 1, "2026-01-01", json.dumps({"symbol": "BTC/USDT"})),
         )
     assert {row["kind"] for row in alerts.inbox.page()["items"]} == {"price", "strategy"}

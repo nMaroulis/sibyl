@@ -1,3 +1,5 @@
+import { CustomStrategies } from '../components/strategies/custom-strategies';
+import { BenchmarkComparison } from '../components/strategies/benchmark-comparison';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FlaskConical, Play, Radio } from 'lucide-react';
@@ -614,6 +616,20 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
                     />
                   </label>
                 </div>
+                <label>
+                  Reference portfolio cadence · candles
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={params.benchmark_interval ?? 20}
+                    onChange={(event) => update('benchmark_interval', Number(event.target.value))}
+                  />
+                  <small>
+                    Applies only to installment and 50/50 references. All initial cash is available
+                    from the start.
+                  </small>
+                </label>
                 <p className="footnote">
                   Applied to each fill. 10 basis points = 0.1%. Signals use closed candles.
                 </p>
@@ -780,6 +796,7 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
                   result={activeResult}
                   comparison={comparison}
                 />
+                <BenchmarkComparison result={activeResult} />
                 {comparison && (
                   <div className="backtest-comparison">
                     <strong>Same input & initial capital</strong>
@@ -1080,6 +1097,7 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
         ) : (
           <StrategyList jobs={jobs.data ?? []} catalog={catalog.data ?? []} />
         )}
+        <CustomStrategies params={params} datasetId={datasetId} demo={demoInput} />
         <ComingSoon module="strategies" />
       </SectionPanel>
     </>

@@ -4,7 +4,7 @@ This specialist does not delegate. Sibyl remains the coordinator; native tools
 here provide portfolio observations or focused workspace instructions.
 """
 
-from protolink import Agent
+from protolink import Agent, Tool
 
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.oracle import GUIDES, Topic
@@ -25,7 +25,18 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Oracle's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     portfolio = services.portfolio
 
     def portfolio_snapshot(scope: str | None = None) -> dict:
@@ -50,7 +61,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent = Agent(
         name="sibyl-oracle",
         description=DESCRIPTION,
-        tools=[portfolio_snapshot, page_help],
+        tools=[portfolio_snapshot, Tool.from_callable(page_help, sync_execution="inline")],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )

@@ -38,16 +38,30 @@ Accountant has a native ProtoLink `risk_alerts(rule_id="")` evidence tool. Techn
 
 All paths have prefix `/api/v1`, workspace token/origin controls and `Cache-Control: no-store`.
 
-| Method | Path | Contract |
-| --- | --- | --- |
-| GET | `/risk-alerts?include_archived=false&offset=0` | Local pages of 50, non-archived budget and scheduling metadata; no balance/quote reads |
-| POST | `/risk-alerts` | Fixed `account_ids` (1–10 unique saved IDs), `source`, `metric: value_floor/concentration/drawdown`, positive finite `threshold`; optional `reset_threshold`, `asset`, `cooldown_seconds`, `notify_recovery`, `label`; returns 201 |
-| POST | `/risk-alerts/{id}/edit` | Full create configuration + strict positive integer `revision`; preserves history, saves paused |
-| POST | `/risk-alerts/{id}/action` | `action: pause/arm/archive/restore` + `revision`; stale editors return 409 |
-| POST | `/risk-alerts/{id}/check` | Read only if armed and due; respect backoff/budgets |
-| GET | `/risk-alerts/{id}/evidence?sample_id=123` | Local complete snapshots from that rule/revision; no provider calls |
-| GET | `/risk-alerts/example` | Separate illustrative rule/inbox/evidence; no activation or persistence |
+| Method | Path                                           | Contract                                                                                                                                                                                                                           |
+| ------ | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/risk-alerts?include_archived=false&offset=0` | Local pages of 50, non-archived budget and scheduling metadata; no balance/quote reads                                                                                                                                             |
+| POST   | `/risk-alerts`                                 | Fixed `account_ids` (1–10 unique saved IDs), `source`, `metric: value_floor/concentration/drawdown`, positive finite `threshold`; optional `reset_threshold`, `asset`, `cooldown_seconds`, `notify_recovery`, `label`; returns 201 |
+| POST   | `/risk-alerts/{id}/edit`                       | Full create configuration + strict positive integer `revision`; preserves history, saves paused                                                                                                                                    |
+| POST   | `/risk-alerts/{id}/action`                     | `action: pause/arm/archive/restore` + `revision`; stale editors return 409                                                                                                                                                         |
+| POST   | `/risk-alerts/{id}/check`                      | Read only if armed and due; respect backoff/budgets                                                                                                                                                                                |
+| GET    | `/risk-alerts/{id}/evidence?sample_id=123`     | Local complete snapshots from that rule/revision; no provider calls                                                                                                                                                                |
+| GET    | `/risk-alerts/example`                         | Separate illustrative rule/inbox/evidence; no activation or persistence                                                                                                                                                            |
 
 Thresholds/recovery values are strict JSON numbers, excluding booleans/non-finite values. Percentage limits are `(0,100]`. Value floors are `(0,10¹⁵]` USDT; recovery values must be higher. Concentration requires a canonical uppercase asset ID (max 24 characters); other metrics reject an asset. Percentage recovery is lower and nonnegative. Defaults: value floor × 1.01 or percentage limit minus one percentage point (minimum zero); cooldown 300 seconds; recovery notices enabled. Unknown fields are rejected (422); unavailable setup returns 400; missing rules 404; stale revisions 409. A same-account/source edit can save paused while access is unavailable, without claiming a new successful assessment.
 
 `tests/test_risk_alerts.py` covers native-shaped valuation, source pinning, fixed groups/environments, stablecoin/inverse routes, quality gates, observed peaks/zero values, cooldown/recovery behavior, in-flight lifecycle/configuration/age races, rollback, duplicate consumers, local-only evidence, retention/revisions, HTTP validation, token access and native Accountant client tools. No actual exchange order or external message is sent.
+
+## Whole-basket concentration rules
+
+`accounting/diversification.py` computes shared value-weighted HHI, effective asset count and largest/top-three weights after combining identical assets. Invalid, zero-value or incomplete baskets keep metrics unavailable. Account shows the same definitions; risk samples use their existing stricter fresh/complete valuation gate.
+
+New `metric=hhi` and `metric=top_three` rules breach at or above the reviewed threshold and recover at or below its lower reset level, using the existing cooldown/incident state machine. HHI is a 0–100 index and displays `/ 100`; top-three is a percentage. No asset selector applies to either. Retained samples include their calculated diversification evidence. Existing inbox, per-rule Telegram delivery and read-only Accountant tools use the same metric names and units. These are passive value-concentration rules, not correlated-risk estimates, automatic rebalancing or strategy guards.
+
+## Historical basket metrics
+
+Risk requests additionally accept `metric: volatility|tail_loss`, required `basket_assets` (1–8 distinct uppercase symbols), and `history_days: 60|90|180`. Other metrics reject a nonempty basket. Volatility thresholds are annualized percent (up to 10,000); tail-loss thresholds are daily expected-shortfall percent (up to 100). Hysteresis, cooldown, original account/source binding, configuration guards and complete fresh valuation are unchanged.
+
+`alerts/risk/historical.py` reuses the Account covariance/tail engine over the selected current-value weights and identical observed conversion routes. It bounds reads to 16 daily conversion legs and the reviewed history window, requires 31 shared consecutive closes and rejects history more than two days behind. Only USDT is an identity conversion. Samples retain converted closes, routes, weights, metrics and a fingerprint within existing journal retention. Native Accountant evidence omits the full converted series to keep model context bounded; the local evidence dialog retains it.
+
+Successful historical checks schedule the next read no sooner than one hour; other watches retain their minute cadence. Errors/backoff preserve existing incidents. Revision/account/feed/freshness checks run again at commit, so stale in-flight results cannot publish after an edit or account change. Inbox/Telegram summaries retain basket identities, dated sample size and scope. This is passive empirical risk observation, not enforcement or measured account returns.

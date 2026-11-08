@@ -4,8 +4,21 @@ from typing import Literal
 
 from sibyl.agents.guides import Guide
 
-Topic = Literal["outcomes", "overview", "inputs", "intervals", "models", "rolling"]
+Topic = Literal["outcomes", "overview", "inputs", "intervals", "models", "rolling", "portability"]
 GUIDES = {
+    "portability": Guide(
+        "Move and organize trained research models",
+        "/forecast?tab=models",
+        (
+            "Model library → Export portable bundle includes the recipe, recorded fit and full immutable daily input as bounded JSON.",
+            "Import a model from another workspace → choose the JSON bundle → Import & verify. Sibyl checks hashes and input contracts and refits locally; uploaded coefficients and scores are never trusted. Repeated identical imports reuse the saved version.",
+            "Imported provider origin is unverified and uses a separate import namespace. Use saved input for forecasts and historical evaluations; imports cannot become live forward evidence.",
+            "Archive model hides the version from the default picker and disables new forecasts. Show archived versions → Restore model makes it selectable again. Outputs, evaluations and existing outcome monitors stay retained; archiving does not free storage or stop monitors.",
+        ),
+        (
+            "16 MiB per bundle, known ridge/neural engine, 360–5,000 closed consecutive daily candles and existing workspace budgets apply. Bundles include price research, not API credentials or chat models.",
+        ),
+    ),
     "outcomes": Guide(
         "Follow live forecast outcomes",
         "/forecast?tab=models",
@@ -69,10 +82,11 @@ GUIDES = {
         (
             "Each JSON artifact keeps its input fingerprint, source, engine, coefficients, train/calibration/test dates and complete evidence.",
             "Rerun exact training input saves a new numbered version without overwriting the old result or fetching prices.",
+            "Model settings & assumptions offers return lags only or Returns + trend & volatility, adding six causal trailing-price statistics. The richer recipe is retained through rolling studies, predictions and portable refits; extra features do not establish better accuracy.",
             "Edit model settings explicitly for another experiment. AI model selection changes the assistant, not the numerical forecast model.",
         ),
         (
-            "Trained autoregressive ridge is available. Neural/ARIMA models, automated recalibration and calibrated drift monitoring remain pending.",
+            "Ridge is the default. Model settings & assumptions → Numerical model offers a trained 8-unit tanh network with 120 fixed Adam steps, training-only scaling and a 1,000-candle / 14-day cap. Inspect Neural training evidence and independent test benchmarks. ARIMA, other neural families and automated recalibration remain pending.",
         ),
     ),
 }

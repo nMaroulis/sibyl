@@ -40,17 +40,17 @@ Measured performance periods separate investment gain from external contribution
 
 ### Markets · Look beyond the price
 
-Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports.
+Search available spot pairs, manage source-specific watchlists and choose public exchange feeds, saved exchange accounts or supported data APIs. Explore line and candlestick charts with indicators, OHLCV inspection, volume, region zoom, panning and exports. Binance/Testnet and Kraken feeds add live price and candle previews with visible connection health and REST fallback.
 
-Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics and correlations. An explainable technical-bias score shows its inputs and votes. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
+Python calculates returns, trend and momentum, volatility, drawdowns, volume statistics, linear/rank/distance dependence and descriptive log-return regressions. An explainable technical-bias score shows its inputs and votes. Optional Granger lag research separates training-only inference from later-target error, with explicit assumptions. Retained candles, resumable historical imports and immutable datasets give your research a reusable foundation.
 
 [Markets guide](docs/docs/guides/markets.md) · [Statistics and score](docs/docs/guides/market-statistics.md) · [History and datasets](docs/docs/guides/market-history.md)
 
 ### Trade · Follow an order through
 
-Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Monitor orders, partial fills and cancellation evidence. Recover uncertain submissions by client ID without blindly submitting again.
+Review spot market and GTC limit orders on supported exchanges, or practice with the persistent Demo wallet. Binance and Binance Testnet also support native conditional limits, linked OCO orders and reviewed unfilled-limit replacement. Monitor orders, partial fills and cancellation evidence. Recover uncertain submissions by client ID without blindly submitting again.
 
-Account history brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
+Account history, including bounded Bitstamp/Gemini imports and exact-order reconciliation, brings together selected-market fills, native-currency fees, supported funding imports and retained FIFO performance. Review possible transfers between your accounts, inspect observed funding corrections and opt into bounded recent-history or pending-record updates.
 
 Execution, imports and recovery vary by provider. Each exchange card in Settings shows the capabilities actually implemented for that provider and environment.
 
@@ -60,7 +60,7 @@ Execution, imports and recovery vary by provider. Each exchange card in Settings
 
 Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Bollinger Surge, Impulse Breakout and Quantum Momentum**. Start with a simple configuration, then expand indicator, risk and execution settings.
 
-- **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against buy-and-hold, drawdowns and trade-level metrics.
+- **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against cost-aware buy-and-hold, cash, installment and 50/50 references, drawdowns and trade-level metrics.
 - **Validate:** compare a small grid or sample a larger parameter space with a reproducible seed, then run chronological holdouts and expanding walk-forward tests. Inspect candidate coverage, save inputs and rerun exact studies.
 - **Monitor:** follow paper or separately approved exchange runs through charts, execution markers and a persistent decision journal.
 - **Control:** use account-bound budgets, order limits, a global strategy halt and optional shared exposure and observed daily-loss controls.
@@ -69,9 +69,9 @@ Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Boll
 
 ### Sibyl & Agents · A team you can talk to
 
-Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Saved conversations, live activity, consultation trails and run details make the work inspectable.
+Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Streamed Markdown answers, saved conversations, native live activity, consultation trails and root/specialist usage details make the work inspectable.
 
-Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional delivery to your private Telegram bot chat. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
+Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional text-message or document delivery to your private Telegram bot chat. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
 
 Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
 
@@ -91,7 +91,7 @@ Developers can run [repeatable native agent checks](docs/docs/developers/agent-e
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
-Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot. WhatsApp, Discord, Slack, Signal and Email setup previews are marked unavailable.
+Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot, with optional text documents for long replies. WhatsApp, Discord, Slack, Signal and Email setup previews are marked unavailable.
 
 [Sibyl guide](docs/docs/guides/sibyl.md) · [Model setup](docs/docs/guides/settings.md) · [Telegram](docs/docs/guides/telegram.md)
 
@@ -103,11 +103,15 @@ Tone and trend views describe the wording of headlines and excerpts. The separat
 
 [News and sentiment](docs/docs/guides/research.md#reporter-news-and-insights)
 
+Custom Python strategies can also be installed and explicitly enabled for research-only backtests, with bounded controls, pinned sources, saved inputs and actual execution charts. See the [plugin contract and momentum example](docs/docs/developers/strategy-plugins.md).
+
 ### Forecast · Train, evaluate, inspect
 
-Fit lightweight daily autoregressive ridge models from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
+Fit lightweight daily ridge models or an optional small neural network from your current feed or immutable datasets. Inspect chronological held-out results against naïve and drift benchmarks, empirical bands, exact-input reruns and numbered model versions. Forecast retained input offline or explicitly refresh the original matching feed, with provenance and input-shift diagnostics.
 
-Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; neural model families and automated recalibration are pending.
+Move models between workspaces with bounded JSON bundles that verify inputs and refit locally, with imported sources clearly labeled unverified. Archive and restore versions without deleting saved evidence.
+
+Chronos explains the same evidence through native ProtoLink tools. The separate **Statistical baseline** tab retains the untrained drift/volatility projection. Future accuracy and coverage remain uncertain; ARIMA, other neural families and automated recalibration are pending.
 
 Inspect a saved recipe across successive periods with expanding or fixed training windows, pooled benchmark errors and per-fold charts. Rolling reports retain their exact inputs and fitting evidence; evaluation never deploys or replaces a model.
 
@@ -125,7 +129,7 @@ Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
 ### Alerts · Keep useful signals close
 
-Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
+Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Hourly historical basket watches also track annualized volatility and daily 95% expected shortfall, with explicit asset selection and dated evidence. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
 
 [Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 
@@ -221,5 +225,7 @@ npm run build
 For release preparation, use the single version command documented in [distribution and releases](docs/docs/developers/distribution.md). It synchronizes package metadata and locks without upgrading dependencies.
 
 Start with the [user guides](https://nmaroulis.github.io/sibyl/), explore the [Python architecture](docs/docs/developers/architecture.md), or use the [extension guide](docs/docs/developers/extending.md) to add a client, strategy or agent tool. The [pending checklist](docs/docs/developers/backend-roadmap.md) tracks work beyond the v2.0.0 baseline.
+
+Inbox history supports filtered private JSON/CSV exports and opt-in cleanup of old read notices, with unread and unfinished delivery evidence protected. Account adds whole-basket HHI/effective asset and top-three concentration measurements, with optional fresh-valuation alerts. Workspace settings exposes scoped Python process resources and an explicit read-only database quick check with a content-free health-report download; saved provider history shows latency distributions and actual sample coverage.
 
 Sibyl is released under the [Apache License 2.0](LICENSE).

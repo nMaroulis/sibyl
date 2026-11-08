@@ -7,17 +7,22 @@ provide instructions; status tools report saved metadata, not verified credentia
 import json
 from typing import Literal
 
-from protolink import Agent
+from protolink import Agent, Tool
 
 from sibyl.agents.utils.common import COMMON_PROMPT, Services
+from sibyl.alerts.history.service import NotificationHistory
 from sibyl.exchanges.catalog import CATALOG, exchange_spec
 from sibyl.exchanges.registry import provider_catalog
+from sibyl.messaging.reply_review import reply_evidence
+from sibyl.messaging.review import delivery_evidence
 from sibyl.services.workspace.llm_settings import ModelSettings
 
 NAME = "Technician"
 TAGLINE = "Keep everything connected"
 DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging and alerts; explain saved diagnostics."
 SYSTEM_PROMPT = (
+    "Use telegram_delivery_review to explain actual app-origin delivery outcomes and separate user acknowledgments. It cannot read private message bodies or send/review messages. "
+    "Use notification_history for retained inbox cleanup policy, protections and actual receipts; never clear history for the user. "
     "Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
     "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace "
@@ -94,7 +99,8 @@ GUIDES = {
     "messaging": {
         "url": "/settings?tab=messaging",
         "steps": [
-            "Messaging lets you talk to Sibyl through another app. Telegram is implemented; WhatsApp, Discord, Slack, Signal and Email are unavailable previews. Telegram can also receive explicitly selected scheduled briefings and per-rule alerts; enabling chat alone does not enable these deliveries.",
+            "Messaging lets you talk to Sibyl through another app. Telegram is implemented; WhatsApp, Discord, Slack, Signal and Email are unavailable previews. Telegram can optionally send long replies and scheduled briefings as bounded UTF-8 text documents; incoming media remains unsupported. Telegram can also receive explicitly selected scheduled briefings and per-rule alerts; enabling chat alone does not enable these deliveries.",
+            "Review Telegram deliveries opens actual queued text, the recorded private target and part outcomes. Withdraw queued remainders or record separate received/dismissed user reviews; admitted sends must finish first, and review never resends or changes native confirmation.",
             "Telegram: create a bot with BotFather, enter its token and your numeric user ID, save, Check bot, then Enable Telegram. Setup and enabling do not require an AI model. Open the bot’s private chat and press Start; help/status work immediately, while questions receive setup guidance until a model is active. Other channels remain unavailable previews.",
         ],
     },
@@ -107,15 +113,17 @@ GUIDES = {
             "Inbox and the top-bar bell show retained evidence with Paper/Exchange and Demo/test labels. Open monitor follows that exact run. Mark read acknowledges a notice without deleting it.",
             "Connections tab: select a configured/previously observed source and consecutive failed-read threshold. Successes of the same operation can notify recovery. Rules watch future recorded HTTP reads only, without polling or activating the source. Demo has no connection; View example is isolated.",
             "Read counters reset on session/profile changes, recording gaps or more than five minutes between reads. No observations means no connection-status conclusion. Recovery describes successful transport reads, not fully validated data or verified current credentials. Pausing/resuming begins a new observation window.",
-            "Account risk tab: select a fixed set of up to ten active accounts in one environment and a reference feed. Choose a value floor in USDT, asset concentration or observed-value drawdown limit. Arming authorizes background balance/quote reads. New connections are not automatically included; deactivate a pinned account and the watch waits for complete coverage.",
+            "Account risk tab: select a fixed set of up to ten active accounts in one environment and a reference feed. Choose a value floor in USDT, asset/top-three concentration, overall HHI concentration (0–100), observed-value drawdown, or hourly historical basket volatility/95% daily expected shortfall (up to eight held assets and 60/90/180 days). Arming authorizes background balance/quote reads. New connections are not automatically included; deactivate a pinned account and the watch waits for complete coverage.",
             "Recovery levels prevent repeated notices near a limit. Edits save paused; Resume resets the observed peak and incident state. Drawdown includes deposits and withdrawals, so it is not investment return. View evidence reads retained valuation details without fetching accounts.",
+            "Inbox → History export & retention exports JSON/CSV with kind and UTC date filters (up to 2,000 newest notices). Automatic cleanup is off by default; saving an opt-in age policy clears only old read notices in bounded batches. Unread notices and unfinished delivery evidence are protected. Disabling the policy stops later automatic deletion; rules, financial records and delivery receipts remain separate.",
             "No AI model is required. A rule’s Delivery button selects optional Telegram messages to the checked bot and private user. Every save starts from future events; existing inbox entries stay local. Cooldowns suppress extra messages and delivery windows reject stale observations. Alerts never trade, stop strategies, cancel orders or detect silent-worker outages.",
         ],
     },
     "workspace": {
         "url": "/settings?tab=workspace",
         "steps": [
-            "Inspect server configuration, actual background-worker progress/faults, encrypted backup controls and documentation links in Workspace. Use workspace_operations for current diagnostics. A worker heartbeat does not prove provider readiness or successful trades.",
+            "Workspace displays Python process CPU (one busy CPU = 100%), resident memory, threads, database/WAL bytes, free workspace-volume space and process uptime. CPU requires two observations at least five seconds apart; Ollama/browser/other processes are excluded. Provider saved read history exposes latency histogram upper bounds and sample coverage, not external uptime.",
+            "Inspect server configuration, actual background-worker progress/faults, encrypted backup controls and documentation links in Workspace. Use workspace_operations for current diagnostics. Run health check in Workspace explicitly creates a bounded read-only SQLite check and content-free JSON report; download is passive, and reports expire on restart. A quick check does not verify account data or every database invariant. A worker heartbeat does not prove provider readiness or successful trades.",
             "Complete release wheels include the dashboard and can run with sibyl --open-browser, without Node.js. Use sibyl --version or --help for launcher options. Public wheel URLs require a published GitHub Release. Homebrew, PyPI and prebuilt registry images remain optional future work; no new repository is needed for the Python package.",
             "Source checkouts keep their repository .sibyl workspace. Installed apps default to per-user application data: macOS Application Support/Sibyl, Windows Local AppData/Sibyl or Linux XDG data/sibyl. Use --data-dir or SIBYL_DATA_DIR to open an existing workspace; no installer moves or deletes it.",
             "Use --env-file for an explicit configuration file, --no-env-file to ignore .env, and --port for a different listening port. Use Workspace backups for encrypted online SQLite snapshots, inspection/download and separate-directory restore. Keep the archive passphrase outside agent chat. For manual filesystem copies, stop the app and copy its databases and vault key together.",
@@ -127,7 +135,18 @@ GUIDES = {
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Define Technician's read-only diagnostic and setup tools."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
 
     def connection_status() -> dict:
         """Inspect configured accounts, active/Demo flags, model setup and history-import progress.
@@ -224,7 +243,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         tools=[
             connection_status,
             connection_alerts,
-            settings_guide,
+            Tool.from_callable(settings_guide, sync_execution="inline"),
             exchange_setup,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
@@ -233,18 +252,45 @@ def create_agent(services: Services, **runtime) -> Agent:
     agent.card.capabilities.delegation = False
 
     @agent.tool
+    def notification_history() -> dict:
+        """Inspect the saved inbox retention policy, eligible counts and recent cleanup receipts.
+
+        Explains which old read notices are eligible, and which unread or unfinished
+        delivery records are protected. Includes the export/retention controls link.
+        This tool cannot acknowledge, export or delete notices or change the policy.
+        """
+        return {**NotificationHistory.read_status(services.store), "url": "/alerts?tab=inbox"}
+
+    @agent.tool
     def workspace_operations() -> dict:
         """Inspect background-worker progress and explain encrypted backup and recovery controls.
 
-        Returns observed iteration times, faults and overdue work, not provider readiness
+        Returns observed iteration times, faults, overdue work and current Python process
+        CPU/memory/threads, storage space and the last explicit content-free database check. CPU uses
+        an elapsed observation window; other processes and external uptime are excluded.
+        These counters do not establish provider readiness
         or proof that orders completed. You can explain a failed worker but cannot
         restart workers, create/decrypt backups or authorize recovery. Never ask for a
         backup passphrase in chat; it belongs only in the Workspace settings form.
         """
         return {
             "health": services.workers.snapshot() if services.workers else {"available": False},
+            "last_health_report": services.workers.diagnostics.last() if services.workers else None,
             "url": "/settings?tab=workspace",
             "backup_help": "Create a passphrase-encrypted archive in Settings → Workspace. It contains local databases, documents and the vault key inside encryption. Download it and keep the passphrase separately. Restore creates a separate workspace with automatic work paused. Launch the returned directory, review connections/orders, complete recovery and restart. Accounts remain inactive until explicitly enabled.",
+        }
+
+    @agent.tool
+    def telegram_delivery_review() -> dict:
+        """Inspect Telegram notification/reply outcomes without private text or credentials.
+
+        Explain Settings → Messaging review controls: unsent withdrawal and separate
+        user acknowledgments. Reviews never resend or replace native confirmation.
+        """
+        return {
+            **delivery_evidence(services.store),
+            "reply_items": reply_evidence(services.store),
+            "note": "App-origin and conversation outcomes remain separate. Settings → Messaging → Review Telegram deliveries inspects exact queued text and targets; user acknowledgment never changes native confirmation or resends a message.",
         }
 
     return agent

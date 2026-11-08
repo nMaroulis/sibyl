@@ -2,25 +2,25 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — November 2, 2026
+## Audited snapshot — November 6, 2026
 
-The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Multi-user work is deferred and excluded from the local implementation sequence.
+The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Unchecked entries bundle broad follow-up scopes and acceptance work; completing an extension does not necessarily close its whole parent entry. Multi-user work is deferred and excluded from the local implementation sequence.
 
-| Area                           | Current state | Next missing foundation                                                                               |
-| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
-| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.         |
-| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                              |
-| Order management               | partial       | Broader discovery/recovery adapters, amendment handling and definitive fee/settlement reconciliation. |
-| Market-data infrastructure     | partial       | Broader historical adapters, weighted quota policies, richer operational metrics and WebSockets.      |
-| Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, resource metrics and more delivery channels.  |
-| Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.       |
-| Strategy research              | partial       | Additional benchmarks, continuous deployment simulation, nested validation and broader optimization.  |
-| Sibyl & messaging              | partial       | Token streaming, evaluated collaboration, resumable investigations and additional messaging clients.   |
-| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.              |
-| Forecasting                    | partial       | More model families, automatic recalibration and calibrated drift monitoring; prospective outcome tracking is implemented.   |
-| Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                            |
-| Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.              |
-| Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                      |
+| Area                           | Current state | Next missing foundation                                                                                                    |
+| ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.                              |
+| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                                                   |
+| Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
+| Market-data infrastructure     | partial       | Broader historical adapters, quota metrics and private/additional-provider WebSockets.                                     |
+| Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, tracing and more delivery channels.                                      |
+| Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
+| Strategy research              | partial       | Continuous deployment simulation and broader optimization; nested chronological selection is implemented.                                              |
+| Sibyl & messaging              | partial       | Broader evaluated collaboration, resumable investigations and additional messaging clients.                       |
+| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.                                   |
+| Forecasting                    | partial       | More model families, automatic recalibration and calibrated drift monitoring; prospective outcome tracking is implemented. |
+| Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                         |
+| Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.                                  |
+| Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                                           |
 
 ## Working foundations
 
@@ -42,7 +42,7 @@ A paper strategy can consume live prices while still using virtual funds. Its ru
 
 ### 1. Account synchronization — partial
 
-There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports for eleven clients/environments, with provider retention shown in the UI. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
+There are on-demand balances, bounded fill/order reads, and a durable normalized fill ledger with background imports including Bitstamp and Gemini, with provider retention shown in the UI. See [account synchronization](account-sync.md). These are not a complete reconciled account history.
 
 - [x] Persist normalized fills, native order references, fee currencies and rebates in a shared ledger.
 - [x] Add explicit observed balance checkpoints and per-asset quantity comparisons across imported markets, native fees/rebates and eligible funding, with gap/timing/scope checks, saved reports, CSV export and read-only Accountant evidence. See [balance checks](balance-checks.md). This does not establish complete account history or settlement.
@@ -86,14 +86,17 @@ Known orders now import native execution pages into the shared Account history l
 
 - [ ] Review and enable execution for the remaining production providers; most added adapters are read-only.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
-- [ ] Add cancel/replace with venue-specific atomicity and reservation semantics.
-- [ ] Add stop, take-profit, trailing, OCO, additional time-in-force, post-only and iceberg support where the venue permits it.
-- [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini detailed imports remain pending.
+- [x] Add native Binance/Testnet unfilled-only manual GTC replacement with estimated reservation release, STOP_ON_FAILURE/ONLY_NEW, durable compound-command admission and retained non-atomic outcomes. See [advanced orders](advanced-orders.md).
+- [ ] Extend replacement to additional providers, partially filled orders and complete amendment/lifecycle history.
+- [x] Add native Binance/Testnet stop-loss/take-profit GTC limits and linked two-leg OCO, exact trigger validation, independent fill tracking and child-ID recovery after a lost response.
+- [ ] Add these advanced orders to more providers; implement trailing, additional time-in-force, post-only and iceberg support.
+- [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini now also have bounded native imports and exact-order reconciliation, with explicit saturation/reversal/retention limits.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
 - [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
 - [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.
+- [x] Exercise real Testnet conditional open/cancel, native OCO with deliberately lost response, exact child recovery, sibling cancellation, unfilled cancel/replace, duplicate approval identities and a fill-winning marketable-limit observation. Intermediate partial fills, true outages, late fee corrections and other venues remain unaccepted.
 - [ ] Extend authenticated recovery to delayed indexing, external amendments, permissions, retention and additional providers.
 
 ### 4. Automated strategy execution — partial
@@ -124,12 +127,15 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 
 - [x] Persist exact-source OHLCV, reviewed resumable backfills, coverage gaps, manual retention and immutable research snapshots. See [candle history](candle-history.md).
 - [ ] Review historical pagination for the remaining providers and exercise authenticated provider acceptance.
-- [ ] Add WebSocket market and account/order subscriptions with reconnection handling.
+- [x] Add on-demand Binance production/Testnet public ticker/candle WebSockets, shared bounded queues, reconnect/freshness status, exact-source REST fallback and native Analyst evidence. See [live previews](live-markets.md).
+- [x] Add Kraken v2 public ticker/OHLC previews with exact symbols, native interval filtering, explicit receipt timing and shared lifecycle/fallback.
+- [x] Add Coinbase production public tickers and native five-minute candle previews, connection-wide sequence checks, exact-product alias rejection and REST fallback.
+- [ ] Add private account/order streams, additional public providers and persisted reconnect-gap recovery.
 - [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
 - [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
 - [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Live session counters reset on API restart.
 - [x] Persist bounded hourly HTTP read outcomes, success rate, mean/peak response time and sanitized errors; inspect 24-hour/7-day windows across restart. History never establishes current credential readiness or uptime. See [retained read history](provider-control.md#retained-read-history).
-- [ ] Add richer latency distributions and application-wide operational metrics. Continuous availability monitoring remains a separate future capability.
+- [x] Add fixed provider latency histograms with p50/p95 upper bounds and legacy sample coverage, plus current-process CPU/memory/threads, database/WAL and free-volume metrics. External uptime and distributed tracing remain pending.
 - [x] Support held-asset valuation and editable watchlists beyond the six defaults with bounded provider reads; broader aggregator discovery remains future work.
 
 ### 6. Strategy research — partial
@@ -138,24 +144,29 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 
 - [x] Add bounded grid search, chronological holdout/expanding walk-forward evaluation, fixed-settings comparisons, recorded training rankings/test executions, exact-study reruns and Broker evidence tools. See [validation](../guides/strategy-validation.md).
 - [x] Add reproducible seeded finite random search with an explicit candidate budget, full-space validation, coverage/fingerprints, saved plans, exact-study replay checks and native Broker evidence.
-- [ ] Add nested validation, continuous rebalanced deployment simulations and Bayesian/distribution-based optimization; repeated user experiments can still overfit.
+- [x] Add optional nested chronological candidate selection, retained inner metrics, bounded work and independent outer tests.
+- [x] Add continuous single-market walk-forward replay carrying one cash/asset balance and entry cost across chosen-parameter windows, with actual fills, transition balances, fixed-setting comparison and native Broker evidence.
+- [ ] Add multi-asset deployment/rebalancing and Bayesian/distribution-based optimization; repeated user experiments can still overfit.
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
-- [ ] Add additional explicit benchmarks and strategy-version comparisons.
+- [x] Add exact-window cost-aware cash, buy-and-hold, scheduled-installment and 50/50 asset/cash references, selectable equity overlays and actual cost/metric summaries. Saved same-input strategy comparisons remain available; continuous deployment simulation is separate.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
-- [ ] Define a plugin contract for custom strategies and optional Freqtrade integration.
+- [x] Add an explicitly enabled installed-Python research plugin contract, bounded numeric controls, causal prefix observations, source pins, actual cost-aware backtests, saved inputs/signals, exact reruns, charts/exports and Broker evidence.
+- [ ] Extend custom plugins to validation/jobs when reviewed; optional Freqtrade integration remains pending.
 - [ ] Implement the planned ML/RL strategies with their own training/evaluation pipeline.
 
 ## AI and research work
 
 ### 7. Sibyl and ProtoLink workflows — partial
 
-Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with registry discovery. Each has its own file and prompt. ProtoLink automatically supplies discovered agents and handles native delegation for Sibyl; module requests use native group handles for their registered specialist; owned local consultations inherit explicit private context. The agents have page context and read-only domain tools. They are request-driven assistants. Models choose evidence tools on demand. Every specialist has topic-based page help; Broker can also inspect retained order/fill reconciliation evidence. Tool descriptions explain purpose, arguments and returned information. Agents inherit a workspace model default or use an explicit per-agent provider/model override. Each request freezes the whole team’s configuration; profiles retain shared encrypted provider keys/endpoints.
+Sibyl and the ten specialists start through ProtoLink 0.8.4 `AgentGroup` with registry discovery. Each has its own file and prompt. ProtoLink automatically supplies discovered agents and handles native delegation for Sibyl; module requests use native group handles for their registered specialist; owned local consultations inherit explicit private context. The agents have page context and read-only domain tools. They are request-driven assistants. Models choose evidence tools on demand. Every specialist has topic-based page help; Broker can also inspect retained order/fill reconciliation evidence. Tool descriptions explain purpose, arguments and returned information. Agents inherit a workspace model default or use an explicit per-agent provider/model override. Each request freezes the whole team’s configuration; profiles retain shared encrypted provider keys/endpoints.
 
-- [x] Adopt ProtoLink 0.8.3 native thread execution, lazy model factories, private request context, group lifecycle, SQLite conversations and correlated report/evidence APIs. Remove application tool wrappers, LLM adapter and telemetry reconstruction; keep UI projections only.
+- [x] Adopt ProtoLink 0.8.4 native thread execution, lazy model factories, private request context, group lifecycle, SQLite conversations and correlated report/evidence APIs. Remove application tool wrappers, LLM adapter and telemetry reconstruction; keep UI projections only.
 - [x] Split each agent into its own native declaration with prompt and typed tools; remove consult gateways and per-request Agent construction.
 - [x] Add on-demand evidence tools, cached Reporter reads and practical Technician setup guides.
 - [x] Review model-facing tool docstrings; add typed, focused help/FAQ tools for every specialist, including Trade history, backtesting, chart controls and source setup. Keep instructions separate from observations and update guides with module changes.
+- [x] Reuse native shared research tools and schema validation, run static help inline through per-tool SDK overrides, and use native consultation classification without per-token persistence. Retained document and evaluation failures remain correctable or explicitly unavailable.
 - [x] Let Broker inspect bounded, filtered retained order/fill evidence, with native ProtoLink correction for invalid record selections and no provider refresh or mutation.
+- [x] Add native Analyst live-stream evidence and Broker OCO/conditional/replacement evidence, with typed practical help and explicit read-only boundaries.
 - [ ] Expand investigations with deeper source-specific tools as domain features become available.
 - [x] Sibyl uses native ProtoLink discovery/delegation, with delegation disabled for specialists; saved chats include collaboration evidence.
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.
@@ -169,10 +180,15 @@ Sibyl and the ten specialists start through ProtoLink 0.8.3 `AgentGroup` with re
 - [x] Run an initial real Ollama/Gemma acceptance pass for specialist evidence, native coordinator tool/inference consultations, memory/isolation, Stop and persistence; align provider/context-policy windows and preserve setup instructions in native previews. See [findings and remaining limits](agent-acceptance.md).
 - [x] Add repeatable native ProtoLink evaluations with scoped specialist evidence, source/selection checks, missing-data and untrusted-excerpt cases, coordinator delegation receipts, bounded repetitions, private local fixtures, native report export and baseline score comparisons. Record actual small-model successes and coordinator failures. See [agent evaluation](agent-evaluation.md).
 - [x] Use native correctable rejections for missing retained articles, trained models, strategy runs and investigations/calendars; preserve operational errors and selected-source boundaries. Broker's deterministic summaries distinguish paper, test and production exchange runs.
-- [ ] Add user-facing token streaming, broader provider/model and semantic-grounding evaluation and fix the [upstream owned-subagent metrics gap](protolink-metrics.md). Activity streaming does not expose raw model chunks or internal action JSON. Narrow contract checks do not establish general answer reliability.
+- [x] Use ProtoLink 0.8.4 answer-only streaming for native/JSON-mode models, typed public activity, native delegated usage rollups, bounded FIFO root admission and group diagnostics. Remove the answer projector, protocol flag, raw activity classifier and admission semaphore; retain safe shared Markdown and application chat history.
+- [x] Expose read-only retained native subscriptions with independent activity/answer cursors, explicit replay gaps, process-local retention and deletion guards. Use native scoped submission IDs; do not claim durable continuation or exactly-once external actions.
+- [ ] Expand provider/model and semantic-grounding evaluation. Narrow contract checks do not establish general answer reliability.
 - [x] Implement direct-HTTP Telegram polling, private-user binding, encrypted credentials, conversation mapping and durable delivery outcomes. Explicit rate limits retry; ambiguous sends never auto-retry.
 - [x] Retain initial user-confirmed Telegram conversation acceptance. Automated briefing delivery is tested with a mock HTTP transport; real scheduled-delivery acceptance remains a deployment check.
-- [ ] Add Telegram media and richer delivery review. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
+- [x] Add app-origin Telegram delivery review with exact text/target inspection, unsent withdrawal and separate user acknowledgments preserving native outcomes.
+- [x] Add grouped conversation-reply receipts, original-target metadata, exact text inspection, atomic unsent withdrawal, separate user acknowledgments and UTF-16-safe chunking.
+- [x] Add opt-in outgoing UTF-8 text documents for long replies and scheduled briefings, with bounded complete content, original recipient binding and durable native outcomes.
+- [ ] Add incoming Telegram documents, audio/photos and broader media. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
 - [ ] Design approval/action contracts and audit records before introducing mutation tools.
 
 ### 8. Forecasting / Chronos — partial
@@ -186,8 +202,11 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Expose descriptive lag-feature departures from training ranges without claiming a calibrated drift detector.
 - [x] Add bounded expanding/fixed-window historical rolling evaluation of a saved recipe, with causal refits/calibration, purged test boundaries, pooled benchmark metrics, immutable reports/reruns, per-fold charts/exports and native Chronos evidence. This is historical research, not live forward performance.
 - [x] Add prospective exact-source outcome tracking with original-save-time eligibility, corrected actual receipts, equal-horizon benchmarks, pause/resume, explicit refresh and native evidence.
-- [ ] Add calibrated drift monitoring, automated recalibration and managed model archive/import beyond the bounded registry.
-- [ ] Add neural/ARIMA and other model families, richer features and larger evaluation studies. Historical held-out results do not establish future profitability.
+- [x] Add bounded portable JSON model/input bundles with integrity validation, offline local refitting, unverified imported namespaces and deduplication; archive/restore model versions without deleting evidence or silently stopping monitors.
+- [ ] Add calibrated drift monitoring, automated recalibration and larger managed lifecycles.
+- [x] Add an optional causal returns-plus-context ridge recipe with six trailing-price features, retained through rolling evaluation, predictions and portable refits.
+- [x] Add a small fixed-seed NumPy tanh neural model with training-only normalization, purged chronological calibration/testing, actual training-loss evidence, rolling refits and portable recipe validation.
+- [ ] Add ARIMA and other neural/model families, additional inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 
@@ -195,6 +214,7 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 
 - [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
 - [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
+- [x] Add owner-labeled saved retrieval evaluations over pinned corpora/indexes, exact rankings/citations and precision/recall/MRR/nDCG/hit-rate reports.
 - [ ] Evaluate semantic relevance and answer grounding across real models/corpora, add calibrated no-answer thresholds and support reviewed hosted embedding providers. Controlled-vector tests establish contracts, not real-model relevance.
 - [ ] Add cited web-search tools; local hybrid retrieval is implemented.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
@@ -203,13 +223,15 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 
 ### 10. Explorer, equities and advanced analytics — partial
 
-Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman correlation exist.
+Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman/distance dependence and descriptive return regressions exist.
 
 - [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
 - [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools. No spendability proof or durable watch is claimed.
 - [ ] Add historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
-- [ ] Add distance correlation, MIC, Granger causality, regression and SHAP only with clear statistical assumptions.
+- [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
+- [x] Add bounded fixed-order Granger tests with training-only classical inference, request-family adjustment, residual qualifications, independent later-target errors and exact-source UI/agent evidence.
+- [ ] Add MIC, SHAP, robust/nonlinear causal inference and broader real-data/model evaluation.
 
 ## Cross-cutting and optional expansion
 
@@ -239,14 +261,22 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add connection read-failure/recovery rules per operation, bounded credential-free evidence, atomic cursor/inbox commits, restart catch-up and revision-checked controls. No polling/uptime claim; see [connection alerts](alerts.md#connection-read-subscriptions).
 - [x] Add fixed-account-set value floors, asset concentration and observed-value drawdown watches with complete fresh valuation, recovery/cooldown, atomic evidence/inbox commits and read-only Accountant tools. See [account risk](account-risk.md).
 - [x] Add per-account order/fill subscriptions over atomic local observation receipts, future-only controls, retained inbox and optional existing Telegram delivery.
-- [ ] Add broader risk metrics and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
+- [x] Add whole-basket HHI/effective-asset/largest/top-three value concentration and optional HHI/top-three alerts, gated on complete fresh valuations.
+- [x] Add saved explicit current-holding basket studies with observed historical conversion routes, consecutive sample covariance/correlations, volatility, empirical tails, variance contributions, full input export and native Accountant evidence.
+- [x] Add hourly current-weight basket volatility and historical 95% daily expected-shortfall alerts, explicit asset/window selection, complete fresh valuation, exact observed history and retained scope/input evidence.
+- [ ] Add broader correlation-aware enforcement and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
 - [x] Add opt-in Telegram delivery per price/risk/strategy/connection rule, reviewed recipients, future-only cursors, transactional admission, cooldown suppression, expiry and actual part outcomes. See [contracts](alert-delivery.md).
-- [ ] Add other external alert channels and richer review controls; live alert-delivery acceptance remains a deployment check.
+- [x] Add app-origin delivery text/target inspection, queued-remainder withdrawal and separate user review history with optimistic evidence tokens.
+- [x] Extend the review contract to grouped conversation replies while preserving native delivery outcomes and unknown legacy bot identities.
+- [ ] Add other external alert channels; live alert-delivery acceptance remains a deployment check.
 - [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
 - [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
-- [ ] Add resource metrics, tracing, external uptime monitoring and richer latency distributions.
+- [x] Add lightweight process resource counters and fixed latency histograms with scoped, honest coverage.
+- [x] Add explicit read-only bounded SQLite quick checks and privacy-allowlisted downloadable workspace health reports, with passive native Technician evidence.
+- [ ] Add tracing, broader host diagnostics and external uptime monitoring.
 - [x] Add passphrase-encrypted managed archives, authenticated inspection/download/import and validated separate-directory restore. Recovery quarantines automatic work and requires explicit review/restart.
-- [ ] Add notification retention/export and credential/key rotation tools beyond encrypted backup/restore.
+- [x] Add private filtered notification JSON/CSV exports and opt-in bounded read-history retention, protected unread/delivery evidence, cleanup receipts and monotonic cursor-safe notification sequences.
+- [ ] Add credential/key rotation tools beyond encrypted backup/restore.
 
 ### 12. Hosted/multi-user product — deferred
 
@@ -274,3 +304,10 @@ Multi-user hosting is deferred. No user accounts, permissions, tenant isolation 
 The [feature coverage table](../guides/feature-coverage.md) tracks current user-facing scope. The [exchange reference](./exchange-clients.md) contains the provider matrix and exchange-specific backlog.
 
 Prospective forecast tracking, measured cash-flow review and execution notifications are described together in [their domain contracts](performance-outcomes-alerts.md). Real forward forecast skill, broad authenticated execution acceptance and complete provider funding accounting remain deployment/evaluation work.
+
+### Additional v2.3.0 scope
+
+- [x] Add native Bitstamp/Gemini spot-history checkpoints and exact-order fee evidence; native retention/saturation/reversal limits stay explicit and private authenticated acceptance is pending. See [import scope](account-sync.md#bitstamp-and-gemini).
+- [x] Add Kraken public live previews through the shared runtime; private-account streams and persisted gap recovery remain pending.
+- [x] Add distance dependence and contemporaneous return-regression evidence; MIC/Granger/SHAP and out-of-sample inference remain outside this feature.
+- [x] Add whole-basket value-concentration metrics and HHI/top-three alerts; broader return/correlation-aware risk and enforcement policies remain separate.

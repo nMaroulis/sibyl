@@ -2,7 +2,8 @@ import type { Inbox } from '../components/notifications';
 import type { Connection, MarketSource } from './types';
 import { number } from './api';
 
-export type RiskMetric = 'value_floor' | 'concentration' | 'drawdown';
+export type RiskMetric =
+  'value_floor' | 'concentration' | 'drawdown' | 'hhi' | 'top_three' | 'volatility' | 'tail_loss';
 export type RiskAccount = Omit<Connection, 'active'>;
 export type RiskSource = {
   source: string;
@@ -28,6 +29,8 @@ export type RiskRule = {
   source_info: RiskSource;
   metric: RiskMetric;
   asset: string;
+  basket_assets?: string[];
+  history_days?: number;
   threshold: number;
   reset_threshold: number;
   cooldown_seconds: number;
@@ -68,6 +71,20 @@ export type RiskEvidenceData = {
           reset_threshold: number;
           label: string;
         };
+        basket?: {
+          annualized_volatility_pct: number;
+          expected_shortfall_95_pct: number;
+          historical_var_95_pct: number;
+          observations: number;
+          tail_observations: number;
+          start: string;
+          end: string;
+          share_of_account_value_pct: number;
+          selected_assets: string[];
+          coverage_note: string;
+          fingerprint: string;
+          assets: { asset: string; weight_pct: number }[];
+        };
         complete: boolean;
         accounts: RiskAccount[];
         environment: string;
@@ -93,12 +110,18 @@ export type RiskEvidenceData = {
 export type RiskExample = { rules: RiskRulesData; inbox: Inbox; evidence: RiskEvidenceData };
 export const riskLabel = (metric: RiskMetric, asset = '') =>
   ({
+    volatility: 'Basket annualized volatility',
+    tail_loss: 'Basket historical 95% expected shortfall',
     value_floor: 'Account value floor',
     concentration: `${asset || 'Asset'} concentration`,
     drawdown: 'Observed-value drawdown',
+    hhi: 'Asset concentration HHI',
+    top_three: 'Top-three asset concentration',
   })[metric];
 export const riskValue = (value: number | null | undefined, metric: RiskMetric) =>
-  value == null ? '—' : `${number(value, 2)}${metric === 'value_floor' ? ' USDT' : '%'}`;
+  value == null
+    ? '—'
+    : `${number(value, 2)}${metric === 'value_floor' ? ' USDT' : metric === 'hhi' ? ' / 100' : '%'}`;
 export const riskURL = (id: string, sampleId?: number) =>
   `/alerts?tab=risk&rule_id=${encodeURIComponent(id)}${sampleId ? `&sample_id=${sampleId}` : ''}`;
 export const fundsEnvironment = (account: Pick<Connection, 'exchange' | 'sandbox'>) =>

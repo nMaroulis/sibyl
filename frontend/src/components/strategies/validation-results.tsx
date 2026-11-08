@@ -1,3 +1,4 @@
+import { ContinuousReplay } from './continuous-replay';
 import { useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { AgentButton } from '../agents';
@@ -32,7 +33,8 @@ export function ValidationResults({
       <div className="validation-result-heading">
         <div>
           <Badge tone={report.source === 'demo' ? 'sand' : 'blue'}>
-            {report.source === 'demo' ? 'Demo · Walk-forward' : 'Walk-forward'}
+            {report.source === 'demo' ? 'Demo · ' : ''}
+            {report.request.selection === 'nested' ? 'Nested walk-forward' : 'Walk-forward'}
           </Badge>
           <h3>
             {report.dataset.symbol} · {report.request.parameters.strategy}
@@ -43,7 +45,7 @@ export function ValidationResults({
             {report.summary.trades} round trips
           </p>
           <p>
-            Training objective:{' '}
+            Selection objective:{' '}
             {
               {
                 return_pct: 'highest net return',
@@ -52,7 +54,7 @@ export function ValidationResults({
               }[report.request.objective]
             }{' '}
             · {report.request.initial_train_pct}% initial training · minimum{' '}
-            {report.request.min_train_trades} training round trips
+            {report.request.min_train_trades} selection round trips
           </p>
         </div>
         <AgentButton module="broker" context={{ validation_id: report.id }} />
@@ -139,7 +141,8 @@ export function ValidationResults({
                 <td>
                   {choices(item.selected.overrides)}
                   <small className="table-subline">
-                    Selected from {item.train.scored_bars} training bars
+                    Selected from {item.selection?.scored_bars ?? item.train.scored_bars}{' '}
+                    {item.selection ? 'inner-validation' : 'training'} bars
                   </small>
                 </td>
                 <td>
@@ -169,7 +172,8 @@ export function ValidationResults({
         result={{ ...fold.out_of_sample, id: report.id, source: report.source }}
       />
       <details className="advanced-options">
-        <summary>Training ranking for window {fold.index}</summary>
+        <summary>Selection ranking for window {fold.index}</summary>
+        {fold.selection && <p>{fold.selection.method}</p>}
         <p>
           Only these earlier training scores selected the settings. No candidate was ranked on this
           window's test results.
@@ -179,7 +183,7 @@ export function ValidationResults({
             <thead>
               <tr>
                 <th>Parameters</th>
-                <th>Training return</th>
+                <th>{fold.selection ? 'Mean inner return' : 'Training return'}</th>
                 <th>Sharpe</th>
                 <th>Max drawdown</th>
                 <th>Round trips</th>
@@ -191,6 +195,18 @@ export function ValidationResults({
                 <tr key={candidate.candidate_id}>
                   <td>
                     {choices(candidate.overrides)}
+                    {candidate.inner_results && (
+                      <details>
+                        <summary>Inner-window scores</summary>
+                        {candidate.inner_results.map((inner, i) => (
+                          <p key={i}>
+                            {date(inner.start)} – {date(inner.last_candle)} · {inner.bars} bars ·
+                            return {number(inner.return_pct)}% · Sharpe {number(inner.sharpe)} ·
+                            drawdown {number(inner.max_drawdown)}% · {inner.trades} round trips
+                          </p>
+                        ))}
+                      </details>
+                    )}
                     {candidate.candidate_id === fold.selected.candidate_id && (
                       <Badge>Selected</Badge>
                     )}
@@ -264,6 +280,9 @@ export function ValidationResults({
         </p>
         <pre className="validation-settings">{JSON.stringify(report.request, null, 2)}</pre>
       </details>
+      {report.deployment && (
+        <ContinuousReplay result={report.deployment} id={report.id} source={report.source} />
+      )}
       <div className="validation-actions">
         <button type="button" className="button secondary tiny" disabled={!!busy} onClick={onRerun}>
           <RotateCcw size={13} />

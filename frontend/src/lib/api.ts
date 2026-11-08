@@ -42,7 +42,7 @@ export const post = <T>(path: string, body?: unknown) =>
 export async function postStream<T>(
   path: string,
   body: unknown,
-  onEvent: (event: import('./types').AgentActivity) => void,
+  onEvent: (event: import('./types').AgentStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<T> {
   const response = await fetch(`/api/v1${path}`, {
@@ -66,6 +66,8 @@ export async function postStream<T>(
   let buffer = '',
     received = false,
     reply: T | undefined;
+  let answer = '',
+    paint = 0;
   const readLine = (line: string) => {
     if (!line.trim() || received) return;
     const event = JSON.parse(line);
@@ -73,7 +75,18 @@ export async function postStream<T>(
     if (event.type === 'reply') {
       reply = event.reply as T;
       received = true;
-    } else if (event.type === 'activity' || event.type === 'status') onEvent(event);
+    } else if (event.type === 'answer' && typeof event.update?.content === 'string') {
+      if (!['delta', 'replacement', 'completed'].includes(event.update.type))
+        throw new Error('Invalid answer stream.');
+      answer = event.update.type === 'delta' ? answer + event.update.content : event.update.content;
+      if (answer.length > 1_000_000) throw new Error('The answer exceeded the stream limit.');
+      // Coalesce token bursts into one Markdown update per browser paint.
+      if (!paint)
+        paint = requestAnimationFrame(() => {
+          paint = 0;
+          if (!signal?.aborted) onEvent({ type: 'answer', text: answer });
+        });
+    } else if (event.type === 'activity') onEvent(event.update);
   };
   try {
     while (true) {
@@ -94,6 +107,7 @@ export async function postStream<T>(
       );
     return reply as T;
   } finally {
+    cancelAnimationFrame(paint);
     await reader.cancel().catch(() => {});
     reader.releaseLock();
   }
@@ -156,4 +170,34 @@ export async function downloadFile(path: string, filename: string) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Consume an authenticated read-only display stream; credentials never enter its URL. */
+export async function getStream<T>(path: string, onEvent: (event: T) => void, signal: AbortSignal) {
+  const response = await fetch(`/api/v1${path}`, {
+    signal,
+    headers: workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {},
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(typeof error.detail === 'string' ? error.detail : 'Live stream unavailable.');
+  }
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Live streaming is unavailable in this browser.');
+  const decoder = new TextDecoder();
+  let pending = '';
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      pending += decoder.decode(value, { stream: !done });
+      if (pending.length > 131072) throw new Error('Invalid market stream.');
+      const lines = pending.split('\n');
+      pending = lines.pop() ?? '';
+      for (const line of lines) if (line.trim()) onEvent(JSON.parse(line) as T);
+      if (done) break;
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
 }

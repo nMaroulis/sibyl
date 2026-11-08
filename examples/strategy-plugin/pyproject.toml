@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sibyl-momentum-example"
+version = "0.1.0"
+description = "An inspectable custom momentum strategy for Sibyl's research plugin contract."
+requires-python = ">=3.12"
+dependencies = ["sibyl>=2.3,<3"]
+
+[project.entry-points."sibyl.strategies"]
+local-momentum = "sibyl_momentum_example:Momentum"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sibyl_momentum_example"]

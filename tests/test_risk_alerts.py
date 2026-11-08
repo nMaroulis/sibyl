@@ -561,3 +561,25 @@ def test_passive_evidence_hides_expired_details_without_a_new_private_read(risk)
     assert evidence["sample"] is None and not evidence["samples"]
     assert risk.calls == previous_calls
     assert risk.alerts.inbox.page()["items"][0] == notice
+
+
+@pytest.mark.parametrize("metric,threshold,reset", [("hhi", 45, 40), ("top_three", 90, 85)])
+def test_whole_basket_concentration_breach_recovery_and_retained_delivery_units(
+    risk, metric, threshold, reset
+):
+    from sibyl.alerts.delivery.formatting import alert_text
+
+    rule = watch(risk, metric=metric, threshold=threshold, reset_threshold=reset)
+    first = check(risk, rule)
+    assert first["last_observation"]["metric_value"] >= threshold
+    evidence = risk.alerts.journal.evidence(rule["id"])
+    assert evidence["sample"]["diversification"]["hhi"] == pytest.approx(50)
+    notice = risk.alerts.inbox.page()["items"][0]
+    formatted = alert_text(notice)
+    assert ("/ 100" if metric == "hhi" else "%") in formatted
+    risk.balances[risk.first.id] = {"BTC": 1, "USDT": 100, "ETH": 1, "SOL": 1}
+    risk.quotes.update({"ETH/USDT": 100, "SOL/USDT": 100})
+    second = check(risk, rule)
+    assert second["last_observation"]["metric_value"] <= reset
+    assert not second["in_breach"]
+    assert risk.alerts.inbox.page()["items"][0]["action"] == "recovered"

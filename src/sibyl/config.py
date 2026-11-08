@@ -1,7 +1,7 @@
 """Validated application configuration; no network or filesystem work on import."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     api_token: SecretStr = SecretStr("")
     allow_live_trading: bool = False
     allow_strategy_execution: bool = False
+    strategy_plugins: list[Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{0,63}$")]] = Field(
+        default_factory=list, max_length=8
+    )
     llm_provider: ProviderId = "none"
     llm_model: str = ""
     llm_base_url: str = "http://127.0.0.1:11434"

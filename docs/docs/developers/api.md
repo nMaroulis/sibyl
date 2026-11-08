@@ -70,6 +70,7 @@ Saved investigation endpoints are documented in [Investigation reports](investig
 | POST       | `/bitcoin/history`                                  | One confirmed cursor page or bounded pending address activity                                |
 | GET        | `/stocks/{symbol}`                                  | Quote, adjusted history, statistics, profile                                               |
 | GET        | `/agents`                                           | Agent catalog and tool/provider metadata                                                   |
+| GET        | `/agents/runs/{run_id}/stream`                      | Native retained presentation/answer replay with independent cursors; no submission |
 | GET        | `/agents/runs/{run_id}/summary`                     | Safe native tool outcomes/timing and available per-call metrics; no raw prompts or results |
 | POST       | `/agents/ask/stream`                                | Same module operation as `/agents/ask`, with safe native activity as NDJSON                |
 | GET        | `/agents/runs/{run_id}`                             | Persisted native ProtoLink report; no model call, missing report returns 404               |
@@ -80,14 +81,15 @@ Saved investigation endpoints are documented in [Investigation reports](investig
 
 The two Ask stream routes accept exactly the same bodies and workspace authentication as their JSON counterparts. They run the same operation once, with `Content-Type: application/x-ndjson`, `Cache-Control: no-store` and proxy buffering disabled. Each line is one JSON object:
 
-- `{"type":"status","status":"queued"}` while accepting the request.
-- `{"type":"activity",...}` with native action ID, run/task ID, agent, `kind` (`tool` or `consultation`), label and lifecycle status. No prompts, raw model chunks, tool arguments/results or provider exception text.
-- `{"type":"reply","reply":{...}}` with the original committed result, or `{"type":"error","status":502,"message":"..."}` with a sanitized failure. These are terminal frames.
+- `{"type":"activity","update":{...}}` contains a native `PresentationEvent`: `type`, `status`, `summary`, name, correlation IDs, timestamp and source sequence. Model calls, tools, consultations and admission are distinguished. Requested/approved actions are not completed effects. Prompts, arguments, results and diagnostic errors are excluded.
+- `{"type":"answer","update":{...}}` contains a native root `AnswerEvent`. Append `content` for `delta`; replace for `replacement` or `completed`. Answer sequences are independent of presentation cursors. Text is provisional until authoritative completion; Markdown and Unicode are preserved.
+- `{"type":"reply","reply":{...}}` contains Sibyl's committed result, or `{"type":"error","status":503,"message":"..."}` a sanitized failure. These are terminal API frames. Native answer completion alone does not confirm the application's chat record was saved.
 
-Authentication and body validation use normal HTTP errors before streaming. Failures after streaming starts use an error frame; clients must inspect that frame rather than treating HTTP 200 as success. Disconnect cancels/drains the producer and its native handle. Running synchronous work may finish after cancellation; its late return is discarded. Clients do not automatically replay an interrupted model request. Sibyl's existing chat activity/history reads remain available for reopening a request.
+Authentication and body validation use normal HTTP errors before streaming. Failures after streaming starts use an error frame; clients must inspect that frame rather than treating HTTP 200 as success. Initiating-connection disconnect cancels/drains its native handle. Running synchronous work may finish after cancellation; its late return is discarded. Clients never automatically resubmit an uncertain model request. Native FIFO admission allows two roots and sixteen waiters, with a thirty-second queue deadline; full/expired admission returns 503. Native diagnostics in `/system.agent_runtime` expose registration readiness and active/queued/retained root counts without provider probes.
 
-`GET /agents/runs/{run_id}/summary` is an authenticated, no-store read of the persisted native report (404 when missing). `tools` contains names, outcomes and durations; `calls` contains provider/model, latency, native token usage and optional per-call cost/currency. Missing values stay null, estimates retain labels, and `tokens.known_calls` discloses aggregate coverage. Costs are never summed across currencies. Owned-agent usage is currently unavailable because of the [verified ProtoLink 0.8.3 gap](protolink-metrics.md).
+`GET /agents/runs/{run_id}/stream?after=0&answer_after=0` is an authenticated, no-store read-only subscription to a retained native handle. It forwards the same native update frames and finishes with `{"type":"result","status":"completed"}` (or the actual native outcome). Disconnect only detaches this viewer. Presentation uses the raw-event `after` cursor; answers use `answer_after`. Pass the last observed sequence from each channel to continue without replaying those events. An expired raw cursor yields `{"type":"gap","after":0,"first_available":100,"latest":150}`; the server never silently advances it. Invalid cursors produce an error frame. Unknown/evicted/deleted handles return 404. The group retains at most twenty completed runs within this backend process; a restart clears live handles. Saved chat/report APIs remain available. Structured investigation reports are not streamed as chat answer text.
 
+`GET /agents/runs/{run_id}/summary` reads the persisted native report (404 when missing). `tools` contains outcomes/durations; `calls` contains SDK-deduplicated provider/model, latency, usage and optional cost/currency. `usage.tree`, `usage.root` and `usage.children` are native rollups with separate reported/estimated/unknown call counts and currency-grouped prices. Missing counts stay null and missing prices remain unavailable. See [native usage](protolink-metrics.md).
 ## Strategy monitor routes
 
 Chronological validation has separate retained-study endpoints: `GET /strategies/validation/options`, `POST /strategies/validations`, `GET /strategies/validations` (optional `demo=true/false`), `GET /strategies/validations/{id}`, and `POST /strategies/validations/{id}/rerun`. These use immutable local inputs and never create orders or strategy jobs. See [validation contracts](strategy-research.md#chronological-parameter-validation) and the [user guide](../guides/strategy-validation.md).
@@ -227,7 +229,7 @@ Performance consumes eligible confirmed transfers without creating fills. `GET /
 
 ## Managed spot orders
 
-The existing exchange order preview accepts `order_type` (`market` by default, or `limit`) and requires a positive `limit_price` exactly for limits. Native limits are GTC. Demo uses the same managed-limit workflow with its virtual wallet; its existing market route stays separate.
+The exchange order preview accepts `order_type` (`market`, `limit`, `stop_loss_limit` or `take_profit_limit`) and requires a positive `limit_price` for every non-market type. Conditional types also require `trigger_price` and an implemented Binance/Testnet instrument path. Native limits are GTC. Demo uses the same managed-limit workflow with its virtual wallet; its existing market route stays separate.
 
 `POST /exchange-orders/{id}/cancel/preview` reads native state and creates a 60-second review. Confirm through `POST /exchange-orders/{id}/cancel` with `cancel_id` and the displayed `confirmation`. `POST /exchange-orders/{id}/tracking` persists an `enabled` boolean. `GET /exchange-orders/example` is read-only illustrative data. `/paper/balances` reports available `balances`, `total` and `used` reservations. See [complete contracts and failure semantics](order-management.md).
 
@@ -297,3 +299,9 @@ Funding balance conventions have local GET/POST review and POST withdrawal endpo
 Pending status controls: `POST /connections/{account_id}/funding-refresh/{stream}` saves version-checked opt-in settings or queues a check of retained unfinished records. `GET /funding-sync` includes actual support and public pending-update progress. See [request fields, support and budgets](funding-pending-updates.md).
 
 Recent funding sync: version-checked opt-in controls at `POST /connections/{account_id}/funding-scans/{stream}`, lazy pass history at `GET /connections/{account_id}/funding-scans/{stream}/reports`, and observed source history at `GET /account-ledger/funding/{event_id}/versions`. See [controls, budgets and coverage semantics](funding-recent-sync.md).
+
+## Live previews and native advanced orders
+
+`GET /markets/live` leases an exact public Binance/Testnet display stream; `/markets/live/status` reads observed active-channel evidence without subscribing. These authenticated HTTP routes use NDJSON for display and JSON for status. See [bounds and reconnect behavior](live-markets.md).
+
+`POST /exchange-order-lists/preview`, `GET /exchange-order-lists/{id}` and `POST /exchange-order-lists/{id}/confirm` manage one native OCO list and its two tracked children. `POST /exchange-orders/{id}/replace/preview` reviews an unfilled manual limit replacement, confirmed through the existing new-intent confirmation endpoint. `GET /connections/{id}/order-capabilities` checks actual native per-market permission. See [request fields and non-atomic outcomes](advanced-orders.md).

@@ -58,6 +58,11 @@ def fetch_trade_page(exchange, kind: str, symbol: str, cursor: dict, limit: int)
     cursor API with non-position trades. No generic timestamp-only pagination is
     assumed: fills can share a timestamp and providers have different defaults.
     """
+    from sibyl.exchanges.venue_history import KINDS as VENUES
+    from sibyl.exchanges.venue_history import fetch_venue_page
+
+    if kind in VENUES:
+        return fetch_venue_page(exchange, kind, symbol, cursor, limit)
     market = exchange.market(symbol)
     from sibyl.exchanges.spot_history import KINDS, fetch_spot_page
 

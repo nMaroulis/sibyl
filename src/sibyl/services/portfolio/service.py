@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 
 import ccxt
 
+from sibyl.accounting.diversification import diversification
+from sibyl.accounting.risk.service import HistoricalRisk
 from sibyl.alerts.risk import RiskAlerts
 from sibyl.services.accounts.service import Accounts
 from sibyl.services.markets.service import STABLES, Market
@@ -27,6 +29,7 @@ class Portfolio:
         self.market, self.store = market, store
         self.selection = Accounts(store)
         self.risk_alerts = RiskAlerts(market, store)
+        self.risk = HistoricalRisk(self, market, store)
 
     def connections(self, scope: str = "all"):
         """Select overview accounts; sandbox funds never aggregate with production."""
@@ -130,6 +133,7 @@ class Portfolio:
                 "total": total,
                 "complete": complete,
                 "coverage": {"priced": len(holdings), "total": len(holdings) + len(unpriced)},
+                "diversification": diversification(holdings, complete=complete),
                 "change": (total / previous - 1) * 100 if previous else None,
                 "change_value": total - previous if previous is not None else None,
                 "holdings": holdings,
@@ -269,6 +273,7 @@ class Portfolio:
             "currency": CURRENCY,
             "complete": True,
             "coverage": {"priced": 0, "total": 0},
+            "diversification": diversification([]),
             "change": None,
             "change_value": None,
             "holdings": [],

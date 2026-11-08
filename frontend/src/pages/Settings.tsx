@@ -1,3 +1,4 @@
+import { WorkspaceDiagnostics } from '../components/workspace/diagnostics';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -289,6 +290,7 @@ function WorkspaceSettings({ system }: { system?: System }) {
         <div className="workspace-operations">
           <WorkerHealthPanel />
           <WorkspaceBackups />
+          <WorkspaceDiagnostics />
         </div>
         <Panel className="settings-resources">
           <PanelTitle title="Built to be understood" subtitle="Documentation and developer tools" />

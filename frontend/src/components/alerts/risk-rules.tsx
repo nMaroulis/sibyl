@@ -95,9 +95,9 @@ export function RiskRules({
         <div className="strategy-alert-intro">
           <ShieldAlert size={19} />
           <p>
-            Keep your own limits in view. Watch a value floor, an asset’s allocation or a decline
-            from an observed account-value peak. Choose one account or a fixed group. Only complete,
-            fresh valuations can produce notices.
+            Keep your own limits in view. Watch a value floor, asset/top-three allocation, overall
+            HHI concentration or a decline from an observed account-value peak. Choose one account
+            or a fixed group. Only complete, fresh valuations can produce notices.
           </p>
         </div>
         <div className="strategy-alert-filters">
@@ -164,7 +164,12 @@ export function RiskRules({
                     <span>
                       Notify {rule.metric === 'value_floor' ? 'at or below' : 'at or above'}
                     </span>
-                    <strong className="monetary">{riskValue(rule.threshold, rule.metric)}</strong>
+                    <strong className="monetary">
+                      {riskValue(rule.threshold, rule.metric)}
+                      {rule.basket_assets?.length
+                        ? ` · ${rule.basket_assets.join(' + ')} · hourly`
+                        : ''}
+                    </strong>
                   </div>
                   <div>
                     <span>Recovery level</span>
@@ -286,11 +291,11 @@ export function RiskRules({
           </div>
         )}
         <p className="footnote padded">
-          Checks read spot balances and the pinned feed roughly once a minute, subject to provider
-          budgets and backoff. Inactive accounts or incomplete/undated/stale prices prevent
-          assessment. Drawdown includes deposits/withdrawals and is not investment return. Resume
-          starts a new peak window. Alerts do not place orders, close positions or enforce strategy
-          risk limits.
+          Checks read spot balances and the pinned feed roughly once a minute; historical basket
+          watches check hourly, subject to provider budgets and backoff. Inactive accounts or
+          incomplete/undated/stale prices prevent assessment. Drawdown includes deposits/withdrawals
+          and is not investment return. Resume starts a new peak window. Alerts do not place orders,
+          close positions or enforce strategy risk limits.
         </p>
       </Panel>
       {example && sample.data && (

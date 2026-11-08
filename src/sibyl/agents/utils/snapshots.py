@@ -72,6 +72,15 @@ def tool_arguments(request: AgentRequest) -> dict:
 
 def snapshot_answer(module: str, evidence) -> str:
     """Format actual tool output when language-model inference has not been configured."""
+    if isinstance(evidence, dict) and evidence.get("kind") == "basket_risk_study":
+        if "observations" not in evidence:
+            return f"{len(evidence.get('items', []))} saved historical basket risk studies. Calculate a new study explicitly in Account.\n{evidence['url']}"
+        return f"Historical basket risk: {evidence['observations']} consecutive daily returns. Annualized volatility {evidence['annualized_volatility_pct']:.2f}%; empirical daily 95% VaR {evidence['historical_var_95_pct']:.2f}%.\n{evidence['coverage_note']}\nCurrent-weight hypothetical basket, not measured account performance or a forecast.\n{evidence['url']}"
+    if isinstance(evidence, dict) and evidence.get("kind") == "retrieval_evaluation":
+        if "state" not in evidence:
+            return f"{len(evidence.get('items', []))} saved retrieval evaluations. Open Retrieval quality lab to label passages or inspect a report.\n{evidence['url']}"
+        methods = ", ".join(evidence["methods"])
+        return f"{evidence['title']}: {evidence['state']} · {evidence['completed']}/{evidence['total']} queries · top {evidence['k']} · {methods}.\n\n{evidence['note']}\n{evidence['url']}"
     if isinstance(evidence, dict) and evidence.get("kind") == "account_return_period":
         result = evidence["result"]
         if result:
@@ -121,6 +130,22 @@ def snapshot_answer(module: str, evidence) -> str:
         if top:
             text += f"{top['name']} is the largest position at {top['allocation']:.1f}%. "
         return text + f"Data source: {evidence['source']}. " + " ".join(evidence["warnings"])
+    if module == "analyst" and evidence.get("granger"):
+        result = evidence["granger"]
+        readings = []
+        for item in result["items"]:
+            detail = (
+                item["reason"] if item["p_value"] is None else f"adjusted p {item['adjusted_p_value']:.4g}"
+            )
+            held = item.get("held_out")
+            if held and held["skill_vs_own_lags_pct"] is not None:
+                detail += f", later-target MAE improvement {held['skill_vs_own_lags_pct']:.1f}% vs own lags"
+            readings.append(f"{item['reference']} → {item['target']}: {detail}.")
+        return (
+            f"Granger lag research · order {result['lags']} · {result['observations']} consecutive returns · source {evidence['source_label']}.\n"
+            + "\n".join(readings)
+            + "\nClassical inference assumptions remain unverified. Request-family adjustment does not cover repeated experiments. Lag predictability is not causation or a profitable strategy."
+        )
     if module == "analyst":
         if "rsi" not in evidence:
             return f"{evidence['symbol']}: {evidence['price']:,.4f}. Source: {evidence['source_label']}. {evidence['note']}"
@@ -204,6 +229,18 @@ def snapshot_answer(module: str, evidence) -> str:
                 "Inspect the model's held-out test results; future coverage and profitable trades are not guaranteed."
             )
         return f"The {evidence['horizon']} day log-return baseline ends at {point['value']:,.2f}, with an approximate interval of {point['lower']:,.2f}–{point['upper']:,.2f}. Source: {evidence['source']}. This is an uncalibrated statistical baseline, not a trained model."
+    if module == "broker" and evidence.get("simulation"):
+        label = (evidence.get("plugin") or {}).get("name", evidence["strategy"])
+        return (
+            (
+                "Demo · synthetic input. "
+                if evidence.get("source") == "demo"
+                else "Recorded historical research. "
+            )
+            + f"{label} on {evidence['symbol']}: {evidence['return_pct']:+.2f}% net return, "
+            + f"{evidence['trades']} simulated round trips and {evidence['fees']:.4f} fees. "
+            + "These are saved simulated fills, not live account performance or established future profitability."
+        )
     if module == "broker" and evidence.get("selected_validation"):
         study = evidence["selected_validation"]
         plan = study.get("search")

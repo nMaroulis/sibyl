@@ -2,6 +2,8 @@
 
 import math
 
+from protolink import RunReport
+
 
 def number(value):
     """Keep unknown metrics unknown, rejecting booleans and nonfinite values."""
@@ -16,27 +18,22 @@ def number(value):
 
 
 def run_details(report) -> dict:
-    """Summarize native call receipts, preserving estimation and missing-cost semantics."""
-    calls, seen = [], set()
-    for event in report.events:
-        if event.type != "llm.call.completed" or event.event_id in seen:
-            continue
-        seen.add(event.event_id)
-        data = {**event.payload.get("metadata", {}), **event.payload}
-        metrics = data.get("metrics")
-        if not isinstance(metrics, dict):
-            metrics = {}
-        usage = metrics.get("usage")
-        usage = usage if isinstance(usage, dict) else {}
-        cost = metrics.get("cost")
-        cost = cost if isinstance(cost, dict) else {}
+    """Format native deduplicated metrics/rollups; retain unknown and estimated values."""
+    # Normalize historical reports using the current SDK's own receipt pairing.
+    report = RunReport.from_events(report.events, context=report.context)
+    calls = []
+    for metric in report.metrics:
+        usage = metric.get("usage") or {}
+        cost = metric.get("cost") or {}
         total_cost = number(cost.get("total_cost"))
         calls.append(
             {
-                "agent": event.agent_name,
-                "provider": metrics.get("provider") or data.get("provider"),
-                "model": metrics.get("model") or data.get("model"),
-                "latency_ms": number(metrics.get("latency_ms", data.get("latency_ms"))),
+                "id": metric.get("call_id"),
+                "run_id": metric.get("run_id"),
+                "agent": metric.get("agent_name"),
+                "provider": metric.get("provider"),
+                "model": metric.get("model"),
+                "latency_ms": number(metric.get("latency_ms")),
                 "input_tokens": number(usage.get("input_tokens")),
                 "output_tokens": number(usage.get("output_tokens")),
                 "total_tokens": number(usage.get("total_tokens")),
@@ -51,16 +48,23 @@ def run_details(report) -> dict:
                 else None,
             }
         )
-    known = [row["total_tokens"] for row in calls if row["total_tokens"] is not None]
+
+    def usage_view(scope):
+        result = report.usage(scope=scope).to_dict()
+        # Defensive JSON display validation, including older provider receipts.
+        # Totals and coverage are calculated only by ProtoLink.
+        for group in ("reported", "estimated"):
+            for name in ("input_tokens", "output_tokens", "total_tokens"):
+                result[group][name] = number(result[group][name])
+        for cost in result["costs"]:
+            for name in ("input_cost", "output_cost", "total_cost"):
+                cost[name] = number(cost[name])
+        return result
+
     return {
         "run_id": report.context.run_id,
         "calls": calls,
-        "tokens": {
-            "total": sum(known) if known else None,
-            "known_calls": len(known),
-            "calls": len(calls),
-            "estimated": any(row["estimated"] for row in calls if row["total_tokens"] is not None),
-        },
+        "usage": {scope: usage_view(scope) for scope in ("tree", "root", "children")},
         "tools": [
             {
                 "id": item.action_id,

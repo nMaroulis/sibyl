@@ -1,6 +1,7 @@
 /** JSON contracts shared by the typed API client and dashboard screens. */
 export type Source = {
   source: string;
+  provider?: string;
   source_label?: string;
   as_of?: string;
   environment?: string;
@@ -64,6 +65,7 @@ export type MarketAsset = Omit<Asset, 'price'> & {
   observed_at: string | null;
 };
 export type Portfolio = Source & {
+  diversification?: import('../components/portfolio-diversification').Diversification;
   mode: AccountSelection['mode'];
   total: number;
   active: boolean;
@@ -189,6 +191,7 @@ export type StrategyParams = {
   candles: number;
   fee_bps: number;
   slippage_bps: number;
+  benchmark_interval?: number;
   window: number;
   timeframe?: Timeframe;
   fast_period?: number;
@@ -240,6 +243,23 @@ export type Backtest = Source & {
     low: number;
     volume: number;
   }[];
+  benchmarks?: Record<
+    string,
+    {
+      label: string;
+      kind: string;
+      return_pct: number;
+      final_equity: number;
+      max_drawdown: number;
+      sharpe: number | null;
+      fees: number;
+      execution_count: number;
+      cadence_bars: number | null;
+      assumptions: string;
+      curve: Point[];
+      fills: Fill[];
+    }
+  >;
   benchmark_curve?: Point[];
   engine_revision?: string;
   round_trips?: {
@@ -398,18 +418,42 @@ export type Agent = {
   model_ready?: boolean;
   model_reason?: string;
 };
-export type AgentActivity =
-  | { type: 'status'; status: 'queued' }
-  | {
-      type: 'activity';
-      id: string;
-      run_id: string;
-      task_id: string;
-      agent: string;
-      kind: 'tool' | 'consultation';
-      label: string;
-      status: 'running' | 'completed' | 'failed' | 'rejected' | 'cancelled';
-    };
+/** ProtoLink 0.8.4 PresentationEvent fields consumed by the chat UI. */
+export type AgentActivity = {
+  type: 'model' | 'tool' | 'consultation' | 'approval' | 'action' | 'run';
+  status:
+    | 'requested'
+    | 'started'
+    | 'completed'
+    | 'retrying'
+    | 'failed'
+    | 'rejected'
+    | 'denied'
+    | 'canceled'
+    | 'required'
+    | 'approved'
+    | 'submitted'
+    | 'working'
+    | 'input-required'
+    | 'queued'
+    | 'running'
+    | 'expired'
+    | 'unknown';
+  summary: string;
+  name: string | null;
+  activity_id: string | null;
+  event_id: string;
+  run_id: string | null;
+  task_id: string | null;
+  agent_name: string | null;
+  sequence: number | null;
+  action_id?: string | null;
+  delegation_id?: string | null;
+  timestamp: string;
+  final?: boolean;
+};
+/** Public answer snapshots are separate from native tool/consultation activity. */
+export type AgentStreamEvent = AgentActivity | { type: 'answer'; text: string };
 export type AgentReply = {
   run_id?: string;
   context?: AgentContext;
@@ -599,6 +643,10 @@ export type Run = {
 
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
+  comparison_symbols?: string[];
+  granger_lags?: number;
+  correlation_method?: 'pearson' | 'spearman' | 'distance';
+  correlation_transform?: 'log_returns' | 'prices' | 'changes';
   backtest_id?: string;
   validation_id?: string;
   portfolio_scope?: string;
@@ -621,6 +669,8 @@ export type AgentContext = {
   crypto_id?: string;
   library_document_id?: string;
   library_passage_id?: string;
+  retrieval_evaluation_id?: string;
+  risk_study_id?: string;
   library_source_type?: 'all' | 'document' | 'news';
   library_query?: string;
   library_search_method?: 'keyword' | 'semantic' | 'hybrid';
@@ -827,6 +877,9 @@ export type ExchangeSupportGroup = {
   }[];
 };
 export type ExchangeProvider = {
+  conditional_orders: boolean;
+  oco_orders: boolean;
+  replace_orders: boolean;
   id: string;
   name: string;
   note: string;

@@ -254,10 +254,17 @@ class CCXTClient(ExchangeClient):
 
     @staticmethod
     def _order(row: dict) -> dict:
+        info = row.get("info") if isinstance(row.get("info"), dict) else {}
+        native_type = info.get("type")
+        kind = {"STOP_LOSS_LIMIT": "stop_loss_limit", "TAKE_PROFIT_LIMIT": "take_profit_limit"}.get(
+            native_type, row.get("type")
+        )
         return {
+            "type": kind,
+            "triggerPrice": number(row.get("triggerPrice") or row.get("stopPrice") or info.get("stopPrice")),
             **{
                 key: row.get(key)
-                for key in ("id", "clientOrderId", "symbol", "status", "type", "side", "timeInForce")
+                for key in ("id", "clientOrderId", "symbol", "status", "side", "timeInForce")
             },
             **{
                 key: number(row.get(key))

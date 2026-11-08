@@ -41,7 +41,17 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(store: Store, **runtime) -> Agent:
-    """Let ProtoLink supply discovery, agent-call schemas, dispatch and child-task lifecycle."""
+    """Declare the coordinator and its read-only saved-research tools.
+
+    Args:
+        store: Workspace storage for investigation and briefing evidence.
+        **runtime: Native Agent options, including owned subagents, registry,
+            lazy model factory and persistent state, supplied by AgentNetwork.
+
+    Returns:
+        An unstarted Agent with delegation enabled. ProtoLink discovers peers,
+        validates agent calls and owns child-task budgets and cancellation.
+    """
     agent = Agent(
         name="sibyl-sibyl",
         description="Sibyl, your connected intelligence. Connect specialist evidence into a clear answer.",

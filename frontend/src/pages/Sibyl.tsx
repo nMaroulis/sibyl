@@ -1,3 +1,5 @@
+import { ChatMarkdown } from '../components/chat-markdown';
+import { StreamingAnswer } from '../components/streaming-answer';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
@@ -112,7 +114,7 @@ function SibylTabs() {
 }
 
 function SibylAnswer({ turn }: { turn: Reply }) {
-  if (!turn.investigation_id) return <div className="sibyl-answer-text">{turn.answer}</div>;
+  if (!turn.investigation_id) return <ChatMarkdown>{turn.answer}</ChatMarkdown>;
   let summary =
     'The investigation response is retained with its source checks in the report workspace.';
   try {
@@ -123,7 +125,7 @@ function SibylAnswer({ turn }: { turn: Reply }) {
   }
   return (
     <div className="sibyl-answer-text">
-      <p>{summary}</p>
+      <ChatMarkdown>{summary}</ChatMarkdown>
       <Link
         className="text-link"
         to={`/sibyl?tab=investigations&investigation=${turn.investigation_id}&run=${turn.request_id ?? ''}`}
@@ -155,7 +157,7 @@ function SibylChat() {
   const [following, setFollowing] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [requestId, setRequestId] = useState('');
-  const [live, setLive] = useState<{ session: string; items: AgentActivity[] }>();
+  const [live, setLive] = useState<{ session: string; items: AgentActivity[]; answer: string }>();
   const controller = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => controller.current?.abort(), []);
   const activity = useResource<SibylActivity | null>(
@@ -213,7 +215,7 @@ function SibylChat() {
         target = chat.id;
         setParams({ chat: target });
       }
-      setLive({ session: target, items: [] });
+      setLive({ session: target, items: [], answer: '' });
       const reply = await postStream<
         Reply | { status: 'cancelled'; request_id: string; session_id: string }
       >(
@@ -226,7 +228,14 @@ function SibylChat() {
         (event) => {
           setLive((old) => ({
             session: target,
-            items: mergeActivity(old?.session === target ? old.items : [], event),
+            items:
+              event.type === 'answer'
+                ? old?.session === target
+                  ? old.items
+                  : []
+                : mergeActivity(old?.session === target ? old.items : [], event),
+            answer:
+              event.type === 'answer' ? event.text : old?.session === target ? old.answer : '',
           }));
         },
         stream.signal,
@@ -501,7 +510,7 @@ function SibylChat() {
                                   {item.provider === 'mock' ? ' · Simulated' : ''}
                                 </p>
                                 <p className="muted">{item.question}</p>
-                                <p>{item.answer || item.error}</p>
+                                <ChatMarkdown>{item.answer || item.error || ''}</ChatMarkdown>
                                 {item.evidence !== undefined && (
                                   <details>
                                     <summary>Source observations</summary>
@@ -524,7 +533,10 @@ function SibylChat() {
                         <p>{pending || currentActivity?.question}</p>
                       </div>
                     )}
+                    {pending && live?.session === session && <StreamingAnswer text={live.answer} />}
                     <SibylProgress
+                      items={pending && live?.session === session ? live.items : []}
+                      streaming={Boolean(pending && live?.session === session && live.answer)}
                       activity={visibleActivity}
                       stopping={stopping}
                       stop={

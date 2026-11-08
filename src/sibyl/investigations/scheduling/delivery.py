@@ -1,7 +1,7 @@
 """Render saved report text for Telegram without another model request or invented links."""
 
 
-def briefing_text(title: str, run: dict, presentation: str) -> str:
+def briefing_text(title: str, run: dict, presentation: str, *, document: bool = False) -> str:
     """Prepare plain text from a completed report, retaining model/data attribution."""
     report = run["report"]
     lines = [f"Sibyl briefing · {title}", f"Report version {run['version']} · {run['finished_at']}"]
@@ -30,6 +30,6 @@ def briefing_text(title: str, run: dict, presentation: str) -> str:
         ]
     )
     text = "\n".join(lines)
-    if len(text) > 18000:
+    if not document and len(text) > 18000:
         text = text[:17800] + "\n[Briefing shortened. Read the full report in Sibyl → Investigations.]"
     return text

@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
-from protolink import ContextLimitError
+from protolink import ContextLimitError, RunAdmissionError
 
 from sibyl import __version__
 from sibyl.agents.utils.conversations import SibylRequest
@@ -14,7 +14,7 @@ from sibyl.agents.utils.network import ModelRequired
 from sibyl.agents.utils.providers import ProviderId
 from sibyl.agents.utils.reporting import run_details
 from sibyl.agents.utils.requests import CancelSibylRequest
-from sibyl.agents.utils.streaming import stream_reply
+from sibyl.agents.utils.streaming import retained_run, stream_reply
 from sibyl.api.app import Services
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.market_data.backfills import (
@@ -82,6 +82,7 @@ def system(s: S):
         "llm_model": model["model"],
         "agent_engine": "ProtoLink",
         "agents": len(s.agents.network.cards),
+        "agent_runtime": s.agents.network.group.snapshot().to_dict(),
         "allow_live_trading": s.settings.allow_live_trading,
         "allow_strategy_execution": s.settings.allow_strategy_execution,
         "accounts": s.accounts.public(),
@@ -261,7 +262,7 @@ def correlations(
     symbols: str = Query("BTC/USDT,ETH/USDT,SOL/USDT,LINK/USDT", max_length=350),
     timeframe: Timeframe = "1d",
     limit: int = Query(90, ge=30, le=720),
-    method: Literal["pearson", "spearman"] = "pearson",
+    method: Literal["pearson", "spearman", "distance"] = "pearson",
     transform: Literal["log_returns", "prices", "changes"] = "log_returns",
     source: MarketSource | None = None,
 ):
@@ -277,7 +278,11 @@ def correlations(
         for symbol in selected:
             s.market.client().market(symbol)
         histories = {symbol: s.market.candles(symbol, limit, timeframe) for symbol in selected}
-        return {**s.market.metadata(), "timeframe": timeframe, **correlation(histories, method, transform)}
+        return {
+            **s.market.metadata(),
+            "timeframe": timeframe,
+            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe]),
+        }
 
 
 @router.get("/markets/symbols", tags=["Analyst"])
@@ -1087,6 +1092,8 @@ async def ask_sibyl(body: SibylRequest, s: S):
     """Ask the lead ProtoLink agent; it chooses specialist consultations itself."""
     try:
         return await s.agents.network.ask(body)
+    except RunAdmissionError as exc:
+        raise HTTPException(503, str(exc)) from exc
     except (ModelRequired, ContextLimitError) as exc:
         raise HTTPException(409, str(exc)) from exc
     except TimeoutError as exc:
@@ -1132,6 +1139,8 @@ async def ask_agent(body: AgentRequest, s: S):
     """Run a module's ProtoLink tool and optionally perform model inference."""
     try:
         return await s.agents.ask(body)
+    except RunAdmissionError as exc:
+        raise HTTPException(503, str(exc)) from exc
     except SemanticNotReady as exc:
         raise HTTPException(400, str(exc)) from exc
     except ContextLimitError as exc:
@@ -1158,6 +1167,40 @@ def agent_run_report(run_id: str, s: S, response: Response):
         raise LookupError("Agent run report not found.")
     response.headers["Cache-Control"] = "no-store"
     return report.to_dict()
+
+
+@router.get("/agents/runs/{run_id}/stream", tags=["Oracle"])
+def observe_agent_run(
+    run_id: str,
+    s: S,
+    after: Annotated[int, Query(ge=0)] = 0,
+    answer_after: Annotated[int, Query(ge=0)] = 0,
+):
+    """Replay native public activity/answers for a retained run without executing work.
+
+    Cursors are independent. Native gaps are explicit; disconnect only detaches
+    this viewer. Retention is bounded to this backend process, not persisted resumes.
+    """
+    try:
+        handle = s.agents.network.group.get_run(run_id)
+        # A deleted chat/report must not remain publicly replayable just because
+        # the SDK retains a completed handle in memory.
+        if handle.task.is_terminal and s.agents.network.run_store.get_report(run_id) is None:
+            raise KeyError(run_id)
+    except KeyError as exc:
+        raise HTTPException(
+            404, "This live run is no longer retained. Saved replies remain available."
+        ) from exc
+    structured = any(
+        part.type == "infer" and isinstance(part.content, dict) and part.content.get("output_schema")
+        for message in handle.task.messages
+        for part in message.parts
+    )
+    return StreamingResponse(
+        retained_run(handle, after=after, answer_after=answer_after, answers=not structured),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/agents/runs/{run_id}/summary", tags=["Oracle"])

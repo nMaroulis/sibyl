@@ -82,6 +82,7 @@ export function ForecastForward({
     (o) =>
       o.input_kind === 'current_feed' &&
       o.environment !== 'demo' &&
+      o.environment !== 'imported' &&
       o.source !== 'demo' &&
       !rows.some((r) => r.id === o.id),
   );

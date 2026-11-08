@@ -5,7 +5,7 @@ import threading
 from uuid import uuid4
 
 import pytest
-from agent_helpers import coordinator_factory, delegate
+from agent_helpers import busy_agents, coordinator_factory, delegate
 from fastapi.testclient import TestClient
 from protolink import create_llm
 from pydantic import SecretStr
@@ -210,25 +210,23 @@ def test_a_stale_cancel_cannot_stop_a_new_request_or_another_conversation(client
 def test_queued_requests_can_be_stopped_without_a_model_call(client, monkeypatch):
     network, session = prepare(client)
     coordinator_factory(monkeypatch, lambda *a, **kw: pytest.fail("Queued model was called"))
-    client.portal.call(network.owner._semaphore.acquire)
-    client.portal.call(network.owner._semaphore.acquire)
-    request_id = uuid4().hex
-    future = client.portal.start_task_soon(
-        network.ask, SibylRequest(session_id=session, request_id=request_id, message="Wait for a slot")
-    )
-    try:
-        queued = client.get(f"/api/v1/sibyl/conversations/{session}/activity").json()
-        assert queued["status"] == "queued"
-        assert (
-            client.post(
-                f"/api/v1/sibyl/conversations/{session}/cancel", json={"request_id": request_id}
-            ).status_code
-            == 202
+    with busy_agents(client, monkeypatch):
+        request_id = uuid4().hex
+        future = client.portal.start_task_soon(
+            network.ask, SibylRequest(session_id=session, request_id=request_id, message="Wait for a slot")
         )
-        assert future.result(timeout=2)["status"] == "cancelled"
-    finally:
-        client.portal.call(network.owner._semaphore.release)
-        client.portal.call(network.owner._semaphore.release)
+        try:
+            queued = client.get(f"/api/v1/sibyl/conversations/{session}/activity").json()
+            assert queued["status"] == "queued"
+            assert (
+                client.post(
+                    f"/api/v1/sibyl/conversations/{session}/cancel", json={"request_id": request_id}
+                ).status_code
+                == 202
+            )
+            assert future.result(timeout=2)["status"] == "cancelled"
+        finally:
+            future.result(timeout=2)
     assert not network._chat_locks
 
 

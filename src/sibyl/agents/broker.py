@@ -6,7 +6,7 @@ retrieve focused UI instructions. No tool grants order or strategy control.
 
 from typing import Literal
 
-from protolink import Agent, ToolRejectedError
+from protolink import Agent, Tool, ToolRejectedError
 
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.broker import STRATEGIES, TRADE, StrategyTopic, TradeTopic
@@ -19,13 +19,17 @@ NAME = "Broker"
 TAGLINE = "Build with discipline"
 DESCRIPTION = "Explain Trade and Strategies: recorded orders/fills, backtests, monitored runs, execution support and practical page help."
 SYSTEM_PROMPT = (
+    "Continuous replay carries one balance between parameter windows; distinguish its cumulative return from independent-window means and live execution. "
+    "Nested validation scores candidates only within outer training prefixes; disclose its recorded aggregation rule and repeated-experiment bias. "
+    "Custom backtests are trusted installed research plugins, not paper/exchange jobs. Read their pinned implementation/decisions through backtest_report; never run or install them. "
     "For how-to questions choose trade_help or strategy_help with the matching topic; "
     "instructions alone do not require reading account/order records. Use recorded_orders for "
     "the user's saved order status and reconciliation evidence. Its order_id is Sibyl's record ID, "
     "not a venue ID; ask or list records if unclear. This tool reads retained observations, not current "
     "exchange state. Never suggest an uncertain order is safe to resubmit. "
-    "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. Call "
-    "strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
+    "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. "
+    "Use backtest_report for recorded reference portfolio metrics and strategy_help benchmarks for their assumptions. "
+    "Use strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
     "supported rules and assumptions. Call backtest_report for a saved or selected historical run: "
     "explain actual simulated fills, costs, input provenance and metrics. Never describe a backtest "
     "as predictive or confuse synthetic Demo input with observed exchange prices. "
@@ -36,6 +40,7 @@ SYSTEM_PROMPT = (
     "Inspect the recorded search method, finite space, sampled candidates, seed and coverage. Random "
     "search evaluates only its recorded sample, not all possible combinations; seeds are not quality scores. "
     "Never call the best training score an out-of-sample result or imply that this proves future performance. "
+    "Use advanced_order_evidence and recorded_orders for native OCO leg states, conditional triggers and replacement links. OCO activation cancels its sibling, but conditional limits can remain unfilled. Replacement is unfilled-only and non-atomic; never infer both legs or commands succeeded from one acknowledgment. Instruments and providers differ. "
     "Call exchange_support for manual spot order support, permissions "
     "and provider-specific history/recovery limits. Inspect mode and environment: paper runs use virtual capital; "
     "approved exchange runs use actual/test exchange funds and native fills. Explain paused/uncertain orders, "
@@ -80,7 +85,18 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Broker's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     strategies, store = (services.strategies, services.store)
 
     def strategy_context(
@@ -150,6 +166,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         return {
             "selected_parameters": simulation.model_dump(),
             "catalog": CATALOG,
+            "custom_research": strategies.plugins.registry.catalog(),
             "recent_paper_orders": store.orders()[:10],
             "strategy_jobs": strategies.jobs(),
             "backtests": [
@@ -227,13 +244,17 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Inspect a saved backtest's metrics, costs, input provenance and ten recent round trips.
 
         Supply a known run_id or omit it for the selected experiment. Use to explain
-        actual historical simulation results; strategy_help covers running or rerunning one.
+        actual historical simulation results, including recorded cash, hold, installment
+        and 50/50 reference returns, costs and assumptions when available. strategy_help
+        covers running or rerunning an experiment; older reports may lack reference evidence.
         """
         import json
 
         run_id = selected("backtest_id", run_id or None, "")
         with store.db() as db:
-            row = db.execute("SELECT payload FROM runs WHERE id=? AND kind='backtest'", (run_id,)).fetchone()
+            row = db.execute(
+                "SELECT payload FROM runs WHERE id=? AND kind IN ('backtest','plugin_backtest')", (run_id,)
+            ).fetchone()
         if not row:
             return {"note": "Choose a saved backtest first.", "url": "/strategies"}
         result = json.loads(row[0])
@@ -241,7 +262,20 @@ def create_agent(services: Services, **runtime) -> Agent:
             **{
                 key: value
                 for key, value in result.items()
-                if key not in {"curve", "price_series", "benchmark_curve", "fills", "round_trips"}
+                if key
+                not in {
+                    "curve",
+                    "price_series",
+                    "benchmark_curve",
+                    "benchmarks",
+                    "fills",
+                    "round_trips",
+                    "plugin_signals",
+                }
+            },
+            "benchmarks": {
+                name: {key: value for key, value in item.items() if key not in {"curve", "fills"}}
+                for name, item in result.get("benchmarks", {}).items()
             },
             "recent_round_trips": result.get("round_trips", [])[-10:],
             "evidence_trade_limit": 10,
@@ -265,7 +299,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def validation_report(validation_id: str = "", window: int = 1) -> dict:
-        """Inspect a saved validation study's training rankings and independent test-window evidence.
+        """Inspect saved parameter-selection rankings and independent test-window evidence, including nested validation.
 
         Supply a known validation_id or omit it for the selected study. window is the
         one-based test-window number. Returns retained settings, comparisons, metrics
@@ -280,6 +314,24 @@ def create_agent(services: Services, **runtime) -> Agent:
             return {"note": "Choose one of the study's recorded test windows."}
         fold = result["folds"][window - 1]
         return {
+            **(
+                {
+                    "deployment": {
+                        "method": result["deployment"]["method"],
+                        "note": result["deployment"]["note"],
+                        "adaptive": {
+                            key: result["deployment"]["adaptive"][key]
+                            for key in ("return_pct", "trades", "fees", "max_drawdown", "transitions")
+                        },
+                        "fixed": {
+                            key: result["deployment"]["fixed"][key]
+                            for key in ("return_pct", "trades", "fees", "max_drawdown")
+                        },
+                    }
+                }
+                if result.get("deployment")
+                else {}
+            ),
             "search": result.get("search"),
             **{
                 key: result[key]
@@ -300,6 +352,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "selected_window": {
                 "index": window,
                 "training_ranking": fold["training_ranking"],
+                "selection": fold.get("selection", {"mode": "training"}),
                 "recent_test_round_trips": fold["out_of_sample"]["round_trips"][-10:],
             },
             "simulation": True,
@@ -371,6 +424,9 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "exchange",
                         "environment",
                         "origin",
+                        "oco_group_id",
+                        "oco_list_id",
+                        "replacement_of",
                         "status",
                         "filled",
                         "remaining",
@@ -396,6 +452,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "quantity",
                         "order_type",
                         "limit_price",
+                        "trigger_price",
                     )
                 },
             }
@@ -432,6 +489,38 @@ def create_agent(services: Services, **runtime) -> Agent:
             "evidence_order_limit": 10,
         }
 
+    def advanced_order_evidence(list_id: str | None = None) -> dict:
+        """Inspect saved native OCO groups and each leg's observed status, trigger, fills and uncertainty.
+
+        Omit list_id to list up to ten saved groups. Use an exact group ID from
+        these results or recorded_orders to inspect its two legs. Returns retained
+        observations only; canceled siblings and partially filled active legs remain
+        separate facts. This tool cannot submit, replace, cancel or refresh orders.
+        """
+        execution = strategies.execution
+        if execution is None:
+            return {"items": [], "url": "/trade?tab=executions"}
+        trading = execution.trading
+        with store.db() as db:
+            ids = (
+                [list_id]
+                if list_id
+                else [
+                    row[0] for row in db.execute("SELECT id FROM order_groups ORDER BY rowid DESC LIMIT 10")
+                ]
+            )
+        try:
+            return {
+                "items": [trading.advanced.detail(identity) for identity in ids],
+                "url": "/trade?tab=executions",
+                "scope": "Retained native list and leg observations; inspect dates and unresolved outcomes.",
+            }
+        except LookupError as error:
+            raise ToolRejectedError(
+                "That OCO group is not saved. List groups first and use an exact returned ID.",
+                code="order_group_not_found",
+            ) from error
+
     def trade_help(topic: TradeTopic = "overview") -> dict:
         """Explain Trade workflows: accounts, spot orders, account history, executions, tracking, cancellation or recovery.
 
@@ -454,7 +543,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         description=DESCRIPTION,
         tools=[
             strategy_context,
-            strategy_guide,
+            Tool.from_callable(strategy_guide, sync_execution="inline"),
             execution_controls,
             portfolio_limits,
             strategy_alerts,
@@ -463,8 +552,9 @@ def create_agent(services: Services, **runtime) -> Agent:
             validation_report,
             exit_readiness,
             recorded_orders,
-            trade_help,
-            strategy_help,
+            advanced_order_evidence,
+            Tool.from_callable(trade_help, sync_execution="inline"),
+            Tool.from_callable(strategy_help, sync_execution="inline"),
             execution_alerts,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,

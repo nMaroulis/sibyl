@@ -25,7 +25,7 @@ module.exports = {
         chapter(
           'Accounts and setup',
           'Connect exchanges, configure Sibyl and understand your balances.',
-          ['guides/account-returns', 'guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks'],
+          ['guides/account-returns', 'guides/account', 'guides/exchanges', 'guides/settings', 'guides/balance-checks', 'guides/basket-risk'],
         ),
         chapter(
           'Markets and research',
@@ -33,6 +33,7 @@ module.exports = {
           [
             'guides/markets',
             'guides/market-statistics',
+            'guides/lag-analysis',
             'guides/market-history',
             'guides/research',
             'guides/research-library',
@@ -96,6 +97,7 @@ module.exports = {
           'Exchange adapters, synchronization, valuation and accounting evidence.',
           [
             'developers/accounts',
+            'developers/basket-risk',
             'developers/performance-outcomes-alerts',
             'developers/exchange-clients',
             'developers/exchange-acceptance',
@@ -111,6 +113,7 @@ module.exports = {
           'Order lifecycle, funding imports, recovery and transfer reconciliation.',
           [
             'developers/order-management',
+            'developers/advanced-orders',
             'developers/order-reconciliation',
             'developers/order-recovery',
             'developers/order-discovery',
@@ -127,6 +130,8 @@ module.exports = {
           'Market feeds, candle history, news, forecasting and Bitcoin research.',
           [
             'developers/market-data',
+            'developers/lag-analysis',
+            'developers/live-markets',
             'developers/provider-control',
             'developers/candle-history',
             'developers/news',
@@ -140,6 +145,7 @@ module.exports = {
           'Research engines, execution controls, limits and persistent alerts.',
           [
             'developers/strategy-research',
+            'developers/strategy-plugins',
             'developers/strategy-controls',
             'developers/portfolio-limits',
             'developers/alerts',

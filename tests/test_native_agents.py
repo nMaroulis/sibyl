@@ -40,6 +40,7 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
         "research_search_status",
         "read_research_document",
         "read_research_passage",
+        "retrieval_evaluation",
         "read_context_artifact",
     }
     assert set(owner.agents["technician"].tools) == {
@@ -48,6 +49,8 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
         "settings_guide",
         "exchange_setup",
         "workspace_operations",
+        "notification_history",
+        "telegram_delivery_review",
         "read_context_artifact",
     }
     use_model(client, monkeypatch, ["A general explanation without account reads."])

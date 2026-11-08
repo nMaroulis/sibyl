@@ -35,7 +35,7 @@ READS = {
     "fetch_order_fill_page",
     "fetch_account_order_page",
 }
-WRITES = {"create_order", "cancel_order"}
+WRITES = {"create_order", "cancel_order", "create_oco", "cancel_replace"}
 MESSAGES = {
     "rate_limit": "Provider rate limit reached; shared reads are cooling down.",
     "network": "Provider temporarily unavailable; shared reads will retry after backoff.",

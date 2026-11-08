@@ -4,7 +4,7 @@ import type { Candle } from '../lib/types';
 import { exportCSV, number } from '../lib/api';
 
 export type ChartCandle = Pick<Candle, 'timestamp' | 'open' | 'high' | 'low' | 'close' | 'volume'> &
-  Partial<Pick<Candle, 'upper' | 'lower' | 'ema_fast'>>;
+  Partial<Pick<Candle, 'upper' | 'lower' | 'ema_fast'>> & { live_preview?: boolean };
 const W = 1000,
   H = 360,
   L = 12,
@@ -420,7 +420,7 @@ export function Candlesticks({
         viewBox={`0 0 ${W} ${H}`}
         role="img"
         tabIndex={0}
-        aria-label={`${mode === 'line' ? 'Price line' : 'OHLC candlestick'} chart, ${visible.length} of ${data.length} closed candles`}
+        aria-label={`${mode === 'line' ? 'Price line' : 'OHLC candlestick'} chart, ${visible.length} of ${data.length} ${data.some((row) => row.live_preview) ? 'candles, including a live preview' : 'closed candles'}`}
         aria-describedby={instructions}
         className={`${dragMode === 'pan' ? 'pan-mode' : 'region-mode'} ${dragging ? 'dragging' : ''}`}
         onPointerDown={(event) => {

@@ -84,3 +84,19 @@ Each source permits one non-archived rule, with a separate budget of 50 connecti
 ## Account risk watches
 
 **Alerts → Account risk** adds opt-in fixed-account value floors, asset concentration and observed-value drawdown limits. Complete fresh spot valuation is required; notices do not control orders or strategies. See [setup, formulas and limits](account-risk.md).
+
+## Export and retain inbox history
+
+Open **Inbox → History export & retention**. Export JSON or CSV, optionally filtered by kind and UTC dates (inclusive **From**, exclusive **Before**). Each export contains up to 2,000 newest matching notices; use smaller date ranges for larger histories. JSON includes matching/exported counts and an explicit truncation flag. Exporting does not mark notices read. Files can contain private account evidence.
+
+Automatic cleanup is **off by default**. Choose an age of at least seven days, then save the policy to enable it. Only older **read** notices are eligible; unread notices, unfinished delivery receipts and records not yet processed by enabled delivery rules stay protected. The preview shows the actual cutoff and counts. Saving a policy schedules later cleanup; **Clear up to 500 eligible read notices** explicitly performs one bounded pass immediately, even with automatic cleanup disabled. Pending unsaved edits must be saved or discarded first.
+
+Disabling the policy prevents later automatic passes; it cannot restore deleted notices. Cleanup never removes alert rules, financial ledgers, conversations or the separate messaging delivery history. Recent cleanup receipts remain visible. Restored workspaces keep automatic workers paused until recovery review and restart.
+
+Account-risk rules also support **Overall asset concentration · HHI** and **Top three assets reaching a combined allocation limit**. HHI uses a 0–100 index; top-three uses percent. Both include every valued asset in the fixed account set, require fresh complete coverage, and recover only below the configured lower reset level. Saved evidence and optional Telegram messages retain the exact observed value and units. Concentration does not measure correlation-adjusted investment risk.
+
+## Historical basket watches
+
+In **Account risk → New watch**, choose **Basket annualized historical volatility** or **Basket historical 95% expected shortfall · daily**. Enter up to eight currently held asset symbols and choose 60, 90 or 180 requested days. Set your limit and optional recovery level. This authorizes hourly balance, quote and closed daily-history reads against the fixed accounts/reference feed; it never places orders or stops a strategy.
+
+Every selected asset must remain held, all account holdings must price completely with fresh dated quotes, and the basket needs at least 31 common consecutive daily closes with history no more than two days behind. Missing data leaves incidents unchanged rather than implying recovery. Evidence shows the exact dated window, tail sample size, current basket weights, share of account value and fingerprint. Volatility annualizes daily sample deviation with √365. Expected shortfall is minus the mean return at/below the empirical fifth percentile, including ties. Current weights are hypothetically rebalanced daily without fees; a selected subset is not whole-account performance. Historical tails are not calibrated future loss probabilities or maximum-loss guarantees.

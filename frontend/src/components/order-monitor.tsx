@@ -8,6 +8,7 @@ import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast }
 import { OrderReconciliation, reconciliationLabel } from './order-reconciliation';
 import type { Reconciliation } from './order-reconciliation';
 import { OrderDiscovery } from './order-discovery';
+import { ReplaceOrder } from './trading/advanced-orders';
 
 export type ManagedOrder = {
   id: string;
@@ -16,6 +17,7 @@ export type ManagedOrder = {
     connection_id: string;
     order_type?: string;
     limit_price?: number;
+    trigger_price?: number;
   };
   account: string;
   exchange: string;
@@ -25,7 +27,9 @@ export type ManagedOrder = {
   status: string;
   price: number | null;
   notional: number | null;
-  origin?: 'sibyl' | 'strategy' | 'imported';
+  origin?: 'sibyl' | 'strategy' | 'imported' | 'oco' | 'replacement';
+  oco_group_id?: string;
+  replacement_of?: string;
   strategy_job_id?: string;
   read_only?: boolean;
   time_in_force?: string | null;
@@ -42,6 +46,8 @@ export type ManagedOrder = {
   created_at?: string;
   order_created_at?: string | null;
   sync_error?: string;
+  replace_state?: string;
+  replace_message?: string;
   cancel_state?: string;
   cancel_message?: string;
   reconciliation?: Reconciliation;
@@ -96,6 +102,7 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
   >(example ? '/exchange-orders/example' : `/exchange-orders/monitor?${query}`, 5000, active);
   const [busy, setBusy] = useState('');
   const [review, setReview] = useState<CancelReview>();
+  const [replacement, setReplacement] = useState<ManagedOrder>();
   const [inspected, setInspected] = useState<string>();
   const [phrase, setPhrase] = useState('');
   const [error, setError] = useState('');
@@ -185,6 +192,9 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
       )}
       {!example && (
         <>
+          {replacement && (
+            <ReplaceOrder order={replacement} close={() => setReplacement(undefined)} />
+          )}
           <OrderDiscovery active={active} />
           <div className="workspace-controls order-monitor-filters">
             <label>
@@ -282,10 +292,15 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                     </small>
                   </td>
                   <td>
-                    {order.request.side} · {order.request.order_type || 'market'}
+                    {order.request.side} ·{' '}
+                    {(order.request.order_type || 'market').replaceAll('_', ' ')}
+                    {order.oco_group_id && <Badge>OCO leg</Badge>}
+                    {order.request.trigger_price != null && (
+                      <small>Trigger {display(order.request.trigger_price)}</small>
+                    )}
                     <small className="table-subline">
                       {display(order.request.quantity)}
-                      {order.request.order_type === 'limit'
+                      {order.request.order_type !== 'market'
                         ? ` @ ${display(order.request.limit_price ?? order.price)}${order.origin === 'imported' ? (order.time_in_force ? ` · ${order.time_in_force}` : '') : ' · GTC'}`
                         : ''}
                     </small>
@@ -377,6 +392,22 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                           >
                             {order.tracking ? <Pause size={14} /> : <Play size={14} />}
                           </button>
+                          {['binance', 'binance-testnet'].includes(order.exchange) &&
+                            !order.oco_group_id &&
+                            ['sibyl', 'replacement'].includes(order.origin || 'sibyl') &&
+                            order.status === 'open' &&
+                            order.filled === 0 &&
+                            order.request.order_type === 'limit' &&
+                            !order.cancel_state &&
+                            !order.replace_state && (
+                              <button
+                                className="text-button"
+                                disabled={!!busy || example}
+                                onClick={() => setReplacement(order)}
+                              >
+                                Replace…
+                              </button>
+                            )}
                           {order.origin !== 'imported' &&
                             ['open', 'pending', 'submitted'].includes(order.status) && (
                               <button
@@ -397,14 +428,18 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
           </table>
           {submitted
             .filter(
-              (order) => order.sync_error || order.cancel_message || order.status === 'unknown',
+              (order) =>
+                order.sync_error ||
+                order.cancel_message ||
+                order.replace_message ||
+                order.status === 'unknown',
             )
             .map((order) => (
               <p className="footnote padded" key={order.id}>
                 <strong>
                   {order.account} · {order.request.symbol}:
                 </strong>{' '}
-                {order.sync_error || order.cancel_message || order.message}
+                {order.sync_error || order.replace_message || order.cancel_message || order.message}
                 <br />
                 Client order ID: <code>{order.client_order_id || 'Not reported'}</code>
               </p>

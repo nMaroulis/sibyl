@@ -83,3 +83,32 @@ The isolated workspace deliberately had no history imports configured, so its co
 ## Recent funding sync - October 28, 2026
 
 A single authenticated Binance production deposit-history pass over a 24-hour creation-time window completed in an isolated local workspace. The transport allowed only GET requests to Binance deposit history and server time; exactly one deposit-history request was made, with no writes. Pagination was exhausted for that window. Controls were disabled after the check, and the main workspace was not reconfigured. The local summary is `.sibyl/acceptance/recent-funding-20261028T091020Z/acceptance.json`; credentials and native financial records were not printed. This verifies that bounded read, not live correction transitions or complete funding history. Kraken/Bybit authenticated rolling reads and native correction scenarios remain unverified.
+
+## Advanced orders — November 6, 2026
+
+A new isolated encrypted workspace exercised actual Binance Spot Testnet HTTP handlers with virtual funds. Each native order/alternative was bounded to fifteen USDT at its reviewed price; production destinations were rejected by the transport. Six admitted commands produced seven native order identities because one was an OCO pair.
+
+| Scenario | Observed result |
+| --- | --- |
+| Stop-loss limit | Native conditional GTC opened without execution and canceled with zero fills. |
+| Take-profit limit | Native conditional GTC opened without execution and canceled with zero fills. |
+| Lost OCO response | The real successful list response was deliberately discarded. Both exact child client IDs recovered native open orders without resubmission. |
+| OCO cancellation | Canceling one observed child resulted in both native legs being observed canceled with zero fills. |
+| Native cancel/replace | A wholly unfilled manual GTC order canceled and a new native limit opened. Duplicate approval retained its identity; the new order then canceled. |
+| Fill/cancel observation | A small marketable limit filled before cancellation could be reviewed. This records the fill-winning outcome, not an intermediate partial fill. |
+| Read-only fill follow-up | One actual native fill and its reported zero BTC fee matched the retained ledger after pagination completed, with execution disabled. Settlement remains explicitly non-final. |
+
+The primary local receipt is `.sibyl/acceptance/advanced-v230-20261106-a/acceptance.json`. Protect the retained directory: it includes encrypted Testnet credentials and the local ledger. No production order or application account preference was changed. Virtual units purchased by the final fill remain in Testnet; no automatic cleanup sell was submitted.
+
+To repeat in a **new** directory:
+
+```bash
+uv run python scripts/check_binance_advanced_testnet.py \
+  --account-id YOUR_SAVED_TESTNET_CONNECTION_ID \
+  --workspace .sibyl/acceptance/NEW_ADVANCED_RUN \
+  --execute-testnet \
+  --lose-oco-response \
+  --observe-fill-race
+```
+
+Without the optional fill observation, the gate admits at most five native BUY commands, each alternative capped at fifteen virtual USDT, and cancellation of their known native IDs. The fill option admits one additional capped BUY limit. The runner preserves uncertainty and stops rather than retrying writes. Response-loss injection surrounds a real request; it is not evidence of a genuine connectivity outage. Intermediate partial fills, late native fee corrections, production execution and other venues still need authenticated acceptance. Deterministic race/correction tests remain separate.

@@ -3,7 +3,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from starlette.concurrency import run_in_threadpool
 
@@ -108,3 +108,30 @@ def download(identifier: str, s: S):
 def delete(identifier: str, s: S):
     """Remove one local archive, preserving downloaded copies and restored workspaces."""
     s.archives.delete(identifier)
+
+
+@router.get("/diagnostics")
+def last_diagnostics(s: S):
+    """Read the last in-memory report without starting a database check."""
+    return {"report": s.workers.diagnostics.last()}
+
+
+@router.post("/diagnostics")
+def check_workspace(s: S):
+    """Explicit read-only SQLite quick check and content-free runtime observations."""
+    return s.workers.diagnostics.run()
+
+
+@router.get("/diagnostics/export")
+def export_diagnostics(s: S):
+    """Export the exact completed report; never refresh or include workspace content."""
+    report = s.workers.diagnostics.last()
+    if report is None:
+        raise ValueError("Run a workspace health check before exporting its report.")
+    return JSONResponse(
+        report,
+        headers={
+            "Cache-Control": "no-store",
+            "Content-Disposition": 'attachment; filename="sibyl-health-report.json"',
+        },
+    )

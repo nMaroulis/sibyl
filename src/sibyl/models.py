@@ -119,6 +119,7 @@ class BacktestRequest(Request):
     candles: int = Field(default=180, ge=60, le=720)
     fee_bps: float = Field(default=10, ge=0, le=200)
     slippage_bps: float = Field(default=5, ge=0, le=200)
+    benchmark_interval: int = Field(default=20, ge=1, le=365, strict=True)
     window: int = Field(default=20, ge=5, le=120)
     timeframe: Timeframe = "1d"
     fast_period: int = Field(default=9, ge=2, le=100)
@@ -176,14 +177,18 @@ class ExchangeOrderRequest(OrderRequest):
     """Prepare an exchange order against an explicit saved account."""
 
     connection_id: str = Field(min_length=1, max_length=100)
-    order_type: Literal["market", "limit"] = "market"
+    order_type: Literal["market", "limit", "stop_loss_limit", "take_profit_limit"] = "market"
     limit_price: float | None = Field(default=None, gt=0, le=1e15)
+
+    trigger_price: float | None = Field(default=None, gt=0, le=1e15)
 
     @model_validator(mode="after")
     def price_for_type(self):
         """A GTC limit needs a price; market orders must not carry a hidden limit."""
-        if (self.order_type == "limit") != (self.limit_price is not None):
+        if (self.order_type != "market") != (self.limit_price is not None):
             raise ValueError("Set a limit price only for limit orders.")
+        if (self.order_type in {"stop_loss_limit", "take_profit_limit"}) != (self.trigger_price is not None):
+            raise ValueError("Set a trigger price only for conditional limit orders.")
         return self
 
 
@@ -211,6 +216,10 @@ class AgentContext(Request):
 
     symbol: str | None = None
     market_source: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
+    comparison_symbols: list[str] | None = Field(default=None, min_length=2, max_length=8)
+    granger_lags: int | None = Field(default=None, ge=1, le=5, strict=True)
+    correlation_method: Literal["pearson", "spearman", "distance"] | None = None
+    correlation_transform: Literal["log_returns", "prices", "changes"] | None = None
     portfolio_scope: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
     performance_view: bool | None = None
     performance_account_id: str | None = Field(default=None, max_length=100)
@@ -236,6 +245,8 @@ class AgentContext(Request):
     )
     library_document_id: str | None = Field(default=None, pattern=r"^(?:news-)?[a-f0-9]{32}$")
     library_source_type: Literal["all", "document", "news"] | None = None
+    risk_study_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    retrieval_evaluation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     library_query: str | None = Field(default=None, min_length=1, max_length=300)
     library_search_method: Literal["keyword", "semantic", "hybrid"] | None = None
     library_passage_id: str | None = Field(
@@ -269,6 +280,16 @@ class AgentContext(Request):
     def valid_symbol(cls, value: str | None) -> str | None:
         """Apply the same canonical market validation used by trading and backtests."""
         return OrderRequest.valid_symbol(value) if value is not None else None
+
+    @field_validator("comparison_symbols")
+    @classmethod
+    def exact_comparison_symbols(cls, values):
+        if values is None:
+            return values
+        result = [OrderRequest.valid_symbol(value) for value in values]
+        if len(set(result)) != len(result):
+            raise ValueError("Choose each comparison market once.")
+        return result
 
     @field_validator("bitcoin_address")
     @classmethod

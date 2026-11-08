@@ -55,7 +55,10 @@ def test_live_intraday_candles_drop_unfinished_interval(settings, store, monkeyp
 
 
 def test_rank_correlation_and_transform_have_observable_effect():
-    first = [{"timestamp": str(i), "close": value} for i, value in enumerate([1, 2, 3, 4, 5])]
+    first = [
+        {"timestamp": f"2024-01-0{i + 1}T00:00:00+00:00", "close": value}
+        for i, value in enumerate([1, 2, 3, 4, 5])
+    ]
     second = [{**c, "close": c["close"] ** 3} for c in first]
     rank = correlation({"A": first, "B": second}, "spearman", "prices")
     linear = correlation({"A": first, "B": second}, "pearson", "prices")

@@ -5,8 +5,10 @@ tool retrieves user instructions without accessing funds or changing records.
 """
 
 import json
+from typing import Annotated
 
-from protolink import Agent, ToolRejectedError
+from protolink import Agent, Tool, ToolRejectedError
+from pydantic import Field
 
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.accountant import GUIDES, Topic
@@ -16,6 +18,7 @@ NAME = "Accountant"
 TAGLINE = "Know what you own"
 DESCRIPTION = "Explain account holdings, valuation, retained fills, FIFO performance, funding and transfers; guide Account workflows."
 SYSTEM_PROMPT = (
+    "Use basket_risk for saved current-weight historical covariance/tail studies. These are frictionless daily-rebalanced basket descriptions, not measured account performance, optimized allocations or future risk probabilities. Disclose subset coverage, dates and sample size. "
     "Use investment_returns for cash-flow-adjusted measured periods. Source-bound values and completeness reviews are user assertions, not audited provider guarantees. Missing coverage, stale reviews or ambiguous boundaries mean the return is unavailable; do not substitute raw value growth or FIFO profit. "
     "For how-to or navigation questions call page_help; instructions do not require reading balances. "
     "Read holdings and accounting reports through accountant_snapshot. Page-selected funding, "
@@ -47,8 +50,9 @@ SYSTEM_PROMPT = (
     "This compares observed native quantities with retained activity, not investment returns or complete reconciliation. "
     "Missing history, timing boundaries, historical corrections and funding fee inclusion can leave expected balances unknown. "
     "Never repair a difference, replace a checkpoint or claim a saved check is a live balance read. "
+    "Account allocation includes value-weighted HHI, top-three concentration and effective asset count only when all selected accounts/assets are priced. These combine duplicate assets, include cash/stablecoins separately and are not correlation-adjusted diversification or investment risk scores. "
     "For saved account risk rules, notices and retained valuation samples call risk_alerts. It is passive; "
-    "never imply you created a watch or continuously monitor. Explain value floors, asset concentration "
+    "never imply you created a watch or continuously monitor. Explain value floors, per-asset/top-three concentration, HHI on a 0–100 scale "
     "and drawdown from an observed account-value peak. Deposits and withdrawals affect that peak; this is "
     "not investment return or a cash-flow-adjusted loss. Missing/undated/stale values cannot trigger or "
     "recover risk alerts. Fixed account sets and test/Demo/production funds remain separate. "
@@ -56,11 +60,24 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Accountant's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     portfolio = services.portfolio
     performance, funding, transfers = services.performance, services.funding, services.transfers
 
-    def investment_returns(period_id: str | None = None, flow_offset: int = 0) -> dict:
+    def investment_returns(
+        period_id: str | None = None, flow_offset: Annotated[int, Field(ge=0, le=2000)] = 0
+    ) -> dict:
         """Explain a measured account return using its saved valuations and reviewed cash flows.
 
         Omit period_id to follow the selected Account performance period, or list periods
@@ -76,10 +93,6 @@ def create_agent(services: Services, **runtime) -> Agent:
         if not identity:
             return performance.returns.list(selected("portfolio_scope", None, "all"))
         try:
-            if not 0 <= flow_offset <= 2000:
-                raise ToolRejectedError(
-                    "Use a flow offset between zero and 2,000.", code="invalid_period_offset"
-                )
             report = performance.returns.detail(identity)
             result = {
                 key: report[key]
@@ -134,14 +147,18 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "AND (?='' OR rule_id=?) ORDER BY created_at DESC,rowid DESC LIMIT 10",
                 (rule_id, rule_id),
             ).fetchall()
+        evidence = portfolio.risk_alerts.journal.evidence(rule_id) if rule_id else None
+        if evidence and (evidence.get("sample") or {}).get("basket"):
+            # Full converted observations remain in the UI journal, outside the model context.
+            evidence["sample"]["basket"].pop("converted_closes", None)
         return {
             "rules": portfolio.risk_alerts.rules(),
             "recent_notifications": [
                 {**json.loads(row["payload"]), "created_at": row["created_at"]} for row in rows
             ],
-            "evidence": portfolio.risk_alerts.journal.evidence(rule_id) if rule_id else None,
+            "evidence": evidence,
             "url": "/alerts?tab=risk",
-            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. This tool cannot change rules, trade or send messages. Optional Telegram delivery is selected separately for each rule.",
+            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. Historical basket watches use current weights, dated consecutive daily history and empirical tails, never future loss guarantees. This tool cannot change rules, trade or send messages. Optional Telegram delivery is selected separately for each rule.",
         }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:
@@ -436,11 +453,38 @@ def create_agent(services: Services, **runtime) -> Agent:
             balance_check_report,
             account_history,
             risk_alerts,
-            page_help,
+            Tool.from_callable(page_help, sync_execution="inline"),
             investment_returns,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,
     )
+
+    @agent.tool
+    def basket_risk(study_id: str | None = None) -> dict:
+        """Read or list saved historical basket-risk studies using study_id/page scope.
+
+        Explain volatility, correlations, variance contributions and historical tails.
+        Disclose weights, coverage, dates and assumptions: these are neither measured
+        account returns nor future-loss guarantees. Setup: page_help(basket_risk).
+        """
+        identity = selected("risk_study_id", study_id, "")
+        if not identity:
+            return {
+                "kind": "basket_risk_study",
+                **portfolio.risk.list(selected("portfolio_scope", None, "all")),
+                "url": "/account",
+            }
+        result = portfolio.risk.get(identity)
+        return {
+            "kind": "basket_risk_study",
+            **{
+                key: value
+                for key, value in result.items()
+                if key not in {"inputs", "valuation", "daily_returns", "accounts"}
+            },
+            "url": "/account",
+        }
+
     agent.card.capabilities.delegation = False
     return agent

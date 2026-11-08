@@ -5,6 +5,8 @@ from typing import Literal
 from sibyl.agents.guides import Guide
 
 TradeTopic = Literal[
+    "advanced",
+    "replace",
     "notifications",
     "overview",
     "accounts",
@@ -16,10 +18,44 @@ TradeTopic = Literal[
     "recovery",
 ]
 StrategyTopic = Literal[
-    "overview", "backtest", "results", "validation", "paper", "exchange", "monitor", "stop", "halt", "limits"
+    "overview",
+    "backtest",
+    "results",
+    "validation",
+    "paper",
+    "exchange",
+    "monitor",
+    "stop",
+    "halt",
+    "limits",
+    "benchmarks",
 ]
 
 TRADE = {
+    "advanced": Guide(
+        "Review conditional and linked orders",
+        "/trade",
+        (
+            "Select an active Binance or Binance Testnet account. Choose Stop-loss limit or Take-profit limit and enter both the trigger and executable limit price.",
+            "For linked alternatives, expand Linked take-profit & stop-loss. It uses the selected account, pair, side and base quantity; review both triggers/limits and type the OCO confirmation.",
+            "Find both saved OCO legs in Order monitor and inspect their independent fills, cancellation and reconciliation evidence. Canceling one native OCO leg also cancels the list.",
+        ),
+        (
+            "Instrument permissions and filters apply. A last-trade trigger creates a GTC limit; it may remain unfilled. OCO links alternatives and reserves one quantity, not twice the position. Unknown list outcomes recover each saved child ID without resubmission. Demo and other providers do not emulate these orders.",
+        ),
+    ),
+    "replace": Guide(
+        "Replace an unfilled manual limit",
+        "/trade?tab=executions",
+        (
+            "Choose Replace… on an open, wholly unfilled manual Binance/Testnet GTC limit.",
+            "Enter the new TOTAL base quantity and limit price, review the estimated released reservation and new requirements, and type the replacement phrase.",
+            "Inspect both the original and replacement records afterward. A fill before native cancellation makes the unfilled-only replacement fail.",
+        ),
+        (
+            "STOP_ON_FAILURE prevents a new submission if cancellation fails, but cancellation can succeed while the new order fails. No compound write is retried; uncertain results require native inspection. Strategies, imported orders, OCO legs and partially filled orders are excluded.",
+        ),
+    ),
     "notifications": Guide(
         "Watch order and fill observations",
         "/alerts?tab=orders",
@@ -56,7 +92,7 @@ TRADE = {
         "Review a spot order",
         "/trade",
         (
-            "Choose the account, exact spot pair, side and base quantity. Select Market or a supported Limit · GTC and enter the limit price.",
+            "Choose the account, exact spot pair, side and base quantity. Select Market, Limit · GTC or an implemented conditional limit and enter its required prices. Linked OCO entry is in the disclosure below.",
             "Review the environment, reference notional, precision and funds checks, then type the displayed confirmation phrase.",
             "The review expires after 60 seconds. After submission, inspect the order monitor for actual status, fills and fees.",
         ),
@@ -70,6 +106,7 @@ TRADE = {
         (
             "Open Trade → Account history → Fills & imports.",
             "Choose an active supported account and exact spot market, then Sync market history; saved progress supports pause/resume and later Sync again.",
+            "Bitstamp and Gemini support resumable selected-market fills and exact-order fee reconciliation. Bitstamp uses transaction IDs and retains closed-order status for 30 days; Gemini preserves millisecond-boundary IDs and stops on saturated groups or reversals needing review. Neither adds client-ID recovery or complete settlement accounting.",
             "Filter retained fills and inspect native IDs and fees. Pause active work before Rescan available history to revisit older available fills and corrections.",
             "Use Performance for retained market FIFO, Funding for deposits/withdrawals, and Reconcile transfers within Funding for own-account links.",
         ),
@@ -126,6 +163,18 @@ TRADE = {
 }
 
 STRATEGIES = {
+    "benchmarks": Guide(
+        "Compare cost-aware reference portfolios",
+        "/strategies",
+        (
+            "Run a backtest and open Reference portfolios below the execution chart. Buy & hold, cash, scheduled installments and 50/50 asset/cash use exactly the same evaluation window and initial capital.",
+            "Execution assumptions → Reference portfolio cadence sets the candle spacing for installment purchases and 50/50 rebalances. Capital is present from the start; uninvested cash earns zero. It is not new periodic income.",
+            "Choose Equity & benchmark, then Reference portfolio, to compare paths. The table reports return, drawdown, Sharpe, actual simulated fees and fill count with final-close liquidation.",
+        ),
+        (
+            "These are fixed single-asset research references with configured costs, not optimized or deployed multi-asset strategies. Saved older runs without reference evidence remain readable; rerun explicitly to calculate new references.",
+        ),
+    ),
     "limits": Guide(
         "Set shared strategy limits",
         "/strategies",
@@ -155,6 +204,7 @@ STRATEGIES = {
         (
             "Choose current feed or an immutable saved dataset under Research input, then configure the strategy and trading costs.",
             "Run the backtest and inspect the retained input provenance, fingerprint and engine version.",
+            "Custom Python strategies expands research-only installed plugins with separate controls, source revisions, saved results and exact-input reruns. Install reviewed code in the backend environment, explicitly set SIBYL_STRATEGY_PLUGINS and restart; plugin jobs/optimization remain unavailable.",
             "Rerun exact input recomputes the same saved data/settings with the current engine; Load settings lets you edit a new experiment.",
         ),
         (
@@ -179,7 +229,9 @@ STRATEGIES = {
         (
             "Expand Validate on unseen data and choose the bounded parameter search and chronological holdout/walk-forward windows.",
             "Choose a small exhaustive grid, fixed settings, or a seeded sample of a larger finite parameter space. For random search, inspect the evaluated count, coverage, seed and recorded candidate plan.",
-            "Inspect training rankings separately from later test-window metrics and fixed-settings/buy-and-hold comparisons.",
+            "Selection rules & limits optionally enables inner chronological validation inside each outer training prefix. Mean inner return/Sharpe or worst inner drawdown selects fixed candidates, with separate cash per inner episode and no outer-test prices.",
+            "Inspect training or inner-validation rankings separately from later test-window metrics and fixed-settings/buy-and-hold comparisons.",
+            "Optionally enable Also replay continuous deployment in Selection rules & limits. The replay carries one balance and entry cost through parameter updates, with no boundary liquidation, and shows actual fills plus fixed-setting comparison. Its cumulative return differs from independent fold means.",
             "Open a saved study to inspect each window, reuse its exact input or export evidence.",
         ),
         (

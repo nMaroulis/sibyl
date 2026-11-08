@@ -1,5 +1,7 @@
 """Deterministic observed-value risk transitions, separate from reads and storage."""
 
+from sibyl.accounting.diversification import diversification
+
 
 def baseline(rule: dict):
     """Start a new observation window, including its observed peak and incident state."""
@@ -39,12 +41,27 @@ def assess_risk(rule: dict, sample: dict, now: float) -> str | None:
             return None
         held = next((row["value"] for row in sample["holdings"] if row["asset"] == rule["asset"]), 0)
         value = min(100, held / total * 100)
-    else:
+    elif rule["metric"] in {"hhi", "top_three"}:
+        summary = diversification(sample["holdings"])
+        sample["diversification"] = summary
+        value = summary["hhi" if rule["metric"] == "hhi" else "top_three_pct"]
+        if value is None:
+            rule["evaluation_note"] = (
+                "Concentration is unavailable without a complete positive-valued basket."
+            )
+            sample.update(metric_value=None, peak=rule["peak"], peak_at=rule["peak_at"])
+            return None
+    elif rule["metric"] in {"volatility", "tail_loss"}:
+        key = "annualized_volatility_pct" if rule["metric"] == "volatility" else "expected_shortfall_95_pct"
+        value = sample["basket"][key]
+    elif rule["metric"] == "drawdown":
         if rule["peak"] <= 0:
             rule["evaluation_note"] = "Waiting for a positive observed account value to establish a peak."
             sample.update(metric_value=None, peak=rule["peak"], peak_at=rule["peak_at"])
             return None
         value = max(0, min(100, (rule["peak"] - total) / rule["peak"] * 100))
+    else:
+        raise ValueError("Unknown account-risk metric.")
     sample.update(metric_value=value, peak=rule["peak"], peak_at=rule["peak_at"])
     breached = value <= rule["threshold"] if rule["metric"] == "value_floor" else value >= rule["threshold"]
     cleared = (

@@ -6,6 +6,8 @@ tool receipts, cancellation and persistence of the complete run report.
 
 import json
 
+from protolink import PresentationEvent, RunEvent, RunResult
+
 
 class RunPresentation:
     """Keep the existing consultation cards while consuming one native event stream."""
@@ -16,8 +18,13 @@ class RunPresentation:
         self.rows: dict[str, dict] = {}
         self.saved: set[str] = set()
 
-    def progress(self):
-        """Persist only UI progress, never chunks, raw prompts or private model context."""
+    async def follow(self) -> None:
+        """Retain application consultation cards from the native execution evidence."""
+        async for event in self.handle.events():
+            self.consume(event)
+
+    def progress(self) -> None:
+        """Save consultation cards and phase; omit system prompts and private dependencies."""
         self.network.requests.update(
             self.request.request_id,
             phase="consulting"
@@ -26,19 +33,32 @@ class RunPresentation:
             delegations=list(self.rows.values()),
         )
 
-    def consume(self, event):
-        """Render native delegation and child final-answer events; ignore raw action chunks."""
+    def consume(self, event: RunEvent) -> None:
+        """Update cards from SDK-classified consultations and child final answers.
+
+        Questions and child answer text remain application display policy. Native
+        PresentationEvent owns lifecycle classification and correlation; raw model
+        chunks never cause a database write or become consultation evidence.
+        """
+        activity = PresentationEvent.from_run_event(event)
         payload = event.payload
-        data = {**payload.get("metadata", {}), **payload}
         kind = payload.get("llm_event_type")
+        if activity is None and kind != "llm_final":
+            return
+        consultation = activity is not None and activity.type == "consultation"
         action_id = event.delegation_id or event.parent_action_id or event.action_id
-        if kind == "agent_call_start":
-            module = data["agent"].removeprefix("sibyl-")
+        if action_id is None:
+            return
+        row = self.rows.get(action_id)
+        before = row.copy() if row is not None else None
+        if consultation and activity.status == "started" and row is None:
+            data = {**payload.get("metadata", {}), **payload}
+            module = (activity.name or "").removeprefix("sibyl-")
             role = self.network.roles.get(module)
-            question = data["payload"]
-            self.rows[action_id] = {
+            question = data.get("payload", {})
+            row = self.rows[action_id] = {
                 "agent_id": module,
-                "name": role[0] if role else data["agent"],
+                "name": role[0] if role else activity.name,
                 "action_id": action_id,
                 "task_id": "",
                 "question": (
@@ -47,29 +67,31 @@ class RunPresentation:
                 )[:4000],
                 "context": {},
                 "status": "running",
-                "started_at": event.timestamp,
+                "started_at": activity.timestamp,
                 "finished_at": None,
-                "mode": "tools" if data["action"] == "tool_call" else "llm",
+                "mode": "tools" if data.get("action") == "tool_call" else "llm",
             }
-        row = self.rows.get(action_id)
         if row is None:
             return
         if event.task_id != self.handle.task.id:
             row["task_id"] = event.task_id
             if kind == "llm_final":
                 row["answer"] = payload.get("content", "")
-        if kind in {"agent_call_result", "agent_call_error", "agent_call_rejected"}:
+        if consultation and activity.status in {"completed", "failed", "rejected", "denied", "canceled"}:
             row.update(
-                status="completed" if kind == "agent_call_result" else "unavailable",
-                finished_at=event.timestamp,
+                status={"completed": "completed", "canceled": "cancelled"}.get(
+                    activity.status, "unavailable"
+                ),
+                finished_at=activity.timestamp,
             )
             if row["status"] == "completed":
                 self.complete(action_id, row)
-            else:
+            elif row["status"] == "unavailable":
                 row["error"] = "The specialist could not complete this consultation."
-        self.progress()
+        if row != before:
+            self.progress()
 
-    def complete(self, action_id, row):
+    def complete(self, action_id: str, row: dict) -> None:
         """Use native terminal ToolEvidence; never synthesize or log observations in tools."""
         evidence = [
             item
@@ -102,7 +124,7 @@ class RunPresentation:
             )
             self.saved.add(action_id)
 
-    def finish(self, result):
+    def finish(self, result: RunResult) -> None:
         """Close unfinished UI cards according to the actual terminal native run."""
         for row in self.rows.values():
             if row["status"] == "running":

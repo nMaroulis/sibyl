@@ -85,3 +85,9 @@ Account uses the same wallet icon as the exchange cards’ Account overview cate
 ## Watch your own limits
 
 **Risk alerts** opens setup for the current account view. Watches pin the accounts you review, with value floors, asset concentration or observed-value drawdown. They require complete fresh pricing and deliver in-app notices; they do not trade or enforce strategy risk policies. See [account risk alerts](account-risk.md).
+
+## Value diversification
+
+Expand **Diversification** in Allocation to see overall asset HHI (0–100), effective asset count, the largest asset’s weight and the top three assets’ combined weight. Identical assets across accounts combine; cash and different stablecoins remain separate assets. The backend uses the complete selected account set and observed valuation, with unavailable metrics when an account or price is missing or the basket has no positive value.
+
+HHI is `100 × sum(value_weight²)`, and effective assets is `100 / HHI`. Twenty equal weights give HHI 5 and effective assets 20; one asset gives HHI 100 and effective assets 1. These measure value spread only, without correlations, liquidity or risk-factor independence. Lower concentration does not establish lower investment risk. Optional **Alerts → Account risk** rules can watch HHI or top-three weights using complete fresh valuations; alerts never change execution policy.

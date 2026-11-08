@@ -4,6 +4,7 @@ A CCXT method existing is sufficient for shared bounded reads, but never enables
 submission, resumable imports or recovery. Those require Sibyl's explicit gates.
 """
 
+from sibyl.exchanges.catalog import STRATEGY_EXECUTION_PROVIDERS
 from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import funding_streams
 from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS
@@ -112,9 +113,11 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 ),
                 feature(
                     "advanced_orders",
-                    "Stop / OCO / cancel-replace",
-                    False,
-                    "These order types and amendments are not implemented in Sibyl, even where the exchange offers them.",
+                    "Conditional limits / OCO / cancel-replace",
+                    spec.id in {"binance", "binance-testnet"},
+                    "Native stop-loss/take-profit GTC limits, linked OCO limits and unfilled-only STOP_ON_FAILURE replacements. Instrument permissions are checked at review; replacement is not atomic. Trailing and other order types remain pending."
+                    if spec.id in {"binance", "binance-testnet"}
+                    else "Conditional orders, OCO and replacements are not implemented for this Sibyl adapter.",
                 ),
             ],
         },
@@ -217,8 +220,10 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "websocket",
                     "Live WebSocket streams",
-                    False,
-                    "Prices and account updates currently use REST; WebSocket streams are pending.",
+                    spec.id in {"binance", "binance-testnet", "kraken"},
+                    "On-demand public ticker/candle streams, shared connections, reconnect and visible REST fallback. Kraken supports native intervals and labels local receipt timing; account/order tracking remains REST-based."
+                    if spec.id in {"binance", "binance-testnet", "kraken"}
+                    else "This source uses REST snapshots; streaming is not implemented for this adapter.",
                 ),
             ],
         },
@@ -229,12 +234,16 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "automated",
                     "Automated exchange strategies",
-                    not demo and spec.spot_trading and history in ORDER_FILL_KINDS,
+                    spec.id in STRATEGY_EXECUTION_PROVIDERS
+                    and spec.spot_trading
+                    and history in ORDER_FILL_KINDS,
                     "Account-bound, approved price-capped GTC strategies with native fill accounting, restart pause and risk limits. Both execution flags are required; private venue acceptance is pending."
-                    if not demo and spec.spot_trading and history in ORDER_FILL_KINDS
+                    if spec.id in STRATEGY_EXECUTION_PROVIDERS
+                    and spec.spot_trading
+                    and history in ORDER_FILL_KINDS
                     else "Demo uses isolated paper strategy runs."
                     if demo
-                    else "Automated exchange strategies require implemented order submission and exact-order native fill imports.",
+                    else "Automated exchange strategies require a separate provider review, implemented order submission and native fill imports. Read/history support alone does not enable execution.",
                 ),
                 feature(
                     "derivatives",

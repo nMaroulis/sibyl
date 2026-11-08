@@ -206,12 +206,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 120,
             ),
             ("execution-alerts", "Order and fill notifications", trading.alerts.tick, 1, 60),
+            ("notification-retention", "Read-notification retention", alerts._inbox.history.tick, 60, 60),
             ("forecast-observations", "Forecast outcomes", forecasts.forward.tick, 60, 120),
             ("history", "Candle history", lambda: background_call(history.tick), 1, 120),
             ("briefings", "Scheduled investigations", briefing_tick, 2, 120),
             ("alert-delivery", "Alert delivery admission", alert_delivery.tick, 1, 60),
             ("messaging", "Telegram messaging", messaging.tick, 0.5, 120),
             ("library", "Retained-news search index", library.synchronize_news, 30, 120),
+            ("retrieval-evaluations", "Research retrieval evaluations", library.evaluations.tick, 1, 120),
         ]
         for name, label, action, interval, deadline in jobs:
             workers.start(
@@ -228,6 +230,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "alert-delivery",
                     "messaging",
                     "library",
+                    "retrieval-evaluations",
                     "execution-alerts",
                     "forecast-observations",
                 }
@@ -237,7 +240,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            await market.live.close()
             await workers.close()
+            await asyncio.to_thread(library.evaluations.close)
+            await asyncio.to_thread(alerts._inbox.history.close)
             await asyncio.to_thread(alert_delivery.close)
             await asyncio.to_thread(trading.alerts.close)
             await asyncio.to_thread(forecasts.forward.close)
@@ -348,21 +354,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.add_exception_handler(exception, provider_error)
 
     from sibyl.api.account_returns import router as returns_router
+    from sibyl.api.advanced_orders import router as advanced_orders_router
+    from sibyl.api.notification_history import router as notification_history_router
     from sibyl.api.order_alerts import router as order_alerts_router
 
+    app.include_router(advanced_orders_router)
     app.include_router(returns_router)
     app.include_router(order_alerts_router)
+    app.include_router(notification_history_router)
+    from sibyl.api.account_risk import router as account_risk_router
+
+    app.include_router(account_risk_router)
     from sibyl.api.library import router as library_router
     from sibyl.api.workspace import router as workspace_router
 
     app.include_router(workspace_router)
     app.include_router(library_router)
+    from sibyl.api.market_streams import router as market_stream_router
     from sibyl.api.routes import router
 
     app.include_router(router, prefix="/api/v1")
+    app.include_router(market_stream_router, prefix="/api/v1")
     from sibyl.api.strategy_research import router as strategy_research_router
 
     app.include_router(strategy_research_router)
+    from sibyl.api.market_relationships import router as market_relationships_router
+
+    app.include_router(market_relationships_router)
     from sibyl.api.strategy_execution import router as strategy_execution_router
 
     app.include_router(strategy_execution_router)

@@ -16,6 +16,10 @@ Native account acceptance testing remains outstanding. Contract tests use contro
 
 The adapter sends a base-quantity limit with `timeInForce=GTC`, an exact price and a generated client ID. Coinbase Advanced uses native `client_order_id` because its SDK path drops the unified spelling. There are no user-supplied transport flags, derivative orders or silent precision rounding. Preview checks exact quantity/price precision, active spot status, native amount/cost/price limits and free funds. Native buys require a conservative 1% buffer; this is neither a fee quote nor a slippage guarantee. Actual venue requirements still apply.
 
+## Native advanced orders
+
+Binance and Binance Testnet add stop-loss/take-profit GTC limits, linked native OCO limits and unfilled-only manual cancel/replace. All use persisted reviews and native IDs; no local trigger simulation or automatic write retry is added. See [contracts, reservation semantics and uncertainty](advanced-orders.md).
+
 ## Durable submission
 
 `ExchangeTrading.preview()` records an intent with a 60-second confirmation deadline. Limit notional is quantity × limit price; market notional is a side-of-book reference. A preview reserves nothing. Confirmation must match the displayed phrase and the account must still be active. New native orders also require `SIBYL_ALLOW_LIVE_TRADING=true`.
@@ -69,6 +73,6 @@ All paths have `/api/v1` prefix.
 
 ## Still missing
 
-Cancel/replace, stop/trigger, OCO, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution/recovery, broader account order discovery, amendment handling and complete fill/fee/settlement reconciliation remain separate work. Authenticated acceptance remains outstanding. Approved [exchange strategies](../guides/strategy-execution.md) reuse these order intents; agents stay read-only.
+Broader-provider cancel/replace, conditional/OCO support, partial-order amendment, trailing, post-only, iceberg, IOC/FOK limits, streaming private updates, broader provider execution/recovery, broader account order discovery, amendment handling and complete fill/fee/settlement reconciliation remain separate work. Initial Binance/Testnet advanced-order acceptance is recorded separately; broader venue/failure acceptance remains outstanding. Approved [exchange strategies](../guides/strategy-execution.md) reuse these order intents; agents stay read-only.
 
 Implementation is informed by the [CCXT manual](https://docs.ccxt.com/docs/manual), [Binance Spot API](https://developers.binance.com/en/docs/products/spot/rest-api), [Coinbase Advanced create-order reference](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/create-order), and Kraken's [add-order](https://docs.kraken.com/api-reference/trading/add-order) / [cancel-order](https://docs.kraken.com/api-reference/trading/cancel-order) references.

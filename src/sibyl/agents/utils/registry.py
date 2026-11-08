@@ -1,6 +1,5 @@
 """Wire the module declarations to existing services and preserve the HTTP response contract."""
 
-import asyncio
 import json
 from uuid import uuid4
 
@@ -78,7 +77,6 @@ class AgentRegistry:
             library,
             workers,
         )
-        self._semaphore = asyncio.Semaphore(2)
         self.network = AgentNetwork(self, MODULES)
         self.agents = {key: self.network.agents[key] for key in MODULES}
 
@@ -144,7 +142,13 @@ class AgentRegistry:
         ):
             if configuration["provider"] == "none":
                 arguments = tool_arguments(request)
-                if request.module == "wiki" and request.context.library_passage_id:
+                if request.module == "broker" and request.context.backtest_id:
+                    primary_tool, arguments = "backtest_report", {}
+                if request.module == "analyst" and request.context.granger_lags is not None:
+                    primary_tool, arguments = "market_relationships", {}
+                if request.module == "wiki" and request.context.retrieval_evaluation_id:
+                    primary_tool, arguments = "retrieval_evaluation", {}
+                elif request.module == "wiki" and request.context.library_passage_id:
                     primary_tool, arguments = (
                         "read_research_passage",
                         {"passage_id": request.context.library_passage_id},
@@ -157,9 +161,15 @@ class AgentRegistry:
                 if (
                     request.module == "wiki"
                     and request.context.library_query
-                    and not (request.context.library_document_id or request.context.library_passage_id)
+                    and not (
+                        request.context.library_document_id
+                        or request.context.library_passage_id
+                        or request.context.retrieval_evaluation_id
+                    )
                 ):
                     primary_tool, arguments = "search_research", {}
+                if request.module == "accountant" and request.context.risk_study_id:
+                    primary_tool, arguments = "basket_risk", {}
                 if request.module == "accountant" and request.context.return_period_id:
                     primary_tool, arguments = "investment_returns", {}
                 if request.module == "chronos" and request.context.forecast_tracking:

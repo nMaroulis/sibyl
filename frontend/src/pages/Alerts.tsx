@@ -1,3 +1,4 @@
+import { NotificationHistoryControls } from '../components/alerts/history-controls';
 import { useState } from 'react';
 import {
   AlertDeliveryButton,
@@ -637,6 +638,14 @@ export function Alerts() {
           </Panel>
         )}
       </SectionPanel>
+      {tab === 'inbox' && !example && (
+        <NotificationHistoryControls
+          changed={() => {
+            setOffset(0);
+            inbox.retry();
+          }}
+        />
+      )}
       {(creating || editing) && (
         <Modal
           className="price-alert-dialog"

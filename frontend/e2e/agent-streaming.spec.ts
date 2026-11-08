@@ -6,13 +6,16 @@ test('module chat reads NDJSON and opens safe run details without invoking a pro
   await page.route('**/api/v1/agents/ask/stream', async (route) => {
     const body = route.request().postDataJSON();
     const activity = {
-      type: 'activity',
-      id: 'tool-fixture',
+      type: 'tool',
+      activity_id: 'tool-fixture',
+      event_id: 'fixture-event',
+      summary: 'Tool completed',
+      timestamp: new Date().toISOString(),
+      sequence: 1,
       run_id: 'fixture-run',
       task_id: 'task-fixture',
-      agent: 'sibyl-reporter',
-      kind: 'tool',
-      label: 'news_briefing',
+      agent_name: 'sibyl-reporter',
+      name: 'news_briefing',
     };
     const reply = {
       id: 'fixture-reply',
@@ -33,9 +36,8 @@ test('module chat reads NDJSON and opens safe run details without invoking a pro
       contentType: 'application/x-ndjson',
       body:
         [
-          { type: 'status', status: 'queued' },
-          { ...activity, status: 'running' },
-          { ...activity, status: 'completed' },
+          { type: 'activity', update: { ...activity, status: 'started' } },
+          { type: 'activity', update: { ...activity, status: 'completed' } },
           { type: 'reply', reply },
         ]
           .map((frame) => JSON.stringify(frame))
@@ -45,7 +47,19 @@ test('module chat reads NDJSON and opens safe run details without invoking a pro
   await page.route('**/api/v1/agents/runs/fixture-run/summary', (route) =>
     route.fulfill({
       json: {
-        tokens: { total: 123, estimated: true, known_calls: 1, calls: 1 },
+        usage: {
+          tree: {
+            calls: 1,
+            reported_calls: 0,
+            estimated_calls: 1,
+            unknown_calls: 0,
+            reported: { total_tokens: null },
+            estimated: { total_tokens: 123 },
+            unpriced_calls: 1,
+          },
+          root: { calls: 1 },
+          children: { calls: 0 },
+        },
         tools: [
           {
             id: 'tool-fixture',
@@ -90,7 +104,7 @@ test('an interrupted stream does not invent an answer or automatically retry', a
     attempts++;
     return route.fulfill({
       contentType: 'application/x-ndjson',
-      body: JSON.stringify({ type: 'status', status: 'queued' }) + '\n',
+      body: '',
     });
   });
   await page.goto('/news');

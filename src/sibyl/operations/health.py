@@ -6,6 +6,8 @@ import threading
 import time
 from datetime import UTC, datetime
 
+from sibyl.operations.resources import ProcessResources
+
 
 def timestamp():
     return datetime.now(UTC).isoformat()
@@ -22,11 +24,15 @@ class WorkerHealth:
 
     def __init__(self, store, *, clock=time.monotonic):
         self.store, self.clock = store, clock
+        from sibyl.operations.diagnostics import WorkspaceDiagnostics
+
+        self.diagnostics = WorkspaceDiagnostics(store, self)
         self.workers, self.tasks = {}, []
         self.inflight = set()
         self.recovery_required = False
         self.lock = threading.RLock()
         self.started_at = timestamp()
+        self.resources = ProcessResources(store)
         with store.db() as db:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS worker_events (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,kind TEXT NOT NULL,at TEXT NOT NULL,error TEXT)"
@@ -154,6 +160,7 @@ class WorkerHealth:
             if rows and all(r["state"] == "paused" for r in rows)
             else "observed",
             "issue_count": issues,
+            "resources": self.resources.snapshot(),
             "started_at": self.started_at,
             "observed_at": timestamp(),
             "workers": rows,

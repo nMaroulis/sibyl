@@ -3,6 +3,9 @@
 import json
 from datetime import UTC, datetime
 
+from sibyl.alerts.history.schema import ensure_schema
+from sibyl.alerts.history.service import NotificationHistory
+
 
 class NotificationInbox:
     """Store local notification evidence and idempotent unread acknowledgments."""
@@ -10,11 +13,8 @@ class NotificationInbox:
     def __init__(self, store):
         self.store = store
         with store.db() as db:
-            db.execute("""CREATE TABLE IF NOT EXISTS alert_notifications (
-                id TEXT PRIMARY KEY, rule_id TEXT NOT NULL, cycle INTEGER NOT NULL,
-                created_at TEXT NOT NULL, read_at TEXT, payload TEXT NOT NULL,
-                UNIQUE(rule_id,cycle)
-            )""")
+            ensure_schema(db)
+        self.history = NotificationHistory(store)
 
     def page(self, limit: int = 20, offset: int = 0) -> dict:
         """Read a mixed price/strategy/connection page without evaluating any alert."""

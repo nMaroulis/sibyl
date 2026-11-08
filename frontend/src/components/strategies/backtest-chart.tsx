@@ -14,13 +14,27 @@ import type { Backtest } from '../../lib/types';
 import { number } from '../../lib/api';
 
 /** Inspect exact historical prices and executions; no smoothing between trade markers. */
-export function BacktestChart({ result, comparison }: { result: Backtest; comparison?: Backtest }) {
+type ChartInput = Pick<
+  Backtest,
+  'price_series' | 'curve' | 'metrics' | 'symbol' | 'fills' | 'benchmark_curve' | 'benchmarks'
+>;
+export function BacktestChart<T extends ChartInput>({
+  result,
+  comparison,
+}: {
+  result: T;
+  comparison?: Backtest;
+}) {
   const [mode, setMode] = useState<'price' | 'equity' | 'drawdown'>(
     result.price_series ? 'price' : 'equity',
   );
+  const [reference, setReference] = useState('buy_hold');
+  const referenceData = result.benchmarks?.[reference];
   const [selected, setSelected] = useState<number | null>(null);
   const equity = new Map(result.curve.map((p) => [p.timestamp, p.value]));
-  const benchmark = new Map(result.benchmark_curve?.map((p) => [p.timestamp, p.value]) ?? []);
+  const benchmark = new Map(
+    (referenceData?.curve ?? result.benchmark_curve)?.map((p) => [p.timestamp, p.value]) ?? [],
+  );
   const compared = new Map(comparison?.curve.map((p) => [p.timestamp, p.value]) ?? []);
   const drawdown = new Map(
     result.curve.map((p, i) => [p.timestamp, result.metrics?.drawdown_curve[i + 1] ?? 0]),
@@ -63,11 +77,27 @@ export function BacktestChart({ result, comparison }: { result: Backtest; compar
             {m === 'price' ? 'Price & trades' : m === 'equity' ? 'Equity & benchmark' : 'Drawdown'}
           </button>
         ))}
+        {mode === 'equity' && result.benchmarks && (
+          <label>
+            <span className="sr-only">Reference portfolio</span>
+            <select
+              aria-label="Reference portfolio"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+            >
+              {Object.entries(result.benchmarks).map(([key, item]) => (
+                <option key={key} value={key}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <span className="footnote">
           {mode === 'price'
             ? 'Green buys · coral sells · click a trade'
             : mode === 'equity'
-              ? 'Blue strategy · dashed buy & hold'
+              ? `Blue strategy · dashed ${referenceData?.label ?? 'buy & hold'}`
               : 'Decline from the equity peak'}
         </span>
       </div>
@@ -121,7 +151,7 @@ export function BacktestChart({ result, comparison }: { result: Backtest; compar
             {mode === 'equity' && (
               <Line
                 dataKey="benchmark"
-                name="Buy & hold"
+                name={referenceData?.label ?? 'Buy & hold'}
                 stroke="#b3a285"
                 strokeDasharray="5 5"
                 dot={false}

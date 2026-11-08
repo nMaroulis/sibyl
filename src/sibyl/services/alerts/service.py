@@ -367,7 +367,7 @@ class PriceAlerts:
                         "rule_revision": current["revision"],
                     }
                     db.execute(
-                        "INSERT INTO alert_notifications VALUES(?,?,?,?,NULL,?)",
+                        "INSERT INTO alert_notifications(id,rule_id,cycle,created_at,read_at,payload) VALUES(?,?,?,?,NULL,?)",
                         (
                             uuid4().hex,
                             identity,

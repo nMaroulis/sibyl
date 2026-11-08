@@ -14,6 +14,7 @@ class TelegramSettingsRequest(Request):
     """A token is write-only; omitting it preserves the encrypted saved credential."""
 
     bot_token: SecretStr | None = None
+    long_reply_document: bool = Field(default=False, strict=True)
     allowed_user_id: int = Field(gt=0, le=2**52, strict=True)
 
     @field_validator("bot_token")
@@ -52,6 +53,7 @@ class MessagingSettings:
                 "bot_token": token,
                 "allowed_user_id": body.allowed_user_id,
                 "enabled": False,
+                "long_reply_document": body.long_reply_document,
                 "revision": old.get("revision") if same else uuid4().hex,
                 "configured_at": old.get("configured_at", time.time()) if same else time.time(),
             },
@@ -73,6 +75,7 @@ class MessagingSettings:
                         {
                             "enabled": profile.get("enabled", False),
                             "has_started": bool(profile.get("enabled_at")),
+                            "long_reply_document": profile.get("long_reply_document", False),
                             "has_token": bool(profile.get("bot_token")),
                             "allowed_user_id": profile.get("allowed_user_id"),
                             "bot_username": profile.get("bot_username"),

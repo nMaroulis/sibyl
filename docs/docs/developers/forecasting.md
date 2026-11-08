@@ -37,16 +37,16 @@ Current-feed inference is explicitly requested and pinned to the original source
 
 All routes use existing workspace authorization/origin checks and `Cache-Control: no-store`. Synchronous computation runs in FastAPI's normal worker thread; no second execution wrapper is introduced.
 
-| Method | `/api/v1` path | Contract |
-| --- | --- | --- |
-| GET | `/forecast-models` | Bounded model-version metadata |
-| POST | `/forecast-models` | Explicit input capture, fit, calibration, test and atomic save |
-| GET | `/forecast-models/{id}?horizon=7` | All compact metrics, one horizon's test trace and saved output headers |
-| GET | `/forecast-models/{id}/export` | Complete JSON artifact, recipe and all test traces |
-| POST | `/forecast-models/{id}/rerun` | New version from the exact original input |
-| POST | `/forecast-models/{id}/forecasts` | Body: `input_kind` (`saved_input` or `current_feed`) and `horizon` (1–30) |
-| GET | `/forecast-models/outputs/{id}` | Exact retained output and observation window |
-| GET | `/forecast` | Existing separate untrained baseline; unchanged contract |
+| Method | `/api/v1` path                    | Contract                                                                  |
+| ------ | --------------------------------- | ------------------------------------------------------------------------- |
+| GET    | `/forecast-models`                | Bounded model-version metadata                                            |
+| POST   | `/forecast-models`                | Explicit input capture, fit, calibration, test and atomic save            |
+| GET    | `/forecast-models/{id}?horizon=7` | All compact metrics, one horizon's test trace and saved output headers    |
+| GET    | `/forecast-models/{id}/export`    | Complete JSON artifact, recipe and all test traces                        |
+| POST   | `/forecast-models/{id}/rerun`     | New version from the exact original input                                 |
+| POST   | `/forecast-models/{id}/forecasts` | Body: `input_kind` (`saved_input` or `current_feed`) and `horizon` (1–30) |
+| GET    | `/forecast-models/outputs/{id}`   | Exact retained output and observation window                              |
+| GET    | `/forecast`                       | Existing separate untrained baseline; unchanged contract                  |
 
 Training accepts `label`, `input_kind` (`current_feed`, `saved_dataset`, `demo`), optional saved `dataset_id`, exact `symbol`, `candles`, `lags` (5/14/30), positive `alpha` (0.01–1000), and `max_horizon` (1–30). Saved input uses its entire actual dataset. Public-source availability and native retention can return fewer bars than requested; fewer than 360 fails explicitly.
 
@@ -58,12 +58,11 @@ Native tools only read persisted evidence or calculate from the original retaine
 
 ## Verification and remaining scope
 
-Tests cover causal features, purged partitions, isolation of test/calibration changes, benchmark math, constant markets, invalid/bounded inputs, fit failures, concurrent admission, JSON integrity, exact-input reruns, retention, API privacy and native Chronos evidence. Controlled data and successful provider retrieval do not establish predictive profitability. Prospective tracking now uses a separate [outcome service](performance-outcomes-alerts.md). Neural/ARIMA families, calibrated drift monitoring, managed archive/import and automatic training remain pending.
+Tests cover causal features, purged partitions, isolation of test/calibration changes, benchmark math, constant markets, invalid/bounded inputs, fit failures, concurrent admission, JSON integrity, exact-input reruns, retention, API privacy and native Chronos evidence. Controlled data and successful provider retrieval do not establish predictive profitability. Prospective tracking now uses a separate [outcome service](performance-outcomes-alerts.md). Neural/ARIMA families, calibrated drift monitoring, automatic training and larger managed lifecycles remain pending.
 
 An isolated October 29, 2026 acceptance run trained on 720 real Binance BTC/USDT daily candles, retained 137 seven-day test origins and produced a seven-point forecast. Its exact-input rerun reproduced the artifact fingerprint with zero additional provider reads. The transport admitted only credential-free GET requests to Binance's public spot `exchangeInfo` and `klines` endpoints (two requests); there were no private requests, account reads or orders. This establishes the observed data/fit/replay workflow, not forecast quality or other providers' history coverage.
 
 Trained forecast origins and chart targets use the daily candle close time, when the close becomes available. Raw dataset timestamps and partition boundaries retain the archive’s opening-time convention; a target close can equal the exclusive end boundary of the partition containing its candle.
-
 
 ## Rolling evaluation `chronos-rolling-1`
 
@@ -79,11 +78,11 @@ Pooled metrics are calculated from concatenated matching target errors: RMSE is 
 
 `forecast_evaluations(id,model_id,payload)` lives in the existing workspace database and is covered by the ordinary encrypted workspace archive. The original saved dataset is resolved and its provenance checked before fitting. The existing nonblocking fit lock admits either training or one rolling evaluation; failure leaves no partial report and releases admission. Save/retention happen in one short SQLite transaction. The newest ten per model and one hundred workspace-wide are retained. Reads/exports do not require current source access or refit anything; missing/pruned reports are explicit 404s.
 
-| Method | Path below `/api/v1` | Behavior |
-| --- | --- | --- |
-| POST | `/forecast-models/{model_id}/evaluations` | Explicitly run and retain a recipe evaluation; 201 on success |
-| GET | `/forecast-models/{model_id}/evaluations` | Retained report headers and limits |
-| GET | `/forecast-models/evaluations/{evaluation_id}` | Exact saved report, including reproducibility artifacts and traces; used for export |
+| Method | Path below `/api/v1`                           | Behavior                                                                            |
+| ------ | ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| POST   | `/forecast-models/{model_id}/evaluations`      | Explicitly run and retain a recipe evaluation; 201 on success                       |
+| GET    | `/forecast-models/{model_id}/evaluations`      | Retained report headers and limits                                                  |
+| GET    | `/forecast-models/evaluations/{evaluation_id}` | Exact saved report, including reproducibility artifacts and traces; used for export |
 
 Requests accept strict integer `horizon` (1–30), `folds` (2–8), `test_days` (21–180), `calibration_days` (21–365), `window` (`expanding`/`rolling`) and `training_days` (120–2000, required only for `rolling`). The horizon cannot exceed the saved recipe's maximum. The source dataset remains bounded at 5,000 candles, so at most eight refits and fewer than 1,440 test origins are scored. Existing workspace authorization/origin checks and no-store responses apply.
 
@@ -94,3 +93,23 @@ Chronos's ordinary typed `rolling_evaluation(model_id?,evaluation_id?)` tool lis
 The UI has progressive window settings, pinned recipe/source attribution, saved history, pooled metrics, fold selection, exact JSON export and an explicit separate rerun. It reuses the existing bounded chart with at most 400 displayed points and disables chart animation. Selecting a different model clears evaluation context; cross-model report URLs are rejected. Completing an old request after navigation cannot select its report into the new model's UI.
 
 Tests cover future-price perturbations, fixed-window isolation, later-fold admission of now-historical data, purged boundaries, pooled metrics, constant-price skill, strict input/budget failures, rollback/admission, retention, integrity, restarts, HTTP controls and native selected-report evidence without provider reads. Automatic recalibration, monitored drift, additional model families and live forward-performance monitoring remain pending.
+
+## Portable bundles and archive state
+
+`forecasting/bundles.py` accepts only bounded finite JSON (`sibyl-forecast-bundle`, schema 1), with duplicate-key rejection, envelope/model/input fingerprints, a known engine, validated request parameters, source agreement and consecutive closed daily OHLCV. `POST /forecast-models/import` accepts the raw JSON file body and returns a locally refitted version. It shares nonblocking training admission and checks both 100-model/1,000-dataset budgets before committing model and dataset atomically. An identical bundle digest reuses the imported version.
+
+`GET /forecast-models/{id}/bundle` exports the complete immutable input, recipe and recorded fit; the older artifact-only export remains available. Imported input is always assigned a new `import:<digest>` / `imported` identity. Hashes establish internal integrity, not provider authenticity. Uploaded artifacts/metrics are retained only as fingerprint comparisons; fresh local fitting computes the stored results. Original output IDs, tracking and live claims are not imported. No executable deserialization or provider reads occur.
+
+`POST /forecast-models/{id}/archive` accepts `{archived, revision}`. Organization metadata is updated atomically without changing the numerical fingerprint. Registry reads hide archived versions unless `include_archived=true`. Existing evidence remains readable; new saved forecasts require restoration. Outcome tracking remains independently controlled. Chronos `trained_models(include_archived=True)` and typed `page_help(topic="portability")` expose read-only evidence/help, not mutations.
+
+## Causal feature recipes
+
+`TrainForecast.feature_set` accepts `returns` (default) or `returns_context`. The default retains legacy artifact parameters, engine identity and numerical behavior. The richer recipe uses `chronos-ridge-context-1` and appends six trailing-window features to the lag vector; the artifact stores readable feature names. All features for origin t depend only on closes through t. Scaling and range evidence use training rows only, with minimum training size based on actual feature width.
+
+Predict, rolling evaluation and bundle validation dispatch from the recorded recipe, never current UI settings. Bundle request, metadata and artifact engines/parameters must agree; offline imports refit that exact recipe. Tests perturb held-out prices, compare prefix feature vectors, retain default behavior, refit bundles and exercise the actual rolling engine. More features do not establish better generalization or calibrated drift detection.
+
+## Bounded neural family
+
+`TrainForecast.family` accepts `ridge` (default) or `mlp`. Default ridge parameters and engine identity remain unchanged. `forecasting/families/neural.py` implements one 8-unit tanh layer and scalar standardized cumulative-log-return output in NumPy. Each horizon uses seed `1729 + horizon`, 120 full-batch Adam steps, learning rate 0.02, mean squared standardized-target error plus `alpha/n` weight L2. Inputs and targets are normalized from training rows only; fixed iterations avoid hidden test-driven stopping. JSON stores finite weights, normalization and actual initial/final objective. No executable serialization is accepted.
+
+Neural engine identities are `chronos-mlp-1` and `chronos-mlp-context-1`. Actual input length is checked in training and rolling evaluation, independently of request fields: at most 1,000 candles and 14 forecast days. The existing purged partitions, empirical calibration radius, independent benchmarks, causal feature recipes, immutable artifacts, archive controls and prospective scoring apply. Bundle request/metadata/artifact must agree on engine/family; imports locally refit the recorded recipe. Rolling reports retain the compatibility field `ridge_engine`, whose value now identifies either numerical family. This bounded model is not an accuracy claim or a replacement for larger studies.

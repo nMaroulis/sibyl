@@ -32,9 +32,9 @@ def test_binance_categories_do_not_hide_missing_features():
     provider = next(row for row in provider_catalog()["items"] if row["id"] == "binance")
     groups = {row["id"]: row for row in provider["support"]}
     assert groups["account"]["summary"] == {"status": "supported", "implemented": 3, "total": 3}
-    assert groups["spot"]["summary"]["status"] == "partial"  # Stop/OCO is not implemented.
+    assert groups["spot"]["summary"]["status"] == "supported"  # All listed paths are implemented; native pair permissions still apply.
     assert groups["history"]["summary"]["status"] == "partial"  # Transfers are not imported.
-    assert groups["market"]["summary"]["status"] == "partial"  # No WebSockets.
+    assert groups["market"]["summary"]["status"] == "supported"  # Public ticker/candle streams; private streams remain separate.
     assert groups["limits"]["summary"] == {"status": "partial", "implemented": 1, "total": 3}
 
 

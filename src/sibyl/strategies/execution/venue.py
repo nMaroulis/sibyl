@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import ccxt
 
-from sibyl.exchanges.catalog import exchange_spec
+from sibyl.exchanges.catalog import STRATEGY_EXECUTION_PROVIDERS, exchange_spec
 from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 from sibyl.exchanges.providers import CLIENTS
@@ -15,9 +15,10 @@ from sibyl.strategies.execution.contracts import ExecutionGuard
 
 
 def supported(exchange: str) -> bool:
-    """Require implemented limit submission and exact-order native fill imports."""
+    """Require a reviewed strategy provider as well as submission and native fill adapters."""
     return (
-        exchange in CLIENTS
+        exchange in STRATEGY_EXECUTION_PROVIDERS
+        and exchange in CLIENTS
         and exchange_spec(exchange).supports_order("limit")
         and CLIENTS[exchange].history_kind in ORDER_FILL_KINDS
     )

@@ -7,7 +7,7 @@ import { DocHero, DocCards } from '@site/src/components/DocBlocks';
 
 <DocHero title="ProtoLink agents" eyebrow="Developers · ProtoLink" icon="spark" facts={["One file per agent", "Typed tools", "Request-local models"]}>
 
-Sibyl uses `protolink[http]>=0.8.3,<0.9`, locked to 0.8.3. Every specialist has its own file, system prompt and ordinary typed tool functions. ProtoLink owns tool execution, request-local model instances, native delegation, session history, event correlation and run reports. There is no application tool wrapper or LLM subclass.
+Sibyl uses `protolink[http]>=0.8.4,<0.9`, locked to 0.8.4. Every specialist has its own file, system prompt and ordinary typed tool functions. ProtoLink owns tool execution, request-local model instances, native delegation, session history, event correlation and run reports. There is no application tool wrapper or LLM subclass.
 
 </DocHero>
 
@@ -34,7 +34,7 @@ Sibyl uses `protolink[http]>=0.8.3,<0.9`, locked to 0.8.3. Every specialist has 
   ]}
 />
 
-The migration follows the published [application-runtime guide](https://github.com/nMaroulis/protolink/blob/v0.8.3/docs/content/application-runtime.md) and [FastAPI example](https://github.com/nMaroulis/protolink/blob/v0.8.3/examples/application_runtime.py), checked against the installed PyPI package. The HTTP extra supplies the dependencies used by its HTTP model adapters, including `httpx2`.
+The migration uses [ProtoLink 0.8.4](https://pypi.org/project/protolink/0.8.4/) and its native [runtime APIs](https://nmaroulis.github.io/protolink/docs/runtime/), checked against the installed source and the published SDK's streaming example. The HTTP extra supplies the dependencies used by its HTTP model adapters, including `httpx2`.
 
 ## Files and responsibilities
 
@@ -53,6 +53,7 @@ in `guides/`.
 | `utils/model_selection.py`, `utils/providers.py` | Model assignments, provider catalog and passive readiness                       |
 | `utils/presentation.py`                          | Format native events and `ToolEvidence` into consultation cards                 |
 | `utils/reporting.py`, `utils/streaming.py`       | Public run summaries and streaming response formatting                          |
+| `utils/retrieval.py`                             | Shared native Wiki/Reporter research tools, schemas and source-evidence reads     |
 | `utils/snapshots.py`                             | Deterministic factual formatting when no model is selected                      |
 | `utils/conversations.py`, `utils/requests.py`    | UI chat cards, queued-request IDs, progress and durable outcomes                |
 
@@ -103,6 +104,14 @@ def create_agent(services: Services, **runtime) -> Agent:
 
 ProtoLink infers schemas/descriptions from the original annotations and docstrings, validates and authorizes calls, then admits blocking functions to its worker pool. Async tools are awaited directly. No agent has order submission, cancellation, credential, shell, file or messaging tools. The model chooses domain reads; nothing preloads balances, prices or news just to answer a conceptual or navigation question.
 
+## Per-tool execution and reusable tools
+
+Agent factories return unstarted native `Agent` objects; `AgentGroup` supplies lifecycle and runtime options. Domain reads inherit `sync_execution="thread"` and four bounded workers. Static guides and methodology use native `Tool.from_callable(..., sync_execution="inline")`, so they do not consume those workers. Inline tools still obey validation, policy and applicable group admission; they must remain short and free of blocking I/O. New database, provider or computational work should use the default worker policy.
+
+Wiki and Reporter register the same five research capabilities from `utils/retrieval.py` through `research_tools(library)`. These are ordinary typed functions adapted by native `Tool.from_callable`, with original names/docstrings and private page defaults. There is no callable decorator wrapper or second dispatcher. Each specialist still owns its prompt and module-specific tools. A shared definition keeps research citations, corrections and schemas consistent between them.
+
+`Annotated`/Pydantic `Field` bounds describe research query lengths, result limits, document offsets and accounting flow pagination. ProtoLink validates explicit arguments before domain execution and supplies its native inference correction loop. Dynamic selections and unavailable retained records remain domain checks using `ToolRejectedError`; operational failures retain their ordinary failure behavior. For retrieval evaluations, omitting `evaluation_id` follows the page while `evaluation_id=''` lists reports, allowing a missing selection to be corrected without inventing another report.
+
 ## Readiness and native runs
 
 All eleven agents register in a workspace-specific `protolink.discovery.Registry` with `runtime://` URLs. `AgentGroup` owns registry startup, registration readiness, partial-start rollback, native run cancellation and resource shutdown. Startup never constructs a provider through the model factory or runs inference.
@@ -143,17 +152,29 @@ The handle/store use a request-specific `RedactionPolicy` including known config
 
 ## Events, evidence and cancellation
 
-`RunPresentation` consumes `handle.events()` solely to format consultation/progress cards. Native child identifiers, delegation IDs and final answers drive the cards. `result.tool_evidence` / `handle.report.tool_evidence` supply validated arguments, actual returned values, timing and outcomes. Failed, rejected, canceled or omitted results are never presented as completed observations. The executing agents explicitly enable `expose_tool_results=True`; every tool must therefore return only data appropriate for the authorized workspace UI.
+`RunPresentation` consumes `handle.events()` solely to format saved consultation cards. Native `PresentationEvent` supplies lifecycle classification; child final text and questions remain application display policy. Cards update only on meaningful changes, so raw model chunks do not produce SQLite writes. Native child identifiers, delegation IDs and final answers drive the cards. `result.tool_evidence` / `handle.report.tool_evidence` supply validated arguments, actual returned values, timing and outcomes. Failed, rejected, canceled or omitted results are never presented as completed observations. The executing agents explicitly enable `expose_tool_results=True`; every tool must therefore return only data appropriate for the authorized workspace UI.
 
 Native evidence retains the actual JSON-safe return before history hooks or context truncation. No function wrapper records evidence. Consultation envelopes are not counted as tool executions, and native deduplication prevents a forwarded live event plus final receipt becoming two observations.
 
-The browser consumes `POST /agents/ask/stream` and `POST /sibyl/ask/stream` as NDJSON. `streaming.py` projects the existing handle events into bounded tool/consultation labels and outcomes; it does not execute tools or reconstruct runs. Arguments, results, provider errors and raw `llm_chunk` fragments never enter activity frames. A terminal reply contains the same committed response as the existing JSON endpoint. The UI displays the root final answer; raw chunks can contain internal action JSON and are never shown as answer text. Reopened Sibyl chats retain their one-second activity polling for recovery.
+The browser consumes `POST /agents/ask/stream` and `POST /sibyl/ask/stream` as NDJSON. `streaming.py` forwards `handle.answer_events()` and `handle.presentation_events()` through a bounded HTTP bridge. Their typed dictionaries are carried unchanged in `answer`/`activity` frames. There is no application answer projector, raw-event classifier, model-protocol flag or model wrapper. Native answer events support JSON-mode and native-provider streaming, preserve Markdown/Unicode, exclude thoughts, action envelopes and child answers, and apply cross-chunk redaction. Structured investigations suppress answer frames; their validated reports keep their own application rendering.
 
-**Run details** reads `GET /agents/runs/{run_id}/summary` on demand. `reporting.py` projects native tool outcomes/durations and completed model-call metrics without prompts, raw chunks, tool arguments or results. Reported tokens, estimates and unavailable values stay distinct; totals identify partial coverage. Costs appear per call and currency only when the SDK supplies them, with estimates labeled. No application pricing table or token estimator fills missing values. ProtoLink 0.8.3 currently omits usage metrics on its owned-subagent execution path; see the [verified reproducer](./protolink-metrics.md). Real-model routing/grounding evaluation and user-facing token streaming remain pending.
+`delta` appends content; `replacement` replaces it. Native `completed` contains authoritative text after successful execution; it is distinct from Sibyl's final `reply`, which confirms the application chat record was saved. JSON endpoints and saved replies also use that same native authoritative text. The browser batches token bursts per animation frame and uses the existing safe Markdown renderer for provisional and final text. HTML is excluded and generated images are not fetched.
+
+**Run details** reads `GET /agents/runs/{run_id}/summary`. The SDK's `RunReport.from_events()` pairs historical/dedicated call receipts, and `report.usage(scope="tree" | "root" | "children")` supplies deduplicated rollups. Provider-reported, estimated and unknown calls remain separate; costs keep their currencies and estimation flags. Sibyl formats these results and defensively checks displayed numbers. It does not estimate tokens, maintain a pricing table or recalculate aggregates. The old owned-agent metrics omission is resolved; see [native usage contracts](protolink-metrics.md).
+
+## Admission, retained subscriptions and identity
+
+`AgentGroup` uses `GroupLimits(max_concurrent_runs=2, max_queued_runs=16, queue_timeout=30)`. The SDK owns FIFO root admission and queued cancellation; consultations share their parent's slot. Sibyl no longer has an admission semaphore. Frozen model/page snapshots are bound before group submission, and queued work never constructs a provider. The SDK's admission events set the UI's actual queued/running phase. Full or expired queues produce a sanitized HTTP 503 (or streamed error). Overall request deadlines remain 95 seconds for a specialist and 150 seconds for Sibyl, including queue time.
+
+Group registration readiness and active/queued/retained root counts come from `group.snapshot()`, exposed in `/system` as `agent_runtime` and `/sibyl` as `runtime`. They are not provider availability probes or Python-thread occupancy measurements. The group retains at most 20 completed handles; active runs are not evicted. Each raw event replay window is bounded to 4,096 events; complete persisted reports remain available separately.
+
+Sibyl passes a conversation-scoped request ID to `group.run()`. Native reuse is limited to retained identical submissions in that group. Private dependencies are not part of the SDK fingerprint. Sibyl keeps its own durable conversation/request guards and one-pending-turn rule; replaying an HTTP Ask does not bypass them. This is not exactly-once external execution or cross-process idempotency.
+
+`GET /agents/runs/{run_id}/stream?after=0&answer_after=0` observes `group.get_run(run_id)` without submitting work. It forwards native presentation and answer updates, then a native `result` status. `after` is the raw-event sequence used by presentation events; `answer_after` is an independent answer sequence. Retention gaps are explicit frames. Unknown, evicted or deleted runs return 404. A viewer disconnect stops only its subscriptions; it does not cancel the execution. This endpoint does not make initiating Ask requests survive disconnects, persist partial browser text, recover a run after process restart, or replace saved conversation APIs. Structured report JSON is excluded from answer replay.
 
 An explicit Sibyl Stop cancels the exact outer request; specialist Stop aborts its stream, and disconnect cancellation drains the producer and its native handle. Closing a module dialog preserves its ongoing request. Navigating away from the Sibyl page aborts its stream. In each case, native `RunHandle.cancel()` propagates cancellation and the group owns drain/shutdown. Queued requests can stop before calling a provider. Completed consultation evidence remains visible on later failure or cancellation. UI answer commit and request completion remain one application transaction, preventing a late reply after Stop.
 
-A running synchronous Python thread cannot be killed. Its native worker slot remains occupied until it returns, while canceled awaits finish promptly and late results are discarded. This does not undo side effects; all current tools are read-only. Only outer requests acquire application admission; child consultations use ProtoLink's native budget/supervision. Specialist tasks allow eight model steps/calls, six tool calls and 80 seconds; page requests wait up to 95 seconds. Sibyl's root budget allows twelve steps, ten model/tool calls and 140 seconds, within a 150-second outer request timeout.
+A running synchronous Python thread cannot be killed. Its native worker slot remains occupied until it returns, while canceled awaits finish promptly and late results are discarded. This does not undo side effects; all current tools are read-only. Only outer requests acquire application admission; child consultations use ProtoLink's native budget/supervision. Specialist tasks allow eight model steps/calls, six tool calls and 80 seconds; page requests wait up to 95 seconds. Sibyl's root budget allows twelve steps, ten model/tool calls and 140 seconds, within a 150-second outer request timeout, including native queue admission.
 
 ## Domain tools
 
@@ -187,4 +208,8 @@ Tool docstrings should lead with the question answered and information returned,
 
 `tests/test_agent_streaming.py` additionally checks native activity and correlated summaries, early progress during a blocked tool, disconnect cancellation without late success, sanitized failures, missing/estimated usage, partial coverage and per-currency costs. Browser fixtures cover NDJSON parsing and uncertain connection outcomes without automatic retries.
 
-No paid provider, actual exchange order or external message is used for these checks. Real-provider/sandbox acceptance, real-model routing/grounding evaluation and browser token streaming remain separate work. Scheduled or resumable investigations are not enabled by this migration; saved request history is still an audit, not a scheduler.
+`tests/test_agent_answer_streaming.py` checks real native text/JSON-mode generation before completion, cancellation and root/child isolation. `tests/test_agent_replay.py` checks native cursor replay/gaps, viewer detachment, queue bounds, idempotent handles, authoritative saved text after hooks, and deletion privacy. Browser tests verify incremental/replaced/final Markdown, Unicode boundaries, Stop, activity phases and native usage labels.
+
+`tests/test_agent_tool_contracts.py` exercises native pre-execution schema rejection/correction, concurrent shared research defaults, static help with all evidence workers occupied, missing-report recovery and token-free consultation persistence.
+
+No paid provider, actual exchange order or external message is used for these checks. Broader real-model routing/grounding and venue acceptance remain separate work. Existing daily/weekly research calendars are unchanged. Retained handles are process-local observations; they do not enable durable workflow resumption.

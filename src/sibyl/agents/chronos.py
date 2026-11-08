@@ -6,7 +6,7 @@ forecast model. Tool descriptions explain their purpose to the reasoning model.
 
 from typing import Annotated
 
-from protolink import Agent, ToolRejectedError
+from protolink import Agent, Tool, ToolRejectedError
 from pydantic import Field
 
 from sibyl.agents.guides import read_guide
@@ -20,6 +20,8 @@ DESCRIPTION = (
     "Explain selected trained forecasts, model evaluation and baseline assumptions; guide Forecasting."
 )
 SYSTEM_PROMPT = (
+    "Read the selected model's numerical family, saved feature recipe and notes. Optional causal trend/volatility context does not establish better future accuracy. "
+    "Portable imported models are locally refitted research with unverified source origin, never prospective live evidence. Archived models keep saved evidence and existing outcome monitors; they must be restored for new forecasts. Use page_help models/portability for library controls. "
     "Use forecast_outcomes for live prospective scorecards, distinct from historical held-out or rolling evaluations. Missing future or archived targets remain missing; repeated horizon errors and selected forecast runs do not establish reliable future accuracy. "
     "Use rolling_evaluation to inspect selected saved rolling reports or list evaluations for a model. These refit a fixed recipe over earlier windows; they do not evaluate the original saved weights. Disclose per-fold variation, pooled benchmark skill, overlapping targets and repeated-experiment limitations. Never claim a rolling run trained or deployed a production model. "
     "Use page_help for Forecasting controls and setup, forecast_method for conceptual methodology, "
@@ -33,7 +35,18 @@ SYSTEM_PROMPT = (
 
 
 def create_agent(services: Services, **runtime) -> Agent:
-    """Declare Chronos's tools and expose them through ProtoLink's runtime transport."""
+    """Register this specialist's evidence and help tools on a native Agent.
+
+    Args:
+        services: Workspace domain services; credentials stay in their owners.
+        **runtime: AgentGroup configuration, including the lazy model factory,
+            native state, worker defaults and context policy.
+
+    Returns:
+        An unstarted Agent. Static guides run inline; domain reads inherit the
+        runtime's execution policy (bounded threads in Sibyl). AgentGroup owns
+        startup and shutdown.
+    """
     market = services.market
 
     def price_forecast(
@@ -152,26 +165,37 @@ def create_agent(services: Services, **runtime) -> Agent:
         trained. Returns the implemented assumptions and calibration limitations.
         """
         return {
-            "method": "Trained direct autoregressive ridge, or the separate untrained log-return baseline",
-            "training": "Separate autoregressive ridge models use frozen daily input, chronological 60/20/20 train/calibration/test partitions and purged boundary-crossing targets.",
+            "method": "Trained direct autoregressive ridge or a small tanh neural network; the untrained log-return baseline is separate",
+            "training": "Separate per-horizon ridge or neural models use frozen daily input, chronological 60/20/20 train/calibration/test partitions and purged boundary-crossing targets.",
             "trained_intervals": "Nominal 90% bands from calibration log errors; held-out coverage is reported and future coverage is not guaranteed.",
-            "horizon_days": [1, 30],
+            "horizon_days": {"ridge": [1, 30], "small_neural": [1, 14]},
             "baseline_intervals": "Approximate 95% theoretical bands from constant historical drift/volatility, without empirical calibration.",
             "interpretation": "Neither model's bands are probabilities of profitable trades.",
         }
 
-    def trained_models() -> dict:
+    def trained_models(include_archived: bool = False) -> dict:
         """List saved Chronos model versions, their exact markets, datasets and training settings.
 
         Use to find a model ID before inspecting its evaluation or a retained forecast.
-        Returns the local registry only; does not train, fetch prices or select a model for the user.
+        Set include_archived to find hidden retained versions. Imported versions carry
+        unverified source labels even after local refitting. Returns the local registry only; does not train, fetch prices or select a model for the user.
         """
-        rows = services.forecasts.list()["items"] if services.forecasts else []
+        rows = services.forecasts.list(include_archived)["items"] if services.forecasts else []
         return {
             "items": [
                 {
-                    key: row[key]
-                    for key in ("id", "label", "version", "symbol", "source", "environment", "parameters")
+                    key: row.get(key)
+                    for key in (
+                        "id",
+                        "label",
+                        "version",
+                        "symbol",
+                        "source",
+                        "environment",
+                        "parameters",
+                        "archived",
+                        "imported_from",
+                    )
                 }
                 for row in rows[:20]
             ],
@@ -277,8 +301,8 @@ def create_agent(services: Services, **runtime) -> Agent:
         description=DESCRIPTION,
         tools=[
             price_forecast,
-            forecast_method,
-            page_help,
+            Tool.from_callable(forecast_method, sync_execution="inline"),
+            Tool.from_callable(page_help, sync_execution="inline"),
             trained_models,
             model_report,
             rolling_evaluation,
