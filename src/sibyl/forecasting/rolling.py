@@ -29,6 +29,8 @@ def evaluate(candles, recipe, request):
     family = recipe.get("family", "ridge")
     if family == "mlp" and (n > 1000 or h > 14):
         raise ValueError("Neural rolling studies support at most 1,000 candles and 14 forecast days.")
+    if family == "huber" and n > 2000:
+        raise ValueError("Huber rolling studies support at most 2,000 actual input candles.")
     if h > recipe["max_horizon"]:
         raise ValueError("Choose a horizon supported by the selected model recipe.")
     if min(request.test_days, request.calibration_days) - h < 20:
@@ -66,7 +68,9 @@ def evaluate(candles, recipe, request):
         training = np.arange(train_start + lags, train_end - h)
         calibration = np.arange(train_end, test_start - h)
         test = np.arange(test_start, test_end - h)
-        model, predictions = fit_horizon(logs, x, lags, recipe["alpha"], h, training, calibration, family)
+        model, predictions = fit_horizon(
+            logs, x, lags, recipe["alpha"], h, training, calibration, family, recipe.get("huber_delta", 1.35)
+        )
         drift = float(np.diff(logs[train_start:train_end]).mean())
         evidence = score_horizon(logs, times, predictions, model, test, drift, lags)
         folds.append(

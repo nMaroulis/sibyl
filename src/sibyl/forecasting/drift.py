@@ -158,7 +158,8 @@ class ForecastDrift:
     def _observations(self, model):
         meta = model["metadata"]
         key = series_key(meta["source"], meta["environment"], meta["symbol"], "1d")
-        count = min(1000 if model["request"].get("family") == "mlp" else 5000, meta["dataset"]["count"])
+        family = model["request"].get("family", "ridge")
+        count = min({"mlp": 1000, "huber": 2000}.get(family, 5000), meta["dataset"]["count"])
         with self.store.db() as db:
             rows = db.execute(
                 "SELECT timestamp,open,high,low,close,volume FROM candle_rows WHERE series_id=? AND timestamp+?<=? ORDER BY timestamp DESC LIMIT ?",

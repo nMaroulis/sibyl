@@ -86,7 +86,7 @@ GUIDES = {
             "Edit model settings explicitly for another experiment. AI model selection changes the assistant, not the numerical forecast model.",
         ),
         (
-            "Ridge is the default. Model settings & assumptions → Numerical model offers a trained 8-unit tanh network with 120 fixed Adam steps, training-only scaling and a 1,000-candle / 14-day cap. Inspect Neural training evidence and independent test benchmarks. ARIMA, other neural families and automated recalibration remain pending.",
+            "Ridge is the default. Model settings & assumptions → Numerical model also offers fixed-scale Huber autoregression: choose delta, then inspect actual IRLS steps, convergence, residual cutoff and downweighted counts. It accepts up to 2,000 saved daily candles and 30 days, requires no extra package, retains all rows and does not solve feature leverage. The same menu offers a trained 8-unit tanh network with 120 fixed Adam steps, training-only scaling and a 1,000-candle / 14-day cap. Inspect Neural training evidence and independent test benchmarks. ARIMA and additional neural families remain pending. Retained-source candidate recalibration is separately opt-in and never promotes a model automatically.",
         ),
     ),
 }

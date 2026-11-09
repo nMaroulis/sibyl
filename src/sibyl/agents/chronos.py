@@ -21,6 +21,7 @@ DESCRIPTION = (
 )
 SYSTEM_PROMPT = (
     "Read the selected model's numerical family, saved feature recipe and notes. Optional causal trend/volatility context does not establish better future accuracy. "
+    "For a Huber model, inspect its retained delta, training-only median/MAD scale, convergence/step cap and downweighted residual counts. Downweighting does not establish that an observation is erroneous and does not protect against extreme feature leverage. A step-limit fit is not converged. Training loss and convergence are not held-out accuracy or future coverage; compare naive/drift test errors and empirical bands. "
     "Drift compares training returns with later non-overlapping retained observations, using descriptive Jensen–Shannon divergence. Saved policies can retain candidates through local jobs; candidates never replace a model automatically. Missing recent days are not evidence of stability. "
     "Portable imported models are locally refitted research with unverified source origin, never prospective live evidence. Archived models keep saved evidence and existing outcome monitors; they must be restored for new forecasts. Use page_help models/portability for library controls. "
     "Use forecast_outcomes for live prospective scorecards, distinct from historical held-out or rolling evaluations. Missing future or archived targets remain missing; repeated horizon errors and selected forecast runs do not establish reliable future accuracy. "
@@ -28,7 +29,7 @@ SYSTEM_PROMPT = (
     "Use page_help for Forecasting controls and setup, forecast_method for conceptual methodology, "
     "and price_forecast for a selected trained result or baseline. Use trained_models and model_report "
     "to inspect registry versions, chronological evaluation, naive/drift benchmarks, calibration and data provenance. "
-    "Ask for a model, symbol or horizon when ambiguous. Trained autoregressive ridge coefficients and "
+    "Ask for a model, symbol or horizon when ambiguous. Trained numerical forecast models and "
     "the untrained drift baseline are distinct. Negative skill means the naive benchmark performed better. "
     "Bands and input-shift checks provide research evidence, not guaranteed coverage, calibrated regime detection "
     "or profitable trade probabilities. You can read model evidence but cannot train, refit or save forecasts. "
@@ -156,10 +157,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         trained. Returns the implemented assumptions and calibration limitations.
         """
         return {
-            "method": "Trained direct autoregressive ridge or a small tanh neural network; the untrained log-return baseline is separate",
-            "training": "Separate per-horizon ridge or neural models use frozen daily input, chronological 60/20/20 train/calibration/test partitions and purged boundary-crossing targets.",
+            "method": "Trained direct ridge, fixed-scale Huber autoregression or a small tanh neural network; the untrained log-return baseline is separate",
+            "training": "Separate per-horizon ridge, Huber or neural models use frozen daily input, chronological 60/20/20 train/calibration/test partitions and purged boundary-crossing targets.",
             "trained_intervals": "Nominal 90% bands from calibration log errors; held-out coverage is reported and future coverage is not guaranteed.",
-            "horizon_days": {"ridge": [1, 30], "small_neural": [1, 14]},
+            "horizon_days": {"ridge": [1, 30], "huber": [1, 30], "small_neural": [1, 14]},
             "baseline_intervals": "Approximate 95% theoretical bands from constant historical drift/volatility, without empirical calibration.",
             "interpretation": "Neither model's bands are probabilities of profitable trades.",
         }
@@ -198,7 +199,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Inspect a trained model's test errors, naive/drift benchmarks and interval coverage.
 
         Omit model_id to use the Forecasting page selection. Returns dataset/source
-        provenance, version, training/calibration/test dates, metrics and interpretation notes.
+        provenance, version, training/calibration/test dates, metrics, actual Huber/neural training diagnostics and interpretation notes. Huber residual weights are not labels of incorrect market data; inspect convergence separately from held-out skill.
         """
         identity = selected("forecast_model_id", model_id)
         if not identity or not services.forecasts:

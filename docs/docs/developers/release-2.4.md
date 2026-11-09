@@ -44,7 +44,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 ## 5. Research and forecasting
 
 - [x] Forecast drift monitoring and explicit retained-source candidate recalibration policies, with native Chronos evidence and opt-in local schedules.
-- [ ] Additional trained model families.
+- [x] Add trained fixed-scale Huber autoregression, validated delta, training diagnostics and existing chronological/rolling/portable/recalibration workflows.
+- [ ] ARIMA, additional neural/model families and larger real-market validation.
 - [ ] Hosted embedding providers, calibrated retrieval abstention and evaluated finance/entity sentiment.
 - [ ] Licensed article ingestion and configurable research integrations.
 - [ ] Additional chain/history/watch support, disclosure archives and interpretable advanced analytics.

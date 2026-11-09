@@ -6,20 +6,20 @@
 
 1. Choose **Train model**. Enter an exact spot pair and choose 360, 540 or 720 daily observations from your configured market feed.
 2. Alternatively, select a saved daily dataset. Training uses its entire immutable input, with 360–5,000 consecutive closed daily candles. Prepare longer ranges in **Markets → History & datasets**.
-3. Optionally expand **Model settings & assumptions**. Choose 5, 14 or 30 daily return lags, a positive ridge penalty and a maximum 7-, 14- or 30-day horizon.
+3. Optionally expand **Model settings & assumptions**. Choose 5, 14 or 30 daily return lags, a positive regularization penalty and a maximum 7-, 14- or 30-day horizon.
 4. Choose **Train & evaluate**. The completed model version appears in the registry with its source, environment, dataset fingerprint, settings and independent test evidence.
 
 A smaller **Try with Demo prices** action uses synthetic daily candles through the same engine. It does not activate Demo accounts or change your market source. Demo-trained models and forecasts remain labeled. Missing history, gaps, unfinished days and provider failures do not trigger Demo substitution.
 
-Only one fit runs per workspace at a time. Current-feed pages are bounded to 720 candles; saved inputs support 5,000. The registry retains at most 100 versions. These are local, synchronous bounded research operations rather than scheduled training jobs.
+Only one fit runs per workspace at a time. Current-feed pages are bounded to 720 candles; saved inputs support up to 5,000 for ridge, 2,000 for Huber and 1,000 for the small neural model. The registry retains at most 100 versions. Fitting is a bounded local research operation. Separate opt-in drift policies can schedule candidate recalibration; they never promote a candidate automatically.
 
 ## What the model learns
 
-For each future horizon, Chronos fits a separate **ridge regression** from recent daily log-return lags to the cumulative log return over that horizon. Features contain information available at the forecast origin. Standardization and coefficients use the first 60% of the dataset only.
+By default, for each future horizon Chronos fits a separate **ridge regression** from recent daily log-return lags to the cumulative log return over that horizon. Features contain information available at the forecast origin. Standardization and coefficients use the first 60% of the dataset only.
 
 The next 20% supplies calibration errors. The last 20% supplies independent test targets. Examples whose target would cross a partition boundary are excluded. Models remain fixed after training; there is no hidden refit on the full dataset, automatic parameter optimization or selection using the test period.
 
-Repeatedly trying settings after looking at test results can still overfit that period. This initial model family is autoregressive ridge, not LSTM, ARIMA or pretrained foundation-model weights.
+Repeatedly trying settings after looking at test results can still overfit that period. Ridge is the default; robust Huber and a small neural model are optional. None uses ARIMA, LSTM or pretrained foundation-model weights.
 
 ## Read the evaluation
 
@@ -39,7 +39,7 @@ Horizons above one day have overlapping targets, so observations are not indepen
 
 ## Rolling evaluation
 
-Select a saved model and open **Rolling evaluation** below its independent test results. This evaluates its fixed **recipe** (lags and ridge penalty) across successive historical periods. It refits coefficients and calibration bands for each period; the saved model version remains unchanged. The source, exact market, original dataset and recipe stay pinned, with no provider reads or new dependencies.
+Select a saved model and open **Rolling evaluation** below its independent test results. This evaluates its fixed **recipe** (family, features, lags, regularization and any Huber delta) across successive historical periods. It refits coefficients and calibration bands for each period; the saved model version remains unchanged. The source, exact market, original dataset and recipe stay pinned, with no provider reads or new dependencies.
 
 1. Choose a supported horizon, two to eight successive test windows, test days and calibration days. Defaults use two 60-day test windows with 60 calibration days each.
 2. Optionally open **Training window**. **Expanding** uses all earlier training history; **Fixed window** retains only the chosen number of earlier training days.
@@ -59,7 +59,7 @@ For each horizon, calibration collects absolute log-return prediction errors and
 
 This is empirical calibration at a nominal 90% level. Financial time series have dependence and changing distributions; these bands do not have a distribution-free future coverage guarantee. Their held-out coverage and width remain visible rather than being treated as known probabilities.
 
-The input-shift check counts lag features outside the training sample's observed minimum/maximum ranges. It is a descriptive diagnostic, not a calibrated drift detector, significance test or automatic reason to trade/retrain. Monitored drift and automatic recalibration remain pending.
+The input-shift check counts lag features outside the training sample's observed minimum/maximum ranges. It is a descriptive diagnostic, not a calibrated drift detector, significance test or automatic reason to trade/retrain. The separate **Drift & candidate recalibration** panel compares recent retained observations and can train a new research candidate under an explicit policy. See the [drift workflow](../developers/forecast-drift.md).
 
 ## Produce and reopen forecasts
 
@@ -74,7 +74,7 @@ The input-shift check counts lag features outside the training sample's observed
 
 ## Remaining work
 
-The [Live forecast scorecard](forecast-outcomes.md) compares saved prospective predictions with actual closes. Additional model families, richer features, automated recalibration, empirically evaluated drift monitoring and larger model lifecycle management remain in the [planning checklist](../developers/backend-roadmap.md).
+The [Live forecast scorecard](forecast-outcomes.md) compares saved prospective predictions with actual closes. ARIMA and additional neural/model families, richer features, real-data drift/calibration studies and larger model lifecycle management remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Trained forecast origins and chart targets use the daily candle close time, when the close becomes available. Raw dataset timestamps and partition boundaries retain the archive’s opening-time convention; a target close can equal the exclusive end boundary of the partition containing its candle.
 
@@ -82,7 +82,7 @@ Trained forecast origins and chart targets use the daily candle close time, when
 
 **Model library → Export portable bundle** downloads a JSON package with the training recipe, recorded numerical evidence and complete immutable daily input. In another workspace, expand **Import a model from another workspace**, choose the file and select **Import & verify**. Sibyl verifies the data and hashes, then fits the recipe locally; uploaded coefficients and scores never become trusted computed results.
 
-Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the known ridge engine, 360–5,000 consecutive closed daily candles and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
+Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the supported ridge/Huber/neural engines with each family’s input bounds (at least 360 closed daily candles) and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
 
 **Archive model** hides a version from the default picker and disables new saved forecasts. **Show archived versions → Restore model** brings it back. Saved outputs, evaluations and any existing outcome monitors remain intact; archiving neither deletes storage nor silently pauses monitors. Pause outcome tracking separately if needed. Read-only Chronos help explains these controls and can inspect archived versions on request.
 
@@ -90,7 +90,7 @@ Imports are explicitly **Imported · unverified source**, with a separate import
 
 In **Train model → Model settings & assumptions**, choose **Returns + trend & volatility**. Alongside the selected daily-return lags, this adds six statistics over exactly the same preceding price window: mean log return, population return volatility, downside RMS around zero, positive-return share, log drawdown from the trailing maximum, and distance from the trailing log-price mean. There are no volume, order-book or external inputs.
 
-The recipe is shown beside the saved model's engine and parameters. Training-only scaling, purged chronological train/calibration/test boundaries, empirical calibration bands and naive/drift comparisons still apply. Compare recorded held-out results; extra features can make performance worse. This is an optional ridge recipe, not a neural model or automatic feature selection.
+The recipe is shown beside the saved model's engine and parameters. Training-only scaling, purged chronological train/calibration/test boundaries, empirical calibration bands and naive/drift comparisons still apply. Compare recorded held-out results; extra features can make performance worse. This feature recipe is available to ridge, Huber and the small neural model; it is not automatic feature selection.
 
 Exact reruns, rolling studies, saved/current-input forecasts, portable bundle imports and prospective tracking keep that model's feature recipe. Older returns-only artifacts remain supported unchanged. Chronos can explain which recipe a selected model actually uses.
 
@@ -99,3 +99,13 @@ Exact reruns, rolling studies, saved/current-input forecasts, portable bundle im
 Open **Train model → Model settings & assumptions → Numerical model** and choose **Small neural network**. Ridge stays the default. The optional network learns eight tanh hidden units from the same causal return features, with a fixed seed and 120 Adam steps. It needs no LLM, GPU or extra ML package. Inputs are limited to 360–1,000 closed consecutive daily candles and forecasts to 14 days; current/Demo pages retain their 720-candle limit.
 
 **Neural training evidence** shows actual initial/final training objective and architecture per horizon. A lower training loss is not proof of predictive skill: compare the independent test results with naive/drift, inspect calibrated coverage, and run rolling evaluation. The calibration/test data never choose weights, training normalization or iteration count. The selected family is retained through exact-input reruns, saved forecasts, portable local refits and Chronos evidence. Demo prices remain explicitly synthetic. Other neural families and ARIMA are pending.
+
+## Try robust Huber autoregression
+
+Open **Train model → Model settings & assumptions → Numerical model → Huber · robust autoregression**. It uses the same daily price features and held-out evaluation as ridge, with a different fitting loss: large training residuals receive less influence while every observation remains in the input. It needs no LLM, GPU or extra ML package.
+
+**Huber delta** controls when residual downweighting starts after training-only target scaling. The default is 1.35; lower values begin downweighting sooner. Scale uses the training target median/MAD with a small numerical floor. This does not automatically clean data, make input features robust or establish that an unusual price is an error. Genuine market shocks can still affect forecasts.
+
+**Huber training evidence** shows actual iterations, whether the fit converged or reached its 60-step limit, residual cutoff, downweighted samples/effective weights and initial/final training objective. A step-limit result stays visibly unconverged. Convergence and a smaller training loss are not evidence of future accuracy; compare independent MAE/RMSE, naive/drift skill and empirical interval coverage. Loss scales differ across horizons.
+
+Huber supports 360–2,000 consecutive closed daily candles and up to 30 forecast days; current/Demo pages still provide at most 720 candles. Both return-only and trend/volatility features work. Exact-input reruns, rolling studies, portable local refits and explicit recalibration candidates keep the chosen delta and family. Models, forecasts and Demo input retain the existing labels and source boundaries. Chronos can explain the saved diagnostics but cannot train or select a model for you.

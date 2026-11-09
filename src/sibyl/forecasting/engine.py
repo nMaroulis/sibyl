@@ -12,6 +12,8 @@ import math
 
 import numpy as np
 
+from sibyl.forecasting.families.huber import MAX_CANDLES as HUBER_MAX_CANDLES
+from sibyl.forecasting.families.huber import HuberAR
 from sibyl.forecasting.families.neural import TinyMLP
 from sibyl.market_data.archive import iso, milliseconds, now_ms, step_ms
 
@@ -23,8 +25,10 @@ def engine_for(feature_set="returns", family="ridge"):
     """Keep the legacy engine exact and identify the optional richer causal recipe separately."""
     if feature_set not in {"returns", "returns_context"}:
         raise ValueError("Unsupported forecast feature recipe.")
-    if family not in {"ridge", "mlp"}:
+    if family not in {"ridge", "mlp", "huber"}:
         raise ValueError("Unsupported numerical forecast family.")
+    if family == "huber":
+        return "chronos-huber-context-1" if feature_set == "returns_context" else "chronos-huber-1"
     if family == "mlp":
         return "chronos-mlp-context-1" if feature_set == "returns_context" else "chronos-mlp-1"
     return CONTEXT_ENGINE if feature_set == "returns_context" else ENGINE
@@ -33,6 +37,8 @@ def engine_for(feature_set="returns", family="ridge"):
 def parameters(request):
     """Preserve legacy artifact parameters byte-for-byte when richer features are not selected."""
     values = {key: getattr(request, key) for key in ("lags", "alpha", "max_horizon")}
+    if request.family == "huber":
+        values["huber_delta"] = request.huber_delta
     if request.family != "ridge":
         values["family"] = request.family
     if request.feature_set != "returns":
@@ -114,7 +120,7 @@ def metrics(actual, predicted):
     return result
 
 
-def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ridge"):
+def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ridge", huber_delta=1.35):
     """Fit one causal numerical model and calibrate it using only the supplied earlier partitions."""
     if len(training) < max(60, 3 * x.shape[1]) or len(calibration) < 20:
         raise ValueError("Use more training and calibration observations for this horizon.")
@@ -126,6 +132,9 @@ def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ri
     if family == "mlp":
         fitted = TinyMLP.fit(z, y, alpha, horizon)
         predictions = TinyMLP.predict(fitted, (x - mean) / scale)
+    elif family == "huber":
+        fitted = HuberAR.fit(z, y, alpha, huber_delta)
+        predictions = fitted["intercept"] + ((x - mean) / scale) @ np.asarray(fitted["coefficients"])
     elif family == "ridge":
         intercept = float(y.mean())
         try:
@@ -201,6 +210,8 @@ def train(candles, request):
     n, lags = len(logs), request.lags
     if request.family == "mlp" and (n > 1000 or request.max_horizon > 14):
         raise ValueError("Neural training is limited to 1,000 candles and 14 forecast days.")
+    if request.family == "huber" and n > HUBER_MAX_CANDLES:
+        raise ValueError("Huber training supports at most 2,000 actual input candles.")
     train_end, calibration_end = math.floor(n * 0.6), math.floor(n * 0.8)
     x = features(logs, lags, request.feature_set)
     fitted, evaluation = [], []
@@ -212,7 +223,7 @@ def train(candles, request):
         if len(training) < max(60, 3 * lags) or min(len(calibration), len(test)) < 20:
             raise ValueError("The selected horizon needs more training/calibration/test observations.")
         model, predictions = fit_horizon(
-            logs, x, lags, request.alpha, horizon, training, calibration, request.family
+            logs, x, lags, request.alpha, horizon, training, calibration, request.family, request.huber_delta
         )
         fitted.append(model)
         evaluation.append(score_horizon(logs, times, predictions, model, test, drift, lags))
@@ -263,6 +274,15 @@ def train(candles, request):
         artifact["notes"].append(
             "A fixed eight-unit tanh network uses 120 full-batch Adam steps per horizon, with training-only input/target scaling and deterministic seeds. No early stopping, architecture search or final refit uses calibration/test data. Additional flexibility can worsen future accuracy."
         )
+    if request.family == "huber":
+        artifact["algorithm"] = "Direct fixed-scale Huber autoregression on causal daily price features"
+        artifact["notes"].append(
+            "Huber uses training-only median/MAD target scaling, fixed delta and at most 60 deterministic IRLS steps per horizon with feature L2. Large residuals receive reduced weight, not deletion; extreme feature leverage and genuine market shocks are not resolved by this loss. Check actual convergence, independent benchmark skill and coverage. Training-only stopping never selects on calibration/test data."
+        )
+        if any(not model["training"]["converged"] for model in fitted):
+            artifact["notes"].append(
+                "At least one Huber horizon reached its iteration limit. The retained bounded fit is not reported as converged; inspect training evidence before interpreting it."
+            )
     fingerprint(artifact)  # Reject any non-finite persisted artifact.
     return artifact
 

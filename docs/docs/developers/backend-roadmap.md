@@ -220,7 +220,8 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [ ] Evaluate real-data drift thresholds/calibration and larger managed model lifecycles.
 - [x] Add an optional causal returns-plus-context ridge recipe with six trailing-price features, retained through rolling evaluation, predictions and portable refits.
 - [x] Add a small fixed-seed NumPy tanh neural model with training-only normalization, purged chronological calibration/testing, actual training-loss evidence, rolling refits and portable recipe validation.
-- [ ] Add ARIMA and other neural/model families, additional inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
+- [x] Add bounded fixed-scale Huber autoregression with training-only robust target scaling, deterministic IRLS, actual convergence/downweight diagnostics, purged held-out/rolling evaluation and portable recipe-preserving refits.
+- [ ] Add ARIMA and additional neural/model families, additional inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 

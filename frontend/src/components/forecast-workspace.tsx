@@ -1,3 +1,4 @@
+import { ForecastTrainingEvidence } from './forecasting/training-evidence';
 import { ForecastPortability } from './forecast-portability';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -71,7 +72,8 @@ export function ForecastWorkspace() {
   const [datasetId, setDatasetId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [lags, setLags] = useState(14);
-  const [family, setFamily] = useState<'ridge' | 'mlp'>('ridge');
+  const [family, setFamily] = useState<'ridge' | 'mlp' | 'huber'>('ridge');
+  const [huberDelta, setHuberDelta] = useState(1.35);
   const [alpha, setAlpha] = useState(1);
   const [featureSet, setFeatureSet] = useState<'returns' | 'returns_context'>('returns');
   const [maxHorizon, setMaxHorizon] = useState(30);
@@ -92,7 +94,10 @@ export function ForecastWorkspace() {
   };
   const availableDatasets =
     datasets.data?.items.filter(
-      (d) => d.timeframe === '1d' && d.count >= 360 && d.count <= (family === 'mlp' ? 1000 : 5000),
+      (d) =>
+        d.timeframe === '1d' &&
+        d.count >= 360 &&
+        d.count <= (family === 'mlp' ? 1000 : family === 'huber' ? 2000 : 5000),
     ) ?? [];
   const doTrain = async (demo = false) => {
     setBusy('train');
@@ -107,6 +112,7 @@ export function ForecastWorkspace() {
         candles: input === 'saved_dataset' && !demo ? dataset?.count : candles,
         lags,
         family,
+        ...(family === 'huber' ? { huber_delta: huberDelta } : {}),
         alpha,
         max_horizon: maxHorizon,
         feature_set: featureSet,
@@ -200,7 +206,7 @@ export function ForecastWorkspace() {
             </select>
             <small>
               {datasets.error ||
-                'Uses the entire immutable dataset. Ridge accepts 360–5,000 consecutive daily candles; the small neural model accepts up to 1,000.'}
+                'Uses the entire immutable dataset. Ridge accepts up to 5,000 daily candles, Huber up to 2,000, and the small neural model up to 1,000; all need at least 360 consecutive closed days.'}
             </small>
           </label>
         ) : (
@@ -232,6 +238,7 @@ export function ForecastWorkspace() {
           <label>
             Numerical model
             <select
+              aria-label="Numerical forecast model"
               value={family}
               onChange={(e) => {
                 const next = e.target.value as typeof family;
@@ -241,9 +248,28 @@ export function ForecastWorkspace() {
               }}
             >
               <option value="ridge">Ridge · linear autoregression</option>
+              <option value="huber">Huber · robust autoregression</option>
               <option value="mlp">Small neural network · 8 tanh units</option>
             </select>
           </label>
+          {family === 'huber' && (
+            <label>
+              Huber delta
+              <input
+                aria-label="Huber delta"
+                type="number"
+                min="0.25"
+                max="5"
+                step="0.05"
+                value={huberDelta}
+                onChange={(e) => setHuberDelta(Number(e.target.value))}
+              />
+              <small>
+                Residual cutoff after training-only target scaling. Lower values downweight large
+                residuals sooner.
+              </small>
+            </label>
+          )}
           <label>
             Price features
             <select
@@ -293,7 +319,9 @@ export function ForecastWorkspace() {
           units, a fixed seed and 120 full-batch Adam steps, with training-only scaling and a
           1,000-candle / 14-day limit. It may perform worse than ridge or the naïve baseline. Each
           horizon is fitted separately. No final full-data refit or automatic best-model selection.
-          Repeated experiments can overfit the test period.
+          Huber uses fixed-scale robust loss, training-only median/MAD scaling and at most 60 IRLS
+          steps; it keeps every observation and does not solve feature leverage. It can perform
+          worse than the benchmarks. Repeated experiments can overfit the test period.
         </p>
       </details>
       <div className="forecast-workspace-actions">
@@ -431,7 +459,10 @@ export function ForecastWorkspace() {
                   </Badge>
                   <span>
                     {report.model.engine} · lags {report.model.parameters.lags} · penalty{' '}
-                    {report.model.parameters.alpha} ·{' '}
+                    {report.model.parameters.alpha}
+                    {report.model.parameters.family === 'huber' &&
+                      ` · Huber δ ${report.model.parameters.huber_delta}`}{' '}
+                    ·{' '}
                     {report.model.parameters.feature_set === 'returns_context'
                       ? 'Returns + 6 context features'
                       : 'Return lags only'}
@@ -440,41 +471,7 @@ export function ForecastWorkspace() {
                     {report.model.fingerprint.slice(0, 14)}…
                   </code>
                 </div>
-                {report.training && (
-                  <details className="forecast-advanced">
-                    <summary>Neural training evidence</summary>
-                    <p className="footnote">
-                      Training objective only · lower loss does not establish held-out skill. Fixed
-                      iterations; the test window never chooses weights.
-                    </p>
-                    <div className="table-wrap">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Horizon</th>
-                            <th>Architecture</th>
-                            <th>Optimizer</th>
-                            <th>Initial loss</th>
-                            <th>Final loss</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {report.training.map((fit) => (
-                            <tr key={fit.horizon}>
-                              <td>{fit.horizon}d</td>
-                              <td>{fit.hidden_units} tanh units</td>
-                              <td>
-                                {fit.epochs} steps · {fit.optimizer}
-                              </td>
-                              <td>{number(fit.initial_loss, 5)}</td>
-                              <td>{number(fit.final_loss, 5)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </details>
-                )}
+                <ForecastTrainingEvidence report={report} />
                 <div className="forecast-partitions">
                   {Object.entries(report.partitions).map(([key, value]) => (
                     <div key={key}>
@@ -574,7 +571,9 @@ export function ForecastWorkspace() {
                                   model:
                                     report.model.parameters.family === 'mlp'
                                       ? 'Trained neural model'
-                                      : 'Trained ridge model',
+                                      : report.model.parameters.family === 'huber'
+                                        ? 'Trained Huber model'
+                                        : 'Trained ridge model',
                                   naive: 'Naïve · last close',
                                   drift: 'Training-mean log drift',
                                 }[method]

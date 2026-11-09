@@ -182,8 +182,17 @@ class ForecastModels:
             "partitions": artifact["partitions"],
             "notes": artifact["notes"],
             **(
-                {"training": [{"horizon": row["horizon"], **row["training"]} for row in artifact["models"]]}
-                if artifact["parameters"].get("family") == "mlp"
+                {
+                    "training": [
+                        {
+                            "horizon": row["horizon"],
+                            "family": artifact["parameters"]["family"],
+                            **row["training"],
+                        }
+                        for row in artifact["models"]
+                    ]
+                }
+                if artifact["parameters"].get("family") in {"mlp", "huber"}
                 else {}
             ),
             "evaluation": [
