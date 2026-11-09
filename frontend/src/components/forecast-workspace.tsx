@@ -72,8 +72,10 @@ export function ForecastWorkspace() {
   const [datasetId, setDatasetId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [lags, setLags] = useState(14);
-  const [family, setFamily] = useState<'ridge' | 'mlp' | 'huber'>('ridge');
+  const [family, setFamily] = useState<'ridge' | 'mlp' | 'huber' | 'arima'>('ridge');
   const [huberDelta, setHuberDelta] = useState(1.35);
+  const [arimaP, setArimaP] = useState(1);
+  const [arimaQ, setArimaQ] = useState(1);
   const [alpha, setAlpha] = useState(1);
   const [featureSet, setFeatureSet] = useState<'returns' | 'returns_context'>('returns');
   const [maxHorizon, setMaxHorizon] = useState(30);
@@ -97,7 +99,8 @@ export function ForecastWorkspace() {
       (d) =>
         d.timeframe === '1d' &&
         d.count >= 360 &&
-        d.count <= (family === 'mlp' ? 1000 : family === 'huber' ? 2000 : 5000),
+        d.count <=
+          (family === 'mlp' || family === 'arima' ? 1000 : family === 'huber' ? 2000 : 5000),
     ) ?? [];
   const doTrain = async (demo = false) => {
     setBusy('train');
@@ -110,12 +113,13 @@ export function ForecastWorkspace() {
         ...(input === 'saved_dataset' && !demo ? { dataset_id: datasetId } : {}),
         symbol: input === 'saved_dataset' && !demo ? dataset?.symbol : symbol.toUpperCase().trim(),
         candles: input === 'saved_dataset' && !demo ? dataset?.count : candles,
-        lags,
+        lags: family === 'arima' ? 14 : lags,
         family,
+        ...(family === 'arima' ? { arima_p: arimaP, arima_q: arimaQ } : {}),
         ...(family === 'huber' ? { huber_delta: huberDelta } : {}),
-        alpha,
+        alpha: family === 'arima' ? 1 : alpha,
         max_horizon: maxHorizon,
-        feature_set: featureSet,
+        feature_set: family === 'arima' ? 'returns' : featureSet,
       });
       models.retry();
       datasets.retry();
@@ -174,7 +178,7 @@ export function ForecastWorkspace() {
     <Panel className="forecast-training-panel">
       <PanelTitle
         title="Train a daily model"
-        subtitle="Train a numerical price model · no LLM or additional ML dependencies"
+        subtitle="Fit a price model · an LLM is optional"
         action={<Badge>60 / 20 / 20</Badge>}
       />
       <p className="footnote">
@@ -206,7 +210,7 @@ export function ForecastWorkspace() {
             </select>
             <small>
               {datasets.error ||
-                'Uses the entire immutable dataset. Ridge accepts up to 5,000 daily candles, Huber up to 2,000, and the small neural model up to 1,000; all need at least 360 consecutive closed days.'}
+                'Uses the entire immutable dataset. Ridge accepts up to 5,000 daily candles, Huber up to 2,000, and ARIMA or the small neural model up to 1,000; all need at least 360 consecutive closed days.'}
             </small>
           </label>
         ) : (
@@ -243,12 +247,13 @@ export function ForecastWorkspace() {
               onChange={(e) => {
                 const next = e.target.value as typeof family;
                 setFamily(next);
-                if (next === 'mlp') setMaxHorizon((h) => Math.min(h, 14));
+                if (next === 'mlp' || next === 'arima') setMaxHorizon((h) => Math.min(h, 14));
                 setDatasetId('');
               }}
             >
               <option value="ridge">Ridge · linear autoregression</option>
               <option value="huber">Huber · robust autoregression</option>
+              <option value="arima">ARIMA · returns &amp; innovations</option>
               <option value="mlp">Small neural network · 8 tanh units</option>
             </select>
           </label>
@@ -270,41 +275,76 @@ export function ForecastWorkspace() {
               </small>
             </label>
           )}
-          <label>
-            Price features
-            <select
-              value={featureSet}
-              onChange={(e) => setFeatureSet(e.target.value as typeof featureSet)}
-            >
-              <option value="returns">Daily return lags</option>
-              <option value="returns_context">Returns + trend &amp; volatility</option>
-            </select>
-          </label>
-          <label>
-            Daily return lags
-            <select value={lags} onChange={(e) => setLags(Number(e.target.value))}>
-              {[5, 14, 30].map((n) => (
-                <option key={n} value={n}>
-                  {n} lags
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Regularization penalty
-            <input
-              type="number"
-              min="0.01"
-              max="1000"
-              step="0.1"
-              value={alpha}
-              onChange={(e) => setAlpha(Number(e.target.value))}
-            />
-          </label>
+          {family === 'arima' ? (
+            <>
+              <label>
+                Autoregressive order (p)
+                <select
+                  aria-label="ARIMA autoregressive order"
+                  value={arimaP}
+                  onChange={(e) => setArimaP(Number(e.target.value))}
+                >
+                  {[1, 2, 3].map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Moving-average order (q)
+                <select
+                  aria-label="ARIMA moving-average order"
+                  value={arimaQ}
+                  onChange={(e) => setArimaQ(Number(e.target.value))}
+                >
+                  {[0, 1, 2].map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : (
+            <>
+              <label>
+                Price features
+                <select
+                  value={featureSet}
+                  onChange={(e) => setFeatureSet(e.target.value as typeof featureSet)}
+                >
+                  <option value="returns">Daily return lags</option>
+                  <option value="returns_context">Returns + trend &amp; volatility</option>
+                </select>
+              </label>
+              <label>
+                Daily return lags
+                <select value={lags} onChange={(e) => setLags(Number(e.target.value))}>
+                  {[5, 14, 30].map((n) => (
+                    <option key={n} value={n}>
+                      {n} lags
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Regularization penalty
+                <input
+                  type="number"
+                  min="0.01"
+                  max="1000"
+                  step="0.1"
+                  value={alpha}
+                  onChange={(e) => setAlpha(Number(e.target.value))}
+                />
+              </label>
+            </>
+          )}
           <label>
             Maximum forecast horizon
             <select value={maxHorizon} onChange={(e) => setMaxHorizon(Number(e.target.value))}>
-              {(family === 'mlp' ? [7, 14] : [7, 14, 30]).map((n) => (
+              {(family === 'mlp' || family === 'arima' ? [7, 14] : [7, 14, 30]).map((n) => (
                 <option key={n} value={n}>
                   {n} days
                 </option>
@@ -312,17 +352,29 @@ export function ForecastWorkspace() {
             </select>
           </label>
         </div>
-        <p className="footnote">
-          Optional context adds mean return, volatility, downside RMS, positive-return share,
-          drawdown and distance from the trailing mean, using only the same past window. Extra
-          features are not guaranteed to improve results. The optional neural model uses 8 tanh
-          units, a fixed seed and 120 full-batch Adam steps, with training-only scaling and a
-          1,000-candle / 14-day limit. It may perform worse than ridge or the naïve baseline. Each
-          horizon is fitted separately. No final full-data refit or automatic best-model selection.
-          Huber uses fixed-scale robust loss, training-only median/MAD scaling and at most 60 IRLS
-          steps; it keeps every observation and does not solve feature leverage. It can perform
-          worse than the benchmarks. Repeated experiments can overfit the test period.
-        </p>
+        {family === 'arima' ? (
+          <p className="footnote">
+            ARIMA({arimaP}, 1, {arimaQ}) · log prices with drift. One difference (d = 1), no
+            seasonality or extra context features. One training-only fit serves every horizon; the
+            same 90-close filter is used for testing and inference, without refitting. Supports up
+            to 1,000 candles and 14 days. Constant-return, unstable or nonconverged fits are
+            rejected. Choose orders explicitly and compare the held-out benchmarks; repeated
+            experiments can overfit this history.
+          </p>
+        ) : (
+          <p className="footnote">
+            Optional context adds mean return, volatility, downside RMS, positive-return share,
+            drawdown and distance from the trailing mean, using only the same past window. Extra
+            features are not guaranteed to improve results. The optional neural model uses 8 tanh
+            units, a fixed seed and 120 full-batch Adam steps, with training-only scaling and a
+            1,000-candle / 14-day limit. It may perform worse than ridge or the naïve baseline. Each
+            horizon is fitted separately for ridge, Huber and neural models. No final full-data
+            refit or automatic best-model selection. Huber uses fixed-scale robust loss,
+            training-only median/MAD scaling and at most 60 IRLS steps; it keeps every observation
+            and does not solve feature leverage. It can perform worse than the benchmarks. Repeated
+            experiments can overfit the test period.
+          </p>
+        )}
       </details>
       <div className="forecast-workspace-actions">
         <button
@@ -458,14 +510,22 @@ export function ForecastWorkspace() {
                           : 'Trained · research model'}
                   </Badge>
                   <span>
-                    {report.model.engine} · lags {report.model.parameters.lags} · penalty{' '}
-                    {report.model.parameters.alpha}
-                    {report.model.parameters.family === 'huber' &&
-                      ` · Huber δ ${report.model.parameters.huber_delta}`}{' '}
-                    ·{' '}
-                    {report.model.parameters.feature_set === 'returns_context'
-                      ? 'Returns + 6 context features'
-                      : 'Return lags only'}
+                    {report.model.engine}
+                    {report.model.parameters.family === 'arima' ? (
+                      ` · ARIMA(${report.model.parameters.arima_p},1,${report.model.parameters.arima_q}) · 90-close filter context`
+                    ) : (
+                      <>
+                        {' '}
+                        · lags {report.model.parameters.lags} · penalty{' '}
+                        {report.model.parameters.alpha}
+                        {report.model.parameters.family === 'huber' &&
+                          ` · Huber δ ${report.model.parameters.huber_delta}`}{' '}
+                        ·{' '}
+                        {report.model.parameters.feature_set === 'returns_context'
+                          ? 'Returns + 6 context features'
+                          : 'Return lags only'}
+                      </>
+                    )}
                   </span>
                   <code title={report.model.fingerprint}>
                     {report.model.fingerprint.slice(0, 14)}…
@@ -571,9 +631,11 @@ export function ForecastWorkspace() {
                                   model:
                                     report.model.parameters.family === 'mlp'
                                       ? 'Trained neural model'
-                                      : report.model.parameters.family === 'huber'
-                                        ? 'Trained Huber model'
-                                        : 'Trained ridge model',
+                                      : report.model.parameters.family === 'arima'
+                                        ? 'Trained ARIMA model'
+                                        : report.model.parameters.family === 'huber'
+                                          ? 'Trained Huber model'
+                                          : 'Trained ridge model',
                                   naive: 'Naïve · last close',
                                   drift: 'Training-mean log drift',
                                 }[method]

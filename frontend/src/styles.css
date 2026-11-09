@@ -11461,6 +11461,29 @@ details[open] > summary {
   background: #eaf5f1;
   border-right: 0;
 }
+.forecast-partitions.forecast-arima-evidence {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.forecast-arima-evidence > div:nth-child(3) {
+  border-right: 3px solid var(--surface);
+}
+.forecast-arima-evidence > div:last-child {
+  background: #f2f0fa;
+  border-right: 0;
+}
+@media (max-width: 1000px) {
+  .forecast-partitions.forecast-arima-evidence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 800px) {
+  .forecast-partitions.forecast-arima-evidence {
+    grid-template-columns: 1fr;
+  }
+  .forecast-arima-evidence > div:nth-child(3) {
+    border-right: 0;
+  }
+}
 .forecast-partitions strong {
   text-transform: capitalize;
   font-size: 12px;

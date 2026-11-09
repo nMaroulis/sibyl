@@ -22,6 +22,7 @@ dependencies = [
   "ccxt>=4.5,<5",
   "numpy>=2.2,<3",
   "scipy>=1.14,<2",
+  "statsmodels>=0.14.6,<0.15",
   "pandas>=2.2,<4",
   "vadersentiment>=3.3.2,<4",
   "tzdata>=2024.1",

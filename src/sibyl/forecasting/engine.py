@@ -12,6 +12,7 @@ import math
 
 import numpy as np
 
+from sibyl.forecasting.families.arima import ARIMAForecaster
 from sibyl.forecasting.families.huber import MAX_CANDLES as HUBER_MAX_CANDLES
 from sibyl.forecasting.families.huber import HuberAR
 from sibyl.forecasting.families.neural import TinyMLP
@@ -25,8 +26,12 @@ def engine_for(feature_set="returns", family="ridge"):
     """Keep the legacy engine exact and identify the optional richer causal recipe separately."""
     if feature_set not in {"returns", "returns_context"}:
         raise ValueError("Unsupported forecast feature recipe.")
-    if family not in {"ridge", "mlp", "huber"}:
+    if family not in {"ridge", "mlp", "huber", "arima"}:
         raise ValueError("Unsupported numerical forecast family.")
+    if family == "arima":
+        if feature_set != "returns":
+            raise ValueError("ARIMA does not use the optional context-feature recipe.")
+        return "chronos-arima-1"
     if family == "huber":
         return "chronos-huber-context-1" if feature_set == "returns_context" else "chronos-huber-1"
     if family == "mlp":
@@ -36,6 +41,15 @@ def engine_for(feature_set="returns", family="ridge"):
 
 def parameters(request):
     """Preserve legacy artifact parameters byte-for-byte when richer features are not selected."""
+    if request.family == "arima":
+        return {
+            "family": "arima",
+            "arima_p": request.arima_p,
+            "arima_q": request.arima_q,
+            "difference": 1,
+            "context_candles": 90,
+            "max_horizon": request.max_horizon,
+        }
     values = {key: getattr(request, key) for key in ("lags", "alpha", "max_horizon")}
     if request.family == "huber":
         values["huber_delta"] = request.huber_delta
@@ -120,6 +134,15 @@ def metrics(actual, predicted):
     return result
 
 
+def calibrated_radius(logs, predictions, calibration, horizon, lags=0):
+    """Fix the empirical log-error radius using only the retained calibration targets."""
+    residuals = np.abs(logs[calibration + horizon] - logs[calibration] - predictions[calibration - lags])
+    rank = math.ceil((len(residuals) + 1) * COVERAGE)
+    if rank > len(residuals):
+        raise ValueError("Not enough calibration observations for the selected interval.")
+    return float(np.sort(residuals)[rank - 1])
+
+
 def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ridge", huber_delta=1.35):
     """Fit one causal numerical model and calibrate it using only the supplied earlier partitions."""
     if len(training) < max(60, 3 * x.shape[1]) or len(calibration) < 20:
@@ -147,11 +170,7 @@ def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ri
         predictions = intercept + ((x - mean) / scale) @ coefficients
     else:
         raise ValueError("Unsupported forecast family.")
-    residuals = np.abs(logs[calibration + horizon] - logs[calibration] - predictions[calibration - lags])
-    rank = math.ceil((len(residuals) + 1) * COVERAGE)
-    if rank > len(residuals):
-        raise ValueError("Not enough calibration observations for the selected interval.")
-    radius = float(np.sort(residuals)[rank - 1])
+    radius = calibrated_radius(logs, predictions, calibration, horizon, lags)
     model = {
         "horizon": horizon,
         "mean": mean.tolist(),
@@ -205,15 +224,21 @@ def score_horizon(logs, times, predictions, model, test, drift, lags):
 
 
 def train(candles, request):
-    """Fit independently for each horizon and retain reproducible artifacts and test evidence."""
+    """Fit the selected numerical recipe and retain reproducible artifacts and independent evidence."""
     logs, times = validate(candles, 360)
-    n, lags = len(logs), request.lags
+    n, lags = len(logs), 0 if request.family == "arima" else request.lags
     if request.family == "mlp" and (n > 1000 or request.max_horizon > 14):
         raise ValueError("Neural training is limited to 1,000 candles and 14 forecast days.")
     if request.family == "huber" and n > HUBER_MAX_CANDLES:
         raise ValueError("Huber training supports at most 2,000 actual input candles.")
     train_end, calibration_end = math.floor(n * 0.6), math.floor(n * 0.8)
-    x = features(logs, lags, request.feature_set)
+    if request.family == "arima" and (n > 1000 or request.max_horizon > 14):
+        raise ValueError("ARIMA supports at most 1,000 actual input candles and 14 forecast days.")
+    arima = None
+    if request.family == "arima":
+        arima = ARIMAForecaster.fit(logs[:train_end], request.arima_p, request.arima_q)
+        panel = ARIMAForecaster.panel(arima, logs, range(train_end, n), request.max_horizon)
+    x = None if arima else features(logs, lags, request.feature_set)
     fitted, evaluation = [], []
     drift = float(np.diff(logs[:train_end]).mean())
     for horizon in range(1, request.max_horizon + 1):
@@ -222,9 +247,26 @@ def train(candles, request):
         test = np.arange(calibration_end, n - horizon)
         if len(training) < max(60, 3 * lags) or min(len(calibration), len(test)) < 20:
             raise ValueError("The selected horizon needs more training/calibration/test observations.")
-        model, predictions = fit_horizon(
-            logs, x, lags, request.alpha, horizon, training, calibration, request.family, request.huber_delta
-        )
+        if arima:
+            predictions = panel[:, horizon - 1]
+            model = {
+                "horizon": horizon,
+                "radius": calibrated_radius(logs, predictions, calibration, horizon),
+                "training_samples": arima["training"]["training_returns"],
+                "calibration_samples": len(calibration),
+            }
+        else:
+            model, predictions = fit_horizon(
+                logs,
+                x,
+                lags,
+                request.alpha,
+                horizon,
+                training,
+                calibration,
+                request.family,
+                request.huber_delta,
+            )
         fitted.append(model)
         evaluation.append(score_horizon(logs, times, predictions, model, test, drift, lags))
     artifact = {
@@ -283,6 +325,17 @@ def train(candles, request):
             artifact["notes"].append(
                 "At least one Huber horizon reached its iteration limit. The retained bounded fit is not reported as converged; inspect training evidence before interpreting it."
             )
+    if arima:
+        artifact["algorithm"] = (
+            f"Nonseasonal ARIMA({request.arima_p},1,{request.arima_q}) on log prices with drift"
+        )
+        artifact["arima"] = arima
+        artifact["notes"].append(
+            "One native statsmodels ARMA fit on training-only standardized daily log returns defines ARIMA(p,1,q) on log prices with drift. Stationarity/invertibility are enforced; failed or degenerate fits are rejected. Orders are chosen explicitly, never by test scores."
+        )
+        artifact["notes"].append(
+            "Every evaluation/inference origin filters exactly the most recent 90 closes with unchanged parameters. Filtering updates state using observed data; it does not refit or smooth with future prices. All horizons share coefficients; each has its own held-out empirical radius. Point prices exponentiate predicted log prices without a lognormal mean correction."
+        )
     fingerprint(artifact)  # Reject any non-finite persisted artifact.
     return artifact
 
@@ -293,6 +346,8 @@ def predict(artifact, candles, horizon):
         artifact["parameters"].get("feature_set", "returns"), artifact["parameters"].get("family", "ridge")
     ):
         raise ValueError("This forecast engine version is not supported by the installed application.")
+    if artifact["parameters"].get("family") == "arima":
+        return arima_prediction(artifact, candles, horizon)
     lags = artifact["parameters"]["lags"]
     logs, times = validate(candles, lags + 1)
     if not 1 <= horizon <= len(artifact["models"]):
@@ -333,6 +388,46 @@ def predict(artifact, candles, horizon):
                 if artifact["parameters"].get("feature_set") == "returns_context"
                 else "Lag features outside observed training ranges; a descriptive warning, not a calibrated regime-change test."
             ),
+        },
+        "note": "A fitted research model with empirical calibration. Future coverage and profitable trades are not guaranteed.",
+    }
+
+
+def arima_prediction(artifact, candles, horizon):
+    """Forecast unchanged native ARIMA parameters with the same context used for evaluation."""
+    logs, times = validate(candles, 90)
+    if not 1 <= horizon <= len(artifact["models"]):
+        raise ValueError("Choose a horizon supported by this trained model.")
+    fitted = artifact["arima"]
+    returns = ARIMAForecaster.forecast(fitted, logs, horizon)
+    points = []
+    for h, (change, model) in enumerate(zip(returns, artifact["models"][:horizon], strict=True), 1):
+        low, value, high = prices(
+            [logs[-1] + change - model["radius"], logs[-1] + change, logs[-1] + change + model["radius"]]
+        )
+        points.append(
+            {
+                "timestamp": iso(times[-1] + (h + 1) * step_ms("1d")),
+                "value": float(value),
+                "lower": float(low),
+                "upper": float(high),
+            }
+        )
+    observed = np.diff(logs[-90:])
+    return {
+        "trained": True,
+        "model": artifact["algorithm"],
+        "horizon": horizon,
+        "origin": iso(times[-1] + step_ms("1d")),
+        "last_price": float(np.exp(logs[-1])),
+        "points": points,
+        "nominal_coverage": COVERAGE,
+        "shift": {
+            "outside_training_range": int(
+                np.sum((observed < fitted["return_min"]) | (observed > fitted["return_max"]))
+            ),
+            "features": len(observed),
+            "note": "Recent daily returns outside the observed training range; descriptive, not a calibrated regime-change test.",
         },
         "note": "A fitted research model with empirical calibration. Future coverage and profitable trades are not guaranteed.",
     }

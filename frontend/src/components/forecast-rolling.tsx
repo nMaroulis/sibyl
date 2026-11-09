@@ -105,8 +105,13 @@ export function ForecastRolling({
     ...settings,
     ...(settings.window === 'rolling' ? { training_days: trainingDays } : {}),
   };
+  const lags = model.parameters.lags ?? 0;
   const minimumTrain =
-    model.parameters.lags + Math.max(60, 3 * model.parameters.lags) + settings.horizon;
+    model.parameters.family === 'arima'
+      ? 120
+      : lags +
+        Math.max(60, 3 * (lags + (model.parameters.feature_set === 'returns_context' ? 6 : 0))) +
+        settings.horizon;
   const availableTrain =
     model.dataset.count - settings.folds * settings.test_days - settings.calibration_days;
   const validNumbers =

@@ -202,6 +202,7 @@ class ForecastModels:
             "test_trace": artifact["evaluation"][horizon - 1]["trace"],
             "trace_horizon": horizon,
             "nominal_coverage": artifact["nominal_coverage"],
+            **({"arima_training": artifact["arima"]["training"]} if "arima" in artifact else {}),
             "outputs": self.outputs(identity),
         }
 

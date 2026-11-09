@@ -32,7 +32,7 @@ upper(h)    = P × exp(μ × h + 1.96 × σ × sqrt(h))
 
 The interface shows 7, 14, or 30 days; the API accepts 1–30. The band is a theoretical approximate 95% model interval under constant drift/volatility assumptions. It has not been empirically calibrated. The central curve is a log-return baseline, not an arithmetic expected-price estimate or a trained ML forecast.
 
-The separate **Trained models** tab fits daily autoregressive ridge models, with saved input, numbered versions, chronological held-out evaluation and empirical calibration. See [Trained forecasts with Chronos](forecasting.md). Neural/ARIMA and other model families remain pending.
+The separate **Trained models** tab fits daily ridge, fixed-scale Huber, native nonseasonal ARIMA and small neural models, with saved input, numbered versions, chronological held-out evaluation and empirical calibration. See [Trained forecasts with Chronos](forecasting.md). Additional neural/model families, seasonal/exogenous variants and larger real-market studies remain pending.
 
 ## Wiki: curated education
 

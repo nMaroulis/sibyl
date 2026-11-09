@@ -11,7 +11,7 @@
 
 A smaller **Try with Demo prices** action uses synthetic daily candles through the same engine. It does not activate Demo accounts or change your market source. Demo-trained models and forecasts remain labeled. Missing history, gaps, unfinished days and provider failures do not trigger Demo substitution.
 
-Only one fit runs per workspace at a time. Current-feed pages are bounded to 720 candles; saved inputs support up to 5,000 for ridge, 2,000 for Huber and 1,000 for the small neural model. The registry retains at most 100 versions. Fitting is a bounded local research operation. Separate opt-in drift policies can schedule candidate recalibration; they never promote a candidate automatically.
+Only one fit runs per workspace at a time. Current-feed pages are bounded to 720 candles; saved inputs support up to 5,000 for ridge, 2,000 for Huber and 1,000 for ARIMA or the small neural model. The registry retains at most 100 versions. Fitting is a bounded local research operation. Separate opt-in drift policies can schedule candidate recalibration; they never promote a candidate automatically.
 
 ## What the model learns
 
@@ -19,7 +19,7 @@ By default, for each future horizon Chronos fits a separate **ridge regression**
 
 The next 20% supplies calibration errors. The last 20% supplies independent test targets. Examples whose target would cross a partition boundary are excluded. Models remain fixed after training; there is no hidden refit on the full dataset, automatic parameter optimization or selection using the test period.
 
-Repeatedly trying settings after looking at test results can still overfit that period. Ridge is the default; robust Huber and a small neural model are optional. None uses ARIMA, LSTM or pretrained foundation-model weights.
+Repeatedly trying settings after looking at test results can still overfit that period. Ridge is the default; robust Huber, nonseasonal ARIMA and a small neural model are optional. ARIMA fits one parameter vector shared across horizons, as described below. LSTM and pretrained foundation-model weights are not included.
 
 ## Read the evaluation
 
@@ -74,7 +74,7 @@ The input-shift check counts lag features outside the training sample's observed
 
 ## Remaining work
 
-The [Live forecast scorecard](forecast-outcomes.md) compares saved prospective predictions with actual closes. ARIMA and additional neural/model families, richer features, real-data drift/calibration studies and larger model lifecycle management remain in the [planning checklist](../developers/backend-roadmap.md).
+The [Live forecast scorecard](forecast-outcomes.md) compares saved prospective predictions with actual closes. Additional neural/model families, seasonal/exogenous inputs, real-data drift/calibration studies and larger model lifecycle management remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Trained forecast origins and chart targets use the daily candle close time, when the close becomes available. Raw dataset timestamps and partition boundaries retain the archive’s opening-time convention; a target close can equal the exclusive end boundary of the partition containing its candle.
 
@@ -82,7 +82,7 @@ Trained forecast origins and chart targets use the daily candle close time, when
 
 **Model library → Export portable bundle** downloads a JSON package with the training recipe, recorded numerical evidence and complete immutable daily input. In another workspace, expand **Import a model from another workspace**, choose the file and select **Import & verify**. Sibyl verifies the data and hashes, then fits the recipe locally; uploaded coefficients and scores never become trusted computed results.
 
-Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the supported ridge/Huber/neural engines with each family’s input bounds (at least 360 closed daily candles) and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
+Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the supported ridge/Huber/ARIMA/neural engines with each family’s input bounds (at least 360 closed daily candles) and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
 
 **Archive model** hides a version from the default picker and disables new saved forecasts. **Show archived versions → Restore model** brings it back. Saved outputs, evaluations and any existing outcome monitors remain intact; archiving neither deletes storage nor silently pauses monitors. Pause outcome tracking separately if needed. Read-only Chronos help explains these controls and can inspect archived versions on request.
 
@@ -98,7 +98,7 @@ Exact reruns, rolling studies, saved/current-input forecasts, portable bundle im
 
 Open **Train model → Model settings & assumptions → Numerical model** and choose **Small neural network**. Ridge stays the default. The optional network learns eight tanh hidden units from the same causal return features, with a fixed seed and 120 Adam steps. It needs no LLM, GPU or extra ML package. Inputs are limited to 360–1,000 closed consecutive daily candles and forecasts to 14 days; current/Demo pages retain their 720-candle limit.
 
-**Neural training evidence** shows actual initial/final training objective and architecture per horizon. A lower training loss is not proof of predictive skill: compare the independent test results with naive/drift, inspect calibrated coverage, and run rolling evaluation. The calibration/test data never choose weights, training normalization or iteration count. The selected family is retained through exact-input reruns, saved forecasts, portable local refits and Chronos evidence. Demo prices remain explicitly synthetic. Other neural families and ARIMA are pending.
+**Neural training evidence** shows actual initial/final training objective and architecture per horizon. A lower training loss is not proof of predictive skill: compare the independent test results with naive/drift, inspect calibrated coverage, and run rolling evaluation. The calibration/test data never choose weights, training normalization or iteration count. The selected family is retained through exact-input reruns, saved forecasts, portable local refits and Chronos evidence. Demo prices remain explicitly synthetic. Other neural families remain pending; ARIMA has its own settings below.
 
 ## Try robust Huber autoregression
 
@@ -109,3 +109,16 @@ Open **Train model → Model settings & assumptions → Numerical model → Hube
 **Huber training evidence** shows actual iterations, whether the fit converged or reached its 60-step limit, residual cutoff, downweighted samples/effective weights and initial/final training objective. A step-limit result stays visibly unconverged. Convergence and a smaller training loss are not evidence of future accuracy; compare independent MAE/RMSE, naive/drift skill and empirical interval coverage. Loss scales differ across horizons.
 
 Huber supports 360–2,000 consecutive closed daily candles and up to 30 forecast days; current/Demo pages still provide at most 720 candles. Both return-only and trend/volatility features work. Exact-input reruns, rolling studies, portable local refits and explicit recalibration candidates keep the chosen delta and family. Models, forecasts and Demo input retain the existing labels and source boundaries. Chronos can explain the saved diagnostics but cannot train or select a model for you.
+
+
+## Try ARIMA
+
+In **Train model → Model settings & assumptions → Numerical model**, choose **ARIMA · returns & innovations**. Set autoregressive order **p** (1–3) and moving-average order **q** (0–2). One log-price difference (**d = 1**) and drift are fixed; no seasonality or extra context features are included. Lag/penalty controls for the other families are hidden because they do not apply. Ridge stays the default.
+
+One native statsmodels model is fitted only on the training partition, using training-only return normalization. Its parameters stay fixed across all horizons. At each forecast origin, the native filter processes exactly the latest 90 observed closes and predicts the following returns; it does not refit or use future smoothing. Historical evaluation and saved/current-feed forecasts use this same context. Point prices exponentiate predicted log prices; they are not a variance-adjusted expected price.
+
+**ARIMA training evidence** shows actual convergence, optimizer iterations, coefficients, training log likelihood and AIC/BIC. The criteria use standardized training returns and are comparable only for identical training input/scaling. They do not demonstrate future accuracy. Compare independent price errors, naïve/drift benchmarks, empirical band coverage and rolling periods. Bands use held-out residuals, not the library's Gaussian confidence intervals.
+
+Inputs are bounded to 360–1,000 consecutive closed daily candles, with a 1–14 day horizon; current/Demo pages remain capped at 720. Constant or effectively constant returns cannot identify this model and fail explicitly, as do nonconverged/numerically unstable fits. The app retains no substitute model. Try another order/input or inspect the separate statistical baseline deliberately.
+
+Exact reruns, rolling studies, portable local refits, saved/current-input forecasts and explicit retained-source recalibration candidates preserve p/q and the context recipe. Models remain JSON, never uploaded executable weights. **Try with Demo prices** uses synthetic input without activating a Demo account. Chronos reads the actual evidence and explains these controls; it cannot train, select or deploy a model. Seasonal/exogenous ARIMA variants, further model families and larger real-market validation remain pending.

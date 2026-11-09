@@ -4,6 +4,7 @@ import type { ForecastDetail, HuberTraining, NeuralTraining } from '../../lib/fo
 
 /** Training receipts explain fitting; independent test errors remain the accuracy evidence. */
 export function ForecastTrainingEvidence({ report }: { report: ForecastDetail }) {
+  if (report.arima_training) return <ARIMAEvidence report={report} />;
   if (!report.training?.length) return null;
   const huber = report.model.parameters.family === 'huber';
   const robust = report.training.filter((fit): fit is HuberTraining => fit.family === 'huber');
@@ -91,6 +92,78 @@ export function ForecastTrainingEvidence({ report }: { report: ForecastDetail })
           guarantees future accuracy.
         </p>
       )}
+    </details>
+  );
+}
+
+function ARIMAEvidence({ report }: { report: ForecastDetail }) {
+  const fit = report.arima_training!;
+  const params = report.model.parameters;
+  return (
+    <details className="forecast-advanced">
+      <summary>ARIMA training evidence</summary>
+      <p className="footnote">
+        ARIMA({params.arima_p},1,{params.arima_q}) · {fit.library} {fit.library_version}. One
+        training-only fit serves all horizons. Parameters stay fixed while the native filter
+        processes the latest 90 observed closes at each origin; no future-price smoothing or
+        test-driven order search.
+      </p>
+      <div className="forecast-partitions forecast-arima-evidence">
+        <div>
+          <span>Fit status</span>
+          <strong>{fit.converged ? 'Converged' : 'Not converged'}</strong>
+          <small>
+            {fit.iterations}/{fit.max_iterations} optimizer iterations
+          </small>
+        </div>
+        <div>
+          <span>Training returns</span>
+          <strong>{fit.training_returns}</strong>
+          <small>{fit.estimator}</small>
+        </div>
+        <div>
+          <span>AIC / BIC</span>
+          <strong>
+            {number(fit.aic, 2)} / {number(fit.bic, 2)}
+          </strong>
+          <small>Training fit criteria</small>
+        </div>
+        <div>
+          <span>Log likelihood</span>
+          <strong>{number(fit.log_likelihood, 2)}</strong>
+          <small>{fit.scale_units}</small>
+        </div>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Native parameter</th>
+              <th>Fitted value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(fit.parameter_values).map(([name, value]) => (
+              <tr key={name}>
+                <td>{name}</td>
+                <td>{number(value, 6)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {fit.warning_categories.length > 0 && (
+        <p className="footnote">
+          Fit warnings: {fit.warning_categories.join(', ')}. Inspect independent test results before
+          interpreting this model.
+        </p>
+      )}
+      <p className="footnote">
+        Convergence, likelihood and information criteria describe training fit, not future accuracy.
+        AIC/BIC are comparable only on identical training observations and scaling. Compare held-out
+        price errors, naïve/drift benchmarks and empirical band coverage. Bands use held-out
+        residuals, not the library’s Gaussian intervals.
+      </p>
     </details>
   );
 }
