@@ -53,4 +53,4 @@ Opted-in alert evidence, account labels and valuations may pass through the sele
 
 :::
 
-Known-terminal receipts retain about 200 per rule; unresolved uncertain receipts remain inspectable. Generic outbound webhooks/native push and non-Telegram **scheduled research briefings** remain separate pending work. Real provider acceptance is a deployment check; offline tests use controlled HTTP/SMTP responses.
+Known-terminal receipts retain about 200 per rule; unresolved uncertain receipts remain inspectable. Generic outbound webhooks/native push and additional media remain separate pending work. Scheduled text briefings support all six checked routes. Real provider acceptance is a deployment check; offline tests use controlled HTTP/SMTP responses.

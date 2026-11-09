@@ -91,14 +91,19 @@ class NotificationOutbox:
         guard = self.authorizers.get(delivery.get("kind", "briefing"))
         return bool(guard and guard(delivery))
 
-    def enqueue(self, origin_id, schedule, run, text, now):
+    def enqueue(self, origin_id, schedule, run, text, now, *, accepted_route=None):
         """Queue one completed report once, without making any HTTP request."""
-        filename = (
-            f"sibyl-briefing-{run['id']}.txt" if schedule.get("telegram_format") == "document" else None
+        from sibyl.investigations.scheduling.contracts import (
+            delivery_binding,
+            delivery_channel,
+            message_format,
         )
+
+        channel = delivery_channel(schedule) or "telegram"
+        filename = f"sibyl-briefing-{run['id']}.txt" if message_format(schedule) == "document" else None
         return self.enqueue_message(
             origin_id,
-            schedule.get("telegram_binding") or {},
+            delivery_binding(schedule),
             text,
             now,
             datetime.fromisoformat(run["finished_at"]).timestamp() + 3600,
@@ -111,6 +116,8 @@ class NotificationOutbox:
                 "report_version": run.get("version"),
             },
             filename=filename,
+            channel=channel,
+            accepted_route=accepted_route,
         )
 
     def enqueue_message(
@@ -126,6 +133,7 @@ class NotificationOutbox:
         db=None,
         filename=None,
         channel="telegram",
+        accepted_route=None,
     ):
         """Persist explicitly authorized text, optionally in the caller's cursor transaction.
 
@@ -141,6 +149,13 @@ class NotificationOutbox:
                 document_bytes(text, filename)
             except ValueError as exc:
                 error = str(exc)
+        if accepted_route is not None and (
+            not accepted_route.get("ready")
+            or accepted_route.get("channel") != channel
+            or accepted_route.get("revision") != profile.get("revision")
+            or accepted_route.get("control_id") != profile.get("control_id")
+        ):
+            error = "The private connection was unavailable or changed after this briefing was accepted. The report stays local."
         if not error:
             if (profile.get("bot_id"), profile.get("allowed_user_id")) != (
                 binding.get("bot_id"),
@@ -175,11 +190,15 @@ class NotificationOutbox:
             "id": uuid4().hex,
             "origin_id": origin_id,
             "preview": text[:240],
-            "connection_revision": profile.get("revision"),
+            "connection_revision": accepted_route.get("revision")
+            if accepted_route is not None
+            else profile.get("revision"),
             "bot_id": binding.get("bot_id"),
-            "control_id": profile.get("control_id"),
+            "control_id": accepted_route.get("control_id")
+            if accepted_route is not None
+            else profile.get("control_id"),
             "recipient_id": binding.get("recipient_id"),
-            "bot_username": profile.get("bot_username"),
+            "bot_username": binding.get("bot_username") or profile.get("bot_username"),
             "expires_at": expiry,
             "status": "skipped" if error else "pending",
             "error": error,
@@ -295,6 +314,7 @@ class NotificationOutbox:
         schedule_id=None,
         rule_id=None,
         policy_revision=None,
+        before_schedule_revision=None,
         connection_revision=None,
         channel=None,
         reason,
@@ -311,6 +331,10 @@ class NotificationOutbox:
                     (channel and item.get("channel", "telegram") != channel)
                     or (schedule_id and item.get("schedule_id") != schedule_id)
                     or (connection_revision and item["connection_revision"] != connection_revision)
+                    or (
+                        before_schedule_revision is not None
+                        and item.get("schedule_revision", 0) >= before_schedule_revision
+                    )
                     or (rule_id and item.get("rule_id") != rule_id)
                     or (policy_revision is not None and item.get("policy_revision") != policy_revision)
                 ):

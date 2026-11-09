@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Mail } from 'lucide-react';
 import { DeliveryInspector } from './delivery-review';
 import { Badge } from '../ui';
+import '../../styles/message-destinations.css';
+import '../../styles/message-receipts.css';
 
 export type MessageDelivery = {
   id: string;

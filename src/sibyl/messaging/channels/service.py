@@ -112,6 +112,11 @@ class PrivateChannels:
                 if key in profile and field.annotation is not SecretStr
             },
             has_credentials=bool(profile.get("revision")),
+            briefings=self.notifications.summary(
+                profile.get("revision", ""), kind="briefing", channel=channel
+            )
+            if self.notifications
+            else {},
             notifications=self.notifications.summary(
                 profile.get("revision", ""), kind="alert", channel=channel
             )

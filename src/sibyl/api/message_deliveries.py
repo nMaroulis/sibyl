@@ -30,6 +30,12 @@ def history(
     return s.messaging.notifications.history(kind=kind, limit=limit, offset=offset)
 
 
+@router.get("/targets")
+def targets(s: S):
+    """Read checked private destinations without provider probes or secret values."""
+    return s.messaging.notifications.routes.targets()
+
+
 @router.get("/{identity}")
 def detail(identity: str, s: S):
     """Read exact saved text and native confirmations; credentials are never returned."""

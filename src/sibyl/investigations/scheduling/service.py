@@ -1,8 +1,8 @@
-"""Calendar admission, read-only investigation runs and explicit Telegram handoff.
+"""Calendar admission, read-only investigation runs and explicit private delivery handoff.
 
 ProtoLink continues to own the complete AI run. This service owns only calendar
 policies, missed occurrences, the private accepted model snapshot and delivery
-authorization. No model or Telegram provider is contacted by saving a schedule.
+authorization. No model or messaging provider is contacted by saving a schedule.
 """
 
 import asyncio
@@ -13,6 +13,7 @@ from sibyl.agents.utils.network import ModelRequired
 from sibyl.investigations.contracts import InvestigationRun
 from sibyl.investigations.repository import ACTIVE as ACTIVE_REPORTS
 from sibyl.investigations.repository import InvestigationConflict
+from sibyl.investigations.scheduling.contracts import delivery_binding, delivery_channel, message_format
 from sibyl.investigations.scheduling.delivery import briefing_text
 from sibyl.investigations.scheduling.repository import BriefingConflict, BriefingRepository
 
@@ -25,7 +26,7 @@ class BriefingScheduler:
         self.store = investigations.repository.store
         self.repository = BriefingRepository(self.store)
         self.clock = clock or (lambda: datetime.now(UTC))
-        self._models: dict[str, tuple[str, object]] = {}
+        self._models: dict[str, tuple[str, int, object]] = {}
         self._tick_lock = asyncio.Lock()
         self._closed = False
         self.last_tick = None
@@ -51,8 +52,13 @@ class BriefingScheduler:
             pass
 
     def _binding(self, body):
-        if not body.telegram:
+        if body.channel is None:
             return None
+        if body.channel != "telegram":
+            try:
+                return self.messaging.notifications.routes.binding(body.channel, body.private_target)
+            except ValueError as exc:
+                raise BriefingConflict(str(exc)) from exc
         profile = self.messaging.settings.profile()
         if not profile.get("verified") or not profile.get("bot_token") or not profile.get("bot_id"):
             raise BriefingConflict(
@@ -74,40 +80,52 @@ class BriefingScheduler:
     def create(self, investigation_id, body):
         """Save a future calendar, with optional delivery bound to the reviewed private recipient."""
         self.investigations.repository.get(investigation_id)
-        return self.repository.create(investigation_id, body, self._binding(body), self.clock())
+        with self.store.vault.lock:
+            return self.repository.create(investigation_id, body, self._binding(body), self.clock())
 
     def edit(self, identity, body):
         """Review changed calendars/recipients; cancel waiting work and unsent old deliveries."""
-        schedule = self.repository.edit(identity, body, self._binding(body), self.clock())
-        self._withdraw(identity)
+        with self.store.vault.lock:
+            schedule = self.repository.edit(identity, body, self._binding(body), self.clock())
+        self._withdraw(identity, schedule["revision"])
         return schedule
 
     def change(self, identity, body):
         """Pause/resume/archive future work; an admitted report is stopped in Investigations."""
         original = self.repository.get(identity)
         if body.action == "resume":
-            old = self.repository.get(identity)
-            profile = self.messaging.settings.profile()
-            binding = old.get("telegram_binding") or {}
-            if old["telegram"] and (
-                not profile.get("verified")
-                or profile.get("bot_id") != binding.get("bot_id")
-                or profile.get("allowed_user_id") != binding.get("recipient_id")
-            ):
-                raise BriefingConflict(
-                    "Telegram changed. Edit and review delivery before resuming this schedule."
-                )
+            channel = delivery_channel(original)
+            if channel:
+                profile = self.messaging.notifications.routes.profile(channel)
+                binding = delivery_binding(original)
+                if (
+                    not profile.get("verified")
+                    or profile.get("bot_id") != binding.get("bot_id")
+                    or profile.get("allowed_user_id") != binding.get("recipient_id")
+                    or (
+                        channel != "telegram"
+                        and (
+                            profile.get("revision") != binding.get("connection_revision")
+                            or profile.get("target_id") != binding.get("target_id")
+                        )
+                    )
+                ):
+                    raise BriefingConflict(
+                        "The checked private connection changed. Edit and review delivery before resuming this schedule."
+                    )
         schedule = self.repository.change(identity, body, self.clock())
         if schedule["revision"] != original["revision"]:
-            self._withdraw(identity)
+            self._withdraw(identity, schedule["revision"])
         return schedule
 
-    def _withdraw(self, identity):
-        for occurrence_id, (schedule_id, _) in list(self._models.items()):
-            if schedule_id == identity:
+    def _withdraw(self, identity, before_revision):
+        for occurrence_id, (schedule_id, revision, _) in list(self._models.items()):
+            if schedule_id == identity and revision < before_revision:
                 self._models.pop(occurrence_id, None)
         self.messaging.notifications.invalidate(
-            schedule_id=identity, reason="The briefing schedule changed before delivery."
+            schedule_id=identity,
+            before_schedule_revision=before_revision,
+            reason="The briefing schedule changed before delivery.",
         )
 
     def require_deletable(self, investigation_id):
@@ -118,7 +136,19 @@ class BriefingScheduler:
     def _capture(self, occurrence):
         if occurrence["status"] == "waiting" and occurrence["id"] not in self._models:
             configuration = freeze(self.investigations.network.owner.models.for_turn("sibyl"))
-            self._models[occurrence["id"]] = (occurrence["schedule_id"], configuration)
+            schedule = self.repository.get(occurrence["schedule_id"])
+            channel = delivery_channel(schedule)
+            route = (
+                self.messaging.notifications.routes.accept(channel, delivery_binding(schedule))
+                if channel
+                else None
+            )
+            self.repository.update(occurrence["id"], delivery_snapshot=route)
+            self._models[occurrence["id"]] = (
+                occurrence["schedule_id"],
+                occurrence["schedule_revision"],
+                configuration,
+            )
 
     async def run_now(self, identity, body):
         """Explicitly request one additional briefing; leave the calendar time unchanged."""
@@ -167,7 +197,7 @@ class BriefingScheduler:
         if schedule is None:
             return
         try:
-            configuration = accepted[1]
+            configuration = accepted[2]
             readiness = self.investigations.network.status(configuration)
             if not readiness["ready"]:
                 raise ModelRequired(readiness["reason"])
@@ -221,9 +251,11 @@ class BriefingScheduler:
             return
         delivery_id, delivery_error = None, None
         schedule = self.repository.get(occurrence["schedule_id"])
-        if run["status"] == "completed" and occurrence.get("telegram_requested"):
+        if run["status"] == "completed" and occurrence.get(
+            "delivery_requested", occurrence.get("telegram_requested", False)
+        ):
             if (
-                not schedule["telegram"]
+                delivery_channel(schedule) is None
                 or schedule["revision"] != occurrence["schedule_revision"]
                 or schedule["status"] != "armed"
             ):
@@ -238,9 +270,10 @@ class BriefingScheduler:
                         definition["title"],
                         run,
                         schedule["delivery_format"],
-                        document=schedule.get("telegram_format") == "document",
+                        document=message_format(schedule) == "document",
                     ),
                     now,
+                    accepted_route=occurrence.get("delivery_snapshot") or {"ready": False},
                 )
                 delivery_id = delivery["id"]
         self.repository.update(
@@ -259,10 +292,19 @@ class BriefingScheduler:
             run = self.investigations.repository.run(delivery["investigation_id"], delivery["run_id"])
         except LookupError:
             return False
-        binding = schedule.get("telegram_binding") or {}
+        binding = delivery_binding(schedule)
+        channel = delivery_channel(schedule)
         return (
             schedule["status"] == "armed"
-            and schedule["telegram"]
+            and channel is not None
+            and channel == delivery.get("channel", "telegram")
+            and (
+                channel == "telegram"
+                or (
+                    binding.get("connection_revision") == delivery["connection_revision"]
+                    and binding.get("target_id") == delivery.get("target_id")
+                )
+            )
             and schedule["revision"] == delivery["schedule_revision"]
             and binding.get("bot_id") == delivery["bot_id"]
             and binding.get("recipient_id") == delivery["recipient_id"]
@@ -272,7 +314,10 @@ class BriefingScheduler:
     def detail(self, identity):
         """Read a calendar and actual report/delivery outcomes without submitting work."""
         schedule = self.repository.get(identity)
-        occurrences = self.repository.history(identity)
+        occurrences = [
+            {key: value for key, value in row.items() if key != "delivery_snapshot"}
+            for row in self.repository.history(identity)
+        ]
         with self.store.db() as db:
             available = {
                 row[0]

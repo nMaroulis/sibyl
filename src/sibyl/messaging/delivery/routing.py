@@ -122,6 +122,27 @@ class NotificationRoutes:
             bot_username=profile.get("bot_username", ""),
         )
 
+    def accept(self, channel, binding):
+        """Freeze only route identity/control state for a queued long-running report."""
+        profile = self.profile(channel)
+        intent = {
+            "channel": channel,
+            "connection_revision": profile.get("revision"),
+            "control_id": profile.get("control_id"),
+            "bot_id": binding.get("bot_id"),
+            "recipient_id": binding.get("recipient_id"),
+            "target_id": binding.get("target_id"),
+        }
+        ready = self.matches(intent, profile)
+        if channel != "telegram" and binding.get("connection_revision") != profile.get("revision"):
+            ready = False
+        return {
+            "channel": channel,
+            "revision": profile.get("revision"),
+            "control_id": profile.get("control_id"),
+            "ready": ready,
+        }
+
     def units(self, channel):
         if channel == "telegram":
             return 4000

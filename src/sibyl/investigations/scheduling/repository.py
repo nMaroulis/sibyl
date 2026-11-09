@@ -6,6 +6,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from sibyl.investigations.scheduling.calendar import next_occurrence
+from sibyl.investigations.scheduling.contracts import delivery_channel, message_format
 
 ACTIVE = {"waiting", "running"}
 GRACE_SECONDS = 15 * 60
@@ -43,7 +44,17 @@ class BriefingRepository:
         row = db.execute("SELECT payload FROM briefing_schedules WHERE id=?", (identity,)).fetchone()
         if row is None:
             raise LookupError("Briefing schedule not found.")
-        return json.loads(row[0])
+        return BriefingRepository._public_defaults(json.loads(row[0]))
+
+    @staticmethod
+    def _public_defaults(schedule):
+        """Project canonical fields without rewriting an older saved calendar."""
+        return {
+            **schedule,
+            "channel": delivery_channel(schedule),
+            "message_format": message_format(schedule),
+            "delivery_binding": schedule.get("delivery_binding") or schedule.get("telegram_binding"),
+        }
 
     @staticmethod
     def _write(db, schedule):
@@ -62,12 +73,13 @@ class BriefingRepository:
 
     def create(self, investigation_id, body, binding, now):
         """Save an explicit future calendar; creation never generates a report."""
-        values = body.model_dump(exclude={"enabled", "telegram_target"})
+        values = body.model_dump(exclude={"enabled", "telegram_target", "private_target"})
         schedule = {
             "id": uuid4().hex,
             "investigation_id": investigation_id,
             **values,
-            "telegram_binding": binding,
+            "delivery_binding": binding,
+            "telegram_binding": binding if body.channel == "telegram" else None,
             "status": "armed" if body.enabled else "paused",
             "revision": 1,
             "created_at": now.isoformat(),
@@ -114,7 +126,7 @@ class BriefingRepository:
                 "SELECT payload FROM briefing_schedules WHERE (? IS NULL OR investigation_id=?) AND (? OR status!='archived') ORDER BY rowid DESC LIMIT 100",
                 (investigation_id, investigation_id, archived),
             ).fetchall()
-        return [json.loads(row[0]) for row in rows]
+        return [self._public_defaults(json.loads(row[0])) for row in rows]
 
     def _cancel_waiters(self, db, identity, now):
         rows = db.execute(
@@ -137,9 +149,10 @@ class BriefingRepository:
             self._revision(schedule, body.revision)
             if schedule["status"] == "archived":
                 raise BriefingConflict("Create a new schedule instead of editing an archived calendar.")
-            schedule.update(body.model_dump(exclude={"revision", "telegram_target"}))
+            schedule.update(body.model_dump(exclude={"revision", "telegram_target", "private_target"}))
             schedule.update(
-                telegram_binding=binding,
+                delivery_binding=binding,
+                telegram_binding=binding if body.channel == "telegram" else None,
                 revision=schedule["revision"] + 1,
                 updated_at=now.isoformat(),
                 next_run_at=next_occurrence(schedule, now).isoformat()
@@ -179,7 +192,9 @@ class BriefingRepository:
             "schedule_id": schedule["id"],
             "investigation_id": schedule["investigation_id"],
             "schedule_revision": schedule["revision"],
-            "telegram_requested": schedule["telegram"],
+            "delivery_requested": delivery_channel(schedule) is not None,
+            "delivery_channel": delivery_channel(schedule),
+            "telegram_requested": delivery_channel(schedule) == "telegram",
             "trigger": trigger,
             "scheduled_for": scheduled_for,
             "requested_at": now.isoformat(),

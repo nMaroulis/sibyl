@@ -36,7 +36,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Discord private HTTP DMs, Slack Socket Mode and local Signal bridge clients with checked recipient binding, encrypted setup, durable inbox/outbox and native ProtoLink requests.
 - [x] Signed WhatsApp Cloud API webhooks and paired TLS IMAP/SMTP email clients using the shared private inbox/outbox.
 - [x] Six-channel private alert delivery through checked native clients, future-only policies, shared durable receipts, cancellation uncertainty and exact provider IDs.
-- [ ] Non-Telegram scheduled briefing delivery and media beyond Telegram; live external-service/processor acceptance.
+- [x] Six-channel scheduled briefings with one checked recipient, acceptance-time route controls, version-scoped withdrawal, native source/privacy projections and shared message review.
+- [ ] Additional media beyond Telegram and live external-service/processor acceptance.
 
 ## 5. Research and forecasting
 

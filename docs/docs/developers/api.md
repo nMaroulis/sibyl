@@ -318,3 +318,7 @@ Recent funding sync: version-checked opt-in controls at `POST /connections/{acco
 ### Private alert routing
 
 `GET /api/v1/alert-delivery/targets` reads checked private destinations without probing a provider. Rule policies can select one of six channels, with exact private connection-revision/identity consent. `/api/v1/message-deliveries/{id}` and its `/review` action expose provider-neutral queued-text review without resending or altering native outcomes. See [alert delivery contracts](alert-delivery.md).
+
+### Private briefing destinations
+
+Schedule create/edit accepts nullable `channel`, exact checked `telegram_target` or `private_target`, and `message_format`. Shared targets come from `/api/v1/message-deliveries/targets`; only Telegram supports documents. Acceptance-time route controls remain private to delivery and are excluded from agent schedule projections. See [briefing contracts](briefings.md).

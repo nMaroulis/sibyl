@@ -15,7 +15,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, service support and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
 | Strategy research              | partial       | Multi-asset deployment/rebalancing, separate ML/RL pipelines and optional Freqtrade.                                              |
-| Sibyl & messaging              | partial       | Broader grounding evaluation, non-Telegram briefings and live private-channel/media acceptance.                       |
+| Sibyl & messaging              | partial       | Broader grounding evaluation, additional media and live private-channel/processor acceptance.                       |
 | ProtoLink workflows            | partial       | Broader semantic/adversarial evaluation and additional scoped action contracts beyond approved local notes.                                   |
 | Forecasting                    | partial       | Additional trained families, forward calibration/evaluation and broader managed model lifecycles. |
 | Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                         |
@@ -178,7 +178,7 @@ Sibyl and the ten specialists start through ProtoLink 0.8.4 `AgentGroup` with re
 - [x] Sibyl uses native ProtoLink discovery/delegation, with delegation disabled for specialists; saved chats include collaboration evidence.
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.
 - [x] Mark unfinished requests interrupted on startup; block late consultations/answers after Stop and preserve already committed answers.
-- [x] Add daily/weekly investigation calendars, time-zone/DST handling, frozen accepted model choices, bounded waiting, restart/missed-time handling, retention and explicit Telegram briefing delivery with real part outcomes. See [briefing contracts](briefings.md).
+- [x] Add daily/weekly investigation calendars, time-zone/DST handling, frozen accepted model choices, bounded waiting, restart/missed-time handling, retention and explicit six-channel private briefing delivery with actual part outcomes and frozen acceptance-time route controls. See [briefing contracts](briefings.md).
 - [x] Add optional native durable investigation checkpoints, human questions, exact-argument local-note approvals, immutable team snapshots and explicit continuation. See [native workflow contracts](native-research-workflows.md).
 - [ ] Extend native continuation admission/retention where upstream SDK APIs are needed; ordinary retained chat history is not resumable workflow execution.
 - [x] Add saved investigations with progressive starting context, native specialist collaboration, structured report validation, recorded source receipts, versioned reruns, comparison, JSON export, cancellation and restart interruption. See [report contracts](investigations.md). Reruns use newly available evidence; optional native checkpoint continuation is a separate explicitly selected workflow.
@@ -198,7 +198,8 @@ Sibyl and the ten specialists start through ProtoLink 0.8.4 `AgentGroup` with re
 - [x] Add opt-in outgoing UTF-8 text documents for long replies and scheduled briefings, with bounded complete content, original recipient binding and durable native outcomes.
 - [x] Add opt-in Telegram documents, local photo OCR and bounded local audio transcription with retained sources, processor readiness and consent/version guards. See [attachment contracts](telegram-attachments.md).
 - [x] Implement all six configured private text clients and optional per-rule alert delivery through their checked native bindings.
-- [ ] Extend non-Telegram scheduled briefings and media, and verify live external services/processors.
+- [x] Extend scheduled briefings to all six checked private text routes, with shared destination cards, exact connection-generation consent, bounded source-safe native evidence and revision-scoped withdrawal.
+- [ ] Extend media beyond Telegram and verify live external services/processors.
 - [ ] Design additional scoped approval/action contracts before any financial or messaging mutation tool. Ordinary agents remain read-only; native durable research permits an explicitly approved exact-text local note only.
 
 ### 8. Forecasting / Chronos — partial
@@ -281,7 +282,7 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add app-origin delivery text/target inspection, queued-remainder withdrawal and separate user review history with optimistic evidence tokens.
 - [x] Extend the review contract to grouped conversation replies while preserving native delivery outcomes and unknown legacy bot identities.
 - [x] Reuse the shared durable outbox across six native private routes, preserving exact provider IDs, per-channel text bounds, cancellation uncertainty, reviewed receipts and WhatsApp reply windows.
-- [ ] Verify live alert-delivery acceptance; generic outbound webhooks and native push remain optional extensions. Scheduled research briefings still use Telegram.
+- [ ] Verify live alert-delivery acceptance; generic outbound webhooks and native push remain optional extensions. Scheduled research briefings can also select any of the six checked private text routes; documents remain Telegram-only.
 - [x] Add durable local jobs with explicit domain handlers, bounded schedules, persistent idempotency identities, restart/cancellation semantics, retained receipts, Workspace controls and native Technician evidence. See [local jobs](local-jobs.md).
 - [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
 - [x] Add lightweight process resource counters and fixed latency histograms with scoped, honest coverage.
@@ -307,7 +308,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 1. **Reconciliation and venues:** remaining funding/history pagination, complete wallet/fee coverage, advanced-order adapters and authenticated failure-case acceptance.
 2. **Strategy ownership and deployment:** reviewed residual/manual inventory, multi-asset historical deployment/rebalancing, explicitly approved allocation execution and separate causal ML/RL/Freqtrade research.
 3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
-4. **Messaging extensions:** non-Telegram scheduled briefings, additional media and live provider/processor acceptance. All six private text clients and per-rule alert delivery are implemented.
+4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.
 5. **Research integrations:** hosted embeddings, licensed article processing, configurable research sources and chain/disclosure archives; cited web research stays deferred.
 6. **Operations and distribution:** cross-request tracing, external host monitoring, reviewed service/install support and publication/signing/registry acceptance. Durable local jobs, observed worker incidents and local credential rotation are implemented.
 

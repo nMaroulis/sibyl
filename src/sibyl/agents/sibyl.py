@@ -106,7 +106,7 @@ def create_agent(store: Store, **runtime) -> Agent:
 
     @agent.tool
     def briefing_schedules(investigation_id: str = "", schedule_id: str = "") -> dict:
-        """Explain a saved briefing's calendar, next run, missed/failed runs and Telegram delivery outcomes.
+        """Explain a saved briefing's calendar, next run, missed/failed runs and private message delivery outcomes.
 
         Omit IDs to list up to twenty schedules. Use an investigation_id from
         investigation_reports to filter them, or a schedule_id from this list to
