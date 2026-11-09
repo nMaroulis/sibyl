@@ -65,6 +65,8 @@ class ClosePositions:
                 "unvalued_fees",
                 "unresolved_orders",
                 "_native_fills",
+                "ownership_events",
+                "ownership_net_value",
             )
         }
         digest = hashlib.sha256(json.dumps([self._scope(job), evidence], sort_keys=True).encode()).hexdigest()
@@ -162,7 +164,9 @@ class ClosePositions:
                             "The exit is outside current native size/price limits. Fee-reserved dust may be too small to trade."
                         )
                 reserve = quantity * policy.fee_reserve_bps / 10000
-                available = float(client.fetch_balance().get("free", {}).get(base) or 0)
+                balance = client.fetch_balance()
+                self.runner.ownership.require_backed(values, balance)
+                available = float(balance.get("free", {}).get(base) or 0)
                 if not math.isfinite(available) or available + 1e-12 < quantity + reserve:
                     raise ExecutionGuard(
                         f"Not enough free {base} for the reviewed exit and base-fee reserve. Resolve account balances in Trade."
@@ -171,6 +175,7 @@ class ClosePositions:
                 dust = is_dust(client, symbol, residual, observed["bid"])
             return {
                 "quantity": quantity,
+                "account_total_base": (balance.get("total") or {}).get(base),
                 "limit_price": price,
                 "reference_bid": observed["bid"],
                 "spread_bps": observed["spread_bps"],
@@ -252,12 +257,17 @@ class ClosePositions:
                     raise ExecutionGuard(
                         "The reviewed quantity and fee reserve exceed current strategy ownership."
                     )
+                if intent is not None:
+                    base = values["parameters"]["symbol"].split("/")[0]
+                    self.runner.ownership.require_backed(
+                        values, {"total": {base: fresh_quote["account_total_base"]}}, db
+                    )
                 return connection, values
 
             with self.store.db() as db:
                 db.execute("BEGIN")
                 connection, values = validate(db)
-            self._quote(connection, values, policy, fixed=review)
+            fresh_quote = self._quote(connection, values, policy, fixed=review)
             try:
                 intent = self.trading.preview(
                     ExchangeOrderRequest(

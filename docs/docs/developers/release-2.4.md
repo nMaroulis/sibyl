@@ -23,7 +23,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 ## 3. Strategies
 
 - [x] Account/base-asset strategy exposure caps, sampled rolling-loss windows with persistent latches, and optional stop-distance entry-risk sizing.
-- [ ] Reviewed residual/dust ownership and manual-position reconciliation.
+- [x] On-demand base-asset balance comparisons, native dust facts, reviewed manual adoption/release and atomic exact-account/pair new-run handoff with original basis, flow-neutral shared P&L and inherited correction guards.
+- [ ] Reviewed repair/reversal across executed ownership descendants, verified manual-trade classifications and cash-flow-adjusted lifetime return statistics.
 - [x] Native optional Optuna TPE/random numeric distributions, causal trusted-plugin validation and one-off pinned research jobs, with bounded trial/test evidence and exact version-pinned replay.
 - [ ] Multi-asset historical deployment/rebalancing and explicitly approved execution.
 - [ ] Separate causal ML/RL training/evaluation pipelines and optional Freqtrade integration.

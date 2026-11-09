@@ -6,6 +6,7 @@ from contextlib import nullcontext
 
 from sibyl.services.trading.reconciliation import summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
+from sibyl.strategies.execution.ownership.ledger import replay
 
 
 def project(job, trading, *, db=None):
@@ -35,6 +36,7 @@ def project(job, trading, *, db=None):
             "WHERE json_extract(o.payload,'$.strategy_job_id')=? ORDER BY f.timestamp_ms,o.rowid,f.id LIMIT 10001",
             (job["id"],),
         ).fetchall()
+        ownership, ownership_stale = replay(db, job["id"])
         sync = {
             row[0]: json.loads(row[1])
             for row in db.execute(
@@ -63,7 +65,22 @@ def project(job, trading, *, db=None):
         raise ExecutionGuard("A native order identity is linked more than once. Review strategy orders.")
     cash, quantity, basis, realized = job["parameters"]["capital"], 0.0, 0.0, 0.0
     fees, returns, exits, rendered = defaultdict(float), [], {}, []
-    unknown = False
+    unknown = ownership_stale
+    net_value, consumed, next_event = 0.0, set(), 0
+
+    def attributions():
+        nonlocal quantity, basis, net_value, next_event, unknown
+        while next_event < len(ownership) and set(ownership[next_event]["after_fills"]) <= consumed:
+            event = ownership[next_event]
+            quantity += event["quantity"]
+            basis += event["cost_basis"]
+            net_value += event["reference_value"]
+            if quantity < -1e-10 or basis < -1e-8:
+                unknown = True
+            quantity, basis = max(0.0, quantity), max(0.0, basis)
+            next_event += 1
+
+    attributions()
     for fill in fills:
         unknown |= not fill["fees_known"] or fill["notional"] is None
         by_currency = defaultdict(float)
@@ -80,7 +97,7 @@ def project(job, trading, *, db=None):
                 raise ExecutionGuard("Native base fees exceed acquired units. Review strategy accounting.")
         else:
             disposed = fill["quantity"] + by_currency[base]
-            if disposed > quantity + max(1e-10, quantity * 1e-8):
+            if disposed > quantity + max(1e-10, quantity * 1e-8) and not ownership_stale:
                 raise ExecutionGuard(
                     "Native executions exceed the strategy-owned position. Review fills before resuming."
                 )
@@ -93,6 +110,8 @@ def project(job, trading, *, db=None):
             totals = exits.setdefault(fill["order_id"], [0, 0])
             totals[0] += proceeds - allocated
             totals[1] += allocated
+        consumed.add(fill["id"])
+        attributions()
         rendered.append(
             {
                 "id": fill["id"],
@@ -105,6 +124,9 @@ def project(job, trading, *, db=None):
                 "event_recorded": True,
             }
         )
+    if next_event != len(ownership):
+        unknown = True
+        ownership_stale = True
     for identity, (pnl, allocated) in exits.items():
         if allocated and any(
             o.get("exchange_order_id") == identity and o["status"] in {"closed", "canceled", "expired"}
@@ -113,6 +135,25 @@ def project(job, trading, *, db=None):
             returns.append(pnl / allocated * 100)
     return {
         "cash": cash,
+        "ownership_net_value": net_value,
+        "ownership_stale": ownership_stale,
+        "ownership_events": [
+            {
+                key: event.get(key)
+                for key in (
+                    "id",
+                    "action",
+                    "quantity",
+                    "cost_basis",
+                    "reference_value",
+                    "created_at",
+                    "note",
+                    "peer_id",
+                )
+            }
+            for event in ownership[-100:]
+        ],
+        "ownership_event_count": len(ownership),
         "quantity": quantity,
         "entry_cost": basis,
         "entry_price": basis / quantity if quantity else 0,

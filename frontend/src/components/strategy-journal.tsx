@@ -63,6 +63,7 @@ export function DecisionJournal({
             <option value="ORDER_PLANNED">Exchange order plans</option>
             <option value="ORDER_SUBMITTED">Exchange order submissions</option>
             <option value="FILL_CORRECTION">Native fill corrections</option>
+            <option value="OWNERSHIP">Ownership reviews & handoffs</option>
             <option value="CANCEL_QUEUED">Cancellation queued</option>
             <option value="CANCEL_REQUESTED">Cancellation requested</option>
             <option value="CANCEL_UNKNOWN">Cancellation uncertain</option>

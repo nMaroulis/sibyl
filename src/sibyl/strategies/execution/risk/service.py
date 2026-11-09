@@ -322,7 +322,7 @@ class PortfolioLimits:
                 self._audit(db, state, "assessment_unavailable", message, paused)
             write(db, state)
 
-    def review(self, connection, parameters, revision=None):
+    def review(self, connection, parameters, revision=None, *, handoff=None, mark=None):
         """Check shared headroom for an added allocation; a review itself reserves nothing."""
         environment = "test" if connection.sandbox else "production"
         self.require(environment, revision)
@@ -333,7 +333,12 @@ class PortfolioLimits:
             if len(state["sample"]["runs"]) >= MAX_RUNS:
                 raise ExecutionGuard("This environment reached its 100 retained-run shared accounting limit.")
             rate = state["sample"]["rates"][parameters.symbol.split("/")[1]]["price"]
-            if state["sample"]["allocated"] + parameters.capital * rate > state["policy"]["max_allocated"]:
+            allocation = parameters.capital
+            if handoff:
+                allocation += handoff["quantity"] * mark - max(
+                    0, handoff["parameters"]["capital"] + handoff.get("ownership_net_value", 0)
+                )
+            if state["sample"]["allocated"] + allocation * rate > state["policy"]["max_allocated"]:
                 raise ExecutionGuard("This allocation exceeds the shared strategy capital limit.")
         return state["revision"]
 

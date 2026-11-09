@@ -9,6 +9,7 @@ from sibyl.strategies.execution.contracts import (
     StrategyApproval,
 )
 from sibyl.strategies.execution.controls import ControlAction
+from sibyl.strategies.execution.ownership.contracts import OwnershipReview
 from sibyl.strategies.execution.risk.contracts import Environment, ReleaseLossLock, SaveLimits
 
 router = APIRouter(prefix="/api/v1/strategies/exchange", tags=["Broker"])
@@ -110,3 +111,31 @@ def close_position_preview(job_id: str, body: ClosePositionRequest, s: S):
 def close_position_confirm(review_id: str, body: StrategyApproval, s: S):
     """Approve one strategy-owned sell; duplicate requests never repeat a native write."""
     return s.strategies.execution.closing.confirm(review_id, body.confirmation)
+
+
+@router.get("/jobs/{job_id}/ownership")
+def ownership(job_id: str, s: S, response: Response):
+    """Read local attribution receipts and the last explicit account position check."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership.state(job_id)
+
+
+@router.post("/jobs/{job_id}/ownership/check")
+def ownership_check(job_id: str, s: S, response: Response):
+    """Read native balances/book and compare all strategy owners of this base asset."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership.inspect(job_id)
+
+
+@router.post("/jobs/{job_id}/ownership/preview")
+def ownership_preview(job_id: str, body: OwnershipReview, s: S, response: Response):
+    """Save a short-lived local adoption/release review without creating an order."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership.preview(job_id, body)
+
+
+@router.post("/ownership-reviews/{review_id}/confirm")
+def ownership_confirm(review_id: str, body: StrategyApproval, s: S, response: Response):
+    """Confirm one audited local attribution; duplicate confirmation creates no second receipt."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership.confirm(review_id, body.confirmation)

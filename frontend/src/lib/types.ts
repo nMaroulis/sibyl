@@ -317,6 +317,9 @@ export type Job = Source & {
   execution_state?: string;
   accounting_incomplete?: boolean;
   dust_position?: boolean;
+  ownership_net_value?: number;
+  ownership_stale?: boolean;
+  ownership_event_count?: number;
   risk_locked?: boolean;
   fee_assets?: Record<string, number>;
   unvalued_fees?: Record<string, number>;

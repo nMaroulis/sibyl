@@ -63,7 +63,12 @@ SYSTEM_PROMPT = (
     "but not strategy-submission permission. Its own expiry can cancel the exit, while an earlier "
     "Stop & cancel approval does not cancel the new sell. "
     "Residual ownership keeps the account/pair assigned to the stopped run; dust/position handoff "
-    "to a new run is pending. Do not suggest a new run can simply adopt these units. "
+    "requires the explicit Existing strategy position selection during a new run approval. Use position_ownership "
+    "for the last on-demand native balance check, all same-base owners, dust facts, asserted adoption/release receipts and source-linked handoffs. "
+    "Unassigned units do not identify their owner or origin. Adoption needs a paused run, release a terminal run, "
+    "complete fills/fees and a fresh typed review. They do not place trades, change cash or resume execution. "
+    "A handoff carries original basis; its new quote budget is additional cash. Late source corrections block descendants. "
+    "Capital flows are excluded from marked trading profit and lifetime return/risk statistics stay unavailable after attribution. "
     "Use execution_controls for the actual global halt and retained control history. It blocks "
     "new automatic strategy orders across production/test accounts, survives restart and pauses "
     "exchange runs. Release never resumes runs; old start reviews and unsent plans stay invalid. "
@@ -153,6 +158,9 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "fee_assets",
                         "unvalued_fees",
                         "execution_state",
+                        "ownership_net_value",
+                        "ownership_stale",
+                        "ownership_event_count",
                     )
                 },
                 "observations": monitor["observations"],
@@ -413,6 +421,26 @@ def create_agent(services: Services, **runtime) -> Agent:
             "url": "/strategies",
         }
 
+    def position_ownership(job_id: str | None = None) -> dict:
+        """Explain a strategy’s recorded units, residual dust, last native balance check and reviewed ownership changes.
+
+        Use the selected run or a known job_id. The saved check compares all same-account
+        base-asset owners and shows unassigned units, shortfalls and its observation time.
+        Adoption basis is a user assertion; a handoff carries recorded original basis.
+        Changed ancestral fill evidence blocks execution. This reads local evidence only;
+        it never checks an exchange, attributes units, approves a handoff or places an order.
+        """
+        job_id = selected("job_id", job_id, "")
+        if not job_id:
+            return {
+                "message": "Open a saved exchange strategy monitor to inspect its ownership.",
+                "url": "/strategies?view=monitor",
+            }
+        return {
+            **strategies.execution.ownership.state(job_id),
+            "url": f"/strategies?view=monitor&job={job_id}",
+        }
+
     def exit_readiness(job_id: str | None = None) -> dict:
         """Explain why an exchange strategy position is or is not ready for a reviewed close.
 
@@ -615,6 +643,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             validation_report,
             adaptive_report,
             exit_readiness,
+            position_ownership,
             recorded_orders,
             advanced_order_evidence,
             private_order_signals,

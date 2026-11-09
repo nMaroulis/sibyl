@@ -86,7 +86,7 @@ def positions(db, trading, environment):
                 "connection_id": job["connection_id"],
                 "symbol": job["parameters"]["symbol"],
                 "status": job["status"],
-                "capital": job["parameters"]["capital"],
+                "capital": job["parameters"]["capital"] + accounting["ownership_net_value"],
                 "cash": accounting["cash"],
                 "quantity": accounting["quantity"],
                 "retained": job["status"] not in {"stopped", "completed"}
@@ -120,7 +120,7 @@ def totals(rows, rates, candidate=None):
         items.append(
             {
                 **{key: row[key] for key in ("id", "account", "connection_id", "symbol", "status")},
-                "allocated": row["capital"] * quote_rate if row["retained"] else 0,
+                "allocated": max(0, row["capital"]) * quote_rate if row["retained"] else 0,
                 "position": position,
                 "pending_buys": pending,
                 "pnl": (row["cash"] - row["capital"]) * quote_rate + position,

@@ -32,6 +32,7 @@ class ExchangeStrategyRequest(Request):
     """A fixed strategy, exact market, saved account and allocated quote budget."""
 
     connection_id: str = Field(min_length=1, max_length=100)
+    handoff_from: str | None = Field(default=None, min_length=1, max_length=100)
     parameters: ExecutionParameters
     risk: ExecutionRisk = Field(default_factory=ExecutionRisk)
 

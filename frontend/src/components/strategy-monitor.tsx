@@ -31,6 +31,7 @@ import { DecisionJournal } from './strategy-journal';
 import { ExchangeRunEvidence } from './strategies/exchange-evidence';
 import { StopCancellation } from './strategies/stop-cancellation';
 import { ClosePosition } from './strategies/close-position';
+import { PositionOwnership } from './strategies/position-ownership';
 import { exportCSV, number, post, refresh } from '../lib/api';
 import { date, formatted, monitorURL, runName, tone } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
@@ -211,6 +212,7 @@ export function StrategyMonitor({
           {exchangeRun && <ClosePosition key={job.id} job={job} />}
         </div>
       </Panel>
+      {exchangeRun && <PositionOwnership key={job.id} job={job} />}
       {exchangeRun && <ExchangeRunEvidence job={job} />}
       {monitor.error && (
         <div className="inline-alert" role="alert">
@@ -254,9 +256,19 @@ export function StrategyMonitor({
       )}
       {!job.statistics_complete && (
         <div className="monitor-notice">
-          This run predates detailed monitoring. New observations and decisions are journaled from{' '}
-          {date(job.monitoring_since)}. Earlier retained fills are shown below; missing reference
-          prices and lifetime statistics stay unavailable.
+          {job.ownership_event_count ? (
+            <>
+              This run includes reviewed ownership changes. Trading profit excludes their dated
+              reference flows; lifetime percentage returns and risk statistics are unavailable
+              across this changed capital base.
+            </>
+          ) : (
+            <>
+              This run predates detailed monitoring. New observations and decisions are journaled
+              from {date(job.monitoring_since)}. Earlier retained fills are shown below; missing
+              reference prices and lifetime statistics stay unavailable.
+            </>
+          )}
         </div>
       )}
       <div className="monitor-summary-grid">
@@ -265,14 +277,29 @@ export function StrategyMonitor({
             {exchangeRun ? 'Allocated equity' : 'Paper equity'} · {quote}
           </small>
           <strong>{number(job.equity, precision)}</strong>
-          <Change value={(job.equity / job.parameters.capital - 1) * 100} />
+          {!job.ownership_event_count && (
+            <Change value={(job.equity / job.parameters.capital - 1) * 100} />
+          )}
         </Panel>
         <Panel>
           <small>Total P&L · {quote}</small>
-          <strong className={job.equity >= job.parameters.capital ? 'positive' : 'negative'}>
-            {number(job.equity - job.parameters.capital, precision)}
+          <strong
+            className={
+              job.equity >= job.parameters.capital + (job.ownership_net_value ?? 0)
+                ? 'positive'
+                : 'negative'
+            }
+          >
+            {number(
+              job.equity - job.parameters.capital - (job.ownership_net_value ?? 0),
+              precision,
+            )}
           </strong>
-          <span>Marked at last observed quote</span>
+          <span>
+            {job.ownership_event_count
+              ? 'Excludes ownership reference flows'
+              : 'Marked at last observed quote'}
+          </span>
         </Panel>
         <Panel>
           <small>Available cash · {quote}</small>

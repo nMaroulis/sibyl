@@ -322,3 +322,7 @@ Recent funding sync: version-checked opt-in controls at `POST /connections/{acco
 ### Private briefing destinations
 
 Schedule create/edit accepts nullable `channel`, exact checked `telegram_target` or `private_target`, and `message_format`. Shared targets come from `/api/v1/message-deliveries/targets`; only Telegram supports documents. Acceptance-time route controls remain private to delivery and are excluded from agent schedule projections. See [briefing contracts](briefings.md).
+
+### Strategy position ownership
+
+See [ownership review contracts](strategy-ownership.md) for local state, explicit balance checks, typed adoption/release review/confirmation and source-pinned new-run handoffs. These routes never place an exchange order.

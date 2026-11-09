@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { Badge, Modal } from '../ui';
 import { useResource } from '../../lib/hooks';
@@ -23,6 +23,13 @@ type Options = {
   controls: { halted: boolean };
   accounts: (Connection & { supported: boolean })[];
   providers: { id: string; name: string }[];
+  handoff_sources: {
+    id: string;
+    connection_id: string;
+    symbol: string;
+    quantity: number;
+    cost_basis: number;
+  }[];
 };
 type Review = {
   id: string;
@@ -34,6 +41,7 @@ type Review = {
   execution: string;
   request: { parameters: StrategyParams; risk: Risk };
   shared_limits: LimitPolicy;
+  handoff?: { source_id: string; quantity: number; cost_basis: number; reference_value: number };
 };
 
 /** A collapsed execution setup keeps research simple and requires a separate scoped approval. */
@@ -44,7 +52,9 @@ export function ExchangeStrategySetup({
   parameters: StrategyParams;
   onStarted: (job: Job) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [search] = useSearchParams();
+  const [open, setOpen] = useState(!!search.get('handoff'));
+  const [handoff, setHandoff] = useState(search.get('handoff') ?? '');
   const [account, setAccount] = useState('');
   const [pair, setPair] = useState('');
   const [timeframe, setTimeframe] = useState('');
@@ -72,12 +82,22 @@ export function ExchangeStrategySetup({
   const interval = timeframe || parameters.timeframe || '1d';
   const quote = symbol.split('/')[1];
   const accounts = options.data?.accounts.filter((row) => row.active && row.supported) ?? [];
+  useEffect(() => {
+    if (!account && handoff) {
+      const source = options.data?.handoff_sources.find((s) => s.id === handoff);
+      if (source) {
+        setAccount(source.connection_id);
+        setPair(source.symbol);
+      }
+    }
+  }, [options.data, account, handoff]);
   const reviewRun = async () => {
     setBusy(true);
     setError('');
     try {
       const result = await post<Review>('/strategies/exchange/preview', {
         connection_id: account,
+        handoff_from: handoff || null,
         parameters: {
           ...parameters,
           symbol,
@@ -115,6 +135,7 @@ export function ExchangeStrategySetup({
   return (
     <details
       className="advanced-options strategy-exchange-setup"
+      open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary>
@@ -157,9 +178,11 @@ export function ExchangeStrategySetup({
         <label>
           Execution account
           <select
+            aria-label="Execution account"
             value={account}
             onChange={(e) => {
               setAccount(e.target.value);
+              setHandoff('');
               setPair('');
               setTimeframe('');
               setError('');
@@ -178,6 +201,7 @@ export function ExchangeStrategySetup({
             <label>
               Exact exchange pair
               <select
+                aria-label="Exact exchange pair"
                 value={markets.data?.symbols.includes(symbol) ? symbol : ''}
                 onChange={(e) => setPair(e.target.value)}
                 disabled={markets.loading}
@@ -193,6 +217,7 @@ export function ExchangeStrategySetup({
             <label>
               Execution timeframe
               <select
+                aria-label="Execution timeframe"
                 value={markets.data?.timeframes.includes(interval) ? interval : ''}
                 onChange={(e) => setTimeframe(e.target.value)}
                 disabled={markets.loading}
@@ -208,7 +233,7 @@ export function ExchangeStrategySetup({
               </select>
             </label>
             <label>
-              Allocated budget · {quote}
+              {handoff ? 'Additional quote budget' : 'Allocated budget'} · {quote}
               <input
                 type="number"
                 min="0"
@@ -216,6 +241,29 @@ export function ExchangeStrategySetup({
                 value={budget}
                 onChange={(e) => setBudget(Number(e.target.value))}
               />
+            </label>
+            <label>
+              Existing strategy position
+              <select
+                aria-label="Position handoff source"
+                value={handoff}
+                onChange={(e) => setHandoff(e.target.value)}
+              >
+                <option value="">Start without adopting existing units</option>
+                {options.data?.handoff_sources
+                  .filter((s) => s.connection_id === account && s.symbol === symbol)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.id.slice(0, 8)} · {number(s.quantity, 8)} {symbol.split('/')[0]}
+                    </option>
+                  ))}
+              </select>
+              {!!handoff && (
+                <small>
+                  The new run receives all retained units and original basis after review, plus the
+                  additional quote budget above. No exchange trade or transfer occurs.
+                </small>
+              )}
             </label>
             <label>
               Maximum order value · {quote}
@@ -386,11 +434,24 @@ export function ExchangeStrategySetup({
               )}
               {review.execution}
             </p>
+            {review.handoff && (
+              <p className="monitor-notice">
+                Handoff from {review.handoff.source_id.slice(0, 8)}:{' '}
+                {number(review.handoff.quantity, 8)} base units · carried basis{' '}
+                {number(review.handoff.cost_basis, 8)} · reference capital flow{' '}
+                {number(review.handoff.reference_value, 8)} in the pair’s quote asset. The source
+                stays stopped; this run receives ownership atomically. Lifetime return statistics
+                remain unavailable after this change.
+              </p>
+            )}
             <p className="monitor-notice">
               This approval allows future orders within this fixed scope without confirming each
               one. The run waits for the next closed candle. Backend restarts pause new submissions.
-              Existing holdings are not adopted; dust stays visible. Missing fees or fees outside
-              the base/quote assets block further orders.
+              {review.handoff
+                ? 'Only the explicitly reviewed source position is carried; '
+                : 'Existing holdings are not adopted; '}
+              dust stays visible. Missing fees or fees outside the base/quote assets block further
+              orders.
             </p>
             {review.request.parameters.max_trades != null && (
               <p className="footnote">

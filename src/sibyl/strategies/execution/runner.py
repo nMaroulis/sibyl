@@ -14,6 +14,7 @@ from sibyl.strategies.execution.cancellation import StrategyCancellations
 from sibyl.strategies.execution.closing import ClosePositions
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, ExecutionGuard, ExecutionParameters
 from sibyl.strategies.execution.controls import StrategyControls
+from sibyl.strategies.execution.ownership.service import PositionOwnership
 from sibyl.strategies.execution.risk import PortfolioLimits
 from sibyl.strategies.execution.stop_reviews import StopCancellationReviews
 from sibyl.strategies.execution.venue import is_dust, observation, order_size, supported
@@ -47,6 +48,7 @@ class ExchangeStrategies:
         self.cancellations = StrategyCancellations(self)
         self.stop_reviews = StopCancellationReviews(self)
         self.closing = ClosePositions(self)
+        self.ownership = PositionOwnership(self)
         for job in self.jobs():
             if job["status"] == "running":
                 self._pause(
@@ -90,6 +92,7 @@ class ExchangeStrategies:
             "server_enabled": self.market.settings.allow_live_trading
             and self.market.settings.allow_strategy_execution,
             "controls": controls,
+            "handoff_sources": self.ownership.sources(),
             "portfolio_limits": self.portfolio_limits.state(),
             "required_flags": ["SIBYL_ALLOW_LIVE_TRADING", "SIBYL_ALLOW_STRATEGY_EXECUTION"],
             "providers": [
@@ -125,6 +128,9 @@ class ExchangeStrategies:
         result = project(job, self.trading)
         fills = result.pop("_native_fills")
         job.update(result)
+        if job.get("ownership_event_count"):
+            job["statistics_complete"] = False
+            job.pop("metrics", None)
         versions = job.setdefault("fill_versions", {})
         for fill in fills:
             digest = hashlib.sha256(json.dumps(fill, sort_keys=True).encode()).hexdigest()
@@ -202,6 +208,8 @@ class ExchangeStrategies:
                     raise ExecutionGuard("Pause another strategy before resuming more than ten runs.")
                 with self.market.adapter(self.account(job["connection_id"])) as client:
                     observed = observation(client, ExecutionParameters(**job["parameters"]))
+                    if self.ownership.needs_backing(job):
+                        self.ownership.require_backed(job, client.fetch_balance())
                 job.update(
                     reference_price=observed["price"],
                     equity=job["cash"] + job["quantity"] * observed["price"],
@@ -245,7 +253,9 @@ class ExchangeStrategies:
             raise ExecutionGuard("Spread guard reached. Review the exchange before resuming.")
         if time.time() - observed["observed_at"] > 30:
             raise ExecutionGuard("Execution observation expired; no order was sent.")
-        if job["equity"] <= job["parameters"]["capital"] * (1 - job["risk"]["max_loss_pct"] / 100):
+        if job["equity"] <= (job["parameters"]["capital"] + job.get("ownership_net_value", 0)) * (
+            1 - job["risk"]["max_loss_pct"] / 100
+        ):
             job["risk_locked"] = True
             self.journal.save(job)
             raise ExecutionGuard(
@@ -324,6 +334,7 @@ class ExchangeStrategies:
         params = ExecutionParameters(**job["parameters"])
         with self.market.adapter(connection) as client:
             observed = observation(client, params)
+            balance = client.fetch_balance() if self.ownership.needs_backing(job) else {}
         with self.lock:
             job = self._project(self.journal.job(identity))
             if job["status"] != "running":
@@ -339,6 +350,7 @@ class ExchangeStrategies:
                 observed_at=now(),
             )
             self._risk(job, observed)
+            self.ownership.require_backed(job, balance)
             if job["unresolved_orders"]:
                 job.update(execution_state="waiting_order", error=None)
                 return self._sample(job, observed)
@@ -443,7 +455,17 @@ class ExchangeStrategies:
             self.enabled()
             self.account(current["connection_id"])
             self._risk(current, observed)
-            result = self.trading.execute(intent["id"], intent["confirmation"], strategy_job_id=identity)
+            submission_balance = {}
+            if self.ownership.needs_backing(current):
+                with self.market.adapter(self.account(current["connection_id"])) as client:
+                    submission_balance = client.fetch_balance()
+
+            def backing_guard(db, _intent):
+                self.ownership.require_backed(current, submission_balance, db)
+
+            result = self.trading.execute(
+                intent["id"], intent["confirmation"], strategy_job_id=identity, before_submit=backing_guard
+            )
             current.update(execution_state="waiting_order", error=None)
             self.journal.save(
                 current,
@@ -465,7 +487,7 @@ class ExchangeStrategies:
     def _sample(self, job, observed, *, state=None):
         job["execution_state"] = state or ("waiting_order" if job.get("pending") else "waiting_candle")
         candle_timestamp = observed["candles"][-1]["timestamp"]
-        if candle_timestamp != job.get("metric_candle"):
+        if not job.get("ownership_event_count") and candle_timestamp != job.get("metric_candle"):
             job["metric_candle"] = candle_timestamp
             curve = [*job.get("curve", []), {"timestamp": candle_timestamp, "value": job["equity"]}]
             if len(curve) > 720:

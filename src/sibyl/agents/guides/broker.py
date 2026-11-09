@@ -29,6 +29,7 @@ StrategyTopic = Literal[
     "halt",
     "limits",
     "benchmarks",
+    "ownership",
 ]
 
 TRADE = {
@@ -163,6 +164,19 @@ TRADE = {
 }
 
 STRATEGIES = {
+    "ownership": Guide(
+        "Review strategy position ownership",
+        "/strategies?view=monitor",
+        (
+            "Open the exchange run’s Position ownership panel and select Check exchange balance for native totals/free funds, all same-account base owners, unassigned units, shortfalls and exact-pair dust limits.",
+            "Pause and resolve order/fill/fee evidence before Adopt existing units. Enter base quantity, asserted total quote cost and a reason; review and type the displayed confirmation. Resume is separate.",
+            "Stop before Release to unmanaged, or use Hand off to a new run and select that exact source during new-run approval. A handoff carries all retained units/original basis and adds the new quote budget separately.",
+            "Inspect ownership receipts and OWNERSHIP journal/CSV entries. Source corrections invalidate inherited evidence; missing account backing blocks attributed execution.",
+        ),
+        (
+            "These are local attributions, not exchange transfers/sales or verified manual-trade classification. Cash remains unchanged and capital-flow reference values are excluded from trading profit. Lifetime return statistics remain unavailable after attribution. Historical corrections across existing handoffs require further reviewed repair support; never advise bypassing the block.",
+        ),
+    ),
     "benchmarks": Guide(
         "Compare cost-aware reference portfolios",
         "/strategies",
@@ -281,7 +295,7 @@ STRATEGIES = {
             "Close position is a new typed, one-order sell review for a stopped/completed exchange run after reconciliation. Inspect blockers and any residual units.",
         ),
         (
-            "A cancel request or sell acknowledgment does not prove a position is flat. Residual ownership stays with the stopped run; automatic handoff to a new run is unavailable.",
+            "A cancel request or sell acknowledgment does not prove a position is flat. Residual ownership stays with the stopped run until a separately reviewed release or new-run handoff. It is never adopted automatically.",
         ),
     ),
     "halt": Guide(
