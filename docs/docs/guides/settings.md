@@ -80,14 +80,14 @@ Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated
 
 [Telegram](./telegram.md) supports private chat and opt-in [scheduled briefing delivery](briefings.md). Setup: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
 
-| App | Setup |
-| --- | --- |
-| Telegram | BotFather token and your numeric user ID |
-| Discord | Bot token, application ID and numeric private user ID; direct DM polling |
-| Slack | Bot token, Socket Mode app token and private member ID |
+| App      | Setup                                                                                                           |
+| -------- | --------------------------------------------------------------------------------------------------------------- |
+| Telegram | BotFather token and your numeric user ID                                                                        |
+| Discord  | Bot token, application ID and numeric private user ID; direct DM polling                                        |
+| Slack    | Bot token, Socket Mode app token and private member ID                                                          |
 | WhatsApp | Graph version, access token, business phone ID, app secret, webhook verification token and your personal number |
-| Signal | Loopback signal-cli origin, separately linked account and personal sender ACI |
-| Email | Dedicated TLS IMAP/SMTP mailbox, fixed personal sender and a private subject pairing phrase |
+| Signal   | Loopback signal-cli origin, separately linked account and personal sender ACI                                   |
+| Email    | Dedicated TLS IMAP/SMTP mailbox, fixed personal sender and a private subject pairing phrase                     |
 
 Every implemented connection encrypts credentials locally and starts paused. Check its identity, then enable private replies. Setup works without an LLM; questions receive model guidance until one is active. Saved secrets remain hidden; Edit requires complete replacement credentials. Pause stays available during a model request. Receipts show actual acceptance/uncertainty rather than claiming the person read a reply.
 
@@ -104,3 +104,11 @@ When choosing Local → Ollama, inspect actual server status, installed and load
 Choose **Run health check** in Workspace to run a read-only SQLite quick check and collect content-free runtime diagnostics. **Download health report** exports the last completed report; neither opening Settings nor downloading reruns the check. Versions, numeric process/storage counters, aggregate worker states and generic check outcomes are included. Credentials, account identifiers/balances, chats, articles, paths, hostnames, plugin code and raw SQLite messages are excluded. Review the JSON before sharing.
 
 A passed quick check is not a full integrity check, a credential test or proof that account data is correct. Interrupted, busy or inaccessible checks make no integrity conclusion. The check has a two-second execution budget plus a short lock wait; it never repairs data. Reports stay in memory until restart. Technician can read an existing report but cannot start a check or download it.
+
+### Read allowances and quota evidence
+
+Expand a source in **Market data → Source health** for compact allowance cards. **App allowance** is Sibyl’s conservative local budget. **Observed provider ceiling** is a separately reported Binance one-minute IP declaration, with 20% reserved from read admission. The cards show used/estimated remaining units, reset/refill behavior and observation times. Reported order counters are informational and do not grant trading permission.
+
+Reviewed Binance Spot GET requests use their documented weights; Kraken private account/history POST reads use conservative key-scoped estimates. Coinbase Exchange Sandbox has separate public/private/fills allowances. Coinbase Advanced and other unreviewed endpoints keep their existing native limiter and base spacing; their provider headroom is unknown. Actual account tiers and outside traffic are not inferred.
+
+**Read budget wait** means a read was deferred before sending; it does not mean the exchange is offline. Imports retain their saved progress. Native orders/cancellations keep their existing single-attempt contract; this policy never queues or replays them. Extra bypass/coverage details explain what the estimate includes. All quota evidence is local to the current backend process and resets on restart; real provider usage does not. See [policy scope](../developers/provider-control.md#reviewed-quota-policies).

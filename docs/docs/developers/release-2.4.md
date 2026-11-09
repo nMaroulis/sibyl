@@ -18,7 +18,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.
 - [ ] Broader private account/balance streams and complete sequence-gap recovery; scheduling is not reconciliation completion.
-- [ ] Provider quota policies, read diagnostics and venue-specific acceptance tools.
+- [x] Reviewed Binance Spot read weights/observed minute IP ceilings, conservative Kraken private counters and Coinbase Exchange Sandbox buckets; safe native metadata/header evidence, pre-sign deferral, passive diagnostics and native Technician help.
+- [ ] Broader quota/tier/profile and endpoint coverage, cross-process coordination and live venue-specific acceptance.
 
 ## 3. Strategies
 

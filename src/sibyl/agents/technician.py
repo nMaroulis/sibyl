@@ -21,6 +21,7 @@ NAME = "Technician"
 TAGLINE = "Keep everything connected"
 DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging and alerts; explain saved diagnostics."
 SYSTEM_PROMPT = (
+    "Use source_health for actual saved read outcomes, quota allowance/counter evidence, waiting work and coverage gaps. Distinguish application estimates from reported provider limits, transport success from credential/data validity, and read deferral from a provider outage. It is passive; do not recommend retrying uncertain writes or bypassing native limits. "
     "Use telegram_delivery_review to explain actual app-origin delivery outcomes and separate user acknowledgments. It cannot read private message bodies or send/review messages. "
     "Use notification_history for retained inbox cleanup policy, protections and actual receipts; never clear history for the user. "
     "Use worker_incidents for saved stalls, observation gaps and confirmed resumption of progress; observation_ended means recovery is unknown. It cannot establish external uptime or restart a worker. Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
@@ -95,6 +96,7 @@ GUIDES = {
             "Public exchange data do not require account credentials. Provide a key in Settings only for a provider that requires one.",
             "Choose the source and any supported coin/pair in Markets; edit the watchlist there.",
             "Quotes-only providers cannot supply candle history or technical indicators. Demo is an explicit separate source.",
+            "Expand Source health to inspect observed reads, queues and Read allowances & quota evidence. App allowances, reported Binance IP counters and conservative Kraken/Coinbase Exchange estimates are separate. Unsupported endpoint costs and actual account tiers stay unknown. Refresh reads local diagnostics and never probes a provider. Native writes/cancellations are never queued or replayed by this read policy; provider limits and external traffic can still reject requests.",
         ],
     },
     "messaging": {
@@ -190,6 +192,33 @@ def create_agent(services: Services, **runtime) -> Agent:
             "scope": "Recorded transport reads only; no continuous uptime or credential verification. Optional private delivery through any of the six checked text channels is selected separately for each alert rule.",
         }
 
+    def source_health(source_id: str = "") -> dict:
+        """Explain observed connection reads, queued work, read allowances and reported quota evidence.
+
+        Supply a known source ID such as binance, kraken or connection:<saved ID>;
+        omit it for up to twelve default/observed sources. Returns observation times,
+        transport outcomes, application budget estimates, provider counters and
+        unreviewed-cost gaps. These do not establish current credentials, account
+        tier, complete quota coverage or external uptime. No provider check is run.
+        """
+        report = services.market.provider_health(source_id or None)
+        rows = report["items"]
+        if not source_id:
+            rows = [
+                row
+                for row in rows
+                if row["default"] or row["requests"] or row["quotas"]["attempts"] or row["queued"]
+            ]
+        return {
+            "items": rows[:12],
+            "matching_count": len(rows),
+            "limit": 12,
+            "as_of": report["as_of"],
+            "started_at": report["started_at"],
+            "scope": "single_process_observations",
+            "url": "/settings?tab=market",
+        }
+
     def settings_guide(
         section: Literal[
             "overview",
@@ -265,6 +294,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         tools=[
             connection_status,
             connection_alerts,
+            source_health,
             Tool.from_callable(settings_guide, sync_execution="inline"),
             exchange_setup,
         ],

@@ -46,6 +46,7 @@ def test_same_agents_own_prompts_and_domain_tools_through_model_changes(client, 
     assert set(owner.agents["technician"].tools) == {
         "connection_status",
         "connection_alerts",
+        "source_health",
         "settings_guide",
         "exchange_setup",
         "workspace_operations",

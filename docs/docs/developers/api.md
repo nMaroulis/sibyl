@@ -326,3 +326,8 @@ Schedule create/edit accepts nullable `channel`, exact checked `telegram_target`
 ### Strategy position ownership
 
 See [ownership review contracts](strategy-ownership.md) for local state, explicit balance checks, typed adoption/release review/confirmation and source-pinned new-run handoffs. These routes never place an exchange order.
+
+
+### Provider quota evidence
+
+`GET /api/v1/providers/health` includes a per-source `quotas` projection: application policy/allowances, separately observed provider ceilings/counters, last fixed-label request, reviewed/unreviewed/bypassed attempt counts and quota deferral evidence. Budgets are session-local and passive; headers, signed requests and credential grouping hashes are never returned. See [scope and identities](provider-control.md#reviewed-quota-policies).

@@ -11,7 +11,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.                              |
 | Portfolio accounting           | partial       | Complete history/flows, wider fee policies and wallet coverage beyond retained cross-pair FIFO.                                                   |
 | Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
-| Market-data infrastructure     | partial       | Broader historical adapters, quota metrics and private/additional-provider WebSockets.                                     |
+| Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, service support and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
 | Strategy research              | partial       | Multi-asset deployment/rebalancing, separate ML/RL pipelines and optional Freqtrade.                                              |
@@ -138,7 +138,8 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 - [x] Add native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted REST wakeups/backstops.
 - [ ] Extend private balances/account streams, additional providers and complete sequence-gap recovery.
 - [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
-- [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
+- [x] Add reviewed Binance Spot GET weight/IP read ceilings, conservative Kraken key-scoped counters and Coinbase Exchange Sandbox public/private/fills allowances, pre-sign quota deferral, actual native metadata/header evidence and passive UI/Technician diagnostics. See [quota scope](provider-control.md#reviewed-quota-policies).
+- [ ] Extend quota policies to wallet/SAPI, other interval families/providers, discovered tiers/profile identities and live external acceptance; coordinate multiple processes if hosted.
 - [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Live session counters reset on API restart.
 - [x] Persist bounded hourly HTTP read outcomes, success rate, mean/peak response time and sanitized errors; inspect 24-hour/7-day windows across restart. History never establishes current credential readiness or uptime. See [retained read history](provider-control.md#retained-read-history).
 - [x] Add fixed provider latency histograms with p50/p95 upper bounds and legacy sample coverage, plus current-process CPU/memory/threads, database/WAL and free-volume metrics. External uptime and distributed tracing remain pending.
