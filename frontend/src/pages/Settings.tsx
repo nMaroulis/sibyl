@@ -1,3 +1,4 @@
+import { BackgroundService } from '../components/workspace/background-service';
 import { WorkspaceVault } from '../components/workspace/vault';
 import { WorkspaceJobs } from '../components/workspace/jobs';
 import { WorkspaceDiagnostics } from '../components/workspace/diagnostics';
@@ -291,6 +292,7 @@ function WorkspaceSettings({ system }: { system?: System }) {
         </Panel>
         <div className="workspace-operations">
           <WorkerHealthPanel />
+          <BackgroundService />
           <WorkspaceBackups />
           <WorkspaceDiagnostics />
           <WorkspaceJobs />

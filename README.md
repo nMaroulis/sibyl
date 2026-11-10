@@ -207,6 +207,8 @@ python scripts/distribution/release.py inspect-wheel
 
 Install the resulting wheel with uv or pipx using the [installation guide](docs/docs/getting-started/installation.md). GitHub download commands become available after a release is published. The package uses per-user application data; select `--data-dir` to open an existing source workspace. Source checkouts keep their repository `.sibyl` directory.
 
+For local background startup, **Settings → Workspace → Background service** provides native OS status and commands for `sibyl service preview`, `install`, `start`, `status`, `stop`, `restart` and `uninstall`. macOS LaunchAgents, Linux systemd user units and per-user Windows login tasks keep the same workspace without a terminal; installation does not start the app immediately. See [background services](docs/docs/guides/background-service.md).
+
 The existing [Docker Compose setup](docs/docs/developers/deployment.md) builds from source. Homebrew, prebuilt registry images, PyPI publication and desktop installers are optional future work. **No new repository is required to publish the Python package.**
 
 Credentials stay encrypted on the backend machine. Preserve the database and vault key together. Remote access needs a workspace API token. Exchange and automated strategy execution require separate server flags and reviewed approvals; see [deployment](docs/docs/developers/deployment.md).

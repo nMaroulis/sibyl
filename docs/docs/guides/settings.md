@@ -112,3 +112,7 @@ Expand a source in **Market data → Source health** for compact allowance cards
 Reviewed Binance Spot GET requests use their documented weights; Kraken private account/history POST reads use conservative key-scoped estimates. Coinbase Exchange Sandbox has separate public/private/fills allowances. Coinbase Advanced and other unreviewed endpoints keep their existing native limiter and base spacing; their provider headroom is unknown. Actual account tiers and outside traffic are not inferred.
 
 **Read budget wait** means a read was deferred before sending; it does not mean the exchange is offline. Imports retain their saved progress. Native orders/cancellations keep their existing single-attempt contract; this policy never queues or replays them. Extra bypass/coverage details explain what the estimate includes. All quota evidence is local to the current backend process and resets on restart; real provider usage does not. See [policy scope](../developers/provider-control.md#reviewed-quota-policies).
+
+### Background service
+
+Expand **Workspace → Background service** for native current-user service state, workspace matching and copyable CLI controls. It reads the OS only when opened/refreshed; it cannot execute service changes. Preview and install from your local terminal, then start explicitly. See [background service setup](background-service.md).

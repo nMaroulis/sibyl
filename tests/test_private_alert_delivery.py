@@ -488,7 +488,9 @@ def test_http_destination_and_generic_receipt_routes_are_private_without_probes(
     assert not any("Additional external alert channels" in item for item in areas["operations"]["pending"])
 
 
-def test_full_http_policy_targets_and_private_receipt_aliases(client, monkeypatch):
+def test_full_http_policy_targets_and_private_receipt_aliases(manual_client, monkeypatch):
+    # Control evaluation explicitly: an automatic pre-opt-in trigger is deliberately not delivered.
+    client = manual_client
     services = client.app.state.services
     private = services.private_channels
     private.save(

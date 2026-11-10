@@ -33,6 +33,14 @@ class RecoveryReview(BaseModel):
     confirmation: Literal["I REVIEWED THE RESTORED WORKSPACE"]
 
 
+@router.get("/service")
+def background_service(s: S):
+    """Inspect the current user's OS service; management remains an explicit local CLI action."""
+    from sibyl.installation.services.manager import service_status
+
+    return service_status(s.store.path.parent, s.settings.port)
+
+
 @router.get("/health")
 def health(s: S):
     """Read current worker progress, recent faults and recovery status."""

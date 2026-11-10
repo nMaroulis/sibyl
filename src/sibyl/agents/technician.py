@@ -24,6 +24,7 @@ SYSTEM_PROMPT = (
     "Use source_health for actual saved read outcomes, quota allowance/counter evidence, waiting work and coverage gaps. Distinguish application estimates from reported provider limits, transport success from credential/data validity, and read deferral from a provider outage. It is passive; do not recommend retrying uncertain writes or bypassing native limits. "
     "Use telegram_delivery_review to explain actual app-origin delivery outcomes and separate user acknowledgments. It cannot read private message bodies or send/review messages. "
     "Use notification_history for retained inbox cleanup policy, protections and actual receipts; never clear history for the user. "
+    "Use background_service_status for the local OS login-service state and CLI instructions. Native manager state is not API readiness; the currently viewed server may be a manual process or another workspace. You cannot install/start/stop services. Never request environment-file contents or credentials. "
     "Use worker_incidents for saved stalls, observation gaps and confirmed resumption of progress; observation_ended means recovery is unknown. It cannot establish external uptime or restart a worker. Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
     "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace "
@@ -129,6 +130,7 @@ GUIDES = {
             "Inspect server configuration, actual background-worker progress/faults, encrypted backup controls and documentation links in Workspace. Use workspace_operations for current diagnostics. Run health check in Workspace explicitly creates a bounded read-only SQLite check and content-free JSON report; download is passive, and reports expire on restart. A quick check does not verify account data or every database invariant. A worker heartbeat does not prove provider readiness or successful trades.",
             "Complete release wheels include the dashboard and can run with sibyl --open-browser, without Node.js. Use sibyl --version or --help for launcher options. Public wheel URLs require a published GitHub Release. Homebrew, PyPI and prebuilt registry images remain optional future work; no new repository is needed for the Python package.",
             "Source checkouts keep their repository .sibyl workspace. Installed apps default to per-user application data: macOS Application Support/Sibyl, Windows Local AppData/Sibyl or Linux XDG data/sibyl. Use --data-dir or SIBYL_DATA_DIR to open an existing workspace; no installer moves or deletes it.",
+            "Background service in Workspace reads native launchd/systemd/Task Scheduler status. Use sibyl service preview to inspect generated choices, install to register next-login startup without starting now, then start deliberately. Stop disables future login starts until the next start. Reinstall with --replace after stopping when the Python environment moves. No admin/root service or password is requested; Windows requires the user to be logged in and task termination may be abrupt. Uninstall retains workspace/vault/logs. A private --env-file path can be supplied explicitly; shell-only environment values are not copied.",
             "Use --env-file for an explicit configuration file, --no-env-file to ignore .env, and --port for a different listening port. Use Workspace backups for encrypted online SQLite snapshots, inspection/download and separate-directory restore. Keep the archive passphrase outside agent chat. For manual filesystem copies, stop the app and copy its databases and vault key together.",
             "If workspace access is token-protected, enter the server's configured access token in the browser's access field, never in agent chat.",
             "Local jobs in Workspace saves paused health-check, retained accounting or pinned forecast-training tasks. Run once queues explicit work; Enable schedule starts future occurrences. Pausing stops scheduling, Cancel targets one run, and Archive also withdraws queued/run interest. Inspect/download actual receipts; read-only interrupted work can retry, while training is never automatically repeated after interruption.",
@@ -335,6 +337,22 @@ def create_agent(services: Services, **runtime) -> Agent:
             else {"available": False},
             "url": "/settings?tab=workspace",
             "backup_help": "Create a passphrase-encrypted archive in Settings → Workspace. It contains local databases, documents and the vault key inside encryption. Download it and keep the passphrase separately. Restore creates a separate workspace with automatic work paused. Launch the returned directory, review connections/orders, complete recovery and restart. Accounts remain inactive until explicitly enabled.",
+        }
+
+    @agent.tool
+    def background_service_status() -> dict:
+        """Inspect the current user's installed OS service, observed process state and CLI controls.
+
+        Use for startup-at-login, installation, start/stop, log locations or moved
+        Python environments. Returns verified service ownership and workspace matching.
+        OS state does not prove HTTP readiness or worker progress. Changes require
+        explicit local CLI commands; this tool cannot manage a service.
+        """
+        from sibyl.installation.services.manager import service_status
+
+        return {
+            **service_status(services.store.path.parent, services.settings.port),
+            "url": "/settings?tab=workspace",
         }
 
     @agent.tool

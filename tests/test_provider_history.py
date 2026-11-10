@@ -135,12 +135,18 @@ def test_retention_bounds_hours_and_errors_without_inventing_missing_samples(sto
         assert db.execute("SELECT COUNT(*) FROM provider_read_errors").fetchone()[0] == 0
 
 
-def test_restart_preserves_history_without_marking_current_credentials_checked(client, settings, monkeypatch):
-    history = client.app.state.services.market.read_history
-    history.record(source(), "previous", 25, None)
+def test_restart_preserves_history_without_marking_current_credentials_checked(settings, monkeypatch):
+    # A restart is sequential, not two schedulers sharing a workspace. Stop test
+    # scheduling before seeding facts: telemetry deliberately drops contended writes.
     old_id = "connection:" + uuid4().hex
-    history.record({**source(old_id, "test"), "kind": "connection"}, "removed", 40, "authentication")
+    with TestClient(create_app(settings)) as original:
+        original.portal.call(original.app.state.services.workers.close)
+        history = original.app.state.services.market.read_history
+        history.record(source(), "previous", 25, None)
+        history.record({**source(old_id, "test"), "kind": "connection"}, "removed", 40, "authentication")
+        assert history.recording()["dropped_observations"] == 0
     with TestClient(create_app(settings)) as restarted:
+        restarted.portal.call(restarted.app.state.services.workers.close)
         market = restarted.app.state.services.market
         monkeypatch.setattr(market, "client", lambda *_: pytest.fail("History must not probe a provider"))
         current = restarted.get("/api/v1/providers/health?source=binance").json()["items"][0]

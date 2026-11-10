@@ -13171,3 +13171,81 @@ details[open] > summary {
   font-size: 11px;
   color: var(--accent);
 }
+
+
+/* Explicit local service status and copyable terminal commands. */
+.background-service > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+  padding: 4px 0;
+}
+.background-service summary > div {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.background-service summary strong {
+  font-size: 13px;
+}
+.background-service summary span:not(.badge) {
+  font-size: 10px;
+  color: var(--muted);
+}
+.background-service-body {
+  padding-top: 16px;
+}
+.background-service .footnote {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.background-service-commands {
+  padding: 15px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: linear-gradient(110deg, #f7f9ff, #fff);
+  margin: 16px 0;
+}
+.background-service-commands > strong {
+  font-size: 12px;
+}
+.service-command {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid #eaf0f8;
+}
+.service-command > span {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+.service-command code {
+  font-size: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.background-service .workspace-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+@media (max-width: 600px) {
+  .service-command {
+    grid-template-columns: minmax(0, 1fr) 30px;
+    gap: 8px;
+  }
+  .service-command > span {
+    grid-column: 1 / -1;
+  }
+  .background-service > details > summary {
+    flex-wrap: wrap;
+  }
+}

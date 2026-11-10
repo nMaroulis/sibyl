@@ -2,7 +2,7 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — November 9, 2026
+## Audited snapshot — November 10, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Unchecked entries bundle broad follow-up scopes and acceptance work; completing an extension does not necessarily close its whole parent entry. Multi-user work is deferred and excluded from the local implementation sequence.
 
@@ -12,7 +12,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Portfolio accounting           | partial       | Complete history/flows, wider fee policies and wallet coverage beyond retained cross-pair FIFO.                                                   |
 | Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
-| Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, service support and live six-channel acceptance.                                      |
+| Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
 | Strategy research              | partial       | Multi-asset deployment/rebalancing, separate ML/RL pipelines and optional Freqtrade.                                              |
 | Sibyl & messaging              | partial       | Broader grounding evaluation, additional media and live private-channel/processor acceptance.                       |
@@ -252,7 +252,10 @@ Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity q
 
 ## Cross-cutting and optional expansion
 
-### Distribution — Python package ready; publication pending
+### Distribution — Python package and user services ready; publication pending
+
+- [x] Add native macOS LaunchAgent, Linux systemd user unit and SID-specific Windows login-task CLI controls, safe preview/ownership/port handling, private rotating logs and read-only Settings/Technician status.
+- [ ] Complete real platform login/logout/upgrade/outage acceptance; broader installers, signing and registry publication remain separate work.
 
 The release path is a complete Python wheel and source archive published from the existing repository. Source checkout and local Docker Compose remain available. No Homebrew repository or registry is required; see [distribution](distribution.md).
 

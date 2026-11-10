@@ -59,7 +59,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [ ] Broader cross-request tracing, diagnostics and external process/host outage monitoring.
 - [x] Audited credential/key rotation with safe recovery.
 - [x] Additional private alert delivery routes through the existing Discord, Slack, Signal, WhatsApp and email clients.
-- [ ] Additional installation/service support; generic outbound webhooks and native push are optional expansions.
+- [x] Native launchd/systemd-user/Windows Task Scheduler CLI management with preview, ownership-protected definitions, loopback/port checks, private rotating logs and read-only UI/Technician status.
+- [ ] Broader real OS login/logout/upgrade acceptance and additional installers; generic outbound webhooks and native push remain optional expansions.
 - [ ] Release/registry/signing and live external-service acceptance where access is available.
 
 ## Completion rules
