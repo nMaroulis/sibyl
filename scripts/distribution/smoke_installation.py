@@ -131,6 +131,7 @@ def main() -> None:
                 )
                 assert retention["preview"]["eligible"] == 0
                 assert request_json("/notifications/export")["items"] == []
+                assert request_json("/strategies/portfolios")["items"] == []
                 calibration = request_json("/library/calibrations")
                 assert calibration["reports"] == []
                 assert all(not row["enabled"] for row in calibration["policies"].values())

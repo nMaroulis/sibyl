@@ -61,11 +61,12 @@ Execution, imports and recovery vary by provider. Each exchange card in Settings
 Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Bollinger Surge, Impulse Breakout and Quantum Momentum**. Start with a simple configuration, then expand indicator, risk and execution settings.
 
 - **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against cost-aware buy-and-hold, cash, installment and 50/50 references, drawdowns and trade-level metrics.
+- **Portfolio lab:** research 2–8 asset target allocations, interval/drift rebalancing, quote cash, cost-matched benchmarks and exact-input replay, with allocation/trade charts and full execution evidence.
 - **Validate:** compare a small grid or sample a larger parameter space with a reproducible seed, then run chronological holdouts and expanding walk-forward tests. Inspect candidate coverage, save inputs and rerun exact studies.
 - **Monitor:** follow paper or separately approved exchange runs through charts, execution markers and a persistent decision journal.
 - **Control:** use account-bound budgets, order limits, a global strategy halt and optional shared exposure and observed daily-loss controls.
 
-[Strategy studio](docs/docs/guides/strategies.md) · [Validation](docs/docs/guides/strategy-validation.md) · [Exchange execution](docs/docs/guides/strategy-execution.md)
+[Strategy studio](docs/docs/guides/strategies.md) · [Portfolio lab](docs/docs/guides/portfolio-research.md) · [Validation](docs/docs/guides/strategy-validation.md) · [Exchange execution](docs/docs/guides/strategy-execution.md)
 
 ### Sibyl & Agents · A team you can talk to
 

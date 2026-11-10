@@ -1,8 +1,9 @@
+import { PortfolioResearch } from '../components/strategies/portfolio-research';
 import { CustomStrategies } from '../components/strategies/custom-strategies';
 import { BenchmarkComparison } from '../components/strategies/benchmark-comparison';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FlaskConical, Play, Radio } from 'lucide-react';
+import { FlaskConical, Layers3, Play, Radio } from 'lucide-react';
 import {
   Badge,
   Change,
@@ -193,13 +194,15 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
       setBusy('');
     }
   };
-  const view = selectedView === 'monitor' ? 'monitor' : 'build';
+  const view =
+    selectedView === 'monitor' ? 'monitor' : selectedView === 'portfolio' ? 'portfolio' : 'build';
   const tabs = (
     <SectionTabs
       id="strategies"
       label="Strategy workspace"
       items={[
         { id: 'build', label: 'Build & backtest', icon: FlaskConical },
+        { id: 'portfolio', label: 'Portfolio lab', icon: Layers3 },
         {
           id: 'monitor',
           label: 'Monitor',
@@ -208,9 +211,30 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
         },
       ]}
       value={view}
-      onChange={(value) => setSearch(value === 'monitor' ? { view: 'monitor' } : {})}
+      onChange={(value) => setSearch(value === 'build' ? {} : { view: value })}
     />
   );
+  if (selectedView === 'portfolio')
+    return (
+      <>
+        <PageTitle
+          title="Portfolio lab"
+          description="Research target allocations and rebalancing across assets."
+        />
+        {accountContext}
+        {tabs}
+        <SectionPanel id="strategies" value={view}>
+          {!selection.active_ids.length && (
+            <AccountSetup
+              selection={selection}
+              page="portfolio research"
+              description="Connect one or many accounts, or use the small Demo preview option to explore synthetic portfolio research. Saved studies remain readable."
+            />
+          )}
+          <PortfolioResearch demo={demoInput} canRun={selection.active_ids.length > 0} />
+        </SectionPanel>
+      </>
+    );
   if (search.get('view') === 'monitor')
     return (
       <>

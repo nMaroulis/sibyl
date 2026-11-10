@@ -27,7 +27,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] On-demand base-asset balance comparisons, native dust facts, reviewed manual adoption/release and atomic exact-account/pair new-run handoff with original basis, flow-neutral shared P&L and inherited correction guards.
 - [ ] Reviewed repair/reversal across executed ownership descendants, verified manual-trade classifications and cash-flow-adjusted lifetime return statistics.
 - [x] Native optional Optuna TPE/random numeric distributions, causal trusted-plugin validation and one-off pinned research jobs, with bounded trial/test evidence and exact version-pinned replay.
-- [ ] Multi-asset historical deployment/rebalancing and explicitly approved execution.
+- [x] Multi-asset historical target-allocation studies with exact common inputs, post-cost sizing, interval/drift rebalancing, cost-matched benchmarks, interactive/paged evidence and version/fingerprint-checked offline reruns.
+- [ ] Explicitly approved multi-asset paper/exchange execution and coordinated allocation/venue policies.
 - [ ] Separate causal ML/RL training/evaluation pipelines and optional Freqtrade integration.
 
 ## 4. Agents and messaging

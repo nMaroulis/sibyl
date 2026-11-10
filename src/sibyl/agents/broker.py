@@ -30,6 +30,7 @@ SYSTEM_PROMPT = (
     "not a venue ID; ask or list records if unclear. This tool reads retained observations, not current "
     "exchange state. Never suggest an uncertain order is safe to resubmit. "
     "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. "
+    "Portfolio lab studies use backtest_report for exact asset targets, common window, allocation/cost metrics and bounded fills. They are historical rebalancing simulations with final liquidation, not running paper/exchange strategies. Gross turnover excludes initial/final fills; excess return is percentage points versus cost-matched buy-and-hold. "
     "Use backtest_report for recorded reference portfolio metrics and strategy_help benchmarks for their assumptions. "
     "Use strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
     "supported rules and assumptions. Call backtest_report for a saved or selected historical run: "
@@ -180,6 +181,13 @@ def create_agent(services: Services, **runtime) -> Agent:
             "custom_research": strategies.plugins.registry.catalog(),
             "recent_paper_orders": store.orders()[:10],
             "strategy_jobs": strategies.jobs(),
+            "portfolio_studies": [
+                {
+                    key: report[key]
+                    for key in ("id", "title", "source", "environment", "return_pct", "quote", "window")
+                }
+                for report in strategies.portfolios.list()["items"][:5]
+            ],
             "backtests": [
                 {
                     "id": run["id"],
@@ -252,17 +260,18 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def backtest_report(run_id: str = "") -> dict:
-        """Read a saved historical backtest or the page-selected result, including trusted plugin
-        revisions. Returns source, fees, metrics, assumptions and bounded simulated executions.
-        These are historical tests, not predictions or live fills. Never reruns or deploys a
-        strategy.
+        """Inspect a saved single/multi-asset backtest; omit run_id for the page selection.
+
+        Returns pinned inputs/plugin revisions, costs, metrics and ten recent simulated
+        executions/rebalances. Historical research only; cannot rerun or deploy.
         """
         import json
 
         run_id = selected("backtest_id", run_id or None, "")
         with store.db() as db:
             row = db.execute(
-                "SELECT payload FROM runs WHERE id=? AND kind IN ('backtest','plugin_backtest')", (run_id,)
+                "SELECT payload FROM runs WHERE id=? AND kind IN ('backtest','plugin_backtest','portfolio_backtest')",
+                (run_id,),
             ).fetchone()
         if not row:
             return {"note": "Choose a saved backtest first.", "url": "/strategies"}
@@ -280,13 +289,21 @@ def create_agent(services: Services, **runtime) -> Agent:
                     "fills",
                     "round_trips",
                     "plugin_signals",
+                    "allocations",
+                    "rebalance_events",
                 }
             },
             "benchmarks": {
-                name: {key: value for key, value in item.items() if key not in {"curve", "fills"}}
+                name: {
+                    key: value
+                    for key, value in item.items()
+                    if key not in {"curve", "fills", "allocations", "rebalance_events", "pre_liquidation"}
+                }
                 for name, item in result.get("benchmarks", {}).items()
             },
             "recent_round_trips": result.get("round_trips", [])[-10:],
+            "recent_fills": result.get("fills", [])[-10:],
+            "recent_rebalances": result.get("rebalance_events", [])[-10:],
             "evidence_trade_limit": 10,
             "simulation": True,
         }

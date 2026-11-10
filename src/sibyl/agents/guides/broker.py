@@ -30,6 +30,7 @@ StrategyTopic = Literal[
     "limits",
     "benchmarks",
     "ownership",
+    "portfolio",
 ]
 
 TRADE = {
@@ -164,6 +165,18 @@ TRADE = {
 }
 
 STRATEGIES = {
+    "portfolio": Guide(
+        "Research a multi-asset portfolio",
+        "/strategies?view=portfolio",
+        (
+            "Open Portfolio lab, choose 2–8 exact pairs sharing one quote, and set weights; unallocated capital remains quote cash. Demo is explicit through the account mode.",
+            "Choose current closed candles or compatible immutable datasets, then interval or previous-close drift rebalancing. Expand costs to set per-fill quote fees and adverse slippage.",
+            "Run the historical study. Inspect equity/drawdown/allocation or asset price/trade charts, cost-matched buy-and-hold/cash, paged fills and source receipts. Save/export and rerun exact inputs offline; ask Broker with the selected study.",
+        ),
+        (
+            "No currency conversion, leverage, source mixing, gap filling, order submission or strategy deployment. Inputs share one consecutive common UTC window. Post-cost quantities use the execution open; sells fund buys. Fractional units/unlimited modeled liquidity/zero cash yield are assumptions. Both portfolios liquidate at the final close; allocations are marked before that exit. User-chosen weights/assets and repeated experiments can overfit; historical returns are not forecast performance.",
+        ),
+    ),
     "ownership": Guide(
         "Review strategy position ownership",
         "/strategies?view=monitor",

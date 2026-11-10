@@ -56,6 +56,7 @@ module.exports = {
           [
             'guides/trading',
             'guides/strategies',
+            'guides/portfolio-research',
             'guides/strategy-validation',
             'guides/strategy-monitor',
             'guides/strategy-execution',
@@ -178,6 +179,7 @@ module.exports = {
           'Research engines, execution controls, limits and persistent alerts.',
           [
             'developers/strategy-research',
+            'developers/portfolio-research',
             'developers/adaptive-strategy-research',
             'developers/strategy-plugins',
             'developers/strategy-controls',

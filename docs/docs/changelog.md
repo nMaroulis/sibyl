@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Portfolio lab for 2–8 fixed-weight assets: exact same-quote/source common windows, residual cash, post-cost target sizing, interval or previous-close drift rebalancing and identical-input buy-and-hold/cash comparisons. Interactive region/range zoom, allocation and price/trade views, bounded markers/paged fills, cost/risk/source evidence, exports and checked offline reruns share the existing native Broker tools. Demo stays explicit; coordinated multi-asset execution and real-market acceptance remain pending.
+
 - Optional semantic search cutoff calibration with separate owner-labeled fit/held-out questions, actual top-passage evidence and deterministic threshold selection. Explicit per-scope activation, complete corpus/index bindings, stale and concurrent-change abstention, safe stop/restart, raw comparison isolation and native Wiki/Reporter quality reads keep the filter inspectable. Active search returns one passage or none; this is empirical retrieval evidence, not answer confidence. Real-model and forward-quality acceptance remain pending.
 
 - Native user-login service management for macOS launchd, Linux systemd user units and Windows Task Scheduler: preview/install/start/status/stop/restart/uninstall, marked definitions, exact launch receipts, explicit replacement and occupied-port checks. Stream-independent rotating logs, a lazy Settings status panel and native read-only Technician help keep OS process state distinct from API/worker readiness. Installation never starts immediately or removes workspace data; Windows hard-stop and real-platform acceptance limits remain explicit.

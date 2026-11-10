@@ -14,7 +14,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
-| Strategy research              | partial       | Multi-asset deployment/rebalancing, separate ML/RL pipelines and optional Freqtrade.                                              |
+| Strategy research              | partial       | Approved multi-asset execution, separate ML/RL pipelines and optional Freqtrade.                                              |
 | Sibyl & messaging              | partial       | Broader grounding evaluation, additional media and live private-channel/processor acceptance.                       |
 | ProtoLink workflows            | partial       | Broader semantic/adversarial evaluation and additional scoped action contracts beyond approved local notes.                                   |
 | Forecasting                    | partial       | Additional trained families, forward calibration/evaluation and broader managed model lifecycles. |
@@ -154,7 +154,8 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 - [x] Add optional nested chronological candidate selection, retained inner metrics, bounded work and independent outer tests.
 - [x] Add continuous single-market walk-forward replay carrying one cash/asset balance and entry cost across chosen-parameter windows, with actual fills, transition balances, fixed-setting comparison and native Broker evidence.
 - [x] Add native optional Optuna TPE/random numeric distributions, training-only selection, independent later tests, trial receipts and version-pinned exact replay. See [adaptive research](adaptive-strategy-research.md).
-- [ ] Add multi-asset deployment/rebalancing with explicit allocation and execution policy; repeated user experiments can still overfit.
+- [x] Add fixed-target multi-asset historical portfolio studies, exact common-source/quote windows, cost-conserving sizing, interval/previous-close drift rules, full trade/allocation evidence, cost-matched references and checked offline replay. See [portfolio research](portfolio-research.md).
+- [ ] Add reviewed multi-asset paper/exchange deployment and coordinated allocation/execution policy; repeated user experiments can still overfit.
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
 - [x] Add exact-window cost-aware cash, buy-and-hold, scheduled-installment and 50/50 asset/cash references, selectable equity overlays and actual cost/metric summaries. Saved same-input strategy comparisons remain available; continuous deployment simulation is separate.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
@@ -315,7 +316,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 ## Local implementation sequence
 
 1. **Reconciliation and venues:** remaining funding/history pagination, complete wallet/fee coverage, advanced-order adapters and authenticated failure-case acceptance.
-2. **Strategy ownership and deployment:** reviewed residual/manual inventory, multi-asset historical deployment/rebalancing, explicitly approved allocation execution and separate causal ML/RL/Freqtrade research.
+2. **Strategy ownership and deployment:** reviewed residual/manual inventory and explicitly approved multi-asset allocation execution beyond the implemented historical portfolio lab and separate causal ML/RL/Freqtrade research.
 3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
 4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.
 5. **Research integrations:** additional hosted embeddings and live acceptance, licensed article processing, configurable research sources and chain/disclosure archives; cited web research stays deferred.

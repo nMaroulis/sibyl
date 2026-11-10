@@ -247,6 +247,9 @@ def snapshot_answer(module: str, evidence) -> str:
                 "Inspect the model's held-out test results; future coverage and profitable trades are not guaranteed."
             )
         return f"The {evidence['horizon']} day log-return baseline ends at {point['value']:,.2f}, with an approximate interval of {point['lower']:,.2f}–{point['upper']:,.2f}. Source: {evidence['source']}. This is an uncalibrated statistical baseline, not a trained model."
+    if module == "broker" and evidence.get("kind") == "portfolio_backtest":
+        label = "Demo · synthetic prices" if evidence["source"] == "demo" else "Recorded historical prices"
+        return f"{label}. Portfolio study across {len(evidence['parameters']['legs'])} assets and {evidence['window']['count']} common candles: {evidence['return_pct']:+.2f}% net return, {evidence['rebalance_count']} executed rebalances and {evidence['fees']:.4f} {evidence['quote']} simulated fees. Difference versus buy-and-hold: {evidence['excess_return_pct']:+.2f} percentage points. Historical simulation; no running strategy or exchange orders."
     if module == "broker" and evidence.get("simulation"):
         label = (evidence.get("plugin") or {}).get("name", evidence["strategy"])
         return (

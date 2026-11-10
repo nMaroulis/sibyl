@@ -93,3 +93,8 @@ After a new backtest, **Reference portfolios** compares buy & hold, cash, schedu
 **Equity & benchmark → Reference portfolio** switches the dashed comparison path. The table shows returns, maximum drawdown, Sharpe, actual simulated fees and fill count. Cash earns zero. Installments split capital already available at the start into equal purchases, with no later deposits. The 50/50 reference rebalances toward half the pre-trade asset value; costs can leave a small deviation from the target. Scheduled orders use candle opens, configured fees/slippage and final-close liquidation.
 
 These fixed references are single-asset research, not an optimized allocation or deployment simulation. Existing saved runs keep their original evidence; use **Rerun exact input** to calculate the new reference set. Walk-forward validation retains its existing fixed-setting and buy-and-hold comparisons.
+
+
+## Multi-asset portfolio research
+
+The separate **Portfolio lab** tab backtests fixed target weights across 2–8 exact same-quote assets, with interval/drift rebalancing, modeled costs, common immutable inputs and cost-matched buy-and-hold/cash. It has interactive equity/allocation/trade charts, fill exports, saved studies and checked offline replay. See [Portfolio lab](portfolio-research.md). This does not start a monitored or exchange strategy.
