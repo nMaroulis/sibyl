@@ -108,7 +108,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         data_settings.apply_startup()
         market = Market(config, store, data_settings)
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
-        library = ResearchLibrary(config.data_dir, research.news_service.repository)
+        library = ResearchLibrary(config.data_dir, research.news_service.repository, store=store)
         workers = WorkerHealth(store)
         workers.recovery_required = recovery
         archives = WorkspaceArchives(store)

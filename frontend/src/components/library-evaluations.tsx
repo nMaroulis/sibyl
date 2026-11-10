@@ -240,7 +240,7 @@ export function LibraryEvaluations({ semanticReady }: { semanticReady: boolean }
             </div>
             {!semanticReady && (
               <p className="footnote">
-                Keyword search needs no model. Configure and index a local embedding model above to
+                Keyword search needs no model. Configure and index an embedding model above to
                 compare semantic methods.
               </p>
             )}

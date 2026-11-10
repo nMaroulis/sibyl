@@ -113,9 +113,9 @@ def research_tools(library: ResearchLibrary | None) -> list[Tool]:
     def research_search_status() -> dict:
         """Report semantic-search setup and indexed/missing passage coverage.
 
-        Use before semantic/hybrid retrieval. Saved configuration does not verify
-        model-server availability. This reads status; setup and indexing belong
-        in Research. It does not download models or embed documents.
+        Returns the local/hosted provider and model, saved text-processing permission,
+        and actual indexed/missing coverage. Use before semantic/hybrid retrieval or
+        to explain setup. Saved configuration alone does not verify availability.
         """
         return library.semantic.status() if library else {"configured": False, "available": False}
 

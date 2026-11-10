@@ -18,7 +18,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Sibyl & messaging              | partial       | Broader grounding evaluation, additional media and live private-channel/processor acceptance.                       |
 | ProtoLink workflows            | partial       | Broader semantic/adversarial evaluation and additional scoped action contracts beyond approved local notes.                                   |
 | Forecasting                    | partial       | Additional trained families, forward calibration/evaluation and broader managed model lifecycles. |
-| Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                         |
+| Research & news                | partial       | Broader semantic quality evaluation, additional hosted providers, calibrated relevance and cited web search.                         |
 | Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.                                  |
 | Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                                           |
 
@@ -231,7 +231,8 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 - [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
 - [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
 - [x] Add owner-labeled saved retrieval evaluations over pinned corpora/indexes, exact rankings/citations and precision/recall/MRR/nDCG/hit-rate reports.
-- [ ] Evaluate semantic relevance and answer grounding across real models/corpora, add calibrated no-answer thresholds and support reviewed hosted embedding providers. Controlled-vector tests establish contracts, not real-model relevance.
+- [x] Add reviewed OpenAI/Mistral embedding adapters through native ProtoLink, independent encrypted keys, explicit text-processing permission, bounded raw response checks, provider identity and existing index/evaluation revision fences.
+- [ ] Evaluate semantic relevance and answer grounding across real models/corpora, add calibrated no-answer thresholds, broader hosted-provider coverage and live acceptance. Controlled-vector tests establish contracts, not real-model relevance.
 - [ ] Add cited web-search tools; local hybrid retrieval is implemented.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
 - [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.
@@ -313,7 +314,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 2. **Strategy ownership and deployment:** reviewed residual/manual inventory, multi-asset historical deployment/rebalancing, explicitly approved allocation execution and separate causal ML/RL/Freqtrade research.
 3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
 4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.
-5. **Research integrations:** hosted embeddings, licensed article processing, configurable research sources and chain/disclosure archives; cited web research stays deferred.
+5. **Research integrations:** additional hosted embeddings and live acceptance, licensed article processing, configurable research sources and chain/disclosure archives; cited web research stays deferred.
 6. **Operations and distribution:** cross-request tracing, external host monitoring, reviewed service/install support and publication/signing/registry acceptance. Durable local jobs, observed worker incidents and local credential rotation are implemented.
 
 Multi-user hosting is deferred. No user accounts, permissions, tenant isolation or distributed-worker work is included in this sequence.

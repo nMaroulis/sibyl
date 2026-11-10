@@ -8,7 +8,12 @@ export type SemanticStatus = {
   configured: boolean;
   revision: number;
   indexing: boolean;
+  has_api_key?: boolean;
+  hosted?: { items: HostedEmbeddingProvider[]; install: string };
   profile: {
+    provider?: 'openai' | 'mistral';
+    remote_consent?: boolean;
+    identity?: string;
     endpoint?: string;
     model?: string;
     model_digest?: string;
@@ -18,4 +23,12 @@ export type SemanticStatus = {
   coverage: Record<'all' | 'document' | 'news', SemanticCoverage>;
   limits: { passages: number; bytes: number };
   note: string;
+};
+
+export type HostedEmbeddingProvider = {
+  id: 'openai' | 'mistral';
+  label: string;
+  endpoint: string;
+  models: string[];
+  available: boolean;
 };

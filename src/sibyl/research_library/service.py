@@ -18,15 +18,16 @@ from sibyl.research_library.semantic.service import SemanticIndex
 class ResearchLibrary:
     """Keep original uploads, extracted pages and search rows in one transactional database.
 
-    Keyword retrieval uses BM25; optional local embeddings add semantic/hybrid ranking.
+    Keyword retrieval uses BM25; optional local or consented hosted embeddings add semantic/hybrid ranking.
     Ranking does not establish confidence or source truth. News is an
     explicitly synchronized copy of the retained public archive, never a network
     refresh. Excerpts are untrusted source text, not agent instructions.
     """
 
-    def __init__(self, directory: Path, news_repository):
+    def __init__(self, directory: Path, news_repository, *, store=None):
         self.path = directory / "research-library.sqlite"
         self.news = news_repository
+        self.store = store
         self.extraction_slots = threading.BoundedSemaphore(2)
         with self.db() as db:
             db.execute("PRAGMA journal_mode=WAL")

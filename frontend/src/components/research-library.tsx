@@ -338,7 +338,8 @@ export function ResearchLibrary() {
         <p className="footnote">
           PDF text extraction supports up to 100 pages and 8 MiB per file. Scans need OCR first. The
           library retains originals for reindexing; publisher news follows the archive's retention
-          policy. Local semantic search is optional; cited web search remains pending.
+          policy. Local or consented hosted semantic search is optional; cited web search remains
+          pending.
         </p>
       </Panel>
       {importing && (

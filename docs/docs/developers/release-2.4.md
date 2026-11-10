@@ -47,7 +47,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Add trained fixed-scale Huber autoregression, validated delta, training diagnostics and existing chronological/rolling/portable/recalibration workflows.
 - [x] Native statsmodels nonseasonal ARIMA(p,1,q) with explicit bounded orders, training-only scaling/fit, fixed-context causal filtering, real diagnostics and existing rolling/portable/recalibration contracts.
 - [ ] Additional neural/model families, seasonal/exogenous models and larger real-market validation.
-- [ ] Hosted embedding providers, calibrated retrieval abstention and evaluated finance/entity sentiment.
+- [x] Optional OpenAI/Mistral embeddings through native ProtoLink OpenAIEmbedder, independent encrypted keys, explicit hosted-text permission, checked response identity and revision-fenced indexing/evaluation.
+- [ ] Additional hosted providers, live provider/model quality acceptance, calibrated retrieval abstention and evaluated finance/entity sentiment.
 - [ ] Licensed article ingestion and configurable research integrations.
 - [ ] Additional chain/history/watch support, disclosure archives and interpretable advanced analytics.
 

@@ -124,6 +124,11 @@ class RetrievalEvaluations:
                 semantic_revision=revision,
                 model=profile.get("model"),
                 model_digest=profile.get("model_digest"),
+                **(
+                    {"provider": profile["provider"], "identity": profile["identity"]}
+                    if profile.get("provider")
+                    else {}
+                ),
                 index=vectors.hexdigest(),
             )
         return result
@@ -159,7 +164,7 @@ class RetrievalEvaluations:
             coverage = self.library.semantic.coverage(db, suite["kind"])
             if semantic and (not self.library.semantic.config(db)[1] or not coverage["indexed"]):
                 raise ValueError(
-                    "Configure a local embedding model and index passages before comparing semantic methods."
+                    "Configure an embedding model and index passages before comparing semantic methods."
                 )
             item = {
                 "id": uuid4().hex,
@@ -182,7 +187,7 @@ class RetrievalEvaluations:
                 "summary": {},
                 "completed": 0,
                 "total": len(suite["cases"]) * len(body.methods),
-                "note": "Owner-labeled passage relevance, not factual verification or answer confidence. Partial indexes and incomplete gold labels limit comparisons. Latency includes local query embedding; shared-server load and caching can affect it.",
+                "note": "Owner-labeled passage relevance, not factual verification or answer confidence. Partial indexes and incomplete gold labels limit comparisons. Latency includes configured query embedding; hosted runs send queries under saved consent and may incur provider charges; shared-server load and caching can affect it.",
             }
             self._write(db, item)
         return item

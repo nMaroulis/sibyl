@@ -204,6 +204,12 @@ class Store:
                     (f"data:{name}", value),
                 )
 
+    def delete_data_profile(self, name: str) -> None:
+        """Remove one encrypted private data profile without returning its credential material."""
+        with self.vault.lock:
+            with self.db() as db:
+                db.execute("DELETE FROM workspace_settings WHERE key=?", (f"data:{name}",))
+
     def save_model_profile(
         self, provider: str, profile: dict, *, activate: bool = True, fallback_to_tools: bool = False
     ) -> None:

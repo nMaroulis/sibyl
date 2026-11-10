@@ -8,11 +8,13 @@ export function SecretField({
   value,
   onChange,
   multiline = false,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   multiline?: boolean;
+  disabled?: boolean;
 }) {
   const id = useId();
   const [revealed, setRevealed] = useState(false);
@@ -24,6 +26,7 @@ export function SecretField({
   const common = {
     id,
     required: true,
+    disabled,
     value,
     autoComplete: 'off',
     spellCheck: false,

@@ -1,4 +1,4 @@
-"""Explicit local imports and read-only source retrieval for the Research workspace."""
+"""Explicit local imports and attributable source retrieval for the Research workspace."""
 
 import base64
 import binascii
@@ -13,6 +13,7 @@ from sibyl.api.routes import S
 from sibyl.api.uploads import bounded_body
 from sibyl.research_library.evaluations.contracts import EvaluationRun, EvaluationSuite
 from sibyl.research_library.semantic.contracts import (
+    HostedSemanticSettings,
     IndexBatch,
     LocalEndpoint,
     SemanticRevision,
@@ -153,6 +154,12 @@ def semantic_models(body: LocalEndpoint, s: S):
 def semantic_settings(body: SemanticSettings, s: S):
     """Check local embedding capability and save a fresh vector space with an empty index."""
     return s.library.semantic.configure(body)
+
+
+@router.post("/semantic/hosted-settings")
+def hosted_semantic_settings(body: HostedSemanticSettings, s: S):
+    """Check one hosted embedding model after explicit text-processing consent, using a separate key."""
+    return s.library.semantic.configure_hosted(body)
 
 
 @router.post("/semantic/index")

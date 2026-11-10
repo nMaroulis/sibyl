@@ -2368,6 +2368,7 @@ stocks = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "openai" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -2405,6 +2406,7 @@ provides-extras = ["optimization", "openai", "anthropic", "gemini", "huggingface
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "openai", specifier = ">=2,<3" },
     { name = "pytest", specifier = ">=8.3,<10" },
     { name = "pytest-asyncio", specifier = ">=0.25,<2" },
     { name = "ruff", specifier = ">=0.12,<1" },

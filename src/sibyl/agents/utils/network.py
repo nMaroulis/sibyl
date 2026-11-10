@@ -203,7 +203,7 @@ class AgentNetwork:
                 for item in result.tool_evidence
             ):
                 raise SemanticNotReady(
-                    "Semantic search needs a configured local embedding model and indexed passages. "
+                    "Semantic search needs a configured embedding model and indexed passages. "
                     "Review My research → Semantic search, or select Keyword with a valid query."
                 )
             if configuration.get("provider") == "none" and any(

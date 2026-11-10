@@ -55,6 +55,18 @@ export function ProviderMark({ provider, size = 24 }: { provider: string; size?:
           />
         </svg>
       );
+    case 'mistral':
+      return (
+        <img
+          src="/brand/mistral.ico"
+          width={size}
+          height={size}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          style={{ objectFit: 'contain' }}
+        />
+      );
     case 'deepseek':
       return (
         <img

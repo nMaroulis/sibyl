@@ -45,7 +45,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'knowledge',
       title: 'Deeper research retrieval',
-      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, hosted embedding providers and cited web search. Private document/news ingestion, exact citations and optional local Ollama semantic/hybrid search are available now.',
+      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, additional hosted providers and cited web search. Private documents/news, exact citations and optional local Ollama or consented OpenAI/Mistral semantic search are available now.',
     },
     {
       module: 'news',
