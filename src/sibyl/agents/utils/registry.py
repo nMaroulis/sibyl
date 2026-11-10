@@ -146,7 +146,9 @@ class AgentRegistry:
                     primary_tool, arguments = "backtest_report", {}
                 if request.module == "analyst" and request.context.granger_lags is not None:
                     primary_tool, arguments = "market_relationships", {}
-                if request.module == "wiki" and request.context.retrieval_evaluation_id:
+                if request.module == "wiki" and request.context.retrieval_calibration_id:
+                    primary_tool, arguments = "retrieval_evaluation", {}
+                elif request.module == "wiki" and request.context.retrieval_evaluation_id:
                     primary_tool, arguments = "retrieval_evaluation", {}
                 elif request.module == "wiki" and request.context.library_passage_id:
                     primary_tool, arguments = (
@@ -165,6 +167,7 @@ class AgentRegistry:
                         request.context.library_document_id
                         or request.context.library_passage_id
                         or request.context.retrieval_evaluation_id
+                        or request.context.retrieval_calibration_id
                     )
                 ):
                     primary_tool, arguments = "search_research", {}

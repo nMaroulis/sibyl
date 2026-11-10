@@ -90,4 +90,4 @@ Every run pins the corpus and optional embedding-index fingerprint and records p
 
 Keep up to 20 suites and 100 reports. **Delete suite & reports** removes that suite's stored judgments and evaluations, preserving the source library. Removing a source does not erase excerpts already retained in these reports. These workspace records are private local data, not separately encrypted credentials.
 
-This lab measures retrieval against your judgments. It does not grade factual answers, prove broad model quality or implement calibrated no-answer thresholds. Semantic search still returns nearest passages when no source truly answers a question.
+This lab measures raw retrieval against your judgments and does not grade factual answers or prove broad model quality. Separately, [semantic cutoff calibration](search-calibration.md) fits a top-one abstention policy with distinct fit/held-out questions and explicit activation; ranking comparisons stay unfiltered.

@@ -72,6 +72,15 @@ def tool_arguments(request: AgentRequest) -> dict:
 
 def snapshot_answer(module: str, evidence) -> str:
     """Format actual tool output when language-model inference has not been configured."""
+    if (
+        isinstance(evidence, dict)
+        and isinstance(evidence.get("calibration"), dict)
+        and evidence["calibration"].get("abstained")
+    ):
+        return "Search withheld its evidence. " + evidence["calibration"].get(
+            "note",
+            "The leading passage did not meet the cutoff. This does not establish that the claim is false.",
+        )
     if isinstance(evidence, dict) and evidence.get("kind") == "account_asset_books":
         assets = sum(row["asset_count"] for row in evidence["reports"])
         return f"Cross-pair FIFO: {evidence['fill_count']} retained dependency fills across {assets} account/asset books, reported in {evidence['currency']}.\n\n{evidence['note']}\n{evidence['url']}"
@@ -79,6 +88,12 @@ def snapshot_answer(module: str, evidence) -> str:
         if "observations" not in evidence:
             return f"{len(evidence.get('items', []))} saved historical basket risk studies. Calculate a new study explicitly in Account.\n{evidence['url']}"
         return f"Historical basket risk: {evidence['observations']} consecutive daily returns. Annualized volatility {evidence['annualized_volatility_pct']:.2f}%; empirical daily 95% VaR {evidence['historical_var_95_pct']:.2f}%.\n{evidence['coverage_note']}\nCurrent-weight hypothetical basket, not measured account performance or a forecast.\n{evidence['url']}"
+    if isinstance(evidence, dict) and evidence.get("kind") == "retrieval_calibration":
+        result = evidence.get("calibration")
+        if result:
+            validation = result["validation"]
+            return f"Semantic calibration: {validation['correct_accepts']}/{validation['answerable']} relevant held-out questions accepted; {validation['incorrect_accepts']} incorrect accepts. Cutoff {result['threshold']!r}. This is empirical retrieval evidence, not answer confidence. Activation is separate.\n{evidence['url']}"
+        return f"Calibration {evidence.get('state', 'catalog')}; no completed cutoff evidence.\n{evidence['url']}"
     if isinstance(evidence, dict) and evidence.get("kind") == "retrieval_evaluation":
         if "state" not in evidence:
             return f"{len(evidence.get('items', []))} saved retrieval evaluations. Open Retrieval quality lab to label passages or inspect a report.\n{evidence['url']}"

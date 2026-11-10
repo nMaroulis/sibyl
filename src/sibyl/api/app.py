@@ -237,6 +237,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ("messaging", "Telegram messaging", messaging.tick, 0.5, 120),
             ("library", "Retained-news search index", library.synchronize_news, 30, 120),
             ("retrieval-evaluations", "Research retrieval evaluations", library.evaluations.tick, 1, 120),
+            ("retrieval-calibration", "Semantic search calibration", library.calibration.tick, 1, 120),
         ]
         for channel in ("discord", "slack", "signal", "whatsapp", "email"):
 
@@ -260,6 +261,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "messaging",
                     "library",
                     "retrieval-evaluations",
+                    "retrieval-calibration",
                     "execution-alerts",
                     "forecast-observations",
                 }
@@ -275,6 +277,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await workers.close()
             await account_streams.close()
             await asyncio.to_thread(library.evaluations.close)
+            await asyncio.to_thread(library.calibration.close)
             await asyncio.to_thread(alerts._inbox.history.close)
             await asyncio.to_thread(alert_delivery.close)
             await asyncio.to_thread(trading.alerts.close)

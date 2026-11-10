@@ -232,7 +232,8 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 - [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
 - [x] Add owner-labeled saved retrieval evaluations over pinned corpora/indexes, exact rankings/citations and precision/recall/MRR/nDCG/hit-rate reports.
 - [x] Add reviewed OpenAI/Mistral embedding adapters through native ProtoLink, independent encrypted keys, explicit text-processing permission, bounded raw response checks, provider identity and existing index/evaluation revision fences.
-- [ ] Evaluate semantic relevance and answer grounding across real models/corpora, add calibrated no-answer thresholds, broader hosted-provider coverage and live acceptance. Controlled-vector tests establish contracts, not real-model relevance.
+- [x] Fit optional owner-labeled top-one semantic cutoffs using separate fit/held-out questions, exact complete corpus/index bindings, observed-error activation rules, revision-checked opt-in and stale/concurrent-change abstention. See [calibration contracts](search-calibration.md). Raw ranking evaluations remain unfiltered.
+- [ ] Evaluate semantic relevance/answer grounding and forward cutoff quality across real models/corpora, with broader hosted-provider coverage and live acceptance. Small labeled sets and controlled-vector tests do not establish general relevance or confidence.
 - [ ] Add cited web-search tools; local hybrid retrieval is implemented.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
 - [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.

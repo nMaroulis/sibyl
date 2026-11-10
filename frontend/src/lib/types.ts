@@ -677,6 +677,7 @@ export type AgentContext = {
   library_document_id?: string;
   library_passage_id?: string;
   retrieval_evaluation_id?: string;
+  retrieval_calibration_id?: string;
   risk_study_id?: string;
   library_source_type?: 'all' | 'document' | 'news';
   library_query?: string;
