@@ -238,9 +238,11 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
     assert set(channels) == {"whatsapp", "telegram", "discord", "slack", "signal", "email"}
     assert all(not item["connected"] for item in channels.values())
     assert channels["telegram"]["status"] == "available"
-    assert all(item["status"] == "unavailable" for key, item in channels.items() if key != "telegram")
+    assert all(item["status"] == "available" for item in channels.values())
+    assert all(not item.get("enabled") for item in channels.values())
     assert "draft" not in response.text and "OLD-" not in response.text
     assert {f["id"] for f in channels["whatsapp"]["fields"]} == {
+        "api_version",
         "access_token",
         "phone_number_id",
         "app_secret",
@@ -261,6 +263,7 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
     assert set(email_fields) == {
         "email_address",
         "allowed_sender",
+        "reply_code",
         "imap_host",
         "imap_port",
         "imap_security",
@@ -288,7 +291,7 @@ def test_messaging_describes_real_fields_but_never_exposes_old_drafts(client):
 
 
 @pytest.mark.parametrize("channel", ["whatsapp", "discord", "slack", "signal", "email"])
-def test_unavailable_channels_accept_no_credentials_or_draft_writes(client, channel):
+def test_legacy_channel_paths_accept_no_credentials_or_draft_writes(client, channel):
     before = client.app.state.services.store.data_profile(f"messaging:{channel}")
     for method in (client.put, client.post, client.delete):
         response = method(f"/api/v1/settings/messaging/{channel}")
@@ -374,7 +377,11 @@ def test_native_failed_specialist_retains_prior_completed_consultations(client, 
 def test_native_agent_call_is_sibyls_only_delegation_path(client, monkeypatch):
     model(client)
     network = client.app.state.services.agents.network
-    assert set(network.agents["sibyl"].tools) == {"read_context_artifact", "investigation_reports", "briefing_schedules"}
+    assert set(network.agents["sibyl"].tools) == {
+        "read_context_artifact",
+        "investigation_reports",
+        "briefing_schedules",
+    }
     assert network.cards["sibyl"].capabilities.delegation
     assert all(not network.cards[key].capabilities.delegation for key in ROLES)
     script(monkeypatch, [delegate("wiki", "RSI"), "Wiki explained RSI."])

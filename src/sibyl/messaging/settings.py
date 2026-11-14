@@ -1,4 +1,4 @@
-"""Encrypted Telegram connection profiles; other channels remain unavailable previews."""
+"""Encrypted Telegram connection profiles; other private channels use their own profiles."""
 
 import re
 import time

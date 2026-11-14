@@ -129,6 +129,7 @@ function MarketsView({
     });
   const [method, setMethod] = useState('pearson');
   const [transform, setTransform] = useState('log_returns');
+  const [robust, setRobust] = useState(false);
   const [draft, setDraft] = useState('');
   const [symbols, setSymbols] = useState('');
   const defaults = ['BTC', 'ETH', 'SOL', 'LINK']
@@ -162,11 +163,15 @@ function MarketsView({
           source.environment === 'production' &&
           ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'].includes(timeframe))),
   );
-  const corr = useResource<Correlation>(
-    `/markets/correlation?symbols=${encodeURIComponent(comparisons)}&timeframe=${timeframe}&limit=${limit}&method=${method}&transform=${transform}&${suffix}`,
+  const comparisonPath = `/markets/correlation?symbols=${encodeURIComponent(comparisons)}&timeframe=${timeframe}&limit=${limit}&method=${method}&transform=${transform}&${suffix}`;
+  const canCompare = hasCandles && tab === 'correlation' && comparisons.split(',').length >= 2;
+  const corr = useResource<Correlation>(comparisonPath, 0, canCompare);
+  const robustComparison = useResource<Correlation>(
+    `${comparisonPath}&robust=true`,
     0,
-    hasCandles && tab === 'correlation' && comparisons.split(',').length >= 2,
+    canCompare && robust,
   );
+  const regression = robust ? robustComparison : corr;
   const select = (value: string) => {
     const next = new URLSearchParams(params);
     next.set('symbol', value);
@@ -181,6 +186,7 @@ function MarketsView({
     ...(tab === 'correlation' && corr.data
       ? {
           comparison_symbols: corr.data.symbols,
+          ...(regression.data?.regression?.robust ? { robust_regression: true } : {}),
           correlation_method: method as 'pearson' | 'spearman' | 'distance',
           correlation_transform: transform as 'log_returns' | 'prices' | 'changes',
         }
@@ -573,13 +579,19 @@ function MarketsView({
                         timeframe={timeframe}
                         limit={limit}
                       />
-                      <ReturnRelationships
-                        data={corr.data.regression}
-                        source={corr.data}
-                        timeframe={timeframe}
-                      />
                       <DataNote source={corr.data.source} label={corr.data.source_label} />
                     </div>
+                  )}
+                  {!!corr.data?.regression && (
+                    <ReturnRelationships
+                      data={regression.data?.regression}
+                      source={regression.data}
+                      timeframe={timeframe}
+                      robust={robust}
+                      onRobust={setRobust}
+                      error={regression.error}
+                      retry={regression.retry}
+                    />
                   )}
                 </>
               )}

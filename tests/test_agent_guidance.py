@@ -92,8 +92,12 @@ def test_technician_has_complete_settings_orientation_without_account_reads(clie
     assert overview["section"] == "overview" and overview["url"] == "/settings"
     assert set(overview["sections"]) >= {"exchanges", "models", "news", "market", "messaging", "workspace"}
     messaging = tool_call(client, "technician", "settings_guide", section="messaging")
-    assert "Telegram is implemented" in messaging["steps"][0]
-    assert "unavailable previews" in messaging["steps"][0]
+    assert "Telegram" in messaging["steps"][0] and "are implemented" in messaging["steps"][0]
+    assert "IMAP/SMTP" in messaging["steps"][0] and "signed WhatsApp" in messaging["steps"][0]
+    assert (
+        "incoming documents, local photo OCR and bounded speech transcription are opt-in"
+        in messaging["steps"][0]
+    )
 
 
 def test_registry_advertises_actual_docstrings_and_typed_help_schemas(client):
@@ -286,7 +290,11 @@ def test_exchange_setup_keeps_actionable_guidance_in_native_bounded_context(clie
     def respond(history, _prompt):
         step.append(True)
         if len(step) == 1:
-            return {"type": "tool_call", "tool": "exchange_setup", "args": {"exchange": "binance"}}
+            return {
+                "type": "tool_call",
+                "tool": "exchange_setup",
+                "args": {"exchange": "binance", "feature_details": True},
+            }
         visible = json.dumps(history.messages)
         assert "context_artifact" in visible
         assert "/settings?tab=exchanges" in visible

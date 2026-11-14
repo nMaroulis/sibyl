@@ -4,6 +4,14 @@ Open **Research → Block explorer** to inspect a Bitcoin mainnet transaction ID
 
 Public requests go from Sibyl's Python backend to **mempool.space**. The entered reference is visible to that public indexer. The lookup accepts public transaction hashes and checksummed mainnet addresses; it never needs a private key, seed phrase or exchange credentials. URLs and other networks are rejected before a request is sent.
 
+## Inspect a historical block
+
+In **Research → Block explorer → Historical block lookup**, enter a height or a complete block hash. Use **Demo block** for a synthetic two-page example. The result shows the block time, size, weight, transaction count and current best-chain status as reported by the indexer.
+
+**Next transactions** and **Previous transactions** read pages of up to 25 transactions from the same block hash, even if a new block replaces it at that height. Select a transaction ID to inspect it. **Export block page** saves the active page and source as JSON. **Ask Explorer** uses the selected block, source and page.
+
+A block can leave the best chain. The block page describes the selected block’s indexed membership. Opening a transaction separately reads its latest status.
+
 ## Inspect a transaction
 
 The report shows:
@@ -43,6 +51,14 @@ Follow the spending transaction hash to inspect it in place; the spending input 
 
 The Demo spend examples open deterministic confirmed and pending parent outputs; their links follow the same synthetic transaction graph. No actual lookup or exchange connection is required.
 
+## Watch an output
+
+Choose **Watch** on a checked output to follow that exact transaction and output number. **Output watches** shows the source, the last reliable observation, and controls to inspect, pause, resume or remove it.
+
+Mainnet watches periodically send the transaction hash to mempool.space while Sibyl is running. Demo watches use a fixed synthetic graph. The first successful check establishes the baseline. Later checks can add a notice to **Alerts → Inbox** when a spender appears, disappears or changes, or when the parent or same spender enters, leaves or moves between blocks. Expand **Observed change evidence** in the inbox to compare the two observations. A block move is indexer evidence of changed inclusion and can indicate a reorganization. Confirmation depth alone does not trigger a notice.
+
+Each watch is checked no sooner than two minutes after its previous check. Queueing and retries can delay it. If a read is missing or incomplete, Sibyl keeps the last reliable observation and displays the retry state. After restart or resume, it compares with that last observation. Changes that happen and reverse between checks may go unseen. Removing a watch stops future checks and keeps previously recorded inbox notices.
+
 ## Demo, export and Explorer
 
 The small **Demo transaction** and **Demo address** links use synthetic backend fixtures through the same validation and calculation pipeline. They do not activate an account or change market/research settings. Every result is labeled **Demo** and has no external mainnet reference link. Live failures never substitute these examples.
@@ -51,6 +67,6 @@ The small **Demo transaction** and **Demo address** links use synthetic backend 
 
 **Ask Explorer** includes the selected reference and its Demo/mainnet boundary. Native ProtoLink tools read the same normalized observations; Sibyl can consult Explorer too. Asking the agent can fetch a newer observation. Agent questions and tool evidence follow the application's existing local conversation/report persistence. Agents cannot broadcast transactions or infer address owners.
 
-Additional chains, wallet aggregation, durable spend watches, local chain verification and complete historical chain datasets remain in the [planning checklist](../developers/backend-roadmap.md).
+Additional chains, wallet aggregation, local chain verification and complete historical chain datasets remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Source contracts: [mempool.space API](https://mempool.space/docs/api/rest), [Esplora API](https://github.com/Blockstream/esplora/blob/master/API.md), and Bitcoin's [Bech32](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki)/[Bech32m](https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki) address specifications.

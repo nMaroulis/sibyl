@@ -112,7 +112,7 @@ class OllamaEmbeddings:
             or shown.get("remote_model")
         ):
             raise SemanticNotReady(
-                "Semantic research supports local embedding models only; remote/cloud models are unavailable."
+                "The Ollama option supports local models only. Choose the separate hosted OpenAI/Mistral option for remote embeddings."
             )
         if not isinstance(shown.get("capabilities"), list) or "embedding" not in shown["capabilities"]:
             raise SemanticNotReady(

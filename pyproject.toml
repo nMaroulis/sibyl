@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "sibyl"
 # Canonical version; use scripts/distribution/release.py set-version to synchronize mirrors and locks.
-version = "2.3.0"
+version = "2.4.0"
 description = "A local-first crypto workspace with a React dashboard and ProtoLink agents."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -22,6 +22,7 @@ dependencies = [
   "ccxt>=4.5,<5",
   "numpy>=2.2,<3",
   "scipy>=1.14,<2",
+  "statsmodels>=0.14.6,<0.15",
   "pandas>=2.2,<4",
   "vadersentiment>=3.3.2,<4",
   "tzdata>=2024.1",
@@ -30,6 +31,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+optimization = ["optuna>=4.9,<5"]
 openai = ["openai>=2,<3"]
 anthropic = ["anthropic>=0.54,<1"]
 gemini = ["google-genai>=1.60,<2"]
@@ -39,7 +41,8 @@ llama-cpp = ["llama-cpp-python>=0.3.30,<1"]
 stocks = ["yfinance>=0.2.59,<1"]
 
 [dependency-groups]
-dev = ["pytest>=8.3,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.12,<1"]
+# Offline hosted-provider contract tests use the real SDK with a mock HTTP transport.
+dev = ["pytest>=8.3,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.12,<1", "openai>=2,<3"]
 
 [project.scripts]
 sibyl = "sibyl.__main__:main"

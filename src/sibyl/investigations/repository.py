@@ -8,7 +8,7 @@ from sibyl.agents.utils.requests import now
 from sibyl.investigations.contracts import InvestigationCreate
 from sibyl.storage import Store
 
-ACTIVE = {"queued", "running", "cancelling"}
+ACTIVE = {"queued", "running", "cancelling", "input_required"}
 
 
 class InvestigationConflict(ValueError):
@@ -33,6 +33,8 @@ class InvestigationRepository:
                     ON investigation_runs(investigation_id,created_at);
                 CREATE UNIQUE INDEX IF NOT EXISTS investigation_one_active
                     ON investigation_runs(investigation_id) WHERE status IN ('queued','running','cancelling');
+                CREATE UNIQUE INDEX IF NOT EXISTS investigation_one_active_v2
+                    ON investigation_runs(investigation_id) WHERE status IN ('queued','running','cancelling','input_required');
             """)
 
     def recover(self):
@@ -40,7 +42,7 @@ class InvestigationRepository:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             for row in db.execute(
-                "SELECT payload FROM investigation_runs WHERE status IN ('queued','running','cancelling')"
+                "SELECT payload FROM investigation_runs WHERE status IN ('queued','running','cancelling') AND COALESCE(json_extract(payload,'$.durable'),0)=0"
             ).fetchall():
                 run = json.loads(row[0])
                 self._write(
@@ -135,7 +137,7 @@ class InvestigationRepository:
                 )
             if (
                 db.execute(
-                    "SELECT COUNT(*) FROM investigation_runs WHERE status IN ('queued','running','cancelling')"
+                    "SELECT COUNT(*) FROM investigation_runs WHERE status IN ('queued','running','cancelling','input_required')"
                 ).fetchone()[0]
                 >= 4
             ):
@@ -180,7 +182,7 @@ class InvestigationRepository:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             rows = db.execute(
-                "SELECT id,payload FROM investigation_runs WHERE investigation_id=? AND json_extract(payload,'$.origin')=? AND status NOT IN ('queued','running','cancelling') ORDER BY json_extract(payload,'$.version') DESC",
+                "SELECT id,payload FROM investigation_runs WHERE investigation_id=? AND json_extract(payload,'$.origin')=? AND status NOT IN ('queued','running','cancelling','input_required') ORDER BY json_extract(payload,'$.version') DESC",
                 (identity, f"schedule:{schedule_id}"),
             ).fetchall()
             removed = [json.loads(row["payload"]) for row in rows[keep:]]
@@ -214,7 +216,7 @@ class InvestigationRepository:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             if db.execute(
-                "SELECT 1 FROM investigation_runs WHERE investigation_id=? AND status IN ('queued','running','cancelling')",
+                "SELECT 1 FROM investigation_runs WHERE investigation_id=? AND status IN ('queued','running','cancelling','input_required')",
                 (identity,),
             ).fetchone():
                 raise InvestigationConflict("Stop the investigation before deleting its reports.")

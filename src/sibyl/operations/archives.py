@@ -169,7 +169,7 @@ class WorkspaceArchives:
 
     def create(self, passphrase):
         """Capture databases and local files; exclude symlinks, transient SQLite journals and lock files."""
-        with self._operation():
+        with self.store.vault.lock, self._operation():
             salt = os.urandom(16)
             encryption = cipher(passphrase, salt)
             with TemporaryDirectory(prefix="sibyl-backup-") as temporary:

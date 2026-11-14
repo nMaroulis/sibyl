@@ -1,28 +1,16 @@
+import type { NotificationBinding, NotificationChannel } from '../messaging/notification-targets';
+import type { MessageDelivery } from '../messaging/delivery-receipt';
 export type BriefingInput = {
   frequency: 'daily' | 'weekly';
   local_time: string;
   timezone: string;
   weekday: number;
-  telegram: boolean;
-  telegram_format: 'text' | 'document';
+  channel: NotificationChannel | null;
+  message_format: 'text' | 'document';
   delivery_format: 'summary' | 'full';
   keep_reports: number;
 };
-export type BriefingDelivery = {
-  id: string;
-  status: string;
-  sent_parts: number;
-  total_parts: number;
-  preview: string;
-  error: string | null;
-  parts: {
-    part: number;
-    state: string;
-    attempts: number;
-    native_id: number | null;
-    error: string | null;
-  }[];
-};
+export type BriefingDelivery = MessageDelivery;
 export type BriefingOccurrence = {
   id: string;
   status: string;
@@ -33,7 +21,9 @@ export type BriefingOccurrence = {
   error: string | null;
   run_id: string | null;
   report_available: boolean;
-  telegram_requested: boolean;
+  telegram_requested?: boolean;
+  delivery_requested?: boolean;
+  delivery_channel?: NotificationChannel | null;
   delivery_error: string | null;
   delivery: BriefingDelivery | null;
 };
@@ -43,6 +33,9 @@ export type BriefingSchedule = BriefingInput & {
   revision: number;
   status: 'armed' | 'paused' | 'archived';
   next_run_at: string | null;
+  telegram?: boolean;
+  telegram_format?: 'text' | 'document';
+  delivery_binding?: NotificationBinding | null;
   telegram_binding: { bot_id: number; recipient_id: number; bot_username: string } | null;
   occurrences?: BriefingOccurrence[];
 };
@@ -69,8 +62,8 @@ export const briefingLabel = (state: string) =>
     cancelled: 'Cancelled',
     pending: 'Delivery queued',
     sending: 'Sending',
-    retrying: 'Waiting for Telegram',
-    sent: 'Delivered',
+    retrying: 'Rate limited',
+    sent: 'Sent',
     uncertain: 'Unconfirmed',
     partial: 'Partially delivered',
     skipped: 'Not sent',
@@ -92,3 +85,6 @@ export function calendarDate(when: string | null, zone: string) {
     return date.toISOString();
   }
 }
+
+export const scheduledChannel = (schedule: BriefingSchedule) =>
+  schedule.channel ?? (schedule.telegram ? 'telegram' : null);

@@ -6,7 +6,7 @@ import type { MessageDelivery } from './delivery-receipt';
 
 type Detail = MessageDelivery & {
   bot_username?: string;
-  recipient_id?: number;
+  recipient_id?: number | string;
   can_withdraw: boolean;
   can_acknowledge: boolean;
   text_parts: {
@@ -18,7 +18,7 @@ type Detail = MessageDelivery & {
   review_token: string;
   note: string;
 };
-const base = '/settings/messaging/telegram/deliveries';
+const base = '/message-deliveries';
 
 /** Manual review is separate from native confirmation and cannot resend a message. */
 export function DeliveryInspector({ id, onClose }: { id: string; onClose: () => void }) {
@@ -49,7 +49,7 @@ export function DeliveryInspector({ id, onClose }: { id: string; onClose: () => 
     }
   };
   return (
-    <Modal title="Review Telegram delivery" onClose={onClose}>
+    <Modal title="Review message delivery" onClose={onClose}>
       {(error || state.error) && (
         <p className="form-error" role="alert">
           {error || state.error}
@@ -66,8 +66,8 @@ export function DeliveryInspector({ id, onClose }: { id: string; onClose: () => 
             </span>
           </header>
           <p>
-            Bot {delivery.bot_username ? `@${delivery.bot_username}` : 'not recorded'} · private
-            recipient {delivery.recipient_id ?? 'not recorded'}
+            Connection {delivery.bot_username || 'not recorded'} · private recipient{' '}
+            {delivery.recipient_id ?? 'not recorded'}
           </p>
           {delivery.error && <p className="inline-alert">{delivery.error}</p>}
           {delivery.text_parts.map((part) => (
@@ -79,8 +79,12 @@ export function DeliveryInspector({ id, onClose }: { id: string; onClose: () => 
               </strong>
               <pre>{part.text}</pre>
               <small>
-                {delivery.parts.find((p) => p.part === part.part)?.state} · Telegram message{' '}
-                {delivery.parts.find((p) => p.part === part.part)?.native_id ?? 'unconfirmed'}
+                {delivery.parts.find((p) => p.part === part.part)?.state} ·{' '}
+                {delivery.parts.find((p) => p.part === part.part)?.provider_id
+                  ? `Provider ID ${delivery.parts.find((p) => p.part === part.part)?.provider_id}`
+                  : delivery.parts.find((p) => p.part === part.part)?.native_id
+                    ? `Telegram ${delivery.parts.find((p) => p.part === part.part)?.native_id}`
+                    : 'No provider acceptance ID'}
               </small>
             </section>
           ))}
@@ -114,7 +118,7 @@ export function DeliveryInspector({ id, onClose }: { id: string; onClose: () => 
                   disabled={busy}
                   onClick={() => void decide('received')}
                 >
-                  I received it in Telegram
+                  I received this message
                 </button>
                 <button
                   className="text-button"
@@ -159,7 +163,7 @@ export function DeliveryInspector({ id, onClose }: { id: string; onClose: () => 
 }
 
 /** Compact entry point for alerts and scheduled briefings, including earlier bot connections. */
-export function TelegramDeliveryReview() {
+export function MessageDeliveryReview() {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<'alert' | 'briefing' | 'reply'>('alert');
   const [offset, setOffset] = useState(0);
@@ -170,10 +174,14 @@ export function TelegramDeliveryReview() {
     open,
   );
   return (
-    <details className="telegram-history-review" onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>Review Telegram deliveries</summary>
+    <details
+      className="telegram-history-review message-history-review"
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
+      <summary>Review message deliveries</summary>
       <p className="footnote">
-        Inspect exact queued text, confirmed parts and user reviews, including conversation replies.
+        Inspect exact queued text, confirmed parts and user reviews, including Telegram conversation
+        replies.
       </p>
       <label>
         Delivery type
@@ -184,9 +192,9 @@ export function TelegramDeliveryReview() {
             setOffset(0);
           }}
         >
-          <option value="alert">Alerts</option>
-          <option value="reply">Conversation replies</option>
-          <option value="briefing">Scheduled briefings</option>
+          <option value="alert">Alerts · all private channels</option>
+          <option value="reply">Conversation replies · Telegram</option>
+          <option value="briefing">Scheduled briefings · Telegram</option>
         </select>
       </label>
       {receipts.error && <p className="form-error">{receipts.error}</p>}
@@ -199,7 +207,12 @@ export function TelegramDeliveryReview() {
           <span>
             <strong>{delivery.preview.split('\n')[0] || 'Notification'}</strong>
             <small>
-              {delivery.created_at && new Date(delivery.created_at).toLocaleString()} ·{' '}
+              {delivery.channel === 'whatsapp'
+                ? 'WhatsApp'
+                : (delivery.channel || 'telegram').replace(/^./, (value) =>
+                    value.toUpperCase(),
+                  )}{' '}
+              · {delivery.created_at && new Date(delivery.created_at).toLocaleString()} ·{' '}
               {delivery.sent_parts}/{delivery.total_parts} confirmed
             </small>
           </span>

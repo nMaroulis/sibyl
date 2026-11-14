@@ -72,10 +72,28 @@ def tool_arguments(request: AgentRequest) -> dict:
 
 def snapshot_answer(module: str, evidence) -> str:
     """Format actual tool output when language-model inference has not been configured."""
+    if (
+        isinstance(evidence, dict)
+        and isinstance(evidence.get("calibration"), dict)
+        and evidence["calibration"].get("abstained")
+    ):
+        return "Search withheld its evidence. " + evidence["calibration"].get(
+            "note",
+            "The leading passage did not meet the cutoff. This does not establish that the claim is false.",
+        )
+    if isinstance(evidence, dict) and evidence.get("kind") == "account_asset_books":
+        assets = sum(row["asset_count"] for row in evidence["reports"])
+        return f"Cross-pair FIFO: {evidence['fill_count']} retained dependency fills across {assets} account/asset books, reported in {evidence['currency']}.\n\n{evidence['note']}\n{evidence['url']}"
     if isinstance(evidence, dict) and evidence.get("kind") == "basket_risk_study":
         if "observations" not in evidence:
             return f"{len(evidence.get('items', []))} saved historical basket risk studies. Calculate a new study explicitly in Account.\n{evidence['url']}"
         return f"Historical basket risk: {evidence['observations']} consecutive daily returns. Annualized volatility {evidence['annualized_volatility_pct']:.2f}%; empirical daily 95% VaR {evidence['historical_var_95_pct']:.2f}%.\n{evidence['coverage_note']}\nCurrent-weight hypothetical basket, not measured account performance or a forecast.\n{evidence['url']}"
+    if isinstance(evidence, dict) and evidence.get("kind") == "retrieval_calibration":
+        result = evidence.get("calibration")
+        if result:
+            validation = result["validation"]
+            return f"Semantic calibration: {validation['correct_accepts']}/{validation['answerable']} relevant held-out questions accepted; {validation['incorrect_accepts']} incorrect accepts. Cutoff {result['threshold']!r}. This is empirical retrieval evidence, not answer confidence. Activation is separate.\n{evidence['url']}"
+        return f"Calibration {evidence.get('state', 'catalog')}; no completed cutoff evidence.\n{evidence['url']}"
     if isinstance(evidence, dict) and evidence.get("kind") == "retrieval_evaluation":
         if "state" not in evidence:
             return f"{len(evidence.get('items', []))} saved retrieval evaluations. Open Retrieval quality lab to label passages or inspect a report.\n{evidence['url']}"
@@ -145,6 +163,22 @@ def snapshot_answer(module: str, evidence) -> str:
             f"Granger lag research · order {result['lags']} · {result['observations']} consecutive returns · source {evidence['source_label']}.\n"
             + "\n".join(readings)
             + "\nClassical inference assumptions remain unverified. Request-family adjustment does not cover repeated experiments. Lag predictability is not causation or a profitable strategy."
+        )
+    if module == "analyst" and evidence.get("regression", {}).get("robust"):
+        result = evidence["regression"]
+        lines = []
+        for item in result["items"]:
+            fit = item.get("theil_sen")
+            label = f"{item['target']} vs {item['reference']}"
+            if fit:
+                lines.append(f"- {label} · OLS beta {item['beta']:.3f} · Theil–Sen beta {fit['beta']:.3f}")
+            else:
+                lines.append(f"- {label} · {item['status'].replace('_', ' ')}")
+        return (
+            f"Same-interval return fit · {result['observations']} aligned observations · {evidence['source_label']}.\n"
+            + "\n".join(lines)
+            + "\n"
+            + result["note"]
         )
     if module == "analyst":
         if "rsi" not in evidence:
@@ -229,6 +263,9 @@ def snapshot_answer(module: str, evidence) -> str:
                 "Inspect the model's held-out test results; future coverage and profitable trades are not guaranteed."
             )
         return f"The {evidence['horizon']} day log-return baseline ends at {point['value']:,.2f}, with an approximate interval of {point['lower']:,.2f}–{point['upper']:,.2f}. Source: {evidence['source']}. This is an uncalibrated statistical baseline, not a trained model."
+    if module == "broker" and evidence.get("kind") == "portfolio_backtest":
+        label = "Demo · synthetic prices" if evidence["source"] == "demo" else "Recorded historical prices"
+        return f"{label}. Portfolio study across {len(evidence['parameters']['legs'])} assets and {evidence['window']['count']} common candles: {evidence['return_pct']:+.2f}% net return, {evidence['rebalance_count']} executed rebalances and {evidence['fees']:.4f} {evidence['quote']} simulated fees. Difference versus buy-and-hold: {evidence['excess_return_pct']:+.2f} percentage points. Historical simulation; no running strategy or exchange orders."
     if module == "broker" and evidence.get("simulation"):
         label = (evidence.get("plugin") or {}).get("name", evidence["strategy"])
         return (
@@ -241,6 +278,16 @@ def snapshot_answer(module: str, evidence) -> str:
             + f"{evidence['trades']} simulated round trips and {evidence['fees']:.4f} fees. "
             + "These are saved simulated fills, not live account performance or established future profitability."
         )
+    if module == "broker" and evidence.get("selected_adaptive"):
+        study = evidence["selected_adaptive"]
+        summary = study["summary"]
+        result = summary["mean_return_pct"]
+        performance = (
+            f"Mean independent-window return: {result:.2f}%."
+            if result is not None
+            else "No eligible candidate produced an independent test result."
+        )
+        return f"Recorded {study['sampler']['name']} study on {study['dataset']['symbol']}. {summary['evaluated_windows']} tested windows. {performance} Training-only suggestions and later cash-reset tests are historical research, not a forecast or live deployment. Open the retained trial evidence in Strategies."
     if module == "broker" and evidence.get("selected_validation"):
         study = evidence["selected_validation"]
         plan = study.get("search")
@@ -298,6 +345,16 @@ def snapshot_answer(module: str, evidence) -> str:
     if module == "technician":
         return f"{len(evidence['connections'])} connections saved. Market mode: {evidence['mode']}. {evidence['permissions']} Use the connection check to verify saved credentials."
     if module == "explorer":
+        if evidence.get("kind") == "block":
+            block = evidence["block"]
+            chain = {True: "best chain", False: "outside the best chain", None: "unknown"}[
+                evidence["in_best_chain"]
+            ]
+            return (
+                f"Block {block['height']:,} contains {block['tx_count']:,} transactions. "
+                f"The indexer reports chain status as {chain}. Source is {evidence['source']}. "
+                + evidence["note"]
+            )
         if evidence.get("kind") == "transaction":
             item = evidence["transaction"]
             confirmations = item["status"]["confirmations"]

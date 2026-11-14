@@ -1,0 +1,126 @@
+.ownership-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  flex-wrap: wrap;
+}
+.ownership-expand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  padding: 0;
+  margin-right: auto;
+}
+.ownership-expand strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ownership-expand small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+  font-size: 11px;
+}
+.ownership-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 13px;
+  color: #6182cf;
+  background: linear-gradient(135deg, #f3f7ff, #edf0fc);
+}
+.ownership-body {
+  padding: 0 22px 18px;
+  border-top: 1px solid var(--line);
+}
+.ownership-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 18px 0 14px;
+}
+.ownership-facts small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.ownership-facts strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+.ownership-facts strong span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.ownership-check-caption,
+.ownership-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 14px 0;
+}
+.ownership-check-caption > small {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: auto;
+}
+.ownership-history-row,
+.ownership-receipt > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ownership-receipt {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ownership-receipt p {
+  font-size: 12px;
+  margin: 9px 0 6px;
+}
+.ownership-receipt small,
+.ownership-history-row small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.ownership-receipt > a {
+  display: block;
+  margin-top: 8px;
+}
+.ownership-review {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(125deg, #f4f7ff, #f7f8fc);
+}
+.ownership-review span,
+.ownership-review small {
+  font-size: 12px;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .ownership-heading {
+    padding: 16px;
+  }
+  .ownership-body {
+    padding: 0 16px 16px;
+  }
+  .ownership-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ownership-check-caption > small {
+    width: 100%;
+    margin-left: 0;
+  }
+}

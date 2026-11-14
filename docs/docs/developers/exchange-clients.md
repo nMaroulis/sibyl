@@ -44,19 +44,19 @@ Provider subclasses share market, balance, order-status, open-order and bounded 
 | OKX / `okx`                       | Passphrase                               | Trading wallet                                     | Yes             | Implemented · guarded manual flow                |
 | Bybit / `bybit`                   | —                                        | Unified account; shared collateral may be included | Yes             | Implemented · guarded manual flow                |
 | KuCoin / `kucoin`                 | Passphrase                               | Classic spot trading wallet                        | No              | Implemented · guarded manual flow                |
-| Gate / `gate`                     | —                                        | Spot                                               | Yes             | Pending                                          |
-| Bitget / `bitget`                 | Passphrase                               | Classic spot wallet                                | No              | Pending                                          |
-| MEXC / `mexc`                     | —                                        | Spot                                               | No              | Pending                                          |
-| HTX / `htx`                       | —                                        | Spot                                               | No              | Pending                                          |
-| Crypto.com Exchange / `cryptocom` | Exchange keys, separate from retail app  | Exchange wallet                                    | Yes             | Pending                                          |
+| Gate / `gate`                     | —                                        | Spot                                               | Yes             | GTC limit + cancel only                                          |
+| Bitget / `bitget`                 | Passphrase                               | Classic spot wallet                                | No              | GTC limit + cancel only                                          |
+| MEXC / `mexc`                     | —                                        | Spot                                               | No              | GTC limit + cancel only                                          |
+| HTX / `htx`                       | —                                        | Spot                                               | No              | GTC limit + cancel only                                          |
+| Crypto.com Exchange / `cryptocom` | Exchange keys, separate from retail app  | Exchange wallet                                    | Yes             | GTC limit + cancel only                                          |
 | Bitstamp / `bitstamp`             | —                                        | Spot                                               | No              | Implemented · guarded manual flow                |
 | Gemini / `gemini`                 | —                                        | Spot                                               | Yes             | GTC limit + cancel only; no native market orders |
-| Bitfinex / `bitfinex`             | —                                        | Exchange wallet                                    | No              | Pending                                          |
-| CoinEx / `coinex`                 | —                                        | Spot                                               | No              | Pending                                          |
-| BitMart / `bitmart`               | API memo → CCXT `uid`                    | Spot                                               | No              | Pending                                          |
-| Phemex / `phemex`                 | —                                        | Spot                                               | Yes             | Pending                                          |
-| Poloniex / `poloniex`             | —                                        | Spot                                               | No              | Pending                                          |
-| Upbit / `upbit`                   | —                                        | Default CCXT endpoint                              | No              | Pending                                          |
+| Bitfinex / `bitfinex`             | —                                        | Exchange wallet                                    | No              | GTC limit + cancel only                                          |
+| CoinEx / `coinex`                 | —                                        | Spot                                               | No              | GTC limit + cancel only                                          |
+| BitMart / `bitmart`               | API memo → CCXT `uid`                    | Spot                                               | No              | GTC limit + cancel only                                          |
+| Phemex / `phemex`                 | —                                        | Spot                                               | Yes             | GTC limit + cancel only                                          |
+| Poloniex / `poloniex`             | —                                        | Spot                                               | No              | GTC limit + cancel only                                          |
+| Upbit / `upbit`                   | —                                        | Default CCXT endpoint                              | No              | GTC limit + cancel only                                          |
 | Demo / `demo`                     | None                                     | Persistent workspace paper wallet                  | Offline         | Simulated immediate fills                        |
 
 Sandbox availability is intentionally configured, not inferred from a generic exchange marketing page. It is applied before the first request, requires environment-specific keys and may have different instruments. Region-specific endpoints, unified-account variants and funding wallets need separate work; the selected scope is explicit in the catalog and connection form.
@@ -131,7 +131,7 @@ These routes have the same workspace access controls as other APIs. Account read
 - [x] Backend-driven searchable connection UI and reference-exchange selection.
 - [ ] Authenticated read acceptance tests for **every provider**, including sandbox accounts. No private accounts were used to develop this layer.
 - [x] Review base-sized market/GTC limit submission and cancellation for Binance.US, OKX, Bybit UTA, KuCoin classic and Bitstamp; GTC limits/cancellation for Gemini. Test actual SDK request generation without network writes.
-- [ ] Implement submission/cancellation for the remaining 11 production providers; their client-ID and base/quote semantics need separate review.
+- [x] Add base-sized GTC limit submission/cancellation for Gate, Bitget classic, MEXC, HTX, Crypto.com Exchange, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and default-endpoint Upbit. Provider-native request tests cover both sides and stored client IDs. Market orders, exact-fill reconciliation and client-ID recovery remain separate capabilities.
 - [x] Add durable spot imports and exact-order fill/fee reconciliation for OKX, Bybit, KuCoin, Bitstamp and Gemini, with explicit provider limits.
 - [ ] Add client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini; these remain separate capabilities.
 - [x] Durable selected-market fill imports for Demo, Binance/Binance.US/Testnet, Coinbase/Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic. Native-currency fees, pause/resume, incremental passes, available-history rescans and retained ranges appear in Account history. See [account synchronization](account-sync.md).
@@ -139,7 +139,8 @@ These routes have the same workspace access controls as other APIs. Account read
 - [x] Resting GTC limits, reviewed cancellation, cumulative fill status and persisted polling for the existing execution allowlist and Demo.
 - [ ] Cancel/replace and stop/OCO order flows.
 - [x] Add public Binance/Testnet and Kraken ticker/OHLC previews with shared bounded sockets and explicit timing/fallback.
-- [ ] Add private order/account streams and more providers; execution and analysis still use their existing REST contracts.
+- [x] Add optional native private order signals with persisted REST wakeups for Binance/Testnet, Coinbase Advanced and Kraken.
+- [ ] Extend private balance/account streams, complete gap recovery and broader providers; financial evidence still uses existing REST contracts.
 - [ ] Funding/earn/staking/subaccount wallets, transfers, derivatives and unified-account variants beyond the scopes above. Withdrawal APIs are not implemented.
 - [x] Held-asset spot valuation through exact direct/inverse/bridge routes and observed stablecoin/fiat rates; see [portfolio valuation](portfolio-valuation.md). Broader aggregator catalogs and external FX sources remain future work.
 - [ ] Historical candle pagination beyond a provider's single-page limit; explicit retention and import cursors.
@@ -165,3 +166,23 @@ Spot submission now includes Binance.US, OKX, Bybit UTA, KuCoin classic and Bits
 Native request-generation tests replace the final SDK transport and check buy/sell amounts, GTC prices, client IDs, cancellation and status reads. They never submit an order. Provider references: [Binance.US](https://docs.binance.us/), [OKX place order](https://www.okx.com/docs-v5/en/#order-book-trading-trade-post-place-order), [Bybit place order](https://bybit-exchange.github.io/docs/v5/order/create-order), [KuCoin classic orders](https://www.kucoin.com/docs-new/rest/spot-trading/orders/add-order), [Bitstamp](https://www.bitstamp.net/api/), [Gemini orders](https://developer.gemini.com/trading/rest-api/orders).
 
 Binance.US also uses the reviewed Binance client-ID recovery and account-order discovery contracts. OKX, Bybit UTA and KuCoin classic now have durable imports and exact-order fill/fee reconciliation, with explicit retention limits. Bitget classic has durable fill imports but remains read-only for order submission. Bitstamp and Gemini now add bounded resumable imports and exact-order fill/fee reconciliation, with native retention, saturation and reversal limits. Client-ID recovery and account-wide discovery remain pending for OKX, Bybit, KuCoin, Bitstamp and Gemini. An ambiguous submission is never retried: inspect it at the exchange. Funding covers production Binance/Kraken plus Bybit master-UID on-chain withdrawals. Optional sandboxes do not inherit funding support. See [import scope](account-sync.md), [reconciliation](order-reconciliation.md) and [funding](funding-history.md).
+
+## Additional GTC adapter review (v2.4)
+
+All twenty configured production providers now have a guarded manual GTC limit/cancel adapter. This describes implemented requests, not live account acceptance. The eleven additions do **not** gain market orders, automatic strategies, exact-order fill reconciliation, recovery or account-wide discovery by association. The capability inventory reports these independently.
+
+| Provider | Native contract and official reference |
+| --- | --- |
+| [Gate](https://www.gate.com/docs/developers/apiv4/en/spot/) | Classic spot only; base `amount`, `time_in_force=gtc`, persisted `t-` client text. Unified/margin probing disabled. |
+| [Bitget](https://www.bitget.com/legacy-docs/classic/spot/trade/Place-Order) | Classic v2 spot only, base `size`, lowercase `force=gtc`, `clientOid`; UTA disabled. |
+| [MEXC](https://mexcdevelop.github.io/apidocs/spot_v3_en/) | Spot v3 LIMIT/GTC, base quantity and compact `newClientOrderId`. |
+| [HTX](https://huobiapi.github.io/docs/spot/v1/en/) | Requires exactly one identifiable spot wallet for balances/submissions, native account ID, spot-api source and client order ID. Ambiguous wallets fail locally. |
+| [Crypto.com](https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#private-create-order) | Native `client_oid`, GTC, explicit SPOT. The installed SDK does not forward the unified client ID for this method. |
+| [Bitfinex](https://docs.bitfinex.com/reference/rest-auth-submit-order) | EXCHANGE LIMIT, signed base amount, integer int45 `cid`. Generated IDs are checked for local collision before review persistence. |
+| [CoinEx](https://docs.coinex.com/api/v2/spot/order/http/put-order) | SPOT limit, base amount and native `client_id`. |
+| [BitMart](https://developer-pro.bitmart.com/en/spot/) | Base `size`, alphanumeric client ID, API memo authentication. |
+| [Phemex](https://phemex-docs.github.io/) | Spot `ByBase`, instrument-scaled base quantity/price, native GoodTillCancel and `clOrdID`. |
+| [Poloniex](https://api-docs.poloniex.com/spot/api/private/order) | Spot base quantity, GTC, no margin borrowing. |
+| [Upbit](https://global-docs.upbit.com/reference/new-order) | Native limit base volume, bid/ask and identifier. Sibyl retains CCXT's default `api.upbit.com` origin; regional deployments remain unconfigured. |
+
+The final HTTP transport is replaced in request-generation tests: no provider order is placed. Timeouts remain uncertain and are never retried automatically. A native client ID is not an exactly-once guarantee, particularly after a venue's own retention interval.

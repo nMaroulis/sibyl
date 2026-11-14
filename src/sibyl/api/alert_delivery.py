@@ -1,4 +1,4 @@
-"""Explicit future-only Telegram alert policies and private delivery history."""
+"""Explicit future-only private alert policies and private delivery history."""
 
 from typing import Annotated
 
@@ -19,8 +19,14 @@ router = APIRouter(prefix="/api/v1/alert-delivery", tags=["Alert delivery"], dep
 
 @router.get("/policies")
 def policies(s: S):
-    """Read active opt-in indicators without triggering alerts or Telegram requests."""
+    """Read active opt-in indicators without triggering alerts or provider requests."""
     return s.alert_delivery.policies()
+
+
+@router.get("/targets")
+def targets(s: S):
+    """Read checked private destinations and current pause/window status, without probes."""
+    return s.messaging.notifications.routes.targets()
 
 
 @router.get("/history")

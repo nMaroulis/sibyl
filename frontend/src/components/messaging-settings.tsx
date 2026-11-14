@@ -2,6 +2,8 @@ import { MessageCircle, ArrowUpRight, Mail, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useResource } from '../lib/hooks';
 import { Badge, ErrorState, Loading } from './ui';
+import { PrivateChannelSetup } from './messaging/private-channel-settings';
+import { MessageDeliveryReview } from './messaging/delivery-review';
 import { TelegramSetup } from './telegram-settings';
 
 export type MessagingChannel = {
@@ -57,7 +59,8 @@ export function MessagingSettings() {
         <div>
           <h2>Sibyl, wherever you are.</h2>
           <p>
-            Talk to Sibyl through Telegram using the same AI agents and conversations as the app.
+            Talk to Sibyl through your connected messaging apps using the same agents and
+            conversations as the app.
           </p>
         </div>
       </div>
@@ -77,9 +80,10 @@ export function MessagingSettings() {
         </div>
       )}
       <p className="messaging-unavailable-note" id="messaging-unavailable-note">
-        <strong>Telegram is available.</strong> Other apps and email remain coming soon. Telegram
-        can relay workspace information through your bot and selected AI provider; only enable it
-        for your own private user ID.
+        Telegram, Discord, Slack, WhatsApp, email and a local Signal bridge are implemented. Private
+        messaging can relay workspace information through the selected service and AI provider; bind
+        only your own private recipient. Choose alert destinations separately through each rule’s
+        Delivery control.
       </p>
       {resource.loading ? (
         <Loading />
@@ -98,12 +102,15 @@ export function MessagingSettings() {
                   health={resource.data?.telegram}
                   done={resource.retry}
                 />
+              ) : channel.status === 'available' ? (
+                <PrivateChannelSetup key={channel.id} channel={channel} done={resource.retry} />
               ) : (
                 <ChannelSetup key={channel.id} channel={channel} />
               ),
             )}
         </div>
       )}
+      <MessageDeliveryReview />
       {resource.data?.telegram?.llm_ready && (
         <p className="footnote">
           Messaging will use Sibyl’s configured AI model.{' '}

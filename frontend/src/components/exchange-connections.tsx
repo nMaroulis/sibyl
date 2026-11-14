@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { ExchangeCredentialRotation } from './exchange-credential-rotation';
+import { AccountStreams } from './account-streams';
 import { SecretField } from './secret-field';
 import { Link } from 'react-router-dom';
 import {
@@ -329,6 +331,7 @@ export function ExchangeConnections() {
     setSelected(identity);
   };
   const [removing, setRemoving] = useState<Connection>();
+  const [updating, setUpdating] = useState<Connection>();
   const [busy, setBusy] = useState('');
   const [handoff, setHandoff] = useState<{ id: string }>();
   const accountArrived = Boolean(
@@ -483,6 +486,7 @@ export function ExchangeConnections() {
             ) && <p className="muted">No matching exchange.</p>}
         </div>
       )}
+      <AccountStreams />
       <Panel className="full-panel">
         <PanelTitle
           title="Saved accounts"
@@ -578,6 +582,16 @@ export function ExchangeConnections() {
                 <RefreshCw size={13} className={busy === connection.id ? 'spin' : ''} />
                 {connection.exchange === 'demo' ? 'Check account' : 'Check access'}
               </button>
+              {connection.exchange !== 'demo' && (
+                <button
+                  className="button secondary tiny"
+                  disabled={!!busy}
+                  onClick={() => setUpdating(connection)}
+                >
+                  <KeyRound size={13} />
+                  Update keys
+                </button>
+              )}
               <button
                 className="button secondary tiny"
                 onClick={() => openExchange(connection.exchange)}
@@ -686,6 +700,22 @@ export function ExchangeConnections() {
             }}
           />
         </Modal>
+      )}
+      {updating && exchanges.find((provider) => provider.id === updating.exchange) && (
+        <ExchangeCredentialRotation
+          connection={updating}
+          provider={exchanges.find((provider) => provider.id === updating.exchange)!}
+          onClose={() => setUpdating(undefined)}
+          onSaved={() => {
+            setChecks((previous) => {
+              const next = { ...previous };
+              delete next[updating.id];
+              return next;
+            });
+            setHandoff({ id: updating.id });
+            setUpdating(undefined);
+          }}
+        />
       )}
       {removing && (
         <Modal title="Disconnect this account?" onClose={() => setRemoving(undefined)}>

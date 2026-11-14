@@ -75,7 +75,7 @@ Each exact quote has its own source/credential-scoped cache. Reordering reuses c
 
 ## Public live previews
 
-[Binance public streams](live-markets.md) now deliver exact-source/environment ticker and candle previews through an authenticated bounded NDJSON endpoint. Shared sockets start only while viewed, reconnect with backoff, expose observed health and stop when unused. REST snapshots remain the fallback on the same source. Closed-candle analysis, history and execution are unchanged; private account/order streams remain pending.
+[Binance public streams](live-markets.md) now deliver exact-source/environment ticker and candle previews through an authenticated bounded NDJSON endpoint. Shared sockets start only while viewed, reconnect with backoff, expose observed health and stop when unused. REST snapshots remain the fallback on the same source. Closed-candle analysis, history and execution are unchanged; optional [private order signals](private-order-streams.md) are implemented for Binance/Testnet, Coinbase Advanced and Kraken; broader balance/account streams remain pending.
 
 ## Descriptive relationships
 
@@ -84,3 +84,5 @@ Each exact quote has its own source/credential-scoped cache. Reordering reuses c
 The distance statistic double-centers absolute pairwise distances and normalizes their empirical covariance. At most 360 most recent aligned observations bound quadratic work and memory. It is the biased unsigned sample statistic, not an independence/significance test. See the [original authors’ method](https://mariarizzo.github.io/energy/reference/dcov.html).
 
 The response also includes OLS summaries against the first ordered symbol on contemporaneous log returns: beta, intercept per interval, R² and residual RMS. No p-values or causal/predictive claims are computed. All aligned returns fit the coefficients; only the latest 360 scatter points are retained. There must be at least 30 returns and nonconstant reference variation; constant targets have undefined R². No new statistical dependency is required. Native Analyst `market_relationships` exposes compact evidence without scatter arrays. `AgentContext` validates/freezes ordered comparison symbols, matrix method and transform using ProtoLink’s existing private request context.
+
+The correlation endpoint accepts `robust=true` for an optional same-window comparison. Both OLS and SciPy Theil–Sen use the latest 360 or fewer aligned same-interval log returns. The joint intercept is the median of `y − slope × x`. The response includes sample counts, coefficients and comparable median absolute residuals. Slope intervals and hypothesis tests are excluded because the candle returns can be serially dependent. [SciPy Theil–Sen reference](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.theilslopes.html)

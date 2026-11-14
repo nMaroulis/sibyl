@@ -12,6 +12,7 @@ from uuid import uuid4
 from sibyl import __version__
 from sibyl.forecasting.bundles import ForecastBundles
 from sibyl.forecasting.contracts import ForecastRequest, TrainForecast
+from sibyl.forecasting.drift import ForecastDrift
 from sibyl.forecasting.engine import fingerprint, predict, train
 from sibyl.forecasting.evaluations import RollingEvaluations
 from sibyl.forecasting.forward import ForwardMonitor
@@ -40,6 +41,7 @@ class ForecastModels:
         self.bundles = ForecastBundles(self)
         self.evaluations = RollingEvaluations(self)
         self.forward = ForwardMonitor(self)
+        self.drift = ForecastDrift(self)
 
     def _input(self, body):
         if body.input_kind == "saved_dataset":
@@ -180,8 +182,17 @@ class ForecastModels:
             "partitions": artifact["partitions"],
             "notes": artifact["notes"],
             **(
-                {"training": [{"horizon": row["horizon"], **row["training"]} for row in artifact["models"]]}
-                if artifact["parameters"].get("family") == "mlp"
+                {
+                    "training": [
+                        {
+                            "horizon": row["horizon"],
+                            "family": artifact["parameters"]["family"],
+                            **row["training"],
+                        }
+                        for row in artifact["models"]
+                    ]
+                }
+                if artifact["parameters"].get("family") in {"mlp", "huber"}
                 else {}
             ),
             "evaluation": [
@@ -191,6 +202,7 @@ class ForecastModels:
             "test_trace": artifact["evaluation"][horizon - 1]["trace"],
             "trace_horizon": horizon,
             "nominal_coverage": artifact["nominal_coverage"],
+            **({"arima_training": artifact["arima"]["training"]} if "arima" in artifact else {}),
             "outputs": self.outputs(identity),
         }
 

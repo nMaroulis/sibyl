@@ -1,0 +1,76 @@
+.bitcoin-watches {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  scroll-margin-top: 5rem;
+}
+
+.bitcoin-watch-content {
+  display: grid;
+  padding: 0 0.25rem;
+}
+
+.bitcoin-watch-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding: 0.8rem 0.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.bitcoin-watch-row.selected {
+  padding-inline: 0.6rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.bitcoin-watch-main,
+.bitcoin-watch-main code {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.bitcoin-watch-main code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bitcoin-watch-main small {
+  color: var(--muted);
+}
+
+.bitcoin-watch-main .bitcoin-watch-error {
+  color: var(--text);
+}
+
+.bitcoin-watch-label,
+.bitcoin-watch-actions,
+.bitcoin-watch-row .text-button,
+.bitcoin-spend-row .bitcoin-watch-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.bitcoin-watch-actions {
+  column-gap: 0.7rem;
+}
+
+.bitcoin-change-evidence p {
+  margin: 0.4rem 0;
+}
+
+.bitcoin-change-evidence code {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 660px) {
+  .bitcoin-watch-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

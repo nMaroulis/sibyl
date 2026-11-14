@@ -32,13 +32,29 @@ The service does not persist normal lookups, import them into account accounting
 
 `BitcoinExplorer.output_spends` validates the exact parent through the existing transaction normalizer, reads `GET /tx/:txid/outspends`, then a separate tip height. It requires the full array length to match the validated parent output count; every row is validated before paging, including off-page rows. There are three bounded GETs per page, rather than one request per output. Existing two-operation admission, fixed-origin GET-only transport, response-size limits and error sanitization apply. Invalid output offsets are rejected before the spend read.
 
-`blockchain/spends.py` requires a real boolean `spent`, strict nonnegative spending input indexes, valid hashes and valid confirmation evidence. A self-referencing spend or an unspent row carrying spend details fails explicitly. Missing spender/status details remain `unknown`; they are never classified as pending or unspent. This is an indexer observation, not proof that the spending input actually consumes this outpoint or that an unspent output can be spent. No proof verification, durable watch, reorg journal or background refresh is added.
+`blockchain/spends.py` requires a real boolean `spent`, strict nonnegative spending input indexes, valid hashes and valid confirmation evidence. A self-referencing spend or an unspent row carrying spend details fails explicitly. Missing spender/status details remain `unknown`; they are never classified as pending or unspent. This is an indexer observation, not proof that the spending input actually consumes this outpoint or that an unspent output can be spent. Standalone output-spend checks never create a watch.
 
 The UI isolates each transaction/output-page/source selection, aborts checks on unmount, keeps failed-refresh observations dated and exports spend checks separately. Demo derives spends by walking its existing transaction inputs, preserving actual graph links between the synthetic confirmed, pending and unspent examples.
+
+## Durable output watches
+
+`GET /api/v1/bitcoin/watches` lists local evidence. `POST /api/v1/bitcoin/watches` enables one exact transaction output and source, idempotent for the same reference. `POST /api/v1/bitcoin/watches/{watch_id}` accepts revision-checked `pause`, `resume` or `remove`. Request bodies hold public transaction identifiers. Control URLs use opaque local watch IDs. The separate Demo source needs no provider.
+
+`blockchain/watches.py` registers at most 25 saved watches, normalizes one due read per supervised worker iteration, and uses the same public output-spends adapter with parent and spender inclusion evidence. Successful polls are scheduled at least 120 seconds apart per watch. Incomplete results back off up to 30 minutes. A rate-limit response delays mainnet reads across watches within the process. SQLite fences results against pause, resume and removal, and commits a changed checkpoint and its before/after inbox evidence together. Inbox export accepts `kind=bitcoin`. Notices stay local.
+
+Ordinary restart retains the checkpoint. Backup recovery pauses restored watches and preserves their evidence. Explicit resume is available after recovery. Observations are sampled indexer reads. The system cannot reconstruct branches, detect every transient change or verify chain consensus locally.
+
+## Historical blocks
+
+`POST /api/v1/bitcoin/block` takes one integer `height` or 64-character hexadecimal `block_hash`, optional `offset` in multiples of 25 and a `demo` flag. A height lookup resolves through `/block-height/:height`. Block detail and transactions then use that hash on every page. The adapter checks identity, requested height, page size, unique transaction IDs and coinbase position. Responses contain normalized summaries.
+
+A separate `/block/:hash/status` read supplies best-chain membership. Unavailable status becomes unknown. Rate limits still fail the request explicitly. An available stale block can be paged by hash. Block membership and a transaction's latest inclusion are separate observations. Demo uses the same read shape. [Esplora block contracts](https://github.com/Blockstream/esplora/blob/master/API.md#blocks)
 
 ## Native ProtoLink tools
 
 Explorer declares ordinary typed `bitcoin_lookup`, `bitcoin_address_history`, `bitcoin_output_spends`, `bitcoin_blocks`, `blockchain_help` and `page_help` tools. The first tool reads private page references or explicit user/evidence IDs; with no selection it retains the recent-block snapshot behavior. Validated `bitcoin_txid`, `bitcoin_address` and `bitcoin_demo` page context reaches local consultations through existing ProtoLink request context. Specialists still cannot delegate or mutate state.
+
+`bitcoin_blocks` follows the current block hash and page or looks up an explicit height/hash. With no selected block it returns recent summaries.
 
 `bitcoin_output_spends` reads the selected transaction/output page from private `bitcoin_output_offset` context, or explicit validated references/offsets. It returns attributed states and spending links through the existing native client/runtime.
 
@@ -52,4 +68,4 @@ An October 29, 2026 public acceptance pass read the known genesis transaction an
 
 A November 5, 2026 output-spend acceptance pass made three credential-free mempool.space GETs for the public genesis transaction: parent detail, bulk output spends and tip height. The single 5,000,000,000-satoshi output returned `unspent`. This records the indexer's observation; it does not establish spendability. Isolated browser acceptance covered synthetic confirmed/pending/unspent checks, spending-transaction navigation, separate JSON export, failed-refresh labeling and mobile layout.
 
-Read semantics follow [Esplora](https://github.com/Blockstream/esplora/blob/master/API.md) and [mempool.space](https://mempool.space/docs/api/rest); witness validation follows [BIP 173](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki) and [BIP 350](https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki). The backend trusts this public indexer and does not independently verify proofs, follow an atomic chain snapshot or reconcile reorgs over retained history. Additional providers/networks, wallet aggregation, durable spend watches and historical datasets remain pending.
+Read semantics follow [Esplora](https://github.com/Blockstream/esplora/blob/master/API.md) and [mempool.space](https://mempool.space/docs/api/rest); witness validation follows [BIP 173](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki) and [BIP 350](https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki). The backend trusts this public indexer and does not independently verify proofs, follow an atomic chain snapshot or reconcile reorgs over retained history. Additional providers/networks, wallet aggregation and historical datasets remain pending.

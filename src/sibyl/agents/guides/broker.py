@@ -29,6 +29,8 @@ StrategyTopic = Literal[
     "halt",
     "limits",
     "benchmarks",
+    "ownership",
+    "portfolio",
 ]
 
 TRADE = {
@@ -61,7 +63,7 @@ TRADE = {
         "/alerts?tab=orders",
         (
             "Open Alerts → Orders & fills and create one subscription for a saved account.",
-            "Choose fill/correction, cancellation, problem or status categories; Telegram delivery is a separate per-rule opt-in.",
+            "Choose fill/correction, cancellation, problem or status categories; Private delivery to a checked Telegram, Discord, Slack, Signal, WhatsApp or email connection is a separate per-rule opt-in; WhatsApp requires an open reply window.",
             "Inspect Inbox, pause/resume or edit rules. Edits save paused and resume uses a fresh future-only baseline.",
         ),
         (
@@ -163,6 +165,31 @@ TRADE = {
 }
 
 STRATEGIES = {
+    "portfolio": Guide(
+        "Research a multi-asset portfolio",
+        "/strategies?view=portfolio",
+        (
+            "Open Portfolio lab, choose 2–8 exact pairs sharing one quote, and set weights; unallocated capital remains quote cash. Demo is explicit through the account mode.",
+            "Choose current closed candles or compatible immutable datasets, then interval or previous-close drift rebalancing. Expand costs to set per-fill quote fees and adverse slippage.",
+            "Run the historical study. Inspect equity/drawdown/allocation or asset price/trade charts, cost-matched buy-and-hold/cash, paged fills and source receipts. Save/export and rerun exact inputs offline; ask Broker with the selected study.",
+        ),
+        (
+            "No currency conversion, leverage, source mixing, gap filling, order submission or strategy deployment. Inputs share one consecutive common UTC window. Post-cost quantities use the execution open; sells fund buys. Fractional units/unlimited modeled liquidity/zero cash yield are assumptions. Both portfolios liquidate at the final close; allocations are marked before that exit. User-chosen weights/assets and repeated experiments can overfit; historical returns are not forecast performance.",
+        ),
+    ),
+    "ownership": Guide(
+        "Review strategy position ownership",
+        "/strategies?view=monitor",
+        (
+            "Open the exchange run’s Position ownership panel and select Check exchange balance for native totals/free funds, all same-account base owners, unassigned units, shortfalls and exact-pair dust limits.",
+            "Pause and resolve order/fill/fee evidence before Adopt existing units. Enter base quantity, asserted total quote cost and a reason; review and type the displayed confirmation. Resume is separate.",
+            "Stop before Release to unmanaged, or use Hand off to a new run and select that exact source during new-run approval. A handoff carries all retained units/original basis and adds the new quote budget separately.",
+            "Inspect ownership receipts and OWNERSHIP journal/CSV entries. Source corrections invalidate inherited evidence; missing account backing blocks attributed execution.",
+        ),
+        (
+            "These are local attributions, not exchange transfers/sales or verified manual-trade classification. Cash remains unchanged and capital-flow reference values are excluded from trading profit. Lifetime return statistics remain unavailable after attribution. Historical corrections across existing handoffs require further reviewed repair support; never advise bypassing the block.",
+        ),
+    ),
     "benchmarks": Guide(
         "Compare cost-aware reference portfolios",
         "/strategies",
@@ -204,7 +231,7 @@ STRATEGIES = {
         (
             "Choose current feed or an immutable saved dataset under Research input, then configure the strategy and trading costs.",
             "Run the backtest and inspect the retained input provenance, fingerprint and engine version.",
-            "Custom Python strategies expands research-only installed plugins with separate controls, source revisions, saved results and exact-input reruns. Install reviewed code in the backend environment, explicitly set SIBYL_STRATEGY_PLUGINS and restart; plugin jobs/optimization remain unavailable.",
+            "Custom Python strategies expands research-only installed plugins with separate controls, source revisions, saved results and exact-input reruns. Install reviewed code in the backend environment, explicitly set SIBYL_STRATEGY_PLUGINS and restart; pinned queued backtests and adaptive Optuna training/test studies are available as one-off research, without paper/exchange deployment.",
             "Rerun exact input recomputes the same saved data/settings with the current engine; Load settings lets you edit a new experiment.",
         ),
         (
@@ -281,7 +308,7 @@ STRATEGIES = {
             "Close position is a new typed, one-order sell review for a stopped/completed exchange run after reconciliation. Inspect blockers and any residual units.",
         ),
         (
-            "A cancel request or sell acknowledgment does not prove a position is flat. Residual ownership stays with the stopped run; automatic handoff to a new run is unavailable.",
+            "A cancel request or sell acknowledgment does not prove a position is flat. Residual ownership stays with the stopped run until a separately reviewed release or new-run handoff. It is never adopted automatically.",
         ),
     ),
     "halt": Guide(

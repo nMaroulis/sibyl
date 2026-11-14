@@ -85,3 +85,7 @@ Order rows distinguish queued, blocked, requested, unknown, reconciling and curr
 ## Watch run changes
 
 **Run alerts** opens **Alerts → Strategy alerts** filtered to this exact saved run. Opt in to journal pauses/errors/recovery and lifecycle events. Notices retain the original reason/time and link back here. Creating/resuming an alert skips older events; pausing an alert does not pause the strategy. Armed cursors survive restart. See [strategy alerts and limits](alerts.md#strategy-alerts).
+
+## Position ownership
+
+Use the [Position ownership](strategy-ownership.md) panel for on-demand native balance comparisons, exact-pair dust facts, reviewed adoption/release and source-linked new-run handoffs. Its immutable receipts appear in the journal/CSV. These are local custody changes, not native trades; lifetime return statistics remain unavailable afterward.

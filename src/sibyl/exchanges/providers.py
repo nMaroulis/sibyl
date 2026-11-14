@@ -149,8 +149,12 @@ class GateClient(CCXTClient):
     """Gate spot wallet with optional sandbox credentials."""
 
     id = "gate"
-    options = {"fetchMarkets": {"types": ["spot"]}}
+    options = {"fetchMarkets": {"types": ["spot"]}, "unifiedAccount": False}
     balance_params = {"type": "spot"}
+
+    def format_client_order_id(self, identity: str) -> str:
+        """Persist the complete native Gate text ID, including its t- prefix."""
+        return "t-" + identity.replace("-", "")[:26]
 
 
 class BitgetClient(CCXTClient):
@@ -158,7 +162,18 @@ class BitgetClient(CCXTClient):
 
     id = "bitget"
     history_kind = "bitget-id"
+    options = {"uta": False}
     balance_params = {"type": "spot"}
+
+    def format_client_order_id(self, identity: str) -> str:
+        """Use a stable compact classic-account clientOid."""
+        return identity.replace("-", "")
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Classic v2 requires lowercase native force; avoid SDK unified-field leakage."""
+        return self._exchange.create_order(
+            symbol, "limit", side, amount, price, params={"clientOid": client_order_id, "force": "gtc"}
+        )
 
 
 class MEXCClient(CCXTClient):
@@ -168,6 +183,10 @@ class MEXCClient(CCXTClient):
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50, 100)
 
+    def format_client_order_id(self, identity: str) -> str:
+        """MEXC client IDs fit its 32-character native limit."""
+        return identity.replace("-", "")
+
 
 class HTXClient(CCXTClient):
     """HTX spot account, excluding margin and swaps."""
@@ -176,12 +195,50 @@ class HTXClient(CCXTClient):
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20)
 
+    def _spot_account(self) -> str:
+        """Require one actual spot wallet; never fall back to the first margin account."""
+        accounts = [row for row in self._exchange.load_accounts() if row.get("type") == "spot"]
+        if len(accounts) != 1 or not accounts[0].get("id"):
+            raise ValueError("HTX requires one unambiguous spot account for balance and order access.")
+        return str(accounts[0]["id"])
+
+    def balance_parameters(self) -> dict:
+        """Bind balance reads to the same exact spot account used by submissions."""
+        return {"type": "spot", "account-id": self._spot_account()}
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Use the verified spot account ID and native spot-api source only."""
+        return self._exchange.create_order(
+            symbol,
+            "limit",
+            side,
+            amount,
+            price,
+            params={
+                "account-id": self._spot_account(),
+                "clientOrderId": client_order_id,
+                "timeInForce": "GTC",
+                "source": "spot-api",
+            },
+        )
+
 
 class CryptoComClient(CCXTClient):
     """Crypto.com Exchange account, separate from the retail mobile app."""
 
     id = "cryptocom"
     book_limits = (10, 50)
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """The installed SDK omits unified clientOrderId; send native client_oid."""
+        return self._exchange.create_order(
+            symbol,
+            "limit",
+            side,
+            amount,
+            price,
+            params={"client_oid": client_order_id, "timeInForce": "GTC", "spot_margin": "SPOT"},
+        )
 
 
 class BitstampClient(CCXTClient):
@@ -205,6 +262,17 @@ class BitfinexClient(CCXTClient):
     balance_params = {"type": "exchange"}
     book_limits = (1, 25, 100)
 
+    def format_client_order_id(self, identity: str) -> str:
+        """Bitfinex cid is a positive int45; admission rejects any local collision."""
+        return str(int(identity.replace("-", "")[:11], 16) + 1)
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Use integer cid and a native non-margin EXCHANGE LIMIT."""
+        cid = int(client_order_id)
+        if not 0 < cid < 2**45:
+            raise ValueError("Bitfinex client order ID must be a positive int45.")
+        return self._exchange.create_order(symbol, "limit", side, amount, price, params={"cid": cid})
+
 
 class CoinExClient(CCXTClient):
     """CoinEx spot trading account."""
@@ -215,6 +283,16 @@ class CoinExClient(CCXTClient):
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50)
 
+    def format_client_order_id(self, identity: str) -> str:
+        """CoinEx accepts at most 32 bytes for a client_id."""
+        return identity.replace("-", "")
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Pass the native field so no duplicate unified clientOrderId reaches v2."""
+        return self._exchange.create_order(
+            symbol, "limit", side, amount, price, params={"client_id": client_order_id, "timeInForce": "GTC"}
+        )
+
 
 class BitMartClient(CCXTClient):
     """BitMart spot; the API memo is passed through CCXT's uid credential field."""
@@ -224,12 +302,27 @@ class BitMartClient(CCXTClient):
     id = "bitmart"
     balance_params = {"type": "spot"}
 
+    def format_client_order_id(self, identity: str) -> str:
+        """BitMart requires an alphanumeric ID of at most 32 characters."""
+        return identity.replace("-", "")
+
 
 class PhemexClient(CCXTClient):
     """Phemex spot wallet and optional testnet."""
 
     id = "phemex"
     balance_params = {"type": "spot"}
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Phemex spot accepts native GoodTillCancel rather than unified GTC."""
+        return self._exchange.create_order(
+            symbol,
+            "limit",
+            side,
+            amount,
+            price,
+            params={"clientOrderId": client_order_id, "timeInForce": "GoodTillCancel"},
+        )
 
 
 class PoloniexClient(CCXTClient):

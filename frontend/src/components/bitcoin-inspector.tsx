@@ -8,6 +8,8 @@ import {
   Search,
 } from 'lucide-react';
 import { AgentButton } from './agents';
+import { BitcoinBlockInspector } from './bitcoin-block-inspector';
+import { BitcoinWatches } from './bitcoin-watches';
 import { BitcoinOutputSpends } from './bitcoin-output-spends';
 import { Badge, ErrorState, Loading, Panel, PanelTitle } from './ui';
 import { number, post } from '../lib/api';
@@ -18,6 +20,7 @@ import type {
   BitcoinHistory,
   BitcoinReport,
   BitcoinStatus,
+  BitcoinWatchList,
 } from '../lib/bitcoin-types';
 
 /** Format exact satoshis without rounding high-turnover address counters through a float. */
@@ -54,6 +57,7 @@ function download(value: unknown) {
 /** User-initiated public research, with independent Demo examples and no saved browser identifiers. */
 export function BitcoinInspector() {
   const capabilities = useResource<BitcoinCapabilities>('/bitcoin');
+  const watches = useResource<BitcoinWatchList>('/bitcoin/watches', 15000);
   const [draft, setDraft] = useState('');
   const [report, setReport] = useState<BitcoinReport>();
   const [confirmed, setConfirmed] = useState<BitcoinHistory>();
@@ -63,6 +67,7 @@ export function BitcoinInspector() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const active = useRef(false);
+  const lookup = useRef<HTMLDivElement>(null);
 
   const inspect = async (value: string, demo = false, inputOffset = 0, outputOffset = 0) => {
     if (active.current || !value.trim()) return;
@@ -159,14 +164,14 @@ export function BitcoinInspector() {
       <span className="muted">Non-address script</span>
     );
 
-  return (
+  const transactionLookup = (
     <Panel className="bitcoin-inspector">
       <PanelTitle
         title="Transaction & address lookup"
         subtitle="Bitcoin mainnet · public on-chain observations"
         action={<AgentButton module="explorer" context={context} compact />}
       />
-      <div className="bitcoin-content">
+      <div className="bitcoin-content" ref={lookup}>
         <form
           className="bitcoin-search"
           onSubmit={(event) => {
@@ -393,6 +398,12 @@ export function BitcoinInspector() {
                       demo={!!simulated}
                       disabled={!!busy}
                       examples={capabilities.data?.demo}
+                      watchUnavailable={!watches.data || !!watches.data.recovery_required}
+                      watched={watches.data?.items.filter(
+                        (watch) =>
+                          watch.transaction_id === report.transaction.txid &&
+                          watch.demo === !!simulated,
+                      )}
                       inspect={(identity) => void inspect(identity, simulated)}
                     />
                     {report.transaction.next_output_offset != null && (
@@ -576,6 +587,32 @@ export function BitcoinInspector() {
           </div>
         )}
       </div>
+      <BitcoinWatches
+        data={watches.data}
+        loading={watches.loading}
+        loadError={watches.error}
+        inspect={(watch) =>
+          void inspect(
+            watch.transaction_id,
+            watch.demo,
+            0,
+            Math.floor(watch.output_index / 20) * 20,
+          )
+        }
+      />
     </Panel>
+  );
+
+  return (
+    <>
+      {transactionLookup}
+      <BitcoinBlockInspector
+        demoHeight={capabilities.data?.demo.block_height}
+        inspectTransaction={(id, demo) => {
+          lookup.current?.scrollIntoView({ block: 'start' });
+          void inspect(id, demo);
+        }}
+      />
+    </>
   );
 }

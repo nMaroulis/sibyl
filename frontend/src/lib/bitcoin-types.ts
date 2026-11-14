@@ -94,13 +94,20 @@ export type BitcoinCapabilities = {
   source: string;
   source_url: string;
   note: string;
-  demo: { txid: string; address: string; confirmed_spend_txid: string; pending_spend_txid: string };
+  demo: {
+    txid: string;
+    address: string;
+    block_height: number;
+    confirmed_spend_txid: string;
+    pending_spend_txid: string;
+  };
 };
 
 export type BitcoinOutputSpends = BitcoinAttribution & {
   kind: 'output_spends';
   transaction_id: string;
   output_offset: number;
+  parent_status: BitcoinStatus;
   total: number;
   limit: number;
   next_offset: number | null;
@@ -113,4 +120,73 @@ export type BitcoinOutputSpends = BitcoinAttribution & {
     status: BitcoinStatus | null;
     reason: string | null;
   })[];
+};
+
+export const bitcoinSpendLabel = {
+  confirmed: 'Spent · confirmed',
+  pending: 'Spend pending',
+  unspent: 'No spend reported',
+  unknown: 'Spend details unknown',
+} as const;
+
+export type BitcoinWatchObservation = {
+  observed_at: string;
+  value_sats: number;
+  state: Exclude<keyof typeof bitcoinSpendLabel, 'unknown'>;
+  spending_txid: string | null;
+  spending_input_index: number | null;
+  spending_block_hash: string | null;
+  spending_block_height: number | null;
+  parent_block_hash: string | null;
+  parent_block_height: number | null;
+};
+
+export type BitcoinWatch = {
+  id: string;
+  transaction_id: string;
+  output_index: number;
+  demo: boolean;
+  active: boolean;
+  revision: number;
+  next_check: string | null;
+  error: string | null;
+  observation: BitcoinWatchObservation | null;
+};
+
+export type BitcoinWatchList = {
+  items: BitcoinWatch[];
+  limit: number;
+  recovery_required: boolean;
+};
+
+export const bitcoinWatchURL = (id: string) =>
+  `/research?tab=explorer&watch=${encodeURIComponent(id)}`;
+
+export type BitcoinBlockReport = {
+  kind: 'block';
+  source: string;
+  network: string;
+  observed_at: string;
+  in_best_chain: boolean | null;
+  block: {
+    id: string;
+    height: number;
+    timestamp: number;
+    tx_count: number;
+    size: number;
+    weight: number;
+    parent_hash: string | null;
+  };
+  transaction_offset: number;
+  next_offset: number | null;
+  items: {
+    index: number;
+    txid: string;
+    coinbase: boolean;
+    fee_sats: number;
+    input_count: number;
+    output_count: number;
+  }[];
+  url: string | null;
+  note: string;
 };

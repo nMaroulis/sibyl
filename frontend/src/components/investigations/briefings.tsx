@@ -1,3 +1,6 @@
+import { Mail } from 'lucide-react';
+import { channelName } from '../messaging/notification-targets';
+import { scheduledChannel } from './briefing-types';
 import { useEffect, useState } from 'react';
 import {
   Archive,
@@ -92,8 +95,8 @@ export function Briefings({
       detail.retry();
       onChanged();
       toast(
-        policy.telegram
-          ? 'Briefing queued with your selected Telegram delivery.'
+        scheduledChannel(policy)
+          ? `Briefing queued with your selected ${channelName(scheduledChannel(policy)!)} delivery.`
           : 'Briefing queued. The calendar time is unchanged.',
       );
     } catch (reason) {
@@ -152,10 +155,19 @@ export function Briefings({
                   'Paused'
                 )}
               </Badge>
-              {policy.telegram && (
-                <span className="briefing-telegram-tag">
-                  <img src="/messaging/telegram.svg" width="13" height="13" alt="" />
-                  Telegram
+              {scheduledChannel(policy) && (
+                <span className="briefing-channel-tag">
+                  {scheduledChannel(policy) === 'email' ? (
+                    <Mail size={13} />
+                  ) : (
+                    <img
+                      src={`/messaging/${scheduledChannel(policy)}.svg`}
+                      width="13"
+                      height="13"
+                      alt=""
+                    />
+                  )}
+                  {channelName(scheduledChannel(policy)!)}
                 </span>
               )}
             </div>
@@ -170,15 +182,24 @@ export function Briefings({
                 data-state={latest.delivery.status}
                 onClick={() => setHistory(true)}
               >
-                <img src="/messaging/telegram.svg" width="11" height="11" alt="" />
+                {(latest.delivery?.channel || scheduledChannel(policy)) === 'email' ? (
+                  <Mail size={11} />
+                ) : (
+                  <img
+                    src={`/messaging/${latest.delivery?.channel || scheduledChannel(policy) || 'telegram'}.svg`}
+                    width="11"
+                    height="11"
+                    alt=""
+                  />
+                )}
                 {latest.delivery.status === 'sent'
-                  ? 'Briefing delivered'
+                  ? 'Briefing sent'
                   : latest.delivery.status === 'sending'
                     ? 'Sending briefing…'
                     : latest.delivery.status === 'pending'
                       ? 'Briefing delivery queued'
                       : latest.delivery.status === 'retrying'
-                        ? 'Waiting for Telegram'
+                        ? 'Waiting for delivery'
                         : 'Delivery ' + latest.delivery.status}
                 {latest.delivery.total_parts > 0 &&
                   ` · ${latest.delivery.sent_parts}/${latest.delivery.total_parts} parts`}
@@ -197,7 +218,7 @@ export function Briefings({
               onClick={() => void run()}
             >
               <Play size={12} />
-              {policy.telegram ? 'Run & deliver' : 'Run now'}
+              {scheduledChannel(policy) ? 'Run & deliver' : 'Run now'}
             </button>
             <button
               className="icon-button"
@@ -240,7 +261,7 @@ export function Briefings({
             <CalendarClock size={18} />
             <div>
               <strong>Make it a regular briefing.</strong>
-              <span>Daily or weekly, with optional Telegram delivery.</span>
+              <span>Daily or weekly, with an optional private destination.</span>
             </div>
             {!!policies.data?.length && (
               <button

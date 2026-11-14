@@ -217,10 +217,14 @@ class CCXTClient(ExchangeClient):
         """Preserve unknown values and the provider's update-time hint for strict balance checks."""
         return self._balance_snapshot(strict=True)
 
+    def balance_parameters(self) -> dict:
+        """Return a fresh provider wallet selection for one private balance read."""
+        return deepcopy(self.balance_params)
+
     def _balance_snapshot(self, *, strict):
         with self.lock:
             self._require("fetchBalance", private=True)
-            row = self._exchange.fetch_balance(params=deepcopy(self.balance_params))
+            row = self._exchange.fetch_balance(params=self.balance_parameters())
             result = {
                 kind: {
                     asset: None if strict and isinstance(value, bool) else number(value)
@@ -361,14 +365,12 @@ class CCXTClient(ExchangeClient):
         if self._sandbox or stream not in funding_streams(self.id):
             return super().fetch_funding_page(stream, cursor, limit)
         with self.lock:
-            self._require(
-                "fetchLedger"
-                if self.id == "kraken"
-                else "fetchDeposits"
-                if stream == "deposit"
-                else "fetchWithdrawals",
-                private=True,
-            )
+            method = {
+                "deposit": "fetchDeposits",
+                "withdrawal": "fetchWithdrawals",
+                "transfer": "fetchTransfers",
+            }
+            self._require("fetchLedger" if self.id == "kraken" else method[stream], private=True)
             return fetch_funding_page(self._exchange, self.id, stream, cursor, limit)
 
     def create_order(

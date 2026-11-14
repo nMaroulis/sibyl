@@ -20,6 +20,11 @@ class LimitPolicy(Request):
     max_exposure: float | None = Field(default=None, gt=0, le=1e12, strict=True)
     max_daily_loss: float | None = Field(default=None, gt=0, le=1e12, strict=True)
 
+    max_account_exposure: float | None = Field(default=None, gt=0, le=1e12, strict=True)
+    max_asset_exposure: float | None = Field(default=None, gt=0, le=1e12, strict=True)
+    loss_window_hours: int = Field(default=24, ge=1, le=168, strict=True)
+    max_window_loss: float | None = Field(default=None, gt=0, le=1e12, strict=True)
+
     @model_validator(mode="after")
     def complete(self):
         if self.enabled and any(

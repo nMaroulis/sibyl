@@ -196,3 +196,43 @@ def history_row(raw, selected_address, tip):
         "spent_sats": spent,
         "net_sats": None if spent is None else received - spent,
     }
+
+
+def block(raw):
+    """Validate a block summary without exposing the raw header or provider fields."""
+    height = integer(raw["height"], 100_000_000)
+    previous = raw.get("previousblockhash")
+    if height and not previous:
+        raise ValueError("Missing parent block.")
+    size = integer(raw["size"], 4_000_000, 1)
+    weight = integer(raw["weight"], 4_000_000, size)
+    if weight > 4 * size:
+        raise ValueError("Invalid block weight.")
+    return {
+        "id": txid(raw["id"]),
+        "height": height,
+        "timestamp": integer(raw["timestamp"], 2**32 - 1),
+        "tx_count": integer(raw["tx_count"], 100_000, 1),
+        "size": size,
+        "weight": weight,
+        "parent_hash": txid(previous) if height else None,
+    }
+
+
+def block_transaction(raw, index):
+    """Summarize a native block member without treating its current status as block membership."""
+    inputs, outputs = raw["vin"], raw["vout"]
+    if not isinstance(inputs, list) or not inputs or not isinstance(outputs, list) or not outputs:
+        raise ValueError("Invalid block transaction inputs/outputs.")
+    coinbase = inputs[0]["is_coinbase"]
+    fee = integer(raw["fee"], MAX_MONEY)
+    if type(coinbase) is not bool or coinbase != (index == 0) or (coinbase and (fee or len(inputs) != 1)):
+        raise ValueError("Inconsistent block coinbase position.")
+    return {
+        "index": index,
+        "txid": txid(raw["txid"]),
+        "coinbase": coinbase,
+        "fee_sats": fee,
+        "input_count": len(inputs),
+        "output_count": len(outputs),
+    }

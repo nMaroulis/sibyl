@@ -112,7 +112,11 @@ export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy
                     <small>{job.parameters.symbol.split('/')[1]}</small>
                   </td>
                   <td>
-                    <Change value={(job.equity / job.parameters.capital - 1) * 100} />
+                    {job.ownership_event_count ? (
+                      <small>Ownership adjusted</small>
+                    ) : (
+                      <Change value={(job.equity / job.parameters.capital - 1) * 100} />
+                    )}
                   </td>
                   <td>{date(job.checked_at)}</td>
                   <td>

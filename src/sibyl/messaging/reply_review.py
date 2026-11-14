@@ -28,6 +28,7 @@ def record_reply(db, revision, update_id, chat):
         if source.get("received_at")
         else None,
         "reviews": [],
+        **({"attachment": source["attachment_receipt"]} if source.get("attachment_receipt") else {}),
     }
     db.execute(
         "INSERT OR IGNORE INTO telegram_reply_receipts VALUES(?,?,?,?)",

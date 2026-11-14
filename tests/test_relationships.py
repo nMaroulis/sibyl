@@ -153,3 +153,52 @@ def test_native_analyst_follows_frozen_comparison_context_without_large_plot_pay
         AgentContext(comparison_symbols=["BTC/USDT", "BTC/USDT"])
     with pytest.raises(ValidationError):
         AgentContext(comparison_symbols=["BTC/USDT", "INVALID"])
+
+
+def test_robust_return_fit_preserves_the_common_window_and_recovers_known_slope():
+    rng = np.random.default_rng(17)
+    returns = rng.normal(0, 0.012, 500)
+    target = 0.002 + 1.8 * returns
+    target[-1] += 0.5
+    returns[-1] = 0.125
+    history = {"X": prices(np.exp(np.cumsum(returns))), "Y": prices(np.exp(np.cumsum(target)))}
+    normal = regressions(history, seconds=86400)
+    comparison = regressions(history, seconds=86400, robust=True)
+    (fit,) = comparison["items"]
+    assert normal["observations"] == comparison["available_observations"] == 499
+    assert fit["observations"] == len(fit["points"]) == 360
+    assert fit["points"] == normal["items"][0]["points"]
+    assert fit["beta"] != pytest.approx(1.8)
+    assert fit["theil_sen"]["beta"] == pytest.approx(1.8)
+    assert fit["theil_sen"]["intercept_pct"] == pytest.approx(0.2)
+    assert (
+        fit["theil_sen"]["median_absolute_residual_pct"]
+        < fit["theil_sen"]["ols_median_absolute_residual_pct"]
+    )
+    assert "theil_sen" not in normal["items"][0]
+
+
+def test_market_robust_comparison_available_to_analyst_without_model(client):
+    query = "?source=demo&symbols=BTC/USDT,ETH/USDT&robust=true&limit=90"
+    response = client.get("/api/v1/markets/correlation" + query)
+    assert response.status_code == 200, response.text
+    regression = response.json()["regression"]
+    assert regression["robust"] and regression["observations"] == 89
+    reply = client.post(
+        "/api/v1/agents/ask",
+        json={
+            "module": "analyst",
+            "message": "Explain the return fits",
+            "context": {
+                "market_source": "demo",
+                "robust_regression": True,
+                "comparison_symbols": ["BTC/USDT", "ETH/USDT"],
+                "timeframe": "1d",
+                "limit": 90,
+            },
+        },
+    )
+    assert reply.status_code == 200, reply.text
+    (row,) = reply.json()["observations"][0]["evidence"]["regression"]["items"]
+    assert row["theil_sen"] == regression["items"][0]["theil_sen"]
+    assert "points" not in row and "Theil–Sen beta" in reply.text

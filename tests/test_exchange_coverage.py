@@ -1,5 +1,7 @@
 """Category colours describe implemented app paths, never account connectivity."""
 
+from dataclasses import replace
+
 import pytest
 
 from sibyl.exchanges import create_client
@@ -32,9 +34,13 @@ def test_binance_categories_do_not_hide_missing_features():
     provider = next(row for row in provider_catalog()["items"] if row["id"] == "binance")
     groups = {row["id"]: row for row in provider["support"]}
     assert groups["account"]["summary"] == {"status": "supported", "implemented": 3, "total": 3}
-    assert groups["spot"]["summary"]["status"] == "supported"  # All listed paths are implemented; native pair permissions still apply.
+    assert (
+        groups["spot"]["summary"]["status"] == "supported"
+    )  # All listed paths are implemented; native pair permissions still apply.
     assert groups["history"]["summary"]["status"] == "partial"  # Transfers are not imported.
-    assert groups["market"]["summary"]["status"] == "supported"  # Public ticker/candle streams; private streams remain separate.
+    assert (
+        groups["market"]["summary"]["status"] == "supported"
+    )  # Public ticker/candle streams; private streams remain separate.
     assert groups["limits"]["summary"] == {"status": "partial", "implemented": 1, "total": 3}
 
 
@@ -43,7 +49,7 @@ def test_sdk_flags_cannot_enable_unreviewed_writes_or_imports():
         ["ticker", "candles", "order_book", "balances", "order_status", "open_orders", "trade_history"],
         "native",
     )
-    groups = support_groups(exchange_spec("bitmart"), capabilities, None)
+    groups = support_groups(replace(exchange_spec("bitmart"), limit_only=False), capabilities, None)
     rows = {row["id"]: row for group in groups for row in group["features"]}
     assert next(group for group in groups if group["id"] == "spot")["summary"]["status"] == "unsupported"
     for identity in [
@@ -60,7 +66,7 @@ def test_sdk_flags_cannot_enable_unreviewed_writes_or_imports():
     account = next(group for group in groups if group["id"] == "account")
     assert account["summary"]["status"] == "supported"
     capabilities["balances"] = "unavailable"
-    account = support_groups(exchange_spec("bitmart"), capabilities, None)[0]
+    account = support_groups(replace(exchange_spec("bitmart"), limit_only=False), capabilities, None)[0]
     assert account["summary"]["status"] == "partial"
     assert next(row for row in account["features"] if row["id"] == "permissions")["status"] == "unavailable"
 

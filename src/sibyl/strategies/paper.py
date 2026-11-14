@@ -39,6 +39,12 @@ class Strategies:
         from sibyl.strategies.plugins.service import PluginResearch
 
         self.plugins = PluginResearch(market, store)
+        from sibyl.strategies.research.adaptive.service import AdaptiveStudies
+
+        self.adaptive = AdaptiveStudies(store, market.archive, self.plugins)
+        from sibyl.strategies.portfolio.service import PortfolioResearch
+
+        self.portfolios = PortfolioResearch(market, store)
 
     def attach_execution(self, trading):
         """Attach account execution after the shared order pipeline is constructed."""

@@ -5,6 +5,8 @@ PEER = "147Us9aEq2PvBC5wobBJw1yEpQEbPKzssA"
 TXID = "d" * 64
 PENDING_TXID = "e" * 64
 TIP = 900_035
+BLOCK_HEIGHT = 900_030
+BLOCK_HASH = f"{BLOCK_HEIGHT:064x}"
 
 
 def _output(value, target):
@@ -57,16 +59,54 @@ def transactions():
     return list(reversed(rows)), [pending]
 
 
+def block_transactions():
+    """Return a separate two-page Demo block with transaction details available for each row."""
+    coinbase = _transaction("c" * 64, BLOCK_HEIGHT, [{"is_coinbase": True}], [_output(312_500_000, ADDRESS)])
+    coinbase["fee"] = 0
+    return [
+        coinbase,
+        *[
+            _transaction(
+                f"{1000 + i:064x}",
+                BLOCK_HEIGHT,
+                [_input(f"{2000 + i:064x}", PEER, 101_000)],
+                [_output(100_000, ADDRESS)],
+            )
+            for i in range(1, 29)
+        ],
+    ]
+
+
 def read(path):
     """Serve only named Demo resources; unknown IDs never receive fabricated observations."""
     confirmed, pending = transactions()
+    block_path = f"/block/{BLOCK_HASH}"
+    if path == f"/block-height/{BLOCK_HEIGHT}":
+        return BLOCK_HASH
+    if path == block_path:
+        return {
+            "id": BLOCK_HASH,
+            "height": BLOCK_HEIGHT,
+            "timestamp": 1767243600,
+            "tx_count": 29,
+            "size": 6605,
+            "weight": 26420,
+            "previousblockhash": f"{BLOCK_HEIGHT - 1:064x}",
+        }
+    if path == block_path + "/status":
+        return {"in_best_chain": True, "height": BLOCK_HEIGHT}
+    if path in {block_path + "/txs", block_path + "/txs/25"}:
+        rows = block_transactions()
+        return rows[25:] if path.endswith("/25") else rows[:25]
     if path == "/blocks/tip/height":
         return str(TIP)
     if path.startswith("/tx/"):
         identity = path.removeprefix("/tx/")
         if identity.endswith("/outspends"):
             parent_id = identity.removesuffix("/outspends")
-            parent = next((row for row in confirmed + pending if row["txid"] == parent_id), None)
+            parent = next(
+                (row for row in confirmed + pending + block_transactions() if row["txid"] == parent_id), None
+            )
             if parent is None:
                 raise LookupError("Unknown Demo transaction.")
             observations = []
@@ -86,6 +126,9 @@ def read(path):
                     observations.append({"spent": False})
             return observations
         match = next((row for row in confirmed + pending if row["txid"] == identity), None)
+        if match:
+            return match
+        match = next((row for row in block_transactions() if row["txid"] == identity), None)
         if match:
             return match
     prefix = f"/address/{ADDRESS}"

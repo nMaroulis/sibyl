@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Download, RefreshCw } from 'lucide-react';
-import { api, number } from '../lib/api';
-import type { BitcoinOutputSpends as Observation } from '../lib/bitcoin-types';
-import { Badge } from './ui';
+import { ArrowUpRight, BellPlus, Download, RefreshCw } from 'lucide-react';
+import { api, number, post, refresh } from '../lib/api';
+import {
+  bitcoinSpendLabel,
+  type BitcoinOutputSpends as Observation,
+  type BitcoinWatch,
+} from '../lib/bitcoin-types';
+import { Badge, useToast } from './ui';
 import './bitcoin-output-spends.css';
 
 /** Explicit, dated spend checks remain separate from the transaction's earlier observation. */
@@ -12,6 +16,8 @@ export function BitcoinOutputSpends({
   demo,
   disabled,
   examples,
+  watched,
+  watchUnavailable,
   inspect,
 }: {
   transactionId: string;
@@ -19,10 +25,33 @@ export function BitcoinOutputSpends({
   demo: boolean;
   disabled: boolean;
   examples?: { confirmed_spend_txid: string; pending_spend_txid: string };
+  watched?: BitcoinWatch[];
+  watchUnavailable: boolean;
   inspect: (identity: string) => void;
 }) {
   const [observation, setObservation] = useState<Observation>();
   const [busy, setBusy] = useState(false);
+  const [watching, setWatching] = useState<number | null>(null);
+  const toast = useToast();
+
+  const addWatch = async (index: number) => {
+    setWatching(index);
+    try {
+      const watch = await post<BitcoinWatch>('/bitcoin/watches', {
+        transaction_id: transactionId,
+        output_index: index,
+        demo,
+      });
+      toast(
+        watch.active ? `Watching output #${index}` : `Output #${index} already has a paused watch`,
+      );
+      refresh();
+    } catch (reason) {
+      toast((reason as Error).message, true);
+    } finally {
+      setWatching(null);
+    }
+  };
   const [error, setError] = useState('');
   const controller = useRef<AbortController | null>(null);
   useEffect(
@@ -99,55 +128,69 @@ export function BitcoinOutputSpends({
             </p>
           ))}
           <div className="bitcoin-spends-list">
-            {observation.items.map((output) => (
-              <div className="bitcoin-spend-row" key={output.index}>
-                <div>
-                  <span>
-                    Output #{output.index} · {number(output.value_sats, 0)} sat
-                  </span>
-                  <Badge
-                    tone={
-                      output.state === 'confirmed'
-                        ? 'lime'
-                        : output.state === 'pending' || output.state === 'unknown'
-                          ? 'amber'
-                          : 'neutral'
-                    }
-                  >
-                    {
-                      {
-                        confirmed: 'Spent · confirmed',
-                        pending: 'Spend pending',
-                        unspent: 'No spend reported',
-                        unknown: 'Spend details unknown',
-                      }[output.state]
-                    }
-                  </Badge>
+            {observation.items.map((output) => {
+              const watch = watched?.find((item) => item.output_index === output.index);
+              return (
+                <div className="bitcoin-spend-row" key={output.index}>
+                  <div>
+                    <span>
+                      Output #{output.index} · {number(output.value_sats, 0)} sat
+                    </span>
+                    <Badge
+                      tone={
+                        output.state === 'confirmed'
+                          ? 'lime'
+                          : output.state === 'pending' || output.state === 'unknown'
+                            ? 'amber'
+                            : 'neutral'
+                      }
+                    >
+                      {bitcoinSpendLabel[output.state]}
+                    </Badge>
+                    {watch ? (
+                      <small>{watch.active ? 'Watching' : 'Watch paused'}</small>
+                    ) : (
+                      <button
+                        className="text-button bitcoin-watch-action"
+                        aria-label={`Watch output #${output.index}`}
+                        disabled={disabled || watchUnavailable || watching !== null}
+                        onClick={() => void addWatch(output.index)}
+                      >
+                        <BellPlus size={12} aria-hidden="true" />
+                        {watching === output.index ? 'Saving…' : 'Watch'}
+                      </button>
+                    )}
+                  </div>
+                  {output.spending_txid && (
+                    <button
+                      className="text-button bitcoin-spending-link"
+                      disabled={disabled || busy}
+                      onClick={() => inspect(output.spending_txid!)}
+                    >
+                      <code>{output.spending_txid}</code>
+                      <ArrowUpRight size={12} aria-hidden="true" />
+                    </button>
+                  )}
+                  {output.spending_input_index != null && (
+                    <small>
+                      Spending input #{output.spending_input_index}
+                      {output.status?.confirmed
+                        ? output.status.confirmations == null
+                          ? ' · depth unavailable'
+                          : ` · ${output.status.confirmations} confirmations`
+                        : ''}
+                    </small>
+                  )}
+                  {output.reason && <small>{output.reason}</small>}
                 </div>
-                {output.spending_txid && (
-                  <button
-                    className="text-button bitcoin-spending-link"
-                    disabled={disabled || busy}
-                    onClick={() => inspect(output.spending_txid!)}
-                  >
-                    <code>{output.spending_txid}</code>
-                    <ArrowUpRight size={12} aria-hidden="true" />
-                  </button>
-                )}
-                {output.spending_input_index != null && (
-                  <small>
-                    Spending input #{output.spending_input_index}
-                    {output.status?.confirmed
-                      ? output.status.confirmations == null
-                        ? ' · depth unavailable'
-                        : ` · ${output.status.confirmations} confirmations`
-                      : ''}
-                  </small>
-                )}
-                {output.reason && <small>{output.reason}</small>}
-              </div>
-            ))}
+              );
+            })}
           </div>
+          <p className="footnote">
+            {demo
+              ? 'Demo watches use synthetic data.'
+              : 'Watching sends this transaction ID to mempool.space for periodic checks.'}
+          </p>
           <p className="footnote">{observation.spend_note}</p>
         </>
       )}

@@ -40,12 +40,12 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'forecast',
       title: 'More forecasting models and evaluation',
-      text: 'ARIMA, other neural families, automatic recalibration and calibrated drift monitoring. Live prospective outcome tracking is implemented. Versioned ridge and bounded small neural models, chronological and historical rolling evaluation, empirical bands and saved forecasts are available now.',
+      text: 'Additional neural families, exogenous inputs and broader real-market validation. Weekly SARIMA, candidate recalibration and prospective outcome tracking are already available.',
     },
     {
       module: 'knowledge',
       title: 'Deeper research retrieval',
-      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, hosted embedding providers and cited web search. Private document/news ingestion, exact citations and optional local Ollama semantic/hybrid search are available now.',
+      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, additional hosted providers and cited web search. Private documents/news, exact citations and optional local Ollama or consented OpenAI/Mistral semantic search are available now.',
     },
     {
       module: 'news',
@@ -60,7 +60,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'explorer',
       title: 'Beyond Bitcoin',
-      text: 'Additional chains, complete historical network datasets and wallet aggregation. Bitcoin transaction/address inspection, paginated activity and source-labeled fee/confirmation evidence are available now.',
+      text: 'Additional chains, complete historical network datasets and wallet aggregation. Bitcoin historical block and transaction/address inspection, paginated activity and source-labeled fee/confirmation evidence are available now.',
     },
     {
       module: 'markets',

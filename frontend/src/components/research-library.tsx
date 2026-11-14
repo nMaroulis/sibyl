@@ -14,6 +14,7 @@ import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import { AgentButton } from './agents';
 import { LibraryEvaluations } from './library-evaluations';
+import { LibraryCalibration } from './library-calibration';
 import { LibrarySemantic } from './library-semantic';
 import type { SemanticStatus } from '../lib/semantic-types';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
@@ -48,6 +49,7 @@ type Matches = {
   items: Passage[];
   note: string;
   retrieval: string;
+  calibration?: { state: string; applied: boolean; abstained: boolean; note?: string };
   semantic?: { model: string; coverage: { indexed: number; total: number; partial: boolean } };
 };
 const date = (value: string) =>
@@ -186,6 +188,7 @@ export function ResearchLibrary() {
       <LibraryEvaluations
         semanticReady={!!semantic.data?.configured && !!semantic.data.coverage.all.indexed}
       />
+      <LibraryCalibration semantic={semantic.data} />
       {query && (
         <Panel>
           <PanelTitle
@@ -214,10 +217,17 @@ export function ResearchLibrary() {
           ) : matches.loading ? (
             <Loading />
           ) : !matches.data?.items.length ? (
-            <Empty title="No matching passages">
-              Try another term, import a source, or synchronize the retained news archive. Semantic
-              searches also need indexed passages. An empty match does not establish that a claim is
-              false.
+            <Empty
+              title={
+                matches.data?.calibration?.abstained
+                  ? 'Search withheld its evidence'
+                  : 'No matching passages'
+              }
+            >
+              {matches.data?.calibration?.abstained
+                ? matches.data.calibration.note ||
+                  'The leading passage did not meet your calibrated cutoff. This does not establish that the claim is false.'
+                : 'Try another term, import a source, or synchronize retained news. Semantic search needs indexed passages; an empty match does not establish that a claim is false.'}
             </Empty>
           ) : (
             <div className="library-results">
@@ -241,6 +251,19 @@ export function ResearchLibrary() {
                 </button>
               ))}
             </div>
+          )}
+          {matches.data?.calibration?.applied && (
+            <p className="footnote">
+              <Badge tone={matches.data.calibration.abstained ? 'neutral' : 'lime'}>
+                {matches.data.calibration.state}
+              </Badge>
+              Calibrated top-one retrieval · this source scope only · not answer confidence.
+            </p>
+          )}
+          {method === 'hybrid' && (
+            <p className="footnote">
+              Hybrid rankings are uncalibrated. Semantic cutoffs do not apply to this method.
+            </p>
           )}
           {matches.data?.semantic && (
             <p className="footnote">
@@ -338,7 +361,8 @@ export function ResearchLibrary() {
         <p className="footnote">
           PDF text extraction supports up to 100 pages and 8 MiB per file. Scans need OCR first. The
           library retains originals for reindexing; publisher news follows the archive's retention
-          policy. Local semantic search is optional; cited web search remains pending.
+          policy. Local or consented hosted semantic search is optional; cited web search remains
+          pending.
         </p>
       </Panel>
       {importing && (

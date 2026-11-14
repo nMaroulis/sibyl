@@ -16,6 +16,7 @@ from sibyl.agents.utils.reporting import run_details
 from sibyl.agents.utils.requests import CancelSibylRequest
 from sibyl.agents.utils.streaming import retained_run, stream_reply
 from sibyl.api.app import Services
+from sibyl.credentials.connections import ConnectionCredentials, ReplaceCredentials
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.market_data.backfills import (
     CandleRange,
@@ -264,6 +265,7 @@ def correlations(
     limit: int = Query(90, ge=30, le=720),
     method: Literal["pearson", "spearman", "distance"] = "pearson",
     transform: Literal["log_returns", "prices", "changes"] = "log_returns",
+    robust: bool = False,
     source: MarketSource | None = None,
 ):
     """Compare up to eight exact provider pairs on aligned closed candles from one feed."""
@@ -281,7 +283,7 @@ def correlations(
         return {
             **s.market.metadata(),
             "timeframe": timeframe,
-            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe]),
+            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe], robust=robust),
         }
 
 
@@ -612,6 +614,28 @@ def add_connection(body: ConnectionCreate, s: S):
     return result
 
 
+@router.get("/connections/{connection_id}/credentials/status", tags=["Technician"])
+def saved_credential_status(connection_id: str, s: S, response: Response):
+    """Read only an opaque credential revision and actual replacement dates."""
+    response.headers["Cache-Control"] = "no-store"
+    return ConnectionCredentials(s.store).state(connection_id)
+
+
+@router.put("/connections/{connection_id}/credentials", tags=["Technician"])
+def replace_connection_credentials(connection_id: str, body: ReplaceCredentials, s: S, response: Response):
+    """Replace same-account secrets without deleting history, activating or probing the account."""
+    response.headers["Cache-Control"] = "no-store"
+    result = ConnectionCredentials(s.store).replace(connection_id, body)
+    s.account_sync.pause(connection_id)
+    s.funding_sync.pause(connection_id)
+    with s.store.db() as db:
+        discovery = s.trading.discovery.read(db, connection_id)
+    if discovery:
+        s.trading.discovery.pause(connection_id)
+    s.market.forget(connection_id)
+    return result
+
+
 @router.delete("/connections/{connection_id}", status_code=204, tags=["Technician"])
 def delete_connection(connection_id: str, s: S):
     """Disconnect a saved account and clear its cached decrypted client."""
@@ -858,6 +882,7 @@ def strategy_events(
         "ORDER_PLANNED",
         "ORDER_SUBMITTED",
         "FILL_CORRECTION",
+        "OWNERSHIP",
         "STOP_CANCEL",
         "CANCEL_QUEUED",
         "CANCEL_BLOCKED",
@@ -899,6 +924,7 @@ def strategy_events_export(
         "ORDER_PLANNED",
         "ORDER_SUBMITTED",
         "FILL_CORRECTION",
+        "OWNERSHIP",
         "STOP_CANCEL",
         "CANCEL_QUEUED",
         "CANCEL_BLOCKED",
@@ -1114,8 +1140,12 @@ async def ask_sibyl(body: SibylRequest, s: S):
 
 @router.get("/settings/messaging", tags=["Settings"])
 def messaging_settings(s: S):
-    """Describe unavailable channels and their future setup requirements."""
-    return s.messaging.public()
+    """Describe actual channel support and credential-free private connection state."""
+    result = s.messaging.public()
+    for channel in result["channels"]:
+        if channel["id"] in {"discord", "slack", "signal", "whatsapp", "email"}:
+            channel.update(s.private_channels.public(channel["id"]))
+    return result
 
 
 @router.post("/sibyl/ask/stream", tags=["Sibyl"])

@@ -421,3 +421,7 @@ def test_catalog_separates_import_reconciliation_and_funding_support():
     assert bybit["funding"]["status"] == "available"
     assert bybit["funding"]["label"] == "On-chain withdrawal history"
     assert "Deposits" in bybit["funding"]["detail"] and "pending" in bybit["funding"]["detail"]
+    assert (
+        bybit["transfers"]["status"] == "available"
+        and "Unified Trading Account" in bybit["transfers"]["detail"]
+    )

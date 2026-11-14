@@ -1,9 +1,9 @@
-"""Explicit, local-only semantic indexing controls; chat-provider profiles stay separate."""
+"""Explicit local/hosted semantic indexing controls; chat-provider profiles stay separate."""
 
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 
 from sibyl.models import Request
 
@@ -58,3 +58,28 @@ class IndexBatch(SemanticRevision):
 
     kind: Literal["all", "document", "news"] = "document"
     limit: int = Field(default=32, ge=1, le=32, strict=True)
+
+
+class HostedSemanticSettings(Request):
+    """Deliberately check hosted embeddings and authorize text processing independently of chat models."""
+
+    revision: int = Field(ge=0, strict=True)
+    provider: Literal["openai", "mistral"]
+    model: str = Field(min_length=1, max_length=180)
+    api_key: SecretStr | None = Field(default=None, max_length=4096)
+    remote_consent: bool = Field(default=False, strict=True)
+
+    @model_validator(mode="after")
+    def review(self):
+        from sibyl.research_library.semantic.hosted import provider_spec
+
+        provider_spec(self.provider, self.model)
+        if not self.remote_consent:
+            raise ValueError(
+                "Explicit permission to send library passages and search queries to the provider is required."
+            )
+        if self.api_key is not None:
+            key = self.api_key.get_secret_value()
+            if not key.strip() or key != key.strip() or any(ord(c) < 33 or ord(c) == 127 for c in key):
+                raise ValueError("Use a nonempty provider API key without whitespace or control characters.")
+        return self

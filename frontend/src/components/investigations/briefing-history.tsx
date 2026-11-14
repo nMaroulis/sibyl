@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Clock3, Send } from 'lucide-react';
+import { ArrowUpRight, Clock3 } from 'lucide-react';
 import { Badge, ErrorState, Loading, Modal } from '../ui';
 import { useResource } from '../../lib/hooks';
 import { briefingLabel, calendarDate } from './briefing-types';
+import { DeliveryReceipt } from '../messaging/delivery-receipt';
 import type { BriefingSchedule } from './briefing-types';
 
-/** Calendar outcomes and actual Telegram confirmations, including skipped and ambiguous writes. */
+/** Calendar outcomes and actual private delivery confirmations, including skipped and ambiguous writes. */
 export function BriefingHistory({
   schedules,
   selected,
@@ -83,41 +84,17 @@ export function BriefingHistory({
                   <p className="footnote">This report is outside its retained version history.</p>
                 ))}
               {item.delivery ? (
-                <div className="briefing-delivery">
-                  <div>
-                    <Send size={13} />
-                    <strong>{briefingLabel(item.delivery.status)}</strong>
-                    <span>
-                      {item.delivery.total_parts
-                        ? `${item.delivery.sent_parts}/${item.delivery.total_parts} parts confirmed`
-                        : 'No message parts queued'}
-                    </span>
-                  </div>
-                  {item.delivery.error && <p>{item.delivery.error}</p>}
-                  <details>
-                    <summary>Delivery details</summary>
-                    <p>{item.delivery.preview}</p>
-                    {item.delivery.parts.map((part) => (
-                      <div key={part.part} className="briefing-part">
-                        <span>Part {part.part + 1}</span>
-                        <Badge>{part.state}</Badge>
-                        <small>
-                          {part.attempts} attempt{part.attempts === 1 ? '' : 's'}
-                          {part.native_id ? ` · Telegram ${part.native_id}` : ''}
-                        </small>
-                        {part.error && <p>{part.error}</p>}
-                      </div>
-                    ))}
-                  </details>
+                <div className="briefing-message-receipt">
+                  <DeliveryReceipt delivery={item.delivery} />
                 </div>
               ) : item.delivery_error ? (
                 <p className="footnote">{item.delivery_error}</p>
               ) : (
                 item.status === 'completed' && (
                   <p className="footnote">
-                    {item.telegram_requested
+                    {(item.delivery_requested ?? item.telegram_requested)
                       ? 'No delivery receipt is available.'
-                      : 'Saved locally · Telegram delivery was not requested.'}
+                      : 'Saved locally · external delivery was not requested.'}
                   </p>
                 )
               )}

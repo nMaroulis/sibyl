@@ -7,6 +7,7 @@ from sibyl.api.routes import S
 from sibyl.api.uploads import bounded_body
 from sibyl.forecasting.bundles import MAX_BUNDLE
 from sibyl.forecasting.contracts import ArchiveModel, ForecastRequest, RollingEvaluationRequest, TrainForecast
+from sibyl.forecasting.drift import DriftPolicy, Recalibrate
 from sibyl.forecasting.forward import ForwardAction
 
 
@@ -133,3 +134,29 @@ def check_tracking(identity: str, s: S, refresh: bool = False):
 def forget_tracking(identity: str, s: S, revision: int = Query(ge=1)):
     """Remove tracked actuals after explicit review; do not delete the original forecast."""
     return s.forecasts.forward.forget(identity, revision)
+
+
+@router.get("/{identity}/drift")
+def drift(identity: str, s: S):
+    """Read retained drift observations and the explicitly saved candidate policy."""
+    return s.forecasts.drift.state(identity)
+
+
+@router.post("/{identity}/drift")
+def save_drift(identity: str, body: DriftPolicy, s: S):
+    """Save a revision-bound policy; neither train nor schedule a model here."""
+    return s.forecasts.drift.save(identity, body)
+
+
+@router.post("/{identity}/drift/check")
+def check_drift(identity: str, s: S):
+    """Compare training returns with later retained observations without a provider read."""
+    return s.forecasts.drift.check(identity)
+
+
+@router.post("/{identity}/recalibrate")
+def recalibrate(identity: str, body: Recalibrate, s: S):
+    """Run the enabled retained-data policy and retain a candidate without promotion."""
+    if identity != body.model_id:
+        raise ValueError("The selected model does not match the recalibration request.")
+    return s.forecasts.drift.recalibrate(body)

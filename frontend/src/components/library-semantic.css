@@ -137,3 +137,127 @@
     justify-self: start;
   }
 }
+
+.embedding-provider-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.embedding-provider-card {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.embedding-provider-card.selected {
+  background: linear-gradient(120deg, #eff4ff, #f8f8ff);
+  border-color: #a8bbe9;
+  color: #375eaa;
+  box-shadow: 0 3px 14px #b5c6f016;
+}
+.embedding-provider-card:hover:not(:disabled) {
+  border-color: #9db5e6;
+  box-shadow: 0 4px 18px #c6d1f12a;
+}
+.embedding-provider-card span {
+  display: grid;
+  gap: 5px;
+}
+.embedding-provider-card strong {
+  font-size: 12px;
+}
+.embedding-provider-card small {
+  font-size: 10px;
+  color: var(--subtle);
+}
+.embedding-provider-card > svg,
+.embedding-provider-card > img {
+  flex-shrink: 0;
+}
+.embedding-key-saved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #f7f9fd;
+}
+.embedding-key-saved > div {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+}
+.embedding-key-saved strong {
+  font-size: 12px;
+  color: var(--text);
+}
+.embedding-key-saved small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.embedding-remote-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 17px;
+  border: 1px solid #e5d8b7;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #fffbf2, #fffdf9);
+  color: #705c35;
+}
+.embedding-remote-consent > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.embedding-remote-consent strong {
+  font-size: 12px;
+}
+.embedding-remote-consent p {
+  margin: 7px 0 12px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.embedding-remote-consent label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: inherit;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.embedding-remote-consent input {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 1px 0 0;
+  accent-color: #597cbd;
+}
+@media (max-width: 700px) {
+  .embedding-provider-cards {
+    grid-template-columns: 1fr;
+  }
+  .embedding-key-saved {
+    flex-wrap: wrap;
+  }
+}
+
+.embedding-consent-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.embedding-consent-active svg {
+  flex-shrink: 0;
+}

@@ -31,8 +31,15 @@ class StrategyApprovals:
         params = request.parameters
         quote = params.symbol.split("/")[1]
         reserved = 0.0
+        if request.handoff_from:
+            with self.store.db() as db:
+                self.runner.ownership.source(request.handoff_from, connection.id, params.symbol, db)
         for other in self.runner.jobs():
             if other["id"] == exclude or other["connection_id"] != connection.id:
+                continue
+            with self.store.db() as db:
+                other = self.runner.ownership._values(other, db)
+            if other["id"] == request.handoff_from:
                 continue
             retained = (
                 other["status"] not in {"stopped", "completed"}
@@ -50,20 +57,41 @@ class StrategyApprovals:
                 reserved += max(0, other["cash"])
         with self.market.adapter(connection) as client:
             observed = observation(client, params)
-            available = float(client.fetch_balance().get("free", {}).get(quote) or 0)
+            balance = client.fetch_balance()
+            available = float(balance.get("free", {}).get(quote) or 0)
         if not math.isfinite(available) or available < params.capital + reserved:
             raise ExecutionGuard(
                 f"Not enough free {quote} for this budget and the other strategy allocations. Budgets do not reserve funds at the exchange."
             )
         if observed["spread_bps"] > request.risk.max_spread_bps:
             raise ExecutionGuard("Current spread exceeds the approved strategy limit.")
+        if request.handoff_from:
+            with self.store.db() as db:
+                source = self.runner.ownership.source(request.handoff_from, connection.id, params.symbol, db)
+                from sibyl.strategies.execution.ownership.inspection import amount
+
+                if amount(balance, "total", params.symbol.split("/")[0]) + 1e-10 < sum(
+                    row["quantity"] for row in self.runner.ownership._rows(source, db)
+                ):
+                    raise ExecutionGuard(
+                        "Account units cannot back the source position. Review Position ownership first."
+                    )
         return connection, observed
 
     def preview(self, request: ExchangeStrategyRequest):
         """Validate account, candles, funds and policy; never create an exchange order."""
         with self.lock:
             connection, observed = self._validate(request)
-            risk_revision = self.runner.portfolio_limits.review(connection, request.parameters)
+            source, handoff_evidence = None, None
+            if request.handoff_from:
+                with self.store.db() as db:
+                    source = self.runner.ownership.source(
+                        request.handoff_from, connection.id, request.parameters.symbol, db
+                    )
+                    handoff_evidence = self.runner.ownership._evidence(source, db)
+            risk_revision = self.runner.portfolio_limits.review(
+                connection, request.parameters, handoff=source, mark=observed["price"]
+            )
             limits = next(
                 state
                 for state in self.runner.portfolio_limits.state()["policies"]
@@ -75,6 +103,15 @@ class StrategyApprovals:
                 "risk_revision": risk_revision,
                 "shared_limits": {"currency": "USDT", **limits["policy"]},
                 "request": request.model_dump(),
+                "handoff_evidence": handoff_evidence,
+                "handoff": {
+                    "source_id": source["id"],
+                    "quantity": source["quantity"],
+                    "cost_basis": source["entry_cost"],
+                    "reference_value": source["quantity"] * observed["price"],
+                }
+                if source
+                else None,
                 "account": connection.label,
                 "exchange": connection.exchange,
                 "sandbox": connection.sandbox,
@@ -87,7 +124,7 @@ class StrategyApprovals:
             }
             with self.store.db() as db:
                 db.execute("INSERT INTO strategy_reviews VALUES(?,?)", (review["id"], json.dumps(review)))
-            return review
+            return {k: v for k, v in review.items() if k != "handoff_evidence"}
 
     def start(self, review_id, confirmation):
         """Approve a fixed scope; prime the current candle and wait for a new close."""
@@ -111,8 +148,24 @@ class StrategyApprovals:
             self.runner.controls.require(review.get("control_revision", 0))
             request = ExchangeStrategyRequest(**review["request"])
             connection, observed = self._validate(request)
+            source = None
+            if request.handoff_from:
+                with self.store.db() as db:
+                    source = self.runner.ownership.source(
+                        request.handoff_from, connection.id, request.parameters.symbol, db
+                    )
+                    if review["handoff_evidence"] != self.runner.ownership._evidence(source, db):
+                        raise ExecutionGuard(
+                            "Source ownership or account evidence changed. Review the handoff again."
+                        )
+                if abs(observed["price"] / review["reference_price"] - 1) > 0.005:
+                    raise ExecutionGuard("The handoff reference price changed. Review it again.")
             self.runner.portfolio_limits.review(
-                connection, request.parameters, review.get("risk_revision", 0)
+                connection,
+                request.parameters,
+                review.get("risk_revision", 0),
+                handoff=source,
+                mark=review["reference_price"],
             )
             if (connection.exchange, connection.sandbox) != (review["exchange"], review["sandbox"]):
                 raise ExecutionGuard("Execution account environment changed. Review it again.")
@@ -149,12 +202,32 @@ class StrategyApprovals:
                 "execution_state": "waiting_candle",
                 "fill_versions": {},
             }
+            if source:
+                with self.store.db() as db:
+                    db.execute("BEGIN IMMEDIATE")
+                    source = self.runner.ownership.source(
+                        request.handoff_from, connection.id, request.parameters.symbol, db
+                    )
+                    if review["handoff_evidence"] != self.runner.ownership._evidence(source, db):
+                        raise ExecutionGuard(
+                            "Source ownership or account evidence changed before handoff. Review again."
+                        )
+                    db.execute("INSERT INTO strategy_jobs VALUES(?,?)", (identity, json.dumps(job)))
+                    self.runner.ownership.handoff(db, source, job, review["reference_price"])
+                    review["job_id"] = identity
+                    db.execute(
+                        "UPDATE strategy_reviews SET payload=? WHERE id=?", (json.dumps(review), review_id)
+                    )
+                self.journal.save(self.runner._project(self.journal.job(source["id"])))
+                job = self.runner._project(self.journal.job(identity))
             self.journal.save(
                 job,
                 self.host._event(
                     job,
                     "START",
-                    "Exchange strategy approved. Waiting for the next closed candle; existing account holdings are not adopted.",
+                    "Exchange strategy approved with the reviewed position handoff. Waiting for the next closed candle."
+                    if source
+                    else "Exchange strategy approved. Waiting for the next closed candle; existing account holdings are not adopted.",
                 ),
             )
             review["job_id"] = identity

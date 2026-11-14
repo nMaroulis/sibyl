@@ -34,6 +34,8 @@ def fingerprint(row):
     facts = {key: row.get(key) for key in FACTS}
     facts["wallet_scope"] = row.get("wallet_scope", "unknown")
     facts["posted_ms"] = row.get("posted_ms")
+    if row.get("wallet_route") is not None:
+        facts["wallet_route"] = row["wallet_route"]
     return hashlib.sha256(json.dumps(facts, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
 

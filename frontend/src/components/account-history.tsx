@@ -18,6 +18,7 @@ import { useResource } from '../lib/hooks';
 import type { Connection } from '../lib/types';
 import { ExchangeMark } from './exchange-mark';
 import { Badge, Empty, ErrorState, Loading, Panel, PanelTitle, useToast } from './ui';
+import { FillVersions } from './fill-versions';
 import { AccountPerformance } from './account-performance';
 import { FundingHistory } from './funding-history';
 import { SectionTabs, SectionPanel } from './section-tabs';
@@ -189,6 +190,7 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
   const symbol = params.get('market') ?? '';
   const side = params.get('side') ?? '';
   const environment = params.get('environment') ?? '';
+  const [observingFill, setObservingFill] = useState<string>();
   const performance = params.get('history_view') === 'performance';
   const funding = params.get('history_view') === 'funding';
   const historyView = funding ? 'funding' : performance ? 'performance' : 'fills';
@@ -294,6 +296,9 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
   const rows = ledger.data?.items ?? [];
   return (
     <>
+      {observingFill && (
+        <FillVersions identity={observingFill} onClose={() => setObservingFill(undefined)} />
+      )}
       <SectionTabs
         id="account-history"
         label="Account history views"
@@ -644,6 +649,12 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                                   </td>
                                   <td className="account-ledger-ids">
                                     Fill {item.trade_id}
+                                    <button
+                                      className="text-button"
+                                      onClick={() => setObservingFill(item.id)}
+                                    >
+                                      Observation history
+                                    </button>
                                     <small className="table-subline">
                                       {item.order_id
                                         ? `Order ${item.order_id}`

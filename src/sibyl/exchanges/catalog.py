@@ -126,19 +126,35 @@ EXCHANGES = (
         passphrase=True,
         account="Spot trading account; main/funding wallet excluded",
     ),
-    ExchangeSpec("gate", "Gate", sandbox=True),
-    ExchangeSpec("bitget", "Bitget", "API key + secret + passphrase", passphrase=True),
-    ExchangeSpec("mexc", "MEXC"),
-    ExchangeSpec("htx", "HTX"),
-    ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True),
+    ExchangeSpec(
+        "gate", "Gate", sandbox=True, limit_only=True, account="Spot wallet; unified/margin excluded"
+    ),
+    ExchangeSpec(
+        "bitget",
+        "Bitget",
+        "API key + secret + passphrase",
+        passphrase=True,
+        limit_only=True,
+        account="Classic spot account; UTA excluded",
+    ),
+    ExchangeSpec("mexc", "MEXC", limit_only=True),
+    ExchangeSpec("htx", "HTX", limit_only=True),
+    ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True, limit_only=True),
     ExchangeSpec("bitstamp", "Bitstamp", market_orders=True),
     ExchangeSpec("gemini", "Gemini", sandbox=True, limit_only=True),
-    ExchangeSpec("bitfinex", "Bitfinex", account="Exchange wallet; margin/funding wallets excluded"),
-    ExchangeSpec("coinex", "CoinEx"),
-    ExchangeSpec("bitmart", "BitMart", "API key + secret + API memo", uid=True),
-    ExchangeSpec("phemex", "Phemex", sandbox=True),
-    ExchangeSpec("poloniex", "Poloniex"),
-    ExchangeSpec("upbit", "Upbit", account="Global CCXT endpoint; regional variants are not configured"),
+    ExchangeSpec(
+        "bitfinex", "Bitfinex", limit_only=True, account="Exchange wallet; margin/funding wallets excluded"
+    ),
+    ExchangeSpec("coinex", "CoinEx", limit_only=True),
+    ExchangeSpec("bitmart", "BitMart", "API key + secret + API memo", uid=True, limit_only=True),
+    ExchangeSpec("phemex", "Phemex", sandbox=True, limit_only=True),
+    ExchangeSpec("poloniex", "Poloniex", limit_only=True),
+    ExchangeSpec(
+        "upbit",
+        "Upbit",
+        limit_only=True,
+        account="Default api.upbit.com endpoint; regional variants are not configured",
+    ),
 )
 DEMO = ExchangeSpec(
     "demo",

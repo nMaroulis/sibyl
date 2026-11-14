@@ -109,8 +109,20 @@ def order_size(client, job, observed, side):
     ):
         raise ExecutionGuard("The venue price precision produced an invalid limit.")
     reserve = 1 + risk["fee_reserve_bps"] / 10000
+    entry_cap = risk["max_order_quote"]
+    if side == "buy" and risk.get("risk_per_entry_pct") is not None:
+        stop = job["parameters"].get("stop_loss_pct")
+        if not stop or not 0 < stop < 100:
+            raise ExecutionGuard("Approved risk sizing requires a valid algorithm stop distance.")
+        equity = job["cash"] + job["quantity"] * observed["price"]
+        # Gross entry notional at the modeled stop; fees widen modeled loss, never size upward.
+        entry_cap = min(
+            entry_cap, equity * risk["risk_per_entry_pct"] / (stop + 2 * risk["fee_reserve_bps"] / 100)
+        )
+        if not math.isfinite(entry_cap) or entry_cap <= 0:
+            raise ExecutionGuard("Risk sizing produced no positive entry budget.")
     quantity = (
-        min(job["cash"], risk["max_order_quote"]) / (price * reserve)
+        min(job["cash"], entry_cap) / (price * reserve)
         if side == "buy"
         else min(job["quantity"] / reserve, risk["max_order_quote"] / price)
     )

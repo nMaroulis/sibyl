@@ -144,9 +144,15 @@ class AgentRegistry:
                 arguments = tool_arguments(request)
                 if request.module == "broker" and request.context.backtest_id:
                     primary_tool, arguments = "backtest_report", {}
-                if request.module == "analyst" and request.context.granger_lags is not None:
+                if request.module == "analyst" and (
+                    request.context.granger_lags is not None or request.context.robust_regression
+                ):
                     primary_tool, arguments = "market_relationships", {}
-                if request.module == "wiki" and request.context.retrieval_evaluation_id:
+                if request.module == "explorer" and request.context.bitcoin_block_hash:
+                    primary_tool, arguments = "bitcoin_blocks", {}
+                if request.module == "wiki" and request.context.retrieval_calibration_id:
+                    primary_tool, arguments = "retrieval_evaluation", {}
+                elif request.module == "wiki" and request.context.retrieval_evaluation_id:
                     primary_tool, arguments = "retrieval_evaluation", {}
                 elif request.module == "wiki" and request.context.library_passage_id:
                     primary_tool, arguments = (
@@ -165,9 +171,12 @@ class AgentRegistry:
                         request.context.library_document_id
                         or request.context.library_passage_id
                         or request.context.retrieval_evaluation_id
+                        or request.context.retrieval_calibration_id
                     )
                 ):
                     primary_tool, arguments = "search_research", {}
+                if request.module == "accountant" and request.context.account_books_view:
+                    primary_tool, arguments = "account_asset_books", {}
                 if request.module == "accountant" and request.context.risk_study_id:
                     primary_tool, arguments = "basket_risk", {}
                 if request.module == "accountant" and request.context.return_period_id:

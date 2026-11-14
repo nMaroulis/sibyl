@@ -86,49 +86,6 @@
   gap: 12px;
   margin-top: 16px;
 }
-.message-delivery-receipt {
-  padding: 14px;
-  border: 1px solid #e7ecf5;
-  border-radius: 14px;
-  background: #fafbff;
-  color: #8695ab;
-  font-size: 11px;
-}
-.message-delivery-receipt header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-}
-.message-delivery-receipt time {
-  margin-left: auto;
-  font-size: 10px;
-}
-.message-delivery-receipt p {
-  font-size: 11px;
-  line-height: 1.7;
-}
-.message-delivery-receipt summary {
-  cursor: pointer;
-  font-size: 10px;
-  margin-top: 10px;
-}
-.message-preview {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.message-delivery-part {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 9px 0;
-  border-top: 1px solid #e9edf5;
-}
-.message-delivery-part p {
-  flex-basis: 100%;
-  margin: 0;
-}
 @media (max-width: 540px) {
   .alert-delivery-fields {
     grid-template-columns: 1fr;
@@ -145,11 +102,4 @@
 .alert-delivery-panel > .alert-delivery-history {
   padding: 0 20px 20px;
   margin-top: 0;
-}
-.message-delivery-title {
-  display: block;
-  color: #71839f;
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 10px;
 }
