@@ -696,6 +696,8 @@ export type AgentContext = {
   forecast_evaluation_id?: string;
   bitcoin_txid?: string;
   bitcoin_address?: string;
+  bitcoin_block_hash?: string;
+  bitcoin_block_offset?: number;
   bitcoin_demo?: boolean;
   bitcoin_output_offset?: number;
   parameters?: StrategyParams;

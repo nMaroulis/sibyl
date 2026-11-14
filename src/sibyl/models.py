@@ -265,6 +265,8 @@ class AgentContext(Request):
     forecast_evaluation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     bitcoin_txid: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     bitcoin_address: str | None = Field(default=None, min_length=14, max_length=90)
+    bitcoin_block_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    bitcoin_block_offset: int | None = Field(default=None, ge=0, lt=100000, multiple_of=25, strict=True)
     bitcoin_demo: bool | None = None
     bitcoin_output_offset: int | None = Field(default=None, ge=0, le=9999, strict=True)
     parameters: BacktestRequest | None = None
@@ -306,8 +308,14 @@ class AgentContext(Request):
 
     @model_validator(mode="after")
     def bitcoin_selection(self):
-        if self.bitcoin_txid and self.bitcoin_address:
-            raise ValueError("Choose one Bitcoin transaction or address per page context.")
+        if (
+            sum(
+                value is not None
+                for value in (self.bitcoin_txid, self.bitcoin_address, self.bitcoin_block_hash)
+            )
+            > 1
+        ):
+            raise ValueError("Choose one Bitcoin reference per page context.")
         return self
 
 

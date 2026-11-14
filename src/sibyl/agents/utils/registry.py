@@ -148,6 +148,8 @@ class AgentRegistry:
                     request.context.granger_lags is not None or request.context.robust_regression
                 ):
                     primary_tool, arguments = "market_relationships", {}
+                if request.module == "explorer" and request.context.bitcoin_block_hash:
+                    primary_tool, arguments = "bitcoin_blocks", {}
                 if request.module == "wiki" and request.context.retrieval_calibration_id:
                     primary_tool, arguments = "retrieval_evaluation", {}
                 elif request.module == "wiki" and request.context.retrieval_evaluation_id:

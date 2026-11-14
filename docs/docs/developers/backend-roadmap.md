@@ -249,7 +249,8 @@ Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity q
 - [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
 - [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools.
 - [x] Add durable Bitcoin output watches with isolated Demo, before/after spend and block inclusion observations, local inbox evidence, bounded retry, revision-checked controls and restore quarantine.
-- [ ] Add historical chain datasets, additional chains, wallet aggregation and local chain verification.
+- [x] Add historical Bitcoin block lookup by height/hash, hash-pinned transaction pages, best-chain status, JSON export, Demo and native Explorer evidence.
+- [ ] Add bulk historical chain datasets, additional chains, wallet aggregation and local chain verification.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
 - [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
 - [x] Add bounded fixed-order Granger tests with training-only classical inference, request-family adjustment, residual qualifications, independent later-target errors and exact-source UI/agent evidence.

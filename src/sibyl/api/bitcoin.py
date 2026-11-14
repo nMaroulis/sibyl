@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Path, Response
 from pydantic import Field, model_validator
 
 from sibyl.api.routes import S
-from sibyl.blockchain.bitcoin import BitcoinUnavailable
+from sibyl.blockchain.bitcoin import BLOCK_PAGE, MAX_BLOCK_TRANSACTIONS, MAX_HEIGHT, BitcoinUnavailable
 from sibyl.blockchain.identifiers import address, txid
 from sibyl.blockchain.watches import WatchConflict
 from sibyl.models import Request
@@ -93,6 +93,34 @@ def history(body: BitcoinHistory, s: S, response: Response):
         body.address,
         cursor=body.cursor,
         pending=body.pending,
+        simulated=body.demo,
+    )
+
+
+class BitcoinBlock(Request):
+    """Select a historical block and one exact native transaction page."""
+
+    height: int | None = Field(default=None, ge=0, le=MAX_HEIGHT, strict=True)
+    block_hash: str | None = Field(default=None, pattern=r"^[a-fA-F0-9]{64}$")
+    offset: int = Field(default=0, ge=0, lt=MAX_BLOCK_TRANSACTIONS, multiple_of=BLOCK_PAGE, strict=True)
+    demo: bool = Field(default=False, strict=True)
+
+    @model_validator(mode="after")
+    def selection(self):
+        if (self.height is None) == (self.block_hash is None):
+            raise ValueError("Choose one Bitcoin block height or hash.")
+        return self
+
+
+@router.post("/block")
+def block(body: BitcoinBlock, s: S, response: Response):
+    """Inspect one historical block; a hash pins subsequent pages to the same block."""
+    response.headers["Cache-Control"] = "no-store"
+    return read(
+        s.research.bitcoin.block,
+        height=body.height,
+        block_hash=body.block_hash,
+        offset=body.offset,
         simulated=body.demo,
     )
 

@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Historical Bitcoin block lookup in **Research → Block explorer** accepts a height or hash and pages transactions from the selected block. It shows indexer best-chain status, opens transactions in the inspector and exports the active page. Demo and native Explorer use the same contracts.
+
 - Bybit same-UID wallet transfers in **Trade → Account history → Funding** show direction and both wallet types for movements crossing UNIFIED. Manual imports, optional pending updates, and recent sync retain native cursor progress and observed revisions. Cross-account pairing excludes these rows.
 
 - Optional Theil–Sen comparison in **Markets → Correlation** overlays a robust return fit with OLS on the same aligned candles. Both betas and median absolute residuals are available in the chart, JSON export and native Analyst evidence.

@@ -8,6 +8,7 @@ import {
   Search,
 } from 'lucide-react';
 import { AgentButton } from './agents';
+import { BitcoinBlockInspector } from './bitcoin-block-inspector';
 import { BitcoinWatches } from './bitcoin-watches';
 import { BitcoinOutputSpends } from './bitcoin-output-spends';
 import { Badge, ErrorState, Loading, Panel, PanelTitle } from './ui';
@@ -66,6 +67,7 @@ export function BitcoinInspector() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const active = useRef(false);
+  const lookup = useRef<HTMLDivElement>(null);
 
   const inspect = async (value: string, demo = false, inputOffset = 0, outputOffset = 0) => {
     if (active.current || !value.trim()) return;
@@ -162,14 +164,14 @@ export function BitcoinInspector() {
       <span className="muted">Non-address script</span>
     );
 
-  return (
+  const transactionLookup = (
     <Panel className="bitcoin-inspector">
       <PanelTitle
         title="Transaction & address lookup"
         subtitle="Bitcoin mainnet · public on-chain observations"
         action={<AgentButton module="explorer" context={context} compact />}
       />
-      <div className="bitcoin-content">
+      <div className="bitcoin-content" ref={lookup}>
         <form
           className="bitcoin-search"
           onSubmit={(event) => {
@@ -599,5 +601,18 @@ export function BitcoinInspector() {
         }
       />
     </Panel>
+  );
+
+  return (
+    <>
+      {transactionLookup}
+      <BitcoinBlockInspector
+        demoHeight={capabilities.data?.demo.block_height}
+        inspectTransaction={(id, demo) => {
+          lookup.current?.scrollIntoView({ block: 'start' });
+          void inspect(id, demo);
+        }}
+      />
+    </>
   );
 }

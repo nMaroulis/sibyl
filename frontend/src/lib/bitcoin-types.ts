@@ -94,7 +94,13 @@ export type BitcoinCapabilities = {
   source: string;
   source_url: string;
   note: string;
-  demo: { txid: string; address: string; confirmed_spend_txid: string; pending_spend_txid: string };
+  demo: {
+    txid: string;
+    address: string;
+    block_height: number;
+    confirmed_spend_txid: string;
+    pending_spend_txid: string;
+  };
 };
 
 export type BitcoinOutputSpends = BitcoinAttribution & {
@@ -155,3 +161,32 @@ export type BitcoinWatchList = {
 
 export const bitcoinWatchURL = (id: string) =>
   `/research?tab=explorer&watch=${encodeURIComponent(id)}`;
+
+export type BitcoinBlockReport = {
+  kind: 'block';
+  source: string;
+  network: string;
+  observed_at: string;
+  in_best_chain: boolean | null;
+  block: {
+    id: string;
+    height: number;
+    timestamp: number;
+    tx_count: number;
+    size: number;
+    weight: number;
+    parent_hash: string | null;
+  };
+  transaction_offset: number;
+  next_offset: number | null;
+  items: {
+    index: number;
+    txid: string;
+    coinbase: boolean;
+    fee_sats: number;
+    input_count: number;
+    output_count: number;
+  }[];
+  url: string | null;
+  note: string;
+};

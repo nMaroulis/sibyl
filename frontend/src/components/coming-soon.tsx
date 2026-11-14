@@ -60,7 +60,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'explorer',
       title: 'Beyond Bitcoin',
-      text: 'Additional chains, complete historical network datasets and wallet aggregation. Bitcoin transaction/address inspection, paginated activity and source-labeled fee/confirmation evidence are available now.',
+      text: 'Additional chains, complete historical network datasets and wallet aggregation. Bitcoin historical block and transaction/address inspection, paginated activity and source-labeled fee/confirmation evidence are available now.',
     },
     {
       module: 'markets',

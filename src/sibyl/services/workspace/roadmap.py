@@ -142,9 +142,9 @@ AREAS = [
         "name": "Explorer, equities & analytics",
         "status": "partial",
         "priority": "later",
-        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, explicit paged output-spend checks with spending-transaction links, JSON exports, independent Demo and native Explorer tools; persistent local watches for sampled Bitcoin output spend and inclusion changes; recent blocks, optional equity research and Pearson/Spearman/distance dependence with descriptive same-interval return regression and an optional same-window Theil–Sen comparison. Fixed-order Granger research adds training-only F/Bonferroni evidence, residual qualifications and independent later-target comparisons without causal/profit claims.",
+        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, explicit paged output-spend checks with spending-transaction links, JSON exports, independent Demo and native Explorer tools; persistent local watches for sampled Bitcoin output spend and inclusion changes; recent blocks and historical height/hash lookup with pinned transaction pages, optional equity research and Pearson/Spearman/distance dependence with descriptive same-interval return regression and an optional same-window Theil–Sen comparison. Fixed-order Granger research adds training-only F/Bonferroni evidence, residual qualifications and independent later-target comparisons without causal/profit claims.",
         "pending": [
-            "Historical chain datasets, additional chains, wallet aggregation and local chain verification.",
+            "Bulk historical chain datasets, additional chains, wallet aggregation and local chain verification.",
             "Public-official disclosure archives and advanced portfolio analytics.",
             "MIC, SHAP, robust/nonlinear causal inference and broader real-data evaluation. Fixed-order Granger training/holdout evidence is implemented with classical inference limits.",
         ],

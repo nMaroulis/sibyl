@@ -4,6 +4,14 @@ Open **Research → Block explorer** to inspect a Bitcoin mainnet transaction ID
 
 Public requests go from Sibyl's Python backend to **mempool.space**. The entered reference is visible to that public indexer. The lookup accepts public transaction hashes and checksummed mainnet addresses; it never needs a private key, seed phrase or exchange credentials. URLs and other networks are rejected before a request is sent.
 
+## Inspect a historical block
+
+In **Research → Block explorer → Historical block lookup**, enter a height or a complete block hash. Use **Demo block** for a synthetic two-page example. The result shows the block time, size, weight, transaction count and current best-chain status as reported by the indexer.
+
+**Next transactions** and **Previous transactions** read pages of up to 25 transactions from the same block hash, even if a new block replaces it at that height. Select a transaction ID to inspect it. **Export block page** saves the active page and source as JSON. **Ask Explorer** uses the selected block, source and page.
+
+A block can leave the best chain. The block page describes the selected block’s indexed membership. Opening a transaction separately reads its latest status.
+
 ## Inspect a transaction
 
 The report shows:

@@ -18,6 +18,9 @@ from sibyl.blockchain.spends import output_spend
 
 BASE_URL = "https://mempool.space/api"
 MAX_RESPONSE = 8 * 1024 * 1024
+BLOCK_PAGE = 25
+MAX_HEIGHT = 100_000_000
+MAX_BLOCK_TRANSACTIONS = 100_000
 
 
 class BitcoinUnavailable(Exception):
@@ -53,11 +56,13 @@ class BitcoinExplorer:
             "io_page_size": normalize.PAGE_SIZE,
             "demo": {
                 "txid": demo.TXID,
+                "block_height": demo.BLOCK_HEIGHT,
                 "address": demo.ADDRESS,
                 "confirmed_spend_txid": f"{1:064x}",
                 "pending_spend_txid": f"{3:064x}",
             },
             "output_spends": True,
+            "block_lookup": True,
             "note": "Public lookups send the entered transaction ID or address to mempool.space. Address activity does not identify its owner or represent a complete wallet.",
         }
 
@@ -83,7 +88,9 @@ class BitcoinExplorer:
                         )
                     chunks.append(chunk)
                 body = b"".join(chunks)
-                return body.decode("ascii").strip() if path == "/blocks/tip/height" else json.loads(body)
+                if path == "/blocks/tip/height" or path.startswith("/block-height/"):
+                    return body.decode("ascii").strip()
+                return json.loads(body)
         except (httpx.HTTPError, UnicodeError, json.JSONDecodeError):
             raise BitcoinUnavailable(
                 "mempool.space is unavailable or returned an unreadable response. No Demo data was substituted."
@@ -132,6 +139,62 @@ class BitcoinExplorer:
             + (warnings or []),
             "note": "Provider observations are not an atomic chain snapshot or proof of finality. Reorganizations and mempool changes can alter results. Address totals are indexed output values, not verified spendable funds; coinbase maturity and script restrictions are not evaluated. An address is not a complete wallet or an identity.",
         }
+
+    def block(self, *, height=None, block_hash=None, offset=0, simulated=False):
+        """Read a hash-pinned historical block and one bounded transaction page."""
+        if (height is None) == (block_hash is None):
+            raise ValueError("Choose one Bitcoin block height or hash.")
+        if height is not None:
+            normalize.integer(height, MAX_HEIGHT)
+        if block_hash is not None:
+            block_hash = txid(block_hash)
+        if type(offset) is not int or not 0 <= offset < MAX_BLOCK_TRANSACTIONS or offset % BLOCK_PAGE:
+            raise ValueError("Use a block transaction offset in multiples of 25.")
+        with self._session(simulated) as client:
+            identity = block_hash or txid(self._read(client, f"/block-height/{height}", simulated))
+            path = f"/block/{identity}"
+            block = normalize.block(self._read(client, path, simulated))
+            if block["id"] != identity or (height is not None and block["height"] != height):
+                raise BitcoinUnavailable("The indexer returned a different Bitcoin block.")
+            total = block["tx_count"]
+            if offset >= total:
+                raise LookupError("Block transaction page not found.")
+            raw = self._read(client, path + (f"/txs/{offset}" if offset else "/txs"), simulated)
+            if not isinstance(raw, list) or len(raw) != min(BLOCK_PAGE, total - offset):
+                raise BitcoinUnavailable("The indexer returned an incomplete Bitcoin block page.")
+            items = [normalize.block_transaction(row, offset + i) for i, row in enumerate(raw)]
+            if len({row["txid"] for row in items}) != len(items):
+                raise BitcoinUnavailable("The indexer repeated a transaction in the Bitcoin block page.")
+            chain = self._block_status(client, path, simulated, block["height"])
+        return {
+            "kind": "block",
+            "source": "demo" if simulated else "mempool.space",
+            "network": "demo" if simulated else "bitcoin-mainnet",
+            "observed_at": now(),
+            "block": block,
+            "in_best_chain": chain,
+            "transaction_offset": offset,
+            "next_offset": offset + BLOCK_PAGE if offset + BLOCK_PAGE < total else None,
+            "items": items,
+            "url": None if simulated else f"https://mempool.space/block/{identity}",
+            "note": "Block membership and best-chain status are indexer observations taken separately. Chain status can change.",
+        }
+
+    def _block_status(self, client, path, simulated, height):
+        """Report an unknown chain status when the independent status read is unavailable."""
+        try:
+            raw = self._read(client, path + "/status", simulated)
+        except LookupError:
+            return None
+        except BitcoinUnavailable as exc:
+            if exc.status == 429:
+                raise
+            return None
+        if type(raw["in_best_chain"]) is not bool or (
+            raw["in_best_chain"] and normalize.integer(raw["height"], MAX_HEIGHT) != height
+        ):
+            raise BitcoinUnavailable("The indexer returned inconsistent Bitcoin block status.")
+        return raw["in_best_chain"]
 
     def transaction(self, identity, *, simulated=False, input_offset=0, output_offset=0):
         """Inspect one exact transaction, with paged inputs/outputs and integer-satoshi fee evidence."""

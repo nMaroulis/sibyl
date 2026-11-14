@@ -44,9 +44,17 @@ The UI isolates each transaction/output-page/source selection, aborts checks on 
 
 Ordinary restart retains the checkpoint. Backup recovery pauses restored watches and preserves their evidence. Explicit resume is available after recovery. Observations are sampled indexer reads. The system cannot reconstruct branches, detect every transient change or verify chain consensus locally.
 
+## Historical blocks
+
+`POST /api/v1/bitcoin/block` takes one integer `height` or 64-character hexadecimal `block_hash`, optional `offset` in multiples of 25 and a `demo` flag. A height lookup resolves through `/block-height/:height`. Block detail and transactions then use that hash on every page. The adapter checks identity, requested height, page size, unique transaction IDs and coinbase position. Responses contain normalized summaries.
+
+A separate `/block/:hash/status` read supplies best-chain membership. Unavailable status becomes unknown. Rate limits still fail the request explicitly. An available stale block can be paged by hash. Block membership and a transaction's latest inclusion are separate observations. Demo uses the same read shape. [Esplora block contracts](https://github.com/Blockstream/esplora/blob/master/API.md#blocks)
+
 ## Native ProtoLink tools
 
 Explorer declares ordinary typed `bitcoin_lookup`, `bitcoin_address_history`, `bitcoin_output_spends`, `bitcoin_blocks`, `blockchain_help` and `page_help` tools. The first tool reads private page references or explicit user/evidence IDs; with no selection it retains the recent-block snapshot behavior. Validated `bitcoin_txid`, `bitcoin_address` and `bitcoin_demo` page context reaches local consultations through existing ProtoLink request context. Specialists still cannot delegate or mutate state.
+
+`bitcoin_blocks` follows the current block hash and page or looks up an explicit height/hash. With no selected block it returns recent summaries.
 
 `bitcoin_output_spends` reads the selected transaction/output page from private `bitcoin_output_offset` context, or explicit validated references/offsets. It returns attributed states and spending links through the existing native client/runtime.
 

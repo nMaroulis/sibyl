@@ -345,6 +345,16 @@ def snapshot_answer(module: str, evidence) -> str:
     if module == "technician":
         return f"{len(evidence['connections'])} connections saved. Market mode: {evidence['mode']}. {evidence['permissions']} Use the connection check to verify saved credentials."
     if module == "explorer":
+        if evidence.get("kind") == "block":
+            block = evidence["block"]
+            chain = {True: "best chain", False: "outside the best chain", None: "unknown"}[
+                evidence["in_best_chain"]
+            ]
+            return (
+                f"Block {block['height']:,} contains {block['tx_count']:,} transactions. "
+                f"The indexer reports chain status as {chain}. Source is {evidence['source']}. "
+                + evidence["note"]
+            )
         if evidence.get("kind") == "transaction":
             item = evidence["transaction"]
             confirmations = item["status"]["confirmations"]

@@ -19,7 +19,7 @@ GUIDES = {
         "/research?tab=explorer",
         (
             "Choose 10, 25, 50 or 100 blocks and inspect the transaction-count chart, mean size/count and observed mean block interval.",
-            "Export CSV for the supplied sample or follow a block reference to its public explorer.",
+            "Export CSV for recent blocks or enter a height/hash in Historical block lookup. Page by block hash, open a transaction in the inspector or export one page as JSON.",
         ),
         ("A sample mean block interval is not a guarantee about the next confirmation time.",),
     ),
