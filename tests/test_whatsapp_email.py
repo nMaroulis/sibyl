@@ -184,7 +184,7 @@ def mail_servers(monkeypatch):
     sent = []
     calls = []
     validity = ["777"]
-    internal = time.strftime("%d-%b-%Y %H:%M:%S +0000", time.gmtime())
+    internal = [time.time()]
 
     class IMAP:
         def __init__(self, host, port, **kwargs):
@@ -219,7 +219,8 @@ def mail_servers(monkeypatch):
             raw = incoming[index - 10]
             if args[1] == "(UID RFC822.SIZE)":
                 return "OK", [f"1 (UID {index} RFC822.SIZE {len(raw)})".encode()]
-            metadata = f'1 (UID {index} INTERNALDATE "{internal}" BODY[] {{{len(raw)}}})'.encode()
+            received = time.strftime("%d-%b-%Y %H:%M:%S +0000", time.gmtime(internal[0]))
+            metadata = f'1 (UID {index} INTERNALDATE "{received}" BODY[] {{{len(raw)}}})'.encode()
             return "OK", [(metadata, raw), b")"]
 
     class SMTP:
@@ -252,7 +253,7 @@ def mail_servers(monkeypatch):
 
     monkeypatch.setattr("sibyl.messaging.channels.email.imaplib.IMAP4_SSL", IMAP)
     monkeypatch.setattr("sibyl.messaging.channels.email.smtplib.SMTP", SMTP)
-    return SimpleNamespace(incoming=incoming, sent=sent, calls=calls, validity=validity)
+    return SimpleNamespace(incoming=incoming, sent=sent, calls=calls, validity=validity, internal=internal)
 
 
 def mail(sender="owner@example.org", code=None, body="Explain my portfolio", **headers):
@@ -302,6 +303,7 @@ async def test_email_pairing_secret_is_encrypted_and_never_in_public_projection(
         assert secret not in public
     profile = channels.profile("email")
     await channels.action("email", ChannelAction(revision=profile["revision"], action="enable"))
+    mail_servers.internal[0] = channels.profile("email")["enabled_at"]
     mail_servers.incoming.append(mail())
     await channels.tick("email")
     await channels.tick("email")

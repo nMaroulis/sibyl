@@ -245,11 +245,13 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman/distance dependence and descriptive return regressions exist.
 
 - [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
-- [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools. No spendability proof or durable watch is claimed.
-- [ ] Add historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.
+- [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools.
+- [x] Add durable Bitcoin output watches with isolated Demo, before/after spend and block inclusion observations, local inbox evidence, bounded retry, revision-checked controls and restore quarantine.
+- [ ] Add historical chain datasets, additional chains, wallet aggregation and local chain verification.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
 - [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
 - [x] Add bounded fixed-order Granger tests with training-only classical inference, request-family adjustment, residual qualifications, independent later-target errors and exact-source UI/agent evidence.
+- [x] Add an optional descriptive Theil–Sen fit alongside OLS on identical bounded return samples, with scatter evidence, comparable residuals and native Analyst results.
 - [ ] Add MIC, SHAP, robust/nonlinear causal inference and broader real-data/model evaluation.
 
 ## Cross-cutting and optional expansion

@@ -217,6 +217,7 @@ class AgentContext(Request):
     symbol: str | None = None
     market_source: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
     comparison_symbols: list[str] | None = Field(default=None, min_length=2, max_length=8)
+    robust_regression: bool | None = Field(default=None, strict=True)
     granger_lags: int | None = Field(default=None, ge=1, le=5, strict=True)
     correlation_method: Literal["pearson", "spearman", "distance"] | None = None
     correlation_transform: Literal["log_returns", "prices", "changes"] | None = None

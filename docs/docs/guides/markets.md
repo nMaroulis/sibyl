@@ -84,6 +84,8 @@ Expand **Return regression** below the correlation matrix. The first comparison 
 
 Read beta, intercept per candle in percent, R² and residual RMS. Select a target for a lightweight scatter plot and fitted line, or export the regression evidence. Fitting uses all aligned returns; the plot/export point sample retains at most the latest 360. At least 30 aligned returns are needed; constant references and undefined R² stay unavailable. The intercept is not risk-free-adjusted CAPM alpha. These are in-sample descriptions, not forecasts, significance tests or causal conclusions. Outliers, serial dependence and window selection matter. **Ask Analyst** follows the visible ordered pairs/method/transform.
 
+Enable **Compare with Theil–Sen** to fit both lines to the same latest 360 or fewer aligned returns. The solid line is ordinary least squares. The dashed line uses the median of pairwise slopes to reduce the influence of unusually large moves. Compare beta and median absolute residuals in percent per candle. These differences describe sensitivity within the sample. They do not establish a causal effect or future performance.
+
 ## Coinbase live previews
 
 Coinbase production now supports public live tickers. With **5m** selected, the chart also previews its native forming five-minute candle. At other intervals, the price updates live while candles and analysis stay on their exact-source closed REST snapshot. Provider envelope time is not last-trade time; an idle market can stay visibly stale even while socket heartbeats arrive.

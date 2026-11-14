@@ -52,7 +52,9 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Owner-labeled semantic cutoff experiments with separate fit/validation questions, exact corpus/index bindings, reviewed activation, top-one abstention, stale/concurrent-change fencing and native read-only quality evidence.
 - [ ] Additional hosted providers, live provider/model relevance/grounding and forward-quality acceptance, and evaluated finance/entity sentiment.
 - [ ] Licensed article ingestion and configurable research integrations.
-- [ ] Additional chain/history/watch support, disclosure archives and interpretable advanced analytics.
+- [x] Durable Bitcoin output watches with spend and inclusion change evidence, private inbox/export, bounded retry and restore quarantine.
+- [x] Optional same-sample Theil–Sen versus OLS return comparison with scatter and native Analyst evidence.
+- [ ] Additional chains, historical datasets, local chain verification, disclosure archives and interpretable advanced analytics.
 
 ## 6. Operations and distribution
 

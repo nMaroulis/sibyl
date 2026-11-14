@@ -265,6 +265,7 @@ def correlations(
     limit: int = Query(90, ge=30, le=720),
     method: Literal["pearson", "spearman", "distance"] = "pearson",
     transform: Literal["log_returns", "prices", "changes"] = "log_returns",
+    robust: bool = False,
     source: MarketSource | None = None,
 ):
     """Compare up to eight exact provider pairs on aligned closed candles from one feed."""
@@ -282,7 +283,7 @@ def correlations(
         return {
             **s.market.metadata(),
             "timeframe": timeframe,
-            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe]),
+            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe], robust=robust),
         }
 
 

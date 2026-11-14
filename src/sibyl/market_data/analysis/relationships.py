@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 DISTANCE_LIMIT = 360
+ROBUST_LIMIT = 360
 
 
 def aligned(histories, transform="log_returns", *, seconds=None):
@@ -87,13 +88,16 @@ def distance_matrix(observations):
     return rows, matrix
 
 
-def regressions(histories, *, seconds=None):
+def regressions(histories, *, seconds=None, robust=False):
     """Fit y = intercept + beta*x to aligned contemporaneous log returns.
 
-    The first selected market is x. Coefficients, R² and residual RMS are
-    in-sample descriptions, not CAPM alpha, causal effects or out-of-sample skill.
+    The first selected market is x. In robust mode, fit OLS and Theil–Sen
+    to the same latest 360 or fewer returns and compare their median residual size.
     """
     rows = aligned(histories, seconds=seconds)
+    available = len(rows)
+    if robust:
+        rows = rows.tail(ROBUST_LIMIT)
     symbols = list(rows.columns)
     n = len(rows)
     results = []
@@ -125,6 +129,19 @@ def regressions(histories, *, seconds=None):
             beta = float(np.dot(centered_x, y - mean_y) / variance_x)
             intercept = mean_y - beta * x_mean
             residual = y - (intercept + beta * x)
+            if robust:
+                from scipy.stats import theilslopes
+
+                fit = theilslopes(y, x, method="joint")
+                item["theil_sen"] = {
+                    "beta": float(fit.slope),
+                    "intercept_pct": float(fit.intercept) * 100,
+                    "median_absolute_residual_pct": float(
+                        np.median(np.abs(y - fit.intercept - fit.slope * x))
+                    )
+                    * 100,
+                    "ols_median_absolute_residual_pct": float(np.median(np.abs(residual))) * 100,
+                }
             total = float(np.dot(y - mean_y, y - mean_y))
             squared_error = float(np.dot(residual, residual))
             item.update(
@@ -142,7 +159,15 @@ def regressions(histories, *, seconds=None):
         "items": results,
         "observations": n,
         "reference": symbols[0],
+        "available_observations": available,
+        "robust": robust,
         "transform": "same-interval log returns",
         "point_limit": 360,
-        "note": "In-sample OLS with an intercept; first market is the reference. Returns are not risk-free-adjusted. No significance test, causality or predictive skill is established; serial dependence, outliers and window selection affect the fit.",
+        "note": (
+            "OLS and Theil–Sen use the same latest 360 or fewer aligned returns. Theil–Sen uses a median "
+            "pairwise slope and median of y minus slope times x for its intercept. Residuals are in-sample. "
+            "No significance or causal effect is estimated."
+            if robust
+            else "In-sample OLS with an intercept; first market is the reference. Returns are not risk-free-adjusted. No significance test, causality or predictive skill is established; serial dependence, outliers and window selection affect the fit."
+        ),
     }

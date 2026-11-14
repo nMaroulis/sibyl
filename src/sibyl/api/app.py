@@ -20,6 +20,7 @@ from sibyl.agents.utils.model_selection import ModelConflict
 from sibyl.agents.utils.registry import AgentRegistry
 from sibyl.alerts.delivery.service import AlertDelivery
 from sibyl.api.dashboard import mount_dashboard
+from sibyl.blockchain.watches import BitcoinWatches
 from sibyl.config import Settings
 from sibyl.exchanges.streams.service import PrivateAccountStreams
 from sibyl.forecasting.service import ForecastModels
@@ -87,6 +88,7 @@ class Services:
     jobs: LocalJobs
     private_channels: PrivateChannels
     account_streams: PrivateAccountStreams
+    bitcoin_watches: BitcoinWatches
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -152,6 +154,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         trading.account_streams = account_streams
         strategies.attach_execution(trading)
         alerts = PriceAlerts(market, store)
+        bitcoin_watches = BitcoinWatches(store, research.bitcoin, recovery_required=recovery)
         alert_delivery = AlertDelivery(store, messaging)
         history = CandleHistory(market, store)
         local_jobs = LocalJobs(store, application_handlers(performance, forecasts, workers, strategies))
@@ -187,6 +190,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             local_jobs,
             private_channels,
             account_streams,
+            bitcoin_watches,
         )
 
         def background_call(method):
@@ -229,6 +233,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 120,
             ),
             ("execution-alerts", "Order and fill notifications", trading.alerts.tick, 1, 60),
+            ("bitcoin-watches", "Bitcoin output watches", bitcoin_watches.tick, 15, 60),
             ("notification-retention", "Read-notification retention", alerts._inbox.history.tick, 60, 60),
             ("forecast-observations", "Forecast outcomes", forecasts.forward.tick, 60, 120),
             ("history", "Candle history", lambda: background_call(history.tick), 1, 120),
@@ -263,6 +268,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "retrieval-evaluations",
                     "retrieval-calibration",
                     "execution-alerts",
+                    "bitcoin-watches",
                     "forecast-observations",
                 }
                 else (),

@@ -2,12 +2,13 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Path, Response
 from pydantic import Field, model_validator
 
 from sibyl.api.routes import S
 from sibyl.blockchain.bitcoin import BitcoinUnavailable
 from sibyl.blockchain.identifiers import address, txid
+from sibyl.blockchain.watches import WatchConflict
 from sibyl.models import Request
 
 router = APIRouter(prefix="/api/v1/bitcoin", tags=["Explorer"])
@@ -114,3 +115,50 @@ def output_spends(body: BitcoinOutputSpends, s: S, response: Response):
         output_offset=body.output_offset,
         simulated=body.demo,
     )
+
+
+class BitcoinWatchRequest(Request):
+    """Choose one exact output and a fixed data source for periodic checks."""
+
+    transaction_id: str = Field(pattern=r"^[a-fA-F0-9]{64}$")
+    output_index: int = Field(ge=0, le=9999, strict=True)
+    demo: bool = Field(default=False, strict=True)
+
+
+class BitcoinWatchControl(Request):
+    """Apply a control against the locally observed watch revision."""
+
+    action: Literal["pause", "resume", "remove"]
+    revision: int = Field(ge=1, strict=True)
+
+
+def write_watch(method, *args):
+    """Keep watch controls private and report expired revisions as conflicts."""
+    try:
+        return method(*args)
+    except (WatchConflict, ValueError, LookupError) as exc:
+        status = 409 if isinstance(exc, WatchConflict) else 404 if isinstance(exc, LookupError) else 400
+        raise HTTPException(status, detail=str(exc), headers={"Cache-Control": "no-store"}) from None
+
+
+@router.get("/watches")
+def watches(s: S, response: Response):
+    """List saved watches and their latest reliable evidence without a provider read."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.bitcoin_watches.list()
+
+
+@router.post("/watches", status_code=201)
+def create_watch(body: BitcoinWatchRequest, s: S, response: Response):
+    """Enable a periodic check of an exact output."""
+    response.headers["Cache-Control"] = "no-store"
+    return write_watch(s.bitcoin_watches.create, body.transaction_id, body.output_index, body.demo)
+
+
+@router.post("/watches/{watch_id}", responses={409: {"description": "Watch changed or recovery required"}})
+def control_watch(
+    body: BitcoinWatchControl, s: S, response: Response, watch_id: str = Path(pattern=r"^[a-f0-9]{32}$")
+):
+    """Update a local watch by opaque ID."""
+    response.headers["Cache-Control"] = "no-store"
+    return write_watch(s.bitcoin_watches.control, watch_id, body.action, body.revision)

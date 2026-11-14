@@ -257,6 +257,7 @@ class BitcoinExplorer:
             "kind": "output_spends",
             "transaction_id": identity,
             "output_offset": output_offset,
+            "parent_status": normalize.status(raw["status"], tip),
             "total": len(rows),
             "limit": normalize.PAGE_SIZE,
             "next_offset": parent["next_output_offset"],

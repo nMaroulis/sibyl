@@ -57,6 +57,10 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Optional Theil–Sen comparison in **Markets → Correlation** overlays a robust return fit with OLS on the same aligned candles. Both betas and median absolute residuals are available in the chart, JSON export and native Analyst evidence.
+
+- Bitcoin output watches in **Research → Block explorer** retain observed spend and block-inclusion changes in the local inbox with before/after evidence. Mainnet and Demo are separate. Watches support pause, resume and removal, preserve the last reliable reading during failures and pause on workspace recovery.
+
 - Portfolio lab for 2–8 fixed-weight assets: exact same-quote/source common windows, residual cash, post-cost target sizing, interval or previous-close drift rebalancing and identical-input buy-and-hold/cash comparisons. Interactive region/range zoom, allocation and price/trade views, bounded markers/paged fills, cost/risk/source evidence, exports and checked offline reruns share the existing native Broker tools. Demo stays explicit; coordinated multi-asset execution and real-market acceptance remain pending.
 
 - Optional semantic search cutoff calibration with separate owner-labeled fit/held-out questions, actual top-passage evidence and deterministic threshold selection. Explicit per-scope activation, complete corpus/index bindings, stale and concurrent-change abstention, safe stop/restart, raw comparison isolation and native Wiki/Reporter quality reads keep the filter inspectable. Active search returns one passage or none; this is empirical retrieval evidence, not answer confidence. Real-model and forward-quality acceptance remain pending.

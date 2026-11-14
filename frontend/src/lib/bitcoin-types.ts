@@ -101,6 +101,7 @@ export type BitcoinOutputSpends = BitcoinAttribution & {
   kind: 'output_spends';
   transaction_id: string;
   output_offset: number;
+  parent_status: BitcoinStatus;
   total: number;
   limit: number;
   next_offset: number | null;
@@ -114,3 +115,43 @@ export type BitcoinOutputSpends = BitcoinAttribution & {
     reason: string | null;
   })[];
 };
+
+export const bitcoinSpendLabel = {
+  confirmed: 'Spent · confirmed',
+  pending: 'Spend pending',
+  unspent: 'No spend reported',
+  unknown: 'Spend details unknown',
+} as const;
+
+export type BitcoinWatchObservation = {
+  observed_at: string;
+  value_sats: number;
+  state: Exclude<keyof typeof bitcoinSpendLabel, 'unknown'>;
+  spending_txid: string | null;
+  spending_input_index: number | null;
+  spending_block_hash: string | null;
+  spending_block_height: number | null;
+  parent_block_hash: string | null;
+  parent_block_height: number | null;
+};
+
+export type BitcoinWatch = {
+  id: string;
+  transaction_id: string;
+  output_index: number;
+  demo: boolean;
+  active: boolean;
+  revision: number;
+  next_check: string | null;
+  error: string | null;
+  observation: BitcoinWatchObservation | null;
+};
+
+export type BitcoinWatchList = {
+  items: BitcoinWatch[];
+  limit: number;
+  recovery_required: boolean;
+};
+
+export const bitcoinWatchURL = (id: string) =>
+  `/research?tab=explorer&watch=${encodeURIComponent(id)}`;

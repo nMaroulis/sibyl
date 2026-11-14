@@ -179,7 +179,7 @@ class NotificationHistory:
 
     def export(self, kind="all", start=None, end=None):
         """Export an exact bounded history selection without acknowledging or deleting records."""
-        if kind not in {"all", "price", "risk", "strategy", "connection", "order", "workspace"}:
+        if kind not in {"all", "price", "risk", "strategy", "connection", "order", "workspace", "bitcoin"}:
             raise ValueError("Unknown notification kind.")
         start, end = utc(start), utc(end)
         if start and end and start >= end:

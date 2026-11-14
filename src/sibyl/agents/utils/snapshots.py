@@ -164,6 +164,22 @@ def snapshot_answer(module: str, evidence) -> str:
             + "\n".join(readings)
             + "\nClassical inference assumptions remain unverified. Request-family adjustment does not cover repeated experiments. Lag predictability is not causation or a profitable strategy."
         )
+    if module == "analyst" and evidence.get("regression", {}).get("robust"):
+        result = evidence["regression"]
+        lines = []
+        for item in result["items"]:
+            fit = item.get("theil_sen")
+            label = f"{item['target']} vs {item['reference']}"
+            if fit:
+                lines.append(f"- {label} · OLS beta {item['beta']:.3f} · Theil–Sen beta {fit['beta']:.3f}")
+            else:
+                lines.append(f"- {label} · {item['status'].replace('_', ' ')}")
+        return (
+            f"Same-interval return fit · {result['observations']} aligned observations · {evidence['source_label']}.\n"
+            + "\n".join(lines)
+            + "\n"
+            + result["note"]
+        )
     if module == "analyst":
         if "rsi" not in evidence:
             return f"{evidence['symbol']}: {evidence['price']:,.4f}. Source: {evidence['source_label']}. {evidence['note']}"

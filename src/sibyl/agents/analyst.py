@@ -19,14 +19,15 @@ NAME = "Analyst"
 TAGLINE = "Find the signal"
 DESCRIPTION = "Interpret market prices, technical statistics and directional scores; explain Markets controls and indicator limitations."
 SYSTEM_PROMPT = (
-    "Coinbase public previews use exact production products and native five-minute candles only; other intervals retain REST candles. Most USDC aliases are refused to avoid silently relabeling USD quotes. Envelope time is not last-trade time; a sequence gap reconnects without rewriting closed history. "
-    "Use market_relationships for dependence/regression and optional fixed-order Granger lag research. Granger p-values assume stable linear errors, correct only this request, and do not imply causation or profit; distinguish earlier-fit inference from later-target error. For descriptive regression, disclose the exact shared sample and gaps. Distance dependence is unsigned, sample-biased and capped, not proof of independence. Regression is contemporaneous log-return OLS, not causality, CAPM alpha or prediction. "
-    "Use live_market_status for observed public-stream health and forming-candle evidence, never as a closed-candle signal or an account/order stream. An empty stream list means no active viewer, not an outage. "
-    "Use page_help for Markets navigation, chart controls, source/pair selection, watchlists and history. "
-    "Interpret market prices, trend, momentum, drawdowns, volatility, volume and levels. Call market_analysis for "
-    "the requested symbol, timeframe and source. An omitted selection uses the current page; a "
-    "different coin named by the user requires its explicit BASE/QUOTE symbol. Explain indicator "
-    "limitations with analysis_help. market_analysis includes statistics and a technical-bias score with weighted votes. Explain the score as bullish/bearish direction, never a buy/sell recommendation, investment quality, safety or probability of profit. Report source, timeframe, actual sample, gaps, stale data and missing inputs. Statistics use the latest contiguous segment and do not follow browser chart zoom. Never present technical indicators as certain forecasts. "
+    "Use market_analysis for exact pair, feed and closed-candle indicators. Follow the page unless the user specifies "
+    "another BASE/QUOTE pair. Attribute source, timeframe, coverage and stale or missing data. Technical-bias votes "
+    "describe historical direction. Avoid investment recommendations or profit odds. Chart zoom does not affect statistics. "
+    "Use market_relationships for dependence, same-interval OLS/Theil–Sen and Granger lag tests. Explain shared samples, "
+    "serial dependence and gaps. Distance is unsigned and sample-biased. Regression beta is descriptive. Granger "
+    "adjustment covers one request; distinguish classical inference from held-out errors. No result shows causation. "
+    "Use live_market_status for public forming previews and actual feed health. Empty means no active viewer. "
+    "Coinbase previews use exact products and native 5m candles; other intervals retain REST candles. Check source "
+    "and actual trade freshness. Use page_help for navigation and analysis_help for indicator definitions."
 )
 
 
@@ -88,13 +89,13 @@ def create_agent(services: Services, **runtime) -> Agent:
         limit: Annotated[int | None, Field(ge=30, le=720)] = None,
         source: str | None = None,
         lags: Annotated[int | None, Field(ge=1, le=5)] = None,
+        robust: bool | None = None,
     ) -> dict:
         """Compare exact spot-pair dependence and reference-first return regressions.
 
-        Omitted settings follow Markets. Set lags (1–5) for bidirectional Granger
-        tests on consecutive log returns: training-only classical F/adjusted p,
-        held-out errors and assumption flags. Low p is not causation or profit.
-        Returns compact same-source evidence; constants and gaps stay explicit.
+        Defaults follow Markets. Set robust to compare Theil–Sen and OLS on the same
+        returns. Set lags (1–5) for Granger F tests, adjusted p-values and held-out
+        errors. Constants and gaps stay explicit. Results do not show causation.
         """
         from sibyl.models import OrderRequest
 
@@ -116,7 +117,13 @@ def create_agent(services: Services, **runtime) -> Agent:
             for pair in symbols:
                 market.client().market(pair)
             histories = {pair: market.candles(pair, limit, timeframe) for pair in symbols}
-            result = correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe])
+            result = correlation(
+                histories,
+                method,
+                transform,
+                seconds=TIMEFRAMES[timeframe],
+                robust=selected("robust_regression", robust, False),
+            )
             order = selected("granger_lags", lags)
             if order is not None:
                 from sibyl.market_data.analysis.granger import granger

@@ -82,6 +82,10 @@ def prepare_recovery(store, backup_id):
                         recovery_required=True,
                     )
                     db.execute("UPDATE strategy_jobs SET payload=? WHERE id=?", (json.dumps(job), row[0]))
+        if "bitcoin_watches" in tables:
+            db.execute(
+                "UPDATE bitcoin_watches SET active=0,next_check=NULL,revision=revision+1 WHERE active=1"
+            )
         for table in ("order_alerts", "forecast_tracking"):
             if table in tables:
                 for record in db.execute(f"SELECT id,payload FROM {table}").fetchall():

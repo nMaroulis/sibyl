@@ -144,7 +144,9 @@ class AgentRegistry:
                 arguments = tool_arguments(request)
                 if request.module == "broker" and request.context.backtest_id:
                     primary_tool, arguments = "backtest_report", {}
-                if request.module == "analyst" and request.context.granger_lags is not None:
+                if request.module == "analyst" and (
+                    request.context.granger_lags is not None or request.context.robust_regression
+                ):
                     primary_tool, arguments = "market_relationships", {}
                 if request.module == "wiki" and request.context.retrieval_calibration_id:
                     primary_tool, arguments = "retrieval_evaluation", {}
