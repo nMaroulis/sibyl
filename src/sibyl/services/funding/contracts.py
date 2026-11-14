@@ -19,7 +19,9 @@ def refresh_streams(connection):
     return (
         []
         if connection.sandbox
-        else {"binance": ["deposit", "withdrawal"], "bybit": ["withdrawal"]}.get(connection.exchange, [])
+        else {"binance": ["deposit", "withdrawal"], "bybit": ["withdrawal", "transfer"]}.get(
+            connection.exchange, []
+        )
     )
 
 
@@ -31,7 +33,7 @@ def scan_streams(connection):
         else {
             "binance": ["deposit", "withdrawal"],
             "kraken": ["deposit", "withdrawal", "transfer"],
-            "bybit": ["withdrawal"],
+            "bybit": ["withdrawal", "transfer"],
         }.get(connection.exchange, [])
     )
 
@@ -50,7 +52,7 @@ class RefreshFunding(Request):
 
 
 class ScanFunding(Request):
-    """Authorize a rolling creation-time history window, separately from retained pending checks."""
+    """Authorize a rolling source-time history window, separately from retained pending checks."""
 
     enabled: bool
     interval_minutes: Literal[15, 60, 360] = 60

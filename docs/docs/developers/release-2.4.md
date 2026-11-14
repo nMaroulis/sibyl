@@ -9,6 +9,7 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Reviewed asset openings, existing documented/reviewed funding effects and cross-market one-to-one transfer lot carryover with immutable evidence.
 - [x] Audited split/merged transfer groups with exact principal matrices, pair/group reservation conflicts, current source/review checks and whole-group cross-pair FIFO carryover.
 - [ ] Additional fee conventions and independently verified external-flow classifications.
+- [x] Bybit same-UID UNIFIED wallet transfer history with native pagination, local revision evidence and optional background checks.
 - [ ] Wider funding/history adapters and account balance reconciliation.
 
 ## 2. Exchange infrastructure

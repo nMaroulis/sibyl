@@ -33,6 +33,7 @@ const labels: Record<string, string> = {
   timestamp_ms: 'Source time',
   amount_basis: 'Amount basis',
   wallet_scope: 'Wallet scope',
+  wallet_route: 'Wallet route',
   internal: 'Internal at venue',
   reference: 'Reference',
 };
@@ -42,6 +43,10 @@ function value(field: string, data: unknown, asset: string): string {
   if (typeof data === 'boolean') return data ? 'Yes' : 'No';
   if (field === 'quantity') return `${data} ${asset}`;
   if (field === 'direction') return data === 'in' ? 'Received' : 'Sent';
+  if (field === 'wallet_route' && typeof data === 'object') {
+    const route = data as { from: string; to: string };
+    return `${route.from} → ${route.to}`;
+  }
   if (field === 'fee' && typeof data === 'object') {
     const fee = data as { currency: string | null; cost: number | null };
     return `${fee.cost ?? 'Unavailable'} ${fee.currency || ''}`;

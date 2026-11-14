@@ -88,6 +88,7 @@ def eligible(event: dict, direction: str) -> bool:
     return (
         event.get("direction") == direction
         and event.get("kind") in kinds
+        and not event.get("wallet_route")
         and event.get("status") == "completed"
         and event.get("quantity", 0) > 0
     )
@@ -98,7 +99,9 @@ def comparison(outgoing: dict, incoming: dict) -> dict:
     issues, warnings = [], []
     if outgoing["id"] == incoming["id"] or outgoing["account_id"] == incoming["account_id"]:
         issues.append("Choose observations from two different accounts.")
-    if not eligible(outgoing, "out") or not eligible(incoming, "in"):
+    if outgoing.get("wallet_route") or incoming.get("wallet_route"):
+        issues.append("Same-UID wallet transfers cannot link two saved accounts.")
+    elif not eligible(outgoing, "out") or not eligible(incoming, "in"):
         issues.append("Choose a positive completed withdrawal/transfer out and deposit/transfer in.")
     if outgoing["asset"] != incoming["asset"]:
         issues.append("Both observations must use the same asset; conversions are not transfer pairs.")

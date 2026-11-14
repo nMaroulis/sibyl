@@ -15,11 +15,11 @@ The panel shows unfinished counts, source updates, last exhausted check, upcomin
 | Client | Pending streams | Limits |
 | --- | --- | --- |
 | Binance production | Deposits, withdrawals | Existing crypto capital-history endpoints; original creation-time windows and native pagination |
-| Bybit production | Withdrawals | Existing master-UID on-chain source; no off-chain, sub-UID or additional-tax support |
+| Bybit production | On-chain withdrawals, same-UID UNIFIED wallet transfers | Native withdrawal windows and transfer windows with per-stream cursors |
 | Kraken | Unavailable | Its current source contains posted ledger entries, not pending requests |
 | Demo, test environments, other clients | Unavailable | No pending-source adapter advertised |
 
-The worker reuses the reviewed [Binance history endpoints](https://developers.binance.com/en/docs/catalog/core-trading-wallet/api/rest-api/capital) and [Bybit withdrawal history](https://bybit-exchange.github.io/docs/v5/asset/withdraw/withdraw-record). It adds no exchange write method and does not create deposits, withdrawals, transfers or orders.
+The worker reuses the reviewed [Binance history endpoints](https://developers.binance.com/en/docs/catalog/core-trading-wallet/api/rest-api/capital) and Bybit’s reviewed history endpoints. [Bybit withdrawals](https://bybit-exchange.github.io/docs/v5/asset/withdraw/withdraw-record), [Bybit wallet transfers](https://bybit-exchange.github.io/docs/v5/asset/transfer/inter-transfer-list) It adds no exchange write method and does not create deposits, withdrawals, transfers or orders.
 
 ## Bounded scheduling and persistence
 

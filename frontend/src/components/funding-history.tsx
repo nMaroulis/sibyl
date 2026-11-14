@@ -76,6 +76,7 @@ type Movement = {
   status: string;
   internal: boolean;
   amount_basis: string;
+  wallet_route?: { from: string; to: string };
   fee: { currency: string | null; cost: number | null };
   fee_known: boolean;
   observed_version_count?: number;
@@ -316,8 +317,8 @@ export function FundingHistory({ active }: { active: boolean }) {
               <p className="footnote padded">
                 Choose an active account to import an explicit range. Binance supports crypto
                 deposits/withdrawals; Kraken supports deposit, withdrawal and transfer ledger
-                entries; Bybit supports master-UID on-chain withdrawals. Other providers are coming
-                soon.
+                entries; Bybit supports on-chain withdrawals and transfers into or out of its
+                Unified Trading Account.
               </p>
             )}
           </>
@@ -441,6 +442,8 @@ export function FundingHistory({ active }: { active: boolean }) {
                       'Balance effect provenance',
                       'Balance effect rule',
                       'Wallet scope',
+                      'From wallet',
+                      'To wallet',
                       'Review status',
                       'Scope',
                     ],
@@ -469,6 +472,8 @@ export function FundingHistory({ active }: { active: boolean }) {
                       row.balance_effect?.provenance ?? '',
                       row.balance_effect?.rule ?? '',
                       row.balance_effect?.wallet_scope ?? 'unknown',
+                      row.wallet_route?.from ?? '',
+                      row.wallet_route?.to ?? '',
                       row.balance_effect?.review_status ?? '',
                       data.data!.note,
                     ]),
@@ -613,6 +618,11 @@ export function FundingHistory({ active }: { active: boolean }) {
                               {row.direction === 'in' ? 'Received' : 'Sent'}
                               {row.internal ? ' · internal at venue' : ''}
                             </small>
+                            {row.wallet_route && (
+                              <small>
+                                {row.wallet_route.from} → {row.wallet_route.to}
+                              </small>
+                            )}
                             {row.reconciliation && (
                               <small>
                                 <button

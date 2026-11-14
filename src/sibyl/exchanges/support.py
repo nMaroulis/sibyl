@@ -188,10 +188,10 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "funding",
                     "On-chain withdrawal history"
-                    if funding == ["withdrawal"]
+                    if "withdrawal" in funding and "deposit" not in funding
                     else "Deposit / withdrawal history",
                     "deposit" in funding or "withdrawal" in funding,
-                    "Master-UID on-chain withdrawal reads, native cursors and status/fee rescans. Deposits, off-chain transfers, additional tax charges and sub-UID reads remain pending; unavailable in optional sandboxes."
+                    "Master-UID on-chain withdrawal reads, native cursors and status/fee rescans. Deposits, off-chain withdrawals, additional tax charges and sub-UID withdrawal reads remain pending; unavailable in optional sandboxes."
                     if spec.id == "bybit" and funding
                     else "Read-only funding imports; unavailable in optional sandboxes."
                     if funding
@@ -201,7 +201,9 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                     "transfers",
                     "Transfer history",
                     "transfer" in funding,
-                    "Read-only transfer ledger imports; unavailable in optional sandboxes."
+                    "Same-UID transfers into or out of the Unified Trading Account. Cross-UID transfers and test accounts are unavailable."
+                    if spec.id == "bybit"
+                    else "Read-only transfer ledger imports; unavailable in optional sandboxes."
                     if "transfer" in funding
                     else "Transfer history imports are not implemented for this provider/environment.",
                 ),

@@ -365,14 +365,12 @@ class CCXTClient(ExchangeClient):
         if self._sandbox or stream not in funding_streams(self.id):
             return super().fetch_funding_page(stream, cursor, limit)
         with self.lock:
-            self._require(
-                "fetchLedger"
-                if self.id == "kraken"
-                else "fetchDeposits"
-                if stream == "deposit"
-                else "fetchWithdrawals",
-                private=True,
-            )
+            method = {
+                "deposit": "fetchDeposits",
+                "withdrawal": "fetchWithdrawals",
+                "transfer": "fetchTransfers",
+            }
+            self._require("fetchLedger" if self.id == "kraken" else method[stream], private=True)
             return fetch_funding_page(self._exchange, self.id, stream, cursor, limit)
 
     def create_order(
