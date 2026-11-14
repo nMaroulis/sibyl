@@ -76,6 +76,7 @@ export function ForecastWorkspace() {
   const [huberDelta, setHuberDelta] = useState(1.35);
   const [arimaP, setArimaP] = useState(1);
   const [arimaQ, setArimaQ] = useState(1);
+  const [arimaSeason, setArimaSeason] = useState(0);
   const [alpha, setAlpha] = useState(1);
   const [featureSet, setFeatureSet] = useState<'returns' | 'returns_context'>('returns');
   const [maxHorizon, setMaxHorizon] = useState(30);
@@ -115,7 +116,9 @@ export function ForecastWorkspace() {
         candles: input === 'saved_dataset' && !demo ? dataset?.count : candles,
         lags: family === 'arima' ? 14 : lags,
         family,
-        ...(family === 'arima' ? { arima_p: arimaP, arima_q: arimaQ } : {}),
+        ...(family === 'arima'
+          ? { arima_p: arimaP, arima_q: arimaQ, arima_season: arimaSeason }
+          : {}),
         ...(family === 'huber' ? { huber_delta: huberDelta } : {}),
         alpha: family === 'arima' ? 1 : alpha,
         max_horizon: maxHorizon,
@@ -305,6 +308,17 @@ export function ForecastWorkspace() {
                   ))}
                 </select>
               </label>
+              <label>
+                Seasonality
+                <select
+                  value={arimaSeason}
+                  onChange={(e) => setArimaSeason(Number(e.target.value))}
+                >
+                  <option value={0}>Off</option>
+                  <option value={7}>Weekly · 7 daily candles</option>
+                </select>
+                <small>Adds one autoregressive term at a seven-day lag.</small>
+              </label>
             </>
           ) : (
             <>
@@ -354,12 +368,11 @@ export function ForecastWorkspace() {
         </div>
         {family === 'arima' ? (
           <p className="footnote">
-            ARIMA({arimaP}, 1, {arimaQ}) · log prices with drift. One difference (d = 1), no
-            seasonality or extra context features. One training-only fit serves every horizon; the
-            same 90-close filter is used for testing and inference, without refitting. Supports up
-            to 1,000 candles and 14 days. Constant-return, unstable or nonconverged fits are
-            rejected. Choose orders explicitly and compare the held-out benchmarks; repeated
-            experiments can overfit this history.
+            {arimaSeason ? 'Weekly SARIMA' : 'ARIMA'}({arimaP}, 1, {arimaQ})
+            {arimaSeason ? ' × (1, 0, 0, 7)' : ''} · log prices with drift. One training-only fit
+            serves every horizon. The latest 90 observed closes feed the same filter in testing and
+            inference. Supports up to 1,000 candles and 14 days. Compare held-out errors with the
+            benchmarks to see how the selected recipe performed.
           </p>
         ) : (
           <p className="footnote">
@@ -512,7 +525,7 @@ export function ForecastWorkspace() {
                   <span>
                     {report.model.engine}
                     {report.model.parameters.family === 'arima' ? (
-                      ` · ARIMA(${report.model.parameters.arima_p},1,${report.model.parameters.arima_q}) · 90-close filter context`
+                      ` · ${report.model.parameters.arima_season ? 'Weekly SARIMA' : 'ARIMA'}(${report.model.parameters.arima_p},1,${report.model.parameters.arima_q})${report.model.parameters.arima_season ? ' × (1,0,0,7)' : ''} · 90-close filter context`
                     ) : (
                       <>
                         {' '}
@@ -632,7 +645,9 @@ export function ForecastWorkspace() {
                                     report.model.parameters.family === 'mlp'
                                       ? 'Trained neural model'
                                       : report.model.parameters.family === 'arima'
-                                        ? 'Trained ARIMA model'
+                                        ? report.model.parameters.arima_season
+                                          ? 'Trained weekly SARIMA model'
+                                          : 'Trained ARIMA model'
                                         : report.model.parameters.family === 'huber'
                                           ? 'Trained Huber model'
                                           : 'Trained ridge model',

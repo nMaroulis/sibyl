@@ -47,7 +47,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Forecast drift monitoring and explicit retained-source candidate recalibration policies, with native Chronos evidence and opt-in local schedules.
 - [x] Add trained fixed-scale Huber autoregression, validated delta, training diagnostics and existing chronological/rolling/portable/recalibration workflows.
 - [x] Native statsmodels nonseasonal ARIMA(p,1,q) with explicit bounded orders, training-only scaling/fit, fixed-context causal filtering, real diagnostics and existing rolling/portable/recalibration contracts.
-- [ ] Additional neural/model families, seasonal/exogenous models and larger real-market validation.
+- [x] Optional weekly native SARIMA with a seven-day autoregressive term, held-out and rolling evidence, recipe-preserving reruns and portable refits.
+- [ ] Additional neural/model families, other seasonal orders, exogenous inputs and larger real-market validation.
 - [x] Optional OpenAI/Mistral embeddings through native ProtoLink OpenAIEmbedder, independent encrypted keys, explicit hosted-text permission, checked response identity and revision-fenced indexing/evaluation.
 - [x] Owner-labeled semantic cutoff experiments with separate fit/validation questions, exact corpus/index bindings, reviewed activation, top-one abstention, stale/concurrent-change fencing and native read-only quality evidence.
 - [ ] Additional hosted providers, live provider/model relevance/grounding and forward-quality acceptance, and evaluated finance/entity sentiment.

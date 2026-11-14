@@ -12,7 +12,7 @@ import math
 
 import numpy as np
 
-from sibyl.forecasting.families.arima import ARIMAForecaster
+from sibyl.forecasting.families.arima import ARIMAForecaster, seasonal_order
 from sibyl.forecasting.families.huber import MAX_CANDLES as HUBER_MAX_CANDLES
 from sibyl.forecasting.families.huber import HuberAR
 from sibyl.forecasting.families.neural import TinyMLP
@@ -22,16 +22,19 @@ ENGINE = "chronos-ridge-1"
 CONTEXT_ENGINE = "chronos-ridge-context-1"
 
 
-def engine_for(feature_set="returns", family="ridge"):
+def engine_for(feature_set="returns", family="ridge", arima_season=0):
     """Keep the legacy engine exact and identify the optional richer causal recipe separately."""
     if feature_set not in {"returns", "returns_context"}:
         raise ValueError("Unsupported forecast feature recipe.")
     if family not in {"ridge", "mlp", "huber", "arima"}:
         raise ValueError("Unsupported numerical forecast family.")
+    if arima_season and family != "arima":
+        raise ValueError("Seasonality applies only to the ARIMA family.")
     if family == "arima":
+        seasonal_order(arima_season)
         if feature_set != "returns":
             raise ValueError("ARIMA does not use the optional context-feature recipe.")
-        return "chronos-arima-1"
+        return "chronos-sarima-weekly-1" if arima_season else "chronos-arima-1"
     if family == "huber":
         return "chronos-huber-context-1" if feature_set == "returns_context" else "chronos-huber-1"
     if family == "mlp":
@@ -46,6 +49,7 @@ def parameters(request):
             "family": "arima",
             "arima_p": request.arima_p,
             "arima_q": request.arima_q,
+            **({"arima_season": request.arima_season} if request.arima_season else {}),
             "difference": 1,
             "context_candles": 90,
             "max_horizon": request.max_horizon,
@@ -236,7 +240,9 @@ def train(candles, request):
         raise ValueError("ARIMA supports at most 1,000 actual input candles and 14 forecast days.")
     arima = None
     if request.family == "arima":
-        arima = ARIMAForecaster.fit(logs[:train_end], request.arima_p, request.arima_q)
+        arima = ARIMAForecaster.fit(
+            logs[:train_end], request.arima_p, request.arima_q, season=request.arima_season
+        )
         panel = ARIMAForecaster.panel(arima, logs, range(train_end, n), request.max_horizon)
     x = None if arima else features(logs, lags, request.feature_set)
     fitted, evaluation = [], []
@@ -270,7 +276,7 @@ def train(candles, request):
         fitted.append(model)
         evaluation.append(score_horizon(logs, times, predictions, model, test, drift, lags))
     artifact = {
-        "engine": engine_for(request.feature_set, request.family),
+        "engine": engine_for(request.feature_set, request.family, request.arima_season),
         "numpy_version": np.__version__,
         "algorithm": "Direct autoregressive ridge on daily log returns",
         "parameters": parameters(request),
@@ -329,9 +335,17 @@ def train(candles, request):
         artifact["algorithm"] = (
             f"Nonseasonal ARIMA({request.arima_p},1,{request.arima_q}) on log prices with drift"
         )
+        if request.arima_season:
+            artifact["algorithm"] = (
+                f"Weekly SARIMA({request.arima_p},1,{request.arima_q}) × (1,0,0,7) on log prices with drift"
+            )
         artifact["arima"] = arima
         artifact["notes"].append(
-            "One native statsmodels ARMA fit on training-only standardized daily log returns defines ARIMA(p,1,q) on log prices with drift. Stationarity/invertibility are enforced; failed or degenerate fits are rejected. Orders are chosen explicitly, never by test scores."
+            "Native statsmodels fits one SARIMA model with a seven-day seasonal AR term on "
+            "training-standardized daily returns. The one log-price difference is nonseasonal. "
+            "The weekly lag is chosen explicitly; a fitted seasonal coefficient does not establish a weekly trading edge."
+            if request.arima_season
+            else "One native statsmodels ARMA fit on training-only standardized daily log returns defines ARIMA(p,1,q) on log prices with drift. Stationarity/invertibility are enforced; failed or degenerate fits are rejected. Orders are chosen explicitly, never by test scores."
         )
         artifact["notes"].append(
             "Every evaluation/inference origin filters exactly the most recent 90 closes with unchanged parameters. Filtering updates state using observed data; it does not refit or smooth with future prices. All horizons share coefficients; each has its own held-out empirical radius. Point prices exponentiate predicted log prices without a lognormal mean correction."
@@ -342,8 +356,9 @@ def train(candles, request):
 
 def predict(artifact, candles, horizon):
     """Apply unchanged trained coefficients to a closed causal window, with a descriptive shift check."""
+    recipe = artifact["parameters"]
     if artifact["engine"] != engine_for(
-        artifact["parameters"].get("feature_set", "returns"), artifact["parameters"].get("family", "ridge")
+        recipe.get("feature_set", "returns"), recipe.get("family", "ridge"), recipe.get("arima_season", 0)
     ):
         raise ValueError("This forecast engine version is not supported by the installed application.")
     if artifact["parameters"].get("family") == "arima":
@@ -399,6 +414,9 @@ def arima_prediction(artifact, candles, horizon):
     if not 1 <= horizon <= len(artifact["models"]):
         raise ValueError("Choose a horizon supported by this trained model.")
     fitted = artifact["arima"]
+    order = seasonal_order(artifact["parameters"].get("arima_season", 0))
+    if tuple(fitted.get("seasonal_order", (0, 0, 0, 0))) != order:
+        raise ValueError("The fitted seasonal order does not match this forecast recipe.")
     returns = ARIMAForecaster.forecast(fitted, logs, horizon)
     points = []
     for h, (change, model) in enumerate(zip(returns, artifact["models"][:horizon], strict=True), 1):

@@ -19,12 +19,13 @@ class TrainForecast(Request):
     family: Literal["ridge", "mlp", "huber", "arima"] = "ridge"
     arima_p: Literal[1, 2, 3] = 1
     arima_q: Literal[0, 1, 2] = 1
+    arima_season: Literal[0, 7] = 0
     huber_delta: float = Field(default=1.35, ge=0.25, le=5, strict=True)
     feature_set: Literal["returns", "returns_context"] = "returns"
     max_horizon: int = Field(default=30, ge=1, le=30, strict=True)
     alpha: float = Field(default=1.0, ge=0.01, le=1000, strict=True)
 
-    @field_validator("arima_p", "arima_q", mode="before")
+    @field_validator("arima_p", "arima_q", "arima_season", mode="before")
     @classmethod
     def integer_order(cls, value):
         if type(value) is not int:
@@ -59,7 +60,7 @@ class TrainForecast(Request):
                 raise ValueError(
                     "ARIMA uses its own order; return/context lag and ridge-penalty controls do not apply."
                 )
-        elif self.arima_p != 1 or self.arima_q != 1:
+        elif self.arima_p != 1 or self.arima_q != 1 or self.arima_season:
             raise ValueError("ARIMA order applies only to the ARIMA family.")
         return self
 

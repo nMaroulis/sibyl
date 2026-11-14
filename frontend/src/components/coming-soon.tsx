@@ -40,7 +40,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'forecast',
       title: 'More forecasting models and evaluation',
-      text: 'ARIMA, other neural families, automatic recalibration and calibrated drift monitoring. Live prospective outcome tracking is implemented. Versioned ridge and bounded small neural models, chronological and historical rolling evaluation, empirical bands and saved forecasts are available now.',
+      text: 'Additional neural families, exogenous inputs and broader real-market validation. Weekly SARIMA, candidate recalibration and prospective outcome tracking are already available.',
     },
     {
       module: 'knowledge',

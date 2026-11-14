@@ -1,4 +1,4 @@
-"""Bounded nonseasonal ARIMA research with native statsmodels fitting/filtering.
+"""Bounded ARIMA and weekly seasonal ARIMA with native statsmodels fitting/filtering.
 
 ARMA(p,q) on daily log returns is ARIMA(p,1,q) on log prices with a drift.
 Training-only normalization improves numerical conditioning; one frozen native
@@ -18,13 +18,21 @@ CONTEXT = 90
 MAX_STEPS = 100
 
 
-def native_model(values, p, q):
+def seasonal_order(period):
+    """Use one seasonal autoregressive term for the supported seven-day period."""
+    if type(period) is not int or period not in (0, 7):
+        raise ValueError("ARIMA seasonality supports Off or a seven-day lag.")
+    return (1, 0, 0, period) if period else (0, 0, 0, 0)
+
+
+def native_model(values, p, q, *, season=0):
     """Construct the reviewed stationary/invertible return model; import only on explicit use."""
     from statsmodels.tsa.arima.model import ARIMA
 
     return ARIMA(
         np.asarray(values).reshape(-1, 1),
         order=(p, 0, q),
+        seasonal_order=seasonal_order(season),
         trend="c",
         enforce_stationarity=True,
         enforce_invertibility=True,
@@ -35,7 +43,7 @@ class ARIMAForecaster:
     """Fit once on earlier returns, then filter observed context with unchanged parameters."""
 
     @staticmethod
-    def fit(logs, p=1, q=1):
+    def fit(logs, p=1, q=1, *, season=0):
         """Estimate native maximum likelihood on training data only; reject failed/degenerate fits."""
         import statsmodels
         from statsmodels.tools.sm_exceptions import EstimationWarning, ValueWarning
@@ -50,7 +58,8 @@ class ARIMAForecaster:
             raise ValueError(
                 "ARIMA needs varying daily returns; this input cannot identify the selected model."
             )
-        model = native_model((values - center) / scale, p, q)
+        seasonal = seasonal_order(season)
+        model = native_model((values - center) / scale, p, q, season=season)
         try:
             with warnings.catch_warnings(record=True) as recorded:
                 warnings.simplefilter("always")
@@ -68,6 +77,7 @@ class ARIMAForecaster:
             raise ValueError("ARIMA fitting was numerically unstable. Try another order or input.") from exc
         return {
             "order": [p, 1, q],
+            **({"seasonal_order": list(seasonal)} if season else {}),
             "return_center": center,
             "return_scale": scale,
             "parameters": params.tolist(),
@@ -108,7 +118,8 @@ class ARIMAForecaster:
         p, _, q = fitted["order"]
         values = (np.diff(logs[-CONTEXT:]) - fitted["return_center"]) / fitted["return_scale"]
         try:
-            result = native_model(values, p, q).filter(fitted["parameters"], cov_type="none")
+            season = fitted.get("seasonal_order", (0, 0, 0, 0))[-1]
+            result = native_model(values, p, q, season=season).filter(fitted["parameters"], cov_type="none")
             returns = np.asarray(result.forecast(horizon)) * fitted["return_scale"] + fitted["return_center"]
             predicted = np.cumsum(returns)
         except (np.linalg.LinAlgError, FloatingPointError, OverflowError) as exc:

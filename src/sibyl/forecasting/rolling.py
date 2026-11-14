@@ -76,7 +76,12 @@ def evaluate(candles, recipe, request):
         calibration = np.arange(train_end, test_start - h)
         test = np.arange(test_start, test_end - h)
         if family == "arima":
-            arima = ARIMAForecaster.fit(logs[train_start:train_end], recipe["arima_p"], recipe["arima_q"])
+            arima = ARIMAForecaster.fit(
+                logs[train_start:train_end],
+                recipe["arima_p"],
+                recipe["arima_q"],
+                season=recipe.get("arima_season", 0),
+            )
             panel = ARIMAForecaster.panel(arima, logs, range(train_end, test_end), h)
             predictions = panel[:, h - 1]
             model = {
@@ -136,7 +141,9 @@ def evaluate(candles, recipe, request):
     )
     result = {
         "engine": ROLLING_ENGINE,
-        "ridge_engine": engine_for(recipe.get("feature_set", "returns"), family),
+        "ridge_engine": engine_for(
+            recipe.get("feature_set", "returns"), family, recipe.get("arima_season", 0)
+        ),
         "numpy_version": np.__version__,
         "parameters": request.model_dump(),
         "recipe": recipe,

@@ -38,6 +38,7 @@ export type ForecastModel = {
     family?: 'ridge' | 'mlp' | 'huber' | 'arima';
     arima_p?: number;
     arima_q?: number;
+    arima_season?: 7;
     difference?: number;
     context_candles?: number;
     huber_delta?: number;
