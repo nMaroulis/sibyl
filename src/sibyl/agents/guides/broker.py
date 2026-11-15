@@ -185,9 +185,10 @@ STRATEGIES = {
             "Pause and resolve order/fill/fee evidence before Adopt existing units. Enter base quantity, asserted total quote cost and a reason; review and type the displayed confirmation. Resume is separate.",
             "Stop before Release to unmanaged, or use Hand off to a new run and select that exact source during new-run approval. A handoff carries all retained units/original basis and adds the new quote budget separately.",
             "Inspect ownership receipts and OWNERSHIP journal/CSV entries. Source corrections invalidate inherited evidence; missing account backing blocks attributed execution.",
+            "Use Lifetime performance for flow-adjusted quote gains and returns. Refresh valuation mark reads the exact venue midpoint. Archive is available for flat terminal runs after execution evidence reconciles. Choose Archived under Run visibility to reopen and restore one.",
         ),
         (
-            "These are local attributions, not exchange transfers/sales or verified manual-trade classification. Cash remains unchanged and capital-flow reference values are excluded from trading profit. Lifetime return statistics remain unavailable after attribution. Historical corrections across existing handoffs require further reviewed repair support; never advise bypassing the block.",
+            "Ownership receipts record local attributions. They leave trading cash unchanged. The lifetime estimate weights each signed reference-valued flow by time remaining in the period. Historical third-currency fees qualify for this report only. A manual-fill label requires an exact native match to a recorded Sibyl order. Source corrections across existing handoffs still block execution.",
         ),
     ),
     "benchmarks": Guide(

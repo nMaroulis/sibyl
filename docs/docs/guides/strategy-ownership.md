@@ -10,7 +10,7 @@ Open a run’s monitor and select **Check exchange balance**. This reads the exa
 - A **shortfall** means observed account units cannot back all recorded owners. Inspect account activity before attributing anything.
 - **Dust** uses the exact pair’s amount precision, current bid and reported minimums. Being above an observed minimum does not guarantee an order can execute.
 
-Checks are on demand. The panel shows when a check was made and whether local ownership evidence changed. Native balances are point-in-time observations, not fund reservations. Recent imported fills outside strategy orders can help explain changes, but import coverage may be incomplete.
+Checks are on demand. The panel shows when a check was made and whether local ownership evidence changed. Native balances are point-in-time observations, not fund reservations. Recent imported fills outside strategy orders can help explain changes. A **Matched Sibyl manual order** label requires the same account, pair, side and native order ID on a single recorded manual order. Fills without this evidence show **Order origin unknown**. The label never assigns units or asserts the origin of orders placed outside Sibyl.
 
 ## Adopt existing units
 
@@ -31,8 +31,21 @@ A partial release retains the rest. Repeated confirmation never duplicates a rec
 
 Ownership receipts remain separate from native fills and appear in the journal/CSV as `OWNERSHIP`. Their dated reference value is a capital flow, not exchange cash or trading proceeds. Marked total P&L and shared loss observations exclude that flow. Shared allocated capital includes attributed inbound value; units remain part of gross exposure.
 
-Lifetime percentage returns, curve risk statistics and complete lifetime accounting are unavailable after attribution. Native acquired/disposed cost basis still follows the actual fill and receipt replay; the ownership panel exposes carried or asserted basis separately.
+Native acquired/disposed cost basis follows fill and receipt replay. The panel shows the carried or asserted basis separately.
+
+## Lifetime performance and archiving
+
+The run monitor shows a **Modified Dietz estimate** from the initial quote budget, closing cash and owned units, and recorded reference-valued ownership flows. Adoption and inbound handoffs contribute capital. Release and outbound handoffs withdraw capital. Each signed flow is weighted by the fraction of the measurement period remaining after its timestamp.
+
+- With inventory, the closing valuation uses the last retained exchange midpoint. **Refresh valuation mark** reads the exact venue's book without changing the run's trading or risk state.
+- A terminal run with zero owned units uses its allocated quote cash. The as-of time includes known fills and attributions after stop.
+- For fees in a third currency, keep closed candles for a conversion route on the run's exact connected feed and environment. Sibyl values each charge or rebate at the latest eligible close at or before its execution, up to 24 hours old. The report shows conversion legs and omits returns when required values are missing. The execution guard still requires directly accounted fees.
+- A stale ownership receipt, uncertain order, incomplete native costs or fees, or mark older than a fill or attribution withholds the lifetime return. Historical chart samples and risk statistics remain tied to their original observations.
+
+Once a stopped or completed run is flat and its execution ledger is reconciled, select **Archive run**. Use **Run visibility → Archived** to inspect or restore it. Archiving only organizes the run list. Monitoring still retains the journal, order reconciliation, and applicable shared risk evidence.
+
+## Corrected exchange evidence
 
 Fresh observed backing is required when attributed runs resume, evaluate or submit; separately reviewed exits also check backing. External trades can still race a read: this is not a native reservation or complete wallet reconciliation.
 
-Later corrections to orders/fills preceding a receipt invalidate that receipt and descendants of a handoff. Uncertain evidence blocks further orders; it is not silently reassigned or rewritten. A reviewed correction/reversal workflow across already executed descendants, third-currency fee valuation, complete settlement/bust handling and validated cash-flow-adjusted lifetime statistics remain pending. Inspect the source in Trade and keep affected runs paused; do not bypass the block by creating duplicate ownership.
+Later corrections to orders/fills preceding a receipt invalidate that receipt and descendants of a handoff. The ownership panel links each affected source run and shows the number of affected receipts and pinned orders to inspect. Uncertain evidence blocks further orders; it is not silently reassigned or rewritten. Reviewed correction or reversal across already executed descendants and definitive venue settlement or bust handling remain pending. Inspect the source in Trade and keep affected runs paused; do not bypass the block by creating duplicate ownership.

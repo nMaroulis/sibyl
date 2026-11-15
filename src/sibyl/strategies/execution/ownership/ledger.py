@@ -126,6 +126,33 @@ def append(db, event):
     )
 
 
+def changed_sources(db, identity):
+    """Trace invalidated pins to the local receipts and source runs that carry them."""
+    changed, checked = {}, {}
+    for event in events(db, identity):
+        for evidence in event["pins"]:
+            key = digest(evidence)
+            if key not in checked:
+                checked[key] = current(db, evidence)
+            if checked[key]:
+                continue
+            source = changed.setdefault(
+                evidence["job_id"],
+                {"receipts": set(), "orders": set(), "symbol": evidence["scope"]["symbol"]},
+            )
+            source["receipts"].add(event["id"])
+            source["orders"].update(evidence["order_ids"])
+    return [
+        {
+            "job_id": job_id,
+            "symbol": source["symbol"],
+            "receipt_count": len(source["receipts"]),
+            "order_count": len(source["orders"]),
+        }
+        for job_id, source in changed.items()
+    ]
+
+
 def replay(db, identity):
     """Read receipts and detect changed ancestors without contacting any exchange."""
     items = events(db, identity)

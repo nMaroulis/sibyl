@@ -28,6 +28,7 @@ import { SectionTabs, SectionPanel } from './section-tabs';
 import { AgentButton } from './agents';
 import { StrategyChart } from './strategy-chart';
 import { DecisionJournal } from './strategy-journal';
+import { RunPerformance } from './strategies/run-performance';
 import { ExchangeRunEvidence } from './strategies/exchange-evidence';
 import { StopCancellation } from './strategies/stop-cancellation';
 import { ClosePosition } from './strategies/close-position';
@@ -214,6 +215,7 @@ export function StrategyMonitor({
       </Panel>
       {exchangeRun && <PositionOwnership key={job.id} job={job} />}
       {exchangeRun && <ExchangeRunEvidence job={job} />}
+      {exchangeRun && <RunPerformance key={job.id} job={job} interval={live ? 15000 : 0} />}
       {monitor.error && (
         <div className="inline-alert" role="alert">
           Could not refresh: {monitor.error}. Showing the last received snapshot.
@@ -258,9 +260,9 @@ export function StrategyMonitor({
         <div className="monitor-notice">
           {job.ownership_event_count ? (
             <>
-              This run includes reviewed ownership changes. Trading profit excludes their dated
-              reference flows; lifetime percentage returns and risk statistics are unavailable
-              across this changed capital base.
+              This run includes reviewed ownership changes. Lifetime performance accounts for their
+              dated reference flows. The raw equity curve is unsuitable for lifetime risk
+              statistics.
             </>
           ) : (
             <>

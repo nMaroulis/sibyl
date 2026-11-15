@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Badge, Modal, Panel } from '../ui';
 import { useResource } from '../../lib/hooks';
 import { number, post, refresh } from '../../lib/api';
+import { monitorURL } from '../../lib/strategy-monitor';
 import type { Job } from '../../lib/types';
 import '../../styles/position-ownership.css';
 
@@ -36,6 +37,8 @@ type Check = {
     side: string;
     quantity: number;
     created_at: string;
+    origin?: 'sibyl_manual' | 'unknown';
+    intent_id?: string | null;
   }[];
 };
 type State = {
@@ -43,6 +46,7 @@ type State = {
   entry_cost: number;
   net_reference_flow: number;
   stale: boolean;
+  changed_sources: { job_id: string; symbol: string; receipt_count: number; order_count: number }[];
   history: Receipt[];
   event_count: number;
   check?: Check;
@@ -143,11 +147,32 @@ export function PositionOwnership({ job }: { job: Job }) {
             </p>
           )}
           {data?.stale && (
-            <p className="monitor-notice">
-              An earlier native fill or source handoff changed. Execution is blocked. Inspect the
-              linked source and Trade evidence; this receipt cannot silently rewrite corrected
-              history.
-            </p>
+            <div className="monitor-notice">
+              <p>
+                Earlier exchange evidence changed. Execution is blocked while ownership is
+                unresolved.
+              </p>
+              {data.changed_sources.length > 0 && (
+                <ul>
+                  {data.changed_sources.map((source) => (
+                    <li key={source.job_id}>
+                      {source.job_id === job.id ? (
+                        'This run'
+                      ) : (
+                        <Link to={monitorURL(source.job_id)}>
+                          {source.symbol} · {source.job_id.slice(0, 8)}
+                        </Link>
+                      )}
+                      {' · '}
+                      {source.receipt_count} affected{' '}
+                      {source.receipt_count === 1 ? 'receipt' : 'receipts'}
+                      {' · '}
+                      {source.order_count} pinned {source.order_count === 1 ? 'order' : 'orders'}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
           {check ? (
             <>
@@ -214,7 +239,13 @@ export function PositionOwnership({ job }: { job: Job }) {
                       <span>
                         {f.side.toUpperCase()} {number(f.quantity, 8)} · {f.symbol}
                       </span>
-                      <small>{new Date(f.created_at).toLocaleString()}</small>
+                      <small>
+                        {f.origin === 'sibyl_manual'
+                          ? 'Matched Sibyl manual order'
+                          : 'Order origin unknown'}
+                        {' · '}
+                        {new Date(f.created_at).toLocaleString()}
+                      </small>
                     </p>
                   ))}
                 </details>

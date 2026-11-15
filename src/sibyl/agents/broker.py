@@ -32,7 +32,7 @@ SYSTEM_PROMPT = (
     "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. "
     "Portfolio lab studies use backtest_report for exact asset targets, common window, allocation/cost metrics and bounded fills. They are historical rebalancing simulations with final liquidation, not running paper/exchange strategies. Gross turnover excludes initial/final fills; excess return is percentage points versus cost-matched buy-and-hold. "
     "Use backtest_report for recorded reference portfolio metrics and strategy_help benchmarks for their assumptions. "
-    "Use strategy_context to inspect the selected job or simulation parameters. Use strategy_guide for "
+    "Use strategy_context to inspect the selected job, its exchange lifetime estimate or simulation parameters. Explain ownership flows separately from trading P&L. The report gives a dated approximate return and withholds it when required evidence is missing. Use strategy_guide for "
     "supported rules and assumptions. Call backtest_report for a saved or selected historical run: "
     "explain actual simulated fills, costs, input provenance and metrics. Never describe a backtest "
     "as predictive or confuse synthetic Demo input with observed exchange prices. "
@@ -164,6 +164,9 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "ownership_event_count",
                     )
                 },
+                "lifetime_performance": strategies.execution.performance.report(job_id)
+                if job.get("mode") == "exchange" and strategies.execution
+                else None,
                 "observations": monitor["observations"],
                 "recent_events": strategies.journal.events(job_id, 20)["items"],
                 "alert_rules": strategies.alerts.rules(job_id=job_id),
@@ -444,7 +447,8 @@ def create_agent(services: Services, **runtime) -> Agent:
         Use the selected run or a known job_id. The saved check compares all same-account
         base-asset owners and shows unassigned units, shortfalls and its observation time.
         Adoption basis is a user assertion; a handoff carries recorded original basis.
-        Changed ancestral fill evidence blocks execution. This reads local evidence only;
+        Changed ancestral evidence blocks execution. Affected source runs and receipt counts
+        identify where to investigate. This reads local evidence only;
         it never checks an exchange, attributes units, approves a handoff or places an order.
         """
         job_id = selected("job_id", job_id, "")

@@ -271,8 +271,11 @@ def test_late_source_correction_invalidates_descendant_and_prevents_writes(execu
     source, intent, _, target = handoff(execution, ownership)
     native.fills[0]["fees"][0]["cost"] += 0.5
     reconcile(trading, intent["id"])
-    assert ownership.state(source["id"])["stale"]
-    assert ownership.state(target["id"])["stale"]
+    source_state = ownership.state(source["id"])
+    target_state = ownership.state(target["id"])
+    changed = [{"job_id": source["id"], "symbol": "BTC/USDT", "receipt_count": 1, "order_count": 1}]
+    assert source_state["stale"] and source_state["changed_sources"] == changed
+    assert target_state["stale"] and target_state["changed_sources"] == changed
     native.clock += 60
     strategies.tick()
     latest = strategies.journal.job(target["id"])

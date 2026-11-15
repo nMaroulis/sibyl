@@ -123,9 +123,13 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add a durable global strategy submission halt: atomically pause exchange runs, invalidate old reviews/unsent signal plans, enforce the shared write boundary, retain audit history and require revision-bound typed release. Release never resumes runs; approved cancellations/manual orders/separately reviewed exits remain available.
 - [x] Add opt-in shared allocated-capital, gross-exposure and observed UTC daily-loss policies across accounts, separately for production/test funds; fresh actual conversion paths, retained/pending exposure, native-write transaction admission, persisted daily baselines/locks, deliberate later-day release, bounded audit and read-only Broker evidence. See [portfolio limits](portfolio-limits.md).
 - [x] Add account/base-asset exposure caps, sampled rolling-loss latches and optional stop-distance entry-risk sizing with native-write admission.
-- [ ] Extend archived-run accounting/coordination and any automatic multi-order liquidation policy; current residual exits require fresh reviews. Entry-risk sizing does not install a native protective stop.
+- [x] Archive reconciled flat terminal runs and restore them without deleting order, accounting or journal evidence. Archived runs remain in reconciliation and shared risk.
+- [ ] Add an explicitly approved automatic multi-order liquidation policy. Each residual exit currently requires a fresh review.
 - [x] Add explicit native base-balance checks across same-account owners, dust classification, reviewed manual adoption/release and atomic original-basis handoff to a new exact-account/pair run, with flow-neutral shared P&L and inherited correction guards. See [ownership](../guides/strategy-ownership.md).
-- [ ] Add reviewed correction/reversal across executed ownership descendants, verified manual-trade classification, cash-flow-adjusted lifetime performance, third-currency fee valuation and definitive settlement/bust handling.
+- [x] Estimate cash-flow-adjusted lifetime performance from linked fills, local ownership receipts and exact venue marks. Value individual third-currency fees and rebates from eligible closed candles on the run's exact feed for this report.
+- [x] Identify imported fills linked to one recorded Sibyl manual order by exact native identity and account scope. Retain unknown origin for all other unattributed fills.
+- [x] Trace invalidated ownership receipts to the source runs that carry changed order evidence.
+- [ ] Add reviewed correction/reversal across executed ownership descendants, verified provenance beyond recorded Sibyl manual orders, execution/risk valuation of third-currency fees and definitive settlement/bust handling.
 
 ### 5. Market-data infrastructure — partial
 

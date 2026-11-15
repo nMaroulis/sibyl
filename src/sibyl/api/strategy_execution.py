@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Response
 
 from sibyl.api.routes import S
+from sibyl.models import Request
 from sibyl.strategies.execution.contracts import (
     ClosePositionRequest,
     ExchangeStrategyRequest,
@@ -139,3 +140,30 @@ def ownership_confirm(review_id: str, body: StrategyApproval, s: S, response: Re
     """Confirm one audited local attribution; duplicate confirmation creates no second receipt."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.ownership.confirm(review_id, body.confirmation)
+
+
+class ArchiveStrategyRun(Request):
+    """Change whether a settled flat run appears in the default list."""
+
+    archived: bool
+
+
+@router.get("/jobs/{job_id}/performance")
+def strategy_performance(job_id: str, s: S, response: Response):
+    """Read retained strategy lifetime performance without contacting the venue."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.performance.report(job_id)
+
+
+@router.post("/jobs/{job_id}/performance/mark")
+def strategy_mark(job_id: str, s: S, response: Response):
+    """Record the current exact venue book midpoint without order or balance changes."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.performance.refresh(job_id)
+
+
+@router.post("/jobs/{job_id}/archive")
+def archive_strategy(job_id: str, body: ArchiveStrategyRun, s: S, response: Response):
+    """Archive or restore an exchange run without changing its lifecycle."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.performance.archive(job_id, body.archived)

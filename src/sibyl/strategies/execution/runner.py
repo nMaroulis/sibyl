@@ -15,6 +15,7 @@ from sibyl.strategies.execution.closing import ClosePositions
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, ExecutionGuard, ExecutionParameters
 from sibyl.strategies.execution.controls import StrategyControls
 from sibyl.strategies.execution.ownership.service import PositionOwnership
+from sibyl.strategies.execution.performance import StrategyPerformance
 from sibyl.strategies.execution.risk import PortfolioLimits
 from sibyl.strategies.execution.stop_reviews import StopCancellationReviews
 from sibyl.strategies.execution.venue import is_dust, observation, order_size, supported
@@ -49,6 +50,7 @@ class ExchangeStrategies:
         self.stop_reviews = StopCancellationReviews(self)
         self.closing = ClosePositions(self)
         self.ownership = PositionOwnership(self)
+        self.performance = StrategyPerformance(self)
         for job in self.jobs():
             if job["status"] == "running":
                 self._pause(

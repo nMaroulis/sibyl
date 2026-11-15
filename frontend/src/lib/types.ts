@@ -320,6 +320,8 @@ export type Job = Source & {
   ownership_net_value?: number;
   ownership_stale?: boolean;
   ownership_event_count?: number;
+  archived_at?: string;
+  unresolved_orders?: { id: string }[];
   risk_locked?: boolean;
   fee_assets?: Record<string, number>;
   unvalued_fees?: Record<string, number>;

@@ -22,6 +22,15 @@ def now():
     return datetime.now(UTC).isoformat()
 
 
+def unattributed_fill(fill, matches):
+    """A matching local order can establish local submission provenance, without attributing ownership."""
+    evidence = {key: fill.get(key) for key in ("id", "created_at", "symbol", "side", "quantity", "price")}
+    order = matches[0] if len(matches) == 1 else None
+    if order and order["origin"] in {"sibyl", "replacement", "oco"}:
+        return {**evidence, "origin": "sibyl_manual", "intent_id": order["id"]}
+    return {**evidence, "origin": "unknown", "intent_id": None}
+
+
 class PositionOwnership:
     """Serialize attribution reviews with strategy orders and final SQLite admission."""
 
@@ -124,6 +133,7 @@ class PositionOwnership:
                 "entry_cost": job["entry_cost"],
                 "net_reference_flow": job["ownership_net_value"],
                 "stale": job["ownership_stale"],
+                "changed_sources": ledger.changed_sources(db, identity) if job["ownership_stale"] else [],
                 "history": job["ownership_events"],
                 "event_count": job["ownership_event_count"],
                 "check": latest,
@@ -148,16 +158,22 @@ class PositionOwnership:
                     for row in rows
                 )
                 base = job["parameters"]["symbol"].split("/")[0]
-                manual = [
-                    json.loads(row[0])
-                    for row in db.execute(
-                        "SELECT f.payload FROM account_fills f WHERE f.account_id=? AND f.symbol LIKE ? "
+                manual = list(
+                    db.execute(
+                        "SELECT f.payload,(SELECT json_group_array(json_object('id',o.id,'origin',"
+                        "COALESCE(json_extract(o.payload,'$.origin'),'sibyl'))) FROM exchange_orders o "
+                        "WHERE json_extract(o.payload,'$.request.connection_id')=f.account_id "
+                        "AND json_extract(o.payload,'$.request.symbol')=f.symbol "
+                        "AND json_extract(o.payload,'$.request.side')=json_extract(f.payload,'$.side') "
+                        "AND json_extract(o.payload,'$.exchange_order_id')=json_extract(f.payload,'$.order_id') "
+                        "AND json_extract(o.payload,'$.status') NOT IN ('preview','submitting','unknown','rejected')) "
+                        "FROM account_fills f WHERE f.account_id=? AND f.symbol LIKE ? "
                         "AND NOT EXISTS (SELECT 1 FROM exchange_orders o WHERE json_extract(o.payload,'$.request.connection_id')=f.account_id "
                         "AND json_extract(o.payload,'$.request.symbol')=f.symbol AND json_extract(o.payload,'$.exchange_order_id')=json_extract(f.payload,'$.order_id') "
                         "AND json_extract(o.payload,'$.strategy_job_id') IS NOT NULL) ORDER BY f.timestamp_ms DESC,f.id DESC LIMIT 20",
                         (job["connection_id"], base + "/%"),
                     )
-                ]
+                )
                 result = {
                     **observed,
                     "evidence": evidence,
@@ -175,8 +191,7 @@ class PositionOwnership:
                         for r in rows
                     ],
                     "unattributed_fills": [
-                        {k: r.get(k) for k in ("id", "created_at", "symbol", "side", "quantity", "price")}
-                        for r in manual
+                        unattributed_fill(json.loads(fill), json.loads(orders)) for fill, orders in manual
                     ],
                 }
                 db.execute(
