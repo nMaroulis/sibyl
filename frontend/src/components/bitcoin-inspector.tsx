@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AgentButton } from './agents';
 import { BitcoinBlockInspector } from './bitcoin-block-inspector';
+import { BitcoinInclusionProof } from './bitcoin-inclusion-proof';
 import { BitcoinWatches } from './bitcoin-watches';
 import { BitcoinOutputSpends } from './bitcoin-output-spends';
 import { Badge, ErrorState, Loading, Panel, PanelTitle } from './ui';
@@ -285,6 +286,17 @@ export function BitcoinInspector() {
                   )}
                   {report.transaction.coinbase && <Badge>Coinbase · newly issued coins</Badge>}
                 </div>
+                {report.transaction.status.block_hash &&
+                  (!simulated ||
+                    capabilities.data?.demo.block_hash ===
+                      report.transaction.status.block_hash) && (
+                    <BitcoinInclusionProof
+                      key={report.transaction.txid + report.transaction.status.block_hash}
+                      transactionId={report.transaction.txid}
+                      blockHash={report.transaction.status.block_hash}
+                      demo={simulated}
+                    />
+                  )}
                 <div className="bitcoin-metrics">
                   <div>
                     <small>Transaction fee</small>

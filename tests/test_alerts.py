@@ -370,7 +370,9 @@ def test_http_example_is_isolated_and_rules_inbox_are_durable(client):
     assert client.post(f"/api/v1/alerts/{rule['id']}/action", json={"action": "trade"}).status_code == 422
     assert client.get("/api/v1/notifications?limit=1000").status_code == 422
     roadmap = client.get("/api/v1/roadmap").json()
-    assert len(roadmap["areas"]) == 13
+    areas = {area["id"]: area for area in roadmap["areas"]}
+    assert areas["explorer"]["status"] == "complete" and not areas["explorer"]["pending"]
+    assert areas["research-expansion"]["status"] == "partial" and areas["research-expansion"]["pending"]
     assert next(a for a in roadmap["areas"] if a["id"] == "multi-user")["status"] == "deferred"
     assert client.app.state.services.store.orders() == []
 

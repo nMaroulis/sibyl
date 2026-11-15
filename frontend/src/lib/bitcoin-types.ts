@@ -98,6 +98,7 @@ export type BitcoinCapabilities = {
     txid: string;
     address: string;
     block_height: number;
+    block_hash: string;
     confirmed_spend_txid: string;
     pending_spend_txid: string;
   };

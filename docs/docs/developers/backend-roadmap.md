@@ -242,15 +242,19 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 - [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.
 - [ ] Add configurable external research API credentials/endpoints where integrations need them.
 
-### 10. Explorer, equities and advanced analytics — partial
+### 10a. Bitcoin Explorer — complete for v2.4
 
-Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman/distance dependence and descriptive return regressions exist.
+The local Bitcoin workspace covers block, transaction and address inspection, output monitoring, dated exports and verification of an inclusion branch against a selected header. The indexer supplies chain selection.
 
 - [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
 - [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools.
 - [x] Add durable Bitcoin output watches with isolated Demo, before/after spend and block inclusion observations, local inbox evidence, bounded retry, revision-checked controls and restore quarantine.
 - [x] Add historical Bitcoin block lookup by height/hash, hash-pinned transaction pages, best-chain status, JSON export, Demo and native Explorer evidence.
-- [ ] Add bulk historical chain datasets, additional chains, wallet aggregation and local chain verification.
+- [x] Verify transaction inclusion locally against the exact selected block header, with isolated Demo and known mainnet vectors.
+
+### 10b. Chain expansion, equities and advanced analytics — partial
+
+- [ ] Add bulk historical chain datasets, additional chains, wallet aggregation and independent chain validation.
 - [ ] Implement the planned public-official portfolio/disclosure archive.
 - [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
 - [x] Add bounded fixed-order Granger tests with training-only classical inference, request-family adjustment, residual qualifications, independent later-target errors and exact-source UI/agent evidence.

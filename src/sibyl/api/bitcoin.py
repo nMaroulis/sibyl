@@ -125,6 +125,23 @@ def block(body: BitcoinBlock, s: S, response: Response):
     )
 
 
+class BitcoinInclusion(Request):
+    """Bind the proof request to the block shown in the transaction observation."""
+
+    transaction_id: str = Field(pattern=r"^[a-fA-F0-9]{64}$")
+    block_hash: str = Field(pattern=r"^[a-fA-F0-9]{64}$")
+    demo: bool = Field(default=False, strict=True)
+
+
+@router.post("/inclusion-proof")
+def inclusion_proof(body: BitcoinInclusion, s: S, response: Response):
+    """Check one Merkle branch locally against the selected header."""
+    response.headers["Cache-Control"] = "no-store"
+    return read(
+        s.research.bitcoin.verify_inclusion, body.transaction_id, body.block_hash, simulated=body.demo
+    )
+
+
 class BitcoinOutputSpends(Request):
     """Inspect spending observations for one exact transaction output page."""
 

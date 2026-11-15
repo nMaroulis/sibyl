@@ -57,7 +57,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Durable Bitcoin output watches with spend and inclusion change evidence, private inbox/export, bounded retry and restore quarantine.
 - [x] Optional same-sample Theil–Sen versus OLS return comparison with scatter and native Analyst evidence.
 - [x] Historical Bitcoin block lookup with hash-pinned transaction pages, indexer chain status, transaction drill-down and native Explorer evidence.
-- [ ] Additional chains, bulk historical datasets, local chain verification, disclosure archives and interpretable advanced analytics.
+- [x] Complete local Bitcoin Explorer scope with transaction-inclusion verification against the selected block header.
+- [ ] Additional chains, bulk historical datasets, independent chain validation, disclosure archives and interpretable advanced analytics.
 
 ## 6. Operations and distribution
 

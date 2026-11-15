@@ -14,6 +14,7 @@ import httpx
 
 from sibyl.blockchain import demo, normalize
 from sibyl.blockchain.identifiers import address, txid
+from sibyl.blockchain.merkle import inclusion
 from sibyl.blockchain.spends import output_spend
 
 BASE_URL = "https://mempool.space/api"
@@ -57,12 +58,14 @@ class BitcoinExplorer:
             "demo": {
                 "txid": demo.TXID,
                 "block_height": demo.BLOCK_HEIGHT,
+                "block_hash": demo.BLOCK_HASH,
                 "address": demo.ADDRESS,
                 "confirmed_spend_txid": f"{1:064x}",
                 "pending_spend_txid": f"{3:064x}",
             },
             "output_spends": True,
             "block_lookup": True,
+            "inclusion_proofs": True,
             "note": "Public lookups send the entered transaction ID or address to mempool.space. Address activity does not identify its owner or represent a complete wallet.",
         }
 
@@ -88,7 +91,11 @@ class BitcoinExplorer:
                         )
                     chunks.append(chunk)
                 body = b"".join(chunks)
-                if path == "/blocks/tip/height" or path.startswith("/block-height/"):
+                if (
+                    path == "/blocks/tip/height"
+                    or path.startswith("/block-height/")
+                    or (path.startswith("/block/") and path.endswith("/header"))
+                ):
                     return body.decode("ascii").strip()
                 return json.loads(body)
         except (httpx.HTTPError, UnicodeError, json.JSONDecodeError):
@@ -178,6 +185,32 @@ class BitcoinExplorer:
             "items": items,
             "url": None if simulated else f"https://mempool.space/block/{identity}",
             "note": "Block membership and best-chain status are indexer observations taken separately. Chain status can change.",
+        }
+
+    def verify_inclusion(self, transaction_id, block_hash, *, simulated=False):
+        """Compare the transaction branch and block header with the selected transaction and block."""
+        transaction_id, block_hash = txid(transaction_id), txid(block_hash)
+        with self._session(simulated) as client:
+            path = f"/block/{block_hash}"
+            block = normalize.block(self._read(client, path, simulated))
+            if block["id"] != block_hash:
+                raise BitcoinUnavailable("The indexer returned a different Bitcoin block.")
+            proof = self._read(client, f"/tx/{transaction_id}/merkle-proof", simulated)
+            proof_height = normalize.integer(proof["block_height"], MAX_HEIGHT)
+            if proof_height != block["height"]:
+                raise BitcoinUnavailable(
+                    "The proof points to a different height. Refresh the transaction.", 409
+                )
+            header = self._read(client, path + "/header", simulated)
+            result = inclusion(transaction_id, block_hash, block["tx_count"], header, proof)
+        return {
+            "source": "demo" if simulated else "mempool.space",
+            "observed_at": now(),
+            "transaction_id": transaction_id,
+            "block_hash": block_hash,
+            "block_height": proof_height,
+            "transaction_count": block["tx_count"],
+            **result,
         }
 
     def _block_status(self, client, path, simulated, height):

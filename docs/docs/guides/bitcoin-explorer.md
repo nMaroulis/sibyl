@@ -28,6 +28,12 @@ A transaction's total outputs can include change and self-transfers. It is not t
 
 The inclusion block is the first confirmation. Where the provider supplies a usable tip, depth is `tip height − inclusion height + 1`. If the tip is unavailable or behind the observed inclusion, the count stays unknown. These reads are separate observations and do not prove finality or independently verify the chain. Refresh to obtain another observation; changes and reorganizations remain possible.
 
+## Verify transaction inclusion
+
+Open a confirmed transaction and choose **Verify inclusion**. Sibyl recalculates the Merkle root from the transaction ID and the returned branch, then checks that the header hashes to the selected block ID. Expand the result to see the hash and root. For an offline example, open **Demo block**, select a transaction and run the same check.
+
+A match links that transaction ID to the selected header. Best-chain status remains a separate observation from mempool.space. Full chain validation and transaction spendability are outside this check.
+
 ## Inspect an address
 
 Address reports separate **confirmed balance**, **pending change**, and the resulting projected balance. A negative pending change is expected when unconfirmed transactions spend the address's funds. Inconsistent projected balances stay unavailable. Expand **Address totals** for cumulative confirmed received/spent output values.
@@ -67,6 +73,6 @@ The small **Demo transaction** and **Demo address** links use synthetic backend 
 
 **Ask Explorer** includes the selected reference and its Demo/mainnet boundary. Native ProtoLink tools read the same normalized observations; Sibyl can consult Explorer too. Asking the agent can fetch a newer observation. Agent questions and tool evidence follow the application's existing local conversation/report persistence. Agents cannot broadcast transactions or infer address owners.
 
-Additional chains, wallet aggregation, local chain verification and complete historical chain datasets remain in the [planning checklist](../developers/backend-roadmap.md).
+Additional chains, wallet aggregation, independent chain validation and complete historical chain datasets remain in the [planning checklist](../developers/backend-roadmap.md).
 
 Source contracts: [mempool.space API](https://mempool.space/docs/api/rest), [Esplora API](https://github.com/Blockstream/esplora/blob/master/API.md), and Bitcoin's [Bech32](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki)/[Bech32m](https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki) address specifications.

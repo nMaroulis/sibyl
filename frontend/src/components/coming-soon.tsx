@@ -174,8 +174,8 @@ export function Roadmap() {
                       <h2>{area.name}</h2>
                       <Badge
                         tone={
-                          area.status === 'deferred'
-                            ? 'neutral'
+                          area.status === 'complete'
+                            ? 'green'
                             : area.priority === 'next'
                               ? 'purple'
                               : 'neutral'
@@ -187,17 +187,19 @@ export function Roadmap() {
                     <p>
                       <strong>Working today</strong> {area.working}
                     </p>
-                    <details>
-                      <summary>
-                        {area.pending.length} pending workstreams{' '}
-                        {area.priority === 'next' && <span>· Foundations first</span>}
-                      </summary>
-                      <ul>
-                        {area.pending.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </details>
+                    {area.pending.length > 0 && (
+                      <details>
+                        <summary>
+                          {area.pending.length} pending workstreams{' '}
+                          {area.priority === 'next' && <span>· Foundations first</span>}
+                        </summary>
+                        <ul>
+                          {area.pending.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                     {area.note && <p className="footnote">{area.note}</p>}
                   </article>
                 ))}

@@ -139,14 +139,23 @@ AREAS = [
     },
     {
         "id": "explorer",
-        "name": "Explorer, equities & analytics",
+        "name": "Bitcoin Explorer",
+        "status": "complete",
+        "priority": "delivered",
+        "working": "Bitcoin mainnet block, transaction and address lookup; hash-pinned block and address activity pages; fee and output-spend evidence; durable spend watches with local inbox notices; local transaction inclusion checks against exact block headers; attributable exports, isolated Demo and native Explorer guidance.",
+        "pending": [],
+        "note": "Complete for the v2.4 local Bitcoin scope. Chain selection is indexer-reported. Additional networks, bulk datasets, wallet aggregation and independent chain validation are tracked under Chain expansion, equities & analytics.",
+    },
+    {
+        "id": "research-expansion",
+        "name": "Chain expansion, equities & analytics",
         "status": "partial",
         "priority": "later",
-        "working": "Bitcoin mainnet transaction/address inspection with checksum validation, exact satoshi fees, observed confirmations, paged inputs/outputs and confirmed activity, bounded pending observations, explicit paged output-spend checks with spending-transaction links, JSON exports, independent Demo and native Explorer tools; persistent local watches for sampled Bitcoin output spend and inclusion changes; recent blocks and historical height/hash lookup with pinned transaction pages, optional equity research and Pearson/Spearman/distance dependence with descriptive same-interval return regression and an optional same-window Theil–Sen comparison. Fixed-order Granger research adds training-only F/Bonferroni evidence, residual qualifications and independent later-target comparisons without causal/profit claims.",
+        "working": "Optional equity quote/history and descriptive statistics. Markets includes Pearson, Spearman and distance dependence, OLS and an optional same-window Theil–Sen comparison, plus fixed-order Granger research with separate training and holdout evidence.",
         "pending": [
-            "Bulk historical chain datasets, additional chains, wallet aggregation and local chain verification.",
+            "Additional chains, bulk historical chain datasets, wallet aggregation and independent chain validation.",
             "Public-official disclosure archives and advanced portfolio analytics.",
-            "MIC, SHAP, robust/nonlinear causal inference and broader real-data evaluation. Fixed-order Granger training/holdout evidence is implemented with classical inference limits.",
+            "MIC, SHAP, robust/nonlinear causal inference and broader real-data evaluation.",
         ],
     },
     {
@@ -167,7 +176,7 @@ AREAS = [
 def implementation_status() -> dict:
     """Return a human-audited inventory without provider reads or fake completion percentages."""
     return {
-        "reviewed_on": "2026-11-10",
+        "reviewed_on": "2026-11-15",
         "scope": "Local single-user workspace",
         "areas": AREAS,
         "current_focus": "v2.4.0 is in development. Delivered foundations include cross-pair FIFO and split/merged transfer groups, fill revisions, native private order signals with REST wakeups and reviewed read quota evidence, shared strategy exposure/rolling-loss controls and reviewed position ownership/handoff, Optuna/plugin research jobs and multi-asset historical portfolio studies, native durable research approvals, Telegram attachments, six private text clients, six-channel alert/briefing delivery with acceptance-time consent, forecast drift/recalibration and robust Huber/native ARIMA fits, consented hosted research embeddings and reviewed top-one semantic cutoffs, retained worker incidents, native user-service CLI/status and credential rotation. Remaining work is listed by area below and in the release checklist: wider funding/venue coverage, advanced orders, ownership correction/return coverage, approved multi-asset execution and separate ML/RL research, broader semantic/model evaluation, additional media, research/chain integrations, tracing/service distribution and live external acceptance. Multi-user hosting and cited web research remain deferred.",
