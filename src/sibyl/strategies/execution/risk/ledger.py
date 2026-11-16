@@ -31,7 +31,7 @@ def positions(db, trading, environment):
         accounting = project(job, trading, db=db)
         if accounting["accounting_incomplete"] or accounting["unvalued_fees"]:
             raise ExecutionGuard(
-                "Strategy fills have missing costs or unvalued fees. Reconcile them in Trade."
+                "Strategy fills have missing costs or unvalued fees. Reconcile fills and review fees in the monitor."
             )
         rows = db.execute(
             "SELECT o.payload,COALESCE(SUM(json_extract(f.payload,'$.quantity')),0) AS imported "
@@ -88,6 +88,7 @@ def positions(db, trading, environment):
                 "status": job["status"],
                 "capital": job["parameters"]["capital"] + accounting["ownership_net_value"],
                 "cash": accounting["cash"],
+                "foreign_fees_quote": accounting["foreign_fees_quote"],
                 "quantity": accounting["quantity"],
                 "retained": job["status"] not in {"stopped", "completed"}
                 or accounting["quantity"] > 1e-12
@@ -123,7 +124,8 @@ def totals(rows, rates, candidate=None):
                 "allocated": max(0, row["capital"]) * quote_rate if row["retained"] else 0,
                 "position": position,
                 "pending_buys": pending,
-                "pnl": (row["cash"] - row["capital"]) * quote_rate + position,
+                "pnl": (row["cash"] - row.get("foreign_fees_quote", 0) - row["capital"]) * quote_rate
+                + position,
             }
         )
     values = {

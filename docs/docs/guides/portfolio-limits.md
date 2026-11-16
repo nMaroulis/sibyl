@@ -21,7 +21,7 @@ The panel shows capital, exposure and daily loss against their caps, with the so
 
 An open partially filled buy contributes its imported owned units plus its unfilled capacity. Remaining buy capacity uses the higher of limit-price notional and current reference value. Fully reconciled canceled/closed orders release their unfilled capacity. Stopped holdings, including dust, remain counted. New strategy allocations are not profits, and releasing a terminal run's unused allocation does not erase its period P&L.
 
-The first complete assessment establishes the initial daily baseline. Later UTC days carry the last observed P&L into the next period, so a price gap while the backend is down is not silently rebased away. This is an **observed UTC daily P&L change**, not an exact midnight valuation, cash-flow-adjusted investment return or whole-account exchange P&L. Late imported fills and fee corrections affect the period when they become observable. Foreign-quote P&L is translated at current reference rates, so changes in those rates can affect observed P&L.
+The first complete assessment establishes the initial daily baseline. Later UTC days carry the last observed P&L into the next period, so a price gap while the backend is down is not silently rebased away. This is an **observed UTC daily P&L change**, not an exact midnight valuation, cash-flow-adjusted investment return or whole-account exchange P&L. Late imported fills and fee corrections affect the period when they become observable. Reviewed third-currency fees and rebates enter shared P&L after approval, translated from the run’s quote asset at the assessment’s reference rate. Foreign-quote P&L is translated at current reference rates, so changes in those rates can affect observed P&L.
 
 ## A daily-loss lock
 
@@ -33,7 +33,7 @@ This requests **no cancellation or liquidation**. Already admitted orders can fi
 
 ## Incomplete evidence
 
-Missing fees, third-currency fees, uncertain submissions, mismatched native execution totals or incomplete terminal fill pages prevent a complete assessment. Missing, undated, stale or future-dated reference quotes also block automatic orders. A failed assessment preserves the last complete evidence/baseline and pauses affected runs; a later successful assessment does not resume them.
+Missing fees, third-currency fees awaiting [price approval](strategy-execution.md#review-fees-charged-in-another-asset), uncertain submissions, mismatched native execution totals or incomplete terminal fill pages prevent a complete assessment. Missing, undated, stale or future-dated reference quotes also block automatic orders. A failed assessment preserves the last complete evidence/baseline and pauses affected runs; a later successful assessment does not resume them.
 
 Reference assessments expire after 60 seconds, and the original conversion quotes must remain within their five-minute freshness window. The running strategy worker normally checks every 30 seconds; provider limits, slow requests and backend downtime can delay detection. The final native submission boundary rechecks freshness and rebuilds ownership in the same local database transaction that admits the order. Refreshing the browser is not itself an exchange check.
 

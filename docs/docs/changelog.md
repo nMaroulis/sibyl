@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Exchange strategies can approve historical prices for fees and rebates charged in another asset. The monitor shows the exact fill and candle evidence, retains receipts in the decision journal, and applies approved prices to budget and loss controls. Changed native fee facts pause further execution pending review.
+
 - Exchange strategy monitors now show flow-adjusted lifetime gains and returns with dated ownership flows, exact venue marks and historical third-currency fee evidence. Reconciled flat terminal runs can be archived and restored while their journals and reconciliation stay available. Position ownership labels fills matched to a single recorded Sibyl manual order and links the source runs behind invalidated handoff receipts.
 
 - Confirmed Bitcoin transactions offer **Verify inclusion**. Sibyl checks the header hash and recalculates the Merkle root locally. The completed Bitcoin Explorer scope and future chain research now appear separately on the roadmap.

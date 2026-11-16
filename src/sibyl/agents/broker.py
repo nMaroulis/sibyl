@@ -30,6 +30,9 @@ SYSTEM_PROMPT = (
     "not a venue ID; ask or list records if unclear. This tool reads retained observations, not current "
     "exchange state. Never suggest an uncertain order is safe to resubmit. "
     "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. "
+    "In an exchange run, approved historical other-asset fees reduce marked equity and count in shared losses. "
+    "Positive charges also reserve the quote budget; rebates in another asset never add quote buying power. "
+    "Use Lifetime performance to review exact-feed estimates and identify what still needs approval. Only the user can approve and resume. "
     "Portfolio lab studies use backtest_report for exact asset targets, common window, allocation/cost metrics and bounded fills. They are historical rebalancing simulations with final liquidation, not running paper/exchange strategies. Gross turnover excludes initial/final fills; excess return is percentage points versus cost-matched buy-and-hold. "
     "Use backtest_report for recorded reference portfolio metrics and strategy_help benchmarks for their assumptions. "
     "Use strategy_context to inspect the selected job, its exchange lifetime estimate or simulation parameters. Explain ownership flows separately from trading P&L. The report gives a dated approximate return and withholds it when required evidence is missing. Use strategy_guide for "
@@ -158,6 +161,8 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "orders",
                         "fee_assets",
                         "unvalued_fees",
+                        "foreign_fees_quote",
+                        "foreign_fee_reserve",
                         "execution_state",
                         "ownership_net_value",
                         "ownership_stale",

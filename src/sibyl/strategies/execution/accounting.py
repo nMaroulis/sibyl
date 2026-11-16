@@ -1,11 +1,13 @@
 """Rebuild strategy ownership from linked native fills, including later corrections."""
 
 import json
+import math
 from collections import defaultdict
 from contextlib import nullcontext
 
 from sibyl.services.trading.reconciliation import summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
+from sibyl.strategies.execution.fees import foreign_fees
 from sibyl.strategies.execution.ownership.ledger import replay
 
 
@@ -13,8 +15,8 @@ def project(job, trading, *, db=None):
     """Attribute only this strategy's orders; account deposits and unrelated holdings are excluded.
 
     Recalculation prevents duplicate fills and incorporates late fee corrections.
-    Base/quote fees affect owned units/cash. Other fee currencies remain explicit
-    and block new orders until reviewed; no invented conversion enters P&L.
+    Base/quote fees affect units and cash. Reviewed other-asset fees affect
+    marked equity and risk while their native debits remain separate.
     """
     base, quote = job["parameters"]["symbol"].split("/")
     with trading.store.db() if db is None else nullcontext(db) as connection:
@@ -36,6 +38,8 @@ def project(job, trading, *, db=None):
             "WHERE json_extract(o.payload,'$.strategy_job_id')=? ORDER BY f.timestamp_ms,o.rowid,f.id LIMIT 10001",
             (job["id"],),
         ).fetchall()
+        fills = [json.loads(row[0]) for row in rows]
+        fee_entries = foreign_fees(db, job, fills) if len(rows) <= 10000 else []
         ownership, ownership_stale = replay(db, job["id"])
         sync = {
             row[0]: json.loads(row[1])
@@ -48,7 +52,6 @@ def project(job, trading, *, db=None):
         raise ExecutionGuard(
             "This strategy reached its 10,000-fill accounting limit. Review and start a new run."
         )
-    fills = [json.loads(row[0]) for row in rows]
     grouped = defaultdict(list)
     for fill in fills:
         grouped[fill["order_id"]].append(fill)
@@ -133,8 +136,18 @@ def project(job, trading, *, db=None):
             for o in orders
         ):
             returns.append(pnl / allocated * 100)
+    approved, missing_costs = [], defaultdict(float)
+    for entry in fee_entries:
+        if entry["receipt"]:
+            approved.extend(row["quote_fee"] for row in entry["receipt"]["rows"])
+        else:
+            for asset, amount in entry["amounts"]:
+                missing_costs[asset] += amount
     return {
         "cash": cash,
+        "_foreign_fees": fee_entries,
+        "foreign_fees_quote": math.fsum(approved),
+        "foreign_fee_reserve": math.fsum(max(fee, 0.0) for fee in approved),
         "ownership_net_value": net_value,
         "ownership_stale": ownership_stale,
         "ownership_events": [
@@ -160,9 +173,7 @@ def project(job, trading, *, db=None):
         "realized_pnl": realized,
         "fees_paid": fees.get(quote, 0.0),
         "fee_assets": dict(fees),
-        "unvalued_fees": {
-            asset: value for asset, value in fees.items() if asset not in {base, quote} and value
-        },
+        "unvalued_fees": dict(missing_costs),
         "accounting_incomplete": unknown,
         "completed_returns": returns,
         "round_trips": len(returns),

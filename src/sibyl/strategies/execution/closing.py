@@ -61,6 +61,8 @@ class ClosePositions:
                 "entry_cost",
                 "realized_pnl",
                 "fee_assets",
+                "foreign_fees_quote",
+                "foreign_fee_reserve",
                 "accounting_incomplete",
                 "unvalued_fees",
                 "unresolved_orders",
@@ -95,7 +97,7 @@ class ClosePositions:
             )
         if job["accounting_incomplete"] or job["unvalued_fees"]:
             raise ExecutionGuard(
-                "Native costs and fees must be complete and valued in the pair's base/quote assets before closing."
+                "Reconcile native costs and fees, and approve any other-asset fee prices in the run monitor before closing."
             )
         if job["quantity"] <= 1e-12:
             raise ExecutionGuard("This strategy has no retained position to close.")

@@ -37,6 +37,7 @@ EVENT_COLUMNS = (
     "expires_at",
     "close_review_id",
     "control_revision",
+    "fee_review_id",
     "ownership_event_id",
     "ownership_action",
     "ownership_peer",

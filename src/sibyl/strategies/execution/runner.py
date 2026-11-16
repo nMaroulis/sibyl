@@ -14,6 +14,8 @@ from sibyl.strategies.execution.cancellation import StrategyCancellations
 from sibyl.strategies.execution.closing import ClosePositions
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, ExecutionGuard, ExecutionParameters
 from sibyl.strategies.execution.controls import StrategyControls
+from sibyl.strategies.execution.fee_review import StrategyFeeReviews
+from sibyl.strategies.execution.fees import marked_equity
 from sibyl.strategies.execution.ownership.service import PositionOwnership
 from sibyl.strategies.execution.performance import StrategyPerformance
 from sibyl.strategies.execution.risk import PortfolioLimits
@@ -50,6 +52,7 @@ class ExchangeStrategies:
         self.stop_reviews = StopCancellationReviews(self)
         self.closing = ClosePositions(self)
         self.ownership = PositionOwnership(self)
+        self.fee_reviews = StrategyFeeReviews(self)
         self.performance = StrategyPerformance(self)
         for job in self.jobs():
             if job["status"] == "running":
@@ -129,6 +132,7 @@ class ExchangeStrategies:
     def _project(self, job):
         result = project(job, self.trading)
         fills = result.pop("_native_fills")
+        result.pop("_foreign_fees")
         job.update(result)
         if job.get("ownership_event_count"):
             job["statistics_complete"] = False
@@ -154,7 +158,7 @@ class ExchangeStrategies:
                 )
                 self.journal.save(job, event)
         price = job.get("reference_price", 0)
-        job["equity"] = job["cash"] + job["quantity"] * price
+        job["equity"] = marked_equity(job, price)
         pending = self._intent(job)
         if (
             pending
@@ -204,7 +208,7 @@ class ExchangeStrategies:
                     )
                 if job["accounting_incomplete"] or job["unvalued_fees"]:
                     raise ExecutionGuard(
-                        "Native costs/fees are incomplete or use another currency. Review the strategy accounting before resuming."
+                        "Native costs or fees are incomplete. Reconcile fills and review other-asset fees before resuming."
                     )
                 if sum(run["status"] == "running" for run in self.host.jobs()) >= 10:
                     raise ExecutionGuard("Pause another strategy before resuming more than ten runs.")
@@ -214,7 +218,7 @@ class ExchangeStrategies:
                         self.ownership.require_backed(job, client.fetch_balance())
                 job.update(
                     reference_price=observed["price"],
-                    equity=job["cash"] + job["quantity"] * observed["price"],
+                    equity=marked_equity(job, observed["price"]),
                 )
                 self._risk(job, observed)
                 if self._order_count(job) >= job["risk"]["max_orders_per_day"]:
@@ -263,10 +267,12 @@ class ExchangeStrategies:
             raise ExecutionGuard(
                 "Allocated loss guard reached. New submissions are locked; manage retained orders and holdings in Trade."
             )
-        if job["cash"] < -1e-8 or job["accounting_incomplete"] or job["unvalued_fees"]:
+        if job["accounting_incomplete"] or job["unvalued_fees"]:
             raise ExecutionGuard(
-                "Costs/fees exceed the allocation or cannot be fully valued in base/quote units. Review the native executions in Trade."
+                "Native costs or fees are incomplete. Reconcile fills and review other-asset fees in the monitor."
             )
+        if job["cash"] - job["foreign_fee_reserve"] < -1e-8:
+            raise ExecutionGuard("Native costs and reviewed fees exceed the strategy allocation.")
 
     def _order_count(self, job):
         """Count durable prepared attempts, including rejected/abandoned intents, conservatively."""
@@ -347,7 +353,7 @@ class ExchangeStrategies:
             self.account(job["connection_id"])
             job.update(
                 reference_price=observed["price"],
-                equity=job["cash"] + job["quantity"] * observed["price"],
+                equity=marked_equity(job, observed["price"]),
                 checked_at=now(),
                 observed_at=now(),
             )
@@ -462,11 +468,20 @@ class ExchangeStrategies:
                 with self.market.adapter(self.account(current["connection_id"])) as client:
                     submission_balance = client.fetch_balance()
 
-            def backing_guard(db, _intent):
+            def submission_guard(db, approved):
+                actual = project(current, self.trading, db=db)
+                keys = ("cash", "quantity", "entry_cost", "foreign_fees_quote", "foreign_fee_reserve")
+                if (
+                    actual["accounting_incomplete"]
+                    or actual["unvalued_fees"]
+                    or any(order["id"] != approved["id"] for order in actual["unresolved_orders"])
+                    or any(actual[key] != current[key] for key in keys)
+                ):
+                    raise ExecutionGuard("Native accounting changed before submission. Review the run.")
                 self.ownership.require_backed(current, submission_balance, db)
 
             result = self.trading.execute(
-                intent["id"], intent["confirmation"], strategy_job_id=identity, before_submit=backing_guard
+                intent["id"], intent["confirmation"], strategy_job_id=identity, before_submit=submission_guard
             )
             current.update(execution_state="waiting_order", error=None)
             self.journal.save(

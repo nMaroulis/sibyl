@@ -4,6 +4,7 @@ import { Badge, Empty, Loading, Panel, PanelTitle, useToast } from './ui';
 import { downloadFile } from '../lib/api';
 import { date, formatted } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
+import { RunFeeReceipt } from './strategies/run-fee-review';
 import type { StrategyEventPage } from '../lib/types';
 
 /** An event journal page stays fixed while browsing history; the latest page can poll. */
@@ -19,6 +20,7 @@ export function DecisionJournal({
   const [action, setAction] = useState('all');
   const [before, setBefore] = useState<number>();
   const [exporting, setExporting] = useState(false);
+  const [feeReceipt, setFeeReceipt] = useState<string>();
   const toast = useToast();
   const events = useResource<StrategyEventPage>(
     `/strategies/jobs/${encodeURIComponent(jobId)}/events?action=${action}&limit=50${before ? `&before=${before}` : ''}`,
@@ -63,6 +65,7 @@ export function DecisionJournal({
             <option value="ORDER_PLANNED">Exchange order plans</option>
             <option value="ORDER_SUBMITTED">Exchange order submissions</option>
             <option value="FILL_CORRECTION">Native fill corrections</option>
+            <option value="FEE_VALUATION">Approved fee prices</option>
             <option value="OWNERSHIP">Ownership reviews & handoffs</option>
             <option value="ARCHIVE">Run archives</option>
             <option value="RESTORE">Run restores</option>
@@ -160,7 +163,17 @@ export function DecisionJournal({
                       Cash {formatted(event.cash, 6)} · Position {formatted(event.position, 8)}
                     </small>
                   </td>
-                  <td>{event.reason}</td>
+                  <td>
+                    {event.reason}
+                    {event.fee_review_id && (
+                      <button
+                        className="text-button"
+                        onClick={() => setFeeReceipt(event.fee_review_id)}
+                      >
+                        View receipt
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -171,6 +184,13 @@ export function DecisionJournal({
           New decisions are recorded once per newly closed candle. Lifecycle events appear
           immediately.
         </Empty>
+      )}
+      {feeReceipt && (
+        <RunFeeReceipt
+          jobId={jobId}
+          receiptId={feeReceipt}
+          close={() => setFeeReceipt(undefined)}
+        />
       )}
       <div className="chart-footnote">
         <span>

@@ -3,15 +3,14 @@
 import json
 import math
 from datetime import UTC, datetime
-from decimal import Decimal
 from itertools import chain
 
-from sibyl.accounting.executions.prices import HistoricalPrices
 from sibyl.market_data.archive import milliseconds
 from sibyl.services.portfolio.returns.calculation import dietz
 from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ExecutionGuard
+from sibyl.strategies.execution.fees import price_unreviewed
 from sibyl.strategies.execution.ownership.ledger import events
 from sibyl.strategies.execution.venue import order_book
 
@@ -55,43 +54,27 @@ def archive_blocker(job, state, problem):
     return None
 
 
-def third_currency_fees(db, job, fills):
-    """Value each signed native fee at its fill time, preserving the actual historical route."""
-    base, quote = job["parameters"]["symbol"].split("/")
-    fees = [
-        (fill["id"], milliseconds(fill["timestamp"]), fee["currency"], fee["cost"])
-        for fill in fills
-        for fee in fill["fees"]
-        if fee["currency"] not in {None, base, quote} and fee["cost"]
+def third_currency_fees(db, job, entries):
+    """Use approved marks where present and show estimates for remaining fills."""
+    pending = [entry for entry in entries if not entry["receipt"]]
+    estimates = {row["fill_id"]: row for row in price_unreviewed(db, job, pending)}
+    evidence = [
+        {
+            **row,
+            "fill_id": entry["fill_id"],
+            "timestamp_ms": entry["timestamp_ms"],
+            "approved": bool(entry["receipt"]),
+        }
+        for entry in entries
+        for row in (entry["receipt"] or estimates[entry["fill_id"]])["rows"]
+        if row["quote_fee"] is not None
     ]
-    if not fees:
-        return 0.0, [], 0
-    prices = HistoricalPrices(
-        db, job["source"], job["environment"], min(x[1] for x in fees), max(x[1] for x in fees)
-    )
-    total, evidence, missing = Decimal(0), [], 0
-    for identity, timestamp, asset, quantity in fees:
-        match = prices.rate(asset, quote, timestamp)
-        if not match:
-            missing += 1
-            continue
-        rate, legs = match
-        value = Decimal(str(quantity)) * rate
-        if not math.isfinite(float(value)):
-            missing += 1
-            continue
-        total += value
-        evidence.append(
-            {
-                "fill_id": identity,
-                "timestamp_ms": timestamp,
-                "asset": asset,
-                "native_fee": quantity,
-                "quote_fee": float(value),
-                "legs": legs,
-            }
-        )
-    return float(total), evidence[-10:], missing
+    missing = sum(len(entry["amounts"]) for entry in entries) - len(evidence)
+    try:
+        total = math.fsum(entry["quote_fee"] for entry in evidence)
+    except OverflowError:
+        total = math.inf
+    return total, evidence[-10:], missing
 
 
 class StrategyPerformance:
@@ -149,7 +132,7 @@ class StrategyPerformance:
             fee_total = 0.0
             if not problem:
                 try:
-                    fee_total, evidence, missing = third_currency_fees(db, job, state["_native_fills"])
+                    fee_total, evidence, missing = third_currency_fees(db, job, state["_foreign_fees"])
                 except ValueError as exc:
                     problem = str(exc)
                 else:
@@ -159,6 +142,7 @@ class StrategyPerformance:
                             "environment": job["environment"],
                             "quote_total": fee_total if not missing and math.isfinite(fee_total) else None,
                             "missing_count": missing,
+                            "pending_count": sum(not entry["receipt"] for entry in state["_foreign_fees"]),
                             "recent": evidence,
                         }
                     if missing or not math.isfinite(fee_total):

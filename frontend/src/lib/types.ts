@@ -325,6 +325,8 @@ export type Job = Source & {
   risk_locked?: boolean;
   fee_assets?: Record<string, number>;
   unvalued_fees?: Record<string, number>;
+  foreign_fees_quote?: number;
+  foreign_fee_reserve?: number;
   native_fill_count?: number;
   risk?: Record<string, number | null>;
   stop_cancellation?: { review_id: string; requested_at: string };
@@ -725,6 +727,7 @@ export type ModuleId =
 
 export type StrategyEvent = {
   id: number;
+  fee_review_id?: string;
   timestamp: string;
   kind: string;
   action: string;

@@ -1,6 +1,7 @@
 """Read-only strategy reviews and explicit account-scoped execution approvals."""
 
 from fastapi import APIRouter, Response
+from pydantic import Field
 
 from sibyl.api.routes import S
 from sibyl.models import Request
@@ -167,3 +168,30 @@ def archive_strategy(job_id: str, body: ArchiveStrategyRun, s: S, response: Resp
     """Archive or restore an exchange run without changing its lifecycle."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.performance.archive(job_id, body.archived)
+
+
+class FeeReviewApproval(Request):
+    """Apply the exact locally reviewed batch of historical fee prices."""
+
+    review_id: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+@router.get("/jobs/{job_id}/fee-review")
+def fee_review(job_id: str, s: S, response: Response):
+    """Read fee pricing candidates from local candles for this exact run."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.fee_reviews.preview(job_id)
+
+
+@router.post("/jobs/{job_id}/fee-review")
+def apply_fee_review(job_id: str, body: FeeReviewApproval, s: S, response: Response):
+    """Approve the reviewed fee prices without placing an order or resuming the run."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.fee_reviews.approve(job_id, body.review_id)
+
+
+@router.get("/jobs/{job_id}/fee-review/{review_id}")
+def fee_review_receipt(job_id: str, review_id: str, s: S, response: Response):
+    """Read the approved fee evidence as recorded at review time."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.fee_reviews.receipt(job_id, review_id)

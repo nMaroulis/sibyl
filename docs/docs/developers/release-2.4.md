@@ -27,7 +27,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Account/base-asset strategy exposure caps, sampled rolling-loss windows with persistent latches, and optional stop-distance entry-risk sizing.
 - [x] On-demand base-asset balance comparisons, native dust facts, reviewed manual adoption/release and atomic exact-account/pair new-run handoff with original basis, flow-neutral shared P&L and inherited correction guards.
 - [x] Flow-adjusted lifetime return estimates, exact-feed historical fee evidence, archive/restore for reconciled flat runs and exact-native-ID provenance for recorded Sibyl manual orders.
-- [ ] Reviewed repair/reversal across executed ownership descendants, provenance for externally placed trades, third-currency fees in run admission and risk, and definitive venue settlement/bust handling.
+- [x] Reviewed and version-bound third-currency fees in exchange strategy budget admission, equity and shared losses. Exact historical rate evidence survives restart and native fee revisions.
+- [ ] Reviewed repair/reversal across executed ownership descendants, provenance for externally placed trades and definitive venue settlement/bust handling.
 - [ ] Authenticated partial-fill/cancel races, late corrections and outage recovery across additional venues. See [the exchange acceptance record](exchange-acceptance.md#automated-strategy-acceptance).
 - [x] Native optional Optuna TPE/random numeric distributions, causal trusted-plugin validation and one-off pinned research jobs, with bounded trial/test evidence and exact version-pinned replay.
 - [x] Multi-asset historical target-allocation studies with exact common inputs, post-cost sizing, interval/drift rebalancing, cost-matched benchmarks, interactive/paged evidence and version/fingerprint-checked offline reruns.

@@ -3,6 +3,7 @@ import { Archive, ArchiveRestore, RefreshCw } from 'lucide-react';
 import { number, post, refresh } from '../../lib/api';
 import { useResource } from '../../lib/hooks';
 import { Badge, ErrorState, Loading, Panel, PanelTitle, useToast } from '../ui';
+import { RunFeeReview } from './run-fee-review';
 import type { Job } from '../../lib/types';
 
 type Performance = {
@@ -17,10 +18,12 @@ type Performance = {
   fee_valuation: {
     quote_total: number | null;
     missing_count: number;
+    pending_count: number;
     recent: {
       fill_id: string;
       asset: string;
       native_fee: number;
+      approved: boolean;
       quote_fee: number;
       legs: { symbol: string }[];
     }[];
@@ -64,6 +67,8 @@ export function RunPerformance({ job, interval }: { job: Job; interval: number }
     }
   };
   const metrics = report?.metrics;
+  const pendingFees =
+    !!report?.fee_valuation?.pending_count || !!Object.keys(job.unvalued_fees ?? {}).length;
   return (
     <Panel className="full-panel">
       <PanelTitle
@@ -105,7 +110,9 @@ export function RunPerformance({ job, interval }: { job: Job; interval: number }
                 {report.fee_valuation.quote_total == null
                   ? `${report.fee_valuation.missing_count} fees lack a usable value.`
                   : `Net estimated fees ${number(report.fee_valuation.quote_total, 8)} ${report.quote}.`}{' '}
-                Reported separately from execution accounting.
+                {report.fee_valuation.pending_count > 0
+                  ? 'Unapproved estimates appear here for comparison.'
+                  : 'Included in strategy equity and risk.'}
               </p>
               <ul>
                 {report.fee_valuation.recent.map((fee, index) => (
@@ -114,6 +121,8 @@ export function RunPerformance({ job, interval }: { job: Job; interval: number }
                     {report.quote}
                     {' · '}
                     {fee.legs.map((leg) => leg.symbol).join(' → ')}
+                    {' · '}
+                    {fee.approved ? 'Approved' : 'Estimate'}
                   </li>
                 ))}
               </ul>
@@ -148,6 +157,7 @@ export function RunPerformance({ job, interval }: { job: Job; interval: number }
             </details>
           )}
           <div className="workspace-controls">
+            {pendingFees && <RunFeeReview path={path} />}
             {report.mark?.kind !== 'flat_cash' && (
               <button
                 className="button secondary tiny"

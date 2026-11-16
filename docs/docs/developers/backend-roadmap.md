@@ -13,7 +13,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
-| Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
+| Automated strategy execution   | partial       | Venue and failure-case acceptance, coordinated liquidation, ownership repair and venue settlement.                      |
 | Strategy research              | partial       | Approved multi-asset execution, separate ML/RL pipelines and optional Freqtrade.                                              |
 | Sibyl & messaging              | partial       | Broader grounding evaluation, additional media and live private-channel/processor acceptance.                       |
 | ProtoLink workflows            | partial       | Broader semantic/adversarial evaluation and additional scoped action contracts beyond approved local notes.                                   |
@@ -129,7 +129,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Estimate cash-flow-adjusted lifetime performance from linked fills, local ownership receipts and exact venue marks. Value individual third-currency fees and rebates from eligible closed candles on the run's exact feed for this report.
 - [x] Identify imported fills linked to one recorded Sibyl manual order by exact native identity and account scope. Retain unknown origin for all other unattributed fills.
 - [x] Trace invalidated ownership receipts to the source runs that carry changed order evidence.
-- [ ] Add reviewed correction/reversal across executed ownership descendants, verified provenance beyond recorded Sibyl manual orders, execution/risk valuation of third-currency fees and definitive settlement/bust handling.
+- [x] Approve exact-feed historical prices for signed third-currency fees. Immutable per-fill receipts, native-write rechecks and preserved corrections feed marked equity, quote-budget admission and per-run/shared loss controls.
+- [ ] Add reviewed correction/reversal across executed ownership descendants, verified provenance beyond recorded Sibyl manual orders and definitive settlement/bust handling.
 
 ### 5. Market-data infrastructure — partial
 

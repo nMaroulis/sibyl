@@ -12,6 +12,7 @@ from sibyl.exchanges.data import TIMEFRAMES
 from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 from sibyl.exchanges.providers import CLIENTS
 from sibyl.strategies.execution.contracts import ExecutionGuard
+from sibyl.strategies.execution.fees import marked_equity
 
 
 def supported(exchange: str) -> bool:
@@ -114,7 +115,7 @@ def order_size(client, job, observed, side):
         stop = job["parameters"].get("stop_loss_pct")
         if not stop or not 0 < stop < 100:
             raise ExecutionGuard("Approved risk sizing requires a valid algorithm stop distance.")
-        equity = job["cash"] + job["quantity"] * observed["price"]
+        equity = marked_equity(job, observed["price"])
         # Gross entry notional at the modeled stop; fees widen modeled loss, never size upward.
         entry_cap = min(
             entry_cap, equity * risk["risk_per_entry_pct"] / (stop + 2 * risk["fee_reserve_bps"] / 100)
@@ -122,7 +123,7 @@ def order_size(client, job, observed, side):
         if not math.isfinite(entry_cap) or entry_cap <= 0:
             raise ExecutionGuard("Risk sizing produced no positive entry budget.")
     quantity = (
-        min(job["cash"], entry_cap) / (price * reserve)
+        min(job["cash"] - job.get("foreign_fee_reserve", 0), entry_cap) / (price * reserve)
         if side == "buy"
         else min(job["quantity"] / reserve, risk["max_order_quote"] / price)
     )
