@@ -68,6 +68,12 @@ class StrategyJournal:
                 );
                 CREATE INDEX IF NOT EXISTS strategy_ownership_adjustment
                     ON strategy_ownership_adjustments(event_id,sequence);
+                CREATE TABLE IF NOT EXISTS strategy_ownership_sale_funding (
+                    sequence INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL,
+                    repair_id TEXT NOT NULL, payload TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS strategy_ownership_sale_funding_job
+                    ON strategy_ownership_sale_funding(job_id,sequence);
                 CREATE TABLE IF NOT EXISTS strategy_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     job_id TEXT NOT NULL, payload TEXT NOT NULL

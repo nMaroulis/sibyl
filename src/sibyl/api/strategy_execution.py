@@ -226,12 +226,27 @@ def liquidation_stop(job_id: str, plan_id: str, s: S, response: Response):
     return s.strategies.execution.liquidation.stop(job_id, plan_id)
 
 
-class OwnershipRepairApproval(StrategyApproval):
+class SaleFundingAssertion(Request):
+    """The user's asserted cost and origin for the units consumed by one sale."""
+
+    fill_id: str = Field(min_length=1, max_length=80)
+    cost_basis: float = Field(ge=0, le=1e12, strict=True)
+    note: str = Field(min_length=1, max_length=300)
+
+
+class OwnershipRepairOptions(Request):
+    """Select repair actions and supply cost assertions for shortfalls."""
+
+    allow_quantity_changes: bool = Field(default=False, strict=True)
+    repair_releases: bool = Field(default=False, strict=True)
+    review_sale_funding: bool = Field(default=False, strict=True)
+    sale_funding: list[SaleFundingAssertion] = Field(default_factory=list, max_length=50)
+
+
+class OwnershipRepairApproval(StrategyApproval, OwnershipRepairOptions):
     """Approve the exact replay shown in the ownership repair review."""
 
     review_id: str = Field(pattern=r"^[a-f0-9]{64}$")
-    allow_quantity_changes: bool = Field(default=False, strict=True)
-    repair_releases: bool = Field(default=False, strict=True)
 
 
 @router.get("/jobs/{job_id}/ownership/repair")
@@ -241,14 +256,23 @@ def preview_ownership_repair(
     response: Response,
     allow_quantity_changes: bool = False,
     repair_releases: bool = False,
+    review_sale_funding: bool = False,
 ):
-    """Preview balanced cost-basis corrections across the affected family."""
+    """Preview repairs and historical sale funding requirements."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.ownership_repairs.preview(
         job_id,
         allow_quantity_changes=allow_quantity_changes,
         repair_releases=repair_releases,
+        review_sale_funding=review_sale_funding,
     )
+
+
+@router.post("/jobs/{job_id}/ownership/repair-preview")
+def preview_ownership_with_funding(job_id: str, body: OwnershipRepairOptions, s: S, response: Response):
+    """Recalculate a preview with supplied cost evidence without saving assertions."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership_repairs.preview(job_id, **body.model_dump())
 
 
 @router.post("/jobs/{job_id}/ownership/repair")
@@ -259,8 +283,7 @@ def approve_ownership_repair(job_id: str, body: OwnershipRepairApproval, s: S, r
         job_id,
         body.review_id,
         body.confirmation,
-        allow_quantity_changes=body.allow_quantity_changes,
-        repair_releases=body.repair_releases,
+        **body.model_dump(exclude={"review_id", "confirmation"}),
     )
 
 

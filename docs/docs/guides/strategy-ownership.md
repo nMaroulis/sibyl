@@ -56,6 +56,12 @@ Later corrections to orders or fills preceding a receipt can invalidate it and d
 
 Repair supports up to 24 connected runs and 80 ownership receipts in one account and exact pair. A smaller or larger quantity can flow through multiple handoffs when it still supports later native sales. A supported correction can bring an unused handoff down to zero. When release repair is enabled, each release uses the lesser of available units at its historical checkpoint and its originally approved amount. A later correction can restore a reduced release up to that original amount. Basis and reference value are recalculated from the same checkpoint, and the original receipt remains in the journal. Asserted acquisitions retain their original quantities.
 
-Missing native evidence, a fill that crosses its original receipt checkpoint, or an uncovered sale keeps the run blocked. For an uncovered sale the preview shows the run, fill and deficit in base units.
+Missing native evidence or a fill that crosses its original receipt checkpoint keeps the run blocked.
 
-Repair changes local accounting. Resume and exit still require their separate controls, including current exchange balance checks and existing risk locks. Venue-confirmed settlement, trade busts, and reversals that require a manual resolution of already oversold units remain pending.
+### Fund an already executed sale
+
+For a fully reconciled sale with an ownership shortfall, **Review sale funding** shows the missing units, run, native order and fill. Use it when you can confirm that those units came from unmanaged holdings in the same exchange account. Enter the total acquisition cost for the missing units in the market’s quote asset and record their origin. Both are user assertions. If the source or cost remains unknown, leave the run blocked.
+
+**Review funded sales** previews the effect on basis and realized P&L. The contribution uses the sale’s reported execution price as its dated reference mark and is fully consumed by that fill. The journal keeps the original trade and each approved funding receipt. Changed fill evidence requires fresh approval, including retirement of a funding entry when restored units cover the sale.
+
+Repair changes local accounting. Resume and exit still require their separate controls, including current exchange balance checks and existing risk locks. Independent proof of unmanaged acquisition history, definitive venue settlement and trade bust handling remain pending.

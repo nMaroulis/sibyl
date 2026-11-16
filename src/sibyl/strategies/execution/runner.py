@@ -138,6 +138,9 @@ class ExchangeStrategies:
         fills = result.pop("_native_fills")
         result.pop("_foreign_fees")
         result.pop("_native_costs_incomplete")
+        result.pop("_sale_funding_version")
+        result.pop("_sale_funding")
+        result.pop("_previous_sale_funding")
         job.update(result)
         if job.get("ownership_event_count"):
             job["statistics_complete"] = False

@@ -32,7 +32,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Reviewed cost-basis repair across executed ownership descendants, with original receipt quantities, dated cash flows and restart-safe audit history.
 - [x] Replay corrected handoff quantities and paired reference cash flows through executed descendants when the corrected units still cover subsequent sales and releases.
 - [x] Review and repair underfunded local releases, including zero-unit outcomes and restoration up to their original approved amounts. Show the exact remaining shortfall for venue sales.
-- [ ] Resolve oversold positions after ownership reversals, verify externally placed trade provenance and handle definitive venue settlement/busts.
+- [x] Approve historical funding for reconciled sale shortfalls using asserted basis and origin, preserving native cash/fills, archived receipts and revision guards.
+- [ ] Independently verify funding and external-trade provenance. Handle definitive venue settlement and trade busts.
 - [ ] Authenticated partial-fill/cancel races, late corrections and outage recovery across additional venues. See [the exchange acceptance record](exchange-acceptance.md#automated-strategy-acceptance).
 - [x] Native optional Optuna TPE/random numeric distributions, causal trusted-plugin validation and one-off pinned research jobs, with bounded trial/test evidence and exact version-pinned replay.
 - [x] Multi-asset historical target-allocation studies with exact common inputs, post-cost sizing, interval/drift rebalancing, cost-matched benchmarks, interactive/paged evidence and version/fingerprint-checked offline reruns.

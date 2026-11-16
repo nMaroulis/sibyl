@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- A reconciled sale with insufficient recorded ownership can be repaired using an explicitly asserted historical contribution from unmanaged holdings. The contribution is consumed by its linked sale and uses the execution price as its reference mark. The decision journal preserves the asserted basis, source note and each later revision alongside the native fill.
+
 - Underfunded local releases can be repaired after a fill correction. Sibyl uses the units available at the release’s original checkpoint and caps any restoration at the amount originally approved. Repair receipts retain the original history, and unresolved venue sales show the exact shortfall.
 
 - Strategy ownership repairs now support corrected handoff quantities. The review recalculates both sides at the original reference price, replays already executed sales, and records revised units and cash-flow values beside the original receipts. Sales or releases that exceed corrected ownership keep execution blocked.

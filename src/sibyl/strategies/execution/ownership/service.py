@@ -138,6 +138,10 @@ class PositionOwnership:
                 "stale": job["ownership_stale"],
                 "changed_sources": ledger.changed_sources(db, identity) if job["ownership_stale"] else [],
                 "history": job["ownership_events"],
+                "funded_sales": [
+                    {key: row[key] for key in ("fill_id", "quantity", "cost_basis", "reference_value")}
+                    for row in list(job["_sale_funding"].values())[-50:]
+                ],
                 "event_count": job["ownership_event_count"],
                 "check": latest,
             }

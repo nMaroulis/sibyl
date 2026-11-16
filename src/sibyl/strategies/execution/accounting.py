@@ -9,10 +9,15 @@ from sibyl.services.trading.reconciliation import summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.fees import foreign_fees
 from sibyl.strategies.execution.ownership.ledger import replay
+from sibyl.strategies.execution.ownership.sale_funding import (
+    UNIT_TOLERANCE,
+    active_funding,
+    matches_funding,
+)
 
 
 def project(job, trading, *, db=None, repair=None):
-    """Attribute only this strategy's orders; account deposits and unrelated holdings are excluded.
+    """Rebuild this run from linked orders and explicit ownership receipts.
 
     Recalculation prevents duplicate fills and incorporates late fee corrections.
     Base/quote fees affect units and cash. Reviewed other-asset fees affect
@@ -41,6 +46,7 @@ def project(job, trading, *, db=None, repair=None):
         fills = [json.loads(row[0]) for row in rows]
         fee_entries = foreign_fees(db, job, fills) if len(rows) <= 10000 else []
         ownership, ownership_stale = (repair.events, False) if repair else replay(db, job["id"])
+        funding_version, previous_funding = active_funding(db, job["id"])
         sync = {
             row[0]: json.loads(row[1])
             for row in db.execute(
@@ -70,6 +76,7 @@ def project(job, trading, *, db=None, repair=None):
     fees, returns, exits, rendered = defaultdict(float), [], {}, []
     unknown = ownership_stale
     native_costs_incomplete = False
+    funded_sales = {}
     net_value, consumed, next_event = 0.0, set(), 0
 
     def attributions():
@@ -103,10 +110,27 @@ def project(job, trading, *, db=None, repair=None):
                 raise ExecutionGuard("Native base fees exceed acquired units. Review strategy accounting.")
         else:
             disposed = fill["quantity"] + by_currency[base]
-            tolerance = 1e-10 if repair else max(1e-10, quantity * 1e-8)
+            previous = previous_funding.get(fill["id"])
+            tolerance = UNIT_TOLERANCE if repair or previous else max(UNIT_TOLERANCE, quantity * 1e-8)
             if repair and disposed < 0:
                 raise ExecutionGuard("A native rebate exceeds the disposed quantity in the repair.")
-            if disposed > quantity + tolerance and not ownership_stale:
+            deficit = disposed - quantity
+            funding = None
+            if repair:
+                funding = repair.sale_funding.resolve(job, fill, deficit, previous)
+            elif previous and not ownership_stale:
+                if matches_funding(previous, fill, deficit):
+                    funding = previous
+                else:
+                    ownership_stale = unknown = True
+            if funding:
+                # These base units enter at the fill and are consumed immediately.
+                # Only the native sale proceeds affect cash.
+                quantity = disposed
+                basis += funding["cost_basis"]
+                net_value += funding["reference_value"]
+                funded_sales[fill["id"]] = funding
+            elif disposed > quantity + tolerance and not ownership_stale:
                 if repair:
                     raise ExecutionGuard(
                         f"Native executions exceed the strategy-owned position by {disposed - quantity:.8g} "
@@ -138,6 +162,12 @@ def project(job, trading, *, db=None, repair=None):
                 "event_recorded": True,
             }
         )
+    if previous_funding and previous_funding.keys() - {
+        fill["id"] for fill in fills if fill["side"] == "sell"
+    }:
+        if repair:
+            raise ExecutionGuard("A previously funded sale is missing from the native ledger.")
+        ownership_stale = unknown = True
     if next_event != len(ownership):
         unknown = True
         ownership_stale = True
@@ -157,6 +187,9 @@ def project(job, trading, *, db=None, repair=None):
     return {
         "cash": cash,
         "_foreign_fees": fee_entries,
+        "_sale_funding_version": funding_version,
+        "_sale_funding": funded_sales,
+        "_previous_sale_funding": previous_funding,
         "foreign_fees_quote": math.fsum(approved),
         "foreign_fee_reserve": math.fsum(max(fee, 0.0) for fee in approved),
         "ownership_net_value": net_value,
@@ -178,7 +211,7 @@ def project(job, trading, *, db=None, repair=None):
             }
             for event in ownership[-100:]
         ],
-        "ownership_event_count": len(ownership),
+        "ownership_event_count": len(ownership) + len(funded_sales),
         "quantity": quantity,
         "entry_cost": basis,
         "entry_price": basis / quantity if quantity else 0,

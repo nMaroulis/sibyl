@@ -11,6 +11,7 @@ from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.liquidation import active_plan
 from sibyl.strategies.execution.ownership import ledger
+from sibyl.strategies.execution.ownership.sale_funding import SaleFundingReview
 
 MAX_RUNS = 24
 MAX_EVENTS = 80
@@ -19,11 +20,12 @@ MAX_EVENTS = 80
 class AttributionReplay:
     """Revalue receipts at their original fill checkpoints in one in-memory replay."""
 
-    def __init__(self, events, transfers, *, allow_quantity_changes, repair_releases):
+    def __init__(self, events, transfers, *, allow_quantity_changes, repair_releases, sale_funding):
         self.events = events
         self.transfers = transfers
         self.allow_quantity_changes = allow_quantity_changes
         self.repair_releases = repair_releases
+        self.sale_funding = sale_funding
 
     @staticmethod
     def _apply_quantity(event, units):
@@ -180,8 +182,13 @@ class OwnershipRepairs:
             raise ExecutionGuard("An original handoff order is missing or changed scope.")
         return {**evidence, "digest": ledger.digest(native)}
 
-    def _preview(self, db, selected, *, allow_quantity_changes, repair_releases):
+    def _preview(
+        self, db, selected, *, allow_quantity_changes, repair_releases, review_sale_funding, sale_funding
+    ):
         transfers, rebound, adjustments, summaries, inputs = {}, {}, [], [], []
+        funding_review = SaleFundingReview(review_sale_funding, sale_funding)
+        funding_updates, funding_changes = {}, []
+        seen_fills = set()
         has_correction = False
         family = self._family(db, selected)
         members = {job["id"] for job, _ in family}
@@ -221,6 +228,7 @@ class OwnershipRepairs:
                     transfers,
                     allow_quantity_changes=allow_quantity_changes,
                     repair_releases=repair_releases,
+                    sale_funding=funding_review,
                 ),
             )
             if (
@@ -235,6 +243,24 @@ class OwnershipRepairs:
             if values["unvalued_fees"]:
                 raise ExecutionGuard(
                     f"Approve other-asset fee prices for run {identity[:8]} before repairing its basis."
+                )
+            fill_ids = {row["id"] for row in values["_native_fills"]}
+            if seen_fills & fill_ids:
+                raise ExecutionGuard("A native fill is linked to more than one run in this handoff family.")
+            seen_fills.update(fill_ids)
+            approved, proposed = values["_previous_sale_funding"], values["_sale_funding"]
+            if approved != proposed:
+                has_correction = True
+                funding_updates[identity] = proposed
+                funding_changes.extend(
+                    {**row, "status": "approved"}
+                    for fill_id, row in proposed.items()
+                    if approved.get(fill_id) != row
+                )
+                funding_changes.extend(
+                    {**row, "status": "retired"}
+                    for fill_id, row in approved.items()
+                    if fill_id not in proposed
                 )
             summaries.append(
                 {
@@ -252,6 +278,7 @@ class OwnershipRepairs:
                     "status": job["status"],
                     "capital": job["parameters"]["capital"],
                     "orders": ledger.pin(db, job),
+                    "funding_version": values["_sale_funding_version"],
                 }
             )
             adjustments.extend(
@@ -270,13 +297,30 @@ class OwnershipRepairs:
                 }
                 for event in receipts
             )
+        funding_review.check_assertions()
         if not has_correction:
             raise ExecutionGuard("This handoff family has no corrected source evidence to review.")
-        review_id = ledger.digest(
-            [selected["id"], allow_quantity_changes, repair_releases, inputs, adjustments, summaries]
+        pending = any(row["missing_basis"] for row in funding_review.required)
+        review_id = (
+            ledger.digest(
+                [
+                    selected["id"],
+                    allow_quantity_changes,
+                    repair_releases,
+                    review_sale_funding,
+                    inputs,
+                    adjustments,
+                    summaries,
+                    funding_updates,
+                ]
+            )
+            if not pending
+            else None
         )
         verb = (
-            "REPAIR RELEASES"
+            "CONFIRM SALE FUNDING"
+            if review_sale_funding
+            else "REPAIR RELEASES"
             if repair_releases
             else "REPAIR QUANTITIES"
             if allow_quantity_changes
@@ -286,23 +330,43 @@ class OwnershipRepairs:
             "id": review_id,
             "allow_quantity_changes": allow_quantity_changes,
             "repair_releases": repair_releases,
+            "review_sale_funding": review_sale_funding,
             "job_id": selected["id"],
-            "runs": summaries,
-            "adjustments": adjustments,
-            "confirmation": f"{verb} {selected['parameters']['symbol']} {review_id[:8]}",
+            "symbol": selected["parameters"]["symbol"],
+            "runs": [] if pending else summaries,
+            "adjustments": [] if pending else adjustments,
+            "funding_requirements": funding_review.required,
+            "funding_changes": [] if pending else funding_changes,
+            "funding_updates": funding_updates,
+            "confirmation": f"{verb} {selected['parameters']['symbol']} {review_id[:8]}"
+            if review_id
+            else None,
         }
 
     @staticmethod
     def _public(review):
-        return {
-            **review,
-            "adjustments": [
-                {key: value for key, value in item.items() if key != "pins"} for item in review["adjustments"]
-            ],
-        }
+        public = {key: value for key, value in review.items() if key != "funding_updates"}
+        for key, hidden_key in (
+            ("adjustments", "pins"),
+            ("funding_requirements", "proof"),
+            ("funding_changes", "proof"),
+        ):
+            public[key] = [
+                {field: value for field, value in row.items() if field != hidden_key}
+                for row in review.get(key, [])
+            ]
+        return public
 
-    def preview(self, identity, *, allow_quantity_changes=False, repair_releases=False):
-        """Return local proposed basis changes while leaving persisted ownership untouched."""
+    def preview(
+        self,
+        identity,
+        *,
+        allow_quantity_changes=False,
+        repair_releases=False,
+        review_sale_funding=False,
+        sale_funding=(),
+    ):
+        """Preview exact ledger changes and any sale funding facts still needed."""
         with self.store.db() as db:
             db.execute("BEGIN")
             return self._public(
@@ -311,6 +375,8 @@ class OwnershipRepairs:
                     self.runner.ownership._job(identity, db),
                     allow_quantity_changes=allow_quantity_changes,
                     repair_releases=repair_releases,
+                    review_sale_funding=review_sale_funding,
+                    sale_funding=sale_funding,
                 )
             )
 
@@ -326,7 +392,15 @@ class OwnershipRepairs:
             return self._public(review)
 
     def approve(
-        self, identity, review_id, confirmation, *, allow_quantity_changes=False, repair_releases=False
+        self,
+        identity,
+        review_id,
+        confirmation,
+        *,
+        allow_quantity_changes=False,
+        repair_releases=False,
+        review_sale_funding=False,
+        sale_funding=(),
     ):
         """Recompute the exact review and commit superseding values plus audit together."""
         with self.runner.lock, self.store.db() as db:
@@ -341,6 +415,7 @@ class OwnershipRepairs:
                     or confirmation != review["confirmation"]
                     or review.get("allow_quantity_changes", False) != allow_quantity_changes
                     or review.get("repair_releases", False) != repair_releases
+                    or review.get("review_sale_funding", False) != review_sale_funding
                 ):
                     raise ExecutionGuard("The repair approval does not match this review.")
                 return self._public(review)
@@ -349,8 +424,10 @@ class OwnershipRepairs:
                 self.runner.ownership._job(identity, db),
                 allow_quantity_changes=allow_quantity_changes,
                 repair_releases=repair_releases,
+                review_sale_funding=review_sale_funding,
+                sale_funding=sale_funding,
             )
-            if review_id != review["id"] or confirmation != review["confirmation"]:
+            if not review["id"] or review_id != review["id"] or confirmation != review["confirmation"]:
                 raise ExecutionGuard(
                     "Repair evidence or confirmation changed. Review the current proposal again."
                 )
@@ -364,6 +441,11 @@ class OwnershipRepairs:
                     "INSERT INTO strategy_ownership_adjustments(event_id,payload) VALUES (?,?)",
                     (item["event_id"], json.dumps(adjustment, allow_nan=False)),
                 )
+            for job_id, funding in review["funding_updates"].items():
+                db.execute(
+                    "INSERT INTO strategy_ownership_sale_funding(job_id,repair_id,payload) VALUES (?,?,?)",
+                    (job_id, review_id, json.dumps(funding, allow_nan=False)),
+                )
             db.execute(
                 "INSERT INTO strategy_ownership_repairs VALUES (?,?)",
                 (review_id, json.dumps(review, allow_nan=False)),
@@ -373,7 +455,9 @@ class OwnershipRepairs:
                 event = self.runner.host._event(
                     job,
                     "OWNERSHIP_REPAIR",
-                    "Approved corrected ownership releases, quantities and basis."
+                    "Approved historical sale funding and ownership corrections."
+                    if review_sale_funding
+                    else "Approved corrected ownership releases, quantities and basis."
                     if repair_releases
                     else "Approved corrected ownership quantities and basis across the handoff family."
                     if allow_quantity_changes

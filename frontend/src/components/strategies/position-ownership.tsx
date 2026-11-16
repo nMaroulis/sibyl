@@ -49,6 +49,12 @@ type State = {
   stale: boolean;
   changed_sources: { job_id: string; symbol: string; receipt_count: number; order_count: number }[];
   history: Receipt[];
+  funded_sales?: {
+    fill_id: string;
+    quantity: number;
+    cost_basis: number;
+    reference_value: number;
+  }[];
   event_count: number;
   check?: Check;
 };
@@ -263,6 +269,25 @@ export function PositionOwnership({ job }: { job: Job }) {
               account. Excess units can be manual holdings or transfers; Sibyl does not infer their
               origin.
             </p>
+          )}
+          {!!data?.funded_sales?.length && (
+            <details className="advanced-options">
+              <summary>Funded historical sales ({data.funded_sales.length})</summary>
+              <p className="footnote">
+                User-asserted basis for units consumed by reconciled sales.
+              </p>
+              {data.funded_sales.map((sale) => (
+                <p className="ownership-history-row" key={sale.fill_id}>
+                  <span>
+                    {number(sale.quantity, 8)} {base} · fill {sale.fill_id.slice(0, 8)}
+                  </span>
+                  <small>
+                    {number(sale.cost_basis, 8)} {quote} basis · {number(sale.reference_value, 8)}{' '}
+                    {quote} reference flow
+                  </small>
+                </p>
+              ))}
+            </details>
           )}
           <div className="ownership-actions">
             <button

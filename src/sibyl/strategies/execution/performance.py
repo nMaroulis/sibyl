@@ -165,6 +165,15 @@ class StrategyPerformance:
             }
             for e in receipts
         ]
+        flows.extend(
+            {
+                "timestamp_ms": funding["timestamp_ms"],
+                "value": funding["reference_value"],
+                "action": "historical sale funding",
+            }
+            for funding in state["_sale_funding"].values()
+        )
+        flows.sort(key=lambda flow: flow["timestamp_ms"])
         status["flows"] = flows[-100:]
         status["flow_count"] = len(flows)
         if problem:

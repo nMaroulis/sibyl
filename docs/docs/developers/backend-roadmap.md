@@ -133,7 +133,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Approve append-only cost-basis repairs across executed handoff descendants. Reconstruct receipts at their original fill checkpoints and recalculate realized P&L while preserving quantities, cash-flow values and original records.
 - [x] Approve corrected handoff quantities and paired reference cash flows using the original price and fill checkpoints. Reflow valid changes through executed descendants, including zero-unit handoffs, and reject oversold histories.
 - [x] Repair underfunded local release receipts with separate consent, retaining their original quantity as a cap and carrying effective basis and reference flows from the original checkpoint.
-- [ ] Resolve reversals that leave already executed venue sales underfunded. Add verified provenance beyond recorded Sibyl manual orders and definitive settlement/bust handling.
+- [x] Resolve reconciled historical sale shortfalls with a user-asserted unmanaged contribution and basis, bound to the actual fill and consumed at that fill. Preserve append-only approvals and retire contributions through a new review.
+- [ ] Independently verify historical funding provenance beyond user assertions and recorded Sibyl manual orders. Add definitive settlement and trade-bust handling.
 
 ### 5. Market-data infrastructure — partial
 
