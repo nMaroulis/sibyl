@@ -19,6 +19,12 @@ export function ExchangeRunEvidence({ job }: { job: Job }) {
         Base fees reduce owned units; quote fees reduce cash. Valuation uses the last observed
         exchange midpoint.
       </p>
+      {job.unresolved_orders?.some((order) => order.reconciliation?.startsWith('settlement_')) && (
+        <p className="monitor-notice">
+          This run is waiting for Coinbase Exchange Sandbox to report settlement for all fills on a
+          completed order. Open <Link to="/trade?tab=executions">Trade executions</Link> to recheck.
+        </p>
+      )}
       {job.stop_cancellation && (
         <p className="monitor-notice">
           Stop &amp; cancel was approved. New submissions are stopped; cancellation outcomes and

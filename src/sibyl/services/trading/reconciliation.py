@@ -17,6 +17,16 @@ from sibyl.services.trading.lifecycle import TERMINAL
 READ_LIMIT = 10_000
 
 
+def settlement_blocker(summary: dict) -> str | None:
+    """Require filled sandbox orders to have venue settlement evidence."""
+    settlement = summary.get("settlement")
+    if not settlement or not (summary["native_filled"] or summary["fill_count"]):
+        return None
+    if settlement["state"] == "reported_settled":
+        return None
+    return "settlement_pending" if settlement["state"] == "pending" else "settlement_unverified"
+
+
 def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
     """Compare gross base units and reported quote cost; never equate a match with settlement.
 
@@ -76,7 +86,7 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
             result = float(value)
             return result if abs(result) != float("inf") else None
 
-        return {
+        result = {
             "status": status,
             "fill_count": len(fills),
             "quantity": finite(quantity),
@@ -108,6 +118,34 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
             "settlement_final": False,
             "note": "Compared with retained native executions. A quantity match and reported fees do not guarantee final settlement or complete account history.",
         }
+        if intent["exchange"] == "coinbase-sandbox" and intent["environment"] == "test":
+            settled = sum(fill.get("venue_settled") is True for fill in fills)
+            pending = sum(fill.get("venue_settled") is False for fill in fills)
+            unknown = len(fills) - settled - pending
+            if pending:
+                state = "pending"
+            elif (
+                settled
+                and not unknown
+                and status == "matched"
+                and expected is not None
+                and expected > 0
+                and job
+                and job["caught_up"]
+                and not job.get("error")
+            ):
+                state = "reported_settled"
+            elif settled:
+                state = "incomplete"
+            else:
+                state = "unobserved"
+            result["settlement"] = {
+                "state": state,
+                "settled": settled,
+                "pending": pending,
+                "unknown": unknown,
+            }
+        return result
 
 
 class OrderReconciliation:

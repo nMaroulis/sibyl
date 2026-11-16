@@ -10,6 +10,7 @@ import time
 from datetime import UTC, datetime
 
 from sibyl.services.trading.lifecycle import TERMINAL
+from sibyl.services.trading.reconciliation import settlement_blocker
 from sibyl.strategies.execution.contracts import ExecutionGuard
 
 # Both cancellation scheduling and exit readiness use this predicate. A ledger
@@ -124,7 +125,8 @@ class StrategyCancellations:
         if intent["status"] in TERMINAL:
             detail = self.trading.reconciliation.detail(intent["id"])
             evidence, revision = detail["reconciliation"], detail["fill_revision"]
-            matched = evidence["status"] == "matched"
+            settlement = settlement_blocker(evidence)
+            matched = evidence["status"] == "matched" and not settlement
             previous = intent.get("strategy_cancellation", {})
             observation = [intent.get(key) for key in ("status", "filled", "cost")]
             changed = observation != previous.get("terminal_observation") or revision != previous.get(
@@ -143,6 +145,8 @@ class StrategyCancellations:
                     if complete
                     else "Retained fills match; waiting for three matching native status checks after the last execution change."
                     if matched
+                    else "Waiting for Coinbase Exchange to report fill settlement."
+                    if settlement and evidence["status"] == "matched"
                     else "Waiting for native fill/fee evidence; no further strategy order is allowed."
                 ),
                 outcome=intent["status"],

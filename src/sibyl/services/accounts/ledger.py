@@ -67,7 +67,7 @@ def ledger_fill(row: dict, job: dict) -> dict:
             normalized_fees.append({"currency": currency, "cost": cost})
     base, quote = job["symbol"].split("/")
     identity = hashlib.sha256(json.dumps([job["account_id"], job["symbol"], trade_id]).encode()).hexdigest()
-    return {
+    fill = {
         "id": identity,
         "trade_id": trade_id,
         "order_id": _identity(row.get("order"), optional=True),
@@ -88,6 +88,13 @@ def ledger_fill(row: dict, job: dict) -> dict:
         "fees_known": bool(normalized_fees)
         and all(fee["currency"] is not None and fee["cost"] is not None for fee in normalized_fees),
     }
+    if job["exchange"] == "coinbase-sandbox" and job["environment"] == "test":
+        settled = row.get("venue_settled")
+        if settled is not None:
+            if not isinstance(settled, bool):
+                raise ValueError("A fill has an invalid venue settlement flag.")
+            fill["venue_settled"] = settled
+    return fill
 
 
 class AccountLedger:

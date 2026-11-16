@@ -526,6 +526,7 @@ def test_coinbase_sandbox_uses_response_header_not_a_guessed_trade_cursor(monkey
             [
                 {
                     "trade_id": 7,
+                    "settled": False,
                     "order_id": "order-1",
                     "created_at": "2023-11-14T22:13:20Z",
                     "product_id": "BTC-USD",
@@ -545,6 +546,7 @@ def test_coinbase_sandbox_uses_response_header_not_a_guessed_trade_cursor(monkey
     assert observed[1]["after"] == "header-cursor"
     assert observed[0]["end_date"] == observed[1]["end_date"]
     assert page.items[0]["side"] == "buy" and terminal.caught_up
+    assert page.items[0]["venue_settled"] is False and "info" not in page.items[0]
     client.close()
 
 

@@ -5,7 +5,7 @@ import math
 from collections import defaultdict
 from contextlib import nullcontext
 
-from sibyl.services.trading.reconciliation import summarize
+from sibyl.services.trading.reconciliation import settlement_blocker, summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.fees import foreign_fees
 from sibyl.strategies.execution.ownership.acquisitions import Acquisitions
@@ -74,7 +74,10 @@ def project(job, trading, *, db=None, repair=None):
             continue
         if order["status"] == "rejected" and not order.get("exchange_order_id"):
             continue
-        status = summarize(order, grouped[order.get("exchange_order_id")], sync.get(order["id"]))["status"]
+        summary = summarize(order, grouped[order.get("exchange_order_id")], sync.get(order["id"]))
+        status = summary["status"]
+        if status == "matched":
+            status = settlement_blocker(summary) or status
         if order["status"] not in {"closed", "canceled", "expired"} or status != "matched":
             unresolved.append({"id": order["id"], "status": order["status"], "reconciliation": status})
     if len({fill["id"] for fill in fills}) != len(fills):

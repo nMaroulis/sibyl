@@ -34,6 +34,17 @@ def normalize_trade(row: dict) -> dict:
     }
 
 
+def normalize_coinbase_exchange_fill(row: dict) -> dict:
+    """Keep the Exchange fills endpoint's explicit settlement flag."""
+    fill = normalize_trade(row)
+    settled = (row.get("info") or {}).get("settled")
+    if settled is not None:
+        if not isinstance(settled, bool):
+            raise ccxt.ExchangeError("Invalid Coinbase Exchange settlement flag.")
+        fill["venue_settled"] = settled
+    return fill
+
+
 def _token(value) -> str | None:
     """Reject malformed provider cursors instead of silently ending a partial import."""
     if value in (None, ""):
@@ -127,7 +138,7 @@ def fetch_trade_page(exchange, kind: str, symbol: str, cursor: dict, limit: int)
         parsed = exchange.parse_trades(rows, market)
         if len(parsed) != len(rows):
             raise ccxt.ExchangeError("Unexpected market in fill history.")
-        return TradePage([normalize_trade(row) for row in parsed], next_cursor, done)
+        return TradePage([normalize_coinbase_exchange_fill(row) for row in parsed], next_cursor, done)
 
     if kind == "kraken-cursor":
         start, end = _window(cursor, scale=1)

@@ -2,7 +2,7 @@
 
 import ccxt
 
-from sibyl.exchanges.history import TradePage, _token, normalize_trade
+from sibyl.exchanges.history import TradePage, _token, normalize_coinbase_exchange_fill, normalize_trade
 
 ORDER_FILL_KINDS = {
     "binance-id",
@@ -68,9 +68,10 @@ def fetch_order_fill_page(
         parsed = exchange.parse_trades(rows, market)
         if len(parsed) != len(rows):
             raise ccxt.ExchangeError("Unexpected order execution market.")
-        return TradePage(
-            [normalize_trade(row) for row in parsed], {"page": following}, not rows or not following
+        normalize = (
+            normalize_coinbase_exchange_fill if kind == "coinbase-exchange-cursor" else normalize_trade
         )
+        return TradePage([normalize(row) for row in parsed], {"page": following}, not rows or not following)
 
     if kind == "kraken-cursor":
         identities = cursor.get("ids")

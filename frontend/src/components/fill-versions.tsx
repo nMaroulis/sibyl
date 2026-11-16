@@ -11,6 +11,9 @@ type Observation = {
     quantity: number;
     price: number;
     notional: number | null;
+    exchange: string;
+    environment: string;
+    venue_settled?: boolean;
     fees: { currency: string | null; cost: number | null }[];
   };
 };
@@ -49,6 +52,15 @@ export function FillVersions({ identity, onClose }: { identity: string; onClose:
                     <td>
                       {row.revision}
                       <small className="table-subline">{row.kind.replaceAll('_', ' ')}</small>
+                      {row.payload.exchange === 'coinbase-sandbox' && row.payload.environment === 'test' && (
+                        <small className="table-subline">
+                          {row.payload.venue_settled == null
+                            ? 'Settlement not reported'
+                            : row.payload.venue_settled
+                              ? 'Settlement reported'
+                              : 'Settlement pending'}
+                        </small>
+                      )}
                     </td>
                     <td>{new Date(row.observed_at).toLocaleString()}</td>
                     <td>{number(row.payload.quantity, 8)}</td>

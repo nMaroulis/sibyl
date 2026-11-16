@@ -20,7 +20,8 @@ def scope(job):
     }
 
 
-def native(db, job, order_ids=None):
+def native(db, job, order_ids=None, *, require_settlement=False):
+    """Read pinned economics, optionally requiring current sandbox settlement evidence."""
     orders = [
         json.loads(row[0])
         for row in db.execute(
@@ -41,7 +42,18 @@ def native(db, job, order_ids=None):
             )
         ]
         sync = db.execute("SELECT payload FROM order_fill_sync WHERE intent_id=?", (row["id"],)).fetchone()
-        caught_up = json.loads(sync[0]).get("caught_up") if sync else None
+        checkpoint = json.loads(sync[0]) if sync else {}
+        caught_up = checkpoint.get("caught_up")
+        if (
+            require_settlement
+            and fills
+            and (
+                not caught_up
+                or checkpoint.get("error")
+                or any(f.get("venue_settled") is not True for f in fills)
+            )
+        ):
+            return None
         values.append(
             {
                 "caught_up": caught_up,
@@ -95,10 +107,10 @@ def current(db, evidence):
     if row is None:
         return False
     job = json.loads(row[0])
-    return (
-        scope(job) == evidence["scope"]
-        and digest(native(db, job, evidence["order_ids"])) == evidence["digest"]
-    )
+    if scope(job) != evidence["scope"]:
+        return False
+    values = native(db, job, evidence["order_ids"], require_settlement=job["exchange"] == "coinbase-sandbox")
+    return values is not None and digest(values) == evidence["digest"]
 
 
 def events(db, identity, *, with_original=False):

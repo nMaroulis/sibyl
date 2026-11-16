@@ -18,6 +18,12 @@ export type Reconciliation = {
   native_cost: number | null;
   fees: { currency: string; cost: number | null }[];
   unknown_fee_fills: number;
+  settlement?: {
+    state: 'reported_settled' | 'pending' | 'incomplete' | 'unobserved';
+    settled: number;
+    pending: number;
+    unknown: number;
+  };
   note: string;
   sync: {
     state?: string;
@@ -36,6 +42,7 @@ type Fill = {
   quantity: number;
   price: number;
   fees_known: boolean;
+  venue_settled?: boolean;
   fees: { currency: string | null; cost: number | null }[];
 };
 type Detail = {
@@ -56,6 +63,12 @@ export const reconciliationLabel = (status?: string) =>
     limit_reached: 'Evidence limit reached',
     not_checked: 'Not checked',
   })[status || 'not_checked'] || status;
+const settlementLabels = {
+  reported_settled: 'Settlement reported',
+  pending: 'Settlement pending',
+  incomplete: 'Settlement evidence incomplete',
+  unobserved: 'Settlement not reported',
+};
 const display = (value?: number | null) => (value == null ? '—' : number(value, 8));
 const syncLabel = (state?: string) =>
   ({
@@ -171,6 +184,17 @@ export function OrderReconciliation({
               <strong>{display(result.cost_difference)}</strong>
             </div>
           </div>
+          {result.settlement && (result.fill_count > 0 || (result.native_filled ?? 0) > 0) && (
+            <div className="order-reconciliation-heading">
+              <p className="muted">
+                Coinbase Exchange settlement · {result.settlement.settled} settled ·{' '}
+                {result.settlement.pending} pending · {result.settlement.unknown} unknown
+              </p>
+              <Badge tone={result.settlement.state === 'reported_settled' ? 'lime' : 'neutral'}>
+                {settlementLabels[result.settlement.state]}
+              </Badge>
+            </div>
+          )}
           <div className="order-reconciliation-actions">
             <button
               className="button secondary"
@@ -259,6 +283,15 @@ export function OrderReconciliation({
                       <td>
                         {new Date(fill.created_at).toLocaleString()}
                         <small className="table-subline">{fill.trade_id}</small>
+                        {result.settlement && (
+                          <small className="table-subline">
+                            {fill.venue_settled == null
+                              ? 'Settlement not reported'
+                              : fill.venue_settled
+                                ? 'Settlement reported'
+                                : 'Settlement pending'}
+                          </small>
+                        )}
                       </td>
                       <td>{display(fill.quantity)}</td>
                       <td>{display(fill.price)}</td>

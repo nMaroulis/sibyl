@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Trade and Account history show per-fill settlement reported by Coinbase Exchange Sandbox. Exchange strategies wait for reported settlement on filled terminal orders. Later settlement corrections reopen dependent execution and ownership checks.
+
 - Historical sale funding can link an earlier reconciled buy, including fills from venue-discovered orders. Sibyl derives fee-adjusted acquisition basis, checks active reservations at approval and requires a new review when either linked fill changes. The user records why the units were still unmanaged.
 
 - A reconciled sale with insufficient recorded ownership can be repaired using an explicitly asserted historical contribution from unmanaged holdings. The contribution is consumed by its linked sale and uses the execution price as its reference mark. The decision journal preserves the asserted basis, source note and each later revision alongside the native fill.

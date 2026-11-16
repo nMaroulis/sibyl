@@ -97,7 +97,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini now also have bounded native imports and exact-order reconciliation, with explicit saturation/reversal/retention limits.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
 - [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
-- [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.
+- [x] Retain Coinbase Exchange Sandbox's native per-fill settlement flag. Share changes across exact reconciliation and Account history, with versioned evidence and separate settlement status.
+- [ ] Add broader venue settlement coverage, explicit execution bust/removal handling and additional discovery/adapters.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.
 - [x] Exercise real Testnet conditional open/cancel, native OCO with deliberately lost response, exact child recovery, sibling cancellation, unfilled cancel/replace, duplicate approval identities and a fill-winning marketable-limit observation. Intermediate partial fills, true outages, late fee corrections and other venues remain unaccepted.
@@ -135,7 +136,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Repair underfunded local release receipts with separate consent, retaining their original quantity as a cap and carrying effective basis and reference flows from the original checkpoint.
 - [x] Resolve reconciled historical sale shortfalls with a user-asserted unmanaged contribution and basis, bound to the actual fill and consumed at that fill. Preserve append-only approvals and retire contributions through a new review.
 - [x] Link a verified same-account buy fill from a reconciled Sibyl manual or venue-discovered order to historical sale funding. Derive proportional fee-adjusted basis, reserve quantities across active claims and invalidate revised source evidence.
-- [ ] Independently verify continuous unmanaged custody and the originating order client. Add definitive settlement and trade-bust handling.
+- [x] Require venue-reported settlement on filled terminal Coinbase Exchange Sandbox orders before further strategy submissions or linked funding reuse. Reopen checks when reported settlement changes.
+- [ ] Independently verify continuous unmanaged custody and the originating order client. Extend settlement and trade-bust handling beyond the reviewed Sandbox signal.
 
 ### 5. Market-data infrastructure — partial
 

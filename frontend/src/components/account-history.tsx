@@ -72,6 +72,7 @@ type Fill = {
   notional: number | null;
   fees: { currency: string | null; cost: number | null }[];
   fees_known: boolean;
+  venue_settled?: boolean;
 };
 type Ledger = {
   items: Fill[];
@@ -505,6 +506,7 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                             'Quote',
                             'Fees',
                             'Fees complete',
+                            'Venue settlement',
                             'Trade ID',
                             'Order ID',
                             'Sibyl fill ID',
@@ -522,6 +524,11 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                             item.quote,
                             feeText(item),
                             item.fees_known ? 'yes' : 'no',
+                            item.venue_settled == null
+                              ? ''
+                              : item.venue_settled
+                                ? 'reported settled'
+                                : 'pending',
                             item.trade_id,
                             item.order_id ?? '',
                             item.id,
@@ -651,6 +658,11 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                                   </td>
                                   <td className="account-ledger-ids">
                                     Fill {item.trade_id}
+                                    {item.venue_settled != null && (
+                                      <small className="table-subline">
+                                        {item.venue_settled ? 'Settlement reported' : 'Settlement pending'}
+                                      </small>
+                                    )}
                                     <button
                                       className="text-button"
                                       onClick={() => setObservingFill(item.id)}

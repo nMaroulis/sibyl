@@ -34,7 +34,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Review and repair underfunded local releases, including zero-unit outcomes and restoration up to their original approved amounts. Show the exact remaining shortfall for venue sales.
 - [x] Approve historical funding for reconciled sale shortfalls using asserted basis and origin, preserving native cash/fills, archived receipts and revision guards.
 - [x] Link reconciled earlier buys as historical sale funding evidence, including exact venue-discovered orders, proportional basis and bounded aggregate reservations.
-- [ ] Verify continuous unmanaged custody and placement channels. Handle definitive venue settlement and trade busts.
+- [x] Retain Coinbase Exchange Sandbox settlement observations in the shared fill ledger and require them for further strategy orders and linked funding.
+- [ ] Verify continuous unmanaged custody and placement channels. Extend venue settlement coverage and handle trade busts.
 - [ ] Authenticated partial-fill/cancel races, late corrections and outage recovery across additional venues. See [the exchange acceptance record](exchange-acceptance.md#automated-strategy-acceptance).
 - [x] Native optional Optuna TPE/random numeric distributions, causal trusted-plugin validation and one-off pinned research jobs, with bounded trial/test evidence and exact version-pinned replay.
 - [x] Multi-asset historical target-allocation studies with exact common inputs, post-cost sizing, interval/drift rebalancing, cost-matched benchmarks, interactive/paged evidence and version/fingerprint-checked offline reruns.

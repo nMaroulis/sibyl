@@ -6,7 +6,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from sibyl.services.trading.lifecycle import TERMINAL
-from sibyl.services.trading.reconciliation import READ_LIMIT, summarize
+from sibyl.services.trading.reconciliation import READ_LIMIT, settlement_blocker, summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.ownership.ledger import digest
 
@@ -77,7 +77,7 @@ class Acquisitions:
             )
         ]
         totals = summarize(order, fills, checkpoint)
-        if totals["status"] != "matched" or totals["cost_difference"] is None:
+        if totals["status"] != "matched" or totals["cost_difference"] is None or settlement_blocker(totals):
             return None
         fees = defaultdict(Decimal)
         for fee in fill["fees"]:
