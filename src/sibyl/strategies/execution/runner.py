@@ -16,6 +16,7 @@ from sibyl.strategies.execution.contracts import ExchangeStrategyRequest, Execut
 from sibyl.strategies.execution.controls import StrategyControls
 from sibyl.strategies.execution.fee_review import StrategyFeeReviews
 from sibyl.strategies.execution.fees import marked_equity
+from sibyl.strategies.execution.liquidation import LiquidationPlans
 from sibyl.strategies.execution.ownership.service import PositionOwnership
 from sibyl.strategies.execution.performance import StrategyPerformance
 from sibyl.strategies.execution.risk import PortfolioLimits
@@ -51,6 +52,7 @@ class ExchangeStrategies:
         self.cancellations = StrategyCancellations(self)
         self.stop_reviews = StopCancellationReviews(self)
         self.closing = ClosePositions(self)
+        self.liquidation = LiquidationPlans(self)
         self.ownership = PositionOwnership(self)
         self.fee_reviews = StrategyFeeReviews(self)
         self.performance = StrategyPerformance(self)
@@ -301,6 +303,7 @@ class ExchangeStrategies:
                         if isinstance(error, ExecutionGuard)
                         else "Exchange evaluation failed. Review account access, market availability and order evidence before resuming."
                     )
+                    self.liquidation.block(job["id"], message)
                     if job["status"] == "running":
                         # Only our domain messages are public; provider/transport errors stay private.
                         message = (
@@ -321,6 +324,7 @@ class ExchangeStrategies:
             job = self._project(self.journal.job(identity))
             self.journal.save(job)
             if job["status"] != "running":
+                self.liquidation.step(job)
                 return
             self.enabled()
             control_revision = self.controls.require()["revision"]

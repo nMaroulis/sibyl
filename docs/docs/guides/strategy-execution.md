@@ -73,7 +73,7 @@ Approved prices affect marked equity and strategy loss limits. Positive charges 
 3. Check the account/environment, owned units, exact sell quantity, limit floor, proceeds at that floor before fees, base-fee reserve and estimated residual. The review lasts 60 seconds. Type the displayed `CLOSE TEST/LIVE …` phrase and select **Approve & submit sell**.
 4. Follow the **Reviewed position exit** state and its tagged **Exit** order in the monitor. Acknowledgments do not reduce ownership. Native fills update cash, retained units, weighted cost basis and realized P&L; later fee corrections recompute them. The chart's retained observations and last midpoint valuation are not rewritten.
 
-The sell quantity is capped by reconciled strategy ownership, the base-fee reserve, native amount/cost maxima and the shared quantity bound. It is **not guaranteed to flatten the position**: base fees, precision, native caps or a partial/canceled fill can leave units. They remain visible, including tradable residuals and dust. Each further sell requires a fresh review; no replacement or multi-order liquidation is automatic. Native fees are unknown until reported. A quote-fee allowance is illustrative, not a fee quote or guaranteed net proceeds.
+The sell quantity is capped by reconciled strategy ownership, the base-fee reserve, native amount/cost maxima and the shared quantity bound. It is **not guaranteed to flatten the position**: base fees, precision, native caps or a partial/canceled fill can leave units. They remain visible, including tradable residuals and dust. For additional individually reviewed sells, use **Close position** again. A separate [liquidation plan](#run-a-bounded-liquidation-plan) can authorize a sequence up front. Native fees are unknown until reported. A quote-fee allowance is illustrative, not a fee quote or guaranteed net proceeds.
 
 Residual ownership keeps the account/pair assigned to this retained run, so it can block a new strategy on that same account/pair. Dust below native minimums cannot currently be sold. Use [Position ownership](strategy-ownership.md) for separately reviewed release to unmanaged holdings or original-basis handoff to a new run; units are never silently discarded or adopted.
 
@@ -83,6 +83,18 @@ Closing reviews never execute by themselves. Repeated confirmations return retai
 
 Readiness and a current reconciliation match do not establish final settlement. Later fills, fee changes, exchange busts and manual account changes can require further inspection; no finality is invented.
 
+## Run a bounded liquidation plan
+
+For a stopped or completed exchange run, choose **Liquidation plan** in its monitor. This workflow requires both exchange execution flags. Resolve outstanding orders, fee valuations and cancellation follow-ups first.
+
+1. Set the plan’s maximum order count (2–5), duration (5–60 minutes), optional maximum base units per sell, and per-order safeguards. **Review sell sequence** reads the exact account’s book and balances. The review shows the fixed sell limit, first-order cap, total owned units, spread guard, fee reserve and expiry.
+2. Type the displayed confirmation. Approval grants the worker authority to start the sequence. Each GTC limit uses the same price floor, expires individually after 60–300 seconds, and can only sell within remaining reconciled ownership and the approved size. The venue may fill at a better price.
+3. Follow each order from the plan dialog or **Decision journal → Liquidation plans**. A further sell requires progress on the last one, confirmed terminal status, matching native fills and fees, and any late cancellation checks. The worker sends up to one new sell per cycle. It never retries an uncertain submission.
+
+The plan ends at its order, size or time bound. It also ends when the bid falls below the approved floor, ownership evidence changes or the previous sell has zero fills. Precision, fees and native trade limits can leave residual units. A global halt, backend restart or **Stop future sells** withdraws future-sell authority. Submitted orders retain their approved expiry and reconciliation. To request cancellation, use a fresh **Stop & cancel** review or cancel the linked order in Trade. A venue or backend outage can delay expiry handling.
+
+The plan covers one run, one account and one spot pair. It is independent of the signal loss/exposure policy and is available for a stopped run with a loss latch. Standalone exits and ownership changes need the plan to end first.
+
 ## Review lifetime performance
 
 In a run's monitor, open **Lifetime performance** for its flow-adjusted return estimate, quote-valued gain and recorded capital flows. Terminal flat runs with reconciled execution evidence can be archived there. See [lifetime performance and archiving](strategy-ownership.md#lifetime-performance-and-archiving) for marks, fee evidence and eligibility.
@@ -91,7 +103,7 @@ In a run's monitor, open **Lifetime performance** for its flow-adjusted return e
 
 Initial [Binance Testnet strategy acceptance](../developers/exchange-acceptance.md#automated-strategy-acceptance) covers real entry/exit orders, duplicate approvals, native fill/fee accounting, paused restart, shared capital rejection, global halt and controlled entry-response loss with client-ID recovery. These checks used virtual funds and left the main workspace's execution flags disabled.
 
-Observed partial fills, cancellation races, late corrections, real connectivity failures, broader sandbox/production acceptance, automatic multi-order liquidation, attribution of manual trades placed outside Sibyl, reviewed repair across executed ownership descendants, definitive settlement/bust handling, broader shared risk-policy options and additional providers remain on the [implementation checklist](../developers/backend-roadmap.md). Current residual exits require fresh approvals. Do not interpret a supported adapter badge as successful private-account verification.
+Observed partial fills, cancellation races, late corrections, real connectivity failures, broader sandbox/production acceptance, attribution of manual trades placed outside Sibyl, reviewed repair across executed ownership descendants, definitive settlement/bust handling, broader shared risk-policy options and additional providers remain on the [implementation checklist](../developers/backend-roadmap.md). Do not interpret a supported adapter badge as successful private-account verification.
 
 The code is in `src/sibyl/strategies/execution/`: `contracts.py`, `approvals.py`, `venue.py`, `accounting.py`, `cancellation.py`, `stop_reviews.py`, `closing.py`, the modular `ownership/` package and `runner.py`. Cancellation progress lives on each owned order intent; the persisted stop policy and deadlines reconstruct work after restart. Closing reviews persist separately; their deterministic request keys and linked intents protect duplicate confirmations. A domain guard compares a coherent ownership digest within the shared submission transaction. Host locks precede per-intent locks, matching the submission pipeline. Equal native fill timestamps use local order creation order as the causal tiebreaker for this serialized strategy. It reuses `ExchangeTrading`, order recovery and native fill reconciliation rather than introducing another exchange client. Native limit-order reference: [Binance Spot trading API](https://developers.binance.com/docs/binance-spot-api-docs/rest-api/trading-endpoints).
 
@@ -113,3 +125,7 @@ The code is in `src/sibyl/strategies/execution/`: `contracts.py`, `approvals.py`
 | POST | `/strategies/exchange/jobs/{id}/archive` | Archive or restore a flat, reconciled terminal run |
 | GET / POST | `/strategies/exchange/jobs/{id}/fee-review` | Read a historical fee batch or approve its exact prices |
 | GET | `/strategies/exchange/jobs/{id}/fee-review/{review_id}` | Read an immutable approval receipt |
+| GET | `/strategies/exchange/jobs/{id}/liquidation` | Read the latest authorized plan and its child orders |
+| POST | `/strategies/exchange/jobs/{id}/liquidation/preview` | Review a fixed-price, bounded sell sequence |
+| POST | `/strategies/exchange/jobs/{id}/liquidation/{plan_id}/confirm` | Authorize the exact plan for the worker |
+| POST | `/strategies/exchange/jobs/{id}/liquidation/{plan_id}/stop` | Withdraw future-sell authority |

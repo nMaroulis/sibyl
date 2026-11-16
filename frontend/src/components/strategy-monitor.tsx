@@ -32,6 +32,7 @@ import { RunPerformance } from './strategies/run-performance';
 import { ExchangeRunEvidence } from './strategies/exchange-evidence';
 import { StopCancellation } from './strategies/stop-cancellation';
 import { ClosePosition } from './strategies/close-position';
+import { LiquidationPlan } from './strategies/liquidation-plan';
 import { PositionOwnership } from './strategies/position-ownership';
 import { exportCSV, number, post, refresh } from '../lib/api';
 import { date, formatted, monitorURL, runName, tone } from '../lib/strategy-monitor';
@@ -211,6 +212,7 @@ export function StrategyMonitor({
                   !order.strategy_abandoned,
               )) && <StopCancellation job={job} />}
           {exchangeRun && <ClosePosition key={job.id} job={job} />}
+          {exchangeRun && terminal && <LiquidationPlan job={job} live={live} />}
         </div>
       </Panel>
       {exchangeRun && <PositionOwnership key={job.id} job={job} />}

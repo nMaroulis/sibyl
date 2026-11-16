@@ -13,7 +13,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
-| Automated strategy execution   | partial       | Venue and failure-case acceptance, coordinated liquidation, ownership repair and venue settlement.                      |
+| Automated strategy execution   | partial       | Venue and failure-case acceptance, ownership repair and definitive venue settlement.                      |
 | Strategy research              | partial       | Approved multi-asset execution, separate ML/RL pipelines and optional Freqtrade.                                              |
 | Sibyl & messaging              | partial       | Broader grounding evaluation, additional media and live private-channel/processor acceptance.                       |
 | ProtoLink workflows            | partial       | Broader semantic/adversarial evaluation and additional scoped action contracts beyond approved local notes.                                   |
@@ -114,7 +114,7 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Define Pause/Stop: prevent future submissions and retain holdings; previously approved expiry continues.
 - [x] Persist optional order lifetimes at submission; cancel due remainders through the shared pipeline, retain partial fills and recover uncertain attempts by reading only.
 - [x] Add separate typed Stop & cancel approval, durable restart recovery, bounded late native status checks, monitor evidence and journal/CSV events.
-- [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Partial fills and native caps never cause automatic replacement sells.
+- [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Standalone approvals cover one sell.
 - [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
 - [x] Exercise the manual Binance Spot Testnet limit/cancel and market buy/sell lifecycle, native fills/fees, client-ID lookup, duplicate confirmations and retained state after restart; verify read access on one Binance and Coinbase production account.
 - [x] Exercise real Binance Testnet strategy signals and capped orders, duplicate approvals, owned fill/fee accounting, paused restart, shared capital rejection, global halt and a separately reviewed owned-position exit; recover a deliberately discarded entry response by exact native client ID without resubmission.
@@ -124,7 +124,7 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add opt-in shared allocated-capital, gross-exposure and observed UTC daily-loss policies across accounts, separately for production/test funds; fresh actual conversion paths, retained/pending exposure, native-write transaction admission, persisted daily baselines/locks, deliberate later-day release, bounded audit and read-only Broker evidence. See [portfolio limits](portfolio-limits.md).
 - [x] Add account/base-asset exposure caps, sampled rolling-loss latches and optional stop-distance entry-risk sizing with native-write admission.
 - [x] Archive reconciled flat terminal runs and restore them without deleting order, accounting or journal evidence. Archived runs remain in reconciliation and shared risk.
-- [ ] Add an explicitly approved automatic multi-order liquidation policy. Each residual exit currently requires a fresh review.
+- [x] Add a separately approved fixed-price liquidation plan for one stopped strategy. Cap order count, size, lifetime and plan duration; require terminal reconciled fills and cancellation evidence before another child; withdraw future authority on halt, restart or explicit stop.
 - [x] Add explicit native base-balance checks across same-account owners, dust classification, reviewed manual adoption/release and atomic original-basis handoff to a new exact-account/pair run, with flow-neutral shared P&L and inherited correction guards. See [ownership](../guides/strategy-ownership.md).
 - [x] Estimate cash-flow-adjusted lifetime performance from linked fills, local ownership receipts and exact venue marks. Value individual third-currency fees and rebates from eligible closed candles on the run's exact feed for this report.
 - [x] Identify imported fills linked to one recorded Sibyl manual order by exact native identity and account scope. Retain unknown origin for all other unattributed fills.

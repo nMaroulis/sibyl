@@ -306,7 +306,8 @@ STRATEGIES = {
         (
             "Inspect the selected run and its outstanding orders before using Pause or Stop; neither alone liquidates holdings.",
             "If separately approved, Stop & cancel requests cancellation. Wait for reconciled fills/fees and three matching native status checks; later execution or fee changes restart these checks. New automatic signal orders also wait.",
-            "Close position is a new typed, one-order sell review for a stopped/completed exchange run after reconciliation. Inspect blockers and any residual units.",
+            "Close position is a typed one-order sell review for a stopped/completed exchange run after reconciliation. Inspect blockers and residual units.",
+            "Liquidation plan is a separate typed approval for up to five sequential sells on the same stopped run. Review the fixed minimum price, size, spread and deadlines. The worker waits for fills and late checks before another sell. Stop future sells withdraws authority; submitted orders retain their expiry.",
         ),
         (
             "A cancel request or sell acknowledgment does not prove a position is flat. Residual ownership stays with the stopped run until a separately reviewed release or new-run handoff. It is never adopted automatically.",

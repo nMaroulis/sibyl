@@ -8,6 +8,7 @@ from sibyl.models import Request
 from sibyl.strategies.execution.contracts import (
     ClosePositionRequest,
     ExchangeStrategyRequest,
+    LiquidationRequest,
     StrategyApproval,
 )
 from sibyl.strategies.execution.controls import ControlAction
@@ -195,3 +196,31 @@ def fee_review_receipt(job_id: str, review_id: str, s: S, response: Response):
     """Read the approved fee evidence as recorded at review time."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.fee_reviews.receipt(job_id, review_id)
+
+
+@router.get("/jobs/{job_id}/liquidation")
+def liquidation_status(job_id: str, s: S, response: Response):
+    """Read the last authorized plan and native child status."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.liquidation.view(job_id)
+
+
+@router.post("/jobs/{job_id}/liquidation/preview")
+def liquidation_preview(job_id: str, body: LiquidationRequest, s: S, response: Response):
+    """Review a bounded sell sequence without placing an order."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.liquidation.preview(job_id, body)
+
+
+@router.post("/jobs/{job_id}/liquidation/{plan_id}/confirm")
+def liquidation_confirm(job_id: str, plan_id: str, body: StrategyApproval, s: S, response: Response):
+    """Authorize the reviewed sequence for the worker."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.liquidation.confirm(job_id, plan_id, body.confirmation)
+
+
+@router.post("/jobs/{job_id}/liquidation/{plan_id}/stop")
+def liquidation_stop(job_id: str, plan_id: str, s: S, response: Response):
+    """Withdraw future sells. Submitted orders retain their existing expiry."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.liquidation.stop(job_id, plan_id)

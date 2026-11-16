@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from sibyl.services.trading.lifecycle import TERMINAL
 from sibyl.strategies.execution.contracts import ExecutionGuard
+from sibyl.strategies.execution.liquidation import active_plan
 
 
 class StopCancellationReviews:
@@ -52,6 +53,8 @@ class StopCancellationReviews:
                 "expires_at": (datetime.now(UTC) + timedelta(minutes=2)).isoformat(),
             }
             with self.store.db() as db:
+                plan = active_plan(db, identity)
+                review["liquidation_id"] = plan["id"] if plan else None
                 db.execute(
                     "INSERT INTO strategy_stop_reviews VALUES(?,?)", (review["id"], json.dumps(review))
                 )
@@ -70,7 +73,8 @@ class StopCancellationReviews:
             if confirmation != review["confirmation"]:
                 raise ExecutionGuard("Type " + review["confirmation"] + " to approve.")
             job = self.runner.journal.job(review["job_id"])
-            if job.get("stop_cancellation"):
+            previous = job.get("stop_cancellation")
+            if previous and (previous["review_id"] == review_id or not review.get("liquidation_id")):
                 return self.runner._project(job)
             if datetime.now(UTC) > datetime.fromisoformat(review["expires_at"]):
                 raise ExecutionGuard("Stop & cancel review expired. Review this run again.")
@@ -87,11 +91,22 @@ class StopCancellationReviews:
                 updated_at=datetime.now(UTC).isoformat(),
                 stop_cancellation={"review_id": review_id, "requested_at": datetime.now(UTC).isoformat()},
             )
-            return self.runner.journal.save(
+            event = self.runner.host._event(
                 job,
-                self.runner.host._event(
-                    job,
-                    "STOP_CANCEL",
-                    "New submissions stopped permanently. This run's outstanding orders are queued for cancellation; fills and holdings remain owned. Cancellation is not yet confirmed.",
-                ),
+                "STOP_CANCEL",
+                "New submissions stopped permanently. This run's outstanding orders are queued for cancellation; fills and holdings remain owned. Cancellation is not yet confirmed.",
             )
+            with self.store.db() as db:
+                db.execute("BEGIN IMMEDIATE")
+                plan = active_plan(db, job["id"])
+                if plan and plan["id"] != review.get("liquidation_id"):
+                    raise ExecutionGuard("A new liquidation plan is active. Review Stop & cancel again.")
+                self.runner.liquidation.stop_active(
+                    db, job["id"], "Stopped by the reviewed Stop & cancel action."
+                )
+                db.execute("UPDATE strategy_jobs SET payload=? WHERE id=?", (json.dumps(job), job["id"]))
+                db.execute(
+                    "INSERT INTO strategy_events(job_id,payload) VALUES(?,?)",
+                    (job["id"], json.dumps(event)),
+                )
+            return job

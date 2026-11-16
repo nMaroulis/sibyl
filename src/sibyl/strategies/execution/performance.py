@@ -11,6 +11,7 @@ from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.fees import price_unreviewed
+from sibyl.strategies.execution.liquidation import active_plan
 from sibyl.strategies.execution.ownership.ledger import events
 from sibyl.strategies.execution.venue import order_book
 
@@ -128,7 +129,11 @@ class StrategyPerformance:
                 state, receipts, problem = economics(db, job, self.runner.trading)
             except ExecutionGuard as exc:
                 return {**status, "reason": str(exc), "archive_blocker": str(exc)}
-            status["archive_blocker"] = archive_blocker(job, state, problem)
+            status["archive_blocker"] = (
+                "Stop the active liquidation plan before archiving the run."
+                if active_plan(db, identity)
+                else archive_blocker(job, state, problem)
+            )
             fee_total = 0.0
             if not problem:
                 try:
@@ -242,6 +247,8 @@ class StrategyPerformance:
             if archived == bool(job.get("archived_at")):
                 return job
             if archived:
+                if active_plan(db, identity):
+                    raise ExecutionGuard("Stop the active liquidation plan before archiving the run.")
                 state, _, problem = economics(db, job, self.runner.trading)
                 blocker = archive_blocker(job, state, problem)
                 if blocker:

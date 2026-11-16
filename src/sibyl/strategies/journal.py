@@ -36,6 +36,7 @@ EVENT_COLUMNS = (
     "cancellation_id",
     "expires_at",
     "close_review_id",
+    "liquidation_id",
     "control_revision",
     "fee_review_id",
     "ownership_event_id",

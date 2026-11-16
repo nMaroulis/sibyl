@@ -14,6 +14,7 @@ from uuid import uuid4
 from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ExecutionGuard
+from sibyl.strategies.execution.liquidation import active_plan
 from sibyl.strategies.execution.ownership import ledger
 from sibyl.strategies.execution.ownership.inspection import amount, observe
 
@@ -102,6 +103,8 @@ class PositionOwnership:
     @staticmethod
     def _settled(job, db):
         """Allow local changes only with settled, complete native and ownership evidence."""
+        if active_plan(db, job["id"]):
+            raise ExecutionGuard("Stop the liquidation plan before changing recorded ownership.")
         if job["ownership_event_count"] >= 100:
             raise ExecutionGuard(
                 "This run reached its 100 ownership-receipt limit. Review a separate native exit instead."

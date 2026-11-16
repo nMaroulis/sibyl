@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Stopped exchange strategies can approve a bounded liquidation plan. A fixed sell floor and order/size/time limits apply to each child, and further sells wait for native fill and cancellation reconciliation. Global halt, restart and explicit stop withdraw future-sell authority while preserving submitted orders and journal evidence.
+
 - Exchange strategies can approve historical prices for fees and rebates charged in another asset. The monitor shows the exact fill and candle evidence, retains receipts in the decision journal, and applies approved prices to budget and loss controls. Changed native fee facts pause further execution pending review.
 
 - Exchange strategy monitors now show flow-adjusted lifetime gains and returns with dated ownership flows, exact venue marks and historical third-currency fee evidence. Reconciled flat terminal runs can be archived and restored while their journals and reconciliation stay available. Position ownership labels fills matched to a single recorded Sibyl manual order and links the source runs behind invalidated handoff receipts.

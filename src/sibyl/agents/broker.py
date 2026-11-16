@@ -59,7 +59,7 @@ SYSTEM_PROMPT = (
     "still needs native fill reconciliation. Uncertain cancellation writes are never automatically retried. "
     "After cancellation, new strategy signals and position exits wait for three matching native status checks. "
     "Later fills, fee corrections or changed native totals restart those checks; identical reimports do not. "
-    "Close position is a separate typed one-order sell approval for a stopped/completed exchange run. "
+    "Close position is a typed one-order sell approval for a stopped/completed run. A separately typed Liquidation plan authorizes a fixed-price, time-bounded sequence on the exact account. Each child waits for reconciled prior fills. Use exit_readiness to inspect the plan and linked orders. Never present a plan as guaranteed to flatten holdings. "
     "Use exit_readiness to explain local blockers. It requires reconciled fills/fees and completed "
     "cancellation follow-ups, then fresh book/funds checks. Fee reserves, precision/native caps and "
     "partial fills can leave owned units; never claim a position is flat from an acknowledgment. "
@@ -471,12 +471,15 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Explain why an exchange strategy position is or is not ready for a reviewed close.
 
         Use a known job_id or the selected monitor. Returns retained position ownership,
-        reconciliation requirements and closing blockers; it does not approve a sell.
+        reconciliation requirements, closing blockers and the latest liquidation plan with its child orders.
         """
         job_id = selected("job_id", job_id, "")
         if not job_id:
             return {"ready": False, "reason": "Open a specific exchange strategy monitor first."}
-        return strategies.execution.closing.context(job_id)
+        return {
+            **strategies.execution.closing.context(job_id),
+            "liquidation": strategies.execution.liquidation.view(job_id),
+        }
 
     def execution_alerts(account_id: str = "") -> dict:
         """Inspect saved order/fill subscriptions and recent observed execution notifications.

@@ -118,6 +118,7 @@ class StrategyControls:
                 }
                 paused = []
                 if halted:
+                    self.runner.liquidation.interrupt_all(db, HALT_MESSAGE)
                     for row in db.execute(
                         "SELECT id,payload FROM strategy_jobs WHERE json_extract(payload,'$.mode')='exchange' "
                         "AND json_extract(payload,'$.status')='running'"

@@ -77,6 +77,7 @@ export function DecisionJournal({
             <option value="CANCEL_RECONCILED">Cancellation evidence matched</option>
             <option value="STOP_CANCEL">Stop &amp; cancel approvals</option>
             <option value="CLOSE_APPROVED">Exit approvals</option>
+            <option value="LIQUIDATION">Liquidation plans</option>
             <option value="CLOSE_SUBMITTED">Exit orders submitted</option>
             <option value="CLOSE_UNKNOWN">Exit outcome uncertain</option>
             <option value="CLOSE_RECONCILING">Exit fill checks</option>

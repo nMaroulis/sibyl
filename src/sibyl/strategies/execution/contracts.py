@@ -58,3 +58,19 @@ class ClosePositionRequest(Request):
     max_spread_bps: float = Field(default=50, gt=0, le=500)
     fee_reserve_bps: float = Field(default=100, ge=10, le=500)
     order_lifetime_seconds: int | None = Field(default=300, ge=60, le=86_400, strict=True)
+
+
+class LiquidationRequest(ClosePositionRequest):
+    """Limit one sequential sell plan by order count, quantity and elapsed time."""
+
+    max_orders: int = Field(default=3, ge=2, le=5, strict=True)
+    max_order_base: float | None = Field(default=None, gt=0, le=1_000_000)
+    duration_minutes: int = Field(default=20, ge=5, le=60, strict=True)
+    order_lifetime_seconds: int = Field(default=120, ge=60, le=300, strict=True)
+
+    @model_validator(mode="after")
+    def usable_time_window(self):
+        """Leave room for the worker to prepare the first order before expiry."""
+        if self.duration_minutes * 60 <= self.order_lifetime_seconds:
+            raise ValueError("The plan duration must exceed one order lifetime.")
+        return self
