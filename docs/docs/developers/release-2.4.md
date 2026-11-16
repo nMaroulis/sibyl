@@ -35,7 +35,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Approve historical funding for reconciled sale shortfalls using asserted basis and origin, preserving native cash/fills, archived receipts and revision guards.
 - [x] Link reconciled earlier buys as historical sale funding evidence, including exact venue-discovered orders, proportional basis and bounded aggregate reservations.
 - [x] Retain Coinbase Exchange Sandbox settlement observations in the shared fill ledger and require them for further strategy orders and linked funding.
-- [ ] Verify continuous unmanaged custody and placement channels. Extend venue settlement coverage and handle trade busts.
+- [x] Import Gemini trade breaks in available spot history and exact-order reads, preserving audit revisions and voiding fully busted fills in accounting.
+- [ ] Verify continuous unmanaged custody and placement channels, reconcile Gemini's separate manual adjustments and extend venue settlement/bust coverage.
 - [ ] Authenticated partial-fill/cancel races, late corrections and outage recovery across additional venues. See [the exchange acceptance record](exchange-acceptance.md#automated-strategy-acceptance).
 - [x] Native optional Optuna TPE/random numeric distributions, causal trusted-plugin validation and one-off pinned research jobs, with bounded trial/test evidence and exact version-pinned replay.
 - [x] Multi-asset historical target-allocation studies with exact common inputs, post-cost sizing, interval/drift rebalancing, cost-matched benchmarks, interactive/paged evidence and version/fingerprint-checked offline reruns.

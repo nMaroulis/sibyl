@@ -350,7 +350,7 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                       {reconciliationLabel(order.reconciliation?.status)} ↗
                     </button>
                     <small className="table-subline">
-                      {order.reconciliation?.fill_count ?? 0} retained fills
+                      {order.reconciliation?.fill_count ?? 0} counted fills
                     </small>
                   </td>
                   <td>

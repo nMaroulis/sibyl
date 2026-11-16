@@ -36,6 +36,7 @@ class Acquisitions:
         if (
             fill["side"] != "buy"
             or not fill["order_id"]
+            or fill.get("trade_break")
             or fill["notional"] is None
             or not fill["fees_known"]
         ):

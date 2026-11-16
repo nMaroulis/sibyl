@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pause, Play, RefreshCw } from 'lucide-react';
 import { number, post, refresh } from '../lib/api';
+import {
+  fillBreakLabels,
+  fillBreakSummary,
+  type FillBreak,
+  type FillBreakCounts,
+} from '../lib/fill-break';
 import { useResource } from '../lib/hooks';
 import { Badge, Empty, ErrorState, Loading, Modal } from './ui';
 import type { ManagedOrder } from './order-monitor';
@@ -18,6 +24,7 @@ export type Reconciliation = {
   native_cost: number | null;
   fees: { currency: string; cost: number | null }[];
   unknown_fee_fills: number;
+  trade_breaks?: FillBreakCounts;
   settlement?: {
     state: 'reported_settled' | 'pending' | 'incomplete' | 'unobserved';
     settled: number;
@@ -43,6 +50,7 @@ type Fill = {
   price: number;
   fees_known: boolean;
   venue_settled?: boolean;
+  trade_break?: FillBreak;
   fees: { currency: string | null; cost: number | null }[];
 };
 type Detail = {
@@ -62,6 +70,7 @@ export const reconciliationLabel = (status?: string) =>
     unverified: 'Aggregate unavailable',
     limit_reached: 'Evidence limit reached',
     not_checked: 'Not checked',
+    trade_break_review: 'Trade reversal needs review',
   })[status || 'not_checked'] || status;
 const settlementLabels = {
   reported_settled: 'Settlement reported',
@@ -145,7 +154,7 @@ export function OrderReconciliation({
             </div>
             <Badge
               tone={
-                ['mismatch', 'missing_fills', 'limit_reached'].includes(result.status)
+                ['mismatch', 'missing_fills', 'limit_reached', 'trade_break_review'].includes(result.status)
                   ? 'rose'
                   : 'neutral'
               }
@@ -194,6 +203,11 @@ export function OrderReconciliation({
                 {settlementLabels[result.settlement.state]}
               </Badge>
             </div>
+          )}
+          {result.trade_breaks && (
+            <p className="inline-alert">
+              {fillBreakSummary(result.trade_breaks)}. Execution totals exclude these fills.
+            </p>
           )}
           <div className="order-reconciliation-actions">
             <button
@@ -255,7 +269,7 @@ export function OrderReconciliation({
             </p>
           )}
           <p className="footnote">
-            {result.fill_count} retained {result.fill_count === 1 ? 'execution' : 'executions'} ·{' '}
+            {result.fill_count} counted {result.fill_count === 1 ? 'execution' : 'executions'} ·{' '}
             {example
               ? 'Illustrative record'
               : result.sync.enabled === false &&
@@ -283,6 +297,9 @@ export function OrderReconciliation({
                       <td>
                         {new Date(fill.created_at).toLocaleString()}
                         <small className="table-subline">{fill.trade_id}</small>
+                        {fill.trade_break && (
+                          <small className="table-subline">{fillBreakLabels[fill.trade_break]}</small>
+                        )}
                         {result.settlement && (
                           <small className="table-subline">
                             {fill.venue_settled == null

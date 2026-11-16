@@ -14,6 +14,12 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { exportCSV, number, post, refresh, shortDate } from '../lib/api';
+import {
+  fillBreakLabels,
+  fillBreakSummary,
+  type FillBreak,
+  type FillBreakCounts,
+} from '../lib/fill-break';
 import { useResource } from '../lib/hooks';
 import type { Connection } from '../lib/types';
 import { ExchangeMark } from './exchange-mark';
@@ -73,6 +79,7 @@ type Fill = {
   fees: { currency: string | null; cost: number | null }[];
   fees_known: boolean;
   venue_settled?: boolean;
+  trade_break?: FillBreak;
 };
 type Ledger = {
   items: Fill[];
@@ -80,6 +87,7 @@ type Ledger = {
   has_more: boolean;
   fee_totals: Record<string, number>;
   missing_fee_count: number;
+  trade_breaks?: FillBreakCounts;
   note: string;
 };
 const activeStatuses = ['queued', 'running', 'retrying'];
@@ -507,6 +515,7 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                             'Fees',
                             'Fees complete',
                             'Venue settlement',
+                            'Trade break',
                             'Trade ID',
                             'Order ID',
                             'Sibyl fill ID',
@@ -529,6 +538,7 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                               : item.venue_settled
                                 ? 'reported settled'
                                 : 'pending',
+                            item.trade_break ?? '',
                             item.trade_id,
                             item.order_id ?? '',
                             item.id,
@@ -612,6 +622,12 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                           </span>
                         )}
                       </div>
+                      {!!Object.keys(ledger.data?.trade_breaks ?? {}).length && (
+                        <p className="footnote padded">
+                          {fillBreakSummary(ledger.data?.trade_breaks ?? {})}. These fills are
+                          excluded from fee totals.
+                        </p>
+                      )}
                       {rows.length ? (
                         <div className="table-scroll">
                           <table>
@@ -658,6 +674,9 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                                   </td>
                                   <td className="account-ledger-ids">
                                     Fill {item.trade_id}
+                                    {item.trade_break && (
+                                      <small className="table-subline">{fillBreakLabels[item.trade_break]}</small>
+                                    )}
                                     {item.venue_settled != null && (
                                       <small className="table-subline">
                                         {item.venue_settled ? 'Settlement reported' : 'Settlement pending'}

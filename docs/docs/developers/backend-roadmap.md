@@ -64,7 +64,7 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
 - [x] Add available-history rescans, revision guards for stale in-flight responses, repeated-page protection, correction counts and retained execution ranges.
 - [x] Retain append-only normalized fill revisions atomically with ledger/import updates; distinguish legacy baselines and identical observations.
-- [ ] Add complete cash-event coverage, account-wide balance reconciliation, execution bust/removal handling and complete order amendment audits beyond observed fill/funding revisions.
+- [ ] Add complete cash-event coverage, account-wide balance reconciliation, additional provider execution bust/removal handling and complete order amendment audits beyond observed fill/funding revisions.
 - [x] Match discovered native IDs to local submissions and resume saved discovery pages after restart; uncertain client IDs stay on the reviewed recovery path.
 - [ ] Exercise authenticated reads and sandbox order lifecycles against actual test accounts.
 
@@ -98,7 +98,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
 - [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
 - [x] Retain Coinbase Exchange Sandbox's native per-fill settlement flag. Share changes across exact reconciliation and Account history, with versioned evidence and separate settlement status.
-- [ ] Add broader venue settlement coverage, explicit execution bust/removal handling and additional discovery/adapters.
+- [x] Preserve explicit Gemini trade breaks with native fill IDs and an append-only history. Exclude full busts from accounting and mark manual or unverified breaks for review.
+- [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.
 - [x] Exercise real Testnet conditional open/cancel, native OCO with deliberately lost response, exact child recovery, sibling cancellation, unfilled cancel/replace, duplicate approval identities and a fill-winning marketable-limit observation. Intermediate partial fills, true outages, late fee corrections and other venues remain unaccepted.

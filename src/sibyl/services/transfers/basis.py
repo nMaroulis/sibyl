@@ -73,7 +73,7 @@ def snapshot(db, account_id: str, symbol: str, environment: str, max_fills: int)
         args.append(environment)
     fill_clauses, fill_args = list(clauses), list(args)
     if symbol:
-        fill_clauses.append("symbol=?")
+        fill_clauses.append("(symbol=? OR json_extract(payload,'$.trade_break') IN ('manual','unverified'))")
         fill_args.append(symbol)
     where = " AND ".join(fill_clauses) or "1=1"
     count = db.execute(f"SELECT COUNT(*) FROM account_fills WHERE {where}", fill_args).fetchone()[0]
@@ -94,7 +94,8 @@ def snapshot(db, account_id: str, symbol: str, environment: str, max_fills: int)
     ]
     markets = defaultdict(set)
     for identity, pair in db.execute(
-        "SELECT account_id,symbol FROM account_fills UNION SELECT account_id,symbol FROM opening_inventory"
+        "SELECT account_id,symbol FROM account_fills WHERE json_extract(payload,'$.trade_break') IS NOT 'full' "
+        "UNION SELECT account_id,symbol FROM opening_inventory"
     ):
         for asset in pair.split("/"):
             markets[(identity, asset)].add(pair)

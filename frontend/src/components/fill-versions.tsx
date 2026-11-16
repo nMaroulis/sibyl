@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { number } from '../lib/api';
+import { fillBreakLabels, type FillBreak } from '../lib/fill-break';
 import { useResource } from '../lib/hooks';
 import { Empty, ErrorState, Loading, Modal } from './ui';
 
@@ -14,6 +15,7 @@ type Observation = {
     exchange: string;
     environment: string;
     venue_settled?: boolean;
+    trade_break?: FillBreak;
     fees: { currency: string | null; cost: number | null }[];
   };
 };
@@ -52,6 +54,9 @@ export function FillVersions({ identity, onClose }: { identity: string; onClose:
                     <td>
                       {row.revision}
                       <small className="table-subline">{row.kind.replaceAll('_', ' ')}</small>
+                      {row.payload.trade_break && (
+                        <small className="table-subline">{fillBreakLabels[row.payload.trade_break]}</small>
+                      )}
                       {row.payload.exchange === 'coinbase-sandbox' && row.payload.environment === 'test' && (
                         <small className="table-subline">
                           {row.payload.venue_settled == null

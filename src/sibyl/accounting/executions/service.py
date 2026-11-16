@@ -87,6 +87,8 @@ class AccountBooksService:
                 raise ValueError("Opening review exceeds the 20,000-fill accounting budget.")
             for raw in fills:
                 row = json.loads(raw[0])
+                if row.get("trade_break") == "full":
+                    continue
                 affected = set(row["symbol"].split("/")) | {
                     fee["currency"] for fee in row["fees"] if fee["currency"]
                 }
@@ -255,7 +257,7 @@ class AccountBooksService:
             "account_id": account_id,
             "as_of": datetime.now(UTC).isoformat(),
             "input_fingerprint": fingerprint,
-            "fill_count": len(fills),
+            "fill_count": sum(not row.get("trade_break") for row in fills),
             "funding_count": len(funding),
             "fill_observation_count": revisions[0],
             "reports": reports,
@@ -271,6 +273,8 @@ class AccountBooksService:
         """An older import or corrected timestamp can invalidate a saved assertion."""
         earliest = {}
         for fill in fills:
+            if fill.get("trade_break") == "full":
+                continue
             assets = set(fill["symbol"].split("/")) | {
                 fee["currency"] for fee in fill["fees"] if fee["currency"]
             }

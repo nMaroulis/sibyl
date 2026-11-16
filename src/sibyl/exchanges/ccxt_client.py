@@ -347,6 +347,10 @@ class CCXTClient(ExchangeClient):
             self._require("fetchMyTrades", private=True)
             self.market(symbol)
             rows = self._exchange.fetch_my_trades(symbol, since=since, limit=limit)
+            if self.history_kind == "gemini-trades":
+                from sibyl.exchanges.venue_history import normalize_gemini_trade
+
+                return [normalize_gemini_trade(row, row.get("info")) for row in rows[:limit]]
             return [normalize_trade(row) for row in rows[:limit]]
 
     def fetch_trade_page(self, symbol: str, cursor: dict, limit: int = 100) -> TradePage:

@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Gemini spot imports retain trade reversals in Account history and order reconciliation. Full busts remove the fill and fees from accounting totals. Manual and unverified breaks flag affected balance checks and net results for review. Earlier fill observations remain available.
+
 - Trade and Account history show per-fill settlement reported by Coinbase Exchange Sandbox. Exchange strategies wait for reported settlement on filled terminal orders. Later settlement corrections reopen dependent execution and ownership checks.
 
 - Historical sale funding can link an earlier reconciled buy, including fills from venue-discovered orders. Sibyl derives fee-adjusted acquisition basis, checks active reservations at approval and requires a new review when either linked fill changes. The user records why the units were still unmanaged.

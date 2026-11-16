@@ -8,6 +8,7 @@ from matched results. They never infer missing history, ownership or tax rules.
 from collections import Counter, defaultdict
 from decimal import Decimal, localcontext
 
+from sibyl.accounting.executions.breaks import BREAK_REVIEW, affected_assets
 from sibyl.accounting.executions.group_lots import apply_group
 from sibyl.services.portfolio.fifo import FifoBook, decimal, public
 from sibyl.services.transfers.allocation import split_lots
@@ -29,6 +30,7 @@ class AssetBooks:
         self.funding_fees = defaultdict(lambda: ZERO)
         self.funding_fee_unknown = set()
         self.transit = {}
+        self.break_assets = set()
 
     def value(self, asset, quantity, timestamp, identity, *, hint=None):
         """Value an exact native quantity; retain each actual route or missing rate."""
@@ -93,6 +95,9 @@ class AssetBooks:
                 for lot in lots:
                     if lot["cost"] is None:
                         lot["cost"] = lot["quantity"]
+        if key in self.break_assets:
+            for lot in lots:
+                lot["cost"] = None
         return lots
 
     def dispose(self, key, quantity, proceeds, timestamp, identity, kind):
@@ -331,10 +336,16 @@ def replay(currency, prices, fills, funding, openings, transfers):
                     mapped[event["id"]] = link, kind
         touches = Counter()
         for row in fills:
+            trade_break = row.get("trade_break")
+            if trade_break:
+                if reason := BREAK_REVIEW.get(trade_break):
+                    for asset in affected_assets(row):
+                        key = (row["account_id"], asset)
+                        books.break_assets.add(key)
+                        books.issues[key].add(reason)
+                continue
             timeline.append((row["timestamp_ms"], 1, row["id"], "fill", row))
-            for asset in set(row["symbol"].split("/")) | {
-                f["currency"] for f in row["fees"] if f["currency"]
-            }:
+            for asset in affected_assets(row):
                 touches[row["account_id"], asset, row["timestamp_ms"]] += 1
         dispatch_ties = Counter()
         for row in funding:
