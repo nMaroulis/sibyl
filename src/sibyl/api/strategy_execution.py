@@ -230,7 +230,8 @@ class SaleFundingAssertion(Request):
     """The user's asserted cost and origin for the units consumed by one sale."""
 
     fill_id: str = Field(min_length=1, max_length=80)
-    cost_basis: float = Field(ge=0, le=1e12, strict=True)
+    cost_basis: float | None = Field(default=None, ge=0, le=1e12, strict=True)
+    acquisition_fill_id: str | None = Field(default=None, min_length=1, max_length=80)
     note: str = Field(min_length=1, max_length=300)
 
 

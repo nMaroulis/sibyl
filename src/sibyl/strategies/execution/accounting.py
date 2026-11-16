@@ -8,6 +8,7 @@ from contextlib import nullcontext
 from sibyl.services.trading.reconciliation import summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.fees import foreign_fees
+from sibyl.strategies.execution.ownership.acquisitions import Acquisitions
 from sibyl.strategies.execution.ownership.ledger import replay
 from sibyl.strategies.execution.ownership.sale_funding import (
     UNIT_TOLERANCE,
@@ -47,6 +48,12 @@ def project(job, trading, *, db=None, repair=None):
         fee_entries = foreign_fees(db, job, fills) if len(rows) <= 10000 else []
         ownership, ownership_stale = (repair.events, False) if repair else replay(db, job["id"])
         funding_version, previous_funding = active_funding(db, job["id"])
+        acquisitions = Acquisitions(db)
+        valid_sources = {
+            fill["id"]
+            for fill in fills
+            if (funding := previous_funding.get(fill["id"])) and acquisitions.still_matches(funding, fill)
+        }
         sync = {
             row[0]: json.loads(row[1])
             for row in db.execute(
@@ -119,7 +126,7 @@ def project(job, trading, *, db=None, repair=None):
             if repair:
                 funding = repair.sale_funding.resolve(job, fill, deficit, previous)
             elif previous and not ownership_stale:
-                if matches_funding(previous, fill, deficit):
+                if fill["id"] in valid_sources and matches_funding(previous, fill, deficit):
                     funding = previous
                 else:
                     ownership_stale = unknown = True

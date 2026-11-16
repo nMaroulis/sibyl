@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Historical sale funding can link an earlier reconciled buy, including fills from venue-discovered orders. Sibyl derives fee-adjusted acquisition basis, checks active reservations at approval and requires a new review when either linked fill changes. The user records why the units were still unmanaged.
+
 - A reconciled sale with insufficient recorded ownership can be repaired using an explicitly asserted historical contribution from unmanaged holdings. The contribution is consumed by its linked sale and uses the execution price as its reference mark. The decision journal preserves the asserted basis, source note and each later revision alongside the native fill.
 
 - Underfunded local releases can be repaired after a fill correction. Sibyl uses the units available at the release’s original checkpoint and caps any restoration at the amount originally approved. Repair receipts retain the original history, and unresolved venue sales show the exact shortfall.

@@ -29,6 +29,8 @@ def unattributed_fill(fill, matches):
     order = matches[0] if len(matches) == 1 else None
     if order and order["origin"] in {"sibyl", "replacement", "oco"}:
         return {**evidence, "origin": "sibyl_manual", "intent_id": order["id"]}
+    if order and order["origin"] == "imported":
+        return {**evidence, "origin": "venue_discovered", "intent_id": order["id"]}
     return {**evidence, "origin": "unknown", "intent_id": None}
 
 
@@ -140,6 +142,7 @@ class PositionOwnership:
                 "history": job["ownership_events"],
                 "funded_sales": [
                     {key: row[key] for key in ("fill_id", "quantity", "cost_basis", "reference_value")}
+                    | {"linked_buy": bool(row.get("acquisition"))}
                     for row in list(job["_sale_funding"].values())[-50:]
                 ],
                 "event_count": job["ownership_event_count"],
@@ -172,6 +175,8 @@ class PositionOwnership:
                         "WHERE json_extract(o.payload,'$.request.connection_id')=f.account_id "
                         "AND json_extract(o.payload,'$.request.symbol')=f.symbol "
                         "AND json_extract(o.payload,'$.request.side')=json_extract(f.payload,'$.side') "
+                        "AND json_extract(o.payload,'$.environment')=json_extract(f.payload,'$.environment') "
+                        "AND json_extract(o.payload,'$.exchange')=json_extract(f.payload,'$.exchange') "
                         "AND json_extract(o.payload,'$.exchange_order_id')=json_extract(f.payload,'$.order_id') "
                         "AND json_extract(o.payload,'$.status') NOT IN ('preview','submitting','unknown','rejected')) "
                         "FROM account_fills f WHERE f.account_id=? AND f.symbol LIKE ? "

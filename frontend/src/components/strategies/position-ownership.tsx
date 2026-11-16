@@ -38,7 +38,7 @@ type Check = {
     side: string;
     quantity: number;
     created_at: string;
-    origin?: 'sibyl_manual' | 'unknown';
+    origin?: 'sibyl_manual' | 'venue_discovered' | 'unknown';
     intent_id?: string | null;
   }[];
 };
@@ -54,6 +54,7 @@ type State = {
     quantity: number;
     cost_basis: number;
     reference_value: number;
+    linked_buy?: boolean;
   }[];
   event_count: number;
   check?: Check;
@@ -254,7 +255,9 @@ export function PositionOwnership({ job }: { job: Job }) {
                       <small>
                         {f.origin === 'sibyl_manual'
                           ? 'Matched Sibyl manual order'
-                          : 'Order origin unknown'}
+                          : f.origin === 'venue_discovered'
+                            ? 'Venue-discovered order'
+                            : 'Order origin unknown'}
                         {' · '}
                         {new Date(f.created_at).toLocaleString()}
                       </small>
@@ -274,7 +277,7 @@ export function PositionOwnership({ job }: { job: Job }) {
             <details className="advanced-options">
               <summary>Funded historical sales ({data.funded_sales.length})</summary>
               <p className="footnote">
-                User-asserted basis for units consumed by reconciled sales.
+                Linked or asserted basis for units consumed by reconciled sales.
               </p>
               {data.funded_sales.map((sale) => (
                 <p className="ownership-history-row" key={sale.fill_id}>
@@ -282,8 +285,9 @@ export function PositionOwnership({ job }: { job: Job }) {
                     {number(sale.quantity, 8)} {base} · fill {sale.fill_id.slice(0, 8)}
                   </span>
                   <small>
-                    {number(sale.cost_basis, 8)} {quote} basis · {number(sale.reference_value, 8)}{' '}
-                    {quote} reference flow
+                    {number(sale.cost_basis, 8)} {quote}{' '}
+                    {sale.linked_buy ? 'linked basis' : 'asserted basis'} ·{' '}
+                    {number(sale.reference_value, 8)} {quote} reference flow
                   </small>
                 </p>
               ))}

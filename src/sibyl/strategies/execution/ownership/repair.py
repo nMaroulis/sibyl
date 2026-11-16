@@ -11,6 +11,7 @@ from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ExecutionGuard
 from sibyl.strategies.execution.liquidation import active_plan
 from sibyl.strategies.execution.ownership import ledger
+from sibyl.strategies.execution.ownership.acquisitions import Acquisitions
 from sibyl.strategies.execution.ownership.sale_funding import SaleFundingReview
 
 MAX_RUNS = 24
@@ -186,8 +187,9 @@ class OwnershipRepairs:
         self, db, selected, *, allow_quantity_changes, repair_releases, review_sale_funding, sale_funding
     ):
         transfers, rebound, adjustments, summaries, inputs = {}, {}, [], [], []
-        funding_review = SaleFundingReview(review_sale_funding, sale_funding)
-        funding_updates, funding_changes = {}, []
+        acquisitions = Acquisitions(db)
+        funding_review = SaleFundingReview(review_sale_funding, sale_funding, acquisitions)
+        funding_updates, funding_changes, reservation_changes = {}, [], []
         seen_fills = set()
         has_correction = False
         family = self._family(db, selected)
@@ -252,6 +254,7 @@ class OwnershipRepairs:
             if approved != proposed:
                 has_correction = True
                 funding_updates[identity] = proposed
+                reservation_changes.append((approved, proposed))
                 funding_changes.extend(
                     {**row, "status": "approved"}
                     for fill_id, row in proposed.items()
@@ -298,6 +301,7 @@ class OwnershipRepairs:
                 for event in receipts
             )
         funding_review.check_assertions()
+        acquisitions.check_repair(reservation_changes)
         if not has_correction:
             raise ExecutionGuard("This handoff family has no corrected source evidence to review.")
         pending = any(row["missing_basis"] for row in funding_review.required)
@@ -355,6 +359,11 @@ class OwnershipRepairs:
                 {field: value for field, value in row.items() if field != hidden_key}
                 for row in review.get(key, [])
             ]
+        for row in public["funding_changes"]:
+            if source := row.get("acquisition"):
+                row["acquisition"] = {
+                    key: source[key] for key in ("fill_id", "trade_id", "order_id", "origin", "timestamp_ms")
+                }
         return public
 
     def preview(

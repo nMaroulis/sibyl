@@ -108,7 +108,7 @@ def test_third_currency_fee_requires_a_closed_same_source_rate(execution):
     assert len(native.calls) == 1
 
 
-@pytest.mark.parametrize("origin,expected", [("sibyl", "sibyl_manual"), ("imported", "unknown")])
+@pytest.mark.parametrize("origin,expected", [("sibyl", "sibyl_manual"), ("imported", "venue_discovered")])
 def test_manual_provenance_uses_exact_local_intent_only(origin, expected):
     fill = {"id": "fill"}
     order = {"id": "intent", "origin": origin}

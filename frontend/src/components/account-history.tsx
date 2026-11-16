@@ -507,6 +507,7 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                             'Fees complete',
                             'Trade ID',
                             'Order ID',
+                            'Sibyl fill ID',
                           ],
                           ...rows.map((item) => [
                             item.created_at,
@@ -523,6 +524,7 @@ export function AccountHistory({ active = true }: { active?: boolean }) {
                             item.fees_known ? 'yes' : 'no',
                             item.trade_id,
                             item.order_id ?? '',
+                            item.id,
                           ]),
                         ])
                       }

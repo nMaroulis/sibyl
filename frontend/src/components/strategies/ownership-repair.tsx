@@ -6,6 +6,21 @@ import { useResource } from '../../lib/hooks';
 import { monitorURL } from '../../lib/strategy-monitor';
 import { ErrorState, Loading, Modal, useToast } from '../ui';
 
+type FundingAssertion = {
+  fill_id: string;
+  note: string;
+  cost_basis?: number;
+  acquisition_fill_id?: string;
+};
+
+type Acquisition = {
+  fill_id: string;
+  trade_id: string;
+  order_id: string;
+  timestamp_ms: number;
+  origin: 'venue_discovered' | 'sibyl_manual';
+};
+
 type SaleFunding = {
   job_id: string;
   fill_id: string;
@@ -13,6 +28,7 @@ type SaleFunding = {
   timestamp_ms: number;
   quantity: number;
   reference_value: number;
+  acquisition_candidates?: (Acquisition & { estimated_basis: number })[];
 };
 
 type Repair = {
@@ -28,6 +44,7 @@ type Repair = {
     cost_basis: number;
     note: string;
     status: 'approved' | 'retired';
+    acquisition?: Acquisition;
   })[];
   runs: {
     job_id: string;
@@ -63,7 +80,9 @@ export function OwnershipRepairDialog({
   const [allowQuantity, setAllowQuantity] = useState(false);
   const [repairReleases, setRepairReleases] = useState(false);
   const [fundSales, setFundSales] = useState(false);
-  const [assertions, setAssertions] = useState<Record<string, { basis: string; note: string }>>({});
+  const [assertions, setAssertions] = useState<
+    Record<string, { basis: string; note: string; source: string; customId: string }>
+  >({});
   const [fundedPreview, setFundedPreview] = useState<Repair>();
   const review = useResource<Repair>(
     receiptId
@@ -87,13 +106,14 @@ export function OwnershipRepairDialog({
     allow_quantity_changes: allowQuantity,
     repair_releases: repairReleases,
     review_sale_funding: fundSales,
-    sale_funding: requirements
-      .filter((row) => assertions[row.fill_id]?.basis.trim() && assertions[row.fill_id].note.trim())
-      .map((row) => ({
-        fill_id: row.fill_id,
-        cost_basis: Number(assertions[row.fill_id].basis),
-        note: assertions[row.fill_id].note.trim(),
-      })),
+    sale_funding: requirements.flatMap<FundingAssertion>((row) => {
+      const input = assertions[row.fill_id];
+      if (!input?.note.trim()) return [];
+      const buyId = input.source === 'other' ? input.customId.trim() : input.source;
+      const fields = { fill_id: row.fill_id, note: input.note.trim() };
+      if (input.source) return buyId ? [{ ...fields, acquisition_fill_id: buyId }] : [];
+      return input.basis.trim() ? [{ ...fields, cost_basis: Number(input.basis) }] : [];
+    }),
   };
   const resetPreview = () => {
     setConfirmation('');
@@ -205,10 +225,23 @@ export function OwnershipRepairDialog({
         >
           <p className="footnote">
             Confirm that the missing units came from unmanaged holdings in this exchange account.
-            Enter the total acquisition cost and how you know their origin for each sale.
+            Link a reconciled buy or enter an asserted cost. Record why the units were available in
+            either case.
           </p>
           {requirements.map((sale) => {
-            const input = assertions[sale.fill_id] ?? { basis: '', note: '' };
+            const input = assertions[sale.fill_id] ?? {
+              basis: '',
+              note: '',
+              source: '',
+              customId: '',
+            };
+            const candidates =
+              review.data?.funding_requirements?.find((row) => row.fill_id === sale.fill_id)
+                ?.acquisition_candidates ?? [];
+            const changeInput = (patch: Partial<typeof input>) => {
+              setAssertions({ ...assertions, [sale.fill_id]: { ...input, ...patch } });
+              resetPreview();
+            };
             return (
               <fieldset key={sale.fill_id} className="form">
                 <legend>
@@ -219,24 +252,54 @@ export function OwnershipRepairDialog({
                   {new Date(sale.timestamp_ms).toLocaleString()}
                 </p>
                 <label>
-                  Asserted acquisition cost ({quote})
-                  <input
-                    required
-                    type="number"
-                    step="any"
-                    min={0}
-                    max={1e12}
-                    value={input.basis}
+                  Acquisition basis
+                  <select
+                    value={input.source}
                     disabled={busy}
-                    onChange={(event) => {
-                      setAssertions({
-                        ...assertions,
-                        [sale.fill_id]: { ...input, basis: event.target.value },
-                      });
-                      resetPreview();
-                    }}
-                  />
+                    onChange={(event) => changeInput({ source: event.target.value })}
+                  >
+                    <option value="">Enter a cost assertion</option>
+                    {candidates.map((buy) => (
+                      <option value={buy.fill_id} key={buy.fill_id}>
+                        {buy.origin === 'venue_discovered'
+                          ? 'Venue-discovered buy'
+                          : 'Recorded Sibyl buy'}
+                        {' · '}
+                        {new Date(buy.timestamp_ms).toLocaleDateString()}
+                        {' · '}
+                        {number(buy.estimated_basis, 8)} {quote} · order {buy.order_id}
+                      </option>
+                    ))}
+                    <option value="other">Link another retained buy fill</option>
+                  </select>
                 </label>
+                {input.source === 'other' && (
+                  <label>
+                    Retained buy fill ID
+                    <input
+                      required
+                      maxLength={80}
+                      value={input.customId}
+                      disabled={busy}
+                      onChange={(event) => changeInput({ customId: event.target.value })}
+                    />
+                  </label>
+                )}
+                {!input.source && (
+                  <label>
+                    Asserted acquisition cost ({quote})
+                    <input
+                      required
+                      type="number"
+                      step="any"
+                      min={0}
+                      max={1e12}
+                      value={input.basis}
+                      disabled={busy}
+                      onChange={(event) => changeInput({ basis: event.target.value })}
+                    />
+                  </label>
+                )}
                 <label>
                   Origin of these units
                   <input
@@ -245,11 +308,7 @@ export function OwnershipRepairDialog({
                     value={input.note}
                     disabled={busy}
                     onChange={(event) => {
-                      setAssertions({
-                        ...assertions,
-                        [sale.fill_id]: { ...input, note: event.target.value },
-                      });
-                      resetPreview();
+                      changeInput({ note: event.target.value });
                     }}
                   />
                 </label>
@@ -271,7 +330,7 @@ export function OwnershipRepairDialog({
           <p className="footnote">
             {data.approved_at ? `Approved ${new Date(data.approved_at).toLocaleString()}. ` : ''}
             {data.review_sale_funding
-              ? 'Historical funding enters at the sale’s execution price and is consumed by the same fill. Acquisition cost and the origin of the units are your assertions.'
+              ? 'The same sale consumes the historical funding. Linked purchases support the acquisition cost. Availability from unmanaged holdings remains your assertion.'
               : data.repair_releases
                 ? 'The repair recalculates the enabled ownership quantities using the units available and each receipt’s original reference price.'
                 : data.allow_quantity_changes
@@ -310,12 +369,21 @@ export function OwnershipRepairDialog({
               <ul>
                 {data.funding_changes.map((sale) => (
                   <li key={sale.fill_id}>
-                    {sale.status === 'retired' ? 'Retired' : 'Asserted'} ·{' '}
-                    {number(sale.quantity, 8)} {base} · fill {sale.fill_id.slice(0, 8)}
+                    {sale.status === 'retired'
+                      ? 'Retired'
+                      : sale.acquisition
+                        ? 'Linked buy'
+                        : 'Asserted'}{' '}
+                    · {number(sale.quantity, 8)} {base} · fill {sale.fill_id.slice(0, 8)}
                     <small className="table-subline">
                       {number(sale.cost_basis, 8)} {quote} basis · {number(sale.reference_value, 8)}{' '}
                       {quote} reference flow
                     </small>
+                    {sale.acquisition && (
+                      <small className="table-subline">
+                        Buy order {sale.acquisition.order_id} · trade {sale.acquisition.trade_id}
+                      </small>
+                    )}
                     <small className="table-subline">{sale.note}</small>
                   </li>
                 ))}

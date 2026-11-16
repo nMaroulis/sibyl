@@ -52,16 +52,20 @@ def matches_funding(receipt, fill, deficit):
 class SaleFundingReview:
     """Gather historical shortages and bind each user-asserted basis to its fill."""
 
-    def __init__(self, enabled, assertions):
+    def __init__(self, enabled, assertions, acquisitions):
         self.enabled = enabled
+        self.acquisitions = acquisitions
         self.assertions = {row["fill_id"]: row for row in assertions}
         if len(self.assertions) != len(assertions):
             raise ExecutionGuard("Each sale can have only one funding assertion.")
         if assertions and not enabled:
             raise ExecutionGuard("Enable the sale funding review before entering cost basis.")
         if len(assertions) > MAX_FUNDING or any(
-            not math.isfinite(row["cost_basis"])
-            or not 0 <= row["cost_basis"] <= 1e12
+            bool(row.get("acquisition_fill_id")) == (row.get("cost_basis") is not None)
+            or (
+                row.get("cost_basis") is not None
+                and (not math.isfinite(row["cost_basis"]) or not 0 <= row["cost_basis"] <= 1e12)
+            )
             or not row["note"].strip()
             or len(row["note"]) > 300
             for row in assertions
@@ -72,7 +76,11 @@ class SaleFundingReview:
 
     def resolve(self, job, fill, deficit, previous):
         """Return one provisional or retained funding entry, or let accounting block."""
-        if previous and matches_funding(previous, fill, deficit):
+        if (
+            previous
+            and matches_funding(previous, fill, deficit)
+            and self.acquisitions.still_matches(previous, fill)
+        ):
             return previous
         if not self.enabled:
             if previous:
@@ -95,11 +103,22 @@ class SaleFundingReview:
             "proof": fill_proof(fill),
         }
         assertion = self.assertions.get(fill["id"])
-        self.required.append({**entry, "missing_basis": assertion is None})
+        self.required.append(
+            {
+                **entry,
+                "missing_basis": assertion is None,
+                "acquisition_candidates": self.acquisitions.candidates(job["id"], fill, deficit)
+                if assertion is None
+                else [],
+            }
+        )
         if assertion is None:
             # Replay provisionally to locate later shortages. This can never be approved.
             return {**entry, "cost_basis": 0.0, "note": ""}
         self.used.add(fill["id"])
+        if buy_id := assertion.get("acquisition_fill_id"):
+            source, basis = self.acquisitions.allocate(buy_id, fill, deficit)
+            return {**entry, "cost_basis": basis, "note": assertion["note"], "acquisition": source}
         return {**entry, "cost_basis": assertion["cost_basis"], "note": assertion["note"]}
 
     def check_assertions(self):
