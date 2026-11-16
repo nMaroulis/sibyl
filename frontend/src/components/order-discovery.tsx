@@ -33,6 +33,7 @@ type Discovery = {
     active: boolean;
     supported: boolean;
     history_requires_symbols: boolean;
+    coverage_note?: string | null;
   }[];
   jobs: DiscoveryJob[];
   note: string;
@@ -62,9 +63,9 @@ export function OrderDiscovery({ active }: { active: boolean }) {
   const [error, setError] = useState('');
   const toast = useToast();
   const accounts = resource.data?.accounts.filter((row) => row.active && row.supported) ?? [];
-  const binance = accounts.some(
-    (row) => (!account || row.id === account) && row.history_requires_symbols,
-  );
+  const selectedAccounts = accounts.filter((row) => !account || row.id === account);
+  const binance = selectedAccounts.some((row) => row.history_requires_symbols);
+  const coverageNotes = [...new Set(selectedAccounts.flatMap((row) => row.coverage_note || []))];
   const start = async (job?: DiscoveryJob) => {
     setBusy(true);
     setError('');
@@ -125,8 +126,7 @@ export function OrderDiscovery({ active }: { active: boolean }) {
           ) : !accounts.length ? (
             <p className="inline-alert">
               Activate a supported exchange account or Demo in{' '}
-              <Link to="/settings?tab=exchanges">Settings ↗</Link>. Binance, Coinbase, Kraken and
-              their dedicated test/demo clients support discovery.
+              <Link to="/settings?tab=exchanges">Settings ↗</Link> to sync open and recent orders.
             </p>
           ) : (
             <form
@@ -186,6 +186,9 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                 Enabled discovery checks again about every five minutes while the account is active.
                 Individual order tracking is separate.
               </p>
+              {coverageNotes.map((note) => (
+                <p className="footnote" key={note}>{note}</p>
+              ))}
             </form>
           )}
         </div>

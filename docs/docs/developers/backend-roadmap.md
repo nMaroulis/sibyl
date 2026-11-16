@@ -96,9 +96,10 @@ Known orders now import native execution pages into the shared Account history l
 - [ ] Add these advanced orders to more providers; implement trailing, additional time-in-force, post-only and iceberg support.
 - [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini now also have bounded native imports and exact-order reconciliation, with explicit saturation/reversal/retention limits.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
-- [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
+- [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken, OKX and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
 - [x] Retain Coinbase Exchange Sandbox's native per-fill settlement flag. Share changes across exact reconciliation and Account history, with versioned evidence and separate settlement status.
 - [x] Preserve explicit Gemini trade breaks with native fill IDs and an append-only history. Exclude full busts from accounting and mark manual or unverified breaks for review.
+- [x] Add account-wide OKX cash spot order discovery with native pending/history endpoints, exact-ID checkpoints, explicit cancellation retention and shared fill evidence.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

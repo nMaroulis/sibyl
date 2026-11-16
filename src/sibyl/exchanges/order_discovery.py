@@ -6,6 +6,7 @@ import ccxt
 
 from sibyl.exchanges.base import number
 from sibyl.exchanges.history import _token
+from sibyl.exchanges.venue_history import identity
 
 DISCOVERY_PROVIDERS = {
     "binance",
@@ -14,9 +15,13 @@ DISCOVERY_PROVIDERS = {
     "coinbase",
     "coinbase-sandbox",
     "kraken",
+    "okx",
     "demo",
 }
 DAY_MS = 86_400_000
+DISCOVERY_NOTES = {
+    "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
+}
 
 
 def _binance_order(exchange, row):
@@ -117,6 +122,9 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
             [exchange.parse_order(row) for row in rows], {"after": token}, not rows or not token
         )
 
+    if provider == "okx":
+        return _okx_page(exchange, stream, cursor, start, end)
+
     if provider == "kraken":
         if stream == "open":
             rows = exchange.privatePostOpenOrders({"trades": False})["result"]["open"]
@@ -158,3 +166,43 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
             len(rows) - len(spot),
         )
     raise ccxt.NotSupported("Account order discovery is not reviewed for this provider.")
+
+
+def _okx_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
+    """Page cash spot orders by exact native ID, including pages with excluded orders."""
+    request = {"instType": "SPOT", "limit": "100"}
+    after = identity(cursor["after"]) if "after" in cursor else None
+    if after is not None:
+        request["after"] = after
+    if stream == "open":
+        result = exchange.privateGetTradeOrdersPending(request)
+        states = {"live", "partially_filled"}
+    else:
+        request.update(begin=str(start), end=str(end - 1))
+        result = exchange.privateGetTradeOrdersHistory(request)
+        states = {"filled", "canceled"}
+    rows = result.get("data") if isinstance(result, dict) and result.get("code") == "0" else None
+    if not isinstance(rows, list) or len(rows) > 100 or any(not isinstance(row, dict) for row in rows):
+        raise ccxt.ExchangeError("Invalid OKX account order page.")
+    ids = [identity(row.get("ordId")) for row in rows]
+    numeric_ids = list(map(int, ids))
+    before = int(after) if after is not None else None
+    if len(set(numeric_ids)) != len(ids) or any(
+        value <= 0 or (before is not None and value >= before) for value in numeric_ids
+    ):
+        raise ccxt.ExchangeError("OKX order IDs did not advance.")
+    selected = []
+    for order_id, row in zip(ids, rows, strict=True):
+        if row.get("instType") != "SPOT" or row.get("tdMode") != "cash":
+            continue
+        if row.get("state") not in states:
+            raise ccxt.ExchangeError("Unexpected OKX order state in the selected stream.")
+        if stream == "recent" and not start <= int(identity(row.get("cTime"))) < end:
+            raise ccxt.ExchangeError("OKX order is outside the selected creation window.")
+        parsed = exchange.parse_order(row)
+        # A triggered child is a regular order. CCXT may prefer its parent algo ID.
+        parsed["id"] = order_id
+        selected.append(parsed)
+    return OrderDiscoveryPage(
+        selected, {"after": min(ids, key=int)} if ids else {}, not rows, len(rows) - len(selected)
+    )

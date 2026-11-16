@@ -13,7 +13,7 @@ from pydantic import Field, field_validator
 
 from sibyl.alerts.orders.events import order_changed
 from sibyl.exchanges.base import number
-from sibyl.exchanges.order_discovery import DAY_MS, DISCOVERY_PROVIDERS, OrderDiscoveryPage
+from sibyl.exchanges.order_discovery import DAY_MS, DISCOVERY_NOTES, DISCOVERY_PROVIDERS, OrderDiscoveryPage
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import OrderRequest, Request
 from sibyl.services.accounts.ledger import now_iso
@@ -152,6 +152,7 @@ class OrderDiscovery:
                     **connection.model_dump(mode="json"),
                     "environment": environment(connection),
                     "supported": connection.exchange in DISCOVERY_PROVIDERS,
+                    "coverage_note": DISCOVERY_NOTES.get(connection.exchange),
                     "history_requires_symbols": connection.exchange
                     in {"binance", "binanceus", "binance-testnet"},
                 }

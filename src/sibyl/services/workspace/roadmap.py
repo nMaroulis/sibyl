@@ -34,12 +34,12 @@ AREAS = [
         "name": "Order management",
         "status": "partial",
         "priority": "next",
-        "working": "Manual market/GTC limits and cancellation for eight production providers and test clients; reviewed GTC limits/cancellation for the other twelve configured production providers. Binance/Testnet add native conditional GTC limits, linked OCO, child-ID recovery and reviewed unfilled-only native replacement with non-atomic outcomes. Actual Testnet checks cover conditional open/cancel, deliberately lost OCO response recovery, sibling cancellation, replacement and a fill-winning order. Per-exchange support tabs and per-instrument permissions keep limits explicit. Coinbase Exchange Sandbox retains per-fill settlement. Gemini full trade busts are voided in accounting and manual/unverified breaks are flagged for review.",
+        "working": "Manual market/GTC limits and cancellation for eight production providers and test clients; reviewed GTC limits/cancellation for the other twelve configured production providers. Binance/Testnet add native conditional GTC limits, linked OCO, child-ID recovery and reviewed unfilled-only native replacement with non-atomic outcomes. Actual Testnet checks cover conditional open/cancel, deliberately lost OCO response recovery, sibling cancellation, replacement and a fill-winning order. Per-exchange support tabs and per-instrument permissions keep limits explicit. OKX supports account-wide discovery for cash spot orders with native ID pagination. Coinbase Exchange Sandbox retains per-fill settlement. Gemini full trade busts are voided in accounting and manual/unverified breaks are flagged for review.",
         "pending": [
             "Broader discovery/recovery adapters, external amendments, Gemini manual balance adjustments and wider venue settlement and trade-bust coverage.",
             "Conditional/OCO and replacement adapters for additional providers, partial-order amendment, trailing, post-only, iceberg and other time-in-force choices.",
             "Market execution, exact-order reconciliation and broader authenticated acceptance for Gate, Bitget, MEXC, HTX, Crypto.com, Bitfinex, CoinEx, BitMart, Phemex, Poloniex and Upbit. Their guarded GTC limit/cancel adapters are implemented.",
-            "Client-ID recovery and account-wide discovery for OKX, Bybit, KuCoin, Bitstamp and Gemini.",
+            "Client-ID recovery for OKX, Bybit, KuCoin, Bitstamp and Gemini. Account-wide discovery for Bybit, KuCoin, Bitstamp and Gemini.",
         ],
     },
     {

@@ -99,6 +99,23 @@ class OKXClient(CCXTClient):
         """OKX accepts at most 32 alphanumeric characters; persist the native ID."""
         return identity.replace("-", "")
 
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep native cash order IDs and separate quote-size requests from executed cost."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if not isinstance(native, dict) or native.get("instType") != "SPOT" or native.get("tdMode") != "cash":
+            return order
+        if native.get("ordId"):
+            order["id"] = str(native["ordId"])
+        if native.get("ordType") == "market":
+            quantity_unit = native.get("tgtCcy") or (
+                "quote_ccy" if native.get("side") == "buy" else "base_ccy"
+            )
+            if quantity_unit != "base_ccy":
+                order.update(amount=None, remaining=None, cost=None)
+        return order
+
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
         """Use cash trading and base units, including market buys."""
         return self._exchange.create_order(

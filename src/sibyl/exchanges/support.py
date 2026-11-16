@@ -7,7 +7,7 @@ submission, resumable imports or recovery. Those require Sibyl's explicit gates.
 from sibyl.exchanges.catalog import STRATEGY_EXECUTION_PROVIDERS
 from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import funding_streams
-from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS
+from sibyl.exchanges.order_discovery import DISCOVERY_NOTES, DISCOVERY_PROVIDERS
 from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS
 from sibyl.exchanges.spot_history import history_note
@@ -181,7 +181,10 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                     "discovery",
                     "Import account orders",
                     spec.id in DISCOVERY_PROVIDERS,
-                    "Read-only discovery of account orders, including orders placed outside Sibyl."
+                    DISCOVERY_NOTES.get(
+                        spec.id,
+                        "Read-only discovery of account orders, including orders placed outside Sibyl.",
+                    )
                     if spec.id in DISCOVERY_PROVIDERS
                     else "Account-wide order discovery is not implemented; exact-pair open-order reads are separate.",
                 ),
