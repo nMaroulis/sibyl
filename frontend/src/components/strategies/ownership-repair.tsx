@@ -10,6 +10,7 @@ type Repair = {
   id: string;
   confirmation: string;
   approved_at?: string;
+  allow_quantity_changes?: boolean;
   runs: {
     job_id: string;
     symbol: string;
@@ -24,6 +25,10 @@ type Repair = {
     action: string;
     previous_cost_basis: number;
     cost_basis: number;
+    previous_quantity?: number;
+    quantity?: number;
+    previous_reference_value?: number;
+    reference_value?: number;
   }[];
 };
 
@@ -37,20 +42,30 @@ export function OwnershipRepairDialog({
   close: () => void;
 }) {
   const path = `/strategies/exchange/jobs/${encodeURIComponent(jobId)}/ownership`;
+  const [allowQuantity, setAllowQuantity] = useState(false);
   const review = useResource<Repair>(
-    receiptId ? `${path}/repairs/${encodeURIComponent(receiptId)}` : `${path}/repair`,
+    receiptId
+      ? `${path}/repairs/${encodeURIComponent(receiptId)}`
+      : `${path}/repair?allow_quantity_changes=${allowQuantity}`,
   );
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
   const toast = useToast();
-  const data = review.data;
-  const quote = data?.runs[0]?.symbol.split('/')[1];
+  const data =
+    receiptId || (review.data?.allow_quantity_changes ?? false) === allowQuantity
+      ? review.data
+      : undefined;
+  const [base, quote] = data?.runs[0]?.symbol.split('/') ?? [];
   const approve = async () => {
     if (!data) return;
     setBusy(true);
     try {
-      await post(`${path}/repair`, { review_id: data.id, confirmation });
-      toast('Ownership basis repaired');
+      await post(`${path}/repair`, {
+        review_id: data.id,
+        confirmation,
+        allow_quantity_changes: allowQuantity,
+      });
+      toast(allowQuantity ? 'Ownership quantities and basis repaired' : 'Ownership basis repaired');
       refresh();
       close();
     } catch (error) {
@@ -66,14 +81,29 @@ export function OwnershipRepairDialog({
       title={receiptId ? 'Ownership repair receipt' : 'Review ownership repair'}
       onClose={() => !busy && close()}
     >
+      {!receiptId && (
+        <label className="monitor-live-toggle">
+          <input
+            type="checkbox"
+            checked={allowQuantity}
+            disabled={busy}
+            onChange={(event) => {
+              setAllowQuantity(event.target.checked);
+              setConfirmation('');
+            }}
+          />
+          Recalculate handed-off units
+        </label>
+      )}
       {review.error && <ErrorState message={review.error} retry={review.retry} />}
       {review.loading && !data && <Loading />}
       {data && (
         <div className="form">
           <p className="footnote">
             {data.approved_at ? `Approved ${new Date(data.approved_at).toLocaleString()}. ` : ''}
-            Original receipt quantities and cash-flow values are retained. The repair recalculates
-            cost basis and realized trade P&amp;L.
+            {data.allow_quantity_changes
+              ? 'The repair carries corrected units and uses each handoff’s original reference price to recalculate its paired cash flows.'
+              : 'The repair preserves receipt quantities and reference cash flows while recalculating basis and realized trade P&L.'}
           </p>
           <div className="table-scroll">
             <table>
@@ -107,7 +137,16 @@ export function OwnershipRepairDialog({
               {data.adjustments.map((row) => (
                 <li key={row.event_id}>
                   {row.job_id.slice(0, 8)} · {row.action.replaceAll('_', ' ')} ·{' '}
-                  {number(row.previous_cost_basis, 8)} → {number(row.cost_basis, 8)} {quote}
+                  {number(row.previous_cost_basis, 8)} → {number(row.cost_basis, 8)} {quote} basis
+                  {row.previous_quantity != null &&
+                    row.quantity != null &&
+                    row.previous_quantity !== row.quantity && (
+                      <small className="table-subline">
+                        {number(row.previous_quantity, 8)} → {number(row.quantity, 8)} {base} ·{' '}
+                        {number(row.previous_reference_value ?? 0, 8)} →{' '}
+                        {number(row.reference_value ?? 0, 8)} {quote} reference flow
+                      </small>
+                    )}
                 </li>
               ))}
             </ul>
@@ -127,7 +166,12 @@ export function OwnershipRepairDialog({
                 disabled={busy || !!review.error || confirmation !== data.confirmation}
                 onClick={() => void approve()}
               >
-                <FileCheck2 size={15} /> {busy ? 'Saving…' : 'Approve basis repair'}
+                <FileCheck2 size={15} />{' '}
+                {busy
+                  ? 'Saving…'
+                  : allowQuantity
+                    ? 'Approve quantity repair'
+                    : 'Approve basis repair'}
               </button>
             </>
           )}

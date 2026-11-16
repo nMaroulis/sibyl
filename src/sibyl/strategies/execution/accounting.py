@@ -103,7 +103,10 @@ def project(job, trading, *, db=None, repair=None):
                 raise ExecutionGuard("Native base fees exceed acquired units. Review strategy accounting.")
         else:
             disposed = fill["quantity"] + by_currency[base]
-            if disposed > quantity + max(1e-10, quantity * 1e-8) and not ownership_stale:
+            tolerance = 1e-10 if repair else max(1e-10, quantity * 1e-8)
+            if repair and disposed < 0:
+                raise ExecutionGuard("A native rebate exceeds the disposed quantity in the repair.")
+            if disposed > quantity + tolerance and not ownership_stale:
                 raise ExecutionGuard(
                     "Native executions exceed the strategy-owned position. Review fills before resuming."
                 )

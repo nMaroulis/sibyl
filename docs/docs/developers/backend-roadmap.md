@@ -131,7 +131,8 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Trace invalidated ownership receipts to the source runs that carry changed order evidence.
 - [x] Approve exact-feed historical prices for signed third-currency fees. Immutable per-fill receipts, native-write rechecks and preserved corrections feed marked equity, quote-budget admission and per-run/shared loss controls.
 - [x] Approve append-only cost-basis repairs across executed handoff descendants. Reconstruct receipts at their original fill checkpoints and recalculate realized P&L while preserving quantities, cash-flow values and original records.
-- [ ] Support quantity-changing reversals, verified provenance beyond recorded Sibyl manual orders and definitive settlement/bust handling.
+- [x] Approve corrected handoff quantities and paired reference cash flows using the original price and fill checkpoints. Reflow valid changes through executed descendants, including zero-unit handoffs, and reject oversold histories.
+- [ ] Resolve reversals that leave already executed sales or manual releases underfunded. Add verified provenance beyond recorded Sibyl manual orders and definitive settlement/bust handling.
 
 ### 5. Market-data infrastructure — partial
 

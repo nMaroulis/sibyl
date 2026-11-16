@@ -18,7 +18,12 @@ from sibyl.strategies.execution.risk.ledger import positions
 
 
 def approve(repairs, review):
-    return repairs.approve(review["job_id"], review["id"], review["confirmation"])
+    return repairs.approve(
+        review["job_id"],
+        review["id"],
+        review["confirmation"],
+        allow_quantity_changes=review.get("allow_quantity_changes", False),
+    )
 
 
 def executed_family(execution, ownership, monkeypatch):
@@ -183,3 +188,113 @@ def test_fee_prices_can_be_approved_before_an_ownership_repair(execution, owners
     assert ownership.state(target["id"])["stale"]
     approve(repairs, repairs.preview(target["id"]))
     assert not ownership.state(target["id"])["stale"] and len(native.calls) == 1
+
+
+@pytest.mark.parametrize("base_fee", [0.01, -0.01])
+def test_quantity_repair_replays_an_executed_sale_and_both_handoffs(
+    execution, ownership, monkeypatch, base_fee
+):
+    strategies, trading, native, _ = execution
+    source, entry, middle, target = executed_family(execution, ownership, monkeypatch)
+    identities = [row["id"] for row in (source, middle, target)]
+    with strategies.store.db() as db:
+        original = db.execute("SELECT payload FROM strategy_ownership_events ORDER BY sequence").fetchall()
+        marks = {
+            event["id"]: event["reference_value"] / event["quantity"]
+            for identity in identities
+            for event in ledger.events(db, identity)
+        }
+    native.fills[0]["fees"] = [{"currency": "BTC", "cost": base_fee}]
+    reconcile(trading, entry["id"])
+    repairs = strategies.execution.ownership_repairs
+    with pytest.raises(ValueError, match="recorded quantity"):
+        repairs.preview(target["id"])
+    review = repairs.preview(target["id"], allow_quantity_changes=True)
+    assert review["runs"][2]["quantity"] == pytest.approx(target["quantity"] - base_fee)
+    assert review["runs"][1]["realized_pnl"] == pytest.approx(
+        99.9 - source["quantity"] * 100 / (source["quantity"] - base_fee)
+    )
+    assert all(ownership.state(identity)["stale"] for identity in identities)
+    with pytest.raises(ValueError, match="recorded quantity"):
+        repairs.approve(target["id"], review["id"], review["confirmation"])
+    result = approve(repairs, review)
+    assert result["allow_quantity_changes"]
+    assert approve(repairs, review) == result
+    with strategies.store.db() as db:
+        assert (
+            db.execute("SELECT payload FROM strategy_ownership_events ORDER BY sequence").fetchall()
+            == original
+        )
+        rows = [event for identity in identities for event in ledger.events(db, identity)]
+        assert sum(row["quantity"] for row in rows) == pytest.approx(0)
+        assert sum(row["reference_value"] for row in rows) == pytest.approx(0)
+        assert all(
+            row["reference_value"] == pytest.approx(marks[row["id"]] * row["quantity"]) for row in rows
+        )
+        assert len(positions(db, trading, "test")) == 3
+    restarted = Strategies(strategies.market, strategies.store)
+    restarted.attach_execution(trading)
+    assert restarted.execution.ownership.state(target["id"])["quantity"] == pytest.approx(
+        target["quantity"] - base_fee
+    )
+    assert not any(ownership.state(identity)["stale"] for identity in identities)
+    assert len(native.calls) == 2
+
+
+def test_reflow_refuses_if_a_descendant_sale_exceeds_corrected_units(execution, ownership, monkeypatch):
+    strategies, trading, native, _ = execution
+    source, entry, middle, target = executed_family(execution, ownership, monkeypatch)
+    native.fills[0]["fees"] = [{"currency": "BTC", "cost": source["quantity"] - 0.5}]
+    reconcile(trading, entry["id"])
+    with pytest.raises(ValueError, match="exceed the strategy-owned position"):
+        strategies.execution.ownership_repairs.preview(target["id"], allow_quantity_changes=True)
+    assert all(ownership.state(row["id"])["stale"] for row in (source, middle, target))
+    with strategies.store.db() as db:
+        assert not db.execute("SELECT 1 FROM strategy_ownership_adjustments").fetchall()
+    assert len(native.calls) == 2
+
+
+def test_zero_handoff_can_be_repaired_again_using_its_original_reference_price(
+    execution, ownership, monkeypatch
+):
+    strategies, trading, native, _ = execution
+    source, entry, _, target = executed_family(execution, ownership, monkeypatch)
+    repairs = strategies.execution.ownership_repairs
+    with strategies.store.db() as db:
+        incoming = ledger.events(db, target["id"])[0]
+    native.fills[0]["fees"] = [{"currency": "BTC", "cost": source["quantity"] - 1.0}]
+    reconcile(trading, entry["id"])
+    zero = approve(repairs, repairs.preview(target["id"], allow_quantity_changes=True))
+    with strategies.store.db() as db:
+        corrected = ledger.events(db, target["id"])[0]
+        assert corrected["quantity"] == corrected["cost_basis"] == corrected["reference_value"] == 0
+    native.fills[0]["fees"] = [{"currency": "USDT", "cost": 0.1}]
+    reconcile(trading, entry["id"])
+    restored = approve(repairs, repairs.preview(target["id"], allow_quantity_changes=True))
+    assert restored["id"] != zero["id"]
+    with strategies.store.db() as db:
+        row = ledger.events(db, target["id"])[0]
+        assert row["quantity"] == incoming["quantity"]
+        assert row["reference_value"] == pytest.approx(incoming["reference_value"])
+        assert row["cost_basis"] == pytest.approx(incoming["cost_basis"])
+    assert len(native.calls) == 2
+
+
+def test_http_quantity_switch_must_match_the_exact_preview(manual_client, execution, ownership, monkeypatch):
+    strategies, trading, native, _ = execution
+    _, entry, _, target = handoff(execution, ownership)
+    strategies.status(target["id"], "paused")
+    native.fills[0]["fees"] = [{"currency": "BTC", "cost": 0.01}]
+    reconcile(trading, entry["id"])
+    monkeypatch.setattr(manual_client.app.state.services, "strategies", strategies)
+    route = f"/api/v1/strategies/exchange/jobs/{target['id']}/ownership/repair"
+    assert manual_client.get(route).status_code == 400
+    response = manual_client.get(route, params={"allow_quantity_changes": True})
+    assert response.status_code == 200, response.text
+    review = response.json()
+    body = {"review_id": review["id"], "confirmation": review["confirmation"]}
+    assert manual_client.post(route, json=body).status_code == 400
+    saved = manual_client.post(route, json={**body, "allow_quantity_changes": True})
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["allow_quantity_changes"]
+    assert manual_client.post(route, json=body).status_code == 400

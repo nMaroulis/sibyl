@@ -101,17 +101,24 @@ def current(db, evidence):
     )
 
 
-def events(db, identity):
-    return [
-        json.loads(row[0]) | (json.loads(row[1]) if row[1] else {})
-        for row in db.execute(
-            "SELECT e.payload,a.payload FROM strategy_ownership_events e "
-            "LEFT JOIN strategy_ownership_adjustments a ON a.sequence=("
-            "SELECT MAX(sequence) FROM strategy_ownership_adjustments WHERE event_id=e.id) "
-            "WHERE e.job_id=? ORDER BY e.sequence",
-            (identity,),
-        )
-    ]
+def events(db, identity, *, with_original=False):
+    """Read effective receipts and optionally their original attribution values."""
+    rows = db.execute(
+        "SELECT e.payload,a.payload FROM strategy_ownership_events e "
+        "LEFT JOIN strategy_ownership_adjustments a ON a.sequence=("
+        "SELECT MAX(sequence) FROM strategy_ownership_adjustments WHERE event_id=e.id) "
+        "WHERE e.job_id=? ORDER BY e.sequence",
+        (identity,),
+    )
+    result = []
+    for original, adjustment in rows:
+        raw = json.loads(original)
+        event = raw | json.loads(adjustment) if adjustment else raw
+        if with_original:
+            event["_original_quantity"] = raw["quantity"]
+            event["_original_reference_value"] = raw["reference_value"]
+        result.append(event)
+    return result
 
 
 def dependencies(db, job):
