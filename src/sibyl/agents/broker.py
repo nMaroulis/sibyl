@@ -452,9 +452,8 @@ def create_agent(services: Services, **runtime) -> Agent:
         Use the selected run or a known job_id. The saved check compares all same-account
         base-asset owners and shows unassigned units, shortfalls and its observation time.
         Adoption basis is a user assertion; a handoff carries recorded original basis.
-        Changed ancestral evidence blocks execution. Affected source runs and receipt counts
-        identify where to investigate. This reads local evidence only;
-        it never checks an exchange, attributes units, approves a handoff or places an order.
+        Affected source runs flag stale evidence. Repair IDs identify revised basis receipts.
+        Read-only local evidence. Use strategy_help for the repair workflow.
         """
         job_id = selected("job_id", job_id, "")
         if not job_id:

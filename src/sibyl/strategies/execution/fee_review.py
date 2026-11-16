@@ -52,11 +52,8 @@ class StrategyFeeReviews:
             return {**result, "reason": "Pause the run before reviewing fee prices."}
         if state["unresolved_orders"] or pending_evidence(db, job["id"]):
             return {**result, "reason": "Reconcile native orders and finish cancellation follow-ups first."}
-        if state["accounting_incomplete"]:
-            return {
-                **result,
-                "reason": "Resolve incomplete native costs or stale ownership before reviewing fees.",
-            }
+        if state["_native_costs_incomplete"]:
+            return {**result, "reason": "Resolve missing native costs or fees before reviewing prices."}
         try:
             prices = price_unreviewed(db, job, pending[:REVIEW_SIZE])
         except ValueError as error:

@@ -728,6 +728,7 @@ export type ModuleId =
 export type StrategyEvent = {
   id: number;
   fee_review_id?: string;
+  ownership_repair_id?: string;
   timestamp: string;
   kind: string;
   action: string;

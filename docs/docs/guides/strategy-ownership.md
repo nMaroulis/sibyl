@@ -48,4 +48,10 @@ Once a stopped or completed run is flat and its execution ledger is reconciled, 
 
 Fresh observed backing is required when attributed runs resume, evaluate or submit; separately reviewed exits also check backing. External trades can still race a read: this is not a native reservation or complete wallet reconciliation.
 
-Later corrections to orders/fills preceding a receipt invalidate that receipt and descendants of a handoff. The ownership panel links each affected source run and shows the number of affected receipts and pinned orders to inspect. Uncertain evidence blocks further orders; it is not silently reassigned or rewritten. Reviewed correction or reversal across already executed descendants and definitive venue settlement or bust handling remain pending. Inspect the source in Trade and keep affected runs paused; do not bypass the block by creating duplicate ownership.
+Later corrections to orders or fills preceding a receipt can invalidate it and descendants of a handoff. **Position ownership** links affected source runs and shows how many receipts and pinned orders depend on them.
+
+1. Pause the affected runs, stop any liquidation plans, and reconcile the linked orders, fees and cancellation follow-ups in Trade. Approve any required third-currency fee prices first.
+2. Choose **Review basis repair** on an affected run. The preview replays the connected handoffs in their original order, including sales that descendants already executed. Review the recalculated cost basis and realized P&L, then type the confirmation to approve the exact snapshot.
+3. Open **Decision journal → Ownership repairs → View repair** on any affected run to inspect the approved basis changes. Original receipt quantities, dated reference cash-flow values and asserted adoption costs remain intact.
+
+Repair supports up to 24 connected runs and 80 ownership receipts in one account and exact pair. A changed handoff quantity, missing order, or a fill that crosses its original receipt checkpoint keeps the run blocked. Quantity-changing reversals and definitive venue settlement or bust handling remain pending. Repair grants no exchange write permission. Resume and exit still require their separate controls, including current exchange balance checks and existing risk locks.

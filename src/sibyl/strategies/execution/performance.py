@@ -120,6 +120,7 @@ class StrategyPerformance:
                 method="Modified Dietz",
                 metrics=None,
                 fee_valuation=None,
+                fee_review_pending=False,
                 reason=None,
                 flows=[],
                 flow_count=0,
@@ -134,6 +135,8 @@ class StrategyPerformance:
                 if active_plan(db, identity)
                 else archive_blocker(job, state, problem)
             )
+            pending_fees = sum(not entry["receipt"] for entry in state["_foreign_fees"])
+            status["fee_review_pending"] = pending_fees > 0
             fee_total = 0.0
             if not problem:
                 try:
@@ -147,7 +150,7 @@ class StrategyPerformance:
                             "environment": job["environment"],
                             "quote_total": fee_total if not missing and math.isfinite(fee_total) else None,
                             "missing_count": missing,
-                            "pending_count": sum(not entry["receipt"] for entry in state["_foreign_fees"]),
+                            "pending_count": pending_fees,
                             "recent": evidence,
                         }
                     if missing or not math.isfinite(fee_total):

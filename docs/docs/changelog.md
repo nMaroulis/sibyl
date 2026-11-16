@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Strategy ownership can repair cost basis after an exchange corrects a fill, even after a descendant has sold part of the position or handed it to another run. The monitor previews revised basis and realized P&L. Approval preserves the original receipts, transfer quantities and cash flows, with a separate journal receipt on every affected run.
+
 - Stopped exchange strategies can approve a bounded liquidation plan. A fixed sell floor and order/size/time limits apply to each child, and further sells wait for native fill and cancellation reconciliation. Global halt, restart and explicit stop withdraw future-sell authority while preserving submitted orders and journal evidence.
 
 - Exchange strategies can approve historical prices for fees and rebates charged in another asset. The monitor shows the exact fill and candle evidence, retains receipts in the decision journal, and applies approved prices to budget and loss controls. Changed native fee facts pause further execution pending review.

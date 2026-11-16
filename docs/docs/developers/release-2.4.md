@@ -29,7 +29,8 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Flow-adjusted lifetime return estimates, exact-feed historical fee evidence, archive/restore for reconciled flat runs and exact-native-ID provenance for recorded Sibyl manual orders.
 - [x] Reviewed and version-bound third-currency fees in exchange strategy budget admission, equity and shared losses. Exact historical rate evidence survives restart and native fee revisions.
 - [x] Bounded, explicitly approved liquidation plans reuse the native close pipeline with sequential reconciliation, a fixed sell floor and durable stop/restart behavior.
-- [ ] Reviewed repair/reversal across executed ownership descendants, provenance for externally placed trades and definitive venue settlement/bust handling.
+- [x] Reviewed cost-basis repair across executed ownership descendants, with original receipt quantities, dated cash flows and restart-safe audit history.
+- [ ] Quantity-changing ownership reversals, provenance for externally placed trades and definitive venue settlement/bust handling.
 - [ ] Authenticated partial-fill/cancel races, late corrections and outage recovery across additional venues. See [the exchange acceptance record](exchange-acceptance.md#automated-strategy-acceptance).
 - [x] Native optional Optuna TPE/random numeric distributions, causal trusted-plugin validation and one-off pinned research jobs, with bounded trial/test evidence and exact version-pinned replay.
 - [x] Multi-asset historical target-allocation studies with exact common inputs, post-cost sizing, interval/drift rebalancing, cost-matched benchmarks, interactive/paged evidence and version/fingerprint-checked offline reruns.

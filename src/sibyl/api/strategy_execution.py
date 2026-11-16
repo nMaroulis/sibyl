@@ -224,3 +224,30 @@ def liquidation_stop(job_id: str, plan_id: str, s: S, response: Response):
     """Withdraw future sells. Submitted orders retain their existing expiry."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.liquidation.stop(job_id, plan_id)
+
+
+class OwnershipRepairApproval(StrategyApproval):
+    """Approve the exact replay shown in the ownership repair review."""
+
+    review_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+@router.get("/jobs/{job_id}/ownership/repair")
+def preview_ownership_repair(job_id: str, s: S, response: Response):
+    """Preview balanced cost-basis corrections across the affected family."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership_repairs.preview(job_id)
+
+
+@router.post("/jobs/{job_id}/ownership/repair")
+def approve_ownership_repair(job_id: str, body: OwnershipRepairApproval, s: S, response: Response):
+    """Approve repaired historical cost basis without placing orders or resuming runs."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership_repairs.approve(job_id, body.review_id, body.confirmation)
+
+
+@router.get("/jobs/{job_id}/ownership/repairs/{repair_id}")
+def ownership_repair_receipt(job_id: str, repair_id: str, s: S, response: Response):
+    """Read the original review and its approved basis changes."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.strategies.execution.ownership_repairs.receipt(job_id, repair_id)

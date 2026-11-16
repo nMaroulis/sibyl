@@ -4,6 +4,7 @@ import { Badge, Empty, Loading, Panel, PanelTitle, useToast } from './ui';
 import { downloadFile } from '../lib/api';
 import { date, formatted } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
+import { OwnershipRepairDialog } from './strategies/ownership-repair';
 import { RunFeeReceipt } from './strategies/run-fee-review';
 import type { StrategyEventPage } from '../lib/types';
 
@@ -21,6 +22,7 @@ export function DecisionJournal({
   const [before, setBefore] = useState<number>();
   const [exporting, setExporting] = useState(false);
   const [feeReceipt, setFeeReceipt] = useState<string>();
+  const [repairReceipt, setRepairReceipt] = useState<string>();
   const toast = useToast();
   const events = useResource<StrategyEventPage>(
     `/strategies/jobs/${encodeURIComponent(jobId)}/events?action=${action}&limit=50${before ? `&before=${before}` : ''}`,
@@ -67,6 +69,7 @@ export function DecisionJournal({
             <option value="FILL_CORRECTION">Native fill corrections</option>
             <option value="FEE_VALUATION">Approved fee prices</option>
             <option value="OWNERSHIP">Ownership reviews & handoffs</option>
+            <option value="OWNERSHIP_REPAIR">Ownership repairs</option>
             <option value="ARCHIVE">Run archives</option>
             <option value="RESTORE">Run restores</option>
             <option value="CANCEL_QUEUED">Cancellation queued</option>
@@ -166,6 +169,14 @@ export function DecisionJournal({
                   </td>
                   <td>
                     {event.reason}
+                    {event.ownership_repair_id && (
+                      <button
+                        className="text-button"
+                        onClick={() => setRepairReceipt(event.ownership_repair_id)}
+                      >
+                        View repair
+                      </button>
+                    )}
                     {event.fee_review_id && (
                       <button
                         className="text-button"
@@ -185,6 +196,13 @@ export function DecisionJournal({
           New decisions are recorded once per newly closed candle. Lifecycle events appear
           immediately.
         </Empty>
+      )}
+      {repairReceipt && (
+        <OwnershipRepairDialog
+          jobId={jobId}
+          receiptId={repairReceipt}
+          close={() => setRepairReceipt(undefined)}
+        />
       )}
       {feeReceipt && (
         <RunFeeReceipt

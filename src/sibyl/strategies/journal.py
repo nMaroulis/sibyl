@@ -40,6 +40,7 @@ EVENT_COLUMNS = (
     "control_revision",
     "fee_review_id",
     "ownership_event_id",
+    "ownership_repair_id",
     "ownership_action",
     "ownership_peer",
 )
@@ -62,6 +63,11 @@ class StrategyJournal:
                     job_id TEXT NOT NULL, payload TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS strategy_ownership_job ON strategy_ownership_events(job_id, sequence);
+                CREATE TABLE IF NOT EXISTS strategy_ownership_adjustments (
+                    sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT NOT NULL, payload TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS strategy_ownership_adjustment
+                    ON strategy_ownership_adjustments(event_id,sequence);
                 CREATE TABLE IF NOT EXISTS strategy_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     job_id TEXT NOT NULL, payload TEXT NOT NULL

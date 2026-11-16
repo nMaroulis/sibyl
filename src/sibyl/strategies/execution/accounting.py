@@ -11,7 +11,7 @@ from sibyl.strategies.execution.fees import foreign_fees
 from sibyl.strategies.execution.ownership.ledger import replay
 
 
-def project(job, trading, *, db=None):
+def project(job, trading, *, db=None, repair=None):
     """Attribute only this strategy's orders; account deposits and unrelated holdings are excluded.
 
     Recalculation prevents duplicate fills and incorporates late fee corrections.
@@ -40,7 +40,7 @@ def project(job, trading, *, db=None):
         ).fetchall()
         fills = [json.loads(row[0]) for row in rows]
         fee_entries = foreign_fees(db, job, fills) if len(rows) <= 10000 else []
-        ownership, ownership_stale = replay(db, job["id"])
+        ownership, ownership_stale = (repair.events, False) if repair else replay(db, job["id"])
         sync = {
             row[0]: json.loads(row[1])
             for row in db.execute(
@@ -69,12 +69,15 @@ def project(job, trading, *, db=None):
     cash, quantity, basis, realized = job["parameters"]["capital"], 0.0, 0.0, 0.0
     fees, returns, exits, rendered = defaultdict(float), [], {}, []
     unknown = ownership_stale
+    native_costs_incomplete = False
     net_value, consumed, next_event = 0.0, set(), 0
 
     def attributions():
         nonlocal quantity, basis, net_value, next_event, unknown
         while next_event < len(ownership) and set(ownership[next_event]["after_fills"]) <= consumed:
             event = ownership[next_event]
+            if repair:
+                repair.revalue(event, quantity, basis, consumed)
             quantity += event["quantity"]
             basis += event["cost_basis"]
             net_value += event["reference_value"]
@@ -85,7 +88,7 @@ def project(job, trading, *, db=None):
 
     attributions()
     for fill in fills:
-        unknown |= not fill["fees_known"] or fill["notional"] is None
+        native_costs_incomplete |= not fill["fees_known"] or fill["notional"] is None
         by_currency = defaultdict(float)
         for fee in fill["fees"]:
             if fee["currency"] and fee["cost"] is not None:
@@ -162,6 +165,7 @@ def project(job, trading, *, db=None):
                     "created_at",
                     "note",
                     "peer_id",
+                    "repair_id",
                 )
             }
             for event in ownership[-100:]
@@ -174,7 +178,8 @@ def project(job, trading, *, db=None):
         "fees_paid": fees.get(quote, 0.0),
         "fee_assets": dict(fees),
         "unvalued_fees": dict(missing_costs),
-        "accounting_incomplete": unknown,
+        "accounting_incomplete": unknown or native_costs_incomplete,
+        "_native_costs_incomplete": native_costs_incomplete,
         "completed_returns": returns,
         "round_trips": len(returns),
         "fills": rendered[-100:],

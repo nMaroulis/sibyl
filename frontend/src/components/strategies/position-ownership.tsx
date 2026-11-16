@@ -5,6 +5,7 @@ import { Badge, Modal, Panel } from '../ui';
 import { useResource } from '../../lib/hooks';
 import { number, post, refresh } from '../../lib/api';
 import { monitorURL } from '../../lib/strategy-monitor';
+import { OwnershipRepairDialog } from './ownership-repair';
 import type { Job } from '../../lib/types';
 import '../../styles/position-ownership.css';
 
@@ -65,6 +66,7 @@ type Review = {
 /** Native balances are fetched only on request; every local attribution has its own typed review. */
 export function PositionOwnership({ job }: { job: Job }) {
   const [open, setOpen] = useState(false);
+  const [repair, setRepair] = useState(false);
   const [editing, setEditing] = useState<'adopt' | 'release'>();
   const [quantity, setQuantity] = useState('');
   const [basis, setBasis] = useState('');
@@ -126,7 +128,7 @@ export function PositionOwnership({ job }: { job: Job }) {
             <small>Native balances, residuals & reviewed attribution</small>
           </span>
         </button>
-        {job.ownership_stale && <Badge tone="sand">Evidence changed</Badge>}
+        {(data?.stale ?? job.ownership_stale) && <Badge tone="sand">Evidence changed</Badge>}
         <button
           className="button secondary tiny"
           disabled={!!busy}
@@ -152,6 +154,10 @@ export function PositionOwnership({ job }: { job: Job }) {
                 Earlier exchange evidence changed. Execution is blocked while ownership is
                 unresolved.
               </p>
+              <button className="button secondary tiny" onClick={() => setRepair(true)}>
+                Review basis repair
+              </button>
+              {repair && <OwnershipRepairDialog jobId={job.id} close={() => setRepair(false)} />}
               {data.changed_sources.length > 0 && (
                 <ul>
                   {data.changed_sources.map((source) => (

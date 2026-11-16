@@ -15,6 +15,7 @@ type Performance = {
   flow_count: number;
   mark: { as_of: string; price: number | null; kind: string } | null;
   reason: string | null;
+  fee_review_pending: boolean;
   fee_valuation: {
     quote_total: number | null;
     missing_count: number;
@@ -67,8 +68,7 @@ export function RunPerformance({ job, interval }: { job: Job; interval: number }
     }
   };
   const metrics = report?.metrics;
-  const pendingFees =
-    !!report?.fee_valuation?.pending_count || !!Object.keys(job.unvalued_fees ?? {}).length;
+  const pendingFees = report?.fee_review_pending ?? !!Object.keys(job.unvalued_fees ?? {}).length;
   return (
     <Panel className="full-panel">
       <PanelTitle

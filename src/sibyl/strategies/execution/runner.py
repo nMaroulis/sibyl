@@ -17,6 +17,7 @@ from sibyl.strategies.execution.controls import StrategyControls
 from sibyl.strategies.execution.fee_review import StrategyFeeReviews
 from sibyl.strategies.execution.fees import marked_equity
 from sibyl.strategies.execution.liquidation import LiquidationPlans
+from sibyl.strategies.execution.ownership.repair import OwnershipRepairs
 from sibyl.strategies.execution.ownership.service import PositionOwnership
 from sibyl.strategies.execution.performance import StrategyPerformance
 from sibyl.strategies.execution.risk import PortfolioLimits
@@ -54,6 +55,7 @@ class ExchangeStrategies:
         self.closing = ClosePositions(self)
         self.liquidation = LiquidationPlans(self)
         self.ownership = PositionOwnership(self)
+        self.ownership_repairs = OwnershipRepairs(self)
         self.fee_reviews = StrategyFeeReviews(self)
         self.performance = StrategyPerformance(self)
         for job in self.jobs():
@@ -135,6 +137,7 @@ class ExchangeStrategies:
         result = project(job, self.trading)
         fills = result.pop("_native_fills")
         result.pop("_foreign_fees")
+        result.pop("_native_costs_incomplete")
         job.update(result)
         if job.get("ownership_event_count"):
             job["statistics_complete"] = False

@@ -103,9 +103,12 @@ def current(db, evidence):
 
 def events(db, identity):
     return [
-        json.loads(row[0])
+        json.loads(row[0]) | (json.loads(row[1]) if row[1] else {})
         for row in db.execute(
-            "SELECT payload FROM strategy_ownership_events WHERE job_id=? ORDER BY sequence",
+            "SELECT e.payload,a.payload FROM strategy_ownership_events e "
+            "LEFT JOIN strategy_ownership_adjustments a ON a.sequence=("
+            "SELECT MAX(sequence) FROM strategy_ownership_adjustments WHERE event_id=e.id) "
+            "WHERE e.job_id=? ORDER BY e.sequence",
             (identity,),
         )
     ]
