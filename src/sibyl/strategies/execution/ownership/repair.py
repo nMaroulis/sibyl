@@ -19,10 +19,26 @@ MAX_EVENTS = 80
 class AttributionReplay:
     """Revalue receipts at their original fill checkpoints in one in-memory replay."""
 
-    def __init__(self, events, transfers, allow_quantity_changes=False):
+    def __init__(self, events, transfers, *, allow_quantity_changes, repair_releases):
         self.events = events
         self.transfers = transfers
         self.allow_quantity_changes = allow_quantity_changes
+        self.repair_releases = repair_releases
+
+    @staticmethod
+    def _apply_quantity(event, units):
+        """Keep the historical per-unit mark when superseding the effective quantity."""
+        original_quantity = event["_original_quantity"]
+        if original_quantity >= 0:
+            raise ExecutionGuard("The original outgoing receipt has an invalid quantity.")
+        original_price = event["_original_reference_value"] / original_quantity
+        if not math.isfinite(original_price) or original_price <= 0:
+            raise ExecutionGuard("The original receipt reference price is invalid.")
+        reference_value = units * original_price
+        if not math.isfinite(reference_value):
+            raise ExecutionGuard("The corrected receipt reference value is outside the supported range.")
+        event["quantity"] = units
+        event["reference_value"] = reference_value
 
     def revalue(self, event, quantity, basis, consumed):
         if not math.isfinite(basis) or basis < 0:
@@ -50,16 +66,7 @@ class AttributionReplay:
                 )
             if changed:
                 units = -quantity if quantity else 0.0
-                original_price = event["_original_reference_value"] / event["_original_quantity"]
-                if not math.isfinite(original_price) or original_price <= 0:
-                    raise ExecutionGuard("The original handoff reference price is invalid.")
-                reference_value = units * original_price
-                if not math.isfinite(reference_value):
-                    raise ExecutionGuard(
-                        "The corrected handoff reference value is outside the supported range."
-                    )
-                event["quantity"] = units
-                event["reference_value"] = reference_value
+                self._apply_quantity(event, units)
             if quantity > 0:
                 event["cost_basis"] = -basis * min(1.0, -units / quantity)
             elif basis > 1e-8:
@@ -68,11 +75,23 @@ class AttributionReplay:
                 event["cost_basis"] = 0.0
             self.transfers[(identity, peer)] = (-units, -event["cost_basis"], -event["reference_value"])
             return
-        if action != "release" or units >= 0 or quantity <= 0 or -units > quantity + 1e-10:
+        if action != "release" or units > 0 or event["_original_quantity"] >= 0:
+            raise ExecutionGuard("The original outgoing ownership receipt is invalid.")
+        if self.repair_releases:
+            corrected = min(-event["_original_quantity"], quantity)
+            if not math.isclose(-units, corrected, rel_tol=0, abs_tol=1e-10):
+                units = -corrected if corrected else 0.0
+                self._apply_quantity(event, units)
+        elif -units > quantity + 1e-10:
             raise ExecutionGuard(
-                "Corrected fills cannot support the recorded quantity at an ownership release."
+                f"Recorded release {event['id'][:8]} exceeds corrected ownership. Enable Fix underfunded releases."
             )
-        event["cost_basis"] = -basis * min(1.0, -units / quantity)
+        if quantity <= 0:
+            if basis > 1e-8:
+                raise ExecutionGuard("Corrected fills leave acquisition basis without any owned units.")
+            event["cost_basis"] = 0.0
+        else:
+            event["cost_basis"] = -basis * min(1.0, -units / quantity)
 
 
 class OwnershipRepairs:
@@ -161,7 +180,7 @@ class OwnershipRepairs:
             raise ExecutionGuard("An original handoff order is missing or changed scope.")
         return {**evidence, "digest": ledger.digest(native)}
 
-    def _preview(self, db, selected, allow_quantity_changes):
+    def _preview(self, db, selected, *, allow_quantity_changes, repair_releases):
         transfers, rebound, adjustments, summaries, inputs = {}, {}, [], [], []
         has_correction = False
         family = self._family(db, selected)
@@ -197,7 +216,12 @@ class OwnershipRepairs:
                 job,
                 self.runner.trading,
                 db=db,
-                repair=AttributionReplay(receipts, transfers, allow_quantity_changes=allow_quantity_changes),
+                repair=AttributionReplay(
+                    receipts,
+                    transfers,
+                    allow_quantity_changes=allow_quantity_changes,
+                    repair_releases=repair_releases,
+                ),
             )
             if (
                 values["ownership_stale"]
@@ -248,11 +272,20 @@ class OwnershipRepairs:
             )
         if not has_correction:
             raise ExecutionGuard("This handoff family has no corrected source evidence to review.")
-        review_id = ledger.digest([selected["id"], allow_quantity_changes, inputs, adjustments, summaries])
-        verb = "REPAIR QUANTITIES" if allow_quantity_changes else "REPAIR"
+        review_id = ledger.digest(
+            [selected["id"], allow_quantity_changes, repair_releases, inputs, adjustments, summaries]
+        )
+        verb = (
+            "REPAIR RELEASES"
+            if repair_releases
+            else "REPAIR QUANTITIES"
+            if allow_quantity_changes
+            else "REPAIR"
+        )
         return {
             "id": review_id,
             "allow_quantity_changes": allow_quantity_changes,
+            "repair_releases": repair_releases,
             "job_id": selected["id"],
             "runs": summaries,
             "adjustments": adjustments,
@@ -268,12 +301,17 @@ class OwnershipRepairs:
             ],
         }
 
-    def preview(self, identity, *, allow_quantity_changes=False):
+    def preview(self, identity, *, allow_quantity_changes=False, repair_releases=False):
         """Return local proposed basis changes while leaving persisted ownership untouched."""
         with self.store.db() as db:
             db.execute("BEGIN")
             return self._public(
-                self._preview(db, self.runner.ownership._job(identity, db), allow_quantity_changes)
+                self._preview(
+                    db,
+                    self.runner.ownership._job(identity, db),
+                    allow_quantity_changes=allow_quantity_changes,
+                    repair_releases=repair_releases,
+                )
             )
 
     def receipt(self, identity, review_id):
@@ -287,7 +325,9 @@ class OwnershipRepairs:
                 raise LookupError("Ownership repair receipt not found.")
             return self._public(review)
 
-    def approve(self, identity, review_id, confirmation, *, allow_quantity_changes=False):
+    def approve(
+        self, identity, review_id, confirmation, *, allow_quantity_changes=False, repair_releases=False
+    ):
         """Recompute the exact review and commit superseding values plus audit together."""
         with self.runner.lock, self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -300,10 +340,16 @@ class OwnershipRepairs:
                     review["job_id"] != identity
                     or confirmation != review["confirmation"]
                     or review.get("allow_quantity_changes", False) != allow_quantity_changes
+                    or review.get("repair_releases", False) != repair_releases
                 ):
                     raise ExecutionGuard("The repair approval does not match this review.")
                 return self._public(review)
-            review = self._preview(db, self.runner.ownership._job(identity, db), allow_quantity_changes)
+            review = self._preview(
+                db,
+                self.runner.ownership._job(identity, db),
+                allow_quantity_changes=allow_quantity_changes,
+                repair_releases=repair_releases,
+            )
             if review_id != review["id"] or confirmation != review["confirmation"]:
                 raise ExecutionGuard(
                     "Repair evidence or confirmation changed. Review the current proposal again."
@@ -327,7 +373,9 @@ class OwnershipRepairs:
                 event = self.runner.host._event(
                     job,
                     "OWNERSHIP_REPAIR",
-                    "Approved corrected ownership quantities and basis across the handoff family."
+                    "Approved corrected ownership releases, quantities and basis."
+                    if repair_releases
+                    else "Approved corrected ownership quantities and basis across the handoff family."
                     if allow_quantity_changes
                     else "Approved corrected ownership basis across the handoff family.",
                     ownership_repair_id=review_id,

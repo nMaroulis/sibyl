@@ -8,12 +8,13 @@ import pytest
 from test_strategy_execution import execution as execution
 from test_strategy_execution import reconcile, request
 from test_strategy_fee_review import priced_candle
-from test_strategy_ownership import handoff
+from test_strategy_ownership import handoff, held
 from test_strategy_ownership import ownership as ownership
 
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution import runner
 from sibyl.strategies.execution.ownership import ledger
+from sibyl.strategies.execution.ownership.contracts import OwnershipReview
 from sibyl.strategies.execution.risk.ledger import positions
 
 
@@ -23,6 +24,7 @@ def approve(repairs, review):
         review["id"],
         review["confirmation"],
         allow_quantity_changes=review.get("allow_quantity_changes", False),
+        repair_releases=review.get("repair_releases", False),
     )
 
 
@@ -246,8 +248,14 @@ def test_reflow_refuses_if_a_descendant_sale_exceeds_corrected_units(execution, 
     source, entry, middle, target = executed_family(execution, ownership, monkeypatch)
     native.fills[0]["fees"] = [{"currency": "BTC", "cost": source["quantity"] - 0.5}]
     reconcile(trading, entry["id"])
-    with pytest.raises(ValueError, match="exceed the strategy-owned position"):
-        strategies.execution.ownership_repairs.preview(target["id"], allow_quantity_changes=True)
+    with pytest.raises(
+        ValueError, match=f"exceed the strategy-owned position by 0.5 BTC in run {middle['id'][:8]}"
+    ):
+        strategies.execution.ownership_repairs.preview(
+            target["id"],
+            allow_quantity_changes=True,
+            repair_releases=True,
+        )
     assert all(ownership.state(row["id"])["stale"] for row in (source, middle, target))
     with strategies.store.db() as db:
         assert not db.execute("SELECT 1 FROM strategy_ownership_adjustments").fetchall()
@@ -298,3 +306,87 @@ def test_http_quantity_switch_must_match_the_exact_preview(manual_client, execut
     assert saved.status_code == 200, saved.text
     assert saved.json()["allow_quantity_changes"]
     assert manual_client.post(route, json=body).status_code == 400
+
+
+def release_all(ownership, job):
+    review = ownership.preview(
+        job["id"],
+        OwnershipReview(action="release", quantity=job["quantity"], note="Reviewed residual"),
+    )
+    return ownership.confirm(review["id"], review["confirmation"])
+
+
+def preview_release(repairs, identity):
+    return repairs.preview(identity, allow_quantity_changes=True, repair_releases=True)
+
+
+def test_underfunded_release_can_be_reduced_and_restored_only_up_to_the_original_amount(execution, ownership):
+    strategies, trading, native, _ = execution
+    source, entry = held(execution)
+    identity = source["id"]
+    release_all(ownership, source)
+    with strategies.store.db() as db:
+        raw = db.execute(
+            "SELECT payload FROM strategy_ownership_events WHERE job_id=?", (identity,)
+        ).fetchone()[0]
+    original = json.loads(raw)
+    reference = original["reference_value"] / original["quantity"]
+    repairs = strategies.execution.ownership_repairs
+    native.fills[0]["fees"] = [{"currency": "BTC", "cost": 0.01}]
+    reconcile(trading, entry["id"])
+    with pytest.raises(ValueError, match="Fix underfunded releases"):
+        repairs.preview(identity, allow_quantity_changes=True)
+
+    preview = repairs.preview(identity, repair_releases=True)
+    assert not preview["allow_quantity_changes"]
+    item = preview["adjustments"][0]
+    assert item["action"] == "release"
+    assert item["quantity"] == pytest.approx(original["quantity"] + 0.01)
+    assert item["reference_value"] == pytest.approx(item["quantity"] * reference)
+    assert preview["runs"][0]["quantity"] == pytest.approx(0)
+    assert ownership.state(identity)["stale"]
+    with pytest.raises(ValueError, match="Fix underfunded releases"):
+        repairs.approve(identity, preview["id"], preview["confirmation"], allow_quantity_changes=True)
+    approved = approve(repairs, preview)
+    assert approve(repairs, preview) == approved
+    assert strategies.execution.performance.report(identity)["flows"][0]["value"] == pytest.approx(
+        item["reference_value"]
+    )
+    restored = Strategies(strategies.market, strategies.store)
+    restored.attach_execution(trading)
+    assert not restored.execution.ownership.state(identity)["stale"]
+
+    native.fills[0]["fees"] = [{"currency": "BTC", "cost": -0.02}]
+    reconcile(trading, entry["id"])
+    correction = restored.execution.ownership_repairs.preview(identity, repair_releases=True)
+    assert correction["adjustments"][0]["quantity"] == original["quantity"]
+    approved = approve(restored.execution.ownership_repairs, correction)
+    assert approved["runs"][0]["quantity"] == pytest.approx(0.02)
+    with strategies.store.db() as db:
+        assert (
+            db.execute(
+                "SELECT payload FROM strategy_ownership_events WHERE job_id=?", (identity,)
+            ).fetchone()[0]
+            == raw
+        )
+        assert ledger.events(db, identity)[0]["reference_value"] == pytest.approx(original["reference_value"])
+    assert len(native.calls) == 1
+
+
+def test_release_can_go_to_zero_after_a_descendant_sale_consumes_the_remaining_units(
+    execution, ownership, monkeypatch
+):
+    strategies, trading, native, _ = execution
+    source, entry, _, target = executed_family(execution, ownership, monkeypatch)
+    target = strategies.status(target["id"], "stopped")
+    release_all(ownership, target)
+    native.fills[0]["fees"] = [{"currency": "BTC", "cost": source["quantity"] - 1.0}]
+    reconcile(trading, entry["id"])
+    repairs = strategies.execution.ownership_repairs
+    reviewed = approve(repairs, preview_release(repairs, target["id"]))
+    release = next(row for row in reviewed["adjustments"] if row["action"] == "release")
+    assert release["quantity"] == release["reference_value"] == release["cost_basis"] == 0
+    assert not ownership.state(target["id"])["stale"]
+    with strategies.store.db() as db:
+        assert len(positions(db, trading, "test")) == 3
+    assert len(native.calls) == 2

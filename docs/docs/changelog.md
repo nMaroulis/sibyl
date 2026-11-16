@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Underfunded local releases can be repaired after a fill correction. Sibyl uses the units available at the release’s original checkpoint and caps any restoration at the amount originally approved. Repair receipts retain the original history, and unresolved venue sales show the exact shortfall.
+
 - Strategy ownership repairs now support corrected handoff quantities. The review recalculates both sides at the original reference price, replays already executed sales, and records revised units and cash-flow values beside the original receipts. Sales or releases that exceed corrected ownership keep execution blocked.
 
 - Strategy ownership can repair cost basis after an exchange corrects a fill, even after a descendant has sold part of the position or handed it to another run. The monitor previews revised basis and realized P&L. Approval preserves the original receipts, transfer quantities and cash flows, with a separate journal receipt on every affected run.

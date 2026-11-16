@@ -231,14 +231,23 @@ class OwnershipRepairApproval(StrategyApproval):
 
     review_id: str = Field(pattern=r"^[a-f0-9]{64}$")
     allow_quantity_changes: bool = Field(default=False, strict=True)
+    repair_releases: bool = Field(default=False, strict=True)
 
 
 @router.get("/jobs/{job_id}/ownership/repair")
-def preview_ownership_repair(job_id: str, s: S, response: Response, allow_quantity_changes: bool = False):
+def preview_ownership_repair(
+    job_id: str,
+    s: S,
+    response: Response,
+    allow_quantity_changes: bool = False,
+    repair_releases: bool = False,
+):
     """Preview balanced cost-basis corrections across the affected family."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.ownership_repairs.preview(
-        job_id, allow_quantity_changes=allow_quantity_changes
+        job_id,
+        allow_quantity_changes=allow_quantity_changes,
+        repair_releases=repair_releases,
     )
 
 
@@ -247,7 +256,11 @@ def approve_ownership_repair(job_id: str, body: OwnershipRepairApproval, s: S, r
     """Approve repaired historical cost basis without placing orders or resuming runs."""
     response.headers["Cache-Control"] = "no-store"
     return s.strategies.execution.ownership_repairs.approve(
-        job_id, body.review_id, body.confirmation, allow_quantity_changes=body.allow_quantity_changes
+        job_id,
+        body.review_id,
+        body.confirmation,
+        allow_quantity_changes=body.allow_quantity_changes,
+        repair_releases=body.repair_releases,
     )
 
 

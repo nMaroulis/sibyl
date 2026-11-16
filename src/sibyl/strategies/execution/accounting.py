@@ -107,6 +107,11 @@ def project(job, trading, *, db=None, repair=None):
             if repair and disposed < 0:
                 raise ExecutionGuard("A native rebate exceeds the disposed quantity in the repair.")
             if disposed > quantity + tolerance and not ownership_stale:
+                if repair:
+                    raise ExecutionGuard(
+                        f"Native executions exceed the strategy-owned position by {disposed - quantity:.8g} "
+                        f"{base} in run {job['id'][:8]} at fill {fill['id'][:8]}."
+                    )
                 raise ExecutionGuard(
                     "Native executions exceed the strategy-owned position. Review fills before resuming."
                 )
