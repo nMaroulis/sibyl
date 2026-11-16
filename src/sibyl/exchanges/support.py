@@ -173,7 +173,9 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                     "recovery",
                     "Recover uncertain submissions",
                     spec.id in RECOVERY_PROVIDERS,
-                    "Read existing orders by the persisted client ID; never resubmit an uncertain order."
+                    "Look up the saved client ID on the exact cash spot instrument. OKX returns the latest match, so Sibyl also verifies creation time and reviewed order details."
+                    if spec.id == "okx"
+                    else "Read existing orders by the persisted client ID; never resubmit an uncertain order."
                     if spec.id in RECOVERY_PROVIDERS
                     else "Automatic client-ID recovery is pending. Resolve an ambiguous submission at the exchange; never retry it blindly.",
                 ),

@@ -100,6 +100,7 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Retain Coinbase Exchange Sandbox's native per-fill settlement flag. Share changes across exact reconciliation and Account history, with versioned evidence and separate settlement status.
 - [x] Preserve explicit Gemini trade breaks with native fill IDs and an append-only history. Exclude full busts from accounting and mark manual or unverified breaks for review.
 - [x] Add account-wide OKX cash spot order discovery with native pending/history endpoints, exact-ID checkpoints, explicit cancellation retention and shared fill evidence.
+- [x] Recover uncertain OKX cash spot market and GTC limit submissions from native instrument/client-ID details, with immutable order checks and abstention on stale or mismatched evidence.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

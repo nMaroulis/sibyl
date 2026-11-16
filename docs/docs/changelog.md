@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- OKX cash spot market and GTC limit orders can recover a lost acknowledgment through their saved client order ID. Sibyl verifies the latest native result against the reviewed submission before attaching it. Uncertain outcomes remain visible after misses or mismatches.
+
 - Trade can import account-wide OKX cash spot orders, including orders placed outside Sibyl. Native pagination resumes after restart, imported orders link to the existing fill ledger, and the sync form explains the shorter retention for unfilled cancellations.
 
 - Gemini spot imports retain trade reversals in Account history and order reconciliation. Full busts remove the fill and fees from accounting totals. Manual and unverified breaks flag affected balance checks and net results for review. Earlier fill observations remain available.

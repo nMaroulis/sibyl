@@ -1,11 +1,13 @@
 """Reviewed client-ID lookup pages; these endpoints only read existing orders."""
 
+import re
 from dataclasses import dataclass
 
 import ccxt
 
 from sibyl.exchanges.base import number
 from sibyl.exchanges.history import _token
+from sibyl.exchanges.venue_history import identity
 
 RECOVERY_PROVIDERS = {
     "binance",
@@ -14,6 +16,7 @@ RECOVERY_PROVIDERS = {
     "coinbase",
     "coinbase-sandbox",
     "kraken",
+    "okx",
     "demo",
 }
 
@@ -32,7 +35,7 @@ def lookup_order_page(
 ) -> OrderLookupPage:
     """Read one native page and discard unrelated orders before retaining any evidence.
 
-    Binance/Exchange Sandbox use direct client-ID reads. Coinbase Advanced scans
+    Binance, Exchange Sandbox and OKX use direct client-ID reads. Coinbase Advanced scans
     an exact-product creation window. Kraken reads client-filtered open orders,
     then closed orders with an opening-time window. No SDK auto-pagination runs.
     """
@@ -47,6 +50,9 @@ def lookup_order_page(
         except ccxt.OrderNotFound:
             return OrderLookupPage([], {}, True)
         return OrderLookupPage([order], {}, True)
+
+    if provider == "okx":
+        return _okx_lookup(exchange, client_id, symbol)
 
     if provider == "coinbase":
         market = exchange.market(symbol)
@@ -103,3 +109,42 @@ def lookup_order_page(
         ]
         return OrderLookupPage(candidates, following, complete)
     raise ccxt.NotSupported("Client order ID recovery is not reviewed for this provider.")
+
+
+def _okx_lookup(exchange, client_id: str, symbol: str) -> OrderLookupPage:
+    """Read the latest OKX match for this exact cash spot instrument and client ID."""
+    if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9]{1,32}", client_id):
+        raise ValueError("Invalid persisted OKX client order ID.")
+    instrument = exchange.market(symbol)["id"]
+    try:
+        response = exchange.privateGetTradeOrder({"instId": instrument, "clOrdId": client_id})
+    except ccxt.OrderNotFound:
+        return OrderLookupPage([], {}, True)
+    rows = response.get("data") if isinstance(response, dict) and response.get("code") == "0" else None
+    if not isinstance(rows, list) or len(rows) > 1 or any(not isinstance(row, dict) for row in rows):
+        raise ccxt.ExchangeError("Invalid OKX order details response.")
+    if not rows:
+        return OrderLookupPage([], {}, True)
+    row = rows[0]
+    if (
+        row.get("clOrdId") != client_id
+        or row.get("instId") != instrument
+        or row.get("instType") != "SPOT"
+        or row.get("tdMode") != "cash"
+        or row.get("algoId")
+        or row.get("algoClOrdId")
+        or row.get("attachAlgoOrds")
+        or row.get("ordType") not in ("market", "limit")
+        or row.get("state") not in ("live", "partially_filled", "filled", "canceled")
+    ):
+        raise ValueError("OKX order evidence differs from the reviewed cash spot submission.")
+    order_id = identity(row.get("ordId"))
+    if int(order_id) <= 0:
+        raise ValueError("Invalid OKX native order ID.")
+    market_order = row.get("ordType") == "market"
+    unit = row.get("tgtCcy") or ("base_ccy" if row.get("side") == "sell" else "quote_ccy")
+    if market_order and unit != "base_ccy":
+        raise ValueError("The OKX market order has no verified requested base quantity.")
+    parsed = exchange.parse_order(row)
+    parsed["id"] = order_id
+    return OrderLookupPage([parsed], {}, True)

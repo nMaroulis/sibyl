@@ -1,16 +1,19 @@
 """Read-only identity recovery uses controlled venues and temporary ledgers, never native writes."""
 
 import json
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
 import ccxt
 import pytest
+from test_order_discovery import okx_order
 from test_order_management import save, submit
 from test_order_management import setup as setup
 
 from sibyl.exchanges.order_lookup import OrderLookupPage, lookup_order_page
 from sibyl.market_data.control import ProviderDeferred
+from sibyl.models import ConnectionCreate
 from sibyl.services.trading.service import ExchangeTrading
 
 
@@ -317,6 +320,133 @@ def test_direct_provider_lookup_only_passes_client_id(provider, param):
     page = lookup_order_page(transport, provider, "client-1", "BTC/USDT", {}, 1000, 2000)
     assert transport.calls == [{param: "client-1"}]
     assert page.complete and len(page.candidates) == 1
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"clOrdId": "different"},
+        {"instId": "ETH-USDT"},
+        {"instType": "MARGIN", "tdMode": "cross"},
+        {"tdMode": "cross"},
+        {"ordType": "post_only"},
+        {"ordType": "market", "tgtCcy": "quote_ccy"},
+        {"ordType": "market", "tgtCcy": ""},
+        {"algoId": "123"},
+        {"attachAlgoOrds": [{"attachAlgoId": "123"}]},
+        {"state": "effective"},
+    ],
+)
+def test_okx_lookup_rejects_mismatched_native_evidence(monkeypatch, changes):
+    native = LookupTransport()
+    row = okx_order(2**60, **({"clOrdId": "client1"} | changes))
+    monkeypatch.setattr(native, "privateGetTradeOrder", lambda _: {"code": "0", "data": [row]}, raising=False)
+    with pytest.raises(ValueError, match="OKX"):
+        lookup_order_page(native, "okx", "client1", "BTC/USDT", {}, 1000, 2000)
+
+
+def test_okx_lookup_rejects_unexpected_multiple_results_and_malformed_client_ids(monkeypatch):
+    native = LookupTransport()
+    rows = [okx_order(identity, clOrdId="client1") for identity in (91, 92)]
+    monkeypatch.setattr(native, "privateGetTradeOrder", lambda _: {"code": "0", "data": rows}, raising=False)
+    with pytest.raises(ccxt.ExchangeError, match="Invalid OKX order details response"):
+        lookup_order_page(native, "okx", "client1", "BTC/USDT", {}, 1000, 2000)
+    with pytest.raises(ValueError, match="client order ID"):
+        lookup_order_page(native, "okx", "client/1", "BTC/USDT", {}, 1000, 2000)
+
+
+@pytest.mark.parametrize("order_type", ["limit", "market"])
+def test_okx_lost_ack_recovers_native_identity_without_resending(manual_client, monkeypatch, order_type):
+    owner = manual_client.app.state.services
+    owner.settings.allow_live_trading = True
+    account = owner.store.add_connection(
+        ConnectionCreate(
+            exchange="okx", label="Isolated OKX recovery", api_key="fake", secret="fake", passphrase="fake"
+        )
+    )
+    adapter = owner.market.client(account)
+    native = adapter._exchange
+    native.set_markets(
+        [
+            {
+                "id": "BTC-USDT",
+                "symbol": "BTC/USDT",
+                "base": "BTC",
+                "quote": "USDT",
+                "baseId": "BTC",
+                "quoteId": "USDT",
+                "type": "spot",
+                "spot": True,
+                "contract": False,
+                "active": True,
+                "precision": {"amount": 0.00000001, "price": 0.01},
+            }
+        ]
+    )
+    native_id = str(2**60 + 3)
+    writes, reads, rows = [], [], []
+    monkeypatch.setattr(adapter, "fetch_balance", lambda: {"free": {"USDT": 10_000}})
+    monkeypatch.setattr(adapter, "fetch_ticker", lambda symbol: {"ask": 50_000, "bid": 49_999})
+
+    def lost_ack(symbol, kind, side, amount, price=None, *, params):
+        writes.append(params["clientOrderId"])
+        assert (symbol, kind, side, amount) == ("BTC/USDT", order_type, "buy", 0.01)
+        if kind == "market":
+            assert params.get("tdMode") == "cash" and params.get("tgtCcy") == "base_ccy"
+        rows.append(
+            okx_order(
+                native_id,
+                clOrdId=params["clientOrderId"],
+                ordType=kind,
+                cTime=str(int(time.time() * 1000)),
+                tgtCcy="base_ccy" if kind == "market" else "",
+                state="filled" if kind == "market" else "live",
+                accFillSz="0.01" if kind == "market" else "0",
+                px=str(price) if price is not None else "",
+                avgPx="50000" if kind == "market" else "",
+            )
+        )
+        raise ccxt.RequestTimeout("PRIVATE LOST ACK")
+
+    def read(request):
+        reads.append(request)
+        assert request["instId"] == "BTC-USDT"
+        assert request.get("ordId") == native_id or request.get("clOrdId") == writes[0]
+        if len(reads) == 1:
+            raise ccxt.OrderNotFound("okx 51603 PRIVATE ERROR DETAILS")
+        return {"code": "0", "data": rows}
+
+    monkeypatch.setattr(native, "create_order", lost_ack)
+    monkeypatch.setattr(native, "privateGetTradeOrder", read)
+    monkeypatch.setattr(native, "privateGetTradeFillsHistory", lambda request: {"data": []})
+    trading = owner.trading
+    submission = submit(
+        trading,
+        account,
+        order_type=order_type,
+        limit_price=50_000 if order_type == "limit" else None,
+    )
+    assert submission["status"] == "unknown" and not submission.get("exchange_order_id")
+    identity = submission["id"]
+    owner.settings.allow_live_trading = False
+    missed = trading.recover(identity)
+    assert missed["recovery"]["state"] == "not_found" and missed["status"] == "unknown"
+    assert "PRIVATE ERROR DETAILS" not in json.dumps(missed)
+    assert reads == [{"instId": "BTC-USDT", "clOrdId": submission["client_order_id"]}]
+
+    actual_time = rows[0]["cTime"]
+    rows[0]["cTime"] = str(int(actual_time) - 30 * 60 * 1000)
+    restarted = ExchangeTrading(owner.market, owner.store)
+    stale = restarted.recover(identity)
+    assert stale["recovery"]["state"] == "mismatch" and not stale.get("exchange_order_id")
+    rows[0]["cTime"] = actual_time
+    recovered = restarted.recover(identity)
+    assert recovered["recovery"]["state"] == "found"
+    assert recovered["exchange_order_id"] == native_id
+    assert recovered["status"] == ("closed" if order_type == "market" else "open")
+    assert reads[-1]["ordId"] == native_id
+    assert restarted.execute(identity, submission["confirmation"])["exchange_order_id"] == native_id
+    assert writes == [submission["client_order_id"]]
 
 
 def test_coinbase_advanced_exact_product_window_and_client_filter():
