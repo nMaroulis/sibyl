@@ -198,6 +198,23 @@ class GateClient(CCXTClient):
         """Persist the complete native Gate text ID, including its t- prefix."""
         return "t-" + identity.replace("-", "")[:26]
 
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep native executed amounts and avoid deriving a base request from a quote budget."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("account") == "spot":
+            if (filled := number(native.get("filled_amount"))) is not None:
+                order["filled"] = filled
+            if native.get("type") == "market" and native.get("side") == "buy":
+                order.update(
+                    amount=None,
+                    remaining=None,
+                    filled=filled,
+                    cost=number(native.get("filled_total")),
+                )
+        return order
+
 
 class BitgetClient(CCXTClient):
     """Bitget classic spot assets and passphrase authentication."""
@@ -210,6 +227,18 @@ class BitgetClient(CCXTClient):
     def format_client_order_id(self, identity: str) -> str:
         """Use a stable compact classic-account clientOid."""
         return identity.replace("-", "")
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Show reported base/quote fills and leave original market sizing units unknown."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            if native.get("orderType") == "market":
+                order.update(amount=None, remaining=None)
+            elif native.get("orderType") == "limit" and native.get("price") not in (None, ""):
+                order["price"] = number(native["price"])
+        return order
 
     def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
         """Classic v2 requires lowercase native force; avoid SDK unified-field leakage."""

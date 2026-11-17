@@ -14,6 +14,7 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 | Bybit UTA                              | Exact `orderLinkId` in V5 realtime. A miss continues through dated spot history with saved cursors. |
 | KuCoin Classic                         | HF spot client-ID lookup for the exact symbol. A miss checks the legacy client-ID endpoint used by older submissions. |
 | Gemini                                 | Exact `client_order_id` details for reviewed spot GTC limits. Original size, limit price, venue flags and creation time must match. |
+| Gate                                   | Exact native `text` ID and cash spot pair for reviewed GTC limits. A provider-reported miss checks recent finished orders for that pair. |
 | Demo                                   | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself.                                 |
 | Other clients                          | Explicitly unsupported; no generic scan or production/Demo fallback.                                                                                |
 
@@ -58,6 +59,8 @@ Recovery states are `available`, `searching`, `found`, `not_found`, `ambiguous`,
 Bybit recovery is scoped to regular cash spot orders. Market results must identify their original quantity as base units. The realtime cache can lose terminal rows after a provider restart, and historical availability depends on status and age. KuCoin requires Classic spot evidence, and its legacy endpoint can miss settled orders. [Bybit realtime orders](https://bybit-exchange.github.io/docs/v5/order/open-order), [Bybit history](https://bybit-exchange.github.io/docs/v5/order/order-list), [KuCoin HF client ID](https://www.kucoin.com/docs-new/rest/spot-trading/orders/get-order-by-clientoid), [KuCoin legacy client ID](https://www.kucoin.com/docs-new/abandoned-endpoints/spot-trading/orders/get-order-by-clientoid-old).
 
 Gemini recommends unique client IDs within each trading session. Sibyl uses its generated, persisted client ID and requires explicit original size, the regular spot limit type and an empty native options list before attaching the returned order. [Gemini client order IDs](https://developer.gemini.com/client-order-id), [Gemini order status](https://developer.gemini.com/trading/rest-api/orders/get-order-status).
+
+Gate documents direct client-ID lookup for pending orders. After a provider-reported miss, Sibyl checks finished cash spot orders for the exact pair within a bounded seven-day window. It verifies that the complete scan contains a unique match and checks the original reviewed terms before attaching the native ID. [Gate spot API](https://www.gate.com/docs/developers/apiv4/en/spot/).
 
 ## Remaining work
 

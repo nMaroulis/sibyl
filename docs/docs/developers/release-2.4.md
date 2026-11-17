@@ -23,6 +23,11 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Import KuCoin Classic open and selected-pair recent spot orders with restart-safe native checkpoints.
 - [x] Import Bitstamp's account-wide open spot orders and disclose its open-only discovery scope.
 - [x] Add direct client-ID recovery for verified Gemini spot GTC orders.
+- [x] Discover account-wide Gemini open spot limit orders with explicit open-only coverage.
+- [x] Discover Gate open and recent finished cash spot orders with native page checkpoints.
+- [x] Recover uncertain Gate GTC spot orders by client ID with a bounded finished-order fallback.
+- [x] Discover Bitget Classic open and recent regular spot orders with durable native order-ID checkpoints.
+- [x] Reconcile exact Bitget Classic spot fills through the shared execution ledger.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

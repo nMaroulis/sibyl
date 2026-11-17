@@ -57,6 +57,16 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Gemini order discovery imports account-wide open spot limit orders for read-only review. Trade shows its open-only scope.
+
+- Gate order discovery imports open and recent finished cash spot orders across the account.
+
+- Gate can recover uncertain spot GTC limits by saved client ID. A bounded finished-order check covers orders that left the pending list.
+
+- Bitget Classic order discovery imports open and recent regular spot orders using native order-ID pagination.
+
+- Bitget Classic can reconcile an order against its exact native fills. Account history and Trade share execution IDs, so checking both does not double-count fills.
+
 - KuCoin Classic order discovery imports open spot orders across the account and recent orders for selected markets. The Trade sync form shows KuCoin's status-specific retention limits.
 
 - Bitstamp can import account-wide open spot limit orders as read-only records for order and fill checks. Trade shows the open-only scope.

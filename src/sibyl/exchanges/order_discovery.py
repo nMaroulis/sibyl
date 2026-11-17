@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import ccxt
 
-from sibyl.exchanges import kucoin_orders
+from sibyl.exchanges import bitget_orders, gate_orders, kucoin_orders
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
     OPEN,
@@ -26,16 +26,22 @@ DISCOVERY_PROVIDERS = {
     "bybit",
     "kucoin",
     "bitstamp",
+    "gemini",
+    "gate",
+    "bitget",
     "demo",
 }
 DAY_MS = 86_400_000
-DISCOVERY_OPEN_ONLY = {"bitstamp"}
+DISCOVERY_OPEN_ONLY = {"bitstamp", "gemini"}
 DISCOVERY_HISTORY_PAIRS = {"binance", "binanceus", "binance-testnet", "kucoin"}
 DISCOVERY_NOTES = {
     "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
     "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
     "kucoin": "KuCoin Classic open-order discovery uses Spot API permission. Recent history uses selected pairs, with up to two days for cancellations and seven days for filled orders.",
     "bitstamp": "Bitstamp discovery covers account-wide open spot limit orders. Individual order and fill checks are available for imported orders.",
+    "gemini": "Gemini discovery covers account-wide open spot limit orders for the API key’s account.",
+    "gate": "Gate scans open and recently finished cash spot orders. Recent history uses Gate’s finish time.",
+    "bitget": "Bitget discovery covers open and recent ordinary Classic spot orders. Managed subaccount history depends on its binding time.",
 }
 
 
@@ -148,6 +154,17 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
 
     if provider == "bitstamp" and stream == "open":
         return _bitstamp_open(exchange)
+
+    if provider == "gemini" and stream == "open":
+        return _gemini_open(exchange)
+
+    if provider == "gate":
+        return _gate_page(exchange, stream, cursor, start, end)
+
+    if provider == "bitget":
+        return OrderDiscoveryPage(
+            *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
+        )
 
     if provider == "kraken":
         if stream == "open":
@@ -318,3 +335,53 @@ def _bitstamp_open(exchange) -> OrderDiscoveryPage:
             }
         )
     return OrderDiscoveryPage(orders, {}, True, len(rows) - len(orders))
+
+
+def _gemini_open(exchange) -> OrderDiscoveryPage:
+    """Read the account's open snapshot, retaining only currently supported spot instruments."""
+    rows = exchange.privatePostV1Orders({})
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ccxt.ExchangeError("Invalid Gemini open-order snapshot.")
+    if len(rows) > 1000:
+        raise ccxt.NotSupported("Gemini open-order snapshot exceeds the reviewed budget.")
+    markets = {
+        market["id"].upper(): market
+        for market in exchange.markets.values()
+        if market.get("spot") and market.get("active") is not False
+    }
+    orders = []
+    for row in rows:
+        instrument = row.get("symbol")
+        if not isinstance(instrument, str) or not instrument:
+            raise ccxt.ExchangeError("Missing Gemini order instrument.")
+        market = markets.get(instrument.upper())
+        if not market or row.get("type") != "exchange limit" or row.get("exchange") != "gemini":
+            continue
+        if row.get("is_live") is not True or row.get("is_cancelled") is not False:
+            raise ccxt.ExchangeError("Unexpected Gemini open-order status.")
+        native_id = identity(row.get("order_id"))
+        parsed = exchange.parse_order(row, market)
+        parsed["id"] = native_id
+        orders.append(parsed)
+    return OrderDiscoveryPage(orders, {}, True, len(rows) - len(orders))
+
+
+def _gate_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
+    """Import exact cash spot records from separate open and finished native streams."""
+    page = cursor.get("page", 1)
+    open_stream = stream == "open"
+    rows = (
+        gate_orders.open_page(exchange, page)
+        if open_stream
+        else gate_orders.finished_page(exchange, page, start, end)
+    )
+    following = gate_orders.next_page(rows, cursor)
+    items = []
+    for row in rows:
+        if not gate_orders.cash_order(row):
+            continue
+        if row.get("status") not in (("open",) if open_stream else ("closed", "cancelled")):
+            raise ccxt.ExchangeError("Unexpected Gate order status in the selected stream.")
+        market = exchange.safe_market(row["currency_pair"], marketType="spot")
+        items.append(exchange.parse_order(row, market))
+    return OrderDiscoveryPage(items, following, not rows, len(rows) - len(items))

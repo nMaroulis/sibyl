@@ -107,6 +107,11 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Discover KuCoin Classic open spot orders across the account and recent orders for selected pairs using native pagination.
 - [x] Discover account-wide Bitstamp open spot limit orders with explicit open-only coverage in Trade and Settings.
 - [x] Recover uncertain Gemini spot GTC limit submissions through exact client-ID details and verified original terms.
+- [x] Discover account-wide Gemini open spot limit orders with explicit open-only coverage.
+- [x] Discover Gate open and recent finished cash spot orders with native page checkpoints.
+- [x] Recover uncertain Gate GTC spot orders by client ID with a bounded finished-order fallback.
+- [x] Discover Bitget Classic open and recent regular spot orders with durable native order-ID checkpoints.
+- [x] Reconcile exact Bitget Classic spot fills through the shared execution ledger.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

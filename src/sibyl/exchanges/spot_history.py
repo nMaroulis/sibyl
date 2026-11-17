@@ -19,7 +19,7 @@ def history_note(provider: str) -> str:
         "okx": "Spot fills in the last 89 days; OKX retains up to three months. Pagination uses bill IDs; execution times use fillTime when reported.",
         "bybit": "UTA spot fills in the last 730 days, read in seven-day windows. Pre-upgrade/classic, margin and derivatives history are excluded.",
         "kucoin": "Classic spot HF fills in the last seven days. KuCoin limits inactive-order history to seven days; UTA and abandoned endpoints are excluded.",
-        "bitget": "Classic spot fills in the last 89 days. Bitget retains up to 90 days; UTA and margin history are excluded.",
+        "bitget": "Classic spot fills in the last 89 days, including exact-order reads. Discounted fee breakdowns without verified wallet effects stay unknown. Bitget retains up to 90 days.",
         "bitstamp": "Selected spot transactions by ascending native IDs. Embedded order fill details require native market/side evidence; closed-order status is retained by Bitstamp for 30 days. Rescan to revisit old fill/fee corrections; settlement/bust accounting remains separate.",
         "gemini": "Selected spot history by millisecond boundary with retained edge IDs. Saturated 500-trade timestamp groups stop for review. Reported full busts void fills in accounting; manual and unverified breaks remain available for review. Master-key subaccount routing is pending. Exact-order reads use include_trades.",
         "demo": "Existing manual Demo fills only; strategy simulations use a separate ledger.",
@@ -88,8 +88,18 @@ def fetch_spot_page(exchange, kind, symbol, cursor, limit, *, order_id=None) -> 
             request["idLessThan"] = page
         if order_id:
             request["orderId"] = order_id
-        raw = exchange.privateSpotGetV2SpotTradeFills(request)["data"]
-        following = _numeric_token(raw[-1].get("tradeId")) if raw else None
+        response = exchange.privateSpotGetV2SpotTradeFills(request)
+        raw = response.get("data") if isinstance(response, dict) and response.get("code") == "00000" else None
+        if not isinstance(raw, list) or len(raw) > limit or any(not isinstance(row, dict) for row in raw):
+            raise ccxt.ExchangeError("Invalid Bitget Classic fill page.")
+        keys = [_numeric_token(row.get("tradeId")) for row in raw]
+        if (
+            any(key is None for key in keys)
+            or len(set(keys)) != len(keys)
+            or (page and any(int(key) >= int(page) for key in keys))
+        ):
+            raise ccxt.ExchangeError("Bitget fill cursor did not advance across native IDs.")
+        following = min(keys, key=int) if keys else None
 
     if not isinstance(raw, list) or len(raw) > limit or any(not isinstance(row, dict) for row in raw):
         raise ccxt.ExchangeError("Invalid spot history page.")
@@ -113,6 +123,8 @@ def fetch_spot_page(exchange, kind, symbol, cursor, limit, *, order_id=None) -> 
     for row in raw:
         native_symbol = row.get("instId") if kind == "okx-bill" else row.get("symbol")
         native_order = row.get("ordId") if kind == "okx-bill" else row.get("orderId")
+        if kind == "bitget-id" and isinstance(native_symbol, str):
+            native_symbol = native_symbol.upper()
         if native_symbol != market["id"] or (order_id and str(native_order) != order_id):
             raise ccxt.ExchangeError("Unexpected market or order in spot history.")
         if kind == "okx-bill" and (row.get("instType") != "SPOT" or row.get("subType") not in {"1", "2"}):
@@ -127,6 +139,12 @@ def fetch_spot_page(exchange, kind, symbol, cursor, limit, *, order_id=None) -> 
             row.get("tradeType") != "TRADE" or (row.get("tax") not in (None, "") and number(row["tax"]) != 0)
         ):
             raise ccxt.NotSupported("Margin executions or additional tax require a separate adapter.")
+        if kind == "bitget-id":
+            detail = row.get("feeDetail")
+            if detail is not None and not isinstance(detail, dict):
+                raise ccxt.ExchangeError("Invalid Bitget Classic fee detail.")
+            if detail and detail.get("deduction") not in (None, "", "no"):
+                row = {**row, "feeDetail": None}
         trade = normalize_trade(exchange.parse_trade(row, market))
         if kind == "kucoin-hf":
             # tradeId identifies a match; id identifies this account's fill leg.

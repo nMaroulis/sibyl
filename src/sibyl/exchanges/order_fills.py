@@ -12,6 +12,7 @@ ORDER_FILL_KINDS = {
     "okx-bill",
     "bybit-execution",
     "kucoin-hf",
+    "bitget-id",
     "bitstamp-transactions",
     "gemini-trades",
 }
@@ -32,7 +33,7 @@ def fetch_order_fill_page(
     if kind in VENUES:
         return fetch_venue_order_page(exchange, kind, order_id, symbol, cursor, limit)
     market = exchange.market(symbol)
-    if kind in {"okx-bill", "bybit-execution", "kucoin-hf"}:
+    if kind in {"okx-bill", "bybit-execution", "kucoin-hf", "bitget-id"}:
         from sibyl.exchanges.spot_history import fetch_spot_page
 
         return fetch_spot_page(exchange, kind, symbol, cursor, limit, order_id=order_id)

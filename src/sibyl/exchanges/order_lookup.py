@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import ccxt
 
+from sibyl.exchanges import gate_orders
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
     OPEN,
@@ -26,6 +27,7 @@ RECOVERY_PROVIDERS = {
     "bybit",
     "kucoin",
     "gemini",
+    "gate",
     "demo",
 }
 
@@ -35,6 +37,7 @@ RECOVERY_NOTES = {
     "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",
     "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
     "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
+    "gate": "Look up a reviewed cash spot GTC limit by its saved client ID. A pending-order miss checks up to seven days of finished orders.",
 }
 
 
@@ -79,6 +82,9 @@ def lookup_order_page(
 
     if provider == "gemini":
         return _gemini_lookup(exchange, client_id, symbol)
+
+    if provider == "gate":
+        return _gate_lookup(exchange, client_id, symbol, cursor, start)
 
     if provider == "coinbase":
         market = exchange.market(symbol)
@@ -285,3 +291,49 @@ def _gemini_lookup(exchange, client_id, symbol) -> OrderLookupPage:
     parsed = exchange.parse_order(row, market)
     parsed["id"] = order_id
     return OrderLookupPage([parsed], {}, True)
+
+
+def _gate_lookup(exchange, client_id, symbol, cursor, start) -> OrderLookupPage:
+    """Read by native text while pending, then scan bounded finish history for an exact client ID."""
+    if not isinstance(client_id, str) or not re.fullmatch(r"t-[A-Za-z0-9_.-]{1,28}", client_id):
+        raise ValueError("Invalid persisted Gate client order ID.")
+    market = exchange.market(symbol)
+    instrument = market["id"]
+    if "end" not in cursor:
+        try:
+            row = exchange.privateSpotGetOrdersOrderId(
+                {
+                    "order_id": client_id,
+                    "currency_pair": instrument,
+                    "account": "spot",
+                }
+            )
+        except ccxt.OrderNotFound:
+            end = exchange.milliseconds() + 1
+            return OrderLookupPage([], {"end": end}, False)
+        rows, following = [row], {}
+    else:
+        end = cursor["end"]
+        lower = max(start, end - 7 * 86_400_000)
+        page = cursor.get("page", 1)
+        rows = gate_orders.finished_page(exchange, page, lower, end, instrument=instrument)
+        if any(row.get("currency_pair") != instrument for row in rows):
+            raise ValueError("Gate returned a different instrument for the recovery window.")
+        following = gate_orders.next_page(rows, cursor)
+        rows = [row for row in rows if row.get("text") == client_id]
+    candidates = []
+    for row in rows:
+        if (
+            not isinstance(row, dict)
+            or row.get("text") != client_id
+            or row.get("currency_pair") != instrument
+            or not gate_orders.reviewed_limit(row)
+        ):
+            raise ValueError("Gate order evidence differs from the reviewed cash spot limit.")
+        native_id = identity(row.get("id"))
+        parsed = exchange.parse_order(row, market)
+        parsed["id"] = native_id
+        candidates.append(parsed)
+    return OrderLookupPage(
+        candidates, {**following, "end": cursor["end"]} if following else {}, not following
+    )

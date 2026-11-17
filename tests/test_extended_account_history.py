@@ -122,7 +122,7 @@ def response(provider, rows, following=None):
                 "lastId": following if following is not None else rows[-1]["id"] if rows else None,
             }
         }
-    return {"data": rows}
+    return {"data": rows, **({"code": "00000"} if provider == "bitget" else {})}
 
 
 def transport(monkeypatch, client, pages):
@@ -184,10 +184,6 @@ def test_wrong_market_rejects_whole_native_page(venue, monkeypatch):
 
 
 def test_order_reads_filter_at_source_and_validate_native_order(venue, monkeypatch):
-    if venue.id == "bitget":
-        with pytest.raises(ccxt.NotSupported):
-            venue.fetch_order_fill_page("order-1", "BTC/USDT", {})
-        return
     seen = transport(
         monkeypatch, venue, iter([response(venue.id, [native(venue.id)]), response(venue.id, [])])
     )
@@ -415,7 +411,7 @@ def test_catalog_separates_import_reconciliation_and_funding_support():
     for name in METHODS:
         features = {row["id"]: row for group in catalog[name]["support"] for row in group["features"]}
         assert features["history_import"]["status"] == "available"
-        assert features["fill_reconciliation"]["status"] == ("pending" if name == "bitget" else "available")
+        assert features["fill_reconciliation"]["status"] == "available"
     assert catalog["binance-testnet"]["history_import"] == "binance-id"
     bybit = {row["id"]: row for group in catalog["bybit"]["support"] for row in group["features"]}
     assert bybit["funding"]["status"] == "available"
