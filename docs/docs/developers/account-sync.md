@@ -82,6 +82,10 @@ Ledger filters: `account_id`, optional exact `symbol`, `side` (`buy`/`sell`), `e
 
 Run `uv run pytest tests/test_account_sync.py tests/test_extended_account_history.py` for offline pagination, parser, retention, rescan races, recovery, fee, isolation and API tests.
 
+## Exact-order coverage
+
+Gate and HTX can reconcile individual known orders. Their account-wide fill imports remain pending. Settings reports these as separate capabilities, and **Trade → Executions → Check executions** is the entry point for their reviewed fill reads. [Read contracts](order-reconciliation.md#gate-and-htx-order-executions).
+
 ## Bitstamp and Gemini
 
 `exchanges/venue_history.py` adds both native adapters while preserving the existing at-most-100-fill page commit, checkpoint transaction, restart and rescan behavior.

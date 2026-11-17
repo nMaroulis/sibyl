@@ -191,6 +191,7 @@ class GateClient(CCXTClient):
     """Gate spot wallet with optional sandbox credentials."""
 
     id = "gate"
+    order_fill_kind = "gate-order"
     options = {"fetchMarkets": {"types": ["spot"]}, "unifiedAccount": False}
     balance_params = {"type": "spot"}
 
@@ -282,15 +283,15 @@ class HTXClient(CCXTClient):
     """HTX spot account, excluding margin and swaps."""
 
     id = "htx"
+    order_fill_kind = "htx-order"
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20)
 
     def _spot_account(self) -> str:
         """Require one actual spot wallet; never fall back to the first margin account."""
-        accounts = [row for row in self._exchange.load_accounts() if row.get("type") == "spot"]
-        if len(accounts) != 1 or not accounts[0].get("id"):
-            raise ValueError("HTX requires one unambiguous spot account for balance and order access.")
-        return str(accounts[0]["id"])
+        from sibyl.exchanges.htx_orders import spot_account
+
+        return spot_account(self._exchange)
 
     def balance_parameters(self) -> dict:
         """Bind balance reads to the same exact spot account used by submissions."""
@@ -311,6 +312,29 @@ class HTXClient(CCXTClient):
                 "source": "spot-api",
             },
         )
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep HTX market-buy quote budgets separate from requested base quantities."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            raw_type = native.get("type", "")
+            if raw_type == "buy-market":
+                order.update(amount=None, remaining=None)
+            elif raw_type == "sell-market":
+                order["amount"] = number(native.get("amount"))
+                if order["amount"] is not None and order["filled"] is not None:
+                    order["remaining"] = max(0, order["amount"] - order["filled"])
+            instruction = raw_type.partition("-")[2]
+            if instruction in {"limit", "ioc", "limit-maker", "limit-fok"}:
+                order.update(
+                    type="limit",
+                    timeInForce={"limit": "GTC", "ioc": "IOC", "limit-maker": "PO", "limit-fok": "FOK"}[
+                        instruction
+                    ],
+                )
+        return order
 
 
 class CryptoComClient(CCXTClient):

@@ -20,9 +20,10 @@ KEY_STORAGE = (
 )
 
 
-def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
+def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_kind: str = "") -> list[dict]:
     """Describe implemented app paths and explicit gaps without probing private accounts."""
     demo = spec.simulated
+    order_fills = order_fill_kind or history
 
     def feature(identity, label, available, detail, *, unavailable=False):
         return {
@@ -163,10 +164,10 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "fill_reconciliation",
                     "Order fill reconciliation",
-                    (demo or history in ORDER_FILL_KINDS) and spec.spot_trading,
+                    (demo or order_fills in ORDER_FILL_KINDS) and spec.spot_trading,
                     "Match native fills and fees to orders with bounded, resumable pages. "
                     + history_note(spec.id)
-                    if (demo or history in ORDER_FILL_KINDS) and spec.spot_trading
+                    if (demo or order_fills in ORDER_FILL_KINDS) and spec.spot_trading
                     else "Detailed fill/fee reconciliation is pending; cumulative native order status is separate.",
                 ),
                 feature(

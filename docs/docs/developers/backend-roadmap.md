@@ -117,6 +117,11 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Discover MEXC account-wide open and selected-pair recent spot orders with durable timestamp-window checkpoints.
 - [x] Recover reviewed MEXC spot GTC limits by exact pair and client ID within the native query window.
 - [x] Reconcile MEXC exact-order fills through the shared ledger with reported native fees.
+- [x] Reconcile Gate cash spot orders through exact native parent and execution reads with durable seven-day query checkpoints.
+- [x] Discover HTX open spot orders across the verified wallet with native order-ID checkpoints.
+- [x] Discover selected-pair HTX recent orders through bounded 48-hour windows with explicit cancellation retention.
+- [x] Recover reviewed HTX GTC spot limits by exact client ID and verified wallet and original terms.
+- [x] Reconcile HTX exact-order executions using native internal IDs, parent-wallet validation and explicit fee-deduction uncertainty.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

@@ -21,6 +21,8 @@ Demo's explicit Check executions action includes the existing managed-status che
 | KuCoin classic            | Exact HF `orderId`/`symbol` and native `lastId`; seven-day inactive-order retention. Ledger identity is the account fill-detail ID.                                                                        |
 | Bitget Classic            | Exact spot `orderId` and `symbol`, with native `tradeId` pagination within the adapter’s 89-day window. |
 | MEXC                      | Exact `orderId` and `symbol` through spot `myTrades`. Uses a rolling 27-day coverage window and bounded time-window splits. |
+| Gate                      | Verify the exact cash spot parent, then read `spot/my_trades` for its `order_id` and pair. Fixed seven-day finish-time query and native page numbers. |
+| HTX                       | Verify the exact spot parent wallet, then read its native match-results list. App pages retain the internal execution ID. |
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
@@ -29,6 +31,14 @@ Bitget Classic’s exact-order reads use the same native trade identities as Acc
 MEXC requires the matching native market, order ID and side before committing a page. The exact-order read shares deal IDs scoped to each native order with Account history, so importing both paths preserves the same execution and two orders in a self-trade can remain separate. [MEXC account trade list](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/account-trade-list).
 
 Provider permissions, retention and actual authenticated account acceptance still require testing. Coinbase Advanced and Exchange Sandbox are different APIs. Native read contracts follow the [Binance account trade list](https://developers.binance.com/en/docs/catalog/core-trading-spot-trading/api/rest-api/account), [Coinbase Advanced fills](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/list-fills), Kraken's [order queries](https://docs.kraken.com/api-reference/account-data/query-orders-info) and [trade queries](https://docs.kraken.com/api-reference/account-data/query-trades-info). The installed CCXT Exchange adapter supplies sandbox fill parsing and authenticated transport.
+
+## Gate and HTX order executions
+
+Gate validates the order’s native `account=spot`, exact instrument and side before requesting executions. Its deprecated fill-account filter cannot establish wallet scope on its own. The native finish-time query is fixed across page reads, and fills keep their reported execution times. Native fee and GT amounts retain their currencies. Nonzero point-card charges stop for review. Each pass ends on an empty page. [Gate spot executions](https://www.gate.com/docs/developers/apiv4/en/spot/#query-personal-trading-records).
+
+HTX resolves the unambiguous spot wallet and verifies the parent order before reading its exact match-results list. Lists above 10,000 rows stop for review. Up to 100 rows commit per app page using the internal `id`, preserving the original reported record time. Repeated passes revisit earlier fee observations. Unverified deduction effects remain unknown, and maker rebate observations do not establish payment. API-cancelled parent orders become unavailable after two hours. [HTX match results](https://huobiapi.github.io/docs/spot/v1/en/#get-the-match-result-of-an-order).
+
+Gate and HTX use `order_fill_kind` separately from `history_kind`. Settings shows exact-order reconciliation as implemented while their broader Account history imports remain pending. Authenticated acceptance for these adapters remains pending.
 
 ## Identity, validation and atomicity
 

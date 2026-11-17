@@ -27,6 +27,7 @@ class ExchangeClient(ABC):
     id: str
     timeframes: dict
     history_kind: str = ""
+    order_fill_kind: str = ""
     candle_history: bool = False
 
     def __init__(self):

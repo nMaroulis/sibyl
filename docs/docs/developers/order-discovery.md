@@ -17,6 +17,7 @@ Trade → Executions combines Sibyl submissions with **read-only imported orders
 | Gemini                    | Account-wide open spot limit snapshot | Use an account-scoped key. Recent history discovery is pending. |
 | Gate                      | Grouped open orders and paged recent finished cash spot orders | Recent windows filter on finish time. |
 | Bitget Classic            | Account-wide open and recent regular spot orders | Recent windows filter on creation time. Bitget retains API-cancelled orders for up to two hours. |
+| HTX                       | Verified-wallet open order pages and recent orders for up to 12 selected pairs | History uses fixed 48-hour windows. API-cancelled orders are queryable for up to two hours. |
 | MEXC                      | Account-wide open snapshot and recent orders for up to 12 selected pairs | Up to seven days. A saturated open snapshot or unsplittable history window reports a coverage limit. |
 | Demo                      | Actual resting virtual orders           | Actual virtual orders created in the selected range                                                           |
 
@@ -40,6 +41,8 @@ Gemini reads one active-order snapshot and selects regular spot limit orders usi
 
 MEXC checks the current open snapshot once. Use exact pairs for recent history. The spot `allOrders` endpoint has a 1,000-row cap and no continuation token. A capped response splits its frozen time window and persists both halves as a checkpoint. Sibyl keeps the last valid observations if a single millisecond still hits the cap. [MEXC open orders](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/current-open-orders) · [MEXC order history](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/all-orders).
 
+HTX resolves one native spot wallet and rejects returned orders from another wallet. Open-order pages advance by the smallest native order ID. Recent discovery requires selected pairs and splits capped responses into smaller creation-time ranges within 48-hour windows. A capped single millisecond reports a coverage limit. Each pass keeps its wallet and pagination checkpoints across restart. [HTX open orders](https://huobiapi.github.io/docs/spot/v1/en/#get-all-open-orders) · [HTX historical orders](https://huobiapi.github.io/docs/spot/v1/en/#search-past-orders).
+
 ## Identity and execution evidence
 
 Account ID, exact spot symbol and native order ID define a retained order. A native ID already attached to a Sibyl intent updates that row, preserving its reviewed request and origin. A client ID matching an uncertain Sibyl submission defers the discovered row to the existing [reviewed recovery](order-recovery.md) workflow; discovery does not adopt an identity on client ID alone.
@@ -58,7 +61,7 @@ All paths use `/api/v1`. Read responses have `Cache-Control: no-store`.
 | ------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/exchange-orders/monitor`                      | Paginated local/imported monitor; filters `account_id`, `exchange`, `origin` (`sibyl`/`imported`), `status` (`active`/`terminal`), `limit` (1–50), `offset` |
 | GET    | `/exchange-orders/discovery`                    | Local supported-account metadata and public progress; no provider reads                                                                                     |
-| POST   | `/exchange-orders/discovery`                    | Start/resume with `account_id` (blank: active supported accounts), `days` (1–7), `symbols` (up to 12 exact history pairs for Binance, KuCoin or MEXC)                                 |
+| POST   | `/exchange-orders/discovery`                    | Start/resume with `account_id` (blank: active supported accounts), `days` (1–7), `symbols` (up to 12 exact history pairs for Binance, KuCoin, MEXC or HTX)                                 |
 | POST   | `/exchange-orders/discovery/{account_id}/pause` | Persist a discovery pause                                                                                                                                   |
 | POST   | `/exchange-orders/{id}/refresh`                 | Observe native status and one execution page, including imported rows                                                                                       |
 | GET    | `/exchange-orders/{id}/reconciliation`          | Inspect retained order/fill evidence without provider reads                                                                                                 |

@@ -57,6 +57,14 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Gate exact-order reconciliation validates the native cash spot parent and imports individual fills with native IDs and reported fees. Read windows and page checkpoints survive restart.
+
+- HTX order discovery reads the verified spot wallet’s open orders and selected-pair recent history. Trade shows native history limits and resumes saved page/window checkpoints.
+
+- HTX spot GTC limits can recover their native order ID using the saved client ID and verified original order details.
+
+- HTX exact-order reconciliation validates the parent wallet and native execution identities. Unverified fee deductions stay unknown. Settings distinguishes these order reads from pending account-wide fill imports.
+
 - Bitget Classic and MEXC spot limits can recover their native order ID by the saved client ID after an uncertain submission. The lookup verifies the order details before resuming tracking.
 
 - MEXC order discovery adds read-only account-wide open orders and up to seven days of history for selected pairs. Saturated history responses split into smaller time windows.

@@ -89,7 +89,7 @@ class Transport:
         }
 
     def load_accounts(self):
-        return [{"id": "controlled-spot-account", "type": "spot"}]
+        return [{"id": "1234", "type": "spot"}]
 
     def fetch_balance(self, params):
         self.events.append(("balance", params))
@@ -178,9 +178,7 @@ def test_all_provider_classes_implement_normalized_read_contract(monkeypatch, id
     assert balances == {"total": {"BTC": 2}, "free": {"BTC": 1.5}, "used": {"BTC": 0.5}}
     assert (
         "balance",
-        {"type": "spot", "account-id": "controlled-spot-account"}
-        if identity == "htx"
-        else client.balance_params,
+        {"type": "spot", "account-id": "1234"} if identity == "htx" else client.balance_params,
     ) in client._exchange.events
     status = client.fetch_order("order-1", "BTC/USDT")
     orders = client.fetch_open_orders("BTC/USDT")

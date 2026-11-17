@@ -33,6 +33,11 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Discover MEXC account-wide open and selected-pair recent spot orders with durable timestamp-window checkpoints.
 - [x] Recover reviewed MEXC spot GTC limits by exact pair and client ID within the native query window.
 - [x] Reconcile MEXC exact-order fills through the shared ledger with reported native fees.
+- [x] Reconcile Gate cash spot orders through exact native parent and execution reads with durable seven-day query checkpoints.
+- [x] Discover HTX open spot orders across the verified wallet with native order-ID checkpoints.
+- [x] Discover selected-pair HTX recent orders through bounded 48-hour windows with explicit cancellation retention.
+- [x] Recover reviewed HTX GTC spot limits by exact client ID and verified wallet and original terms.
+- [x] Reconcile HTX exact-order executions using native internal IDs, parent-wallet validation and explicit fee-deduction uncertainty.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

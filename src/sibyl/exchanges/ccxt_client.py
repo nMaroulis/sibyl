@@ -335,14 +335,15 @@ class CCXTClient(ExchangeClient):
         """Read executions only for the reviewed execution providers and their test clients."""
         from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 
-        if not self.spec.spot_trading or self.history_kind not in ORDER_FILL_KINDS:
+        kind = self.order_fill_kind or self.history_kind
+        if not self.spec.spot_trading or kind not in ORDER_FILL_KINDS:
             return super().fetch_order_fill_page(order_id, symbol, cursor, limit)
         if not 1 <= limit <= 100:
             raise ValueError("Order execution page size must be between 1 and 100.")
         with self.lock:
             self._require("fetchMyTrades", private=True)
             self.market(symbol)
-            return fetch_order_fill_page(self._exchange, self.history_kind, order_id, symbol, cursor, limit)
+            return fetch_order_fill_page(self._exchange, kind, order_id, symbol, cursor, limit)
 
     def fetch_my_trades(self, symbol: str, since: int | None = None, limit: int = 100) -> list[dict]:
         """Read a bounded fill page; callers must explicitly paginate historical imports."""

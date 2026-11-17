@@ -14,6 +14,8 @@ ORDER_FILL_KINDS = {
     "kucoin-hf",
     "bitget-id",
     "mexc-window",
+    "gate-order",
+    "htx-order",
     "bitstamp-transactions",
     "gemini-trades",
 }
@@ -33,6 +35,14 @@ def fetch_order_fill_page(
 
     if kind in VENUES:
         return fetch_venue_order_page(exchange, kind, order_id, symbol, cursor, limit)
+    if kind == "gate-order":
+        from sibyl.exchanges.gate_fills import fetch_order_fills
+
+        return fetch_order_fills(exchange, order_id, symbol, cursor, limit)
+    if kind == "htx-order":
+        from sibyl.exchanges.htx_orders import fetch_order_fills
+
+        return fetch_order_fills(exchange, order_id, symbol, cursor, limit)
     if kind == "mexc-window":
         from sibyl.exchanges.mexc_activity import fetch_fill_page
 
