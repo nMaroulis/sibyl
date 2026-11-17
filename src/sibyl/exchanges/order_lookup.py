@@ -6,6 +6,12 @@ from dataclasses import dataclass
 import ccxt
 
 from sibyl.exchanges.base import number
+from sibyl.exchanges.bybit_orders import (
+    OPEN,
+    TERMINAL,
+    read_spot_orders,
+    regular_spot_order,
+)
 from sibyl.exchanges.history import _token
 from sibyl.exchanges.venue_history import identity
 
@@ -17,7 +23,16 @@ RECOVERY_PROVIDERS = {
     "coinbase-sandbox",
     "kraken",
     "okx",
+    "bybit",
+    "kucoin",
     "demo",
+}
+
+
+RECOVERY_NOTES = {
+    "okx": "Look up the saved client ID on the exact cash spot instrument. OKX returns the latest match, so Sibyl also verifies creation time and reviewed order details.",
+    "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",
+    "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
 }
 
 
@@ -53,6 +68,12 @@ def lookup_order_page(
 
     if provider == "okx":
         return _okx_lookup(exchange, client_id, symbol)
+
+    if provider == "bybit":
+        return _bybit_lookup(exchange, client_id, symbol, cursor, start, end)
+
+    if provider == "kucoin":
+        return _kucoin_lookup(exchange, client_id, symbol, cursor)
 
     if provider == "coinbase":
         market = exchange.market(symbol)
@@ -148,3 +169,77 @@ def _okx_lookup(exchange, client_id: str, symbol: str) -> OrderLookupPage:
     parsed = exchange.parse_order(row)
     parsed["id"] = order_id
     return OrderLookupPage([parsed], {}, True)
+
+
+def _bybit_lookup(exchange, client_id, symbol, cursor, start, end) -> OrderLookupPage:
+    """Find an exact UTA order first in realtime, then in dated history on a miss."""
+    market = exchange.market(symbol)
+    history = cursor.get("phase") == "history"
+    request = {"symbol": market["id"], "orderLinkId": client_id}
+    if history:
+        request.update(startTime=start, endTime=cursor["end"])
+    if cursor.get("page"):
+        request["cursor"] = cursor["page"]
+    try:
+        rows, token = read_spot_orders(exchange, history=history, **request)
+    except ccxt.OrderNotFound:
+        rows, token = [], None
+    candidates = []
+    for row in rows:
+        if (
+            not regular_spot_order(row)
+            or row.get("orderLinkId") != client_id
+            or row.get("symbol") != market["id"]
+            or row.get("orderStatus") not in OPEN | TERMINAL
+            or (row["orderType"] == "Market" and row.get("marketUnit") != "baseCoin")
+            or (row["orderType"] == "Limit" and row.get("timeInForce") != "GTC")
+        ):
+            raise ValueError("Bybit order evidence differs from the reviewed cash spot submission.")
+        candidates.append(exchange.parse_order(row, market))
+    matched = bool(candidates or cursor.get("matched"))
+    if token:
+        return OrderLookupPage(candidates, {**cursor, "matched": matched, "page": token}, False)
+    if not history and not matched:
+        cutoff = min(end - 1, exchange.milliseconds())
+        return OrderLookupPage([], {"phase": "history", "end": cutoff}, False)
+    return OrderLookupPage(candidates, {}, True)
+
+
+def _kucoin_lookup(exchange, client_id, symbol, cursor) -> OrderLookupPage:
+    """Check Classic HF details, then the legacy order namespace used by older submissions."""
+    if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", client_id):
+        raise ValueError("Invalid persisted KuCoin client order ID.")
+    market = exchange.market(symbol)
+    legacy = cursor.get("phase") == "legacy"
+    try:
+        response = (
+            exchange.privateGetOrderClientOrderClientOid({"clientOid": client_id})
+            if legacy
+            else exchange.privateGetHfOrdersClientOrderClientOid(
+                {"clientOid": client_id, "symbol": market["id"]}
+            )
+        )
+        if not isinstance(response, dict) or response.get("code") != "200000" or "data" not in response:
+            raise ccxt.ExchangeError("Invalid KuCoin classic order details response.")
+        row = response["data"]
+    except ccxt.OrderNotFound:
+        row = None
+    if row is None:
+        return OrderLookupPage([], {} if legacy else {"phase": "legacy"}, legacy)
+    if not isinstance(row, dict):
+        raise ccxt.ExchangeError("Invalid KuCoin classic order details response.")
+    if (
+        row.get("clientOid") != client_id
+        or row.get("symbol") != market["id"]
+        or row.get("tradeType") != "TRADE"
+        or row.get("type") not in ("market", "limit")
+        or not isinstance(row.get("active", row.get("isActive")), bool)
+        or row.get("stop")
+        or row.get("postOnly")
+        or row.get("hidden")
+        or row.get("iceberg")
+        or (row["type"] == "limit" and row.get("timeInForce") != "GTC")
+        or (row["type"] == "market" and (number(row.get("size")) or 0) <= 0)
+    ):
+        raise ValueError("KuCoin order evidence differs from the reviewed classic spot submission.")
+    return OrderLookupPage([exchange.parse_order(row, market)], {}, True)

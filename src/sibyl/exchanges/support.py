@@ -9,7 +9,7 @@ from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import funding_streams
 from sibyl.exchanges.order_discovery import DISCOVERY_NOTES, DISCOVERY_PROVIDERS
 from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
-from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS
+from sibyl.exchanges.order_lookup import RECOVERY_NOTES, RECOVERY_PROVIDERS
 from sibyl.exchanges.spot_history import history_note
 from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
 
@@ -173,9 +173,10 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                     "recovery",
                     "Recover uncertain submissions",
                     spec.id in RECOVERY_PROVIDERS,
-                    "Look up the saved client ID on the exact cash spot instrument. OKX returns the latest match, so Sibyl also verifies creation time and reviewed order details."
-                    if spec.id == "okx"
-                    else "Read existing orders by the persisted client ID; never resubmit an uncertain order."
+                    RECOVERY_NOTES.get(
+                        spec.id,
+                        "Read existing orders by the persisted client ID; never resubmit an uncertain order.",
+                    )
                     if spec.id in RECOVERY_PROVIDERS
                     else "Automatic client-ID recovery is pending. Resolve an ambiguous submission at the exchange; never retry it blindly.",
                 ),

@@ -17,6 +17,9 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Reviewed manual GTC limit/cancel adapters for the eleven remaining configured production providers, with captured native request contracts.
 - [x] Add account-wide OKX cash spot discovery, resumable native pages, supported-account controls and read-only detail/fill reconciliation.
 - [x] Add direct OKX client-ID recovery for reviewed cash spot orders, with creation-window and immutable-detail checks and preserved uncertain outcomes on misses.
+- [x] Add Bybit UTA open/recent cash spot discovery with native pagination and bounded retention.
+- [x] Add Bybit UTA client-ID recovery with a durable history fallback.
+- [x] Add KuCoin Classic client-ID recovery with HF and legacy detail reads.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

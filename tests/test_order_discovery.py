@@ -656,6 +656,129 @@ def test_okx_discovery_resumes_and_keeps_quote_sized_orders_read_only(manual_cli
     assert "cursor" not in json.dumps(preview["jobs"])
 
 
+def spot_market(native_id):
+    return {
+        "id": native_id,
+        "symbol": "BTC/USDT",
+        "base": "BTC",
+        "quote": "USDT",
+        "baseId": "BTC",
+        "quoteId": "USDT",
+        "type": "spot",
+        "spot": True,
+        "contract": False,
+        "active": True,
+        "precision": {"amount": 0.00000001, "price": 0.01},
+    }
+
+
+def bybit_order(identity, **changes):
+    return {
+        "orderId": identity,
+        "symbol": "BTCUSDT",
+        "side": "Buy",
+        "orderType": "Limit",
+        "orderStatus": "New",
+        "price": "50000",
+        "qty": "0.01",
+        "leavesQty": "0.01",
+        "cumExecQty": "0",
+        "cumExecValue": "0",
+        "timeInForce": "GTC",
+        "isLeverage": "0",
+        "tpslMode": "",
+        "createdTime": str(DAY_MS),
+        **changes,
+    }
+
+
+def test_bybit_discovery_resumes_account_wide_spot_pages_and_sanitizes_quote_size(manual_client, monkeypatch):
+    owner = manual_client.app.state.services
+    account = owner.store.add_connection(
+        ConnectionCreate(exchange="bybit", label="Isolated Bybit", api_key="fake", secret="fake")
+    )
+    native = owner.market.client(account)._exchange
+    native.set_markets([spot_market("BTCUSDT")])
+    calls = []
+    now = str(int(time.time() * 1000) - 5000)
+
+    def read(history, request):
+        calls.append((history, request))
+        if history:
+            rows, token = (
+                [
+                    bybit_order(
+                        "ext-filled",
+                        createdTime=now,
+                        orderType="Market",
+                        qty="500",
+                        leavesQty="10",
+                        marketUnit="quoteCoin",
+                        cumExecQty="0.0098",
+                        cumExecValue="490",
+                        orderStatus="PartiallyFilledCanceled",
+                    ),
+                    bybit_order(
+                        "ext-conditional", createdTime=now, stopOrderType="Stop", orderStatus="Filled"
+                    ),
+                ],
+                "",
+            )
+        elif request.get("cursor"):
+            rows, token = [bybit_order("ext-margin", isLeverage="1", createdTime=now)], ""
+        else:
+            rows, token = [bybit_order("ext-open", createdTime=now)], "private%3Dnext"
+        return {"retCode": 0, "result": {"category": "spot", "list": rows, "nextPageCursor": token}}
+
+    monkeypatch.setattr(native, "privateGetV5OrderRealtime", lambda request: read(False, request))
+    monkeypatch.setattr(native, "privateGetV5OrderHistory", lambda request: read(True, request))
+    trading = owner.trading
+    trading.discovery.enqueue(OrderDiscoveryRequest(account_id=account.id, days=3))
+    advance(trading, account)
+    persisted = job(trading, account)
+    assert persisted["cursor"] == {"page": "private%3Dnext"}
+
+    restarted = ExchangeTrading(owner.market, owner.store)
+    advance(restarted, account)
+    advance(restarted, account)
+    assert calls == [
+        (False, {"category": "spot", "orderFilter": "Order", "limit": 50, "openOnly": 0}),
+        (
+            False,
+            {
+                "category": "spot",
+                "orderFilter": "Order",
+                "limit": 50,
+                "openOnly": 0,
+                "cursor": "private%3Dnext",
+            },
+        ),
+        (
+            True,
+            {
+                "category": "spot",
+                "orderFilter": "Order",
+                "limit": 50,
+                "startTime": persisted["start"],
+                "endTime": persisted["end"] - 1,
+            },
+        ),
+    ]
+    finished = job(restarted, account)
+    assert finished["complete"] and finished["skipped"] == 2
+    monitor = restarted.monitor(account_id=account.id)
+    assert monitor["total"] == 2 and restarted.list_orders() == []
+    by_id = {item["exchange_order_id"]: item for item in monitor["items"]}
+    assert by_id["ext-open"]["read_only"] and by_id["ext-open"]["status"] == "open"
+    terminal = by_id["ext-filled"]
+    assert terminal["read_only"] and terminal["status"] == "canceled"
+    assert terminal["request"]["quantity"] is None and terminal["remaining"] is None
+    assert terminal["filled"] == 0.0098 and terminal["cost"] == 490
+    assert "private%3Dnext" not in json.dumps(restarted.discovery.snapshot())
+    with pytest.raises(ValueError, match="read-only"):
+        restarted.lifecycle.preview_cancel(terminal["id"])
+
+
 def test_provider_normalization_strips_private_fields_and_counts_unsupported_markets(monkeypatch):
     from test_exchange_clients import fake_client
 

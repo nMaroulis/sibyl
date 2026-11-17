@@ -133,12 +133,21 @@ class ExchangeTrading:
         return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def recover(self, intent_id: str) -> dict:
-        """Read one client-ID lookup page, then check status/fills only after identity is confirmed."""
-        intent = self.recovery.check(intent_id, manual=True)
-        if intent.get("exchange_order_id"):
-            return self.refresh(intent_id)
-        detail = self.reconciliation.detail(intent_id)
-        return {**detail["order"], "reconciliation": detail["reconciliation"]}
+        """Read one client-ID page and check fills after adopting its native observation."""
+        with self.lifecycle.lock(intent_id):
+            with self.store.db() as db:
+                existing = self.lifecycle.read(db, intent_id)
+            if existing.get("exchange_order_id"):
+                return self.refresh(intent_id)
+            intent = self.recovery.check(intent_id, manual=True)
+            if intent.get("exchange_order_id") and intent["exchange"] == "demo":
+                return self.refresh(intent_id)
+            detail = (
+                self.reconciliation.sync(intent_id, manual=True)
+                if intent.get("exchange_order_id")
+                else self.reconciliation.detail(intent_id)
+            )
+            return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def preview(
         self,

@@ -5,6 +5,12 @@ from dataclasses import dataclass
 import ccxt
 
 from sibyl.exchanges.base import number
+from sibyl.exchanges.bybit_orders import (
+    OPEN,
+    TERMINAL,
+    read_spot_orders,
+    regular_spot_order,
+)
 from sibyl.exchanges.history import _token
 from sibyl.exchanges.venue_history import identity
 
@@ -16,11 +22,13 @@ DISCOVERY_PROVIDERS = {
     "coinbase-sandbox",
     "kraken",
     "okx",
+    "bybit",
     "demo",
 }
 DAY_MS = 86_400_000
 DISCOVERY_NOTES = {
     "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
+    "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
 }
 
 
@@ -125,6 +133,9 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
     if provider == "okx":
         return _okx_page(exchange, stream, cursor, start, end)
 
+    if provider == "bybit":
+        return _bybit_page(exchange, stream, cursor, start, end)
+
     if provider == "kraken":
         if stream == "open":
             rows = exchange.privatePostOpenOrders({"trades": False})["result"]["open"]
@@ -205,4 +216,31 @@ def _okx_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
         selected.append(parsed)
     return OrderDiscoveryPage(
         selected, {"after": min(ids, key=int)} if ids else {}, not rows, len(rows) - len(selected)
+    )
+
+
+def _bybit_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
+    """Use separate open and terminal streams with a fixed creation window for history."""
+    history = stream == "recent"
+    request = {"startTime": start, "endTime": end - 1} if history else {"openOnly": 0}
+    if cursor.get("page"):
+        request["cursor"] = cursor["page"]
+    rows, token = read_spot_orders(exchange, history=history, **request)
+    orders = []
+    states = TERMINAL if history else OPEN
+    for row in rows:
+        if not regular_spot_order(row):
+            continue
+        if row.get("orderStatus") not in states:
+            raise ccxt.ExchangeError("Unexpected Bybit order state in the selected stream.")
+        stamp = number(row.get("createdTime"))
+        if history and (stamp is None or not start <= stamp < end):
+            raise ccxt.ExchangeError("Bybit order is outside the selected creation window.")
+        market_id = row.get("symbol")
+        if not isinstance(market_id, str) or not market_id:
+            raise ccxt.ExchangeError("Missing Bybit spot instrument identity.")
+        market = exchange.safe_market(market_id, marketType="spot")
+        orders.append(exchange.parse_order(row, market))
+    return OrderDiscoveryPage(
+        orders, {"page": token} if token else {}, token is None, len(rows) - len(orders)
     )

@@ -1,5 +1,6 @@
 """Explicit spot clients: provider differences live here, not in domain services."""
 
+from sibyl.exchanges.base import number
 from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
 
@@ -140,6 +141,20 @@ class BybitClient(CCXTClient):
     }
     balance_params = {"accountType": "UNIFIED"}
     book_limits = (1, 50, 200)
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Expose base size only when a Bybit market order reports its original sizing unit."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            if native.get("orderType") == "Limit" or native.get("marketUnit") == "baseCoin":
+                order["amount"] = number(native.get("qty"))
+            elif native.get("orderType") == "Market":
+                order.update(amount=None, remaining=None)
+            if native.get("orderStatus") == "PartiallyFilledCanceled":
+                order["status"] = "canceled"
+        return order
 
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
         """UTA spot buys/sells use the reviewed base quantity, never quote cost."""

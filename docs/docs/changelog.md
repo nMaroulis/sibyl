@@ -57,6 +57,12 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Trade can discover open and recent cash spot orders across a Bybit UTA account. It resumes saved pages after restart and discloses Bybit's tighter retention for canceled, rejected and deactivated orders.
+
+- Bybit cash spot client-ID recovery checks realtime orders, then bounded history when needed. Orders recovered from history retain the verified native status immediately.
+
+- KuCoin Classic cash spot client-ID recovery checks HF order details and falls back to the legacy namespace for older submissions.
+
 - OKX cash spot market and GTC limit orders can recover a lost acknowledgment through their saved client order ID. Sibyl verifies the latest native result against the reviewed submission before attaching it. Uncertain outcomes remain visible after misses or mismatches.
 
 - Trade can import account-wide OKX cash spot orders, including orders placed outside Sibyl. Native pagination resumes after restart, imported orders link to the existing fill ledger, and the sync form explains the shorter retention for unfilled cancellations.

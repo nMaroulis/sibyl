@@ -11,6 +11,8 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 | Coinbase Advanced                      | Native order-history pages for one exact product and creation-time window, filtering the returned `client_order_id` exactly.                        |
 | Kraken                                 | Client-filtered open orders, followed by client-filtered closed-order pages within an opening-time window. Uses `cl_ord_id`, not numeric `userref`. |
 | OKX                                    | Direct `GET /api/v5/trade/order` with `instId` and `clOrdId` for cash spot orders. The native endpoint returns the latest match. |
+| Bybit UTA                              | Exact `orderLinkId` in V5 realtime. A miss continues through dated spot history with saved cursors. |
+| KuCoin Classic                         | HF spot client-ID lookup for the exact symbol. A miss checks the legacy client-ID endpoint used by older submissions. |
 | Demo                                   | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself.                                 |
 | Other clients                          | Explicitly unsupported; no generic scan or production/Demo fallback.                                                                                |
 
@@ -45,12 +47,14 @@ Completed no-match passes wait at least 60 seconds, then 300 seconds. After thre
 
 The monitor offers **Recover order** or **Continue lookup** for supported uncertain submissions. The in-place execution dialog shows the same recovery message. A successful recovery displays its timestamp. The isolated LINK example demonstrates an uncertain submission without creating an account, job, reservation or order; all sample actions are disabled.
 
-- `POST /api/v1/exchange-orders/{id}/recover` reads one lookup page. After adoption it checks known native status and one execution page. The response is the managed order with safe `recovery` and `reconciliation` summaries, and `Cache-Control: no-store`.
+- `POST /api/v1/exchange-orders/{id}/recover` reads one lookup page. It retains the verified native status at adoption and checks one execution page. The response is the managed order with safe `recovery` and `reconciliation` summaries, and `Cache-Control: no-store`.
 - `GET /api/v1/exchange-orders` and `GET /api/v1/exchange-orders/{id}/reconciliation` include safe recovery state, message, eligibility, support, page/pass counts and timestamps. They perform no remote reads.
 - Existing status refresh can attempt one lookup before requiring a native ID. An unfinished/no-match lookup does not become a fabricated native status.
 - Existing tracking Resume renews the bounded recovery budget. Repeat confirmation still returns the persisted submission and never writes a second order.
 
 Recovery states are `available`, `searching`, `found`, `not_found`, `ambiguous`, `incomplete`, `mismatch`, `error`, `unsupported`, or `not_needed`. They remain separate from the exchange order's lifecycle status. After Demo identity recovery, the ordinary managed-status check can match a virtual resting order; the lookup itself never advances that matcher.
+
+Bybit recovery is scoped to regular cash spot orders. Market results must identify their original quantity as base units. The realtime cache can lose terminal rows after a provider restart, and historical availability depends on status and age. KuCoin requires Classic spot evidence, and its legacy endpoint can miss settled orders. [Bybit realtime orders](https://bybit-exchange.github.io/docs/v5/order/open-order), [Bybit history](https://bybit-exchange.github.io/docs/v5/order/order-list), [KuCoin HF client ID](https://www.kucoin.com/docs-new/rest/spot-trading/orders/get-order-by-clientoid), [KuCoin legacy client ID](https://www.kucoin.com/docs-new/abandoned-endpoints/spot-trading/orders/get-order-by-clientoid-old).
 
 ## Remaining work
 
