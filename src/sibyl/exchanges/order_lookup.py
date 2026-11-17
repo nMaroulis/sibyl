@@ -25,6 +25,7 @@ RECOVERY_PROVIDERS = {
     "okx",
     "bybit",
     "kucoin",
+    "gemini",
     "demo",
 }
 
@@ -33,6 +34,7 @@ RECOVERY_NOTES = {
     "okx": "Look up the saved client ID on the exact cash spot instrument. OKX returns the latest match, so Sibyl also verifies creation time and reviewed order details.",
     "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",
     "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
+    "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
 }
 
 
@@ -74,6 +76,9 @@ def lookup_order_page(
 
     if provider == "kucoin":
         return _kucoin_lookup(exchange, client_id, symbol, cursor)
+
+    if provider == "gemini":
+        return _gemini_lookup(exchange, client_id, symbol)
 
     if provider == "coinbase":
         market = exchange.market(symbol)
@@ -243,3 +248,40 @@ def _kucoin_lookup(exchange, client_id, symbol, cursor) -> OrderLookupPage:
     ):
         raise ValueError("KuCoin order evidence differs from the reviewed classic spot submission.")
     return OrderLookupPage([exchange.parse_order(row, market)], {}, True)
+
+
+def _gemini_lookup(exchange, client_id, symbol) -> OrderLookupPage:
+    """Match one Gemini spot GTC limit by its submitted client ID and explicit original size."""
+    if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9:_#.\-]{1,36}", client_id):
+        raise ValueError("Invalid persisted Gemini client order ID.")
+    market = exchange.market(symbol)
+    try:
+        row = exchange.privatePostV1OrderStatus({"client_order_id": client_id, "include_trades": False})
+    except ccxt.OrderNotFound:
+        return OrderLookupPage([], {}, True)
+    if not isinstance(row, dict):
+        raise ccxt.ExchangeError("Invalid Gemini order status response.")
+    instrument = row.get("symbol")
+    live, canceled = row.get("is_live"), row.get("is_cancelled")
+    if (
+        row.get("client_order_id") != client_id
+        or not isinstance(instrument, str)
+        or instrument.upper() != market["id"].upper()
+        or row.get("exchange") != "gemini"
+        or row.get("type") != "exchange limit"
+        or row.get("options") != []
+        or not isinstance(live, bool)
+        or not isinstance(canceled, bool)
+        or (live and canceled)
+        or row.get("was_forced")
+        or row.get("is_hidden")
+        or (number(row.get("original_amount")) or 0) <= 0
+    ):
+        raise ValueError("Gemini order evidence differs from the reviewed spot limit submission.")
+    order_id = identity(row.get("order_id"))
+    identity(row.get("timestampms"))
+    if int(order_id) <= 0 or (row.get("id") is not None and identity(row["id"]) != order_id):
+        raise ValueError("Conflicting Gemini native order ID.")
+    parsed = exchange.parse_order(row, market)
+    parsed["id"] = order_id
+    return OrderLookupPage([parsed], {}, True)

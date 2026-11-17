@@ -176,6 +176,16 @@ class KuCoinClient(CCXTClient):
     balance_params = {"type": "trade"}
     book_limits = (20, 100)
 
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Honor Classic's sizing units when a market order was placed in quote funds."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("type") == "market":
+            if (number(native.get("size")) or 0) <= 0:
+                order.update(amount=None, remaining=None)
+        return order
+
 
 class GateClient(CCXTClient):
     """Gate spot wallet with optional sandbox credentials."""

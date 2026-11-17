@@ -23,6 +23,7 @@ type DiscoveryJob = {
   error: string | null;
   last_success_at: string | null;
   completed_at: string | null;
+  recent_enabled: boolean;
 };
 type Discovery = {
   accounts: {
@@ -33,6 +34,7 @@ type Discovery = {
     active: boolean;
     supported: boolean;
     history_requires_symbols: boolean;
+    history_supported: boolean;
     coverage_note?: string | null;
   }[];
   jobs: DiscoveryJob[];
@@ -64,7 +66,8 @@ export function OrderDiscovery({ active }: { active: boolean }) {
   const toast = useToast();
   const accounts = resource.data?.accounts.filter((row) => row.active && row.supported) ?? [];
   const selectedAccounts = accounts.filter((row) => !account || row.id === account);
-  const binance = selectedAccounts.some((row) => row.history_requires_symbols);
+  const needsHistoryPairs = selectedAccounts.some((row) => row.history_requires_symbols);
+  const hasHistory = selectedAccounts.some((row) => row.history_supported);
   const coverageNotes = [...new Set(selectedAccounts.flatMap((row) => row.coverage_note || []))];
   const start = async (job?: DiscoveryJob) => {
     setBusy(true);
@@ -151,21 +154,23 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                   ))}
                 </select>
               </label>
-              <label>
-                Recent history
-                <select
-                  value={days}
-                  onChange={(event) => setDays(Number(event.target.value))}
-                  disabled={busy}
-                >
-                  <option value={1}>Last 24 hours</option>
-                  <option value={3}>Last 3 days</option>
-                  <option value={7}>Last 7 days</option>
-                </select>
-              </label>
-              {binance && (
+              {hasHistory && (
+                <label>
+                  Recent history
+                  <select
+                    value={days}
+                    onChange={(event) => setDays(Number(event.target.value))}
+                    disabled={busy}
+                  >
+                    <option value={1}>Last 24 hours</option>
+                    <option value={3}>Last 3 days</option>
+                    <option value={7}>Last 7 days</option>
+                  </select>
+                </label>
+              )}
+              {needsHistoryPairs && (
                 <label className="order-discovery-pairs">
-                  Binance history pairs · optional
+                  History pairs · optional
                   <input
                     value={symbols}
                     onChange={(event) => setSymbols(event.target.value)}
@@ -181,8 +186,8 @@ export function OrderDiscovery({ active }: { active: boolean }) {
               </button>
               <p className="footnote" id={pairNoteId}>
                 Open orders cover all supported spot pairs.{' '}
-                {binance &&
-                  'Binance recent history needs up to 12 exact pairs; leave this blank for open orders only on Binance. '}
+                {needsHistoryPairs &&
+                  'Enter up to 12 exact pairs for Binance or KuCoin history. Leave blank to sync open orders on those exchanges. '}
                 Enabled discovery checks again about every five minutes while the account is active.
                 Individual order tracking is separate.
               </p>
@@ -214,14 +219,11 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                     ? ` · Read ${new Date(job.last_success_at).toLocaleTimeString()}`
                     : ''}
                 </small>
-                {job.exchange.startsWith('binance') && (
-                  <small>
-                    Recent history:{' '}
-                    {job.symbols.length
-                      ? job.symbols.join(', ')
-                      : 'not selected · open orders only'}
-                  </small>
-                )}
+                {!job.recent_enabled && <small>Open orders only</small>}
+                {job.recent_enabled &&
+                  (job.exchange.startsWith('binance') || job.exchange === 'kucoin') && (
+                    <small>Recent history · {job.symbols.join(', ')}</small>
+                  )}
                 {job.skipped > 0 && (
                   <small>
                     {job.skipped} observations excluded: unsupported/delisted or margin instruments.

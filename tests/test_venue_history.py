@@ -335,5 +335,5 @@ def test_catalog_only_claims_implemented_history_and_retains_recovery_gaps():
             features = {item["id"]: item for group in row["support"] for item in group["features"]}
             assert features["history_import"]["status"] == "available"
             assert features["fill_reconciliation"]["status"] == "available"
-            assert features["recovery"]["status"] == "pending"
+            assert features["recovery"]["status"] == ("available" if row["id"] == "gemini" else "pending")
             assert features["automated"]["status"] == "pending"

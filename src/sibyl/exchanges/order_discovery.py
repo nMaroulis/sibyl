@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import ccxt
 
+from sibyl.exchanges import kucoin_orders
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
     OPEN,
@@ -23,12 +24,18 @@ DISCOVERY_PROVIDERS = {
     "kraken",
     "okx",
     "bybit",
+    "kucoin",
+    "bitstamp",
     "demo",
 }
 DAY_MS = 86_400_000
+DISCOVERY_OPEN_ONLY = {"bitstamp"}
+DISCOVERY_HISTORY_PAIRS = {"binance", "binanceus", "binance-testnet", "kucoin"}
 DISCOVERY_NOTES = {
     "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
     "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
+    "kucoin": "KuCoin Classic open-order discovery uses Spot API permission. Recent history uses selected pairs, with up to two days for cancellations and seven days for filled orders.",
+    "bitstamp": "Bitstamp discovery covers account-wide open spot limit orders. Individual order and fill checks are available for imported orders.",
 }
 
 
@@ -135,6 +142,12 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
 
     if provider == "bybit":
         return _bybit_page(exchange, stream, cursor, start, end)
+
+    if provider == "kucoin":
+        return _kucoin_page(exchange, stream, cursor, start, end, symbols)
+
+    if provider == "bitstamp" and stream == "open":
+        return _bitstamp_open(exchange)
 
     if provider == "kraken":
         if stream == "open":
@@ -244,3 +257,64 @@ def _bybit_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
     return OrderDiscoveryPage(
         orders, {"page": token} if token else {}, token is None, len(rows) - len(orders)
     )
+
+
+def _kucoin_page(exchange, stream, cursor, start, end, symbols) -> OrderDiscoveryPage:
+    """Persist an active-market snapshot, then advance one exact market page per tick."""
+    recent = stream == "recent"
+    if not recent and not cursor:
+        markets, excluded = kucoin_orders.active_markets(exchange)
+        return OrderDiscoveryPage([], {"symbols": markets} if markets else {}, not markets, excluded)
+    markets = symbols if recent else cursor["symbols"]
+    index = cursor.get("market", 0)
+    if index >= len(markets):
+        return OrderDiscoveryPage([], {}, True)
+    orders, next_page, skipped = kucoin_orders.market_orders(
+        exchange, markets[index], recent=recent, cursor=cursor, start=start, end=end
+    )
+    following = {"market": index if next_page else index + 1, **next_page}
+    if not recent:
+        following["symbols"] = markets
+    return OrderDiscoveryPage(orders, following, following["market"] >= len(markets), skipped)
+
+
+def _bitstamp_open(exchange) -> OrderDiscoveryPage:
+    """Read the native account snapshot, retaining observed original size only."""
+    rows = exchange.request("open_orders/", "private", "POST", {}, config={"cost": 1})
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ccxt.ExchangeError("Invalid Bitstamp open-order snapshot.")
+    if len(rows) > 1000:
+        raise ccxt.NotSupported("Bitstamp open-order snapshot exceeds the reviewed budget.")
+    orders = []
+    for row in rows:
+        if (
+            row.get("margin_mode") not in (None, "", "NONE", "SPOT", "CASH")
+            or (row.get("leverage") not in (None, "") and number(row["leverage"]) not in (0, 1))
+            or row.get("subtype") not in (None, "", "LIMIT")
+            or row.get("reduce_only") not in (None, False)
+            or any(
+                row.get(key) not in (None, "") and number(row[key]) != 0
+                for key in ("stop_price", "activation_price", "trailing_delta")
+            )
+        ):
+            continue
+        side = str(row.get("type"))
+        if side not in ("0", "1"):
+            raise ccxt.ExchangeError("Unknown Bitstamp order side.")
+        pair = row.get("market") or row.get("currency_pair")
+        if not isinstance(pair, str) or "/" not in pair:
+            raise ccxt.ExchangeError("Missing Bitstamp spot market.")
+        orders.append(
+            {
+                "id": identity(row.get("id")),
+                "clientOrderId": row.get("client_order_id") or None,
+                "symbol": pair.upper(),
+                "side": "buy" if side == "0" else "sell",
+                "status": "open",
+                "type": "limit",
+                "timestamp": exchange.parse8601(row.get("datetime")),
+                "amount": row.get("amount_at_create"),
+                "price": row.get("price"),
+            }
+        )
+    return OrderDiscoveryPage(orders, {}, True, len(rows) - len(orders))

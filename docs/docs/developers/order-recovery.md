@@ -13,6 +13,7 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 | OKX                                    | Direct `GET /api/v5/trade/order` with `instId` and `clOrdId` for cash spot orders. The native endpoint returns the latest match. |
 | Bybit UTA                              | Exact `orderLinkId` in V5 realtime. A miss continues through dated spot history with saved cursors. |
 | KuCoin Classic                         | HF spot client-ID lookup for the exact symbol. A miss checks the legacy client-ID endpoint used by older submissions. |
+| Gemini                                 | Exact `client_order_id` details for reviewed spot GTC limits. Original size, limit price, venue flags and creation time must match. |
 | Demo                                   | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself.                                 |
 | Other clients                          | Explicitly unsupported; no generic scan or production/Demo fallback.                                                                                |
 
@@ -55,6 +56,8 @@ The monitor offers **Recover order** or **Continue lookup** for supported uncert
 Recovery states are `available`, `searching`, `found`, `not_found`, `ambiguous`, `incomplete`, `mismatch`, `error`, `unsupported`, or `not_needed`. They remain separate from the exchange order's lifecycle status. After Demo identity recovery, the ordinary managed-status check can match a virtual resting order; the lookup itself never advances that matcher.
 
 Bybit recovery is scoped to regular cash spot orders. Market results must identify their original quantity as base units. The realtime cache can lose terminal rows after a provider restart, and historical availability depends on status and age. KuCoin requires Classic spot evidence, and its legacy endpoint can miss settled orders. [Bybit realtime orders](https://bybit-exchange.github.io/docs/v5/order/open-order), [Bybit history](https://bybit-exchange.github.io/docs/v5/order/order-list), [KuCoin HF client ID](https://www.kucoin.com/docs-new/rest/spot-trading/orders/get-order-by-clientoid), [KuCoin legacy client ID](https://www.kucoin.com/docs-new/abandoned-endpoints/spot-trading/orders/get-order-by-clientoid-old).
+
+Gemini recommends unique client IDs within each trading session. Sibyl uses its generated, persisted client ID and requires explicit original size, the regular spot limit type and an empty native options list before attaching the returned order. [Gemini client order IDs](https://developer.gemini.com/client-order-id), [Gemini order status](https://developer.gemini.com/trading/rest-api/orders/get-order-status).
 
 ## Remaining work
 

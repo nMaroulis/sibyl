@@ -9,7 +9,12 @@ from sibyl.exchanges.catalog import exchange_spec
 from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import FundingPage, fetch_funding_page, funding_streams
 from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
-from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS, OrderDiscoveryPage, discovery_page
+from sibyl.exchanges.order_discovery import (
+    DISCOVERY_HISTORY_PAIRS,
+    DISCOVERY_PROVIDERS,
+    OrderDiscoveryPage,
+    discovery_page,
+)
 from sibyl.exchanges.order_fills import fetch_order_fill_page
 from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS, OrderLookupPage, lookup_order_page
 
@@ -314,7 +319,7 @@ class CCXTClient(ExchangeClient):
             if not self._private:
                 raise ccxt.AuthenticationError("A saved account is required.")
             markets = self.load_markets()
-            if self.id in {"binance", "binanceus", "binance-testnet"} and stream == "recent":
+            if self.id in DISCOVERY_HISTORY_PAIRS and stream == "recent":
                 for symbol in symbols:
                     self.market(symbol)
             page = discovery_page(self._exchange, self.id, stream, cursor, start, end, symbols)

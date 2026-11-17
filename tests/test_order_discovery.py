@@ -779,6 +779,151 @@ def test_bybit_discovery_resumes_account_wide_spot_pages_and_sanitizes_quote_siz
         restarted.lifecycle.preview_cancel(terminal["id"])
 
 
+def test_kucoin_discovery_resumes_active_pages_and_selected_history(manual_client, monkeypatch):
+    owner = manual_client.app.state.services
+    account = owner.store.add_connection(
+        ConnectionCreate(
+            exchange="kucoin", label="Isolated KuCoin", api_key="fake", secret="fake", passphrase="fake"
+        )
+    )
+    native = owner.market.client(account)._exchange
+    native.set_markets([spot_market("BTC-USDT")])
+    requests = []
+    marker = str(2**60 + 19)
+    base = {
+        "symbol": "BTC-USDT",
+        "tradeType": "TRADE",
+        "side": "buy",
+        "type": "limit",
+        "size": "0.01",
+        "price": "50000",
+        "dealSize": "0",
+        "dealFunds": "0",
+        "cancelExist": False,
+        "timeInForce": "GTC",
+        "createdAt": int(time.time() * 1000) - 5000,
+        "active": True,
+    }
+
+    def symbols(request):
+        assert request == {}
+        return {"code": "200000", "data": {"symbols": ["BTC-USDT", "UNKNOWN-USDT"]}}
+
+    def open_page(path, api, method, request, *, config):
+        requests.append(("open", request))
+        assert (path, api, method, config) == ("hf/orders/active/page", "private", "GET", {"cost": 2})
+        assert request["symbol"] == "BTC-USDT" and request["pageSize"] == 50
+        page = request["pageNum"]
+        return {
+            "code": "200000",
+            "data": {
+                "items": [{**base, "id": f"open-{page}"}],
+                "currentPage": page,
+                "totalPage": 2,
+            },
+        }
+
+    def recent(request):
+        requests.append(("recent", request))
+        rows = [
+            {
+                **base,
+                "id": "closed-1",
+                "type": "market",
+                "size": "0",
+                "funds": "500",
+                "price": "0",
+                "dealSize": "0.009",
+                "dealFunds": "450",
+                "active": False,
+            }
+        ]
+        return {
+            "code": "200000",
+            "data": {
+                "items": [] if request.get("lastId") else rows,
+                "lastId": 0 if request.get("lastId") else int(marker),
+            },
+        }
+
+    monkeypatch.setattr(native, "privateGetHfOrdersActiveSymbols", symbols)
+    monkeypatch.setattr(native, "privateGetHfOrdersDone", recent)
+    monkeypatch.setattr(native, "request", open_page)
+    service = owner.trading
+    service.discovery.enqueue(OrderDiscoveryRequest(account_id=account.id, days=3, symbols=["BTC/USDT"]))
+    advance(service, account)  # Active symbol snapshot.
+    advance(service, account)  # First active page.
+    assert job(service, account)["cursor"]["page"] == 2
+    resumed = ExchangeTrading(owner.market, owner.store)
+    advance(resumed, account)
+    advance(resumed, account)  # First closed page.
+    stored = job(resumed, account)
+    assert stored["cursor"]["last_id"] == marker
+    advance(resumed, account)
+    assert job(resumed, account)["complete"] and job(resumed, account)["skipped"] == 1
+    assert requests[-1] == (
+        "recent",
+        {
+            "symbol": "BTC-USDT",
+            "limit": 50,
+            "startAt": stored["start"],
+            "endAt": stored["end"] - 1,
+            "lastId": marker,
+        },
+    )
+    monitor = resumed.monitor(account_id=account.id)
+    assert monitor["total"] == 3 and all(row["read_only"] for row in monitor["items"])
+    closed = next(row for row in monitor["items"] if row["status"] == "closed")
+    assert closed["request"]["quantity"] is None and closed["remaining"] is None
+    assert closed["cost"] == 450 and closed["filled"] == 0.009
+    assert marker not in json.dumps(resumed.discovery.snapshot()["jobs"])
+
+
+def test_bitstamp_open_only_pass_preserves_original_size_and_excludes_margin(manual_client, monkeypatch):
+    owner = manual_client.app.state.services
+    account = owner.store.add_connection(
+        ConnectionCreate(exchange="bitstamp", label="Isolated Bitstamp", api_key="fake", secret="fake")
+    )
+    native = owner.market.client(account)._exchange
+    native.set_markets([spot_market("btcusdt")])
+    observed = []
+    native_id = 2**60 + 21
+    base = {
+        "market": "BTC/USDT",
+        "type": "0",
+        "subtype": "LIMIT",
+        "price": "50000",
+        "amount": "0.003",
+        "amount_at_create": "0.01",
+        "datetime": datetime.now(UTC).isoformat(),
+    }
+
+    def read(path, api, method, request, *, config):
+        observed.append((path, api, method, request))
+        return [
+            {**base, "id": native_id},
+            {**base, "id": native_id + 1, "margin_mode": "CROSS", "leverage": "3"},
+            {**base, "id": native_id + 2, "stop_price": "45000"},
+        ]
+
+    monkeypatch.setattr(native, "request", read)
+    service = owner.trading
+    service.discovery.enqueue(OrderDiscoveryRequest(account_id=account.id, days=7))
+    advance(service, account)
+    stored = job(service, account)
+    assert stored["complete"] and stored["skipped"] == 2 and stored["stream"] == "open"
+    assert observed == [("open_orders/", "private", "POST", {})]
+    snapshot = service.discovery.snapshot()
+    assert not snapshot["jobs"][0]["recent_enabled"]
+    bitstamp = next(row for row in snapshot["accounts"] if row["id"] == account.id)
+    assert bitstamp["supported"] and not bitstamp["history_supported"]
+    (row,) = service.monitor(account_id=account.id)["items"]
+    assert row["read_only"] and row["exchange_order_id"] == str(native_id)
+    assert row["request"]["quantity"] == 0.01 and row["filled"] is None and row["remaining"] is None
+    service.discovery.tick()
+    assert len(observed) == 1
+
+
 def test_provider_normalization_strips_private_fields_and_counts_unsupported_markets(monkeypatch):
     from test_exchange_clients import fake_client
 

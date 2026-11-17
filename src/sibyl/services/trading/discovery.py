@@ -13,7 +13,14 @@ from pydantic import Field, field_validator
 
 from sibyl.alerts.orders.events import order_changed
 from sibyl.exchanges.base import number
-from sibyl.exchanges.order_discovery import DAY_MS, DISCOVERY_NOTES, DISCOVERY_PROVIDERS, OrderDiscoveryPage
+from sibyl.exchanges.order_discovery import (
+    DAY_MS,
+    DISCOVERY_HISTORY_PAIRS,
+    DISCOVERY_NOTES,
+    DISCOVERY_OPEN_ONLY,
+    DISCOVERY_PROVIDERS,
+    OrderDiscoveryPage,
+)
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import OrderRequest, Request
 from sibyl.services.accounts.ledger import now_iso
@@ -31,7 +38,7 @@ class OrderDiscoveryRequest(Request):
     @field_validator("symbols")
     @classmethod
     def valid_symbols(cls, values):
-        """Binance history uses explicit spot markets; other providers scan account-level pages."""
+        """Normalize the explicit markets required by selected history providers."""
         return list(dict.fromkeys(OrderRequest.valid_symbol(value) for value in values))
 
 
@@ -133,6 +140,14 @@ class OrderDiscovery:
             complete=False,
         )
 
+    @staticmethod
+    def recent_enabled(job: dict) -> bool:
+        """Determine coverage from the stream contract and the saved pair selection."""
+        provider = job["exchange"]
+        return provider not in DISCOVERY_OPEN_ONLY and (
+            provider not in DISCOVERY_HISTORY_PAIRS or bool(job["symbols"])
+        )
+
     def snapshot(self):
         """Return safe local progress/capabilities; no credentials, native tokens or network reads."""
         with self.store.db() as db:
@@ -153,8 +168,9 @@ class OrderDiscovery:
                     "environment": environment(connection),
                     "supported": connection.exchange in DISCOVERY_PROVIDERS,
                     "coverage_note": DISCOVERY_NOTES.get(connection.exchange),
-                    "history_requires_symbols": connection.exchange
-                    in {"binance", "binanceus", "binance-testnet"},
+                    "history_requires_symbols": connection.exchange in DISCOVERY_HISTORY_PAIRS,
+                    "history_supported": connection.exchange in DISCOVERY_PROVIDERS
+                    and connection.exchange not in DISCOVERY_OPEN_ONLY,
                 }
                 for connection in self.store.connections()
             ],
@@ -162,6 +178,7 @@ class OrderDiscovery:
                 {
                     **{key: value for key, value in job.items() if key not in private},
                     "retained_orders": counts.get(job["account_id"], 0),
+                    "recent_enabled": self.recent_enabled(job),
                 }
                 for job in jobs
             ],
@@ -369,7 +386,7 @@ class OrderDiscovery:
                 next_attempt=time.time() + 1,
             )
             if page.complete:
-                if job["stream"] == "open":
+                if job["stream"] == "open" and self.recent_enabled(job):
                     current.update(stream="recent", cursor={}, seen=[])
                 else:
                     current.update(complete=True, completed_at=now_iso(), next_attempt=time.time() + 300)

@@ -636,6 +636,90 @@ def test_kucoin_lookup_rejects_unreviewed_or_ambiguous_shapes(monkeypatch, chang
         lookup_order_page(venue, "kucoin", "client1", "BTC/USDT", {}, 1000, 2000)
 
 
+def gemini_order(**changes):
+    return {
+        "order_id": 2**60 + 9,
+        "symbol": "btcusd",
+        "exchange": "gemini",
+        "side": "buy",
+        "original_amount": "0.01",
+        "remaining_amount": "0.01",
+        "executed_amount": "0",
+        "price": "50000",
+        "type": "exchange limit",
+        "options": [],
+        "is_live": True,
+        "is_cancelled": False,
+        "timestampms": int(time.time() * 1000),
+        **changes,
+    }
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"options": ["maker-or-cancel"]},
+        {"original_amount": None},
+        {"is_live": "true"},
+        {"exchange": "other"},
+        {"symbol": "ethusd"},
+        {"was_forced": True},
+        {"type": "exchange stop limit"},
+    ],
+)
+def test_gemini_recovery_rejects_unproven_original_terms(monkeypatch, changes):
+    venue = LookupTransport()
+    monkeypatch.setattr(venue, "market", lambda symbol: {"id": "btcusd"})
+    row = gemini_order(client_order_id="client-8", **changes)
+    monkeypatch.setattr(venue, "privatePostV1OrderStatus", lambda _: row, raising=False)
+    with pytest.raises(ValueError, match="Gemini order evidence differs"):
+        lookup_order_page(venue, "gemini", "client-8", "BTC/USD", {}, 1000, 2000)
+
+
+def test_gemini_lost_ack_uses_client_lookup_before_native_fill_read(manual_client, monkeypatch):
+    owner = manual_client.app.state.services
+    owner.settings.allow_live_trading = True
+    account = owner.store.add_connection(
+        ConnectionCreate(exchange="gemini", label="Isolated Gemini", api_key="fake", secret="fake")
+    )
+    adapter = owner.market.client(account)
+    native = adapter._exchange
+    native.set_markets([{**spot_market("btcusd"), "quote": "USD", "quoteId": "usd", "symbol": "BTC/USD"}])
+    monkeypatch.setattr(adapter, "fetch_balance", lambda: {"free": {"USD": 10_000}})
+    native_id = str(2**60 + 9)
+    writes, reads = [], []
+
+    def lost_ack(symbol, kind, side, amount, price, *, params):
+        assert (symbol, kind, side, amount, price) == ("BTC/USD", "limit", "buy", 0.01, 50000)
+        writes.append(params["clientOrderId"])
+        raise ccxt.RequestTimeout("PRIVATE")
+
+    def order_status(request):
+        reads.append(request)
+        if len(reads) == 1:
+            raise ccxt.OrderNotFound("private lookup detail")
+        return gemini_order(client_order_id=writes[0], trades=[])
+
+    monkeypatch.setattr(native, "create_order", lost_ack)
+    monkeypatch.setattr(native, "privatePostV1OrderStatus", order_status)
+    service = owner.trading
+    placement = submit(service, account, symbol="BTC/USD")
+    assert placement["status"] == "unknown"
+    owner.settings.allow_live_trading = False
+    missed = service.recover(placement["id"])
+    assert missed["recovery"]["state"] == "not_found" and missed["status"] == "unknown"
+    resumed = ExchangeTrading(owner.market, owner.store)
+    result = resumed.recover(placement["id"])
+    assert result["exchange_order_id"] == native_id and result["recovery"]["state"] == "found"
+    assert reads == [
+        {"client_order_id": writes[0], "include_trades": False},
+        {"client_order_id": writes[0], "include_trades": False},
+        {"order_id": native_id, "include_trades": True},
+    ]
+    assert resumed.execute(placement["id"], placement["confirmation"])["exchange_order_id"] == native_id
+    assert writes == [placement["client_order_id"]]
+
+
 def test_coinbase_advanced_exact_product_window_and_client_filter():
     transport = LookupTransport()
     transport.more = True

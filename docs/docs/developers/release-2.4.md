@@ -20,6 +20,9 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Add Bybit UTA open/recent cash spot discovery with native pagination and bounded retention.
 - [x] Add Bybit UTA client-ID recovery with a durable history fallback.
 - [x] Add KuCoin Classic client-ID recovery with HF and legacy detail reads.
+- [x] Import KuCoin Classic open and selected-pair recent spot orders with restart-safe native checkpoints.
+- [x] Import Bitstamp's account-wide open spot orders and disclose its open-only discovery scope.
+- [x] Add direct client-ID recovery for verified Gemini spot GTC orders.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

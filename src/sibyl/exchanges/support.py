@@ -7,7 +7,7 @@ submission, resumable imports or recovery. Those require Sibyl's explicit gates.
 from sibyl.exchanges.catalog import STRATEGY_EXECUTION_PROVIDERS
 from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import funding_streams
-from sibyl.exchanges.order_discovery import DISCOVERY_NOTES, DISCOVERY_PROVIDERS
+from sibyl.exchanges.order_discovery import DISCOVERY_NOTES, DISCOVERY_OPEN_ONLY, DISCOVERY_PROVIDERS
 from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 from sibyl.exchanges.order_lookup import RECOVERY_NOTES, RECOVERY_PROVIDERS
 from sibyl.exchanges.spot_history import history_note
@@ -182,7 +182,7 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 ),
                 feature(
                     "discovery",
-                    "Import account orders",
+                    "Import open orders" if spec.id in DISCOVERY_OPEN_ONLY else "Import account orders",
                     spec.id in DISCOVERY_PROVIDERS,
                     DISCOVERY_NOTES.get(
                         spec.id,

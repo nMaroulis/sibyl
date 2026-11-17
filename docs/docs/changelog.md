@@ -57,6 +57,12 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- KuCoin Classic order discovery imports open spot orders across the account and recent orders for selected markets. The Trade sync form shows KuCoin's status-specific retention limits.
+
+- Bitstamp can import account-wide open spot limit orders as read-only records for order and fill checks. Trade shows the open-only scope.
+
+- Gemini spot GTC limit orders can recover their native order ID after a lost acknowledgment. Sibyl verifies the original order terms against the exact saved client ID before attaching the result.
+
 - Trade can discover open and recent cash spot orders across a Bybit UTA account. It resumes saved pages after restart and discloses Bybit's tighter retention for canceled, rejected and deactivated orders.
 
 - Bybit cash spot client-ID recovery checks realtime orders, then bounded history when needed. Orders recovered from history retain the verified native status immediately.
