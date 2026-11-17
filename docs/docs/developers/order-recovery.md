@@ -15,6 +15,8 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 | KuCoin Classic                         | HF spot client-ID lookup for the exact symbol. A miss checks the legacy client-ID endpoint used by older submissions. |
 | Gemini                                 | Exact `client_order_id` details for reviewed spot GTC limits. Original size, limit price, venue flags and creation time must match. |
 | Gate                                   | Exact native `text` ID and cash spot pair for reviewed GTC limits. A provider-reported miss checks recent finished orders for that pair. |
+| Bitget Classic                         | Exact `clientOid` through Classic spot order details. API-cancelled orders are retained for up to two hours. |
+| MEXC                                   | Exact pair and `origClientOrderId` through the spot order query. The native lookup covers up to seven days. |
 | Demo                                   | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself.                                 |
 | Other clients                          | Explicitly unsupported; no generic scan or production/Demo fallback.                                                                                |
 
@@ -61,6 +63,8 @@ Bybit recovery is scoped to regular cash spot orders. Market results must identi
 Gemini recommends unique client IDs within each trading session. Sibyl uses its generated, persisted client ID and requires explicit original size, the regular spot limit type and an empty native options list before attaching the returned order. [Gemini client order IDs](https://developer.gemini.com/client-order-id), [Gemini order status](https://developer.gemini.com/trading/rest-api/orders/get-order-status).
 
 Gate documents direct client-ID lookup for pending orders. After a provider-reported miss, Sibyl checks finished cash spot orders for the exact pair within a bounded seven-day window. It verifies that the complete scan contains a unique match and checks the original reviewed terms before attaching the native ID. [Gate spot API](https://www.gate.com/docs/developers/apiv4/en/spot/).
+
+Bitget Classic requires an API-origin regular spot limit with matching original size and price and no attached trigger. Some native detail rows omit time in force. Sibyl uses the exact saved client ID and the other original terms, and rejects any explicit non-GTC instruction. MEXC requires an explicit `GTC` limit, accepts the documented `Qty` or `origQty` field and treats the documented missing-record code as a lookup miss. [Bitget order info](https://www.bitget.com/legacy-docs/classic/spot/trade/Get-Order-Info) · [Bitget cancellation retention](https://www.bitget.com/support/articles/12560603823155) · [MEXC order query](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/query-order).
 
 ## Remaining work
 

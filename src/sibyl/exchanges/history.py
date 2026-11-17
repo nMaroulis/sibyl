@@ -74,6 +74,10 @@ def fetch_trade_page(exchange, kind: str, symbol: str, cursor: dict, limit: int)
 
     if kind in VENUES:
         return fetch_venue_page(exchange, kind, symbol, cursor, limit)
+    if kind == "mexc-window":
+        from sibyl.exchanges.mexc_activity import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit)
     market = exchange.market(symbol)
     from sibyl.exchanges.spot_history import KINDS, fetch_spot_page
 

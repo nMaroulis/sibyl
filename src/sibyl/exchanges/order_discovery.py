@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import ccxt
 
-from sibyl.exchanges import bitget_orders, gate_orders, kucoin_orders
+from sibyl.exchanges import bitget_orders, gate_orders, kucoin_orders, mexc_activity
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
     OPEN,
@@ -29,11 +29,12 @@ DISCOVERY_PROVIDERS = {
     "gemini",
     "gate",
     "bitget",
+    "mexc",
     "demo",
 }
 DAY_MS = 86_400_000
 DISCOVERY_OPEN_ONLY = {"bitstamp", "gemini"}
-DISCOVERY_HISTORY_PAIRS = {"binance", "binanceus", "binance-testnet", "kucoin"}
+DISCOVERY_HISTORY_PAIRS = {"binance", "binanceus", "binance-testnet", "kucoin", "mexc"}
 DISCOVERY_NOTES = {
     "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
     "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
@@ -41,7 +42,8 @@ DISCOVERY_NOTES = {
     "bitstamp": "Bitstamp discovery covers account-wide open spot limit orders. Individual order and fill checks are available for imported orders.",
     "gemini": "Gemini discovery covers account-wide open spot limit orders for the API key’s account.",
     "gate": "Gate scans open and recently finished cash spot orders. Recent history uses Gate’s finish time.",
-    "bitget": "Bitget discovery covers open and recent ordinary Classic spot orders. Managed subaccount history depends on its binding time.",
+    "bitget": "Bitget discovery covers open and recent ordinary Classic spot orders. API-cancelled orders are retained for up to two hours. Managed subaccount history depends on its binding time.",
+    "mexc": "MEXC reads account-wide open spot orders and up to seven days of history for selected pairs. A capped timestamp or open snapshot reports a coverage limit.",
 }
 
 
@@ -165,6 +167,9 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
         return OrderDiscoveryPage(
             *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
         )
+
+    if provider == "mexc":
+        return OrderDiscoveryPage(*mexc_activity.discover_page(exchange, stream, cursor, start, end, symbols))
 
     if provider == "kraken":
         if stream == "open":

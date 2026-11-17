@@ -20,6 +20,7 @@ def history_note(provider: str) -> str:
         "bybit": "UTA spot fills in the last 730 days, read in seven-day windows. Pre-upgrade/classic, margin and derivatives history are excluded.",
         "kucoin": "Classic spot HF fills in the last seven days. KuCoin limits inactive-order history to seven days; UTA and abandoned endpoints are excluded.",
         "bitget": "Classic spot fills in the last 89 days, including exact-order reads. Discounted fee breakdowns without verified wallet effects stay unknown. Bitget retains up to 90 days.",
+        "mexc": "Selected-pair spot fills and exact-order checks within a rolling 27-day window. Timestamp splits protect capped responses; a saturated single millisecond stops for review.",
         "bitstamp": "Selected spot transactions by ascending native IDs. Embedded order fill details require native market/side evidence; closed-order status is retained by Bitstamp for 30 days. Rescan to revisit old fill/fee corrections; settlement/bust accounting remains separate.",
         "gemini": "Selected spot history by millisecond boundary with retained edge IDs. Saturated 500-trade timestamp groups stop for review. Reported full busts void fills in accounting; manual and unverified breaks remain available for review. Master-key subaccount routing is pending. Exact-order reads use include_trades.",
         "demo": "Existing manual Demo fills only; strategy simulations use a separate ledger.",

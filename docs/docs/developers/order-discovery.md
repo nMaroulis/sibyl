@@ -16,7 +16,8 @@ Trade → Executions combines Sibyl submissions with **read-only imported orders
 | Bitstamp                  | Account-wide open spot limit snapshot | Individual order and fill checks are available for imported orders. Recent account history discovery is pending. |
 | Gemini                    | Account-wide open spot limit snapshot | Use an account-scoped key. Recent history discovery is pending. |
 | Gate                      | Grouped open orders and paged recent finished cash spot orders | Recent windows filter on finish time. |
-| Bitget Classic            | Account-wide open and recent regular spot orders | Recent windows filter on creation time. |
+| Bitget Classic            | Account-wide open and recent regular spot orders | Recent windows filter on creation time. Bitget retains API-cancelled orders for up to two hours. |
+| MEXC                      | Account-wide open snapshot and recent orders for up to 12 selected pairs | Up to seven days. A saturated open snapshot or unsplittable history window reports a coverage limit. |
 | Demo                      | Actual resting virtual orders           | Actual virtual orders created in the selected range                                                           |
 
 The Trade sync form shows each account's coverage. Selecting only open-order accounts hides the recent-history control. Other providers remain unsupported for discovery. Authenticated venue acceptance is still pending. The adapter excludes unknown, delisted and unsupported markets and Kraken margin orders, and reports an exclusion count. A successful pass does **not** establish complete historical coverage or final settlement. Coinbase Simple Trade, other portfolios, derivatives and archived/delisted instruments are outside this contract.
@@ -37,6 +38,8 @@ KuCoin Classic reads a bounded snapshot of its active symbols, then resumes one 
 
 Gemini reads one active-order snapshot and selects regular spot limit orders using the account’s market catalog. Gate flattens open-order groups under each pair’s page limit and uses separate finished-order pages with fixed second-based bounds. Bitget Classic requests `tpslType=normal` and advances `idLessThan` using the oldest native order ID on each page. Gate and Bitget recent passes cover the selected one-to-seven-day window. [Gemini active orders](https://developer.gemini.com/trading/rest-api/orders/list-active-orders) · [Gate spot API](https://www.gate.com/docs/developers/apiv4/en/spot/) · [Bitget Classic spot trading](https://www.bitget.com/docs/catalog/classic-spot-trade/classic-spot-trade).
 
+MEXC checks the current open snapshot once. Use exact pairs for recent history. The spot `allOrders` endpoint has a 1,000-row cap and no continuation token. A capped response splits its frozen time window and persists both halves as a checkpoint. Sibyl keeps the last valid observations if a single millisecond still hits the cap. [MEXC open orders](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/current-open-orders) · [MEXC order history](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/all-orders).
+
 ## Identity and execution evidence
 
 Account ID, exact spot symbol and native order ID define a retained order. A native ID already attached to a Sibyl intent updates that row, preserving its reviewed request and origin. A client ID matching an uncertain Sibyl submission defers the discovered row to the existing [reviewed recovery](order-recovery.md) workflow; discovery does not adopt an identity on client ID alone.
@@ -55,7 +58,7 @@ All paths use `/api/v1`. Read responses have `Cache-Control: no-store`.
 | ------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/exchange-orders/monitor`                      | Paginated local/imported monitor; filters `account_id`, `exchange`, `origin` (`sibyl`/`imported`), `status` (`active`/`terminal`), `limit` (1–50), `offset` |
 | GET    | `/exchange-orders/discovery`                    | Local supported-account metadata and public progress; no provider reads                                                                                     |
-| POST   | `/exchange-orders/discovery`                    | Start/resume with `account_id` (blank: active supported accounts), `days` (1–7), `symbols` (up to 12 Binance or KuCoin history pairs)                                 |
+| POST   | `/exchange-orders/discovery`                    | Start/resume with `account_id` (blank: active supported accounts), `days` (1–7), `symbols` (up to 12 exact history pairs for Binance, KuCoin or MEXC)                                 |
 | POST   | `/exchange-orders/discovery/{account_id}/pause` | Persist a discovery pause                                                                                                                                   |
 | POST   | `/exchange-orders/{id}/refresh`                 | Observe native status and one execution page, including imported rows                                                                                       |
 | GET    | `/exchange-orders/{id}/reconciliation`          | Inspect retained order/fill evidence without provider reads                                                                                                 |

@@ -24,6 +24,7 @@ type DiscoveryJob = {
   last_success_at: string | null;
   completed_at: string | null;
   recent_enabled: boolean;
+  history_requires_symbols: boolean;
 };
 type Discovery = {
   accounts: {
@@ -187,7 +188,7 @@ export function OrderDiscovery({ active }: { active: boolean }) {
               <p className="footnote" id={pairNoteId}>
                 Open orders cover all supported spot pairs.{' '}
                 {needsHistoryPairs &&
-                  'Enter up to 12 exact pairs for Binance or KuCoin history. Leave blank to sync open orders on those exchanges. '}
+                  'Enter up to 12 exact pairs for exchanges that need them. Leave blank to sync open orders on those exchanges. '}
                 Enabled discovery checks again about every five minutes while the account is active.
                 Individual order tracking is separate.
               </p>
@@ -220,10 +221,9 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                     : ''}
                 </small>
                 {!job.recent_enabled && <small>Open orders only</small>}
-                {job.recent_enabled &&
-                  (job.exchange.startsWith('binance') || job.exchange === 'kucoin') && (
-                    <small>Recent history · {job.symbols.join(', ')}</small>
-                  )}
+                {job.recent_enabled && job.history_requires_symbols && (
+                  <small>Recent history · {job.symbols.join(', ')}</small>
+                )}
                 {job.skipped > 0 && (
                   <small>
                     {job.skipped} observations excluded: unsupported/delisted or margin instruments.

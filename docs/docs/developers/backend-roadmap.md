@@ -48,6 +48,7 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Add explicit observed balance checkpoints and per-asset quantity comparisons across imported markets, native fees/rebates and eligible funding, with gap/timing/scope checks, saved reports, CSV export and read-only Accountant evidence. See [balance checks](balance-checks.md). This does not establish complete account history or settlement.
 - [x] Apply documented Kraken ledger fee effects, retain Binance wallet/completion facts, and add source-version-checked local wallet/amount reviews for ambiguous funding; preserve native observations, audit withdrawal and provenance in Balance checks, exports and read-only Accountant evidence. See [funding effects](funding-effects.md).
 - [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Exchange Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic.
+- [x] Add resumable selected-market MEXC fill imports with native deal/order identity, timestamp-window splits and exact-order deduplication.
 - [ ] Review durable import pagination for the remaining exchange providers.
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
@@ -112,6 +113,10 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Recover uncertain Gate GTC spot orders by client ID with a bounded finished-order fallback.
 - [x] Discover Bitget Classic open and recent regular spot orders with durable native order-ID checkpoints.
 - [x] Reconcile exact Bitget Classic spot fills through the shared execution ledger.
+- [x] Recover reviewed Bitget Classic spot limits by exact `clientOid` with cancellation retention shown in Settings.
+- [x] Discover MEXC account-wide open and selected-pair recent spot orders with durable timestamp-window checkpoints.
+- [x] Recover reviewed MEXC spot GTC limits by exact pair and client ID within the native query window.
+- [x] Reconcile MEXC exact-order fills through the shared ledger with reported native fees.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

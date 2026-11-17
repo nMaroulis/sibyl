@@ -20,10 +20,13 @@ Demo's explicit Check executions action includes the existing managed-status che
 | Bybit UTA                 | Spot `orderId`, native execution cursor and seven-day slices beginning one day before the local intent's creation. Exact symbol/order checks still apply because native order-ID filtering takes priority. |
 | KuCoin classic            | Exact HF `orderId`/`symbol` and native `lastId`; seven-day inactive-order retention. Ledger identity is the account fill-detail ID.                                                                        |
 | Bitget Classic            | Exact spot `orderId` and `symbol`, with native `tradeId` pagination within the adapter’s 89-day window. |
+| MEXC                      | Exact `orderId` and `symbol` through spot `myTrades`. Uses a rolling 27-day coverage window and bounded time-window splits. |
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
 Bitget Classic’s exact-order reads use the same native trade identities as Account history. Regular fees keep their reported currency. Discounted fee breakdowns stay unknown when their wallet effects cannot be verified. [Bitget Classic spot fills](https://www.bitget.com/legacy-docs/classic/spot/trade/Get-Fills).
+
+MEXC requires the matching native market, order ID and side before committing a page. The exact-order read shares deal IDs scoped to each native order with Account history, so importing both paths preserves the same execution and two orders in a self-trade can remain separate. [MEXC account trade list](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/account-trade-list).
 
 Provider permissions, retention and actual authenticated account acceptance still require testing. Coinbase Advanced and Exchange Sandbox are different APIs. Native read contracts follow the [Binance account trade list](https://developers.binance.com/en/docs/catalog/core-trading-spot-trading/api/rest-api/account), [Coinbase Advanced fills](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/list-fills), Kraken's [order queries](https://docs.kraken.com/api-reference/account-data/query-orders-info) and [trade queries](https://docs.kraken.com/api-reference/account-data/query-trades-info). The installed CCXT Exchange adapter supplies sandbox fill parsing and authenticated transport.
 

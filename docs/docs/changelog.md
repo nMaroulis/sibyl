@@ -57,6 +57,12 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Bitget Classic and MEXC spot limits can recover their native order ID by the saved client ID after an uncertain submission. The lookup verifies the order details before resuming tracking.
+
+- MEXC order discovery adds read-only account-wide open orders and up to seven days of history for selected pairs. Saturated history responses split into smaller time windows.
+
+- MEXC exact-order reconciliation and resumable Account history share native deal and order IDs. Both retain reported fee currencies and can preserve the two legs of a self-trade.
+
 - Gemini order discovery imports account-wide open spot limit orders for read-only review. Trade shows its open-only scope.
 
 - Gate order discovery imports open and recent finished cash spot orders across the account.

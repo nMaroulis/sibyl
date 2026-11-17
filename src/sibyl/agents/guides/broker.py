@@ -122,7 +122,7 @@ TRADE = {
         (
             "Open Executions and filter by account, symbol, record ID, mode, side, status or date.",
             "Use Order monitor for submitted orders and their filled/remaining quantities. Open Executions on an order for retained fill and fee evidence.",
-            "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. Imported · read-only orders are managed at the exchange.",
+            "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. For Binance, KuCoin Classic and MEXC, enter exact pairs to add recent history to the open-order scan. Imported · read-only orders are managed at the exchange.",
         ),
         (
             "A preview reference is not a fill or realized P&L. Refresh records reloads local data; Check exchange performs a provider read.",

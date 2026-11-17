@@ -30,6 +30,13 @@ def _identity(value, optional: bool = False) -> str | None:
     return text
 
 
+def _trade_key(exchange: str, trade_id: str, order_id: str | None) -> str:
+    """Use one deal per order for MEXC self-trades, preserving the raw deal ID in the payload."""
+    if exchange == "mexc":
+        return json.dumps([trade_id, _identity(order_id)], separators=(",", ":"))
+    return trade_id
+
+
 def ledger_fill(row: dict, job: dict) -> dict:
     """Validate a full fill before advancing a checkpoint; unknown fees stay unknown.
 
@@ -68,11 +75,13 @@ def ledger_fill(row: dict, job: dict) -> dict:
         if currency is not None or cost is not None:
             normalized_fees.append({"currency": currency, "cost": cost})
     base, quote = job["symbol"].split("/")
-    identity = hashlib.sha256(json.dumps([job["account_id"], job["symbol"], trade_id]).encode()).hexdigest()
+    order_id = _identity(row.get("order"), optional=True)
+    key = _trade_key(job["exchange"], trade_id, order_id)
+    identity = hashlib.sha256(json.dumps([job["account_id"], job["symbol"], key]).encode()).hexdigest()
     fill = {
         "id": identity,
         "trade_id": trade_id,
-        "order_id": _identity(row.get("order"), optional=True),
+        "order_id": order_id,
         "account_id": job["account_id"],
         "account": job["account"],
         "exchange": job["exchange"],
@@ -242,7 +251,7 @@ class AccountLedger:
                     fill["id"],
                     fill["account_id"],
                     fill["symbol"],
-                    fill["trade_id"],
+                    _trade_key(fill["exchange"], fill["trade_id"], fill["order_id"]),
                     fill["timestamp_ms"],
                     payload,
                     seen,

@@ -251,12 +251,31 @@ class MEXCClient(CCXTClient):
     """MEXC spot account, excluding contract markets."""
 
     id = "mexc"
+    history_kind = "mexc-window"
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50, 100)
 
     def format_client_order_id(self, identity: str) -> str:
         """MEXC client IDs fit its 32-character native limit."""
         return identity.replace("-", "")
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Retain native amount and quote cost across the MEXC spot response variants."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            if "cumulativeQuoteQty" in native:
+                cost = number(native["cumulativeQuoteQty"])
+                order["cost"] = cost if cost is not None and cost >= 0 else None
+                order["average"] = cost / order["filled"] if cost and cost > 0 and order["filled"] else None
+            if native.get("type") == "MARKET" and native.get("side") == "BUY":
+                order.update(amount=None, remaining=None, filled=number(native.get("executedQty")))
+            elif order["amount"] is None and (amount := number(native.get("Qty"))) is not None:
+                order["amount"] = amount
+                if order["filled"] is not None and amount >= order["filled"]:
+                    order["remaining"] = amount - order["filled"]
+        return order
 
 
 class HTXClient(CCXTClient):

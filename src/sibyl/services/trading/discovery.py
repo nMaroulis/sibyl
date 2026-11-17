@@ -179,6 +179,7 @@ class OrderDiscovery:
                     **{key: value for key, value in job.items() if key not in private},
                     "retained_orders": counts.get(job["account_id"], 0),
                     "recent_enabled": self.recent_enabled(job),
+                    "history_requires_symbols": job["exchange"] in DISCOVERY_HISTORY_PAIRS,
                 }
                 for job in jobs
             ],
@@ -500,7 +501,7 @@ class OrderDiscovery:
                         )
                     elif isinstance(error, ccxt.BadSymbol):
                         current["error"] = (
-                            "A selected Binance history pair is unavailable. Choose exact spot pairs supported by this account's environment."
+                            "A selected history pair is unavailable. Choose exact spot pairs supported by this account's environment."
                         )
             self.write(db, current)
 

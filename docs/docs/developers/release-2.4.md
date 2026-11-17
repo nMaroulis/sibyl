@@ -10,6 +10,7 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Audited split/merged transfer groups with exact principal matrices, pair/group reservation conflicts, current source/review checks and whole-group cross-pair FIFO carryover.
 - [ ] Additional fee conventions and independently verified external-flow classifications.
 - [x] Bybit same-UID UNIFIED wallet transfer history with native pagination, local revision evidence and optional background checks.
+- [x] Import selected-pair MEXC fills over a bounded rolling window with durable bisection, one-day overlap and both self-trade legs retained.
 - [ ] Wider funding/history adapters and account balance reconciliation.
 
 ## 2. Exchange infrastructure
@@ -28,6 +29,10 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Recover uncertain Gate GTC spot orders by client ID with a bounded finished-order fallback.
 - [x] Discover Bitget Classic open and recent regular spot orders with durable native order-ID checkpoints.
 - [x] Reconcile exact Bitget Classic spot fills through the shared execution ledger.
+- [x] Recover reviewed Bitget Classic spot limits by exact `clientOid` with cancellation retention shown in Settings.
+- [x] Discover MEXC account-wide open and selected-pair recent spot orders with durable timestamp-window checkpoints.
+- [x] Recover reviewed MEXC spot GTC limits by exact pair and client ID within the native query window.
+- [x] Reconcile MEXC exact-order fills through the shared ledger with reported native fees.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

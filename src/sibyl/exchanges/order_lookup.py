@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import ccxt
 
-from sibyl.exchanges import gate_orders
+from sibyl.exchanges import bitget_orders, gate_orders, mexc_activity
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
     OPEN,
@@ -28,6 +28,8 @@ RECOVERY_PROVIDERS = {
     "kucoin",
     "gemini",
     "gate",
+    "bitget",
+    "mexc",
     "demo",
 }
 
@@ -38,6 +40,8 @@ RECOVERY_NOTES = {
     "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
     "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
     "gate": "Look up a reviewed cash spot GTC limit by its saved client ID. A pending-order miss checks up to seven days of finished orders.",
+    "bitget": "Recover a reviewed Classic spot limit using its exact clientOid and original terms. Bitget retains API-cancelled records for up to two hours.",
+    "mexc": "Recover a reviewed spot GTC limit by saved client ID on the exact pair. MEXC order lookup covers up to seven days.",
 }
 
 
@@ -85,6 +89,12 @@ def lookup_order_page(
 
     if provider == "gate":
         return _gate_lookup(exchange, client_id, symbol, cursor, start)
+
+    if provider == "bitget":
+        return OrderLookupPage(bitget_orders.lookup_order(exchange, client_id, symbol), {}, True)
+
+    if provider == "mexc":
+        return OrderLookupPage(mexc_activity.lookup_order(exchange, client_id, symbol), {}, True)
 
     if provider == "coinbase":
         market = exchange.market(symbol)
