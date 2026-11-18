@@ -50,6 +50,7 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Exchange Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic.
 - [x] Add resumable selected-market MEXC fill imports with native deal/order identity, timestamp-window splits and exact-order deduplication.
 - [x] Add resumable CoinEx cash spot fill imports with native `has_next`, frozen date bounds, reported fees and shared exact-order identities.
+- [x] Add resumable BitMart v4 cash spot fill imports with native date bounds, timestamp saturation checks and reported fee corrections.
 - [ ] Review durable import pagination for the remaining exchange providers.
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
@@ -127,6 +128,10 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Discover recent CoinEx finished orders by filtering creation time across bounded native pages.
 - [x] Recover reviewed CoinEx spot GTC limits through client-filtered pending and bounded finished-order scans.
 - [x] Reconcile exact CoinEx native fills and reported fees with order-scoped deal identities.
+- [x] Discover BitMart v4 open cash spot orders with explicit bounds covering older native orders.
+- [x] Discover recent BitMart finished orders through durable capped-window splits.
+- [x] Recover BitMart spot GTC limits by exact client ID and verified original terms.
+- [x] Reconcile BitMart exact-order executions with native trade IDs and explicitly reported fee currency.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

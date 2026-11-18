@@ -57,6 +57,12 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- BitMart v4 adds open and recent cash spot order discovery with explicit date bounds, restart-safe split windows and saturation limits. Open reads include older orders within available venue history.
+
+- BitMart spot GTC limits can recover an uncertain submission by the saved client ID and verified original terms. Settings shows its short query window for API-cancelled orders that had no fills.
+
+- BitMart exact-order reconciliation and resumable selected-market Account history share native trade/order IDs and reported fee observations. Imports start with a seven-day query and overlap one day on later passes.
+
 - CoinEx adds account-wide open-order discovery and recent finished orders, with saved native page checkpoints and cash spot validation.
 
 - CoinEx spot GTC limits can recover an uncertain submission through client-filtered pending orders and bounded finished-order history. Recovery waits for the complete lookup before attaching a native ID.

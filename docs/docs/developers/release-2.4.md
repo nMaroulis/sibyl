@@ -12,6 +12,7 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Bybit same-UID UNIFIED wallet transfer history with native pagination, local revision evidence and optional background checks.
 - [x] Import selected-pair MEXC fills over a bounded rolling window with durable bisection, one-day overlap and both self-trade legs retained.
 - [x] Import CoinEx selected-market cash spot fills through frozen 30-day queries, native page checkpoints and one-day incremental overlap.
+- [x] Import BitMart v4 selected-market cash spot fills through bounded seven-day queries, native time-window splits and shared exact-order identities.
 - [ ] Wider funding/history adapters and account balance reconciliation.
 
 ## 2. Exchange infrastructure
@@ -43,6 +44,10 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Discover recent CoinEx finished orders by filtering creation time across bounded native pages.
 - [x] Recover reviewed CoinEx spot GTC limits through client-filtered pending and bounded finished-order scans.
 - [x] Reconcile exact CoinEx native fills and reported fees with order-scoped deal identities.
+- [x] Discover BitMart v4 open cash spot orders with explicit bounds covering older native orders.
+- [x] Discover recent BitMart finished orders through durable capped-window splits.
+- [x] Recover BitMart spot GTC limits by exact client ID and verified original terms.
+- [x] Reconcile BitMart exact-order executions with native trade IDs and explicitly reported fee currency.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

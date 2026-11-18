@@ -19,10 +19,11 @@ Open **Trade → Account history**, or **Settings → Exchanges → Connected ac
 | Bitget classic                       | `idLessThan` using the returned `tradeId`, frozen `startTime`/`endTime`            | Last 89 days within 90-day retention; no UTA/margin substitution                                  |
 | MEXC                                 | Frozen millisecond windows split at the native response cap                    | Rolling 27 days. Uses deal and order IDs together to distinguish self-trade legs. |
 | CoinEx                               | Page numbers with native `pagination.has_next` and frozen millisecond bounds | Initial query covers 30 days, with a one-day overlap on subsequent passes. Native retention can limit coverage. |
+| BitMart                              | Frozen millisecond ranges split at the native response cap | Initial query covers seven days, followed by one-day incremental overlap. Unsplittable timestamp boundaries stop for review. |
 
 Bitstamp and Gemini now also have the reviewed contracts below. Other clients retain balance, order and bounded-fill reads; their unimplemented durable imports explicitly show **Coming soon**. CCXT's `fetchMyTrades` capability alone does not establish safe historical pagination. The provider catalog reports `history_import` separately.
 
-Subsequent Coinbase, Kraken, OKX, Bybit, KuCoin, Bitget, MEXC and CoinEx passes overlap one day to pick up late/corrected observations. Binance and Demo resume native identity checkpoints. Native IDs deduplicate or update existing records. Coinbase's custom `sort_by` is omitted because its documentation warns about unstable pagination for sorted results.
+Subsequent Coinbase, Kraken, OKX, Bybit, KuCoin, Bitget, MEXC, CoinEx and BitMart passes overlap one day to pick up late/corrected observations. Binance and Demo resume native identity checkpoints. Native IDs deduplicate or update existing records. Coinbase's custom `sort_by` is omitted because its documentation warns about unstable pagination for sorted results.
 
 **Rescan available history** restarts the selected market at its adapter's available-history boundary. Pause active work first. Rescans keep existing evidence, upsert returned corrections and report new/corrected fill counts per completed pass. They do not delete an old fill because the provider omits it. Records and corrections outside current retention can remain unavailable; rescanning is not proof of complete history or final settlement. There is no automatic periodic rescan.
 
@@ -84,6 +85,8 @@ All paths use `/api/v1` and normal workspace access controls.
 Ledger filters: `account_id`, optional exact `symbol`, `side` (`buy`/`sell`), `environment` (`demo`/`test`/`production`), `limit` (1–100, default 50), and `offset` (0–1,000,000). Sort is execution time and stable local ID, newest first. New imports may shift offset page boundaries. Caller-supplied provider cursors, arbitrary endpoints and CCXT parameters are not accepted.
 
 Run `uv run pytest tests/test_account_sync.py tests/test_extended_account_history.py` for offline pagination, parser, retention, rescan races, recovery, fee, isolation and API tests.
+
+BitMart v4 selected-market imports pin `orderMode=spot` and freeze their seven-day initial query across split ranges. A small overlap around each native timestamp boundary keeps records available when an endpoint includes a boundary. Capped boundaries report a coverage limit. Rescans start a new initial query, and reported native trade/order IDs deduplicate imports and fee corrections. [BitMart account trades](https://developer-pro.bitmart.com/en/spot/#account-trade-list-v4-signed).
 
 ## Exact-order coverage
 

@@ -5,7 +5,14 @@ from dataclasses import dataclass
 
 import ccxt
 
-from sibyl.exchanges import bitget_orders, coinex_activity, gate_orders, htx_orders, mexc_activity
+from sibyl.exchanges import (
+    bitget_orders,
+    bitmart_activity,
+    coinex_activity,
+    gate_orders,
+    htx_orders,
+    mexc_activity,
+)
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
     OPEN,
@@ -32,6 +39,7 @@ RECOVERY_PROVIDERS = {
     "mexc",
     "htx",
     "coinex",
+    "bitmart",
     "demo",
 }
 
@@ -43,6 +51,7 @@ RECOVERY_NOTES = {
     "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
     "gate": "Look up a reviewed cash spot GTC limit by its saved client ID. A pending-order miss checks up to seven days of finished orders.",
     "bitget": "Recover a reviewed Classic spot limit using its exact clientOid and original terms. Bitget retains API-cancelled records for up to two hours.",
+    "bitmart": "Recover reviewed spot limits through the exact saved client ID. BitMart limits API-cancelled unfilled order queries to 20 minutes.",
     "coinex": "Find reviewed cash spot GTC limits through pending and bounded finished-order pages. CoinEx deletes cancelled orders that had no fills; missing records remain uncertain.",
     "htx": "Look up the exact client ID for the verified spot wallet. HTX limits client-ID lookup to eight hours and API-cancelled records to two hours.",
     "mexc": "Recover a reviewed spot GTC limit by saved client ID on the exact pair. MEXC order lookup covers up to seven days.",
@@ -96,6 +105,9 @@ def lookup_order_page(
 
     if provider == "bitget":
         return OrderLookupPage(bitget_orders.lookup_order(exchange, client_id, symbol), {}, True)
+
+    if provider == "bitmart":
+        return OrderLookupPage(bitmart_activity.lookup_order(exchange, client_id, symbol), {}, True)
 
     if provider == "coinex":
         return OrderLookupPage(*coinex_activity.lookup_page(exchange, client_id, symbol, cursor))

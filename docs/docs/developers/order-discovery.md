@@ -20,9 +20,12 @@ Trade → Executions combines Sibyl submissions with **read-only imported orders
 | HTX                       | Verified-wallet open order pages and recent orders for up to 12 selected pairs | History uses fixed 48-hour windows. API-cancelled orders are queryable for up to two hours. |
 | MEXC                      | Account-wide open snapshot and recent orders for up to 12 selected pairs | Up to seven days. A saturated open snapshot or unsplittable history window reports a coverage limit. |
 | CoinEx                    | Account-wide cash spot pending-order pages | Finished-order pages scanned within the app budget, then filtered by the selected creation window. Cancelled orders with no fills are removed by CoinEx. |
+| BitMart                   | Explicitly bounded account-wide cash spot queries including older open orders | Recent finished-order queries split at the native 200-row cap. Unfilled API-cancelled orders have a short query window. |
 | Demo                      | Actual resting virtual orders           | Actual virtual orders created in the selected range                                                           |
 
 The Trade sync form shows each account's coverage. Selecting only open-order accounts hides the recent-history control. Other providers remain unsupported for discovery. Authenticated venue acceptance is still pending. The adapter excludes unknown, delisted and unsupported markets and Kraken margin orders, and reports an exclusion count. A successful pass does **not** establish complete historical coverage or final settlement. Coinbase Simple Trade, other portfolios, derivatives and archived/delisted instruments are outside this contract.
+
+BitMart v4 reads use authenticated POST query endpoints and explicit `orderMode=spot`. Open discovery starts at the earliest positive timestamp and fixes its upper boundary for the pass, covering older orders within available venue history. Recent discovery uses the chosen creation window. A response at the native 200-row cap splits its time range, with boundary overlap and local filtering. An unsplittable timestamp stops for review. [BitMart query contracts](https://developer-pro.bitmart.com/en/spot/#current-open-orders-v4-signed) · [BitMart default seven-day scope](https://developer-pro.bitmart.com/en/faq/#spot-trade-api-faq).
 
 ## Durable scheduling
 

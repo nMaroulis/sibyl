@@ -437,11 +437,30 @@ class BitMartClient(CCXTClient):
     # Avoid coupling spot reads to the separate deposit/withdrawal currency endpoint.
     fetch_currencies = False
     id = "bitmart"
+    history_kind = "bitmart-window"
     balance_params = {"type": "spot"}
 
     def format_client_order_id(self, identity: str) -> str:
         """BitMart requires an alphanumeric ID of at most 32 characters."""
         return identity.replace("-", "")
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep native filled sizes separate from a market buy's quote-currency budget."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            kind = native.get("type")
+            if kind == "limit":
+                order["timeInForce"] = "GTC"
+            elif kind == "market" and native.get("side") == "buy":
+                order.update(
+                    amount=None,
+                    remaining=None,
+                    filled=number(native.get("filledSize", native.get("filled_size"))),
+                    average=number(native.get("priceAvg", native.get("price_avg"))),
+                )
+        return order
 
 
 class PhemexClient(CCXTClient):

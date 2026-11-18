@@ -31,8 +31,8 @@ def _identity(value, optional: bool = False) -> str | None:
 
 
 def _trade_key(exchange: str, trade_id: str, order_id: str | None) -> str:
-    """Scope MEXC and CoinEx deals to each order while preserving the raw deal ID."""
-    if exchange in {"mexc", "coinex"}:
+    """Scope supported shared deal IDs to each order while preserving the raw venue ID."""
+    if exchange in {"mexc", "coinex", "bitmart"}:
         return json.dumps([trade_id, _identity(order_id)], separators=(",", ":"))
     return trade_id
 

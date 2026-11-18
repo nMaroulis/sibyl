@@ -49,7 +49,7 @@ def test_sdk_flags_cannot_enable_unreviewed_writes_or_imports():
         ["ticker", "candles", "order_book", "balances", "order_status", "open_orders", "trade_history"],
         "native",
     )
-    groups = support_groups(replace(exchange_spec("bitmart"), limit_only=False), capabilities, None)
+    groups = support_groups(replace(exchange_spec("phemex"), limit_only=False), capabilities, None)
     rows = {row["id"]: row for group in groups for row in group["features"]}
     assert next(group for group in groups if group["id"] == "spot")["summary"]["status"] == "unsupported"
     for identity in [
@@ -66,7 +66,7 @@ def test_sdk_flags_cannot_enable_unreviewed_writes_or_imports():
     account = next(group for group in groups if group["id"] == "account")
     assert account["summary"]["status"] == "supported"
     capabilities["balances"] = "unavailable"
-    account = support_groups(replace(exchange_spec("bitmart"), limit_only=False), capabilities, None)[0]
+    account = support_groups(replace(exchange_spec("phemex"), limit_only=False), capabilities, None)[0]
     assert account["summary"]["status"] == "partial"
     assert next(row for row in account["features"] if row["id"] == "permissions")["status"] == "unavailable"
 

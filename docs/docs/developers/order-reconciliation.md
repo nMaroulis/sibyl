@@ -25,6 +25,7 @@ Demo's explicit Check executions action includes the existing managed-status che
 | HTX                       | Verify the exact spot parent wallet, then read its native match-results list. App pages retain the internal execution ID. |
 | CoinEx                    | Exact `order_id`, `market` and `market_type=SPOT` through native `spot/order-deals` pages. Requires explicit `pagination.has_next`. |
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
+| BitMart                   | Exact native `orderId` through the v4 order-trades query. App pages traverse a bounded native execution list. |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
 Bitget Classic’s exact-order reads use the same native trade identities as Account history. Regular fees keep their reported currency. Discounted fee breakdowns stay unknown when their wallet effects cannot be verified. [Bitget Classic spot fills](https://www.bitget.com/legacy-docs/classic/spot/trade/Get-Fills).
@@ -44,6 +45,10 @@ Gate and HTX use `order_fill_kind` separately from `history_kind`. Settings show
 ## CoinEx order executions
 
 CoinEx reads individual order executions through v2 `spot/order-deals`, checking the exact market and order ID and rejecting margin evidence. Native `deal_id` values are scoped to their native order in the ledger, preserving both sides of a self-trade when returned. Account history imports use the same identities, so either path can correct a reported fee while retaining prior observations. Fees keep their reported currency and unknown fee data stays explicit. Each page follows the native `has_next` field. Private-account acceptance remains pending. [CoinEx order executions](https://docs.coinex.com/api/v2/spot/deal/http/list-user-order-deals).
+
+## BitMart order executions
+
+BitMart’s v4 order-trades read returns individual native execution records for the exact order. Sibyl checks the order ID, instrument, side and spot mode, bounds the native list to 10,000 records and commits at most 100 per app page. Native IDs define deterministic local pagination. Later passes revisit corrections. Fees retain their reported currency, and missing fee currencies stay unknown. Account history uses the same order-scoped identities. Private-account acceptance remains pending. [BitMart order trades](https://developer-pro.bitmart.com/en/spot/#order-trade-list-v4-signed).
 
 ## Identity, validation and atomicity
 

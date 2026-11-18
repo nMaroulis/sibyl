@@ -124,6 +124,7 @@ TRADE = {
             "Use Order monitor for submitted orders and their filled/remaining quantities. Open Executions on an order for retained fill and fee evidence.",
             "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. For Binance, KuCoin Classic, MEXC and HTX, enter exact pairs to add recent history to the open-order scan. Imported · read-only orders are managed at the exchange.",
             "CoinEx open and recent order discovery covers cash spot accounts. Recent history scans finished pages within the app budget. CoinEx removes cancelled orders that had no executions, so a missing record needs venue inspection.",
+            "BitMart provides open/recent spot order discovery, exact-order executions and selected-pair fill imports. Its unfilled API-cancelled records may disappear from order queries after 20 minutes. Inspect the provider coverage note if recovery cannot find one.",
         ),
         (
             "A preview reference is not a fill or realized P&L. Refresh records reloads local data; Check exchange performs a provider read.",
