@@ -48,6 +48,9 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Discover recent BitMart finished orders through durable capped-window splits.
 - [x] Recover BitMart spot GTC limits by exact client ID and verified original terms.
 - [x] Reconcile BitMart exact-order executions with native trade IDs and explicitly reported fee currency.
+- [x] Discover Poloniex account-wide open cash spot orders with exact native ID checkpoints.
+- [x] Discover recent Poloniex terminal orders using frozen update-time bounds, including older orders updated recently.
+- [x] Recover Poloniex cash spot GTC limits through exact client-ID details and verified original terms.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

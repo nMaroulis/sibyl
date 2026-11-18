@@ -486,6 +486,26 @@ class PoloniexClient(CCXTClient):
 
     id = "poloniex"
 
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Preserve native spot costs and keep a pending cancellation active until confirmed."""
+        from sibyl.exchanges.poloniex_orders import STATUS
+
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("accountType") == "SPOT":
+            order["status"] = STATUS.get(native.get("state"), order["status"])
+            if "filledAmount" in native:
+                order["cost"] = number(native["filledAmount"])
+            if native.get("type") == "MARKET" and native.get("side") == "BUY":
+                order.update(
+                    amount=None,
+                    remaining=None,
+                    filled=number(native.get("filledQuantity")),
+                    average=number(native.get("avgPrice")),
+                )
+        return order
+
 
 class UpbitClient(CCXTClient):
     """Upbit default endpoint; regional API variants require their own adapter."""

@@ -57,6 +57,12 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Poloniex adds account-wide open cash spot order discovery with restart-safe native ID checkpoints and explicit borrowed-order exclusions. Pending cancellations remain active until the exchange confirms a terminal state.
+
+- Poloniex recent order discovery uses a frozen update-time window, preserving older orders changed recently. Trade and Settings show the cash-only scope and native history retention.
+
+- Poloniex cash spot GTC limits can recover an uncertain submission through the exact saved client ID and verified original terms. The lookup reads existing orders without resubmitting them.
+
 - BitMart v4 adds open and recent cash spot order discovery with explicit date bounds, restart-safe split windows and saturation limits. Open reads include older orders within available venue history.
 
 - BitMart spot GTC limits can recover an uncertain submission by the saved client ID and verified original terms. Settings shows its short query window for API-cancelled orders that had no fills.

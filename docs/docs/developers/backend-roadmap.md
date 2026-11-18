@@ -132,6 +132,9 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Discover recent BitMart finished orders through durable capped-window splits.
 - [x] Recover BitMart spot GTC limits by exact client ID and verified original terms.
 - [x] Reconcile BitMart exact-order executions with native trade IDs and explicitly reported fee currency.
+- [x] Discover Poloniex account-wide open cash spot orders with exact native ID checkpoints.
+- [x] Discover recent Poloniex terminal orders using frozen update-time bounds, including older orders updated recently.
+- [x] Recover Poloniex cash spot GTC limits through exact client-ID details and verified original terms.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

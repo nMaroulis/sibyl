@@ -12,6 +12,7 @@ from sibyl.exchanges import (
     gate_orders,
     htx_orders,
     mexc_activity,
+    poloniex_orders,
 )
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
@@ -40,6 +41,7 @@ RECOVERY_PROVIDERS = {
     "htx",
     "coinex",
     "bitmart",
+    "poloniex",
     "demo",
 }
 
@@ -51,6 +53,7 @@ RECOVERY_NOTES = {
     "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
     "gate": "Look up a reviewed cash spot GTC limit by its saved client ID. A pending-order miss checks up to seven days of finished orders.",
     "bitget": "Recover a reviewed Classic spot limit using its exact clientOid and original terms. Bitget retains API-cancelled records for up to two hours.",
+    "poloniex": "Recover reviewed unborrowed spot GTC limits through the exact saved client ID. Native retention and archived orders can limit lookup coverage.",
     "bitmart": "Recover reviewed spot limits through the exact saved client ID. BitMart limits API-cancelled unfilled order queries to 20 minutes.",
     "coinex": "Find reviewed cash spot GTC limits through pending and bounded finished-order pages. CoinEx deletes cancelled orders that had no fills; missing records remain uncertain.",
     "htx": "Look up the exact client ID for the verified spot wallet. HTX limits client-ID lookup to eight hours and API-cancelled records to two hours.",
@@ -105,6 +108,9 @@ def lookup_order_page(
 
     if provider == "bitget":
         return OrderLookupPage(bitget_orders.lookup_order(exchange, client_id, symbol), {}, True)
+
+    if provider == "poloniex":
+        return OrderLookupPage(poloniex_orders.lookup_order(exchange, client_id, symbol), {}, True)
 
     if provider == "bitmart":
         return OrderLookupPage(bitmart_activity.lookup_order(exchange, client_id, symbol), {}, True)

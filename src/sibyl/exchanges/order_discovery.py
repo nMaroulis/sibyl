@@ -12,6 +12,7 @@ from sibyl.exchanges import (
     htx_orders,
     kucoin_orders,
     mexc_activity,
+    poloniex_orders,
 )
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
@@ -41,6 +42,7 @@ DISCOVERY_PROVIDERS = {
     "htx",
     "coinex",
     "bitmart",
+    "poloniex",
     "demo",
 }
 DAY_MS = 86_400_000
@@ -54,6 +56,7 @@ DISCOVERY_NOTES = {
     "gemini": "Gemini discovery covers account-wide open spot limit orders for the API key’s account.",
     "gate": "Gate scans open and recently finished cash spot orders. Recent history uses Gate’s finish time.",
     "bitget": "Bitget discovery covers open and recent ordinary Classic spot orders. API-cancelled orders are retained for up to two hours. Managed subaccount history depends on its binding time.",
+    "poloniex": "Poloniex imports explicitly unborrowed cash spot orders. Recent history uses update time; cancelled orders are archived after seven days and other terminal orders after 90 days. Smart orders are excluded.",
     "bitmart": "BitMart v4 reads cash spot orders with explicit date bounds and splits capped responses. API-cancelled orders without fills may become unavailable after 20 minutes.",
     "coinex": "CoinEx imports cash spot orders. Recent discovery scans native finished pages and filters creation time locally. Cancelled orders without fills are not retained by CoinEx.",
     "htx": "HTX reads the verified spot wallet’s open orders and selected-pair history in 48-hour windows. API-cancelled orders are available for up to two hours.",
@@ -181,6 +184,9 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
         return OrderDiscoveryPage(
             *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
         )
+
+    if provider == "poloniex":
+        return OrderDiscoveryPage(*poloniex_orders.discover_page(exchange, stream, cursor, start, end))
 
     if provider == "bitmart":
         return OrderDiscoveryPage(*bitmart_activity.discover_page(exchange, stream, cursor, start, end))

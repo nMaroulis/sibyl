@@ -48,6 +48,8 @@ Before contacting the exchange, Sibyl persists the intent as `submitting`. A rep
 
 **Check the exchange before creating another order after an uncertain outcome.** Use **Recover order** where offered to read existing orders by the saved client ID. Settings → Exchanges shows which providers support lookup for the reviewed order type. Inspect the exchange directly when the lookup is unavailable. A matching account, client ID, market, side, quantity and order type are required before Sibyl attaches a native ID and resumes status/fill checks. Continue lookup advances unfinished history reads. No match is not proof that no order exists; ambiguous, incomplete or mismatched evidence still needs venue inspection. Nothing is automatically resubmitted. See [recovery behavior and provider limits](../developers/order-recovery.md).
 
+Poloniex supports recovery for reviewed cash spot GTC limits. Its order sync includes open cash orders and terminal orders updated in the chosen recent window, even when created earlier. Borrowed orders are excluded; exact-order fills and Account history imports remain pending.
+
 The exchange receives a `clientOrderId` where supported by the adapter. Application-level duplicate protection remains the primary protection because exchange support differs.
 
 Manual orders use the reviewed endpoint. [Approved exchange strategies](strategy-execution.md) reuse its durable intent pipeline with a separate fixed-scope approval. Agents and isolated paper strategies cannot submit exchange orders.
