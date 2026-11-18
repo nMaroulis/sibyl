@@ -27,6 +27,8 @@ Demo's explicit Check executions action includes the existing managed-status che
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
 | Poloniex                  | Verified unborrowed cash parent followed by `/orders/{id}/trades`; bounded native snapshot and exact trade-ID app pages. |
 | Bitfinex                  | Exact cash native order ID and symbol through the order-trades snapshot. Native endpoint coverage is up to ten days old. |
+| Phemex                    | Dedicated spot trades-by-order-ID snapshot with exact UUIDs and currency-scaled fees. |
+| Upbit Korea               | Exact parent UUID and native execution snapshot, checking reported trades_count. Per-execution fees remain unknown. |
 | BitMart                   | Exact native `orderId` through the v4 order-trades query. App pages traverse a bounded native execution list. |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
@@ -42,7 +44,7 @@ Gate validates the order’s native `account=spot`, exact instrument and side be
 
 HTX resolves the unambiguous spot wallet and verifies the parent order before reading its exact match-results list. Lists above 10,000 rows stop for review. Up to 100 rows commit per app page using the internal `id`, preserving the original reported record time. Repeated passes revisit earlier fee observations. Unverified deduction effects remain unknown, and maker rebate observations do not establish payment. API-cancelled parent orders become unavailable after two hours. [HTX match results](https://huobiapi.github.io/docs/spot/v1/en/#get-the-match-result-of-an-order).
 
-Gate and HTX use `order_fill_kind` separately from `history_kind`. Settings shows exact-order reconciliation as implemented while their broader Account history imports remain pending. Authenticated acceptance for these adapters remains pending.
+Gate and HTX use `order_fill_kind` separately from `history_kind`. Settings now shows exact-order reconciliation and selected-market parent-verified cash history as separate implemented paths, with provider scope and fee gaps. Authenticated acceptance for these adapters remains pending.
 
 ## CoinEx order executions
 
@@ -59,6 +61,12 @@ Poloniex first verifies the native parent ID, exact instrument, side and explici
 ## Bitfinex exchange-wallet executions
 
 Bitfinex's order-trades endpoint returns executions for the exact symbol and native order ID, with coverage for trades up to ten days old. Sibyl verifies native `EXCHANGE` cash types, signed base quantity, instrument and parent identity. A bounded snapshot of at most 10,000 rows is paged locally by exact numeric trade ID, with at most 100 retained fills per page. Native fee wallet effects are negated into the ledger's cost convention; unknown fee currencies/amounts stay unknown. Account history reuses the same identities and revisits corrections. Empty or expired evidence never proves complete history or absence of earlier fills. [Bitfinex order trades](https://docs.bitfinex.com/reference/rest-auth-order-trades).
+
+## Phemex and Upbit executions
+
+Phemex uses the dedicated native spot trades-by-order-ID endpoint, checks exact pair/order identity, bounds its snapshot to 10,000 executions and retains at most 100 per app page. Native UUIDs are shared with selected-market history. Native Ep/Ev values are decoded with provider scales; missing currency scale metadata or unverified discount-token charges leave fees unknown. Quote order budgets never become executed amounts. [Phemex spot execution contract](https://github.com/phemex/phemex-api-docs/blob/master/Public-Spot-API-en.md#spotDataTradesByIds).
+
+Upbit reads the exact parent order UUID, verifies pair/direction and requires `trades_count` to match the bounded native execution array. Each execution keeps its UUID, price, quantity, timestamp and funds. The parent reports aggregate `paid_fee`, which does not establish per-execution fee allocation, so fee gaps remain visible. No synthetic fills or fee allocation is introduced. [Upbit order details](https://docs.upbit.com/kr/reference/get-order).
 
 ## Identity, validation and atomicity
 

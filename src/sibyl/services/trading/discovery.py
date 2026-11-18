@@ -18,6 +18,7 @@ from sibyl.exchanges.order_discovery import (
     DISCOVERY_HISTORY_PAIRS,
     DISCOVERY_NOTES,
     DISCOVERY_OPEN_ONLY,
+    DISCOVERY_OPEN_PAIRS,
     DISCOVERY_PROVIDERS,
     OrderDiscoveryPage,
 )
@@ -168,6 +169,7 @@ class OrderDiscovery:
                     "environment": environment(connection),
                     "supported": connection.exchange in DISCOVERY_PROVIDERS,
                     "coverage_note": DISCOVERY_NOTES.get(connection.exchange),
+                    "open_requires_symbols": connection.exchange in DISCOVERY_OPEN_PAIRS,
                     "history_requires_symbols": connection.exchange in DISCOVERY_HISTORY_PAIRS,
                     "history_supported": connection.exchange in DISCOVERY_PROVIDERS
                     and connection.exchange not in DISCOVERY_OPEN_ONLY,
@@ -179,6 +181,7 @@ class OrderDiscovery:
                     **{key: value for key, value in job.items() if key not in private},
                     "retained_orders": counts.get(job["account_id"], 0),
                     "recent_enabled": self.recent_enabled(job),
+                    "open_requires_symbols": job["exchange"] in DISCOVERY_OPEN_PAIRS,
                     "history_requires_symbols": job["exchange"] in DISCOVERY_HISTORY_PAIRS,
                 }
                 for job in jobs
@@ -198,6 +201,8 @@ class OrderDiscovery:
         accounts = [row for row in accounts if row.active and row.exchange in DISCOVERY_PROVIDERS]
         if not accounts or len(accounts) > 20:
             raise ValueError("Choose up to twenty active accounts with reviewed order discovery.")
+        if not body.symbols and any(row.exchange in DISCOVERY_OPEN_PAIRS for row in accounts):
+            raise ValueError("Choose up to twelve exact pairs for Phemex open and recent orders.")
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             for connection in accounts:

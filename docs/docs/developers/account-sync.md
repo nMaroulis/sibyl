@@ -21,6 +21,10 @@ Open **Trade → Account history**, or **Settings → Exchanges → Connected ac
 | CoinEx                               | Page numbers with native `pagination.has_next` and frozen millisecond bounds | Initial query covers 30 days, with a one-day overlap on subsequent passes. Native retention can limit coverage. |
 | Poloniex                             | Exact native `pageId` with fixed millisecond bounds and inclusive-edge handling | Initial seven-day cash query, then one-day overlap. Each distinct parent must prove unborrowed scope; unavailable parents require review. At most 20 fills are committed per page. |
 | Bitfinex                             | Frozen execution ranges split at the native response cap, with one-day incremental overlap | Initial 90-day query for cash EXCHANGE fills. Margin fills are excluded; missing type evidence needs review. Native IDs share exact-order imports. |
+| Phemex                               | Frozen seven-day selected-pair query with native offsets | Spot endpoints; one-day overlap; currency scale gaps stay unknown. |
+| Gate                                 | Frozen seven-day second-based query with native page numbers | Cash parents verified; at most 20 fills and parent reads per page. |
+| HTX                                  | Seven-day query in saved 48-hour ranges, split at saturation | Exact spot wallet and parents verified; at most 20 fills/parent reads per page. |
+| Upbit Korea                          | Saved regular open/closed-order listings and per-parent UUID pages | Current open orders plus closed orders created within seven days. Older closed orders and per-fill fees remain incomplete. |
 | BitMart                              | Frozen millisecond ranges split at the native response cap | Initial query covers seven days, followed by one-day incremental overlap. Unsplittable timestamp boundaries stop for review. |
 
 Bitstamp and Gemini now also have the reviewed contracts below. Other clients retain balance, order and bounded-fill reads; their unimplemented durable imports explicitly show **Coming soon**. CCXT's `fetchMyTrades` capability alone does not establish safe historical pagination. The provider catalog reports `history_import` separately.
@@ -44,6 +48,10 @@ CoinEx requests selected-market cash spot fills with `market_type=SPOT`, freezin
 Poloniex requests the exact selected symbol and freezes a seven-day initial fill window. Its pagination field `pageId` differs from the execution's `id`; only `pageId` advances native history. Native trade/order IDs identify ledger entries shared with exact-order reconciliation. An inclusive repeated page edge is filtered without skipping the next execution. Each distinct parent is checked once per page for explicit cash spot evidence because trade rows do not report borrowing. Batches retain at most 20 fills, with at most 20 parent reads. Borrowed or missing/archived parents stop the page for review. This short requested window does not claim all retained venue history. Native fee signs/currencies and absent fields remain explicit. [Poloniex trades](https://api-docs.poloniex.com/spot/api/private/trade#trade-history).
 
 Bitfinex selected-market imports freeze an initial 90-day execution-time range and save splits when a response reaches the 100-fill page cap. Native `EXCHANGE` order types establish the exchange-wallet scope; margin types are excluded, and missing/unknown cash evidence stops for review. Native fees are wallet effects, so negative charges become positive ledger costs and positive rebates become negative costs. Currency aliases use the native adapter's currency mapping; absent fee evidence stays unknown. Native trade/order IDs and fee corrections are shared with exact-order reads. This initial range does not claim complete venue history. [Bitfinex authenticated trades](https://docs.bitfinex.com/reference/rest-auth-trades-by-symbol).
+
+Phemex selected-pair imports freeze seven days and advance native `offset` by raw page size. Exact-order checks use the dedicated spot trades-by-order-ID endpoint. Both paths keep native execution/order UUIDs; verified currency `valueScale` decodes fees, while missing scale/currency metadata stays unknown. [Phemex spot history](https://phemex-docs.github.io/#query-trade-history).
+
+Upbit imports regular current open orders and regular closed orders created in the selected seven-day range, then checks each parent’s native execution list. Listing and execution UUID checkpoints survive restart and exact checks share the same ledger identities. A native trade-count discrepancy stops for review. Orders closed after being created before the range may be missing. `paid_fee` is an order total, so individual execution fees remain unknown; it is not divided across fills. This path uses native order APIs without claiming the SDK has generic trade-history support. [Upbit order details](https://docs.upbit.com/kr/reference/get-order).
 
 ## Ownership and persistence
 
@@ -96,7 +104,7 @@ BitMart v4 selected-market imports pin `orderMode=spot` and freeze their seven-d
 
 ## Exact-order coverage
 
-Gate and HTX can reconcile individual known orders. Their account-wide fill imports remain pending. Settings reports these as separate capabilities, and **Trade → Executions → Check executions** is the entry point for their reviewed fill reads. [Read contracts](order-reconciliation.md#gate-and-htx-order-executions).
+Gate and HTX now support selected-market cash fill imports as well as exact-order checks. Both verify parent wallet scope and start with seven days. Gate retains native numbered pages; HTX retains 48-hour ranges and splits saturated timestamps. Missing parents or unverified wallet effects need review. Neither import proves complete account coverage. [Read contracts](order-reconciliation.md#gate-and-htx-order-executions).
 
 ## Bitstamp and Gemini
 

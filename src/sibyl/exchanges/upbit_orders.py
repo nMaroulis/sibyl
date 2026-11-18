@@ -53,7 +53,7 @@ def parse_order(exchange, row, *, recent):
     return exchange.parse_order(row, market)
 
 
-def discover_page(exchange, stream, cursor, start, end):
+def discover_page(exchange, stream, cursor, start, end, *, instrument=None):
     """Read one open page or split a capped recent creation-time window."""
     recent = stream == "recent"
     if recent:
@@ -63,6 +63,7 @@ def discover_page(exchange, stream, cursor, start, end):
         rows = rows_list(
             exchange.privateGetOrdersClosed(
                 {
+                    **({"market": instrument} if instrument else {}),
                     "start_time": str(lower),
                     "end_time": str(upper - 1),
                     "limit": LIMIT,
@@ -85,7 +86,15 @@ def discover_page(exchange, stream, cursor, start, end):
         if type(page) is not int or not 1 <= page <= 100:
             raise ValueError("Invalid Upbit open-order page.")
         rows = rows_list(
-            exchange.privateGetOrdersOpen({"state": "wait", "page": page, "limit": LIMIT, "order_by": "asc"}),
+            exchange.privateGetOrdersOpen(
+                {
+                    **({"market": instrument} if instrument else {}),
+                    "state": "wait",
+                    "page": page,
+                    "limit": LIMIT,
+                    "order_by": "asc",
+                }
+            ),
             LIMIT,
         )
         keys = [native_id(row.get("uuid")) for row in rows]

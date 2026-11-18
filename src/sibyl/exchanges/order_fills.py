@@ -18,6 +18,8 @@ ORDER_FILL_KINDS = {
     "bitmart-window",
     "poloniex-page",
     "bitfinex-window",
+    "upbit-orders",
+    "phemex-spot",
     "gate-order",
     "htx-order",
     "bitstamp-transactions",
@@ -39,6 +41,14 @@ def fetch_order_fill_page(
 
     if kind in VENUES:
         return fetch_venue_order_page(exchange, kind, order_id, symbol, cursor, limit)
+    if kind == "phemex-spot":
+        from sibyl.exchanges.phemex_activity import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "upbit-orders":
+        from sibyl.exchanges.upbit_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
     if kind == "bitfinex-window":
         from sibyl.exchanges.bitfinex_fills import fetch_fill_page
 

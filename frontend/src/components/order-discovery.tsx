@@ -34,6 +34,7 @@ type Discovery = {
     environment: string;
     active: boolean;
     supported: boolean;
+    open_requires_symbols?: boolean;
     history_requires_symbols: boolean;
     history_supported: boolean;
     coverage_note?: string | null;
@@ -67,6 +68,7 @@ export function OrderDiscovery({ active }: { active: boolean }) {
   const toast = useToast();
   const accounts = resource.data?.accounts.filter((row) => row.active && row.supported) ?? [];
   const selectedAccounts = accounts.filter((row) => !account || row.id === account);
+  const needsOpenPairs = selectedAccounts.some((row) => row.open_requires_symbols);
   const needsHistoryPairs = selectedAccounts.some((row) => row.history_requires_symbols);
   const hasHistory = selectedAccounts.some((row) => row.history_supported);
   const coverageNotes = [...new Set(selectedAccounts.flatMap((row) => row.coverage_note || []))];
@@ -171,9 +173,10 @@ export function OrderDiscovery({ active }: { active: boolean }) {
               )}
               {needsHistoryPairs && (
                 <label className="order-discovery-pairs">
-                  History pairs · optional
+                  {needsOpenPairs ? 'Pairs to sync · required' : 'History pairs · optional'}
                   <input
                     value={symbols}
+                    required={needsOpenPairs}
                     onChange={(event) => setSymbols(event.target.value)}
                     placeholder="BTC/USDT, ETH/USDT"
                     disabled={busy}
@@ -186,9 +189,13 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                 {busy ? 'Queuing…' : 'Start read-only sync'}
               </button>
               <p className="footnote" id={pairNoteId}>
-                Open orders cover all supported spot pairs.{' '}
+                {needsOpenPairs
+                  ? 'Phemex open and recent orders cover the selected exact pairs.'
+                  : 'Open orders cover all supported spot pairs.'}{' '}
                 {needsHistoryPairs &&
-                  'Enter up to 12 exact pairs for exchanges that need them. Leave blank to sync open orders on those exchanges. '}
+                  (needsOpenPairs
+                    ? 'Enter up to 12 exact pairs to start the selected sync. '
+                    : 'Enter up to 12 exact pairs for exchanges that need them. Leave blank to sync open orders on those exchanges. ')}
                 Enabled discovery checks again about every five minutes while the account is active.
                 Individual order tracking is separate.
               </p>

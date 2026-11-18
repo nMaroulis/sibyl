@@ -28,7 +28,7 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Import KuCoin Classic open and selected-pair recent spot orders with restart-safe native checkpoints.
 - [x] Import Bitstamp's account-wide open spot orders and disclose its open-only discovery scope.
 - [x] Add direct client-ID recovery for verified Gemini spot GTC orders.
-- [x] Discover account-wide Gemini open spot limit orders with explicit open-only coverage.
+- [x] Discover account-wide Gemini open spot limit orders.
 - [x] Discover Gate open and recent finished cash spot orders with native page checkpoints.
 - [x] Recover uncertain Gate GTC spot orders by client ID with a bounded finished-order fallback.
 - [x] Discover Bitget Classic open and recent regular spot orders with durable native order-ID checkpoints.
@@ -63,6 +63,16 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Recover Bitfinex regular GTC limits by saved int45 cid through complete bounded open/closed checks.
 - [x] Reconcile Bitfinex exact-order cash executions with native IDs, signed fee effects and documented ten-day query coverage.
 - [x] Import Bitfinex selected-market exchange-wallet fills through frozen 90-day queries, saved timestamp splits and incremental overlap.
+- [x] Discover Phemex selected-pair open spot orders with required-pair controls and explicit cash endpoint scope.
+- [x] Discover Phemex recent spot orders with fixed creation bounds and saved native offsets.
+- [x] Recover Phemex base-sized spot GTC limits through exact clOrdID details and verified original terms.
+- [x] Reconcile Phemex exact-order executions with shared UUIDs and verified native value scales.
+- [x] Import Phemex selected-pair cash fills through resumable seven-day queries and incremental overlap.
+- [x] Import Gate selected-market cash executions with verified native parents and restart-safe numbered pages.
+- [x] Import HTX selected-market spot executions through wallet-verified 48-hour windows and durable saturation splits.
+- [x] Reconcile Upbit Korea native individual executions without guessing per-fill fees from aggregate paid_fee.
+- [x] Import Upbit Korea regular-order executions through saved open/closed listings and execution UUID checkpoints, with older closed-order limits explicit.
+- [x] Discover Gemini recent closed spot limits, including unfilled cancellations, with an explicit 500-order saturation limit.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

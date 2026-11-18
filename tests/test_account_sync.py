@@ -365,7 +365,7 @@ def test_account_and_environment_identity_isolation(sync, monkeypatch):
 
 def test_unsupported_provider_is_explicit_and_does_not_construct_a_transport(sync, monkeypatch):
     connection = sync.store.add_connection(
-        ConnectionCreate(exchange="htx", label="Read account", api_key="key", secret="secret")
+        ConnectionCreate(exchange="cryptocom", label="Read account", api_key="key", secret="secret")
     )
     monkeypatch.setattr(
         sync.market, "client", lambda *args: pytest.fail("Do not authenticate unsupported imports")

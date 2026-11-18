@@ -74,6 +74,22 @@ def fetch_trade_page(exchange, kind: str, symbol: str, cursor: dict, limit: int)
 
     if kind in VENUES:
         return fetch_venue_page(exchange, kind, symbol, cursor, limit)
+    if kind == "phemex-spot":
+        from sibyl.exchanges.phemex_activity import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit)
+    if kind == "upbit-orders":
+        from sibyl.exchanges.upbit_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit)
+    if kind == "gate-cash":
+        from sibyl.exchanges.wallet_history import fetch_wallet_page
+
+        return fetch_wallet_page(exchange, "gate-cash", symbol, cursor, limit)
+    if kind == "htx-cash":
+        from sibyl.exchanges.wallet_history import fetch_wallet_page
+
+        return fetch_wallet_page(exchange, "htx-cash", symbol, cursor, limit)
     if kind == "bitfinex-window":
         from sibyl.exchanges.bitfinex_fills import fetch_fill_page
 

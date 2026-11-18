@@ -176,28 +176,34 @@ def fetch_order_fills(exchange, order_id, symbol, cursor, limit):
     parsed, keys = [], set()
     for row in raw:
         key = identity(row.get("id"))
-        if (
-            key in keys
-            or identity(row.get("order-id")) != order_id
-            or row.get("symbol") != market["id"]
-            or row.get("type") != parent["type"]
-            or row.get("source") not in {"spot-api", "spot-web", "spot-app", "api", "web", "app", "sys"}
-        ):
-            raise ccxt.ExchangeError("Unexpected HTX execution identity or account scope.")
+        if key in keys:
+            raise ccxt.ExchangeError("Duplicate HTX execution identity.")
         keys.add(key)
-        fill = normalize_trade(exchange.parse_trade(row, market))
-        fill.update(id=key, order=order_id)
-        # Deduction breakdowns need independent wallet evidence.
-        if (
-            row.get("fee-deduct-state") == "ongoing"
-            or row.get("fee-deduct-currency")
-            or (number(row.get("filled-points")) or 0) != 0
-        ):
-            fill.update(fee={"currency": None, "cost": None}, fees=[])
-        parsed.append(fill)
+        parsed.append(normalize_fill(exchange, row, market, parent))
     after = int(identity(cursor.get("after_id", "0")))
     remaining = sorted((fill for fill in parsed if int(fill["id"]) > after), key=lambda fill: int(fill["id"]))
     selected = remaining[:limit]
     return TradePage(
         selected, {"after_id": selected[-1]["id"] if selected else str(after)}, len(remaining) <= limit
     )
+
+
+def normalize_fill(exchange, row, market, parent):
+    """Keep the parent-bound native execution identity and explicit fee-deduction gaps."""
+    key, order_id = identity(row.get("id")), identity(parent.get("id"))
+    if (
+        identity(row.get("order-id")) != order_id
+        or row.get("symbol") != market["id"]
+        or row.get("type") != parent["type"]
+        or row.get("source") not in {"spot-api", "spot-web", "spot-app", "api", "web", "app", "sys"}
+    ):
+        raise ccxt.ExchangeError("Unexpected HTX execution identity or account scope.")
+    fill = normalize_trade(exchange.parse_trade(row, market))
+    fill.update(id=key, order=order_id)
+    if (
+        row.get("fee-deduct-state") == "ongoing"
+        or row.get("fee-deduct-currency")
+        or (number(row.get("filled-points")) or 0) != 0
+    ):
+        fill.update(fee={"currency": None, "cost": None}, fees=[])
+    return fill

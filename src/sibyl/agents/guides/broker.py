@@ -122,11 +122,12 @@ TRADE = {
         (
             "Open Executions and filter by account, symbol, record ID, mode, side, status or date.",
             "Use Order monitor for submitted orders and their filled/remaining quantities. Open Executions on an order for retained fill and fee evidence.",
-            "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. For Binance, KuCoin Classic, MEXC and HTX, enter exact pairs to add recent history to the open-order scan. Imported · read-only orders are managed at the exchange.",
+            "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. For Binance, KuCoin Classic, MEXC and HTX, enter exact pairs to add recent history to the open-order scan. Phemex requires exact pairs for both open and recent discovery. Imported · read-only orders are managed at the exchange.",
             "CoinEx open and recent order discovery covers cash spot accounts. Recent history scans finished pages within the app budget. CoinEx removes cancelled orders that had no executions, so a missing record needs venue inspection.",
             "BitMart provides open/recent spot order discovery, exact-order executions and selected-pair fill imports. Its unfilled API-cancelled records may disappear from order queries after 20 minutes. Inspect the provider coverage note if recovery cannot find one.",
+            "Phemex supports selected-pair spot order discovery, GTC recovery and native execution/history imports. Enter exact pairs before starting order sync. Currency scale gaps leave fees unknown. Gemini now also imports a bounded recent closed-order snapshot, including cancellations with no fills; a full 500-order response needs review.",
             "Bitfinex supports ordinary unflagged cash order discovery, GTC cid recovery, exact-order executions and selected-market Account history. Closed orders have up to two weeks of native coverage and exact-order trades up to ten days. Historical partial fills have cancelled remainders; margin activity stays separate. Account imports start with 90 days and preserve native fee costs and rebates.",
-            "Upbit Korea supports regular open/recent spot order discovery and GTC identifier recovery. Recent orders use creation time and capped windows split. Reserved orders, other regions and fill imports remain outside this coverage.",
+            "Upbit Korea supports regular open/recent spot order discovery and GTC identifier recovery. Recent orders use creation time and capped windows split. Exact executions and regular-order history are available. Per-fill fees stay unknown because only an aggregate fee is reported; closed orders created before the selected recent range may be missing. Reserved orders and other regions remain outside this coverage.",
             "Poloniex discovery covers explicitly unborrowed cash spot orders. Recent history uses update time, so an older order changed recently can appear. Pending cancellation stays active until confirmed. GTC client-ID recovery, parent-verified exact fills and selected-market Account history are available. Fill imports start with seven days; unavailable or borrowed parents need review.",
         ),
         (
@@ -139,7 +140,7 @@ TRADE = {
         (
             "Find the order in Order monitor and inspect status, cumulative filled quantity and remaining quantity.",
             "Check exchange reads status; Check executions imports retained native fills and fees. Enable tracking to continue supported background reads.",
-            "Gate and HTX support exact-order execution checks. Their broader Account history imports remain pending. Inspect Settings → Exchanges for each provider’s retention and fee limits.",
+            "Gate and HTX support exact-order checks and selected-market cash Account history. Imports start with seven days, verify parent wallets and keep fee-deduction gaps explicit. Inspect Settings → Exchanges for each provider’s retention and fee limits.",
             "Inspect incomplete pages, missing fees and differing evidence before treating an order as reconciled.",
         ),
         (

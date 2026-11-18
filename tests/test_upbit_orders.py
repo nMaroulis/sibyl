@@ -94,6 +94,8 @@ def test_lost_ack_recovery_uses_only_saved_identifier(upbit, monkeypatch):
 
     def lookup(params):
         reads.append(params.copy())
+        if "uuid" in params:
+            return order(trades_count=0, trades=[])
         assert params == {"identifier": writes[0]}
         return order(
             identifier=writes[0], executed_volume="0.004", remaining_volume="0.006", executed_funds="200"
@@ -107,7 +109,8 @@ def test_lost_ack_recovery_uses_only_saved_identifier(upbit, monkeypatch):
     recovered = ExchangeTrading(owner.market, owner.store).recover(uncertain["id"])
     assert recovered["recovery"]["state"] == "found" and recovered["filled"] == 0.004
     assert recovered["exchange_order_id"] == order()["uuid"] and recovered["cost"] == 200
-    assert len(writes) == len(reads) == 1 and "PRIVATE" not in json.dumps(recovered)
+    assert len(writes) == 1 and reads == [{"identifier": writes[0]}, {"uuid": order()["uuid"]}]
+    assert "PRIVATE" not in json.dumps(recovered)
 
 
 @pytest.mark.parametrize("budget,executed", [("500", None), ("500", "450")])
@@ -218,6 +221,7 @@ def test_settings_only_enable_implemented_upbit_reads():
     (provider,) = [row for row in provider_catalog()["items"] if row["id"] == "upbit"]
     features = {feature["id"]: feature for group in provider["support"] for feature in group["features"]}
     assert features["discovery"]["status"] == features["recovery"]["status"] == "available"
-    for name in ("history_import", "fill_reconciliation", "automated"):
+    for name in ("automated",):
         assert features[name]["status"] == "pending"
+    assert features["history_import"]["status"] == features["fill_reconciliation"]["status"] == "available"
     assert not provider["market_orders"]

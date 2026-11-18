@@ -65,7 +65,7 @@ def bitget_order(identity, **changes):
     }
 
 
-def test_gemini_discovers_open_regular_orders_only(manual_client, monkeypatch):
+def test_gemini_open_snapshot_selects_regular_orders_and_continues_history(manual_client, monkeypatch):
     owner = manual_client.app.state.services
     account, adapter = saved_account(owner, "gemini", "btcusd", quote="USD")
     requests = []
@@ -83,10 +83,15 @@ def test_gemini_discovers_open_regular_orders_only(manual_client, monkeypatch):
     service.discovery.enqueue(OrderDiscoveryRequest(account_id=account.id))
     advance(service, account)
     saved = job(service, account)
-    assert saved["complete"] and saved["skipped"] == 2 and requests == [{}]
+    assert (
+        not saved["complete"] and saved["stream"] == "recent" and saved["skipped"] == 2 and requests == [{}]
+    )
     (order,) = service.monitor(account_id=account.id)["items"]
     assert order["read_only"] and order["exchange_order_id"] == str(2**60 + 7)
-    assert not service.discovery.snapshot()["jobs"][0]["recent_enabled"]
+    assert service.discovery.snapshot()["jobs"][0]["recent_enabled"]
+    monkeypatch.setattr(adapter._exchange, "request", lambda *_: [])
+    advance(service, account)
+    assert job(service, account)["complete"]
 
 
 def test_gate_discovery_restarts_middle_of_grouped_open_pages(manual_client, monkeypatch):

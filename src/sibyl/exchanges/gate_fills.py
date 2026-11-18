@@ -34,21 +34,26 @@ def fetch_order_fills(exchange, order_id, symbol, cursor, limit):
     following = next_page(rows, cursor)
     parsed = []
     for row in rows:
-        if (
-            row.get("currency_pair") != market["id"]
-            or identity(row.get("order_id")) != order_id
-            or row.get("side") != parent["side"]
-            or row.get("trade_quote") not in (None, "", market["quoteId"])
-        ):
-            raise ccxt.ExchangeError("Unexpected Gate execution market, order or direction.")
-        if row.get("point_fee") not in (None, "") and number(row["point_fee"]) != 0:
-            raise ccxt.NotSupported("Gate point-card fees require separate wallet accounting.")
-        fill = normalize_trade(exchange.parse_trade(row, market))
-        fill.update(id=identity(row.get("id")), order=order_id)
-        stamp = number(row.get("create_time_ms"))
-        if stamp is not None:
-            fill["timestamp"] = stamp
-        if fill["timestamp"] is None or fill["timestamp"] <= 0:
-            raise ccxt.ExchangeError("Missing Gate execution time.")
-        parsed.append(fill)
+        parsed.append(normalize_fill(exchange, row, market, parent, order_id))
     return TradePage(parsed, {**following, "start": start, "end": end} if following else {}, not rows)
+
+
+def normalize_fill(exchange, row, market, parent, order_id):
+    """Share exact cash parent validation and fee observations across both import paths."""
+    if (
+        row.get("currency_pair") != market["id"]
+        or identity(row.get("order_id")) != order_id
+        or row.get("side") != parent["side"]
+        or row.get("trade_quote") not in (None, "", market["quoteId"])
+    ):
+        raise ccxt.ExchangeError("Unexpected Gate execution market, order or direction.")
+    if row.get("point_fee") not in (None, "") and number(row["point_fee"]) != 0:
+        raise ccxt.NotSupported("Gate point-card fees require separate wallet accounting.")
+    fill = normalize_trade(exchange.parse_trade(row, market))
+    fill.update(id=identity(row.get("id")), order=order_id)
+    stamp = number(row.get("create_time_ms"))
+    if stamp is not None:
+        fill["timestamp"] = stamp
+    if fill["timestamp"] is None or fill["timestamp"] <= 0:
+        raise ccxt.ExchangeError("Missing Gate execution time.")
+    return fill

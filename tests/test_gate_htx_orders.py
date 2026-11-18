@@ -266,9 +266,9 @@ def test_capability_catalog_distinguishes_exact_order_fills_from_account_history
             feature["id"]: feature for group in providers[name]["support"] for feature in group["features"]
         }
         assert features["fill_reconciliation"]["status"] == "available"
-        assert features["history_import"]["status"] == "pending"
+        assert features["history_import"]["status"] == "available"
         assert features["automated"]["status"] == "pending"
-        assert providers[name]["history_import"] is None
+        assert providers[name]["history_import"] is not None
 
 
 def test_htx_open_pages_accept_an_inclusive_boundary_and_reject_wallet_changes(manual_client, monkeypatch):

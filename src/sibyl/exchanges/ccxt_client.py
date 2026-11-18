@@ -11,6 +11,7 @@ from sibyl.exchanges.funding import FundingPage, fetch_funding_page, funding_str
 from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
 from sibyl.exchanges.order_discovery import (
     DISCOVERY_HISTORY_PAIRS,
+    DISCOVERY_OPEN_PAIRS,
     DISCOVERY_PROVIDERS,
     OrderDiscoveryPage,
     discovery_page,
@@ -319,7 +320,9 @@ class CCXTClient(ExchangeClient):
             if not self._private:
                 raise ccxt.AuthenticationError("A saved account is required.")
             markets = self.load_markets()
-            if self.id in DISCOVERY_HISTORY_PAIRS and stream == "recent":
+            if self.id in DISCOVERY_OPEN_PAIRS and not symbols:
+                raise ValueError("Choose exact pairs for this exchange’s open-order discovery.")
+            if self.id in DISCOVERY_OPEN_PAIRS or (self.id in DISCOVERY_HISTORY_PAIRS and stream == "recent"):
                 for symbol in symbols:
                     self.market(symbol)
             page = discovery_page(self._exchange, self.id, stream, cursor, start, end, symbols)
@@ -341,7 +344,7 @@ class CCXTClient(ExchangeClient):
         if not 1 <= limit <= 100:
             raise ValueError("Order execution page size must be between 1 and 100.")
         with self.lock:
-            self._require("fetchMyTrades", private=True)
+            self._require("fetchOrder" if self.id == "upbit" else "fetchMyTrades", private=True)
             self.market(symbol)
             return fetch_order_fill_page(self._exchange, kind, order_id, symbol, cursor, limit)
 
@@ -366,7 +369,7 @@ class CCXTClient(ExchangeClient):
         if not self.history_kind:
             return super().fetch_trade_page(symbol, cursor, limit)
         with self.lock:
-            self._require("fetchMyTrades", private=True)
+            self._require("fetchOrder" if self.id == "upbit" else "fetchMyTrades", private=True)
             self.market(symbol)
             return fetch_trade_page(self._exchange, self.history_kind, symbol, cursor, limit)
 

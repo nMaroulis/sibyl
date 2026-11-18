@@ -13,6 +13,7 @@ from sibyl.exchanges import (
     htx_orders,
     kucoin_orders,
     mexc_activity,
+    phemex_activity,
     poloniex_orders,
     upbit_orders,
 )
@@ -47,19 +48,30 @@ DISCOVERY_PROVIDERS = {
     "bitfinex",
     "poloniex",
     "upbit",
+    "phemex",
     "demo",
 }
 DAY_MS = 86_400_000
-DISCOVERY_OPEN_ONLY = {"bitstamp", "gemini"}
-DISCOVERY_HISTORY_PAIRS = {"binance", "binanceus", "binance-testnet", "kucoin", "mexc", "htx"}
+DISCOVERY_OPEN_ONLY = {"bitstamp"}
+DISCOVERY_OPEN_PAIRS = {"phemex"}
+DISCOVERY_HISTORY_PAIRS = {
+    "binance",
+    "binanceus",
+    "binance-testnet",
+    "kucoin",
+    "mexc",
+    "htx",
+    "phemex",
+}
 DISCOVERY_NOTES = {
+    "phemex": "Phemex requires selected pairs for both open and recent spot orders. Native spot endpoints exclude margin and derivatives. Recent pages use frozen creation-time bounds and offset checkpoints.",
     "bitfinex": "Bitfinex imports ordinary unflagged EXCHANGE LIMIT/MARKET cash orders. Recent history filters creation time within the selected window; native closed history covers up to two weeks. Margin, linked, expiring and flagged orders are excluded.",
     "upbit": "Upbit Korea imports regular open orders and closed orders created within the selected one-to-seven-day window. Reserved orders and regional API variants are excluded. Capped history windows split; saturated timestamp groups need review.",
     "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
     "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
     "kucoin": "KuCoin Classic open-order discovery uses Spot API permission. Recent history uses selected pairs, with up to two days for cancellations and seven days for filled orders.",
     "bitstamp": "Bitstamp discovery covers account-wide open spot limit orders. Individual order and fill checks are available for imported orders.",
-    "gemini": "Gemini discovery covers account-wide open spot limit orders for the API key’s account.",
+    "gemini": "Gemini imports account-wide open spot limits and a bounded recent closed-order snapshot, including unfilled cancellations. A full 500-order history response reports a coverage limit; master-key subaccount routing remains excluded.",
     "gate": "Gate scans open and recently finished cash spot orders. Recent history uses Gate’s finish time.",
     "bitget": "Bitget discovery covers open and recent ordinary Classic spot orders. API-cancelled orders are retained for up to two hours. Managed subaccount history depends on its binding time.",
     "poloniex": "Poloniex imports explicitly unborrowed cash spot orders. Recent history uses update time; cancelled orders are archived after seven days and other terminal orders after 90 days. Smart orders are excluded.",
@@ -190,6 +202,16 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
         return OrderDiscoveryPage(
             *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
         )
+
+    if provider == "phemex":
+        return OrderDiscoveryPage(
+            *phemex_activity.discover_page(exchange, stream, cursor, start, end, symbols)
+        )
+
+    if provider == "gemini" and stream == "recent":
+        from sibyl.exchanges.gemini_orders import recent_page
+
+        return OrderDiscoveryPage(*recent_page(exchange, cursor, start, end, symbols))
 
     if provider == "bitfinex":
         return OrderDiscoveryPage(*bitfinex_orders.discover_page(exchange, stream, cursor, start, end))

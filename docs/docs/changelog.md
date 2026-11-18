@@ -57,6 +57,26 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Phemex adds selected-pair open spot order discovery. Trade requires exact pairs before queuing Phemex and shows that its open-order scope differs from account-wide snapshots.
+
+- Phemex recent spot order discovery freezes creation bounds and saves native offset checkpoints across restart.
+
+- Phemex base-sized spot GTC limits can recover uncertain submissions by exact saved clOrdID and original native order evidence.
+
+- Phemex exact-order reconciliation imports native execution UUIDs, converts nanosecond source times without floating-point rounding and uses verified currency scales for fee costs. Quote budgets stay separate from executed quantities and costs.
+
+- Phemex selected-market Account history starts with seven days, saves native pages and overlaps one day on later passes. Exact-order checks share its execution identities and corrections.
+
+- Gate selected-market cash Account history verifies native parent-wallet scope and resumes fixed seven-day numbered queries. Point-card fees remain a review boundary.
+
+- HTX selected-market spot Account history verifies the native wallet and parent orders, retains 48-hour range checkpoints and splits saturated execution timestamps. Unverified fee deductions remain unknown.
+
+- Upbit Korea exact-order reconciliation imports individual execution UUIDs and checks the native trade count. Aggregate paid fees are not guessed into per-execution fees.
+
+- Upbit Korea Account history checkpoints regular current open orders, recent creation-window closed orders and their execution details. It shares native IDs with exact-order checks; older closed-order coverage and per-fill fees remain incomplete.
+
+- Gemini recent discovery uses its documented closed-order endpoint, including cancelled orders without fills. A full 500-order response reports a coverage limit rather than guessing timestamp continuation.
+
 - Bitfinex adds account-wide ordinary cash open-order discovery. Margin, linked, expiring and flagged order instructions remain outside this discovery scope.
 
 - Bitfinex recent-order discovery uses fixed creation-time windows and saved splits for capped responses. Historical partial fills show the cancelled remainder; native creation time is preserved separately from updates.

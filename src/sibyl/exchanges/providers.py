@@ -191,6 +191,7 @@ class GateClient(CCXTClient):
     """Gate spot wallet with optional sandbox credentials."""
 
     id = "gate"
+    history_kind = "gate-cash"
     order_fill_kind = "gate-order"
     options = {"fetchMarkets": {"types": ["spot"]}, "unifiedAccount": False}
     balance_params = {"type": "spot"}
@@ -283,6 +284,7 @@ class HTXClient(CCXTClient):
     """HTX spot account, excluding margin and swaps."""
 
     id = "htx"
+    history_kind = "htx-cash"
     order_fill_kind = "htx-order"
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20)
@@ -487,7 +489,17 @@ class PhemexClient(CCXTClient):
     """Phemex spot wallet and optional testnet."""
 
     id = "phemex"
+    history_kind = "phemex-spot"
     balance_params = {"type": "spot"}
+
+    def _order(self, row: dict) -> dict:
+        """Correct native spot scaling and quote-sized requests across every order read."""
+        from sibyl.exchanges.phemex_activity import parse_order
+
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("symbol"):
+            row = parse_order(self._exchange, native, self._exchange.market(row["symbol"]))
+        return CCXTClient._order(row)
 
     def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
         """Phemex spot accepts native GoodTillCancel rather than unified GTC."""
@@ -532,6 +544,7 @@ class UpbitClient(CCXTClient):
     """Upbit default endpoint; regional API variants require their own adapter."""
 
     id = "upbit"
+    history_kind = "upbit-orders"
 
     @staticmethod
     def _order(row: dict) -> dict:
