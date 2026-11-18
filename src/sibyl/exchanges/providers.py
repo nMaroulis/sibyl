@@ -367,6 +367,16 @@ class CryptoComClient(CCXTClient):
                     order.update(amount=None, remaining=None)
         return order
 
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Submit a base-sized cash IOC market order; never replace quantity with notional."""
+        return self._exchange.create_order(
+            symbol,
+            "market",
+            side,
+            amount,
+            params={"client_oid": client_order_id, "timeInForce": "IOC", "spot_margin": "SPOT"},
+        )
+
     def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
         """The installed SDK omits unified clientOrderId; send native client_oid."""
         return self._exchange.create_order(
@@ -404,6 +414,13 @@ class BitfinexClient(CCXTClient):
     def format_client_order_id(self, identity: str) -> str:
         """Bitfinex cid is a positive int45; admission rejects any local collision."""
         return str(int(identity.replace("-", "")[:11], 16) + 1)
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Keep the native cash EXCHANGE MARKET type, signed base amount and int45 cid."""
+        cid = int(client_order_id)
+        if not 0 < cid < 2**45:
+            raise ValueError("Bitfinex client order ID must be a positive int45.")
+        return self._exchange.create_order(symbol, "market", side, amount, params={"cid": cid})
 
     def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
         """Use integer cid and a native non-margin EXCHANGE LIMIT."""
@@ -522,6 +539,20 @@ class PhemexClient(CCXTClient):
         if isinstance(native, dict) and native.get("symbol"):
             row = parse_order(self._exchange, native, self._exchange.market(row["symbol"]))
         return CCXTClient._order(row)
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Use spot base quantities and native IOC without a quote budget or reference price."""
+        return self._exchange.create_order(
+            symbol,
+            "market",
+            side,
+            amount,
+            params={
+                "clientOrderId": client_order_id,
+                "qtyType": "ByBase",
+                "timeInForce": "ImmediateOrCancel",
+            },
+        )
 
     def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
         """Phemex spot accepts native GoodTillCancel rather than unified GTC."""

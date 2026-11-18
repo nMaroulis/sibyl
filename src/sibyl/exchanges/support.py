@@ -13,6 +13,12 @@ from sibyl.exchanges.order_lookup import RECOVERY_NOTES, RECOVERY_PROVIDERS
 from sibyl.exchanges.spot_history import history_note
 from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
 
+MARKET_NOTES = {
+    "bitfinex": " Exchange-wallet EXCHANGE MARKET with a signed base amount and saved int45 cid; margin flags are excluded.",
+    "phemex": " Spot ByBase IOC market orders preserve baseQtyEv and clOrdID; no quote budget is substituted.",
+    "cryptocom": " Cash SPOT IOC market orders preserve native quantity and client_oid, including buys; no notional substitution.",
+}
+
 KEY_STORAGE = (
     "API keys are stored locally and encrypted on the machine running Sibyl's Python backend. "
     "Only the backend uses them to authenticate with your exchange; they are never returned "
@@ -91,6 +97,7 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
                     "Market buy & sell",
                     market_orders,
                     "Reviewed base-asset quantity; preview and explicit confirmation required."
+                    + MARKET_NOTES.get(spec.id, "")
                     if market_orders
                     else "Native market orders are unavailable through the installed Gemini adapter; GTC limits are available."
                     if spec.id == "gemini"

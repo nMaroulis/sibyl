@@ -344,8 +344,9 @@ def test_new_adapters_do_not_enable_unreviewed_execution(monkeypatch, identity):
 def test_market_submission_never_retries_ambiguous_response(monkeypatch, identity):
     client = fake_client(monkeypatch, identity)
     client._exchange.failure = ccxt.RequestTimeout("PRIVATE-SENTINEL")
+    client_id = client.format_client_order_id("135d8630-4dcc-4bfe-8918-41555302a029")
     with pytest.raises(ccxt.RequestTimeout):
-        client.create_order("BTC/USDT", "market", "buy", 1, {"clientOrderId": "unique-id"})
+        client.create_order("BTC/USDT", "market", "buy", 1, {"clientOrderId": client_id})
     assert client._exchange.calls == 1
     with pytest.raises(ValueError):
         client.create_order("BTC/USDT", "limit", "buy", 1, {"clientOrderId": "unique-id"})

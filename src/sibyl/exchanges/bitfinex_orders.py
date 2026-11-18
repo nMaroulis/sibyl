@@ -151,7 +151,6 @@ def lookup_page(exchange, client_id, symbol, cursor, start, end):
         meta = row[31] if len(row) > 31 else None
         if (
             not cash_order(row)
-            or row[8] != "EXCHANGE LIMIT"
             or row[1] not in (None, 0)
             or row[9] not in (None, "")
             or row[24] not in (None, 0)
@@ -162,7 +161,7 @@ def lookup_page(exchange, client_id, symbol, cursor, start, end):
                 and (meta.get("$F7") not in (None, 0) or meta.get("$F33") not in (None, 0))
             )
         ):
-            raise ValueError("Bitfinex evidence differs from the reviewed cash GTC limit.")
+            raise ValueError("Bitfinex evidence differs from the reviewed cash order.")
         candidates.append(parse_order(exchange, row, market, recent=recent))
     return candidates, following, not following
 

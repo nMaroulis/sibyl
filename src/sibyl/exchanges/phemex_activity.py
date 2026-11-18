@@ -135,7 +135,7 @@ def discover_page(exchange, stream, cursor, start, end, symbols):
 
 
 def lookup_order(exchange, client_id, symbol):
-    """Read the exact clOrdID and require original base-sized spot GTC limit terms."""
+    """Read the exact clOrdID and require base-sized spot GTC limit or IOC market terms."""
     if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", client_id):
         raise ValueError("Invalid persisted Phemex client order ID.")
     market = exchange.market(symbol)
@@ -152,13 +152,17 @@ def lookup_order(exchange, client_id, symbol):
         not regular_order(row)
         or row.get("clOrdID") != client_id
         or row.get("symbol") != market["id"]
-        or row.get("ordType") != "Limit"
         or row.get("qtyType") != "ByBase"
-        or row.get("timeInForce") != "GoodTillCancel"
+        or (number(row.get("baseQtyEv")) or 0) <= 0
+        or (row.get("ordType"), row.get("timeInForce"))
+        not in {
+            ("Limit", "GoodTillCancel"),
+            ("Market", "ImmediateOrCancel"),
+        }
         or row.get("ordStatus") not in OPEN | TERMINAL
         or row.get("side") not in {"Buy", "Sell"}
     ):
-        raise ValueError("Phemex evidence differs from the reviewed spot GTC limit.")
+        raise ValueError("Phemex evidence differs from the reviewed base-sized spot order.")
     identity(row.get("createTimeNs"))
     return [parse_order(exchange, row, market)]
 

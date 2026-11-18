@@ -55,9 +55,9 @@ RECOVERY_PROVIDERS = {
 
 
 RECOVERY_NOTES = {
-    "cryptocom": "Recover ordinary cash GTC limits by exact client_oid with verified account, sizing and creation evidence. Missing or margin/advanced evidence remains uncertain.",
-    "phemex": "Recover base-sized spot GTC limits by exact clOrdID on the selected pair. Original native terms and creation time must match; missing client evidence remains uncertain.",
-    "bitfinex": "Recover ordinary EXCHANGE LIMIT orders by saved int45 cid, verified original terms and API origin. Open and bounded closed matches are inspected; closed history covers up to two weeks. Margin, flagged and linked orders are excluded.",
+    "cryptocom": "Recover base-sized cash GTC limits and IOC markets by exact client_oid with verified account, sizing and creation evidence. Missing or margin/advanced evidence remains uncertain.",
+    "phemex": "Recover base-sized spot GTC limits and IOC market orders by exact clOrdID on the selected pair. Original native terms and creation time must match; missing client evidence remains uncertain.",
+    "bitfinex": "Recover ordinary EXCHANGE LIMIT/MARKET orders by saved int45 cid, verified original terms and API origin. Open and bounded closed matches are inspected; closed history covers up to two weeks. Margin, flagged and linked orders are excluded.",
     "upbit": "Recover regular spot GTC limits on the default Upbit Korea endpoint using the exact saved identifier and original order details. Reserved, SMP and non-GTC instructions are excluded.",
     "okx": "Look up the saved client ID on the exact cash spot instrument. OKX returns the latest match, so Sibyl also verifies creation time and reviewed order details.",
     "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",

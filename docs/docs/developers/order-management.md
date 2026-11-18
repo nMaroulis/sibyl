@@ -1,6 +1,6 @@
 # Order management
 
-Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native observations, tracking preferences and cancellation commands. This is a local, single-API-worker workflow. It does not connect automated strategies or ProtoLink tools to execution.
+Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native observations, tracking preferences and cancellation commands. This is a local, single-API-worker workflow. Separately approved strategies on their own provider allowlist reuse its durable intents; ProtoLink tools remain read-only.
 
 ## Provider scope
 
@@ -10,11 +10,18 @@ Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native 
 | Binance Testnet, Coinbase Exchange Sandbox                                                     | Yes                        | Yes                   | Yes                  | REST native order ID                |
 | Demo                                                                                           | Existing paper market form | Virtual resting order | Virtual cancellation | Local synthetic matcher             |
 | Gemini                                                                                         | No                         | Yes                   | Yes                  | REST native order ID                |
-| Other configured exchanges                                                                     | No                         | No                    | No                   | Read-only adapter capabilities vary |
+| Bitfinex, Phemex, Crypto.com Exchange                                                           | Yes · base quantity        | Yes                   | Yes                  | Cash scope and native client ID     |
+| Gate, Bitget Classic, MEXC, HTX, CoinEx, BitMart, Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
 
 Native account acceptance testing remains outstanding. Contract tests use controlled transports; they do not establish production account permissions, regional availability or authenticated exchange acceptance. Coinbase Advanced and Coinbase Exchange Sandbox use different APIs.
 
 The adapter sends a base-quantity limit with `timeInForce=GTC`, an exact price and a generated client ID. Coinbase Advanced uses native `client_order_id` because its SDK path drops the unified spelling. There are no user-supplied transport flags, derivative orders or silent precision rounding. Preview checks exact quantity/price precision, active spot status, native amount/cost/price limits and free funds. Native buys require a conservative 1% buffer; this is neither a fee quote nor a slippage guarantee. Actual venue requirements still apply.
+
+## Additional cash market adapters
+
+Bitfinex uses native `EXCHANGE MARKET`, a signed base amount and the saved positive int45 cid. Phemex uses the spot endpoint with `qtyType=ByBase`, `baseQtyEv`, `clOrdID` and `ImmediateOrCancel`. Crypto.com Exchange uses `spot_margin=SPOT`, native base `quantity`, `client_oid` and `IMMEDIATE_OR_CANCEL`. Neither Phemex nor Crypto.com substitutes a quote budget for the approved buy quantity. Existing server enablement, active-account checks, precision/funds validation, the expiring typed review and at-most-once write records apply.
+
+These providers also have [read-only recovery](order-recovery.md) for the reviewed market terms and shared individual-fill reconciliation. New market support does not extend the separate strategy provider allowlist. A market reference is an estimate, not a price or quote-spend cap. Live provider acceptance remains outstanding. Contracts: [Bitfinex submit](https://docs.bitfinex.com/reference/rest-auth-submit-order), [Phemex spot submit](https://github.com/phemex/phemex-api-docs/blob/master/Public-Spot-API-en.md#spotPlaceOrder), [Crypto.com submit](https://exchange-developer.crypto.com/exchange/v1/docs/api/rest-single-page/#privatecreate-order).
 
 ## Native advanced orders
 

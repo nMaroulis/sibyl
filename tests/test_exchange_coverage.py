@@ -50,7 +50,9 @@ def test_sdk_flags_cannot_enable_unreviewed_writes_or_imports():
         "native",
     )
     groups = support_groups(
-        replace(exchange_spec("cryptocom"), id="unreviewed", limit_only=False), capabilities, None
+        replace(exchange_spec("cryptocom"), id="unreviewed", limit_only=False, market_orders=False),
+        capabilities,
+        None,
     )
     rows = {row["id"]: row for group in groups for row in group["features"]}
     assert next(group for group in groups if group["id"] == "spot")["summary"]["status"] == "unsupported"
@@ -69,7 +71,9 @@ def test_sdk_flags_cannot_enable_unreviewed_writes_or_imports():
     assert account["summary"]["status"] == "supported"
     capabilities["balances"] = "unavailable"
     account = support_groups(
-        replace(exchange_spec("cryptocom"), id="unreviewed", limit_only=False), capabilities, None
+        replace(exchange_spec("cryptocom"), id="unreviewed", limit_only=False, market_orders=False),
+        capabilities,
+        None,
     )[0]
     assert account["summary"]["status"] == "partial"
     assert next(row for row in account["features"] if row["id"] == "permissions")["status"] == "unavailable"

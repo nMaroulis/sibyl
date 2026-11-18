@@ -139,15 +139,15 @@ EXCHANGES = (
     ),
     ExchangeSpec("mexc", "MEXC", limit_only=True),
     ExchangeSpec("htx", "HTX", limit_only=True),
-    ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True, limit_only=True),
+    ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True, market_orders=True),
     ExchangeSpec("bitstamp", "Bitstamp", market_orders=True),
     ExchangeSpec("gemini", "Gemini", sandbox=True, limit_only=True),
     ExchangeSpec(
-        "bitfinex", "Bitfinex", limit_only=True, account="Exchange wallet; margin/funding wallets excluded"
+        "bitfinex", "Bitfinex", market_orders=True, account="Exchange wallet; margin/funding wallets excluded"
     ),
     ExchangeSpec("coinex", "CoinEx", limit_only=True),
     ExchangeSpec("bitmart", "BitMart", "API key + secret + API memo", uid=True, limit_only=True),
-    ExchangeSpec("phemex", "Phemex", sandbox=True, limit_only=True),
+    ExchangeSpec("phemex", "Phemex", sandbox=True, market_orders=True),
     ExchangeSpec("poloniex", "Poloniex", limit_only=True),
     ExchangeSpec(
         "upbit",

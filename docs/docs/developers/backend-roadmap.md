@@ -28,7 +28,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Twenty production spot-exchange clients, Binance Testnet, Coinbase Exchange Sandbox, and the persistent offline Demo account.
 - Public markets, candles, order-book snapshots, indicators, correlations and account balance reads.
 - Portfolio/account views, allocation, observed account-value snapshots and explicit unpriced holdings.
-- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for Binance, Binance.US, Coinbase, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp and the two dedicated test clients; GTC limits and cancellation for Gemini and the eleven remaining configured production providers. These additions do not enable market execution, strategies, recovery or exact-order reconciliation. Settings shows app-level support and gaps per exchange.
+- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for eleven production providers, including Bitfinex, Phemex and Crypto.com Exchange, plus the two dedicated test clients. The other nine configured production providers have reviewed GTC limits and cancellation. Recovery, exact executions and the separate strategy execution allowlist have provider-specific scope; Settings shows the implemented features and gaps.
 - Six rule-based strategies, cost-aware historical backtests, exact-input reruns, chart execution overlays, round-trip accounting, comparable saved runs and explicit Demo research/paper runs.
 - Sibyl orchestration and ten ProtoLink module agents with a startup runtime registry, client routing, contextual read-only tools, saved conversations and consultation evidence.
 - Live Sibyl consultation progress, request-specific cancellation and retained outcomes/evidence for completed, stopped, failed or interrupted requests. Startup marks unfinished requests interrupted without replaying them.
@@ -160,6 +160,12 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Recover Crypto.com Exchange ordinary cash GTC limits through exact client_oid details and verified original terms.
 - [x] Reconcile Crypto.com Exchange individual cash executions with native trade IDs, parent account proof and signed fee observations.
 - [x] Import Crypto.com Exchange selected-market cash history through resumable seven-day queries, one-day overlap and shared exact-order identities.
+- [x] Add reviewed Bitfinex cash EXCHANGE MARKET buys/sells with signed base quantities and saved int45 client IDs.
+- [x] Add reviewed Phemex ByBase spot IOC market buys/sells without quote-budget substitution.
+- [x] Add reviewed Crypto.com Exchange SPOT IOC market buys/sells with native base quantity and client_oid.
+- [x] Recover uncertain Bitfinex ordinary cash market submissions by saved cid, native original size and complete bounded open/closed evidence.
+- [x] Recover uncertain Phemex base-sized IOC market submissions by exact clOrdID and original baseQtyEv evidence.
+- [x] Recover uncertain Crypto.com base-sized cash IOC market submissions by exact client_oid and native original quantity.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

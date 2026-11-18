@@ -241,7 +241,7 @@ def test_exact_execution_snapshot_pages_by_large_native_ids(bitfinex, monkeypatc
     "change",
     [
         {"8": "LIMIT"},
-        {"8": "EXCHANGE MARKET"},
+        {"8": "EXCHANGE STOP"},
         {"12": 4096},
         {"25": 111},
         {"10": 1234},
@@ -314,4 +314,4 @@ def test_settings_enable_reviewed_cash_reads_only():
     features = {feature["id"]: feature for group in provider["support"] for feature in group["features"]}
     for name in ("discovery", "recovery", "history_import", "fill_reconciliation"):
         assert features[name]["status"] == "available"
-    assert features["automated"]["status"] == "pending" and not provider["market_orders"]
+    assert features["automated"]["status"] == "pending" and provider["market_orders"]

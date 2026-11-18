@@ -174,7 +174,7 @@ def discover_page(exchange, stream, cursor, start, end, symbols):
 
 
 def lookup_order(exchange, client_id, symbol):
-    """Read the saved client_oid and require unchanged ordinary cash GTC limit terms."""
+    """Read the saved client_oid for base-sized cash GTC limits or IOC market orders."""
     if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,36}", client_id):
         raise ValueError("Invalid persisted Crypto.com client order ID.")
     try:
@@ -186,10 +186,14 @@ def lookup_order(exchange, client_id, symbol):
         not cash_order(row)
         or row.get("client_oid") != client_id
         or row.get("instrument_name") != market["id"]
-        or row.get("order_type") != "LIMIT"
-        or row.get("time_in_force") != "GOOD_TILL_CANCEL"
+        or (row.get("order_type"), row.get("time_in_force"))
+        not in {
+            ("LIMIT", "GOOD_TILL_CANCEL"),
+            ("MARKET", "IMMEDIATE_OR_CANCEL"),
+        }
+        or (number(row.get("quantity")) or 0) <= 0
         or row.get("exec_inst") != []
         or row.get("status") not in OPEN | TERMINAL
     ):
-        raise ValueError("Crypto.com order evidence differs from the reviewed cash GTC limit.")
+        raise ValueError("Crypto.com order evidence differs from the reviewed base-sized cash order.")
     return [parse_order(exchange, row, market)]

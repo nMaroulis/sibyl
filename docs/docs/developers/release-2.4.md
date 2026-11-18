@@ -78,6 +78,12 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Recover Crypto.com Exchange ordinary cash GTC limits through exact client_oid details and verified original terms.
 - [x] Reconcile Crypto.com Exchange individual cash executions with native trade IDs, parent account proof and signed fee observations.
 - [x] Import Crypto.com Exchange selected-market cash history through resumable seven-day queries, one-day overlap and shared exact-order identities.
+- [x] Add reviewed Bitfinex cash EXCHANGE MARKET buys/sells with signed base quantities and saved int45 client IDs.
+- [x] Add reviewed Phemex ByBase spot IOC market buys/sells without quote-budget substitution.
+- [x] Add reviewed Crypto.com Exchange SPOT IOC market buys/sells with native base quantity and client_oid.
+- [x] Recover uncertain Bitfinex ordinary cash market submissions by saved cid, native original size and complete bounded open/closed evidence.
+- [x] Recover uncertain Phemex base-sized IOC market submissions by exact clOrdID and original baseQtyEv evidence.
+- [x] Recover uncertain Crypto.com base-sized cash IOC market submissions by exact client_oid and native original quantity.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

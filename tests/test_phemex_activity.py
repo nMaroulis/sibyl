@@ -254,7 +254,7 @@ def test_settings_expose_only_implemented_phemex_workflows():
         features[name]["status"] == "available"
         for name in ("discovery", "recovery", "history_import", "fill_reconciliation")
     )
-    assert features["automated"]["status"] == "pending" and not provider["market_orders"]
+    assert features["automated"]["status"] == "pending" and provider["market_orders"]
 
 
 def test_discount_token_fee_is_not_presented_as_zero_quote_fee(phemex, monkeypatch):

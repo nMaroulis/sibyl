@@ -253,14 +253,14 @@ def test_market_buy_notional_is_not_presented_as_executed_base_or_cost(crypto, m
     assert row["amount"] is None and row["remaining"] is None and row["cost"] is None
 
 
-def test_provider_catalog_enables_reads_without_enabling_market_or_automated_writes():
+def test_provider_catalog_enables_manual_market_orders_without_automated_writes():
     provider = next(row for row in provider_catalog()["items"] if row["id"] == "cryptocom")
     features = {f["id"]: f for group in provider["support"] for f in group["features"]}
     assert all(
         features[name]["status"] == "available"
         for name in ("discovery", "recovery", "fill_reconciliation", "history_import")
     )
-    assert features["market_orders"]["status"] == "pending" and features["automated"]["status"] == "pending"
+    assert features["market_orders"]["status"] == "available" and features["automated"]["status"] == "pending"
 
 
 def test_inconsistent_nanosecond_time_cannot_commit_any_part_of_a_history_page(crypto, monkeypatch):
