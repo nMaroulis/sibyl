@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Bitstamp resting spot GTC limits can recover from an uncertain submission. Sibyl matches the saved client ID to fresh order status and verifies the original amount and limit price on the selected pair’s open-order list.
+
 - Bitfinex adds manually reviewed cash `EXCHANGE MARKET` buys and sells, preserving signed base amounts and the saved integer client ID.
 - Phemex adds manually reviewed `ByBase` spot IOC market buys and sells, without converting a buy into a quote budget.
 - Crypto.com Exchange adds manually reviewed cash SPOT IOC market buys and sells using native base quantity and `client_oid`.

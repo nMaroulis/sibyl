@@ -2,15 +2,15 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — November 10, 2026
+## Audited snapshot — November 18, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Unchecked entries bundle broad follow-up scopes and acceptance work; completing an extension does not necessarily close its whole parent entry. Multi-user work is deferred and excluded from the local implementation sequence.
 
 | Area                           | Current state | Next missing foundation                                                                                                    |
 | ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.                              |
+| Account synchronization        | partial       | Widen funding coverage and historical depth. Spot fill imports are already available for the configured exchanges.                              |
 | Portfolio accounting           | partial       | Complete history/flows, wider fee policies and wallet coverage beyond retained cross-pair FIFO.                                                   |
-| Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
+| Order management               | partial       | MEXC market execution and recovery, Bitstamp closed-order coverage, and broader conditional and replacement orders.                 |
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Venue and failure-case acceptance, ownership repair and definitive venue settlement.                      |
@@ -51,7 +51,8 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Add resumable selected-market MEXC fill imports with native deal/order identity, timestamp-window splits and exact-order deduplication.
 - [x] Add resumable CoinEx cash spot fill imports with native `has_next`, frozen date bounds, reported fees and shared exact-order identities.
 - [x] Add resumable BitMart v4 cash spot fill imports with native date bounds, timestamp saturation checks and reported fee corrections.
-- [ ] Review durable import pagination for the remaining exchange providers.
+- [x] Add bounded, resumable selected-market spot fill imports across the configured production exchanges.
+- [ ] Expand historical depth and reconcile complete account activity across fills, funding and balances.
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
 - [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals, Kraken deposit/withdrawal/transfer entries and Bybit master-UID on-chain withdrawals, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
@@ -91,7 +92,9 @@ Reviewed market/GTC limit orders, exact precision checks, durable cancellation r
 
 Known orders now import native execution pages into the shared Account history ledger, compare quantity/cost and expose fee gaps in an in-place dialog. Three bounded terminal passes can pick up delayed evidence. [Client-ID recovery](order-recovery.md) now handles uncertain submissions on the reviewed clients with exact-detail checks and restart-safe bounded lookups; missing/ambiguous evidence remains uncertain. Complete settlement, broader provider support and authenticated acceptance remain pending. See [order/fill reconciliation](order-reconciliation.md).
 
-- [ ] Extend market execution, discovery/recovery and historical pagination for remaining providers; reviewed guarded GTC limit/cancel adapters are already implemented for all configured production providers.
+- [ ] Review MEXC cash market buys and sells with native base quantity, per-pair market support and client-ID recovery. Extend the same review to Gate, Bitget Classic, HTX, CoinEx, BitMart, Poloniex and Upbit where venue sizing matches Trade.
+- [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
+- [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
 - [x] Add native Binance/Testnet unfilled-only manual GTC replacement with estimated reservation release, STOP_ON_FAILURE/ONLY_NEW, durable compound-command admission and retained non-atomic outcomes. See [advanced orders](advanced-orders.md).
 - [ ] Extend replacement to additional providers, partially filled orders and complete amendment/lifecycle history.
@@ -166,6 +169,7 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Recover uncertain Bitfinex ordinary cash market submissions by saved cid, native original size and complete bounded open/closed evidence.
 - [x] Recover uncertain Phemex base-sized IOC market submissions by exact clOrdID and original baseQtyEv evidence.
 - [x] Recover uncertain Crypto.com base-sized cash IOC market submissions by exact client_oid and native original quantity.
+- [x] Recover resting Bitstamp spot GTC limits by exact client order ID, with original size and price corroborated by the selected pair’s open-order snapshot.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.
@@ -404,7 +408,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 
 ## Local implementation sequence
 
-1. **Reconciliation and venues:** remaining funding/history pagination, complete wallet/fee coverage, advanced-order adapters and authenticated failure-case acceptance.
+1. **Reconciliation and venues.** Review MEXC market execution and recovery first. Follow with remaining venue market adapters, Bitstamp closed-order evidence, deeper order history, wider funding coverage and authenticated failure-case acceptance.
 2. **Strategy ownership and deployment:** reviewed residual/manual inventory and explicitly approved multi-asset allocation execution beyond the implemented historical portfolio lab and separate causal ML/RL/Freqtrade research.
 3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
 4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.

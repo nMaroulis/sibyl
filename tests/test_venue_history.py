@@ -329,11 +329,13 @@ def test_gemini_break_updates_normalized_history_books_and_order_reconciliation(
     assert all(row["net_modeled_realized"] is None for row in book["items"])
 
 
-def test_catalog_only_claims_implemented_history_and_retains_recovery_gaps():
+def test_catalog_claims_implemented_history_and_scoped_recovery():
     for row in provider_catalog()["items"]:
         if row["id"] in {"bitstamp", "gemini"}:
             features = {item["id"]: item for group in row["support"] for item in group["features"]}
             assert features["history_import"]["status"] == "available"
             assert features["fill_reconciliation"]["status"] == "available"
-            assert features["recovery"]["status"] == ("available" if row["id"] == "gemini" else "pending")
+            assert features["recovery"]["status"] == "available"
+            if row["id"] == "bitstamp":
+                assert "resting spot GTC" in features["recovery"]["detail"]
             assert features["automated"]["status"] == "pending"

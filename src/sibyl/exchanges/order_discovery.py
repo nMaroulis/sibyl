@@ -8,6 +8,7 @@ from sibyl.exchanges import (
     bitfinex_orders,
     bitget_orders,
     bitmart_activity,
+    bitstamp_orders,
     coinex_activity,
     cryptocom_orders,
     gate_orders,
@@ -381,16 +382,7 @@ def _bitstamp_open(exchange) -> OrderDiscoveryPage:
         raise ccxt.NotSupported("Bitstamp open-order snapshot exceeds the reviewed budget.")
     orders = []
     for row in rows:
-        if (
-            row.get("margin_mode") not in (None, "", "NONE", "SPOT", "CASH")
-            or (row.get("leverage") not in (None, "") and number(row["leverage"]) not in (0, 1))
-            or row.get("subtype") not in (None, "", "LIMIT")
-            or row.get("reduce_only") not in (None, False)
-            or any(
-                row.get(key) not in (None, "") and number(row[key]) != 0
-                for key in ("stop_price", "activation_price", "trailing_delta")
-            )
-        ):
+        if not bitstamp_orders.cash_limit(row):
             continue
         side = str(row.get("type"))
         if side not in ("0", "1"):

@@ -50,6 +50,8 @@ Before contacting the exchange, Sibyl persists the intent as `submitting`. A rep
 
 Poloniex supports recovery for reviewed cash spot GTC limits. Its order sync includes open cash orders and terminal orders updated in the chosen recent window, even when created earlier. Borrowed orders are excluded. Exact-order execution checks and seven-day selected-market Account imports verify cash parent evidence before retaining fills. Missing or archived parents need review. Upbit Korea supports regular open/recent order discovery and GTC identifier recovery; individual execution checks and regular-order history are now available. Per-fill fees remain unknown, and older closed orders may be missing. Reserved orders and other regional endpoints remain outside that coverage.
 
+Bitstamp can recover a resting spot GTC limit using the saved client ID and the original size and price still visible in its open list. For a Bitstamp market or already closed order, inspect the venue using the saved client ID.
+
 Bitfinex supports manual cash market buys/sells, ordinary cash open/recent order sync and GTC/market recovery by saved client ID. Flagged, linked, expiring and margin orders are excluded. Closed-order reads cover up to two weeks, while the exact-order trades endpoint covers executions up to ten days old. A historical partial fill has a cancelled remainder.
 
 The exchange receives a `clientOrderId` where supported by the adapter. Application-level duplicate protection remains the primary protection because exchange support differs.

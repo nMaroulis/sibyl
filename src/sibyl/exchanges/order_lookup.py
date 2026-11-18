@@ -9,6 +9,7 @@ from sibyl.exchanges import (
     bitfinex_orders,
     bitget_orders,
     bitmart_activity,
+    bitstamp_orders,
     coinex_activity,
     cryptocom_orders,
     gate_orders,
@@ -39,6 +40,7 @@ RECOVERY_PROVIDERS = {
     "bybit",
     "kucoin",
     "gemini",
+    "bitstamp",
     "gate",
     "bitget",
     "mexc",
@@ -55,6 +57,7 @@ RECOVERY_PROVIDERS = {
 
 
 RECOVERY_NOTES = {
+    "bitstamp": "Recover resting spot GTC limits by exact client order ID and matching original size and price from the pair’s open-order list. Market and closed-order recovery remain pending.",
     "cryptocom": "Recover base-sized cash GTC limits and IOC markets by exact client_oid with verified account, sizing and creation evidence. Missing or margin/advanced evidence remains uncertain.",
     "phemex": "Recover base-sized spot GTC limits and IOC market orders by exact clOrdID on the selected pair. Original native terms and creation time must match; missing client evidence remains uncertain.",
     "bitfinex": "Recover ordinary EXCHANGE LIMIT/MARKET orders by saved int45 cid, verified original terms and API origin. Open and bounded closed matches are inspected; closed history covers up to two weeks. Margin, flagged and linked orders are excluded.",
@@ -111,6 +114,9 @@ def lookup_order_page(
 
     if provider == "kucoin":
         return _kucoin_lookup(exchange, client_id, symbol, cursor)
+
+    if provider == "bitstamp":
+        return OrderLookupPage(bitstamp_orders.lookup_order(exchange, client_id, symbol), {}, True)
 
     if provider == "gemini":
         return _gemini_lookup(exchange, client_id, symbol)
