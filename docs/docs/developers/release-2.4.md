@@ -2,6 +2,8 @@
 
 This release is being implemented in six dependency-ordered batches. Entries below are engineering work, not a claim of authenticated acceptance. Provider-specific limitations remain in the capability inventory. Multi-user hosting and cited web research remain deferred.
 
+v2.4.0 targets the remaining planned implementation work. The following release will focus on hands-on testing, robustness fixes, visual refinement and UX improvements. Automated validation remains part of each implementation batch; live provider acceptance is recorded separately.
+
 ## 1. Accounting and reconciliation
 
 - [x] Account/asset FIFO across trading pairs, historical reporting-currency conversion and third-currency fees/rebates, with unknown-basis and ordering evidence.
@@ -56,6 +58,11 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Discover Upbit Korea regular open spot orders with resumable numbered pages and reserved-order exclusions.
 - [x] Discover Upbit Korea recently created closed orders with durable timestamp splits and explicit saturation limits.
 - [x] Recover Upbit Korea regular GTC limits through exact identifier lookup and verified original terms.
+- [x] Discover account-wide Bitfinex ordinary cash open orders with explicit margin/flagged-order exclusions.
+- [x] Discover Bitfinex recent cash orders through durable creation-time splits and correct historical partial-fill status.
+- [x] Recover Bitfinex regular GTC limits by saved int45 cid through complete bounded open/closed checks.
+- [x] Reconcile Bitfinex exact-order cash executions with native IDs, signed fee effects and documented ten-day query coverage.
+- [x] Import Bitfinex selected-market exchange-wallet fills through frozen 90-day queries, saved timestamp splits and incremental overlap.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

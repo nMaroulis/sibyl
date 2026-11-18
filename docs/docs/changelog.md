@@ -57,6 +57,16 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Bitfinex adds account-wide ordinary cash open-order discovery. Margin, linked, expiring and flagged order instructions remain outside this discovery scope.
+
+- Bitfinex recent-order discovery uses fixed creation-time windows and saved splits for capped responses. Historical partial fills show the cancelled remainder; native creation time is preserved separately from updates.
+
+- Bitfinex GTC cash limits can recover uncertain submissions by saved int45 cid and verified API-origin terms. Both open and bounded closed matches are checked before attribution. Known orders can continue tracking through retained closed-order reads.
+
+- Bitfinex exact-order reconciliation imports actual cash executions and reported fee currencies. Native wallet-effect signs become positive fee costs and negative rebates. The native order-trades endpoint covers executions up to ten days old.
+
+- Bitfinex selected-market Account history freezes a 90-day cash-wallet query and saves capped-window splits across restart. Shared native IDs retain fee corrections without duplicate fills; missing cash-type evidence requires review.
+
 - Poloniex exact-order execution checks verify the cash spot parent and share native trade/order identities and reported fees with Account history. Missing parent evidence stops for review.
 
 - Poloniex selected-market Account history starts with seven days, saves native pageId checkpoints and overlaps one day on later passes. Batches retain at most 20 fills to bound parent-order checks.

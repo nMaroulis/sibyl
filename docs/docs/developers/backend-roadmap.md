@@ -140,6 +140,11 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Discover Upbit Korea regular open spot orders with resumable numbered pages and reserved-order exclusions.
 - [x] Discover Upbit Korea recently created closed orders with durable timestamp splits and explicit saturation limits.
 - [x] Recover Upbit Korea regular GTC limits through exact identifier lookup and verified original terms.
+- [x] Discover account-wide Bitfinex ordinary cash open orders with explicit margin/flagged-order exclusions.
+- [x] Discover Bitfinex recent cash orders through durable creation-time splits and correct historical partial-fill status.
+- [x] Recover Bitfinex regular GTC limits by saved int45 cid through complete bounded open/closed checks.
+- [x] Reconcile Bitfinex exact-order cash executions with native IDs, signed fee effects and documented ten-day query coverage.
+- [x] Import Bitfinex selected-market exchange-wallet fills through frozen 90-day queries, saved timestamp splits and incremental overlap.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

@@ -108,7 +108,7 @@ TRADE = {
         (
             "Open Trade → Account history → Fills & imports.",
             "Choose an active supported account and exact spot market, then Sync market history; saved progress supports pause/resume and later Sync again.",
-            "Bitstamp and Gemini support resumable selected-market fills and exact-order fee reconciliation. Bitstamp uses transaction IDs and retains closed-order status for 30 days; Gemini preserves millisecond-boundary IDs and stops on saturated groups or reversals needing review. Neither adds client-ID recovery or complete settlement accounting.",
+            "Bitstamp and Gemini support resumable selected-market fills and exact-order fee reconciliation. Bitstamp uses transaction IDs and retains closed-order status for 30 days; Gemini preserves millisecond-boundary IDs and stops on saturated groups or reversals needing review. Check provider-specific client-ID recovery separately; neither import establishes complete settlement accounting.",
             "Filter retained fills and inspect native IDs and fees. Pause active work before Rescan available history to revisit older available fills and corrections.",
             "Use Performance for retained market FIFO, Funding for deposits/withdrawals, and Reconcile transfers within Funding for own-account links.",
         ),
@@ -125,6 +125,7 @@ TRADE = {
             "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. For Binance, KuCoin Classic, MEXC and HTX, enter exact pairs to add recent history to the open-order scan. Imported · read-only orders are managed at the exchange.",
             "CoinEx open and recent order discovery covers cash spot accounts. Recent history scans finished pages within the app budget. CoinEx removes cancelled orders that had no executions, so a missing record needs venue inspection.",
             "BitMart provides open/recent spot order discovery, exact-order executions and selected-pair fill imports. Its unfilled API-cancelled records may disappear from order queries after 20 minutes. Inspect the provider coverage note if recovery cannot find one.",
+            "Bitfinex supports ordinary unflagged cash order discovery, GTC cid recovery, exact-order executions and selected-market Account history. Closed orders have up to two weeks of native coverage and exact-order trades up to ten days. Historical partial fills have cancelled remainders; margin activity stays separate. Account imports start with 90 days and preserve native fee costs and rebates.",
             "Upbit Korea supports regular open/recent spot order discovery and GTC identifier recovery. Recent orders use creation time and capped windows split. Reserved orders, other regions and fill imports remain outside this coverage.",
             "Poloniex discovery covers explicitly unborrowed cash spot orders. Recent history uses update time, so an older order changed recently can appear. Pending cancellation stays active until confirmed. GTC client-ID recovery, parent-verified exact fills and selected-market Account history are available. Fill imports start with seven days; unavailable or borrowed parents need review.",
         ),

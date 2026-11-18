@@ -26,6 +26,7 @@ Demo's explicit Check executions action includes the existing managed-status che
 | CoinEx                    | Exact `order_id`, `market` and `market_type=SPOT` through native `spot/order-deals` pages. Requires explicit `pagination.has_next`. |
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
 | Poloniex                  | Verified unborrowed cash parent followed by `/orders/{id}/trades`; bounded native snapshot and exact trade-ID app pages. |
+| Bitfinex                  | Exact cash native order ID and symbol through the order-trades snapshot. Native endpoint coverage is up to ten days old. |
 | BitMart                   | Exact native `orderId` through the v4 order-trades query. App pages traverse a bounded native execution list. |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
@@ -54,6 +55,10 @@ BitMart’s v4 order-trades read returns individual native execution records for
 ## Poloniex cash order executions
 
 Poloniex first verifies the native parent ID, exact instrument, side and explicit `loan=false` spot scope. Its exact-order execution endpoint supplies a snapshot bounded to 10,000 records; app pages retain at most 100 fills using exact numeric trade IDs. Wrong parents, duplicate identities and mismatched executions reject the page. Missing/archived parents need review. Native fee signs and currencies stay explicit, including unknown currencies. Selected-market Account history uses the same native trade/order identities, so later imports update fee corrections without duplicating fills. [Poloniex order trades](https://api-docs.poloniex.com/spot/api/private/trade#trades-by-order-id).
+
+## Bitfinex exchange-wallet executions
+
+Bitfinex's order-trades endpoint returns executions for the exact symbol and native order ID, with coverage for trades up to ten days old. Sibyl verifies native `EXCHANGE` cash types, signed base quantity, instrument and parent identity. A bounded snapshot of at most 10,000 rows is paged locally by exact numeric trade ID, with at most 100 retained fills per page. Native fee wallet effects are negated into the ledger's cost convention; unknown fee currencies/amounts stay unknown. Account history reuses the same identities and revisits corrections. Empty or expired evidence never proves complete history or absence of earlier fills. [Bitfinex order trades](https://docs.bitfinex.com/reference/rest-auth-order-trades).
 
 ## Identity, validation and atomicity
 

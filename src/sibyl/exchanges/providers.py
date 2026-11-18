@@ -373,6 +373,7 @@ class BitfinexClient(CCXTClient):
     """Bitfinex exchange wallet, excluding margin and funding balances."""
 
     id = "bitfinex"
+    history_kind = "bitfinex-window"
     balance_params = {"type": "exchange"}
     book_limits = (1, 25, 100)
 
@@ -386,6 +387,25 @@ class BitfinexClient(CCXTClient):
         if not 0 < cid < 2**45:
             raise ValueError("Bitfinex client order ID must be a positive int45.")
         return self._exchange.create_order(symbol, "limit", side, amount, price, params={"cid": cid})
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep native creation time separate from updates and leave executed cost to fills."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, list) and len(native) >= 18:
+            order.update(timestamp=number(native[4]), cost=None)
+            order["average"] = number(native[17]) or None
+        return order
+
+    def fetch_order(self, order_id: str, symbol: str) -> dict:
+        """Track exact cash orders through active and retained native closed-order reads."""
+        from sibyl.exchanges.bitfinex_orders import read_order
+
+        with self.lock:
+            self._require("fetchOrder", private=True)
+            self.market(symbol)
+            return self._order(read_order(self._exchange, order_id, self._exchange.market(symbol)))
 
 
 class CoinExClient(CCXTClient):

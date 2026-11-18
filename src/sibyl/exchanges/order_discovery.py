@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import ccxt
 
 from sibyl.exchanges import (
+    bitfinex_orders,
     bitget_orders,
     bitmart_activity,
     coinex_activity,
@@ -43,6 +44,7 @@ DISCOVERY_PROVIDERS = {
     "htx",
     "coinex",
     "bitmart",
+    "bitfinex",
     "poloniex",
     "upbit",
     "demo",
@@ -51,6 +53,7 @@ DAY_MS = 86_400_000
 DISCOVERY_OPEN_ONLY = {"bitstamp", "gemini"}
 DISCOVERY_HISTORY_PAIRS = {"binance", "binanceus", "binance-testnet", "kucoin", "mexc", "htx"}
 DISCOVERY_NOTES = {
+    "bitfinex": "Bitfinex imports ordinary unflagged EXCHANGE LIMIT/MARKET cash orders. Recent history filters creation time within the selected window; native closed history covers up to two weeks. Margin, linked, expiring and flagged orders are excluded.",
     "upbit": "Upbit Korea imports regular open orders and closed orders created within the selected one-to-seven-day window. Reserved orders and regional API variants are excluded. Capped history windows split; saturated timestamp groups need review.",
     "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
     "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
@@ -187,6 +190,9 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
         return OrderDiscoveryPage(
             *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
         )
+
+    if provider == "bitfinex":
+        return OrderDiscoveryPage(*bitfinex_orders.discover_page(exchange, stream, cursor, start, end))
 
     if provider == "upbit":
         return OrderDiscoveryPage(*upbit_orders.discover_page(exchange, stream, cursor, start, end))

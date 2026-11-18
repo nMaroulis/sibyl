@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import ccxt
 
 from sibyl.exchanges import (
+    bitfinex_orders,
     bitget_orders,
     bitmart_activity,
     coinex_activity,
@@ -42,6 +43,7 @@ RECOVERY_PROVIDERS = {
     "htx",
     "coinex",
     "bitmart",
+    "bitfinex",
     "poloniex",
     "upbit",
     "demo",
@@ -49,6 +51,7 @@ RECOVERY_PROVIDERS = {
 
 
 RECOVERY_NOTES = {
+    "bitfinex": "Recover ordinary EXCHANGE LIMIT orders by saved int45 cid, verified original terms and API origin. Open and bounded closed matches are inspected; closed history covers up to two weeks. Margin, flagged and linked orders are excluded.",
     "upbit": "Recover regular spot GTC limits on the default Upbit Korea endpoint using the exact saved identifier and original order details. Reserved, SMP and non-GTC instructions are excluded.",
     "okx": "Look up the saved client ID on the exact cash spot instrument. OKX returns the latest match, so Sibyl also verifies creation time and reviewed order details.",
     "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",
@@ -111,6 +114,9 @@ def lookup_order_page(
 
     if provider == "bitget":
         return OrderLookupPage(bitget_orders.lookup_order(exchange, client_id, symbol), {}, True)
+
+    if provider == "bitfinex":
+        return OrderLookupPage(*bitfinex_orders.lookup_page(exchange, client_id, symbol, cursor, start, end))
 
     if provider == "upbit":
         return OrderLookupPage(upbit_orders.lookup_order(exchange, client_id, symbol), {}, True)

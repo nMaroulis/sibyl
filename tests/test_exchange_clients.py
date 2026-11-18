@@ -138,6 +138,44 @@ class Transport:
         return {"id": "submitted", "symbol": symbol, "filled": amount, "info": "PRIVATE-SENTINEL"}
 
 
+class BitfinexTransport(Transport):
+    """Provide the native order-read surface for the common metadata privacy contract.
+
+    Full native parsing and history/recovery behavior use real SDK instances in
+    test_bitfinex_activity.py. Other common reads retain the controlled parent.
+    """
+
+    def market(self, symbol):
+        return {"id": "tBTCUST", "symbol": symbol}
+
+    def privatePostAuthROrdersSymbol(self, params):
+        assert params["symbol"] == "tBTCUST" and len(params["id"]) == 1
+        row = [None] * 32
+        for index, value in {
+            0: params["id"][0],
+            2: 1001,
+            3: "tBTCUST",
+            4: 1700000000000,
+            5: 1700000001000,
+            6: "0.9",
+            7: "1",
+            8: "EXCHANGE LIMIT",
+            12: 0,
+            13: "PARTIALLY FILLED",
+            16: "100",
+            17: "100",
+            18: "0",
+            19: "0",
+            31: {"private": "PRIVATE-SENTINEL"},
+        }.items():
+            row[index] = value
+        return [row]
+
+    def parse_order(self, response, market):
+        row = response["result"]
+        return {**self.fetch_order(str(row[0]), market["symbol"]), "info": row}
+
+
 def credentials(identity):
     return {
         "apiKey": "PRIVATE-KEY",
@@ -148,7 +186,11 @@ def credentials(identity):
 
 
 def fake_client(monkeypatch, identity="binance", private=True, sandbox=False):
-    monkeypatch.setattr(ccxt, CATALOG[identity].ccxt_id or identity, Transport)
+    monkeypatch.setattr(
+        ccxt,
+        CATALOG[identity].ccxt_id or identity,
+        BitfinexTransport if identity == "bitfinex" else Transport,
+    )
     return create_client(identity, credentials=credentials(identity) if private else None, sandbox=sandbox)
 
 
@@ -180,7 +222,7 @@ def test_all_provider_classes_implement_normalized_read_contract(monkeypatch, id
         "balance",
         {"type": "spot", "account-id": "1234"} if identity == "htx" else client.balance_params,
     ) in client._exchange.events
-    status = client.fetch_order("order-1", "BTC/USDT")
+    status = client.fetch_order("123456" if identity == "bitfinex" else "order-1", "BTC/USDT")
     orders = client.fetch_open_orders("BTC/USDT")
     trades = client.fetch_my_trades("BTC/USDT", since=123, limit=25)
     assert trades[0]["fee"] == {"cost": 0.1, "currency": "USDT"}

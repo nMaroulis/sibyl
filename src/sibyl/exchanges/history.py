@@ -74,6 +74,10 @@ def fetch_trade_page(exchange, kind: str, symbol: str, cursor: dict, limit: int)
 
     if kind in VENUES:
         return fetch_venue_page(exchange, kind, symbol, cursor, limit)
+    if kind == "bitfinex-window":
+        from sibyl.exchanges.bitfinex_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit)
     if kind == "poloniex-page":
         from sibyl.exchanges.poloniex_fills import fetch_fill_page
 

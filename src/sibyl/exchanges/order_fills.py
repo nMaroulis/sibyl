@@ -17,6 +17,7 @@ ORDER_FILL_KINDS = {
     "coinex-page",
     "bitmart-window",
     "poloniex-page",
+    "bitfinex-window",
     "gate-order",
     "htx-order",
     "bitstamp-transactions",
@@ -38,6 +39,10 @@ def fetch_order_fill_page(
 
     if kind in VENUES:
         return fetch_venue_order_page(exchange, kind, order_id, symbol, cursor, limit)
+    if kind == "bitfinex-window":
+        from sibyl.exchanges.bitfinex_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
     if kind == "poloniex-page":
         from sibyl.exchanges.poloniex_fills import fetch_fill_page
 
