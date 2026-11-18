@@ -11,6 +11,7 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [ ] Additional fee conventions and independently verified external-flow classifications.
 - [x] Bybit same-UID UNIFIED wallet transfer history with native pagination, local revision evidence and optional background checks.
 - [x] Import selected-pair MEXC fills over a bounded rolling window with durable bisection, one-day overlap and both self-trade legs retained.
+- [x] Import CoinEx selected-market cash spot fills through frozen 30-day queries, native page checkpoints and one-day incremental overlap.
 - [ ] Wider funding/history adapters and account balance reconciliation.
 
 ## 2. Exchange infrastructure
@@ -38,6 +39,10 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Discover selected-pair HTX recent orders through bounded 48-hour windows with explicit cancellation retention.
 - [x] Recover reviewed HTX GTC spot limits by exact client ID and verified wallet and original terms.
 - [x] Reconcile HTX exact-order executions using native internal IDs, parent-wallet validation and explicit fee-deduction uncertainty.
+- [x] Discover CoinEx account-wide open cash spot orders with native page checkpoints.
+- [x] Discover recent CoinEx finished orders by filtering creation time across bounded native pages.
+- [x] Recover reviewed CoinEx spot GTC limits through client-filtered pending and bounded finished-order scans.
+- [x] Reconcile exact CoinEx native fills and reported fees with order-scoped deal identities.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

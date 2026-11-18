@@ -23,6 +23,7 @@ Demo's explicit Check executions action includes the existing managed-status che
 | MEXC                      | Exact `orderId` and `symbol` through spot `myTrades`. Uses a rolling 27-day coverage window and bounded time-window splits. |
 | Gate                      | Verify the exact cash spot parent, then read `spot/my_trades` for its `order_id` and pair. Fixed seven-day finish-time query and native page numbers. |
 | HTX                       | Verify the exact spot parent wallet, then read its native match-results list. App pages retain the internal execution ID. |
+| CoinEx                    | Exact `order_id`, `market` and `market_type=SPOT` through native `spot/order-deals` pages. Requires explicit `pagination.has_next`. |
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
@@ -39,6 +40,10 @@ Gate validates the order’s native `account=spot`, exact instrument and side be
 HTX resolves the unambiguous spot wallet and verifies the parent order before reading its exact match-results list. Lists above 10,000 rows stop for review. Up to 100 rows commit per app page using the internal `id`, preserving the original reported record time. Repeated passes revisit earlier fee observations. Unverified deduction effects remain unknown, and maker rebate observations do not establish payment. API-cancelled parent orders become unavailable after two hours. [HTX match results](https://huobiapi.github.io/docs/spot/v1/en/#get-the-match-result-of-an-order).
 
 Gate and HTX use `order_fill_kind` separately from `history_kind`. Settings shows exact-order reconciliation as implemented while their broader Account history imports remain pending. Authenticated acceptance for these adapters remains pending.
+
+## CoinEx order executions
+
+CoinEx reads individual order executions through v2 `spot/order-deals`, checking the exact market and order ID and rejecting margin evidence. Native `deal_id` values are scoped to their native order in the ledger, preserving both sides of a self-trade when returned. Account history imports use the same identities, so either path can correct a reported fee while retaining prior observations. Fees keep their reported currency and unknown fee data stays explicit. Each page follows the native `has_next` field. Private-account acceptance remains pending. [CoinEx order executions](https://docs.coinex.com/api/v2/spot/deal/http/list-user-order-deals).
 
 ## Identity, validation and atomicity
 

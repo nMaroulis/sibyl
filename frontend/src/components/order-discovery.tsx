@@ -226,7 +226,7 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                 )}
                 {job.skipped > 0 && (
                   <small>
-                    {job.skipped} observations excluded: unsupported/delisted or margin instruments.
+                    {job.skipped} observations excluded by the selected range or supported spot scope.
                   </small>
                 )}
                 {job.deferred > 0 && (

@@ -57,6 +57,14 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- CoinEx adds account-wide open-order discovery and recent finished orders, with saved native page checkpoints and cash spot validation.
+
+- CoinEx spot GTC limits can recover an uncertain submission through client-filtered pending orders and bounded finished-order history. Recovery waits for the complete lookup before attaching a native ID.
+
+- CoinEx exact-order reconciliation and resumable Account history share native deal and order IDs, reported fee currencies and correction observations. History starts with a 30-day query and overlaps one day on later passes.
+
+- CoinEx v2 partial-fill and cancellation states are normalized in the exchange client for consistent order monitoring. Settings and Broker help reflect the implemented coverage and CoinEx’s removal of cancelled orders that had no fills.
+
 - Gate exact-order reconciliation validates the native cash spot parent and imports individual fills with native IDs and reported fees. Read windows and page checkpoints survive restart.
 
 - HTX order discovery reads the verified spot wallet’s open orders and selected-pair recent history. Trade shows native history limits and resumes saved page/window checkpoints.

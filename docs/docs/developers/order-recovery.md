@@ -18,6 +18,7 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 | Bitget Classic                         | Exact `clientOid` through Classic spot order details. API-cancelled orders are retained for up to two hours. |
 | MEXC                                   | Exact pair and `origClientOrderId` through the spot order query. The native lookup covers up to seven days. |
 | HTX                                    | Exact `clientOrderId` through spot order details. Native coverage is eight hours, with API-cancelled orders unavailable after two hours. |
+| CoinEx                                 | Client-filtered pending spot orders, followed by a bounded exact-pair finished-order scan. Cancelled orders with no fills are removed by CoinEx. |
 | Demo                                   | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself.                                 |
 | Other clients                          | Explicitly unsupported; no generic scan or production/Demo fallback.                                                                                |
 
@@ -68,6 +69,8 @@ Gate documents direct client-ID lookup for pending orders. After a provider-repo
 Bitget Classic requires an API-origin regular spot limit with matching original size and price and no attached trigger. Some native detail rows omit time in force. Sibyl uses the exact saved client ID and the other original terms, and rejects any explicit non-GTC instruction. MEXC requires an explicit `GTC` limit, accepts the documented `Qty` or `origQty` field and treats the documented missing-record code as a lookup miss. [Bitget order info](https://www.bitget.com/legacy-docs/classic/spot/trade/Get-Order-Info) · [Bitget cancellation retention](https://www.bitget.com/support/articles/12560603823155) · [MEXC order query](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/query-order).
 
 HTX recovery requires the same verified spot wallet as placement, an API-origin regular limit and the exact saved client ID. Original quantity, price and creation time must match the reviewed intent. A missing client ID leaves the submission uncertain. [HTX client-ID details](https://huobiapi.github.io/docs/spot/v1/en/#get-the-order-detail-of-an-order-based-on-client-order-id).
+
+Sibyl treats repeated CoinEx client IDs as potentially ambiguous and checks both pending and finished pages for the exact pair before accepting a unique candidate with the reviewed side, original quantity, limit price and creation time. A partial scan stays incomplete. The shared ten-page recovery budget applies, and a missing cancelled record keeps the outcome uncertain. [CoinEx pending client filter](https://docs.coinex.com/api/v2/spot/order/http/list-pending-order) · [CoinEx finished orders](https://docs.coinex.com/api/v2/spot/order/http/list-finished-order).
 
 ## Remaining work
 

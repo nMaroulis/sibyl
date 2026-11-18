@@ -4,7 +4,14 @@ from dataclasses import dataclass
 
 import ccxt
 
-from sibyl.exchanges import bitget_orders, gate_orders, htx_orders, kucoin_orders, mexc_activity
+from sibyl.exchanges import (
+    bitget_orders,
+    coinex_activity,
+    gate_orders,
+    htx_orders,
+    kucoin_orders,
+    mexc_activity,
+)
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
     OPEN,
@@ -31,6 +38,7 @@ DISCOVERY_PROVIDERS = {
     "bitget",
     "mexc",
     "htx",
+    "coinex",
     "demo",
 }
 DAY_MS = 86_400_000
@@ -44,6 +52,7 @@ DISCOVERY_NOTES = {
     "gemini": "Gemini discovery covers account-wide open spot limit orders for the API key’s account.",
     "gate": "Gate scans open and recently finished cash spot orders. Recent history uses Gate’s finish time.",
     "bitget": "Bitget discovery covers open and recent ordinary Classic spot orders. API-cancelled orders are retained for up to two hours. Managed subaccount history depends on its binding time.",
+    "coinex": "CoinEx imports cash spot orders. Recent discovery scans native finished pages and filters creation time locally. Cancelled orders without fills are not retained by CoinEx.",
     "htx": "HTX reads the verified spot wallet’s open orders and selected-pair history in 48-hour windows. API-cancelled orders are available for up to two hours.",
     "mexc": "MEXC reads account-wide open spot orders and up to seven days of history for selected pairs. A capped timestamp or open snapshot reports a coverage limit.",
 }
@@ -169,6 +178,9 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
         return OrderDiscoveryPage(
             *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
         )
+
+    if provider == "coinex":
+        return OrderDiscoveryPage(*coinex_activity.discover_page(exchange, stream, cursor, start, end))
 
     if provider == "htx":
         return OrderDiscoveryPage(*htx_orders.discover_page(exchange, stream, cursor, start, end, symbols))

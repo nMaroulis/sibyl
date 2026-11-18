@@ -18,10 +18,11 @@ Open **Trade → Account history**, or **Settings → Exchanges → Connected ac
 | KuCoin classic                       | HF endpoint `lastId`, frozen `startAt`/`endAt`                                     | Last seven days; inactive orders have a seven-day retention limit; no abandoned endpoint fallback |
 | Bitget classic                       | `idLessThan` using the returned `tradeId`, frozen `startTime`/`endTime`            | Last 89 days within 90-day retention; no UTA/margin substitution                                  |
 | MEXC                                 | Frozen millisecond windows split at the native response cap                    | Rolling 27 days. Uses deal and order IDs together to distinguish self-trade legs. |
+| CoinEx                               | Page numbers with native `pagination.has_next` and frozen millisecond bounds | Initial query covers 30 days, with a one-day overlap on subsequent passes. Native retention can limit coverage. |
 
 Bitstamp and Gemini now also have the reviewed contracts below. Other clients retain balance, order and bounded-fill reads; their unimplemented durable imports explicitly show **Coming soon**. CCXT's `fetchMyTrades` capability alone does not establish safe historical pagination. The provider catalog reports `history_import` separately.
 
-Subsequent Coinbase, Kraken, OKX, Bybit, KuCoin, Bitget and MEXC passes overlap one day to pick up late/corrected observations. Binance and Demo resume native identity checkpoints. Native IDs deduplicate or update existing records. Coinbase's custom `sort_by` is omitted because its documentation warns about unstable pagination for sorted results.
+Subsequent Coinbase, Kraken, OKX, Bybit, KuCoin, Bitget, MEXC and CoinEx passes overlap one day to pick up late/corrected observations. Binance and Demo resume native identity checkpoints. Native IDs deduplicate or update existing records. Coinbase's custom `sort_by` is omitted because its documentation warns about unstable pagination for sorted results.
 
 **Rescan available history** restarts the selected market at its adapter's available-history boundary. Pause active work first. Rescans keep existing evidence, upsert returned corrections and report new/corrected fill counts per completed pass. They do not delete an old fill because the provider omits it. Records and corrections outside current retention can remain unavailable; rescanning is not proof of complete history or final settlement. There is no automatic periodic rescan.
 
@@ -34,6 +35,8 @@ References: [CCXT pagination](https://github.com/ccxt/ccxt/wiki/Manual#paginatio
 Additional native contracts: [OKX fill history](https://www.okx.com/docs-v5/en/#order-book-trading-trade-get-transaction-details-last-3-months), [Bybit executions](https://bybit-exchange.github.io/docs/v5/order/execution), [KuCoin classic HF fills](https://www.kucoin.com/docs-new/rest/spot-trading/orders/get-trade-history), [Bitget classic fills](https://www.bitget.com/docs/catalog/classic-spot-trade/classic-spot-trade).
 
 MEXC reports a one-month API history limit. Sibyl requests a rolling 27 days, saves split windows across restarts and overlaps one day on each incremental pass. A capped single millisecond or a frozen window that ages out stops the import with the saved checkpoint intact. Account and exact-order imports keep the venue’s native deal IDs, order IDs and reported fees. [MEXC account trade list](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/account-trade-list).
+
+CoinEx requests selected-market cash spot fills with `market_type=SPOT`, freezing `start_time` and `end_time` across native numbered pages. A rescan starts a new 30-day query. This requested range describes the adapter’s scope, and CoinEx’s available retention can shorten it. Deal IDs remain visible, while their native order ID also scopes ledger identity. Native `has_next=false` ends the selected pass. [CoinEx user executions](https://docs.coinex.com/api/v2/spot/deal/http/list-user-deals).
 
 ## Ownership and persistence
 

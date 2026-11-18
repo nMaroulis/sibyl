@@ -394,6 +394,7 @@ class CoinExClient(CCXTClient):
     # Trading instruments infer currency codes; deposit-network metadata is outside this client scope.
     fetch_currencies = False
     id = "coinex"
+    history_kind = "coinex-page"
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50)
 
@@ -406,6 +407,28 @@ class CoinExClient(CCXTClient):
         return self._exchange.create_order(
             symbol, "limit", side, amount, price, params={"client_id": client_order_id, "timeInForce": "GTC"}
         )
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Preserve v2 lifecycle states and keep currency-selected market sizing explicit."""
+        from sibyl.exchanges.coinex_activity import INSTRUCTIONS, STATUS
+
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            order["status"] = STATUS.get(native.get("status"), order["status"])
+            kind = native.get("type")
+            if kind in INSTRUCTIONS:
+                order.update(type="limit", timeInForce=INSTRUCTIONS[kind])
+            elif kind == "market":
+                filled, cost = number(native.get("filled_amount")), number(native.get("filled_value"))
+                order.update(
+                    amount=None,
+                    remaining=None,
+                    filled=filled,
+                    average=cost / filled if filled and cost is not None else None,
+                )
+        return order
 
 
 class BitMartClient(CCXTClient):

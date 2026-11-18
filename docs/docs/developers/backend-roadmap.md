@@ -49,6 +49,7 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Apply documented Kraken ledger fee effects, retain Binance wallet/completion facts, and add source-version-checked local wallet/amount reviews for ambiguous funding; preserve native observations, audit withdrawal and provenance in Balance checks, exports and read-only Accountant evidence. See [funding effects](funding-effects.md).
 - [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Exchange Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic.
 - [x] Add resumable selected-market MEXC fill imports with native deal/order identity, timestamp-window splits and exact-order deduplication.
+- [x] Add resumable CoinEx cash spot fill imports with native `has_next`, frozen date bounds, reported fees and shared exact-order identities.
 - [ ] Review durable import pagination for the remaining exchange providers.
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
@@ -122,6 +123,10 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Discover selected-pair HTX recent orders through bounded 48-hour windows with explicit cancellation retention.
 - [x] Recover reviewed HTX GTC spot limits by exact client ID and verified wallet and original terms.
 - [x] Reconcile HTX exact-order executions using native internal IDs, parent-wallet validation and explicit fee-deduction uncertainty.
+- [x] Discover CoinEx account-wide open cash spot orders with native page checkpoints.
+- [x] Discover recent CoinEx finished orders by filtering creation time across bounded native pages.
+- [x] Recover reviewed CoinEx spot GTC limits through client-filtered pending and bounded finished-order scans.
+- [x] Reconcile exact CoinEx native fills and reported fees with order-scoped deal identities.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

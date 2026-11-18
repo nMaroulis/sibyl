@@ -20,6 +20,7 @@ def history_note(provider: str) -> str:
         "bybit": "UTA spot fills in the last 730 days, read in seven-day windows. Pre-upgrade/classic, margin and derivatives history are excluded.",
         "kucoin": "Classic spot HF fills in the last seven days. KuCoin limits inactive-order history to seven days; UTA and abandoned endpoints are excluded.",
         "bitget": "Classic spot fills in the last 89 days, including exact-order reads. Discounted fee breakdowns without verified wallet effects stay unknown. Bitget retains up to 90 days.",
+        "coinex": "CoinEx v2 cash spot imports request the last 30 days by default and overlap one day on subsequent passes. Exact-order reads scan available native pages. Provider retention and page limits qualify coverage.",
         "gate": "Exact-order cash spot fills with a fixed seven-day finish-time query, with native parent-wallet verification. GT fees retain their currency; point-card fees stop for review. Account-wide fill imports remain pending.",
         "htx": "Exact-order fills require the verified spot wallet. HTX API-cancelled order details expire after two hours. Fee deductions without verified effects stay unknown. Account-wide fill imports remain pending.",
         "mexc": "Selected-pair spot fills and exact-order checks within a rolling 27-day window. Timestamp splits protect capped responses; a saturated single millisecond stops for review.",
