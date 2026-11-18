@@ -485,6 +485,7 @@ class PoloniexClient(CCXTClient):
     """Poloniex spot account; no sandbox is exposed by Sibyl."""
 
     id = "poloniex"
+    history_kind = "poloniex-page"
 
     @staticmethod
     def _order(row: dict) -> dict:
@@ -511,6 +512,25 @@ class UpbitClient(CCXTClient):
     """Upbit default endpoint; regional API variants require their own adapter."""
 
     id = "upbit"
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep executed funds separate from quote budgets and unexecuted limit prices."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if not isinstance(native, dict):
+            return order
+        cost = number(native.get("executed_funds"))
+        trades = native.get("trades")
+        if cost is None and isinstance(trades, list) and trades:
+            funds = [number(trade.get("funds")) if isinstance(trade, dict) else None for trade in trades]
+            if all(value is not None and value >= 0 for value in funds):
+                cost = sum(funds)
+        filled = number(native.get("executed_volume"))
+        order.update(cost=cost, average=cost / filled if cost is not None and filled else None)
+        if native.get("ord_type") == "price":
+            order.update(amount=None, remaining=None, filled=filled)
+        return order
 
 
 CLIENTS = {

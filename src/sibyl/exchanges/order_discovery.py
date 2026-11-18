@@ -13,6 +13,7 @@ from sibyl.exchanges import (
     kucoin_orders,
     mexc_activity,
     poloniex_orders,
+    upbit_orders,
 )
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
@@ -43,12 +44,14 @@ DISCOVERY_PROVIDERS = {
     "coinex",
     "bitmart",
     "poloniex",
+    "upbit",
     "demo",
 }
 DAY_MS = 86_400_000
 DISCOVERY_OPEN_ONLY = {"bitstamp", "gemini"}
 DISCOVERY_HISTORY_PAIRS = {"binance", "binanceus", "binance-testnet", "kucoin", "mexc", "htx"}
 DISCOVERY_NOTES = {
+    "upbit": "Upbit Korea imports regular open orders and closed orders created within the selected one-to-seven-day window. Reserved orders and regional API variants are excluded. Capped history windows split; saturated timestamp groups need review.",
     "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
     "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
     "kucoin": "KuCoin Classic open-order discovery uses Spot API permission. Recent history uses selected pairs, with up to two days for cancellations and seven days for filled orders.",
@@ -184,6 +187,9 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
         return OrderDiscoveryPage(
             *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
         )
+
+    if provider == "upbit":
+        return OrderDiscoveryPage(*upbit_orders.discover_page(exchange, stream, cursor, start, end))
 
     if provider == "poloniex":
         return OrderDiscoveryPage(*poloniex_orders.discover_page(exchange, stream, cursor, start, end))

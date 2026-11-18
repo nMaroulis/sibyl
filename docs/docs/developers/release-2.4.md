@@ -51,6 +51,11 @@ This release is being implemented in six dependency-ordered batches. Entries bel
 - [x] Discover Poloniex account-wide open cash spot orders with exact native ID checkpoints.
 - [x] Discover recent Poloniex terminal orders using frozen update-time bounds, including older orders updated recently.
 - [x] Recover Poloniex cash spot GTC limits through exact client-ID details and verified original terms.
+- [x] Reconcile Poloniex exact-order executions with verified cash parents, exact native identities and reported fees.
+- [x] Import Poloniex selected-market cash fills with frozen seven-day queries, native pageId checkpoints and one-day incremental overlap.
+- [x] Discover Upbit Korea regular open spot orders with resumable numbered pages and reserved-order exclusions.
+- [x] Discover Upbit Korea recently created closed orders with durable timestamp splits and explicit saturation limits.
+- [x] Recover Upbit Korea regular GTC limits through exact identifier lookup and verified original terms.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

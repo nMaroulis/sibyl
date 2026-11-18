@@ -125,7 +125,8 @@ TRADE = {
             "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. For Binance, KuCoin Classic, MEXC and HTX, enter exact pairs to add recent history to the open-order scan. Imported · read-only orders are managed at the exchange.",
             "CoinEx open and recent order discovery covers cash spot accounts. Recent history scans finished pages within the app budget. CoinEx removes cancelled orders that had no executions, so a missing record needs venue inspection.",
             "BitMart provides open/recent spot order discovery, exact-order executions and selected-pair fill imports. Its unfilled API-cancelled records may disappear from order queries after 20 minutes. Inspect the provider coverage note if recovery cannot find one.",
-            "Poloniex discovery covers explicitly unborrowed cash spot orders. Recent history uses update time, so an older order changed recently can appear. Pending cancellation stays active until confirmed. GTC client-ID recovery is available; exact-order fills and Account history imports remain pending.",
+            "Upbit Korea supports regular open/recent spot order discovery and GTC identifier recovery. Recent orders use creation time and capped windows split. Reserved orders, other regions and fill imports remain outside this coverage.",
+            "Poloniex discovery covers explicitly unborrowed cash spot orders. Recent history uses update time, so an older order changed recently can appear. Pending cancellation stays active until confirmed. GTC client-ID recovery, parent-verified exact fills and selected-market Account history are available. Fill imports start with seven days; unavailable or borrowed parents need review.",
         ),
         (
             "A preview reference is not a fill or realized P&L. Refresh records reloads local data; Check exchange performs a provider read.",

@@ -135,6 +135,11 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Discover Poloniex account-wide open cash spot orders with exact native ID checkpoints.
 - [x] Discover recent Poloniex terminal orders using frozen update-time bounds, including older orders updated recently.
 - [x] Recover Poloniex cash spot GTC limits through exact client-ID details and verified original terms.
+- [x] Reconcile Poloniex exact-order executions with verified cash parents, exact native identities and reported fees.
+- [x] Import Poloniex selected-market cash fills with frozen seven-day queries, native pageId checkpoints and one-day incremental overlap.
+- [x] Discover Upbit Korea regular open spot orders with resumable numbered pages and reserved-order exclusions.
+- [x] Discover Upbit Korea recently created closed orders with durable timestamp splits and explicit saturation limits.
+- [x] Recover Upbit Korea regular GTC limits through exact identifier lookup and verified original terms.
 - [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.

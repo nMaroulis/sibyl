@@ -25,6 +25,7 @@ Demo's explicit Check executions action includes the existing managed-status che
 | HTX                       | Verify the exact spot parent wallet, then read its native match-results list. App pages retain the internal execution ID. |
 | CoinEx                    | Exact `order_id`, `market` and `market_type=SPOT` through native `spot/order-deals` pages. Requires explicit `pagination.has_next`. |
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
+| Poloniex                  | Verified unborrowed cash parent followed by `/orders/{id}/trades`; bounded native snapshot and exact trade-ID app pages. |
 | BitMart                   | Exact native `orderId` through the v4 order-trades query. App pages traverse a bounded native execution list. |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
@@ -49,6 +50,10 @@ CoinEx reads individual order executions through v2 `spot/order-deals`, checking
 ## BitMart order executions
 
 BitMart’s v4 order-trades read returns individual native execution records for the exact order. Sibyl checks the order ID, instrument, side and spot mode, bounds the native list to 10,000 records and commits at most 100 per app page. Native IDs define deterministic local pagination. Later passes revisit corrections. Fees retain their reported currency, and missing fee currencies stay unknown. Account history uses the same order-scoped identities. Private-account acceptance remains pending. [BitMart order trades](https://developer-pro.bitmart.com/en/spot/#order-trade-list-v4-signed).
+
+## Poloniex cash order executions
+
+Poloniex first verifies the native parent ID, exact instrument, side and explicit `loan=false` spot scope. Its exact-order execution endpoint supplies a snapshot bounded to 10,000 records; app pages retain at most 100 fills using exact numeric trade IDs. Wrong parents, duplicate identities and mismatched executions reject the page. Missing/archived parents need review. Native fee signs and currencies stay explicit, including unknown currencies. Selected-market Account history uses the same native trade/order identities, so later imports update fee corrections without duplicating fills. [Poloniex order trades](https://api-docs.poloniex.com/spot/api/private/trade#trades-by-order-id).
 
 ## Identity, validation and atomicity
 

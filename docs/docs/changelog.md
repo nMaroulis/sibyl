@@ -57,6 +57,16 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Poloniex exact-order execution checks verify the cash spot parent and share native trade/order identities and reported fees with Account history. Missing parent evidence stops for review.
+
+- Poloniex selected-market Account history starts with seven days, saves native pageId checkpoints and overlaps one day on later passes. Batches retain at most 20 fills to bound parent-order checks.
+
+- Upbit Korea adds regular open spot order discovery with saved numbered pages. Reserved orders and unknown markets are excluded.
+
+- Upbit Korea recent closed-order discovery freezes the selected creation-time window and splits capped responses across restart. Saturated single timestamps show a coverage limit.
+
+- Upbit Korea regular GTC limits can recover uncertain submissions through their saved identifier and verified original details. Quote budgets and limit prices are kept separate from actual executed funds.
+
 - Poloniex adds account-wide open cash spot order discovery with restart-safe native ID checkpoints and explicit borrowed-order exclusions. Pending cancellations remain active until the exchange confirms a terminal state.
 
 - Poloniex recent order discovery uses a frozen update-time window, preserving older orders changed recently. Trade and Settings show the cash-only scope and native history retention.

@@ -13,6 +13,7 @@ from sibyl.exchanges import (
     htx_orders,
     mexc_activity,
     poloniex_orders,
+    upbit_orders,
 )
 from sibyl.exchanges.base import number
 from sibyl.exchanges.bybit_orders import (
@@ -42,11 +43,13 @@ RECOVERY_PROVIDERS = {
     "coinex",
     "bitmart",
     "poloniex",
+    "upbit",
     "demo",
 }
 
 
 RECOVERY_NOTES = {
+    "upbit": "Recover regular spot GTC limits on the default Upbit Korea endpoint using the exact saved identifier and original order details. Reserved, SMP and non-GTC instructions are excluded.",
     "okx": "Look up the saved client ID on the exact cash spot instrument. OKX returns the latest match, so Sibyl also verifies creation time and reviewed order details.",
     "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",
     "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
@@ -108,6 +111,9 @@ def lookup_order_page(
 
     if provider == "bitget":
         return OrderLookupPage(bitget_orders.lookup_order(exchange, client_id, symbol), {}, True)
+
+    if provider == "upbit":
+        return OrderLookupPage(upbit_orders.lookup_order(exchange, client_id, symbol), {}, True)
 
     if provider == "poloniex":
         return OrderLookupPage(poloniex_orders.lookup_order(exchange, client_id, symbol), {}, True)

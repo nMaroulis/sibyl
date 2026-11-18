@@ -143,7 +143,7 @@ def test_lost_ack_recovery_reads_exact_client_id_without_resubmission(poloniex, 
 
     def lookup(params):
         reads.append(params.copy())
-        assert params == {"id": "cid:" + writes[0]}
+        assert params in ({"id": "cid:" + writes[0]}, {"id": str(FIRST_ID)})
         return order(
             clientOrderId=writes[0],
             state="PARTIALLY_FILLED",
@@ -154,6 +154,7 @@ def test_lost_ack_recovery_reads_exact_client_id_without_resubmission(poloniex, 
 
     monkeypatch.setattr(native, "create_order", lost_ack)
     monkeypatch.setattr(native, "privateGetOrdersId", lookup)
+    monkeypatch.setattr(native, "privateGetOrdersIdTrades", lambda _: [])
     uncertain = submit(owner.trading, account)
     assert uncertain["status"] == "unknown"
     owner.settings.allow_live_trading = False
@@ -161,7 +162,8 @@ def test_lost_ack_recovery_reads_exact_client_id_without_resubmission(poloniex, 
     recovered = restarted.recover(uncertain["id"])
     assert recovered["recovery"]["state"] == "found" and recovered["filled"] == 0.004
     assert recovered["exchange_order_id"] == str(FIRST_ID) and recovered["cost"] == 200
-    assert len(writes) == len(reads) == 1 and "PRIVATE" not in json.dumps(recovered)
+    assert len(writes) == 1 and reads == [{"id": "cid:" + writes[0]}, {"id": str(FIRST_ID)}]
+    assert "PRIVATE" not in json.dumps(recovered)
 
 
 @pytest.mark.parametrize(
@@ -229,8 +231,8 @@ def test_recent_history_requires_native_update_time_inside_the_fixed_range(polon
 def test_settings_expose_only_the_implemented_cash_order_reads():
     (provider,) = [row for row in provider_catalog()["items"] if row["id"] == "poloniex"]
     features = {feature["id"]: feature for group in provider["support"] for feature in group["features"]}
-    for name in ("recovery", "discovery"):
+    for name in ("recovery", "discovery", "history_import", "fill_reconciliation"):
         assert features[name]["status"] == "available"
-    for name in ("history_import", "fill_reconciliation", "automated"):
+    for name in ("automated",):
         assert features[name]["status"] == "pending"
     assert not provider["market_orders"]
