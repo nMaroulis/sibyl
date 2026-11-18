@@ -73,6 +73,11 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Reconcile Upbit Korea native individual executions without guessing per-fill fees from aggregate paid_fee.
 - [x] Import Upbit Korea regular-order executions through saved open/closed listings and execution UUID checkpoints, with older closed-order limits explicit.
 - [x] Discover Gemini recent closed spot limits, including unfilled cancellations, with an explicit 500-order saturation limit.
+- [x] Discover Crypto.com Exchange regular cash open orders with explicit native execution-flag exclusions.
+- [x] Discover Crypto.com Exchange selected-pair recent terminal orders through saved native day ranges and nanosecond saturation splits.
+- [x] Recover Crypto.com Exchange ordinary cash GTC limits through exact client_oid details and verified original terms.
+- [x] Reconcile Crypto.com Exchange individual cash executions with native trade IDs, parent account proof and signed fee observations.
+- [x] Import Crypto.com Exchange selected-market cash history through resumable seven-day queries, one-day overlap and shared exact-order identities.
 - [ ] Broader market execution, discovery/recovery and historical pagination adapters.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.

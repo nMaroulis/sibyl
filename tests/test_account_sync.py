@@ -364,6 +364,9 @@ def test_account_and_environment_identity_isolation(sync, monkeypatch):
 
 
 def test_unsupported_provider_is_explicit_and_does_not_construct_a_transport(sync, monkeypatch):
+    from sibyl.exchanges.providers import CryptoComClient
+
+    monkeypatch.setattr(CryptoComClient, "history_kind", "")
     connection = sync.store.add_connection(
         ConnectionCreate(exchange="cryptocom", label="Read account", api_key="key", secret="secret")
     )

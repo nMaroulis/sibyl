@@ -10,6 +10,7 @@ from sibyl.exchanges import (
     bitget_orders,
     bitmart_activity,
     coinex_activity,
+    cryptocom_orders,
     gate_orders,
     htx_orders,
     mexc_activity,
@@ -48,11 +49,13 @@ RECOVERY_PROVIDERS = {
     "poloniex",
     "upbit",
     "phemex",
+    "cryptocom",
     "demo",
 }
 
 
 RECOVERY_NOTES = {
+    "cryptocom": "Recover ordinary cash GTC limits by exact client_oid with verified account, sizing and creation evidence. Missing or margin/advanced evidence remains uncertain.",
     "phemex": "Recover base-sized spot GTC limits by exact clOrdID on the selected pair. Original native terms and creation time must match; missing client evidence remains uncertain.",
     "bitfinex": "Recover ordinary EXCHANGE LIMIT orders by saved int45 cid, verified original terms and API origin. Open and bounded closed matches are inspected; closed history covers up to two weeks. Margin, flagged and linked orders are excluded.",
     "upbit": "Recover regular spot GTC limits on the default Upbit Korea endpoint using the exact saved identifier and original order details. Reserved, SMP and non-GTC instructions are excluded.",
@@ -117,6 +120,9 @@ def lookup_order_page(
 
     if provider == "bitget":
         return OrderLookupPage(bitget_orders.lookup_order(exchange, client_id, symbol), {}, True)
+
+    if provider == "cryptocom":
+        return OrderLookupPage(cryptocom_orders.lookup_order(exchange, client_id, symbol), {}, True)
 
     if provider == "phemex":
         return OrderLookupPage(phemex_activity.lookup_order(exchange, client_id, symbol), {}, True)

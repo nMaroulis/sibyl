@@ -343,7 +343,29 @@ class CryptoComClient(CCXTClient):
     """Crypto.com Exchange account, separate from the retail mobile app."""
 
     id = "cryptocom"
+    history_kind = "cryptocom-cash"
     book_limits = (10, 50)
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Retain actual cumulative amounts; quote budgets never stand in for base units."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("instrument_name"):
+            from sibyl.exchanges.cryptocom_orders import OPEN, stamp
+
+            order.update(
+                filled=number(native.get("cumulative_quantity")),
+                cost=number(native.get("cumulative_value")),
+            )
+            if native.get("create_time") is not None:
+                order["timestamp"] = stamp(native) // 1000000
+            if native.get("status") in OPEN:
+                order["status"] = "open"
+            if native.get("order_type") == "MARKET" and native.get("side") == "BUY":
+                if (number(native.get("quantity")) or 0) <= 0:
+                    order.update(amount=None, remaining=None)
+        return order
 
     def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
         """The installed SDK omits unified clientOrderId; send native client_oid."""

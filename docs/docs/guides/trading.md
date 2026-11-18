@@ -56,6 +56,8 @@ The exchange receives a `clientOrderId` where supported by the adapter. Applicat
 
 Manual orders use the reviewed endpoint. [Approved exchange strategies](strategy-execution.md) reuse its durable intent pipeline with a separate fixed-scope approval. Agents and isolated paper strategies cannot submit exchange orders.
 
+Crypto.com Exchange supports regular cash open-order sync and recent history for exact selected pairs, GTC client-ID recovery and individual cash executions. Account history starts with seven days; exact-order reads inspect at most thirty days since creation. Missing cash-parent evidence and unverified fee-credit effects need review. Margin and advanced orders are excluded.
+
 Phemex open and recent order sync requires exact pairs. Gemini recent sync includes a bounded native closed-order snapshot, including cancellations without fills; a full 500-order response asks for review. Check the coverage note before treating a completed sync as complete history.
 
 ## Public order book

@@ -57,6 +57,12 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Crypto.com Exchange adds account-wide regular cash open-order discovery. Explicit native execution flags exclude margin, liquidation and advanced orders; absent scope evidence is excluded.
+- Crypto.com recent terminal-order discovery uses selected pairs, fixed native day ranges and saved nanosecond splits for capped responses.
+- Crypto.com ordinary cash GTC limits can recover uncertain submissions by exact saved `client_oid` and verified original terms, without repeating an order write.
+- Crypto.com exact-order execution checks verify the native cash parent, account, instrument and direction. Native trade IDs and signed fee costs/rebates share the Account ledger; unverified fee-credit consumption remains unknown.
+- Crypto.com selected-market Account history starts with seven days and overlaps one day on later passes. Exact-order reads cover at most thirty days since creation; missing parents, retention and saturated timestamp groups remain explicit coverage limits.
+
 - Phemex adds selected-pair open spot order discovery. Trade requires exact pairs before queuing Phemex and shows that its open-order scope differs from account-wide snapshots.
 
 - Phemex recent spot order discovery freezes creation bounds and saves native offset checkpoints across restart.

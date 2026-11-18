@@ -9,6 +9,7 @@ from sibyl.exchanges import (
     bitget_orders,
     bitmart_activity,
     coinex_activity,
+    cryptocom_orders,
     gate_orders,
     htx_orders,
     kucoin_orders,
@@ -49,6 +50,7 @@ DISCOVERY_PROVIDERS = {
     "poloniex",
     "upbit",
     "phemex",
+    "cryptocom",
     "demo",
 }
 DAY_MS = 86_400_000
@@ -62,8 +64,10 @@ DISCOVERY_HISTORY_PAIRS = {
     "mexc",
     "htx",
     "phemex",
+    "cryptocom",
 }
 DISCOVERY_NOTES = {
+    "cryptocom": "Crypto.com Exchange imports regular cash open orders and selected-pair recent terminal orders. Explicit execution flags exclude margin, liquidation and advanced instructions; missing scope evidence is excluded. Native day ranges split at saturation.",
     "phemex": "Phemex requires selected pairs for both open and recent spot orders. Native spot endpoints exclude margin and derivatives. Recent pages use frozen creation-time bounds and offset checkpoints.",
     "bitfinex": "Bitfinex imports ordinary unflagged EXCHANGE LIMIT/MARKET cash orders. Recent history filters creation time within the selected window; native closed history covers up to two weeks. Margin, linked, expiring and flagged orders are excluded.",
     "upbit": "Upbit Korea imports regular open orders and closed orders created within the selected one-to-seven-day window. Reserved orders and regional API variants are excluded. Capped history windows split; saturated timestamp groups need review.",
@@ -201,6 +205,11 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
     if provider == "bitget":
         return OrderDiscoveryPage(
             *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
+        )
+
+    if provider == "cryptocom":
+        return OrderDiscoveryPage(
+            *cryptocom_orders.discover_page(exchange, stream, cursor, start, end, symbols)
         )
 
     if provider == "phemex":
