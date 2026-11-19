@@ -10,7 +10,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Account synchronization        | partial       | Widen funding coverage and historical depth. Spot fill imports are already available for the configured exchanges.                              |
 | Portfolio accounting           | partial       | Complete history/flows, wider fee policies and wallet coverage beyond retained cross-pair FIFO.                                                   |
-| Order management               | partial       | MEXC market execution and recovery, Bitstamp closed-order coverage, and broader conditional and replacement orders.                 |
+| Order management               | partial       | CoinEx market execution and recovery, Bitstamp closed-order coverage, and broader conditional and replacement orders.                 |
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Venue and failure-case acceptance, ownership repair and definitive venue settlement.                      |
@@ -28,7 +28,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Twenty production spot-exchange clients, Binance Testnet, Coinbase Exchange Sandbox, and the persistent offline Demo account.
 - Public markets, candles, order-book snapshots, indicators, correlations and account balance reads.
 - Portfolio/account views, allocation, observed account-value snapshots and explicit unpriced holdings.
-- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for eleven production providers, including Bitfinex, Phemex and Crypto.com Exchange, plus the two dedicated test clients. The other nine configured production providers have reviewed GTC limits and cancellation. Recovery, exact executions and the separate strategy execution allowlist have provider-specific scope; Settings shows the implemented features and gaps.
+- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for twelve production providers, including Bitfinex, Phemex, Crypto.com Exchange and MEXC, plus the two dedicated test clients. The other eight configured production providers have reviewed GTC limits and cancellation. Recovery, exact executions and the separate strategy execution allowlist have provider-specific scope; Settings shows the implemented features and gaps.
 - Six rule-based strategies, cost-aware historical backtests, exact-input reruns, chart execution overlays, round-trip accounting, comparable saved runs and explicit Demo research/paper runs.
 - Sibyl orchestration and ten ProtoLink module agents with a startup runtime registry, client routing, contextual read-only tools, saved conversations and consultation evidence.
 - Live Sibyl consultation progress, request-specific cancellation and retained outcomes/evidence for completed, stopped, failed or interrupted requests. Startup marks unfinished requests interrupted without replaying them.
@@ -92,7 +92,10 @@ Reviewed market/GTC limit orders, exact precision checks, durable cancellation r
 
 Known orders now import native execution pages into the shared Account history ledger, compare quantity/cost and expose fee gaps in an in-place dialog. Three bounded terminal passes can pick up delayed evidence. [Client-ID recovery](order-recovery.md) now handles uncertain submissions on the reviewed clients with exact-detail checks and restart-safe bounded lookups; missing/ambiguous evidence remains uncertain. Complete settlement, broader provider support and authenticated acceptance remain pending. See [order/fill reconciliation](order-reconciliation.md).
 
-- [ ] Review MEXC cash market buys and sells with native base quantity, per-pair market support and client-ID recovery. Extend the same review to Gate, Bitget Classic, HTX, CoinEx, BitMart, Poloniex and Upbit where venue sizing matches Trade.
+- [x] Add MEXC base-sized manual cash market buys and sells with exact-pair permission, side, precision and market minimum checks.
+- [x] Recover MEXC base-sized market orders by saved client ID and original quantity, with explicit zero quote-budget evidence.
+- [ ] Review CoinEx cash market buys and sells using the native base currency in `ccy` and verify original units in client-ID recovery.
+- [ ] Review market execution for Gate, Bitget Classic, HTX, BitMart, Poloniex and Upbit where venue sizing matches Trade.
 - [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
 - [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
@@ -408,7 +411,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 
 ## Local implementation sequence
 
-1. **Reconciliation and venues.** Review MEXC market execution and recovery first. Follow with remaining venue market adapters, Bitstamp closed-order evidence, deeper order history, wider funding coverage and authenticated failure-case acceptance.
+1. **Reconciliation and venues.** Review CoinEx market execution and recovery first. Follow with remaining venue market adapters, Bitstamp closed-order evidence, deeper order history, wider funding coverage and authenticated failure-case acceptance.
 2. **Strategy ownership and deployment:** reviewed residual/manual inventory and explicitly approved multi-asset allocation execution beyond the implemented historical portfolio lab and separate causal ML/RL/Freqtrade research.
 3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
 4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.

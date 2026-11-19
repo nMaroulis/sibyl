@@ -72,7 +72,7 @@ RECOVERY_NOTES = {
     "bitmart": "Recover reviewed spot limits through the exact saved client ID. BitMart limits API-cancelled unfilled order queries to 20 minutes.",
     "coinex": "Find reviewed cash spot GTC limits through pending and bounded finished-order pages. CoinEx deletes cancelled orders that had no fills; missing records remain uncertain.",
     "htx": "Look up the exact client ID for the verified spot wallet. HTX limits client-ID lookup to eight hours and API-cancelled records to two hours.",
-    "mexc": "Recover a reviewed spot GTC limit by saved client ID on the exact pair. MEXC order lookup covers up to seven days.",
+    "mexc": "Recover reviewed spot GTC limits and base-sized market orders by saved client ID on the exact pair. Market evidence must explicitly show zero original quote budget. MEXC order lookup covers up to seven days.",
 }
 
 

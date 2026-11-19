@@ -2,6 +2,7 @@
 
 import json
 import re
+from decimal import Decimal
 
 import ccxt
 
@@ -36,8 +37,63 @@ def parse_order(exchange, row, market):
     return parsed
 
 
+def market_order_limits(exchange, symbol, side, amount) -> dict:
+    """Read the selected pair's current market-order rules and validate base sizing."""
+    market = exchange.market(symbol)
+    response = exchange.spotPublicGetExchangeInfo({"symbol": market["id"]})
+    rows = response.get("symbols") if isinstance(response, dict) else None
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        raise ValueError("MEXC did not return trading rules for the selected pair.")
+    rules = rows[0]
+    if (rules.get("symbol"), rules.get("baseAsset"), rules.get("quoteAsset")) != (
+        market["id"],
+        market["baseId"],
+        market["quoteId"],
+    ):
+        raise ValueError("MEXC returned trading rules for a different pair.")
+    types = rules.get("orderTypes")
+    if (
+        str(rules.get("status")) != "1"
+        or rules.get("isSpotTradingAllowed") is not True
+        or not isinstance(types, list)
+        or "MARKET" not in types
+        or str(rules.get("tradeSideType")) not in ({"1", "2"} if side == "buy" else {"1", "3"})
+    ):
+        raise ValueError(f"MEXC market {side} orders are unavailable for {symbol}.")
+
+    digits = str(rules.get("baseAssetPrecision"))
+    if not digits.isascii() or not digits.isdecimal() or len(digits) > 2 or int(digits) > 30:
+        raise ValueError("MEXC did not report a valid market quantity precision.")
+    quantity = Decimal(str(amount))
+    precise = Decimal(exchange.amount_to_precision(symbol, amount))
+    if precise != quantity or quantity.normalize().as_tuple().exponent < -int(digits):
+        raise ValueError("Quantity exceeds the MEXC market's base precision.")
+    minimum = number(rules.get("baseSizePrecision"))
+    if minimum is not None and amount < minimum:
+        raise ValueError(f"Order is below the MEXC minimum base quantity of {minimum}.")
+    return {
+        "cost": {
+            "min": number(rules.get("quoteAmountPrecisionMarket")),
+            "max": number(rules.get("maxQuoteAmountMarket")) or None,
+        },
+    }
+
+
+def original_market_quantity(row) -> float | None:
+    """Only treat market size as base when the venue explicitly reports zero quote budget."""
+    amount = number(row.get("origQty", row.get("Qty")))
+    if (
+        number(row.get("origQuoteOrderQty")) != 0
+        or amount is None
+        or amount <= 0
+        or ("origQty" in row and "Qty" in row and number(row["Qty"]) != amount)
+    ):
+        return None
+    return amount
+
+
 def lookup_order(exchange, client_id, symbol):
-    """Read an exact client ID and require plain GTC limit evidence before recovery."""
+    """Read an exact client ID and verify original GTC or base-sized market terms."""
     if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", client_id):
         raise ValueError("Invalid persisted MEXC client order ID.")
     market = exchange.market(symbol)
@@ -60,16 +116,24 @@ def lookup_order(exchange, client_id, symbol):
         or row.get("clientOrderId", row.get("origClientOrderId")) != client_id
         or row.get("origClientOrderId") not in (None, "", client_id)
         or row.get("status") not in OPEN | TERMINAL
-        or row.get("type") != "LIMIT"
-        or row.get("timeInForce") != "GTC"
+        or row.get("type") not in {"LIMIT", "MARKET"}
+        or row.get("side") not in {"BUY", "SELL"}
+        or row.get("stpMode") not in (None, "", "NONE")
         or row.get("orderListId") not in (None, -1, "-1")
         or any(
             row.get(key) not in (None, "") and number(row[key]) != 0 for key in ("stopPrice", "icebergQty")
         )
-        or (number(row.get("origQty", row.get("Qty"))) or 0) <= 0
-        or (number(row.get("price")) or 0) <= 0
     ):
-        raise ValueError("MEXC order evidence differs from the reviewed spot limit submission.")
+        raise ValueError("MEXC order evidence differs from the reviewed spot submission.")
+    if row["type"] == "LIMIT":
+        if (
+            row.get("timeInForce") != "GTC"
+            or (number(row.get("origQty", row.get("Qty"))) or 0) <= 0
+            or (number(row.get("price")) or 0) <= 0
+        ):
+            raise ValueError("MEXC order evidence differs from the reviewed spot limit.")
+    elif original_market_quantity(row) is None or row.get("timeInForce") not in (None, "", "GTC", "IOC"):
+        raise ValueError("MEXC order evidence differs from the reviewed base-sized market order.")
     identity(row.get("time"))
     parsed = parse_order(exchange, row, market)
     parsed["clientOrderId"] = client_id

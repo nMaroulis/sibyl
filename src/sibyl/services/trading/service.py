@@ -206,6 +206,7 @@ class ExchangeTrading:
                 raise ValueError(
                     f"Quantity exceeds market precision. Use {precise} or another valid quantity."
                 )
+            limits_by_field = market.get("limits") or {}
             if request.order_type != "market":
                 price = request.limit_price
                 precise_price = client.price_to_precision(request.symbol, price)
@@ -214,6 +215,8 @@ class ExchangeTrading:
                         f"Price exceeds market precision. Use {precise_price} or another valid price."
                     )
             else:
+                if (market_order_limits := getattr(client, "market_order_limits", None)) is not None:
+                    limits_by_field = market_order_limits(request.symbol, request.side, request.quantity)
                 ticker = client.fetch_ticker(request.symbol)
                 price = ticker.get("ask" if request.side == "buy" else "bid") or ticker.get("last")
             if not price or not math.isfinite(price) or price <= 0:
@@ -225,7 +228,7 @@ class ExchangeTrading:
             if request.order_type != "market":
                 fields.append(("price", price))
             for field, value in fields:
-                limits = (market.get("limits") or {}).get(field) or {}
+                limits = limits_by_field.get(field) or {}
                 if limits.get("min") is not None and value < limits["min"]:
                     raise ValueError(f"Order is below the exchange minimum {field} of {limits['min']}.")
                 if limits.get("max") is not None and value > limits["max"]:

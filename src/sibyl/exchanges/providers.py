@@ -1,8 +1,11 @@
 """Explicit spot clients: provider differences live here, not in domain services."""
 
+import ccxt
+
 from sibyl.exchanges.base import number
 from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
+from sibyl.exchanges.mexc_activity import market_order_limits, original_market_quantity
 
 
 class BinanceClient(BinanceAdvanced, CCXTClient):
@@ -261,6 +264,21 @@ class MEXCClient(CCXTClient):
         """MEXC client IDs fit its 32-character native limit."""
         return identity.replace("-", "")
 
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Check fresh, exact-pair permissions and return the market-specific preview limits."""
+        with self.lock:
+            self.market(symbol)
+            return market_order_limits(self._exchange, symbol, side, amount)
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Recheck pair rules and send native base quantity with the stored client ID."""
+        try:
+            self.market_order_limits(symbol, side, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            # The preflight failed before the native order endpoint was called.
+            raise ccxt.InvalidOrder("MEXC market order rules could not be satisfied.") from error
+        return super()._submit_market_order(symbol, side, amount, client_order_id)
+
     @staticmethod
     def _order(row: dict) -> dict:
         """Retain native amount and quote cost across the MEXC spot response variants."""
@@ -271,8 +289,15 @@ class MEXCClient(CCXTClient):
                 cost = number(native["cumulativeQuoteQty"])
                 order["cost"] = cost if cost is not None and cost >= 0 else None
                 order["average"] = cost / order["filled"] if cost and cost > 0 and order["filled"] else None
-            if native.get("type") == "MARKET" and native.get("side") == "BUY":
-                order.update(amount=None, remaining=None, filled=number(native.get("executedQty")))
+            if native.get("type") == "MARKET":
+                amount = original_market_quantity(native)
+                filled = number(native.get("executedQty"))
+                remaining = (
+                    amount - filled
+                    if amount is not None and filled is not None and 0 <= filled <= amount
+                    else None
+                )
+                order.update(amount=amount, remaining=remaining, filled=filled)
             elif order["amount"] is None and (amount := number(native.get("Qty"))) is not None:
                 order["amount"] = amount
                 if order["filled"] is not None and amount >= order["filled"]:

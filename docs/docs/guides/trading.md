@@ -22,7 +22,7 @@ Exchange execution is disabled by default. To enable it, set:
 SIBYL_ALLOW_LIVE_TRADING=true
 ```
 
-Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp, Bitfinex, Phemex and Crypto.com Exchange, plus the dedicated test clients. Gemini, Gate, Bitget Classic, MEXC, HTX, CoinEx, BitMart, Poloniex and Upbit support reviewed GTC limits and cancellation; market submission is not enabled for those clients. Settings → Exchanges shows the current support and gaps for each provider.
+Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp, Bitfinex, Phemex, Crypto.com Exchange and MEXC, plus the dedicated test clients. Gemini, Gate, Bitget Classic, HTX, CoinEx, BitMart, Poloniex and Upbit support reviewed GTC limits and cancellation; market submission is not enabled for those clients. Settings → Exchanges shows the current support and gaps for each provider.
 
 Restart the API, connect an account with the appropriate spot trading permission, and use the separate **Exchange execution** section. Choose the account and its production/sandbox environment carefully. This flow can spend actual exchange funds.
 
@@ -49,6 +49,8 @@ Before contacting the exchange, Sibyl persists the intent as `submitting`. A rep
 **Check the exchange before creating another order after an uncertain outcome.** Use **Recover order** where offered to read existing orders by the saved client ID. Settings → Exchanges shows which providers support lookup for the reviewed order type. Inspect the exchange directly when the lookup is unavailable. A matching account, client ID, market, side, quantity and order type are required before Sibyl attaches a native ID and resumes status/fill checks. Continue lookup advances unfinished history reads. No match is not proof that no order exists; ambiguous, incomplete or mismatched evidence still needs venue inspection. Nothing is automatically resubmitted. See [recovery behavior and provider limits](../developers/order-recovery.md).
 
 Poloniex supports recovery for reviewed cash spot GTC limits. Its order sync includes open cash orders and terminal orders updated in the chosen recent window, even when created earlier. Borrowed orders are excluded. Exact-order execution checks and seven-day selected-market Account imports verify cash parent evidence before retaining fills. Missing or archived parents need review. Upbit Korea supports regular open/recent order discovery and GTC identifier recovery; individual execution checks and regular-order history are now available. Per-fill fees remain unknown, and older closed orders may be missing. Reserved orders and other regional endpoints remain outside that coverage.
+
+MEXC market buys and sells use the entered base quantity. Preview checks whether the selected pair and side support market orders and whether the size fits the pair’s rules. Recovery uses the saved client ID and waits for the venue to confirm the original base size. Quote-budget and missing-size records require manual inspection.
 
 Bitstamp can recover a resting spot GTC limit using the saved client ID and the original size and price still visible in its open list. For a Bitstamp market or already closed order, inspect the venue using the saved client ID.
 

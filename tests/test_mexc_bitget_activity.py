@@ -212,7 +212,7 @@ def test_mexc_fills_do_not_complete_with_conflicting_or_capped_evidence(manual_c
         )
 
 
-def test_settings_reflect_new_read_paths_without_enabling_market_or_automated_orders():
+def test_settings_reflect_manual_market_and_read_paths_with_automation_pending():
     catalog = {row["id"]: row for row in provider_catalog()["items"]}
     features = {
         feature["id"]: feature["status"]
@@ -221,4 +221,4 @@ def test_settings_reflect_new_read_paths_without_enabling_market_or_automated_or
     }
     assert all(features[key] == "available" for key in ("history_import", "recovery", "fill_reconciliation"))
     assert features["automated"] == "pending"
-    assert not catalog["mexc"]["market_orders"]
+    assert catalog["mexc"]["market_orders"] and features["market_orders"] == "available"

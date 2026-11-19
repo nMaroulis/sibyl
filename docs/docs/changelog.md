@@ -57,6 +57,9 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- MEXC supports manual spot market buys and sells using the approved base quantity. Sibyl checks the selected pair's current API permissions and market sizing rules during review and rechecks eligibility before submission.
+- MEXC market orders can recover after an uncertain submission when the exact client ID, original base quantity and zero original quote budget agree. Partial fills and fees use the same execution ledger as Account history.
+
 - Bitstamp resting spot GTC limits can recover from an uncertain submission. Sibyl matches the saved client ID to fresh order status and verifies the original amount and limit price on the selected pair’s open-order list.
 
 - Bitfinex adds manually reviewed cash `EXCHANGE MARKET` buys and sells, preserving signed base amounts and the saved integer client ID.
