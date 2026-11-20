@@ -87,8 +87,10 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Recover resting Bitstamp spot GTC limits by exact client order ID, with original size and price corroborated by the selected pair’s open-order snapshot.
 - [x] Add MEXC base-sized manual cash market buys and sells with exact-pair permission, side, precision and market minimum checks.
 - [x] Recover MEXC base-sized market orders by saved client ID and original quantity, with explicit zero quote-budget evidence.
-- [ ] Review CoinEx cash market buys and sells using the native base currency in `ccy` and verify original units in client-ID recovery.
-- [ ] Review market execution for Gate, Bitget Classic, HTX, BitMart, Poloniex and Upbit where venue sizing matches Trade.
+- [x] Submit reviewed CoinEx cash market buys and sells using the native base currency in `ccy`, with exact-pair sizing and permission checks.
+- [x] Recover CoinEx cash market orders through bounded pending and finished pages when the original base currency and quantity match.
+- [ ] Review Gate cash market-order sizing and whether its native client-ID evidence covers both sides.
+- [ ] Review market execution for Bitget Classic, HTX, BitMart, Poloniex and Upbit where venue sizing matches Trade.
 - [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
 - [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.

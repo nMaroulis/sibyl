@@ -22,7 +22,7 @@ Exchange execution is disabled by default. To enable it, set:
 SIBYL_ALLOW_LIVE_TRADING=true
 ```
 
-Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp, Bitfinex, Phemex, Crypto.com Exchange and MEXC, plus the dedicated test clients. Gemini, Gate, Bitget Classic, HTX, CoinEx, BitMart, Poloniex and Upbit support reviewed GTC limits and cancellation; market submission is not enabled for those clients. Settings → Exchanges shows the current support and gaps for each provider.
+Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp, Bitfinex, Phemex, Crypto.com Exchange, MEXC and CoinEx, plus the dedicated test clients. Gemini, Gate, Bitget Classic, HTX, BitMart, Poloniex and Upbit support reviewed GTC limits and cancellation; market submission is not enabled for those clients. Settings → Exchanges shows the current support and gaps for each provider.
 
 Restart the API, connect an account with the appropriate spot trading permission, and use the separate **Exchange execution** section. Choose the account and its production/sandbox environment carefully. This flow can spend actual exchange funds.
 

@@ -14,6 +14,7 @@ from sibyl.exchanges.spot_history import history_note
 from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
 
 MARKET_NOTES = {
+    "coinex": " Both sides explicitly use the native base currency. The pair must be online and allow API trading.",
     "mexc": " Exact-pair rules must allow the selected side and market order type. Both sides use a base quantity.",
     "bitfinex": " Exchange-wallet EXCHANGE MARKET with a signed base amount and saved int45 cid; margin flags are excluded.",
     "phemex": " Spot ByBase IOC market orders preserve baseQtyEv and clOrdID; no quote budget is substituted.",

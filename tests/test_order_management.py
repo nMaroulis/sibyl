@@ -470,7 +470,6 @@ def test_native_limit_and_cancel_adapter_contract(monkeypatch, identity):
         "gate",
         "bitget",
         "htx",
-        "coinex",
         "bitmart",
         "poloniex",
         "upbit",

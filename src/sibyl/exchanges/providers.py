@@ -2,6 +2,7 @@
 
 import ccxt
 
+from sibyl.exchanges import coinex_activity
 from sibyl.exchanges.base import number
 from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
@@ -494,26 +495,44 @@ class CoinExClient(CCXTClient):
             symbol, "limit", side, amount, price, params={"client_id": client_order_id, "timeInForce": "GTC"}
         )
 
-    @staticmethod
-    def _order(row: dict) -> dict:
-        """Preserve v2 lifecycle states and keep currency-selected market sizing explicit."""
-        from sibyl.exchanges.coinex_activity import INSTRUCTIONS, STATUS
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Check current Spot API permission and base sizing before review."""
+        with self.lock:
+            self.market(symbol)
+            coinex_activity.market_order_amount(self._exchange, self._exchange.market(symbol), amount)
+        return {}
 
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Send one Spot order with the base currency explicitly set on either side."""
+        market = self._exchange.market(symbol)
+        try:
+            quantity = coinex_activity.market_order_amount(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder("CoinEx market order rules could not be satisfied.") from error
+        request = {
+            "market": market["id"],
+            "market_type": "SPOT",
+            "side": side,
+            "type": "market",
+            "ccy": market["baseId"],
+            "amount": quantity,
+            "client_id": client_order_id,
+        }
+        response = self._exchange.v2PrivatePostSpotOrder(request)
+        return coinex_activity.market_order_ack(self._exchange, market, request, response)
+
+    def _order(self, row: dict) -> dict:
+        """Preserve v2 lifecycle states and keep currency-selected market sizing explicit."""
         order = CCXTClient._order(row)
         native = row.get("info")
         if isinstance(native, dict):
-            order["status"] = STATUS.get(native.get("status"), order["status"])
+            order["status"] = coinex_activity.STATUS.get(native.get("status"), order["status"])
             kind = native.get("type")
-            if kind in INSTRUCTIONS:
-                order.update(type="limit", timeInForce=INSTRUCTIONS[kind])
+            if kind in coinex_activity.INSTRUCTIONS:
+                order.update(type="limit", timeInForce=coinex_activity.INSTRUCTIONS[kind])
             elif kind == "market":
-                filled, cost = number(native.get("filled_amount")), number(native.get("filled_value"))
-                order.update(
-                    amount=None,
-                    remaining=None,
-                    filled=filled,
-                    average=cost / filled if filled and cost is not None else None,
-                )
+                market = self._exchange.markets.get(order["symbol"], {})
+                order.update(coinex_activity.market_quantities(native, market.get("baseId")))
         return order
 
 

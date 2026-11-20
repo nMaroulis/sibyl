@@ -251,14 +251,14 @@ def test_known_order_status_checks_normalize_v2_states(manual_client, monkeypatc
     assert adapter.fetch_order(str(row["order_id"]), "BTC/USDT")["status"] == expected
 
 
-def test_settings_report_only_the_reviewed_read_paths():
+def test_settings_report_market_orders_and_reviewed_read_paths():
     (coinex,) = [row for row in provider_catalog()["items"] if row["id"] == "coinex"]
     features = {feature["id"]: feature for group in coinex["support"] for feature in group["features"]}
     assert coinex["history_import"] == "coinex-page"
     for name in ("history_import", "fill_reconciliation", "recovery", "discovery"):
         assert features[name]["status"] == "available"
     assert features["automated"]["status"] == "pending"
-    assert not coinex["market_orders"]
+    assert coinex["market_orders"] and features["market_orders"]["status"] == "available"
 
 
 @pytest.mark.parametrize("reported", ["0.01", None])

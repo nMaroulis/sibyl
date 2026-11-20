@@ -57,6 +57,7 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- CoinEx supports manual spot market buys and sells in the entered base quantity. Review and confirmation check current pair rules, and an uncertain submission can recover once both history scans verify the original currency, quantity and client ID.
 - MEXC supports manual spot market buys and sells using the approved base quantity. Sibyl checks the selected pair's current API permissions and market sizing rules during review and rechecks eligibility before submission.
 - MEXC market orders can recover after an uncertain submission when the exact client ID, original base quantity and zero original quote budget agree. Partial fills and fees use the same execution ledger as Account history.
 

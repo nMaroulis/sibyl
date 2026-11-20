@@ -9,6 +9,7 @@ ID, and native fill identities are shared by Account history and Trade.
 import hashlib
 import json
 import re
+from decimal import Decimal, InvalidOperation
 
 import ccxt
 
@@ -71,6 +72,90 @@ def cash_order(row):
     )
 
 
+def market_order_amount(exchange, market, amount) -> str:
+    """Read current exact-market rules and preserve the reviewed base amount."""
+    rows = data(exchange.v2PublicGetSpotMarket({"market": market["id"]}))
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        raise ValueError("CoinEx did not return rules for the selected pair.")
+    rules = rows[0]
+    if (rules.get("market"), rules.get("base_ccy"), rules.get("quote_ccy")) != (
+        market["id"],
+        market["baseId"],
+        market["quoteId"],
+    ):
+        raise ValueError("CoinEx returned rules for a different pair.")
+    if rules.get("status") != "online" or rules.get("is_api_trading_available") is not True:
+        raise ValueError("Spot market orders are unavailable for this CoinEx pair.")
+    digits = rules.get("base_ccy_precision")
+    if type(digits) is not int or not 0 <= digits <= 30:
+        raise ValueError("CoinEx did not report valid base quantity precision.")
+    quantity = Decimal(str(amount))
+    precise = exchange.amount_to_precision(market["symbol"], amount)
+    if Decimal(precise) != quantity or quantity.normalize().as_tuple().exponent < -digits:
+        raise ValueError("Quantity exceeds the CoinEx market's base precision.")
+    try:
+        minimum = Decimal(str(rules.get("min_amount")))
+    except InvalidOperation as error:
+        raise ValueError("CoinEx did not report a valid minimum base quantity.") from error
+    if not minimum.is_finite() or minimum < 0:
+        raise ValueError("CoinEx did not report a valid minimum base quantity.")
+    if quantity < minimum:
+        raise ValueError(f"Order is below the CoinEx minimum base quantity of {minimum}.")
+    return precise
+
+
+def market_order_ack(exchange, market, request, response) -> dict:
+    """Require native identity and original terms before attaching the acknowledgment."""
+    try:
+        row = data(response)
+        fields = ("market", "market_type", "side", "type", "ccy", "client_id")
+        if (
+            not isinstance(row, dict)
+            or not cash_order(row)
+            or any(row.get(field) != request[field] for field in fields)
+            or Decimal(str(row.get("amount"))) != Decimal(request["amount"])
+        ):
+            raise ValueError("CoinEx did not confirm the original market order terms.")
+        order_id = identity(row.get("order_id"))
+        if int(order_id) <= 0:
+            raise ValueError("Invalid CoinEx order identity.")
+        parsed = exchange.parse_order(row, market)
+    except (ccxt.ExchangeError, InvalidOperation) as error:
+        raise ValueError("CoinEx did not confirm usable market order details.") from error
+    parsed["id"] = order_id
+    return parsed
+
+
+def market_quantities(row, base_id) -> dict:
+    """Retain fills and cost, and use original sizing only with explicit base units."""
+    base_sized = base_id is not None and row.get("ccy") == base_id
+    filled, cost = number(row.get("filled_amount")), number(row.get("filled_value"))
+    return {
+        "amount": number(row.get("amount")) if base_sized else None,
+        "remaining": number(row.get("unfilled_amount")) if base_sized else None,
+        "filled": filled,
+        "cost": cost,
+        "average": cost / filled if filled and filled > 0 and cost is not None else None,
+    }
+
+
+def _finished_market_status(row, base_id) -> str:
+    """Resolve a statusless finished market row when base quantities agree."""
+    if row.get("ccy") != base_id:
+        return "unknown"
+    try:
+        amount, filled, left = (
+            Decimal(str(row.get(key))) for key in ("amount", "filled_amount", "unfilled_amount")
+        )
+    except InvalidOperation:
+        return "unknown"
+    if not (amount.is_finite() and filled.is_finite() and left.is_finite()):
+        return "unknown"
+    if not (filled > 0 and left >= 0 and amount - filled == left):
+        return "unknown"
+    return "canceled" if left else "closed"
+
+
 def parse_order(exchange, row, market, *, recent=False):
     """Normalize native status and amount units, including quote-sized market requests."""
     parsed = exchange.parse_order(row, market)
@@ -89,7 +174,7 @@ def parse_order(exchange, row, market, *, recent=False):
         if remaining is None or remaining < 0:
             raise ccxt.ExchangeError("Missing CoinEx finished-order remainder.")
         if row["type"] == "market":
-            parsed["status"] = "unknown"
+            parsed["status"] = _finished_market_status(row, market["baseId"])
         else:
             parsed["status"] = "canceled" if remaining > 0 else "closed"
     else:
@@ -97,8 +182,8 @@ def parse_order(exchange, row, market, *, recent=False):
     kind = row["type"]
     if kind in INSTRUCTIONS:
         parsed.update(type="limit", timeInForce=INSTRUCTIONS[kind])
-    elif kind == "market" and row.get("ccy") != market["baseId"]:
-        parsed.update(amount=None, remaining=None)
+    elif kind == "market":
+        parsed.update(market_quantities(row, market["baseId"]))
     return parsed
 
 
@@ -151,12 +236,18 @@ def lookup_page(exchange, client_id, symbol, cursor):
             continue
         if (
             not cash_order(row)
-            or row.get("type") != "limit"
-            or row.get("ccy") not in (None, "", market["baseId"])
+            or row.get("type") not in ("limit", "market")
+            or row.get("side") not in ("buy", "sell")
             or row.get("is_hide") not in (None, False)
             or (number(row.get("amount")) or 0) <= 0
-            or (number(row.get("price")) or 0) <= 0
         ):
+            raise ValueError("CoinEx order evidence differs from the reviewed spot order.")
+        if row["type"] == "market":
+            if row.get("ccy") != market["baseId"] or row.get("stp_mode") not in (None, ""):
+                raise ValueError(
+                    "CoinEx market recovery requires the original base currency and ordinary cash terms."
+                )
+        elif row.get("ccy") not in (None, "", market["baseId"]) or (number(row.get("price")) or 0) <= 0:
             raise ValueError("CoinEx order evidence differs from the reviewed spot GTC limit.")
         candidates.append(parse_order(exchange, row, market, recent=recent))
     if following:

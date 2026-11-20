@@ -52,7 +52,7 @@ Provider subclasses share market, balance, order-status, open-order and bounded 
 | Bitstamp / `bitstamp`             | —                                        | Spot                                               | No              | Implemented · guarded manual flow                |
 | Gemini / `gemini`                 | —                                        | Spot                                               | Yes             | GTC limit + cancel only; no native market orders |
 | Bitfinex / `bitfinex`             | —                                        | Exchange wallet                                    | No              | Market + GTC limit + cancel                                          |
-| CoinEx / `coinex`                 | —                                        | Spot                                               | No              | GTC limit + cancel only                                          |
+| CoinEx / `coinex`                 | —                                        | Spot                                               | No              | Market, GTC limit and cancel                                          |
 | BitMart / `bitmart`               | API memo → CCXT `uid`                    | Spot                                               | No              | GTC limit + cancel only                                          |
 | Phemex / `phemex`                 | —                                        | Spot                                               | Yes             | Market + GTC limit + cancel                                          |
 | Poloniex / `poloniex`             | —                                        | Spot                                               | No              | GTC limit + cancel only                                          |
@@ -181,7 +181,7 @@ All twenty configured production providers now have a guarded manual GTC limit/c
 | [HTX](https://huobiapi.github.io/docs/spot/v1/en/) | Requires exactly one identifiable spot wallet for balances/submissions, native account ID, spot-api source and client order ID. Ambiguous wallets fail locally. |
 | [Crypto.com](https://exchange-docs.crypto.com/exchange/v1/rest-ws/index.html#private-create-order) | Native `client_oid`, base quantity, explicit SPOT; GTC limits and IOC markets. The installed SDK does not forward the unified client ID for this method. |
 | [Bitfinex](https://docs.bitfinex.com/reference/rest-auth-submit-order) | EXCHANGE LIMIT/MARKET, signed base amount, integer int45 `cid`. Generated IDs are checked for local collision before review persistence. |
-| [CoinEx](https://docs.coinex.com/api/v2/spot/order/http/put-order) | SPOT limit, base amount and native `client_id`. |
+| [CoinEx](https://docs.coinex.com/api/v2/spot/order/http/put-order) | SPOT market and limit, with native `client_id`. Market orders explicitly set the base sizing currency in `ccy`. |
 | [BitMart](https://developer-pro.bitmart.com/en/spot/) | Base `size`, alphanumeric client ID, API memo authentication. |
 | [Phemex](https://phemex-docs.github.io/) | Spot `ByBase`, instrument-scaled base quantity/price, native GoodTillCancel limits or ImmediateOrCancel markets, and `clOrdID`. |
 | [Poloniex](https://api-docs.poloniex.com/spot/api/private/order) | Spot base quantity, GTC, no margin borrowing. |

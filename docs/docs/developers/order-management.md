@@ -10,8 +10,8 @@ Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native 
 | Binance Testnet, Coinbase Exchange Sandbox                                                     | Yes                        | Yes                   | Yes                  | REST native order ID                |
 | Demo                                                                                           | Existing paper market form | Virtual resting order | Virtual cancellation | Local synthetic matcher             |
 | Gemini                                                                                         | No                         | Yes                   | Yes                  | REST native order ID                |
-| Bitfinex, Phemex, Crypto.com Exchange, MEXC                                                           | Yes · base quantity        | Yes                   | Yes                  | Cash scope and native client ID     |
-| Gate, Bitget Classic, HTX, CoinEx, BitMart, Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
+| Bitfinex, Phemex, Crypto.com Exchange, MEXC, CoinEx                                                           | Yes · base quantity        | Yes                   | Yes                  | Cash scope and native client ID     |
+| Gate, Bitget Classic, HTX, BitMart, Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
 
 Native account acceptance testing remains outstanding. Contract tests use controlled transports; they do not establish production account permissions, regional availability or authenticated exchange acceptance. Coinbase Advanced and Coinbase Exchange Sandbox use different APIs.
 
@@ -24,6 +24,8 @@ Bitfinex uses native `EXCHANGE MARKET`, a signed base amount and the saved posit
 These providers also have [read-only recovery](order-recovery.md) for the reviewed market terms and shared individual-fill reconciliation. New market support does not extend the separate strategy provider allowlist. A market reference is an estimate, not a price or quote-spend cap. Live provider acceptance remains outstanding. Contracts: [Bitfinex submit](https://docs.bitfinex.com/reference/rest-auth-submit-order), [Phemex spot submit](https://github.com/phemex/phemex-api-docs/blob/master/Public-Spot-API-en.md#spotPlaceOrder), [Crypto.com submit](https://exchange-developer.crypto.com/exchange/v1/docs/api/rest-single-page/#privatecreate-order).
 
 MEXC sends native `quantity` for both market sides with the saved `newClientOrderId`. The preview reads the exact pair's current spot and market permissions, allowed sides and base sizing rules. It compares the reference notional with the market-specific quote limits. Confirmation rechecks current permission and base sizing before making one order request. MEXC applies its actual execution limits. The Chinese API reference explicitly documents either sizing parameter for either side, while the English examples describe quote-sized buys and base-sized sells. Authenticated MEXC acceptance is pending. [MEXC pair rules](https://www.mexc.com/api-docs/spot-v3/market-data-endpoints/exchange-information) · [MEXC order contract](https://www.mexc.com/zh-hans/api-docs/spot-v3/spot-account-trade/new-order).
+
+CoinEx sets `ccy` to the pair’s base currency on both sides of a native market order. Preview and confirmation verify the current exact pair, Spot API permission, base precision and minimum quantity. The acknowledgment must confirm the original terms before Sibyl attaches the native order ID. [CoinEx market rules](https://docs.coinex.com/api/v2/spot/market/http/list-market) · [CoinEx order contract](https://docs.coinex.com/api/v2/spot/order/http/put-order).
 
 ## Native advanced orders
 
