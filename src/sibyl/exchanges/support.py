@@ -14,6 +14,7 @@ from sibyl.exchanges.spot_history import history_note
 from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
 
 MARKET_NOTES = {
+    "gate": " IOC sells are sized in the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
     "coinex": " Both sides explicitly use the native base currency. The pair must be online and allow API trading.",
     "mexc": " Exact-pair rules must allow the selected side and market order type. Both sides use a base quantity.",
     "bitfinex": " Exchange-wallet EXCHANGE MARKET with a signed base amount and saved int45 cid; margin flags are excluded.",
@@ -96,7 +97,7 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
             "features": [
                 feature(
                     "market_orders",
-                    "Market buy & sell",
+                    "Market sell · IOC" if spec.market_sell_only else "Market buy & sell",
                     market_orders,
                     "Reviewed base-asset quantity; preview and explicit confirmation required."
                     + MARKET_NOTES.get(spec.id, "")

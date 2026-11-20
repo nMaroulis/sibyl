@@ -44,7 +44,7 @@ Provider subclasses share market, balance, order-status, open-order and bounded 
 | OKX / `okx`                       | Passphrase                               | Trading wallet                                     | Yes             | Implemented · guarded manual flow                |
 | Bybit / `bybit`                   | —                                        | Unified account; shared collateral may be included | Yes             | Implemented · guarded manual flow                |
 | KuCoin / `kucoin`                 | Passphrase                               | Classic spot trading wallet                        | No              | Implemented · guarded manual flow                |
-| Gate / `gate`                     | —                                        | Spot                                               | Yes             | GTC limit + cancel only                                          |
+| Gate / `gate`                     | —                                        | Spot                                               | Yes             | IOC market sell, GTC limit and cancel                                          |
 | Bitget / `bitget`                 | Passphrase                               | Classic spot wallet                                | No              | GTC limit + cancel only                                          |
 | MEXC / `mexc`                     | —                                        | Spot                                               | No              | Market + GTC limit + cancel                                          |
 | HTX / `htx`                       | —                                        | Spot                                               | No              | GTC limit + cancel only                                          |
@@ -175,7 +175,7 @@ All twenty configured production providers now have a guarded manual GTC limit/c
 
 | Provider | Native contract and official reference |
 | --- | --- |
-| [Gate](https://www.gate.com/docs/developers/apiv4/en/spot/) | Classic spot only; base `amount`, `time_in_force=gtc`, persisted `t-` client text. Unified/margin probing disabled. |
+| [Gate](https://www.gate.com/docs/developers/apiv4/en/spot/) | Classic spot only. GTC limits and IOC market sells send base `amount` and persisted `t-` client text. Gate market buys require a quote budget. Unified/margin probing disabled. |
 | [Bitget](https://www.bitget.com/legacy-docs/classic/spot/trade/Place-Order) | Classic v2 spot only, base `size`, lowercase `force=gtc`, `clientOid`; UTA disabled. |
 | [MEXC](https://mexcdevelop.github.io/apidocs/spot_v3_en/) | Spot v3 market and GTC limits, base quantity and compact `newClientOrderId`. Market orders check native pair permissions and sizing. |
 | [HTX](https://huobiapi.github.io/docs/spot/v1/en/) | Requires exactly one identifiable spot wallet for balances/submissions, native account ID, spot-api source and client order ID. Ambiguous wallets fail locally. |

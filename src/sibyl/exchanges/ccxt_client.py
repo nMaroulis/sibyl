@@ -397,7 +397,7 @@ class CCXTClient(ExchangeClient):
         price: float | None = None,
     ) -> dict:
         """Submit once for reviewed production providers and dedicated test environments."""
-        if not self.spec.supports_order(type):
+        if not self.spec.supports_order(type, side):
             raise ccxt.NotSupported(f"{type.title()} orders are not enabled for this provider.")
         if (
             type not in {"market", "limit"}

@@ -332,7 +332,9 @@ def test_discrete_book_depth_and_invalid_candles(monkeypatch):
         client.fetch_ohlcv("BTC/USDT")
 
 
-@pytest.mark.parametrize("identity", [spec.id for spec in EXCHANGES if not spec.market_orders])
+@pytest.mark.parametrize(
+    "identity", [spec.id for spec in EXCHANGES if not spec.supports_order("market", "buy")]
+)
 def test_new_adapters_do_not_enable_unreviewed_execution(monkeypatch, identity):
     client = fake_client(monkeypatch, identity)
     with pytest.raises(ccxt.NotSupported, match="not enabled"):
@@ -341,7 +343,8 @@ def test_new_adapters_do_not_enable_unreviewed_execution(monkeypatch, identity):
 
 
 @pytest.mark.parametrize(
-    "identity", [spec.id for spec in EXCHANGES if spec.market_orders and spec.id != "coinex"]
+    "identity",
+    [spec.id for spec in EXCHANGES if spec.supports_order("market", "buy") and spec.id != "coinex"],
 )
 def test_market_submission_never_retries_ambiguous_response(monkeypatch, identity):
     client = fake_client(monkeypatch, identity)

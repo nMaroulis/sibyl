@@ -44,9 +44,14 @@ export function ExchangeExecution({
   const selectedProvider = catalog.data?.items.find(
     (provider) => provider.id === eligible.find((account) => account.id === accountId)?.exchange,
   );
+  const marketAvailable =
+    !demo &&
+    (selectedProvider?.market_order_sides?.includes(side) ??
+      selectedProvider?.market_orders !== false);
+  const marketSellsOnly = selectedProvider?.market_order_sides?.join() === 'sell';
   const orderType =
     demo ||
-    selectedProvider?.market_orders === false ||
+    (!marketAvailable && requestedOrderType === 'market') ||
     (!selectedProvider?.conditional_orders &&
       ['stop_loss_limit', 'take_profit_limit'].includes(requestedOrderType))
       ? 'limit'
@@ -126,7 +131,16 @@ export function ExchangeExecution({
                     value={accountId || ''}
                     disabled={busy}
                     onChange={(event) => {
-                      setConnectionId(event.target.value);
+                      const nextId = event.target.value;
+                      const exchange = eligible.find((account) => account.id === nextId)?.exchange;
+                      const provider = catalog.data?.items.find((item) => item.id === exchange);
+                      if (
+                        requestedOrderType === 'market' &&
+                        provider?.market_order_sides?.join() === 'sell'
+                      ) {
+                        setOrderType('limit');
+                      }
+                      setConnectionId(nextId);
                       reset();
                     }}
                   >
@@ -158,7 +172,15 @@ export function ExchangeExecution({
                       value={side}
                       disabled={busy}
                       onChange={(event) => {
-                        setSide(event.target.value as 'buy' | 'sell');
+                        const nextSide = event.target.value as 'buy' | 'sell';
+                        if (
+                          marketSellsOnly &&
+                          nextSide === 'buy' &&
+                          requestedOrderType === 'market'
+                        ) {
+                          setOrderType('limit');
+                        }
+                        setSide(nextSide);
                         reset();
                       }}
                     >
@@ -178,8 +200,10 @@ export function ExchangeExecution({
                         reset();
                       }}
                     >
-                      {!demo && selectedProvider?.market_orders !== false && (
-                        <option value="market">Market</option>
+                      {marketAvailable && (
+                        <option value="market">
+                          {marketSellsOnly ? 'Market · IOC' : 'Market'}
+                        </option>
                       )}
                       <option value="limit">Limit · GTC</option>
                       {selectedProvider?.conditional_orders && (
@@ -206,6 +230,9 @@ export function ExchangeExecution({
                     />
                   </label>
                 </div>
+                {marketSellsOnly && side === 'buy' && (
+                  <small>Gate market buys require a quote budget. Choose a GTC limit buy.</small>
+                )}
                 {orderType !== 'market' && (
                   <label>
                     Limit price · {symbol.split('/')[1] || 'quote currency'}

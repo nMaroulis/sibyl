@@ -174,7 +174,12 @@ class ExchangeTrading:
             self._enabled()
         if not connection.active:
             raise ValueError("Activate this exchange account in Settings before reviewing an order.")
-        if not (demo or exchange_spec(connection.exchange).supports_order(request.order_type)):
+        spec = exchange_spec(connection.exchange)
+        if not (demo or spec.supports_order(request.order_type, request.side)):
+            if request.order_type == "market" and spec.market_sell_only:
+                raise ValueError(
+                    f"{spec.name} market buys require a quote-currency budget. Choose a GTC limit buy."
+                )
             raise ValueError(
                 "Manual exchange orders are not enabled for this provider. Read access is available."
             )

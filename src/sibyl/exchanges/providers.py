@@ -2,7 +2,7 @@
 
 import ccxt
 
-from sibyl.exchanges import coinex_activity
+from sibyl.exchanges import coinex_activity, gate_orders
 from sibyl.exchanges.base import number
 from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
@@ -204,9 +204,39 @@ class GateClient(CCXTClient):
         """Persist the complete native Gate text ID, including its t- prefix."""
         return "t-" + identity.replace("-", "")[:26]
 
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Check current Gate rules for the supported market side before review."""
+        if side != "sell":
+            raise ccxt.NotSupported("Gate market buys require a quote-currency budget.")
+        with self.lock:
+            self.market(symbol)
+            _, limits = gate_orders.market_sell_terms(self._exchange, self._exchange.market(symbol), amount)
+        return limits
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Send a single native cash IOC sell with the reviewed base quantity."""
+        if side != "sell" or not gate_orders.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("Gate requires a market sell with a valid native client order ID.")
+        market = self._exchange.market(symbol)
+        try:
+            quantity, _ = gate_orders.market_sell_terms(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder("Gate market sell rules could not be satisfied.") from error
+        request = {
+            "currency_pair": market["id"],
+            "account": "spot",
+            "type": "market",
+            "side": "sell",
+            "amount": quantity,
+            "time_in_force": "ioc",
+            "text": client_order_id,
+        }
+        row = self._exchange.privateSpotPostOrders(request)
+        return gate_orders.parse_market_sell_ack(self._exchange, market, request, row)
+
     @staticmethod
     def _order(row: dict) -> dict:
-        """Keep native executed amounts and avoid deriving a base request from a quote budget."""
+        """Preserve native cash fills and the request's actual sizing units."""
         order = CCXTClient._order(row)
         native = row.get("info")
         if isinstance(native, dict) and native.get("account") == "spot":
@@ -216,6 +246,14 @@ class GateClient(CCXTClient):
                 order.update(
                     amount=None,
                     remaining=None,
+                    filled=filled,
+                    cost=number(native.get("filled_total")),
+                )
+            elif native.get("type") == "market" and native.get("side") == "sell":
+                order.update(
+                    status=gate_orders.market_sell_status(native),
+                    amount=number(native.get("amount")),
+                    remaining=number(native.get("left")),
                     filled=filled,
                     cost=number(native.get("filled_total")),
                 )

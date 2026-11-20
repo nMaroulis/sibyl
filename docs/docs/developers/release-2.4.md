@@ -89,8 +89,10 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Recover MEXC base-sized market orders by saved client ID and original quantity, with explicit zero quote-budget evidence.
 - [x] Submit reviewed CoinEx cash market buys and sells using the native base currency in `ccy`, with exact-pair sizing and permission checks.
 - [x] Recover CoinEx cash market orders through bounded pending and finished pages when the original base currency and quantity match.
-- [ ] Review Gate cash market-order sizing and whether its native client-ID evidence covers both sides.
-- [ ] Review market execution for Bitget Classic, HTX, BitMart, Poloniex and Upbit where venue sizing matches Trade.
+- [x] Submit Gate cash spot IOC market sells in the reviewed base quantity, with exact-pair sell status and sizing checks.
+- [x] Recover Gate market sells through exact client text and bounded finished-order pages, with original base sizing and partial-fill reconciliation.
+- [ ] Add explicit quote-budget market buys for Gate, including preview, fill bounds and persisted recovery terms.
+- [ ] Review Bitget Classic market-order sizing and recovery next. Review HTX, BitMart, Poloniex and Upbit afterward.
 - [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
 - [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.

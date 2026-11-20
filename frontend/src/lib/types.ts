@@ -910,6 +910,7 @@ export type ExchangeProvider = {
   uid: boolean;
   sandbox: boolean;
   market_orders: boolean;
+  market_order_sides?: Array<'buy' | 'sell'>;
   limit_orders: boolean;
   cancel_orders: boolean;
   verification: string;

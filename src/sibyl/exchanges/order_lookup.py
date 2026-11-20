@@ -66,7 +66,7 @@ RECOVERY_NOTES = {
     "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",
     "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
     "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
-    "gate": "Look up a reviewed cash spot GTC limit by its saved client ID. A pending-order miss checks up to seven days of finished orders.",
+    "gate": "Recover cash spot GTC limits and base-sized IOC market sells by saved client ID. A direct miss checks bounded finished orders on the same pair.",
     "bitget": "Recover a reviewed Classic spot limit using its exact clientOid and original terms. Bitget retains API-cancelled records for up to two hours.",
     "poloniex": "Recover reviewed unborrowed spot GTC limits through the exact saved client ID. Native retention and archived orders can limit lookup coverage.",
     "bitmart": "Recover reviewed spot limits through the exact saved client ID. BitMart limits API-cancelled unfilled order queries to 20 minutes.",
@@ -363,7 +363,7 @@ def _gemini_lookup(exchange, client_id, symbol) -> OrderLookupPage:
 
 def _gate_lookup(exchange, client_id, symbol, cursor, start) -> OrderLookupPage:
     """Read by native text while pending, then scan bounded finish history for an exact client ID."""
-    if not isinstance(client_id, str) or not re.fullmatch(r"t-[A-Za-z0-9_.-]{1,28}", client_id):
+    if not gate_orders.valid_client_id(client_id):
         raise ValueError("Invalid persisted Gate client order ID.")
     market = exchange.market(symbol)
     instrument = market["id"]
@@ -395,10 +395,12 @@ def _gate_lookup(exchange, client_id, symbol, cursor, start) -> OrderLookupPage:
             not isinstance(row, dict)
             or row.get("text") != client_id
             or row.get("currency_pair") != instrument
-            or not gate_orders.reviewed_limit(row)
+            or not (gate_orders.reviewed_limit(row) or gate_orders.reviewed_market_sell(row))
         ):
-            raise ValueError("Gate order evidence differs from the reviewed cash spot limit.")
+            raise ValueError("Gate order evidence differs from the reviewed cash spot order.")
         native_id = identity(row.get("id"))
+        if int(native_id) <= 0:
+            raise ValueError("Invalid Gate order identity.")
         parsed = exchange.parse_order(row, market)
         parsed["id"] = native_id
         candidates.append(parsed)
