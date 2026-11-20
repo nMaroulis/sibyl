@@ -2,7 +2,7 @@
 
 import ccxt
 
-from sibyl.exchanges import coinex_activity, gate_orders
+from sibyl.exchanges import bitget_orders, coinex_activity, gate_orders
 from sibyl.exchanges.base import number
 from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
@@ -272,14 +272,57 @@ class BitgetClient(CCXTClient):
         """Use a stable compact classic-account clientOid."""
         return identity.replace("-", "")
 
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Read current Classic spot rules before preparing a base-sized sell."""
+        if side != "sell":
+            raise ccxt.NotSupported("Bitget Classic market buys require a quote-currency budget.")
+        with self.lock:
+            self.market(symbol)
+            _, limits = bitget_orders.market_sell_terms(self._exchange, self._exchange.market(symbol), amount)
+        return limits
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Place one native Classic spot market sell with a saved clientOid."""
+        if side != "sell" or not bitget_orders.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("Bitget requires a market sell with a valid client order ID.")
+        market = self._exchange.market(symbol)
+        try:
+            quantity, _ = bitget_orders.market_sell_terms(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder("Bitget market sell rules could not be satisfied.") from error
+        # The required force field has no effect on Bitget market orders.
+        row = self._exchange.privateSpotPostV2SpotTradePlaceOrder(
+            {
+                "symbol": market["id"],
+                "side": "sell",
+                "orderType": "market",
+                "force": "gtc",
+                "size": quantity,
+                "clientOid": client_order_id,
+                "tpslType": "normal",
+            }
+        )
+        return bitget_orders.market_sell_ack(row, client_order_id)
+
+    def fetch_order(self, order_id: str, symbol: str) -> dict:
+        """Read exact Classic spot details by native ID, including known sell sizes."""
+        with self.lock:
+            self._require("fetchOrder", private=True)
+            self.market(symbol)
+            market = self._exchange.market(symbol)
+            row = bitget_orders.order_detail(self._exchange, market, orderId=str(order_id))
+            if row is None:
+                raise ccxt.OrderNotFound("Bitget Classic spot order is unavailable.")
+            return self._order(bitget_orders.parse_order(self._exchange, row, market, detail=True))
+
     @staticmethod
     def _order(row: dict) -> dict:
-        """Show reported base/quote fills and leave original market sizing units unknown."""
+        """Keep original market sizes unknown on generic SDK list and cancel responses."""
         order = CCXTClient._order(row)
         native = row.get("info")
         if isinstance(native, dict):
             if native.get("orderType") == "market":
-                order.update(amount=None, remaining=None)
+                order.update(bitget_orders.market_quantities(native))
             elif native.get("orderType") == "limit" and native.get("price") not in (None, ""):
                 order["price"] = number(native["price"])
         return order

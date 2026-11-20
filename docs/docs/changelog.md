@@ -57,6 +57,7 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Bitget Classic supports reviewed spot market sells in the entered base quantity. An uncertain submission can recover using its saved client ID and the original quantity from exact order details. Fill quantities and fees stay separate from the original size.
 - Gate supports reviewed cash spot IOC market sells using the entered base quantity. Sibyl checks current pair rules and can recover uncertain submissions by the saved client text and original size, preserving partial fills and fees.
 - CoinEx supports manual spot market buys and sells in the entered base quantity. Review and confirmation check current pair rules, and an uncertain submission can recover once both history scans verify the original currency, quantity and client ID.
 - MEXC supports manual spot market buys and sells using the approved base quantity. Sibyl checks the selected pair's current API permissions and market sizing rules during review and rechecks eligibility before submission.

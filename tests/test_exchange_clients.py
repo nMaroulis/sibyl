@@ -176,6 +176,32 @@ class BitfinexTransport(Transport):
         return {**self.fetch_order(str(row[0]), market["symbol"]), "info": row}
 
 
+class BitgetTransport(Transport):
+    """Return native Classic detail data for the common read contract."""
+
+    def market(self, symbol):
+        return {"id": "BTCUSDT", "baseId": "BTC", "quoteId": "USDT", "symbol": symbol}
+
+    def privateSpotGetV2SpotTradeOrderInfo(self, params):
+        return {
+            "code": "00000",
+            "data": [
+                {
+                    "orderId": params["orderId"],
+                    "symbol": "BTCUSDT",
+                    "orderType": "limit",
+                    "side": "buy",
+                    "price": "100",
+                    "status": "live",
+                    "private": "PRIVATE-SENTINEL",
+                }
+            ],
+        }
+
+    def parse_order(self, response, market):
+        return {**self.fetch_order(response["orderId"], market["symbol"]), "info": response}
+
+
 def credentials(identity):
     return {
         "apiKey": "PRIVATE-KEY",
@@ -189,7 +215,7 @@ def fake_client(monkeypatch, identity="binance", private=True, sandbox=False):
     monkeypatch.setattr(
         ccxt,
         CATALOG[identity].ccxt_id or identity,
-        BitfinexTransport if identity == "bitfinex" else Transport,
+        {"bitfinex": BitfinexTransport, "bitget": BitgetTransport}.get(identity, Transport),
     )
     return create_client(identity, credentials=credentials(identity) if private else None, sandbox=sandbox)
 
@@ -222,7 +248,7 @@ def test_all_provider_classes_implement_normalized_read_contract(monkeypatch, id
         "balance",
         {"type": "spot", "account-id": "1234"} if identity == "htx" else client.balance_params,
     ) in client._exchange.events
-    status = client.fetch_order("123456" if identity == "bitfinex" else "order-1", "BTC/USDT")
+    status = client.fetch_order("123456" if identity in {"bitfinex", "bitget"} else "order-1", "BTC/USDT")
     orders = client.fetch_open_orders("BTC/USDT")
     trades = client.fetch_my_trades("BTC/USDT", since=123, limit=25)
     assert trades[0]["fee"] == {"cost": 0.1, "currency": "USDT"}

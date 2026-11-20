@@ -12,7 +12,8 @@ Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native 
 | Gemini                                                                                         | No                         | Yes                   | Yes                  | REST native order ID                |
 | Bitfinex, Phemex, Crypto.com Exchange, MEXC, CoinEx                                                           | Yes · base quantity        | Yes                   | Yes                  | Cash scope and native client ID     |
 | Gate | Sell · base quantity · IOC | Yes | Yes | Cash wallet and native client text |
-| Bitget Classic, HTX, BitMart, Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
+| Bitget Classic | Sell · base quantity | Yes | Yes | Classic v2 spot and native clientOid |
+| HTX, BitMart, Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
 
 Native account acceptance testing remains outstanding. Contract tests use controlled transports; they do not establish production account permissions, regional availability or authenticated exchange acceptance. Coinbase Advanced and Coinbase Exchange Sandbox use different APIs.
 
@@ -29,6 +30,8 @@ MEXC sends native `quantity` for both market sides with the saved `newClientOrde
 CoinEx sets `ccy` to the pair’s base currency on both sides of a native market order. Preview and confirmation verify the current exact pair, Spot API permission, base precision and minimum quantity. The acknowledgment must confirm the original terms before Sibyl attaches the native order ID. [CoinEx market rules](https://docs.coinex.com/api/v2/spot/market/http/list-market) · [CoinEx order contract](https://docs.coinex.com/api/v2/spot/order/http/put-order).
 
 Gate sends a cash spot IOC market sell with the reviewed base `amount` and persisted native `text`. Preview and confirmation check current exact-pair sell eligibility, base precision and native base limits. Preview also checks the reference notional against the reported quote limits. Market buys require an explicit quote-currency budget and remain pending. [Gate spot order and currency-pair contracts](https://www.gate.com/docs/developers/apiv4/en/spot/).
+
+Bitget Classic submits spot market sells with native base `size` and the saved `clientOid`. Preview and confirmation check current pair status and base precision. The preview compares the reference notional with published USDT bounds on USDT pairs. Bitget applies its native value limits at execution. The placement acknowledgment confirms identity, while exact order details provide cumulative fills. Market buys require an explicit quote budget. [Bitget Classic trade](https://www.bitget.com/docs/catalog/classic-spot-trade/classic-spot-trade) · [Bitget symbol rules](https://www.bitget.com/legacy-docs/classic/spot/market/Get-Symbols).
 
 ## Native advanced orders
 

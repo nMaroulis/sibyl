@@ -202,7 +202,7 @@ export function ExchangeExecution({
                     >
                       {marketAvailable && (
                         <option value="market">
-                          {marketSellsOnly ? 'Market · IOC' : 'Market'}
+                          {selectedProvider?.id === 'gate' ? 'Market · IOC' : 'Market'}
                         </option>
                       )}
                       <option value="limit">Limit · GTC</option>
@@ -231,7 +231,10 @@ export function ExchangeExecution({
                   </label>
                 </div>
                 {marketSellsOnly && side === 'buy' && (
-                  <small>Gate market buys require a quote budget. Choose a GTC limit buy.</small>
+                  <small>
+                    {selectedProvider?.name} market buys require a quote budget. Choose a GTC limit
+                    buy.
+                  </small>
                 )}
                 {orderType !== 'market' && (
                   <label>

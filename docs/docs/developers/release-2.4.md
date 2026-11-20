@@ -91,8 +91,10 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Recover CoinEx cash market orders through bounded pending and finished pages when the original base currency and quantity match.
 - [x] Submit Gate cash spot IOC market sells in the reviewed base quantity, with exact-pair sell status and sizing checks.
 - [x] Recover Gate market sells through exact client text and bounded finished-order pages, with original base sizing and partial-fill reconciliation.
-- [ ] Add explicit quote-budget market buys for Gate, including preview, fill bounds and persisted recovery terms.
-- [ ] Review Bitget Classic market-order sizing and recovery next. Review HTX, BitMart, Poloniex and Upbit afterward.
+- [ ] Add explicit quote-budget market buys for Gate and Bitget Classic, including preview, fill bounds and persisted recovery terms.
+- [x] Submit Bitget Classic spot market sells in the reviewed base quantity, with fresh pair status and base precision checks.
+- [x] Recover Bitget Classic market sells through exact `clientOid` details, with verified original size and separate cumulative fills.
+- [ ] Review HTX market-order sizing and verified spot-wallet recovery next. Review BitMart, Poloniex and Upbit afterward.
 - [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
 - [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.

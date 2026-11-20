@@ -67,7 +67,7 @@ RECOVERY_NOTES = {
     "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
     "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
     "gate": "Recover cash spot GTC limits and base-sized IOC market sells by saved client ID. A direct miss checks bounded finished orders on the same pair.",
-    "bitget": "Recover a reviewed Classic spot limit using its exact clientOid and original terms. Bitget retains API-cancelled records for up to two hours.",
+    "bitget": "Recover a reviewed Classic spot GTC limit or base-sized market sell using its exact clientOid and original terms. Bitget retains API-cancelled records for up to two hours.",
     "poloniex": "Recover reviewed unborrowed spot GTC limits through the exact saved client ID. Native retention and archived orders can limit lookup coverage.",
     "bitmart": "Recover reviewed spot limits through the exact saved client ID. BitMart limits API-cancelled unfilled order queries to 20 minutes.",
     "coinex": "Find cash GTC limits and base-sized market orders through pending and bounded finished pages. Market recovery requires explicit base currency. CoinEx deletes cancelled orders that had no fills; missing records remain uncertain.",
