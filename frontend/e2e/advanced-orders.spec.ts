@@ -194,6 +194,7 @@ test('replacement shows both non-atomic outcomes and requires a new typed review
 for (const [exchange, venue, label] of [
   ['gate', 'Gate', 'Market · IOC'],
   ['bitget', 'Bitget', 'Market'],
+  ['htx', 'HTX', 'Market'],
 ]) {
   test(`${venue} market orders require an explicit sell selection`, async ({ page }) => {
     const writes = await tradeFixture(page, false, exchange);

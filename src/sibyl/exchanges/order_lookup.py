@@ -71,7 +71,7 @@ RECOVERY_NOTES = {
     "poloniex": "Recover reviewed unborrowed spot GTC limits through the exact saved client ID. Native retention and archived orders can limit lookup coverage.",
     "bitmart": "Recover reviewed spot limits through the exact saved client ID. BitMart limits API-cancelled unfilled order queries to 20 minutes.",
     "coinex": "Find cash GTC limits and base-sized market orders through pending and bounded finished pages. Market recovery requires explicit base currency. CoinEx deletes cancelled orders that had no fills; missing records remain uncertain.",
-    "htx": "Look up the exact client ID for the verified spot wallet. HTX limits client-ID lookup to eight hours and API-cancelled records to two hours.",
+    "htx": "Recover spot GTC limits and base-sized market sells by exact client ID on the verified wallet. HTX documents up to eight hours for open orders and two hours from creation for terminal orders.",
     "mexc": "Recover reviewed spot GTC limits and base-sized market orders by saved client ID on the exact pair. Market evidence must explicitly show zero original quote budget. MEXC order lookup covers up to seven days.",
 }
 

@@ -14,6 +14,7 @@ from sibyl.exchanges.spot_history import history_note
 from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
 
 MARKET_NOTES = {
+    "htx": " Market sells use the verified spot wallet and the pair's native base limits. Market buys require a quote-currency budget. GTC limit buys are available.",
     "bitget": " Classic spot sells use the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
     "gate": " IOC sells are sized in the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
     "coinex": " Both sides explicitly use the native base currency. The pair must be online and allow API trading.",

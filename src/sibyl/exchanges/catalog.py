@@ -157,7 +157,7 @@ EXCHANGES = (
         account="Classic spot account; UTA excluded",
     ),
     ExchangeSpec("mexc", "MEXC", market_orders=True),
-    ExchangeSpec("htx", "HTX", limit_only=True),
+    ExchangeSpec("htx", "HTX", market_orders=True, market_sell_only=True),
     ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True, market_orders=True),
     ExchangeSpec("bitstamp", "Bitstamp", market_orders=True),
     ExchangeSpec("gemini", "Gemini", sandbox=True, limit_only=True),
