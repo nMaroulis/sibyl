@@ -10,6 +10,8 @@ from decimal import Decimal
 import ccxt
 from pydantic import AwareDatetime, Field, field_validator, model_validator
 
+from sibyl.accounting.executions.breaks import BREAK_REVIEW, affected_assets
+from sibyl.accounting.executions.service import AccountBooksService
 from sibyl.exchanges.base import number
 from sibyl.models import OrderRequest, Request
 from sibyl.services.accounts.ledger import ledger_fill
@@ -65,6 +67,7 @@ class AccountPerformance:
     def __init__(self, market: Market, store: Store):
         self.market, self.store = market, store
         self.returns = ReturnPeriods(market, store)
+        self.account_books = AccountBooksService(store)
         with store.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS opening_inventory (
@@ -85,7 +88,8 @@ class AccountPerformance:
             if not db.execute("SELECT 1 FROM connections WHERE id=?", (account_id,)).fetchone():
                 raise LookupError("Connection not found.")
             first = db.execute(
-                "SELECT MIN(timestamp_ms) FROM account_fills WHERE account_id=? AND symbol=?",
+                "SELECT MIN(timestamp_ms) FROM account_fills WHERE account_id=? AND symbol=? "
+                "AND json_extract(payload,'$.trade_break') IS NOT 'full'",
                 (account_id, request.symbol),
             ).fetchone()[0]
             if first is not None and request.as_of.timestamp() * 1000 >= first:
@@ -274,18 +278,26 @@ class AccountPerformance:
         fills, basis = inputs["fills"], inputs["basis"]
         accounts = {row.id: row for row in self.store.connections()}
         grouped = defaultdict(list)
+        break_issues = defaultdict(set)
         for row in fills:
             grouped[(row["account_id"], row["symbol"])].append(row)
+            if reason := BREAK_REVIEW.get(row.get("trade_break")):
+                for asset in affected_assets(row):
+                    break_issues[row["account_id"], row["environment"], asset].add(reason)
         openings = {(row["account_id"], row["symbol"]): row for row in basis}
         for key in openings:
             if not environment or (key[0] in accounts and self._environment(accounts[key[0]]) == environment):
                 grouped.setdefault(key, [])
         groups = {}
-        for (identity, pair), executions in sorted(grouped.items()):
+        for (identity, pair), observations in sorted(grouped.items()):
             connection = accounts.get(identity)
+            executions = [row for row in observations if not row.get("trade_break")]
+            opening_time_candidates = [
+                row["timestamp_ms"] for row in observations if row.get("trade_break") != "full"
+            ]
             scope = (
-                executions[0]
-                if executions
+                observations[0]
+                if observations
                 else {
                     "account_id": identity,
                     "account": connection.label if connection else "Disconnected account",
@@ -296,17 +308,21 @@ class AccountPerformance:
             opening = openings.get((identity, pair))
             overlap = bool(
                 opening
-                and executions
+                and opening_time_candidates
                 and datetime.fromisoformat(opening["as_of"]).timestamp() * 1000
-                >= min(row["timestamp_ms"] for row in executions)
+                >= min(opening_time_candidates)
             )
             cross = len(inputs["markets"][(identity, pair.split("/")[0])]) > 1
-            mixed = len({row["environment"] for row in executions}) > 1
+            mixed = len({row["environment"] for row in observations}) > 1
             if mixed:
                 raise ValueError(
                     "Retained fills mix environments for an account/market. Choose an environment filter; amounts are never combined across environments."
                 )
-            issues = []
+            base, quote = pair.split("/")
+            issues = sorted(
+                break_issues[identity, scope["environment"], base]
+                | break_issues[identity, scope["environment"], quote]
+            )
             if overlap:
                 issues.append(
                     "Opening inventory now overlaps an earlier imported fill and is ignored. Review its date and quantity."
@@ -403,7 +419,7 @@ class AccountPerformance:
             "transfer_summary": {
                 "applied": sum(item["status"] == "applied" for item in selected_transfers),
                 "unapplied": sum(item["status"] != "applied" for item in selected_transfers),
-                "note": "Current zero-fee pairs or explicitly reviewed, balanced same-asset fee allocations. Fee inventory cost stays separate; full account returns and cross-market basis remain unavailable.",
+                "note": "Current zero-fee pairs or explicitly reviewed, balanced same-asset fee allocations. Fee inventory cost stays separate. This By market view does not carry split/merged groups or cross-market basis; use Across pairs for those. Complete account returns require separate coverage.",
             },
             "totals": [
                 {

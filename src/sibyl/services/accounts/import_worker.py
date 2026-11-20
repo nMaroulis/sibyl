@@ -83,11 +83,13 @@ class ImportWorker:
         if isinstance(error, (ccxt.AuthenticationError, ccxt.PermissionDenied)):
             message = "History access denied. Check this account's read permissions and credentials."
         elif isinstance(error, ccxt.NotSupported):
-            message = "This provider does not support the reviewed history operation."
+            message = "This history read is unavailable or reached the provider’s coverage limit. The saved checkpoint is retained."
         elif isinstance(error, ccxt.BadSymbol):
             message = "This exact spot market is unavailable. Check the selected pair."
         elif isinstance(error, ProviderDeferred):
-            message = "This history read is waiting for provider capacity or cooldown. Its checkpoint is retained."
+            message = (
+                "This history read is waiting for provider capacity or cooldown. Its checkpoint is retained."
+            )
         elif transient:
             message = (
                 "The provider is temporarily unavailable or rate limited. The saved checkpoint is retained."

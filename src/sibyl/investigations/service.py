@@ -18,6 +18,7 @@ from sibyl.agents.utils.requests import now
 from sibyl.investigations.contracts import InvestigationReport
 from sibyl.investigations.evidence import report_sources, validate_references
 from sibyl.investigations.repository import ACTIVE, InvestigationConflict, InvestigationRepository
+from sibyl.investigations.workflows import ResearchWorkflows
 
 REPORT_INSTRUCTIONS = (
     "Produce a saved research report for this question. Use the relevant discovered specialists and "
@@ -40,6 +41,11 @@ class Investigations:
         self.repository.recover()
         self._tasks: dict[str, asyncio.Task] = {}
         self._closing = False
+        self.workflows = ResearchWorkflows(self)
+
+    async def start_runtime(self):
+        """Start the native durable coordinator; model factories remain lazy."""
+        await self.workflows.start()
 
     async def start(self, identity, request, *, origin="manual", configuration=None):
         """Accept one idempotent run and freeze all team models before it waits for a slot."""
@@ -69,6 +75,11 @@ class Investigations:
         }
         run, created = self.repository.reserve(identity, request.request_id, context, models, origin)
         if created:
+            if request.checkpoints:
+                instructions = (
+                    f"{REPORT_INSTRUCTIONS}\nStarting selections: {json.dumps(run['context'])}\nQuestion: "
+                )
+                return self.workflows.launch(definition, run, configuration, instructions)
             self._tasks[run["id"]] = asyncio.create_task(self._run(definition, run, configuration))
         return run
 
@@ -150,11 +161,15 @@ class Investigations:
             run["activity"] = self.network.activity(run["session_id"]) if run["session_id"] else None
         except LookupError:
             run["activity"] = None
+        if run.get("durable"):
+            run["workflow"] = self.workflows.inspect(run)
         return run
 
     async def cancel(self, identity, run_id):
         """Stop this exact version; completed reports and previous versions stay unchanged."""
         run = self.repository.run(identity, run_id)
+        if run.get("durable"):
+            return await self.workflows.cancel(identity, run_id)
         if run["status"] == "cancelled":
             return self.detail(identity, run_id)
         if run["status"] not in ACTIVE or run_id not in self._tasks:
@@ -177,6 +192,7 @@ class Investigations:
     async def close(self):
         """Drain accepted requests before the application's native AgentGroup shuts down."""
         self._closing = True
+        await self.workflows.close()
         tasks = list(self._tasks.values())
         for task in tasks:
             task.cancel()

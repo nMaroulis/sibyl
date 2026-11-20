@@ -5,10 +5,10 @@ test.afterEach(async ({ page }) => {
 });
 
 /** Browser-only native-order fixtures: every exchange write is intercepted, never sent to a server. */
-async function tradeFixture(page: Page, original = false) {
+async function tradeFixture(page: Page, original = false, exchange = 'binance-testnet') {
   const connection = {
     id: 'browser-testnet',
-    exchange: 'binance-testnet',
+    exchange,
     label: 'Browser Testnet',
     sandbox: true,
     active: true,
@@ -190,3 +190,41 @@ test('replacement shows both non-atomic outcomes and requires a new typed review
   await expect(modal).not.toBeVisible();
   expect(writes).toHaveLength(2);
 });
+
+for (const [exchange, venue, label] of [
+  ['gate', 'Gate', 'Market · IOC'],
+  ['bitget', 'Bitget', 'Market'],
+  ['htx', 'HTX', 'Market'],
+]) {
+  test(`${venue} market orders require an explicit sell selection`, async ({ page }) => {
+    const writes = await tradeFixture(page, false, exchange);
+    await page.goto('/trade');
+    const form = page.locator('.exchange-execution-grid');
+    await form
+      .getByRole('combobox', { name: 'Account', exact: true })
+      .selectOption('browser-testnet');
+
+    const side = form.getByRole('combobox', { name: 'Side', exact: true });
+    const orderType = form.getByRole('combobox', { name: 'Order type', exact: true });
+    await expect(orderType).toHaveValue('limit');
+    await expect(orderType.locator('option[value="market"]')).toHaveCount(0);
+    await expect(
+      form.getByText(`${venue} market buys require a quote budget.`, { exact: false }),
+    ).toBeVisible();
+
+    await side.selectOption('sell');
+    await expect(orderType).toHaveValue('limit');
+    await orderType.selectOption({ label });
+    await form.getByRole('button', { name: 'Review exchange order', exact: true }).click();
+    await expect(form.getByText('Reference notional', { exact: true })).toBeVisible();
+    expect(writes).toHaveLength(1);
+    expect(writes[0].body).toMatchObject({ side: 'sell', order_type: 'market', quantity: 0.001 });
+    expect(writes[0].body).not.toHaveProperty('limit_price');
+
+    await side.selectOption('buy');
+    await expect(form.getByText('Reference notional', { exact: true })).toHaveCount(0);
+    await expect(orderType).toHaveValue('limit');
+    await expect(orderType.locator('option[value="market"]')).toHaveCount(0);
+    expect(writes).toHaveLength(1);
+  });
+}

@@ -4,11 +4,13 @@ import { Cpu, LoaderCircle, RefreshCw, Play, Square } from 'lucide-react';
 import { api, post, refresh } from '../lib/api';
 import type { SemanticCoverage, SemanticStatus } from '../lib/semantic-types';
 import { Badge, ErrorState, Panel } from './ui';
+import { ProviderMark } from './provider-mark';
+import { LibraryHostedSetup } from './library-hosted-setup';
 import './library-semantic.css';
 
 const presets = ['embeddinggemma:latest', 'nomic-embed-text:latest', 'mxbai-embed-large:latest'];
 
-/** Local embedding setup and explicit bounded indexing; leaving the page stops future batches. */
+/** Local or explicitly consented hosted embedding setup and explicit bounded indexing; leaving the page stops future batches. */
 export function LibrarySemantic({
   state,
   retry,
@@ -16,6 +18,7 @@ export function LibrarySemantic({
   state: { data?: SemanticStatus; error: string; loading: boolean };
   retry: () => void;
 }) {
+  const [provider, setProvider] = useState<'ollama' | 'openai' | 'mistral'>('ollama');
   const [endpoint, setEndpoint] = useState('http://127.0.0.1:11434');
   const [model, setModel] = useState(presets[0]);
   const [custom, setCustom] = useState(false);
@@ -37,9 +40,11 @@ export function LibrarySemantic({
   }, []);
   useEffect(() => {
     const profile = state.data?.profile;
-    setEndpoint(profile?.endpoint || 'http://127.0.0.1:11434');
-    setModel(profile?.model || presets[0]);
-    setCustom(!!profile?.model && !presets.includes(profile.model));
+    setProvider(profile?.provider || 'ollama');
+    const local = !profile?.provider;
+    setEndpoint(local ? profile?.endpoint || 'http://127.0.0.1:11434' : 'http://127.0.0.1:11434');
+    setModel(local ? profile?.model || presets[0] : presets[0]);
+    setCustom(local && !!profile?.model && !presets.includes(profile.model));
     setProgress(undefined);
   }, [state.data?.revision]);
   const current = state.data;
@@ -153,17 +158,18 @@ export function LibrarySemantic({
             <span>
               {current?.configured
                 ? `${current.coverage.all.indexed} / ${current.coverage.all.total} passages indexed · ${current.profile.model}`
-                : 'Optional local embeddings · keyword search works now'}
+                : 'Local or hosted embeddings · keyword search works now'}
             </span>
           </div>
-          <Badge>{current?.configured ? 'Configured' : 'Optional'}</Badge>
+          <Badge>
+            {current?.profile.provider ? 'Hosted' : current?.configured ? 'Local' : 'Optional'}
+          </Badge>
         </summary>
         <div className="library-semantic-body">
           <p>
-            Find passages with related wording, or combine meaning and keywords. This uses a
-            separate local Ollama embedding model; your chat-model selection is independent. Saving
-            sends only a compatibility phrase. Indexing sends selected retained passages to local
-            Ollama.
+            Find passages with related wording, or combine meaning and keywords. Choose local Ollama
+            or a hosted embedding provider. Embedding models and keys are independent of chat
+            models; keyword search needs neither.
           </p>
           {state.error ? (
             <ErrorState message={state.error} retry={retry} />
@@ -171,86 +177,140 @@ export function LibrarySemantic({
             <p role="status">Reading index configuration…</p>
           ) : (
             <>
-              <div className="library-semantic-fields">
-                <label>
-                  Local Ollama endpoint
-                  <input
-                    value={endpoint}
+              <div
+                className="embedding-provider-cards"
+                role="group"
+                aria-label="Embedding provider"
+              >
+                {(['ollama', 'openai', 'mistral'] as const).map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className={`embedding-provider-card ${provider === name ? 'selected' : ''}`}
+                    aria-pressed={provider === name}
                     disabled={!!busy}
-                    maxLength={200}
-                    onChange={(event) => setEndpoint(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Embedding model
-                  <select
-                    value={custom ? '__custom' : model}
-                    disabled={!!busy}
-                    onChange={(event) => {
-                      setCustom(event.target.value === '__custom');
-                      if (event.target.value !== '__custom') setModel(event.target.value);
+                    onClick={() => {
+                      setProvider(name);
+                      setError('');
+                      setMessage('');
                     }}
                   >
-                    {choices.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                        {models.some((row) => row.name === name && !row.remote)
-                          ? ' · installed'
-                          : ''}
-                      </option>
-                    ))}
-                    <option value="__custom">Custom installed model…</option>
-                  </select>
-                </label>
-                {custom && (
-                  <label>
-                    Custom embedding model
-                    <input
-                      value={model}
+                    <ProviderMark provider={name} size={25} />
+                    <span>
+                      <strong>
+                        {name === 'ollama' ? 'Ollama' : name === 'openai' ? 'OpenAI' : 'Mistral'}
+                      </strong>
+                      <small>
+                        {name === 'ollama'
+                          ? 'Local · installed models'
+                          : 'Hosted · text leaves this machine'}
+                      </small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {provider === 'ollama' ? (
+                <>
+                  <div className="library-semantic-fields">
+                    <label>
+                      Local Ollama endpoint
+                      <input
+                        value={endpoint}
+                        disabled={!!busy}
+                        maxLength={200}
+                        onChange={(event) => setEndpoint(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Embedding model
+                      <select
+                        value={custom ? '__custom' : model}
+                        disabled={!!busy}
+                        onChange={(event) => {
+                          setCustom(event.target.value === '__custom');
+                          if (event.target.value !== '__custom') setModel(event.target.value);
+                        }}
+                      >
+                        {choices.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                            {models.some((row) => row.name === name && !row.remote)
+                              ? ' · installed'
+                              : ''}
+                          </option>
+                        ))}
+                        <option value="__custom">Custom installed model…</option>
+                      </select>
+                    </label>
+                    {custom && (
+                      <label>
+                        Custom embedding model
+                        <input
+                          value={model}
+                          disabled={!!busy}
+                          maxLength={180}
+                          onChange={(event) => setModel(event.target.value)}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <div className="library-semantic-actions">
+                    <button
+                      className="button secondary"
+                      disabled={!!busy || !model.trim()}
+                      onClick={() => void actions('save')}
+                    >
+                      {busy === 'save' ? (
+                        <LoaderCircle size={14} className="spin" />
+                      ) : (
+                        <Cpu size={14} />
+                      )}{' '}
+                      Check & save model
+                    </button>
+                    <button
+                      className="text-button"
                       disabled={!!busy}
-                      maxLength={180}
-                      onChange={(event) => setModel(event.target.value)}
-                    />
-                  </label>
-                )}
-              </div>
-              <div className="library-semantic-actions">
-                <button
-                  className="button secondary"
-                  disabled={!!busy || !model.trim()}
-                  onClick={() => void actions('save')}
-                >
-                  {busy === 'save' ? (
-                    <LoaderCircle size={14} className="spin" />
-                  ) : (
-                    <Cpu size={14} />
-                  )}{' '}
-                  Check & save model
-                </button>
-                <button
-                  className="text-button"
-                  disabled={!!busy}
-                  onClick={() => void actions('models')}
-                >
-                  <RefreshCw size={12} /> Check installed models
-                </button>
-                <Link className="text-link" to="/settings?tab=models">
-                  Ollama setup
-                </Link>
-              </div>
-              <p className="footnote">
-                Install an embedding model yourself, for example{' '}
-                <code>ollama pull embeddinggemma</code>. This screen does not download models.
-                Loopback HTTP endpoints and models advertised as local only. Saving a model resets
-                semantic vectors; sources and keyword search stay available.
-              </p>
-              {current?.configured && (
+                      onClick={() => void actions('models')}
+                    >
+                      <RefreshCw size={12} /> Check installed models
+                    </button>
+                    <Link className="text-link" to="/settings?tab=models">
+                      Ollama setup
+                    </Link>
+                  </div>
+                  <p className="footnote">
+                    Install an embedding model yourself, for example{' '}
+                    <code>ollama pull embeddinggemma</code>. This screen does not download models.
+                    Loopback HTTP endpoints and models advertised as local only. Saving a model
+                    resets semantic vectors; sources and keyword search stay available.
+                  </p>
+                </>
+              ) : (
+                current && (
+                  <LibraryHostedSetup
+                    provider={provider}
+                    current={current}
+                    busy={busy}
+                    setBusy={setBusy}
+                    saved={retry}
+                  />
+                )
+              )}
+              {current?.configured && provider !== (current.profile.provider || 'ollama') && (
+                <p className="footnote">
+                  Save this provider before indexing. Your active index still uses{' '}
+                  {current.profile.model}.
+                </p>
+              )}
+              {current?.configured && provider === (current.profile.provider || 'ollama') && (
                 <div className="library-semantic-index">
                   <div className="library-semantic-index-heading">
                     <strong>Passage index</strong>
                     <span>
-                      {current.profile.dimensions} dimensions · digest{' '}
-                      {current.profile.model_digest?.slice(0, 10)}…
+                      {current.profile.model} · {current.profile.dimensions} dimensions
+                      {current.profile.model_digest
+                        ? ` · digest ${current.profile.model_digest.slice(0, 10)}…`
+                        : ' · hosted model alias'}
                     </span>
                   </div>
                   <label>
@@ -330,8 +390,10 @@ export function LibrarySemantic({
                   </div>
                   <p className="footnote">
                     Up to 32 passages per atomic batch; 5,000 vectors / 64 MiB total. Leaving the
-                    page stops future batches. Deleted or reindexed sources lose their vectors.
-                    Model or server-version changes require checking and rebuilding the index.
+                    page stops future batches. Deleted or reindexed sources lose their vectors.{' '}
+                    {current.profile.provider
+                      ? 'Hosted model updates may require clearing and rebuilding this index.'
+                      : 'Text goes only to the local Ollama endpoint. Model or server-version changes require checking and rebuilding the index.'}
                   </p>
                 </div>
               )}

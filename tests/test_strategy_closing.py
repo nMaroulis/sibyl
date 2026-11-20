@@ -372,6 +372,10 @@ def test_close_pipeline_covers_all_supported_execution_variants(execution, provi
     native.settle(entry["exchange_order_id"])
     reconcile(trading, entry["id"])
     strategies.status(job["id"], "stopped")
+    if provider == "coinbase-sandbox":
+        assert not strategies.execution.closing.context(job["id"])["ready"]
+        native.fills[-1]["venue_settled"] = True
+        reconcile(trading, entry["id"])
     review = strategies.execution.closing.preview(job["id"], ClosePositionRequest())
     confirm(strategies, review)
     assert len(native.calls) == 2 and native.calls[-1][0] == "sell"

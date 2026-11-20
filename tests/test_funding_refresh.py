@@ -373,6 +373,8 @@ def test_manual_pause_and_deactivation_stop_pending_updates_even_if_range_was_ca
         ("binance", False, "withdrawal", True),
         ("bybit", False, "withdrawal", True),
         ("bybit", False, "deposit", False),
+        ("bybit", False, "transfer", True),
+        ("bybit", True, "transfer", False),
         ("kraken", False, "withdrawal", False),
         ("binance-testnet", True, "withdrawal", False),
         ("binance", True, "withdrawal", False),

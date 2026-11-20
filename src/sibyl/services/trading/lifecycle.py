@@ -149,6 +149,8 @@ class OrderLifecycle:
             connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
             if not intent.get("exchange_order_id") and intent["status"] in {"submitting", "unknown"}:
                 intent = self.trading.recovery.check(identity, manual=True)
+                if intent.get("exchange_order_id") and intent["exchange"] != "demo":
+                    return intent
             if not intent.get("exchange_order_id"):
                 raise ValueError(
                     "No exchange order ID is recorded. Check the exchange using the client order ID; do not resubmit an uncertain order."

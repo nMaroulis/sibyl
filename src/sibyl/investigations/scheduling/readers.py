@@ -2,6 +2,7 @@
 
 import json
 
+from sibyl.investigations.scheduling.contracts import delivery_binding, delivery_channel
 from sibyl.investigations.scheduling.repository import BriefingConflict, BriefingRepository
 
 
@@ -15,13 +16,29 @@ def briefing_snapshot(repository: BriefingRepository, investigation_id="", sched
         raise BriefingConflict("This schedule belongs to a different investigation.")
     items = []
     for schedule in schedules:
-        binding = schedule.get("telegram_binding") or {}
-        item = {key: value for key, value in schedule.items() if key != "telegram_binding"}
-        item["telegram_bot"] = binding.get("bot_username")
+        binding = delivery_binding(schedule)
+        item = {
+            key: value
+            for key, value in schedule.items()
+            if key not in {"telegram_binding", "delivery_binding", "private_target", "telegram_target"}
+        }
+        item["delivery_channel"] = delivery_channel(schedule)
+        item["delivery_connection"] = (
+            binding.get("bot_username")
+            if delivery_channel(schedule) == "telegram"
+            else delivery_channel(schedule)
+        )
+        item["telegram_bot"] = (
+            binding.get("bot_username") if delivery_channel(schedule) == "telegram" else None
+        )
         if schedule_id:
             item["recent_occurrences"] = []
             for occurrence in repository.history(schedule_id)[:5]:
-                row = {key: value for key, value in occurrence.items() if key != "deadline"}
+                row = {
+                    key: value
+                    for key, value in occurrence.items()
+                    if key not in {"deadline", "delivery_snapshot"}
+                }
                 if occurrence.get("delivery_id"):
                     with store.db() as db:
                         saved = db.execute(
@@ -34,6 +51,7 @@ def briefing_snapshot(repository: BriefingRepository, investigation_id="", sched
                     if saved:
                         delivery = json.loads(saved[0])
                         row["delivery"] = {
+                            "channel": delivery.get("channel", "telegram"),
                             "status": delivery["status"],
                             "error": delivery.get("error"),
                             "sent_parts": counts[1],
@@ -51,9 +69,9 @@ def briefing_snapshot(repository: BriefingRepository, investigation_id="", sched
             "steps": [
                 "Open a saved investigation in Sibyl → Investigations.",
                 "Choose Schedule, select daily/weekly time and an IANA time zone, then save.",
-                "Optionally check your Telegram bot in Settings → Messaging and select private-chat delivery.",
+                "Optionally check a Telegram, Discord, Slack, Signal, WhatsApp or email connection in Settings → Messaging and select its private destination. Telegram additionally supports text documents.",
                 "Pause or edit future automation in the schedule controls. Stop an already running report in Investigations.",
             ],
-            "behavior": "The Python backend must be running. Missed times are recorded without catch-up inference. Telegram delivery is explicit and bound to the checked bot and private user. No orders or other agent mutation actions are scheduled.",
+            "behavior": "The Python backend must be running. Missed times are recorded without catch-up inference. Private delivery is explicit, recipient-bound and frozen to the connection controls at acceptance. Paused/replaced connections leave affected reports local; WhatsApp also needs an active private reply window. No orders or other agent mutation actions are scheduled.",
         },
     }

@@ -1,0 +1,165 @@
+.library-calibration > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.library-calibration > details > p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.library-calibration .footnote {
+  display: block;
+}
+.calibration-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 18px 0;
+}
+.calibration-toolbar > label,
+.calibration-reports {
+  flex: 1;
+  min-width: 180px;
+}
+.calibration-policy {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  padding-bottom: 9px;
+}
+.calibration-policy > span:not(.badge) {
+  font-size: 11px;
+  color: var(--muted);
+}
+.calibration-editor,
+.calibration-evidence {
+  margin-top: 18px;
+  padding: 15px;
+  background: #f7f9fd;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.calibration-editor > summary,
+.calibration-evidence > summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+.calibration-editor > label {
+  margin-top: 18px;
+}
+.calibration-partitions {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.calibration-partitions button {
+  flex: 1;
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #edf1f9;
+  font-size: 12px;
+  transition: background 160ms;
+}
+.calibration-partitions button.is-active {
+  background: #dce7ff;
+  color: #365fbd;
+}
+.calibration-partitions button span {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.calibration-question {
+  border-top: 1px solid var(--border);
+  padding: 16px 0;
+  display: grid;
+  gap: 12px;
+  font-size: 12px;
+}
+.calibration-question p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.calibration-no-source {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+}
+.calibration-no-source input {
+  width: auto;
+}
+.library-calibration .workspace-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 14px;
+}
+.calibration-report {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.calibration-report > header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+}
+.calibration-statistics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.calibration-statistics > div {
+  display: grid;
+  gap: 10px;
+  border-radius: 14px;
+  background: linear-gradient(125deg, #f0f4ff, #fafbff);
+  padding: 15px;
+}
+.calibration-statistics span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.calibration-statistics strong {
+  font-size: 20px;
+  font-weight: 500;
+}
+@media (max-width: 650px) {
+  .calibration-statistics {
+    grid-template-columns: 1fr;
+  }
+  .library-calibration > details > summary {
+    flex-wrap: wrap;
+  }
+}
+
+.library-calibration label:not(.calibration-no-source) {
+  display: grid;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+}
+.library-calibration select,
+.library-calibration input:not([type='checkbox']),
+.library-calibration textarea {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+.calibration-reports {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+}

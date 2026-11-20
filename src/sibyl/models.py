@@ -217,10 +217,13 @@ class AgentContext(Request):
     symbol: str | None = None
     market_source: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
     comparison_symbols: list[str] | None = Field(default=None, min_length=2, max_length=8)
+    robust_regression: bool | None = Field(default=None, strict=True)
     granger_lags: int | None = Field(default=None, ge=1, le=5, strict=True)
     correlation_method: Literal["pearson", "spearman", "distance"] | None = None
     correlation_transform: Literal["log_returns", "prices", "changes"] | None = None
     portfolio_scope: str | None = Field(default=None, max_length=120, pattern=r"^[a-z0-9:-]+$")
+    account_books_view: bool | None = None
+    account_books_currency: str | None = Field(default=None, pattern=r"^[A-Z0-9][A-Z0-9.]{0,19}$")
     performance_view: bool | None = None
     performance_account_id: str | None = Field(default=None, max_length=100)
     performance_environment: Literal["", "demo", "test", "production"] | None = None
@@ -247,6 +250,7 @@ class AgentContext(Request):
     library_source_type: Literal["all", "document", "news"] | None = None
     risk_study_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     retrieval_evaluation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    retrieval_calibration_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     library_query: str | None = Field(default=None, min_length=1, max_length=300)
     library_search_method: Literal["keyword", "semantic", "hybrid"] | None = None
     library_passage_id: str | None = Field(
@@ -261,12 +265,16 @@ class AgentContext(Request):
     forecast_evaluation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     bitcoin_txid: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     bitcoin_address: str | None = Field(default=None, min_length=14, max_length=90)
+    bitcoin_block_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    bitcoin_block_offset: int | None = Field(default=None, ge=0, lt=100000, multiple_of=25, strict=True)
     bitcoin_demo: bool | None = None
     bitcoin_output_offset: int | None = Field(default=None, ge=0, le=9999, strict=True)
     parameters: BacktestRequest | None = None
     job_id: str | None = Field(default=None, min_length=1, max_length=100)
     backtest_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     validation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    adaptive_study_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    adaptive_window: int | None = Field(default=None, ge=1, le=5)
     article_id: str | None = Field(default=None, max_length=100)
     news_mode: Literal["demo", "live"] | None = None
     news_publisher: str | None = Field(default=None, max_length=40)
@@ -300,8 +308,14 @@ class AgentContext(Request):
 
     @model_validator(mode="after")
     def bitcoin_selection(self):
-        if self.bitcoin_txid and self.bitcoin_address:
-            raise ValueError("Choose one Bitcoin transaction or address per page context.")
+        if (
+            sum(
+                value is not None
+                for value in (self.bitcoin_txid, self.bitcoin_address, self.bitcoin_block_hash)
+            )
+            > 1
+        ):
+            raise ValueError("Choose one Bitcoin reference per page context.")
         return self
 
 

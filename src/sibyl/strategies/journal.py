@@ -36,7 +36,13 @@ EVENT_COLUMNS = (
     "cancellation_id",
     "expires_at",
     "close_review_id",
+    "liquidation_id",
     "control_revision",
+    "fee_review_id",
+    "ownership_event_id",
+    "ownership_repair_id",
+    "ownership_action",
+    "ownership_peer",
 )
 
 
@@ -52,6 +58,22 @@ class StrategyJournal:
         self.store = store
         with store.db() as db:
             db.executescript("""
+                CREATE TABLE IF NOT EXISTS strategy_ownership_events (
+                    sequence INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL,
+                    job_id TEXT NOT NULL, payload TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS strategy_ownership_job ON strategy_ownership_events(job_id, sequence);
+                CREATE TABLE IF NOT EXISTS strategy_ownership_adjustments (
+                    sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT NOT NULL, payload TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS strategy_ownership_adjustment
+                    ON strategy_ownership_adjustments(event_id,sequence);
+                CREATE TABLE IF NOT EXISTS strategy_ownership_sale_funding (
+                    sequence INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL,
+                    repair_id TEXT NOT NULL, payload TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS strategy_ownership_sale_funding_job
+                    ON strategy_ownership_sale_funding(job_id,sequence);
                 CREATE TABLE IF NOT EXISTS strategy_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     job_id TEXT NOT NULL, payload TEXT NOT NULL

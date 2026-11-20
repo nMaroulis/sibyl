@@ -3,18 +3,29 @@
 import hashlib
 import json
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 from decimal import Decimal, localcontext
 
 import ccxt
 
+from sibyl.accounting.executions.breaks import BREAK_REVIEW
 from sibyl.exchanges.history import TradePage
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.services.accounts.ledger import AccountLedger, ledger_fill, now_iso
 from sibyl.services.trading.lifecycle import TERMINAL
 
 READ_LIMIT = 10_000
+
+
+def settlement_blocker(summary: dict) -> str | None:
+    """Require filled sandbox orders to have venue settlement evidence."""
+    settlement = summary.get("settlement")
+    if not settlement or not (summary["native_filled"] or summary["fill_count"]):
+        return None
+    if settlement["state"] == "reported_settled":
+        return None
+    return "settlement_pending" if settlement["state"] == "pending" else "settlement_unverified"
 
 
 def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
@@ -24,6 +35,9 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
     Unknown fees remain unknown. Totals always use the whole bounded selection,
     not the first page displayed by the UI, and are recalculated after corrections.
     """
+    observed_count = len(fills)
+    trade_breaks = Counter(fill["trade_break"] for fill in fills if fill.get("trade_break"))
+    fills = [fill for fill in fills if not fill.get("trade_break")]
     with localcontext() as context:
         context.prec = 50
         quantity = sum((Decimal(str(fill["quantity"])) for fill in fills), Decimal(0))
@@ -53,8 +67,10 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
             for fee in fill["fees"]:
                 if fee["currency"] and fee["cost"] is not None:
                     fees[fee["currency"]] += Decimal(str(fee["cost"]))
-        if len(fills) > READ_LIMIT:
+        if observed_count > READ_LIMIT:
             status = "limit_reached"
+        elif any(trade_breaks[kind] for kind in BREAK_REVIEW):
+            status = "trade_break_review"
         elif identity_conflict or (difference is not None and difference > tolerance):
             status = "mismatch"
         elif difference is not None and difference < -tolerance:
@@ -76,7 +92,7 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
             result = float(value)
             return result if abs(result) != float("inf") else None
 
-        return {
+        result = {
             "status": status,
             "fill_count": len(fills),
             "quantity": finite(quantity),
@@ -108,6 +124,36 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
             "settlement_final": False,
             "note": "Compared with retained native executions. A quantity match and reported fees do not guarantee final settlement or complete account history.",
         }
+        if trade_breaks:
+            result["trade_breaks"] = dict(trade_breaks)
+        if intent["exchange"] == "coinbase-sandbox" and intent["environment"] == "test":
+            settled = sum(fill.get("venue_settled") is True for fill in fills)
+            pending = sum(fill.get("venue_settled") is False for fill in fills)
+            unknown = len(fills) - settled - pending
+            if pending:
+                state = "pending"
+            elif (
+                settled
+                and not unknown
+                and status == "matched"
+                and expected is not None
+                and expected > 0
+                and job
+                and job["caught_up"]
+                and not job.get("error")
+            ):
+                state = "reported_settled"
+            elif settled:
+                state = "incomplete"
+            else:
+                state = "unobserved"
+            result["settlement"] = {
+                "state": state,
+                "settled": settled,
+                "pending": pending,
+                "unknown": unknown,
+            }
+        return result
 
 
 class OrderReconciliation:

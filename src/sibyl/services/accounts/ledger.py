@@ -5,9 +5,12 @@ import json
 import re
 from datetime import UTC, datetime
 
+from sibyl.accounting.executions import versions
+from sibyl.accounting.executions.breaks import ACTIVE_FILL_SQL
 from sibyl.alerts.orders.events import fill_changed, schema
 from sibyl.exchanges.base import number
 from sibyl.exchanges.history import TradePage
+from sibyl.exchanges.venue_history import BREAK_PRIORITY
 from sibyl.storage import Store
 
 
@@ -25,6 +28,13 @@ def _identity(value, optional: bool = False) -> str | None:
     if not text or len(text) > 256 or any(ord(char) < 32 for char in text):
         raise ValueError("A fill has an invalid native identity.")
     return text
+
+
+def _trade_key(exchange: str, trade_id: str, order_id: str | None) -> str:
+    """Scope supported shared deal IDs to each order while preserving the raw venue ID."""
+    if exchange in {"mexc", "coinex", "bitmart", "poloniex"}:
+        return json.dumps([trade_id, _identity(order_id)], separators=(",", ":"))
+    return trade_id
 
 
 def ledger_fill(row: dict, job: dict) -> dict:
@@ -65,11 +75,13 @@ def ledger_fill(row: dict, job: dict) -> dict:
         if currency is not None or cost is not None:
             normalized_fees.append({"currency": currency, "cost": cost})
     base, quote = job["symbol"].split("/")
-    identity = hashlib.sha256(json.dumps([job["account_id"], job["symbol"], trade_id]).encode()).hexdigest()
-    return {
+    order_id = _identity(row.get("order"), optional=True)
+    key = _trade_key(job["exchange"], trade_id, order_id)
+    identity = hashlib.sha256(json.dumps([job["account_id"], job["symbol"], key]).encode()).hexdigest()
+    fill = {
         "id": identity,
         "trade_id": trade_id,
-        "order_id": _identity(row.get("order"), optional=True),
+        "order_id": order_id,
         "account_id": job["account_id"],
         "account": job["account"],
         "exchange": job["exchange"],
@@ -87,6 +99,17 @@ def ledger_fill(row: dict, job: dict) -> dict:
         "fees_known": bool(normalized_fees)
         and all(fee["currency"] is not None and fee["cost"] is not None for fee in normalized_fees),
     }
+    if job["exchange"] == "coinbase-sandbox" and job["environment"] == "test":
+        settled = row.get("venue_settled")
+        if settled is not None:
+            if not isinstance(settled, bool):
+                raise ValueError("A fill has an invalid venue settlement flag.")
+            fill["venue_settled"] = settled
+    if job["exchange"] == "gemini" and (trade_break := row.get("trade_break")) is not None:
+        if not isinstance(trade_break, str) or trade_break not in BREAK_PRIORITY or fill["order_id"] is None:
+            raise ValueError("A Gemini trade break has invalid classification or order identity.")
+        fill["trade_break"] = trade_break
+    return fill
 
 
 class AccountLedger:
@@ -123,6 +146,7 @@ class AccountLedger:
                     PRIMARY KEY(account_id, symbol)
                 );
             """)
+            versions.schema(db)
             # The application deliberately runs one API worker. Recover interrupted reads.
             rows = (
                 db.execute("SELECT payload FROM account_sync WHERE status='running'").fetchall()
@@ -197,16 +221,27 @@ class AccountLedger:
         history/reconciliation pages do not restart downstream follow-up checks.
         """
         schema(db)
+        versions.schema(db)
         inserted, updated = 0, 0
         affected = set()
         for fill in fills:
-            payload = json.dumps(fill, sort_keys=True, allow_nan=False)
             previous = db.execute("SELECT payload FROM account_fills WHERE id=?", (fill["id"],)).fetchone()
-            fill_changed(db, json.loads(previous[0]) if previous else None, fill)
+            before = json.loads(previous[0]) if previous else None
+            prior_break = (before or {}).get("trade_break")
+            current_break = fill.get("trade_break")
+            if before and (prior_break or current_break):
+                if any(before[key] != fill[key] for key in ("order_id", "side", "exchange", "environment")):
+                    raise ValueError("Gemini trade break conflicts with a retained execution identity.")
+                # Order status may omit the flag. We have no reversal of a break or ordering token.
+                if BREAK_PRIORITY.get(prior_break, 0) > BREAK_PRIORITY.get(current_break, 0):
+                    fill = {**fill, "trade_break": prior_break}
+            payload = json.dumps(fill, sort_keys=True, allow_nan=False)
+            versions.record(db, before, fill, seen)
+            fill_changed(db, before, fill)
             inserted += previous is None
             updated += previous is not None and previous[0] != payload
             if previous is None or previous[0] != payload:
-                for value in (fill, json.loads(previous[0]) if previous else {}):
+                for value in (fill, before or {}):
                     if value.get("order_id"):
                         affected.add((value["account_id"], value["symbol"], value["order_id"]))
             db.execute(
@@ -216,7 +251,7 @@ class AccountLedger:
                     fill["id"],
                     fill["account_id"],
                     fill["symbol"],
-                    fill["trade_id"],
+                    _trade_key(fill["exchange"], fill["trade_id"], fill["order_id"]),
                     fill["timestamp_ms"],
                     payload,
                     seen,
@@ -339,14 +374,21 @@ class AccountLedger:
             fee_totals = db.execute(
                 f"SELECT json_extract(f.value,'$.currency'), SUM(json_extract(f.value,'$.cost')) "
                 f"FROM account_fills,json_each(payload,'$.fees') f WHERE {where} "
+                f"AND {ACTIVE_FILL_SQL} "
                 "AND json_extract(f.value,'$.currency') IS NOT NULL "
                 "AND json_extract(f.value,'$.cost') IS NOT NULL GROUP BY 1",
                 values,
             ).fetchall()
             missing_fees = db.execute(
-                f"SELECT COUNT(*) FROM account_fills WHERE {where} AND json_extract(payload,'$.fees_known')=0",
+                f"SELECT COUNT(*) FROM account_fills WHERE {where} AND {ACTIVE_FILL_SQL} "
+                "AND json_extract(payload,'$.fees_known')=0",
                 values,
             ).fetchone()[0]
+            trade_breaks = db.execute(
+                f"SELECT json_extract(payload,'$.trade_break'),COUNT(*) FROM account_fills "
+                f"WHERE {where} AND NOT ({ACTIVE_FILL_SQL}) GROUP BY 1",
+                values,
+            ).fetchall()
         return {
             "items": [
                 {**json.loads(row[0]), "first_seen_at": row[1], "last_seen_at": row[2]} for row in rows
@@ -359,6 +401,7 @@ class AccountLedger:
             "newest_timestamp_ms": newest,
             "fee_totals": dict(fee_totals),
             "missing_fee_count": missing_fees,
+            "trade_breaks": dict(trade_breaks),
             "complete_history": False,
             "note": "Retained fills for explicitly selected spot markets. Provider retention and late records can limit coverage. Funding movements have a separate ledger; opening inventory and cost basis are not established by these fills. These are not P&L or tax results.",
         }

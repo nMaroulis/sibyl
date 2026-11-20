@@ -91,6 +91,7 @@ def fill_changed(db, before, after):
         "timestamp_ms",
         "fees",
         "fees_known",
+        "trade_break",
     )
     if before and all(before.get(key) == after.get(key) for key in material):
         return
@@ -105,11 +106,16 @@ def fill_changed(db, before, after):
             fill_id=after["id"],
             symbol=after["symbol"],
             side=after["side"],
-            action="fill_corrected" if before else "fill_imported",
+            action="trade_break_reported"
+            if after.get("trade_break") != (before or {}).get("trade_break")
+            else "fill_corrected"
+            if before
+            else "fill_imported",
             quantity=after["quantity"],
             price=after["price"],
             fees=after["fees"],
             fees_known=after["fees_known"],
+            **({"trade_break": after["trade_break"]} if after.get("trade_break") else {}),
             exchange=after["exchange"],
             execution_at=after["timestamp_ms"],
         ),

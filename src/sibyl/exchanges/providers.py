@@ -1,7 +1,12 @@
 """Explicit spot clients: provider differences live here, not in domain services."""
 
+import ccxt
+
+from sibyl.exchanges import bitget_orders, coinex_activity, gate_orders, htx_orders
+from sibyl.exchanges.base import number
 from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
+from sibyl.exchanges.mexc_activity import market_order_limits, original_market_quantity
 
 
 class BinanceClient(BinanceAdvanced, CCXTClient):
@@ -99,6 +104,23 @@ class OKXClient(CCXTClient):
         """OKX accepts at most 32 alphanumeric characters; persist the native ID."""
         return identity.replace("-", "")
 
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep native cash order IDs and separate quote-size requests from executed cost."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if not isinstance(native, dict) or native.get("instType") != "SPOT" or native.get("tdMode") != "cash":
+            return order
+        if native.get("ordId"):
+            order["id"] = str(native["ordId"])
+        if native.get("ordType") == "market":
+            quantity_unit = native.get("tgtCcy") or (
+                "quote_ccy" if native.get("side") == "buy" else "base_ccy"
+            )
+            if quantity_unit != "base_ccy":
+                order.update(amount=None, remaining=None, cost=None)
+        return order
+
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
         """Use cash trading and base units, including market buys."""
         return self._exchange.create_order(
@@ -124,6 +146,20 @@ class BybitClient(CCXTClient):
     balance_params = {"accountType": "UNIFIED"}
     book_limits = (1, 50, 200)
 
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Expose base size only when a Bybit market order reports its original sizing unit."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            if native.get("orderType") == "Limit" or native.get("marketUnit") == "baseCoin":
+                order["amount"] = number(native.get("qty"))
+            elif native.get("orderType") == "Market":
+                order.update(amount=None, remaining=None)
+            if native.get("orderStatus") == "PartiallyFilledCanceled":
+                order["status"] = "canceled"
+        return order
+
     def _submit_market_order(self, symbol: str, side: str, amount: float, client_order_id: str) -> dict:
         """UTA spot buys/sells use the reviewed base quantity, never quote cost."""
         return self._exchange.create_order(
@@ -144,13 +180,84 @@ class KuCoinClient(CCXTClient):
     balance_params = {"type": "trade"}
     book_limits = (20, 100)
 
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Honor Classic's sizing units when a market order was placed in quote funds."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("type") == "market":
+            if (number(native.get("size")) or 0) <= 0:
+                order.update(amount=None, remaining=None)
+        return order
+
 
 class GateClient(CCXTClient):
     """Gate spot wallet with optional sandbox credentials."""
 
     id = "gate"
-    options = {"fetchMarkets": {"types": ["spot"]}}
+    history_kind = "gate-cash"
+    order_fill_kind = "gate-order"
+    options = {"fetchMarkets": {"types": ["spot"]}, "unifiedAccount": False}
     balance_params = {"type": "spot"}
+
+    def format_client_order_id(self, identity: str) -> str:
+        """Persist the complete native Gate text ID, including its t- prefix."""
+        return "t-" + identity.replace("-", "")[:26]
+
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Check current Gate rules for the supported market side before review."""
+        if side != "sell":
+            raise ccxt.NotSupported("Gate market buys require a quote-currency budget.")
+        with self.lock:
+            self.market(symbol)
+            _, limits = gate_orders.market_sell_terms(self._exchange, self._exchange.market(symbol), amount)
+        return limits
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Send a single native cash IOC sell with the reviewed base quantity."""
+        if side != "sell" or not gate_orders.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("Gate requires a market sell with a valid native client order ID.")
+        market = self._exchange.market(symbol)
+        try:
+            quantity, _ = gate_orders.market_sell_terms(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder("Gate market sell rules could not be satisfied.") from error
+        request = {
+            "currency_pair": market["id"],
+            "account": "spot",
+            "type": "market",
+            "side": "sell",
+            "amount": quantity,
+            "time_in_force": "ioc",
+            "text": client_order_id,
+        }
+        row = self._exchange.privateSpotPostOrders(request)
+        return gate_orders.parse_market_sell_ack(self._exchange, market, request, row)
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Preserve native cash fills and the request's actual sizing units."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("account") == "spot":
+            if (filled := number(native.get("filled_amount"))) is not None:
+                order["filled"] = filled
+            if native.get("type") == "market" and native.get("side") == "buy":
+                order.update(
+                    amount=None,
+                    remaining=None,
+                    filled=filled,
+                    cost=number(native.get("filled_total")),
+                )
+            elif native.get("type") == "market" and native.get("side") == "sell":
+                order.update(
+                    status=gate_orders.market_sell_status(native),
+                    amount=number(native.get("amount")),
+                    remaining=number(native.get("left")),
+                    filled=filled,
+                    cost=number(native.get("filled_total")),
+                )
+        return order
 
 
 class BitgetClient(CCXTClient):
@@ -158,30 +265,263 @@ class BitgetClient(CCXTClient):
 
     id = "bitget"
     history_kind = "bitget-id"
+    options = {"uta": False}
     balance_params = {"type": "spot"}
+
+    def format_client_order_id(self, identity: str) -> str:
+        """Use a stable compact classic-account clientOid."""
+        return identity.replace("-", "")
+
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Read current Classic spot rules before preparing a base-sized sell."""
+        if side != "sell":
+            raise ccxt.NotSupported("Bitget Classic market buys require a quote-currency budget.")
+        with self.lock:
+            self.market(symbol)
+            _, limits = bitget_orders.market_sell_terms(self._exchange, self._exchange.market(symbol), amount)
+        return limits
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Place one native Classic spot market sell with a saved clientOid."""
+        if side != "sell" or not bitget_orders.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("Bitget requires a market sell with a valid client order ID.")
+        market = self._exchange.market(symbol)
+        try:
+            quantity, _ = bitget_orders.market_sell_terms(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder("Bitget market sell rules could not be satisfied.") from error
+        # The required force field has no effect on Bitget market orders.
+        row = self._exchange.privateSpotPostV2SpotTradePlaceOrder(
+            {
+                "symbol": market["id"],
+                "side": "sell",
+                "orderType": "market",
+                "force": "gtc",
+                "size": quantity,
+                "clientOid": client_order_id,
+                "tpslType": "normal",
+            }
+        )
+        return bitget_orders.market_sell_ack(row, client_order_id)
+
+    def fetch_order(self, order_id: str, symbol: str) -> dict:
+        """Read exact Classic spot details by native ID, including known sell sizes."""
+        with self.lock:
+            self._require("fetchOrder", private=True)
+            self.market(symbol)
+            market = self._exchange.market(symbol)
+            row = bitget_orders.order_detail(self._exchange, market, orderId=str(order_id))
+            if row is None:
+                raise ccxt.OrderNotFound("Bitget Classic spot order is unavailable.")
+            return self._order(bitget_orders.parse_order(self._exchange, row, market, detail=True))
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep original market sizes unknown on generic SDK list and cancel responses."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            if native.get("orderType") == "market":
+                order.update(bitget_orders.market_quantities(native))
+            elif native.get("orderType") == "limit" and native.get("price") not in (None, ""):
+                order["price"] = number(native["price"])
+        return order
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Classic v2 requires lowercase native force; avoid SDK unified-field leakage."""
+        return self._exchange.create_order(
+            symbol, "limit", side, amount, price, params={"clientOid": client_order_id, "force": "gtc"}
+        )
 
 
 class MEXCClient(CCXTClient):
     """MEXC spot account, excluding contract markets."""
 
     id = "mexc"
+    history_kind = "mexc-window"
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50, 100)
+
+    def format_client_order_id(self, identity: str) -> str:
+        """MEXC client IDs fit its 32-character native limit."""
+        return identity.replace("-", "")
+
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Check fresh, exact-pair permissions and return the market-specific preview limits."""
+        with self.lock:
+            self.market(symbol)
+            return market_order_limits(self._exchange, symbol, side, amount)
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Recheck pair rules and send native base quantity with the stored client ID."""
+        try:
+            self.market_order_limits(symbol, side, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            # The preflight failed before the native order endpoint was called.
+            raise ccxt.InvalidOrder("MEXC market order rules could not be satisfied.") from error
+        return super()._submit_market_order(symbol, side, amount, client_order_id)
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Retain native amount and quote cost across the MEXC spot response variants."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            if "cumulativeQuoteQty" in native:
+                cost = number(native["cumulativeQuoteQty"])
+                order["cost"] = cost if cost is not None and cost >= 0 else None
+                order["average"] = cost / order["filled"] if cost and cost > 0 and order["filled"] else None
+            if native.get("type") == "MARKET":
+                amount = original_market_quantity(native)
+                filled = number(native.get("executedQty"))
+                remaining = (
+                    amount - filled
+                    if amount is not None and filled is not None and 0 <= filled <= amount
+                    else None
+                )
+                order.update(amount=amount, remaining=remaining, filled=filled)
+            elif order["amount"] is None and (amount := number(native.get("Qty"))) is not None:
+                order["amount"] = amount
+                if order["filled"] is not None and amount >= order["filled"]:
+                    order["remaining"] = amount - order["filled"]
+        return order
 
 
 class HTXClient(CCXTClient):
     """HTX spot account, excluding margin and swaps."""
 
     id = "htx"
+    history_kind = "htx-cash"
+    order_fill_kind = "htx-order"
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20)
+
+    def _spot_account(self) -> str:
+        """Require one actual spot wallet; never fall back to the first margin account."""
+        return htx_orders.spot_account(self._exchange)
+
+    def balance_parameters(self) -> dict:
+        """Bind balance reads to the same exact spot account used by submissions."""
+        return {"type": "spot", "account-id": self._spot_account()}
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Use the verified spot account ID and native spot-api source only."""
+        return self._exchange.create_order(
+            symbol,
+            "limit",
+            side,
+            amount,
+            price,
+            params={
+                "account-id": self._spot_account(),
+                "clientOrderId": client_order_id,
+                "timeInForce": "GTC",
+                "source": "spot-api",
+            },
+        )
+
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Review only a base-sized market sell on an unambiguous spot wallet."""
+        if side != "sell":
+            raise ccxt.NotSupported("HTX market buys require a quote-currency budget.")
+        with self.lock:
+            self.market(symbol)
+            self._spot_account()
+            htx_orders.market_sell_amount(self._exchange, self._exchange.market(symbol), amount)
+        return {}
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Send one native sell-market order scoped to the verified cash wallet."""
+        if side != "sell" or not htx_orders.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("HTX requires a market sell with a valid native client order ID.")
+        market = self._exchange.market(symbol)
+        try:
+            account = self._spot_account()
+            quantity = htx_orders.market_sell_amount(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder(
+                "HTX market sell rules or wallet requirements could not be satisfied."
+            ) from error
+        row = self._exchange.spotPrivatePostV1OrderOrdersPlace(
+            {
+                "account-id": account,
+                "symbol": market["id"],
+                "type": "sell-market",
+                "source": "spot-api",
+                "amount": quantity,
+                "client-order-id": client_order_id,
+            }
+        )
+        return htx_orders.market_sell_ack(row, client_order_id)
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep HTX market-buy quote budgets separate from requested base quantities."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            raw_type = native.get("type", "")
+            if raw_type in {"buy-market", "sell-market"}:
+                order.update(htx_orders.market_quantities(native))
+            instruction = raw_type.partition("-")[2]
+            if instruction in {"limit", "ioc", "limit-maker", "limit-fok"}:
+                order.update(
+                    type="limit",
+                    timeInForce={"limit": "GTC", "ioc": "IOC", "limit-maker": "PO", "limit-fok": "FOK"}[
+                        instruction
+                    ],
+                )
+        return order
 
 
 class CryptoComClient(CCXTClient):
     """Crypto.com Exchange account, separate from the retail mobile app."""
 
     id = "cryptocom"
+    history_kind = "cryptocom-cash"
     book_limits = (10, 50)
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Retain actual cumulative amounts; quote budgets never stand in for base units."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("instrument_name"):
+            from sibyl.exchanges.cryptocom_orders import OPEN, stamp
+
+            order.update(
+                filled=number(native.get("cumulative_quantity")),
+                cost=number(native.get("cumulative_value")),
+            )
+            if native.get("create_time") is not None:
+                order["timestamp"] = stamp(native) // 1000000
+            if native.get("status") in OPEN:
+                order["status"] = "open"
+            if native.get("order_type") == "MARKET" and native.get("side") == "BUY":
+                if (number(native.get("quantity")) or 0) <= 0:
+                    order.update(amount=None, remaining=None)
+        return order
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Submit a base-sized cash IOC market order; never replace quantity with notional."""
+        return self._exchange.create_order(
+            symbol,
+            "market",
+            side,
+            amount,
+            params={"client_oid": client_order_id, "timeInForce": "IOC", "spot_margin": "SPOT"},
+        )
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """The installed SDK omits unified clientOrderId; send native client_oid."""
+        return self._exchange.create_order(
+            symbol,
+            "limit",
+            side,
+            amount,
+            price,
+            params={"client_oid": client_order_id, "timeInForce": "GTC", "spot_margin": "SPOT"},
+        )
 
 
 class BitstampClient(CCXTClient):
@@ -202,8 +542,46 @@ class BitfinexClient(CCXTClient):
     """Bitfinex exchange wallet, excluding margin and funding balances."""
 
     id = "bitfinex"
+    history_kind = "bitfinex-window"
     balance_params = {"type": "exchange"}
     book_limits = (1, 25, 100)
+
+    def format_client_order_id(self, identity: str) -> str:
+        """Bitfinex cid is a positive int45; admission rejects any local collision."""
+        return str(int(identity.replace("-", "")[:11], 16) + 1)
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Keep the native cash EXCHANGE MARKET type, signed base amount and int45 cid."""
+        cid = int(client_order_id)
+        if not 0 < cid < 2**45:
+            raise ValueError("Bitfinex client order ID must be a positive int45.")
+        return self._exchange.create_order(symbol, "market", side, amount, params={"cid": cid})
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Use integer cid and a native non-margin EXCHANGE LIMIT."""
+        cid = int(client_order_id)
+        if not 0 < cid < 2**45:
+            raise ValueError("Bitfinex client order ID must be a positive int45.")
+        return self._exchange.create_order(symbol, "limit", side, amount, price, params={"cid": cid})
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep native creation time separate from updates and leave executed cost to fills."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, list) and len(native) >= 18:
+            order.update(timestamp=number(native[4]), cost=None)
+            order["average"] = number(native[17]) or None
+        return order
+
+    def fetch_order(self, order_id: str, symbol: str) -> dict:
+        """Track exact cash orders through active and retained native closed-order reads."""
+        from sibyl.exchanges.bitfinex_orders import read_order
+
+        with self.lock:
+            self._require("fetchOrder", private=True)
+            self.market(symbol)
+            return self._order(read_order(self._exchange, order_id, self._exchange.market(symbol)))
 
 
 class CoinExClient(CCXTClient):
@@ -212,8 +590,59 @@ class CoinExClient(CCXTClient):
     # Trading instruments infer currency codes; deposit-network metadata is outside this client scope.
     fetch_currencies = False
     id = "coinex"
+    history_kind = "coinex-page"
     balance_params = {"type": "spot"}
     book_limits = (5, 10, 20, 50)
+
+    def format_client_order_id(self, identity: str) -> str:
+        """CoinEx accepts at most 32 bytes for a client_id."""
+        return identity.replace("-", "")
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Pass the native field so no duplicate unified clientOrderId reaches v2."""
+        return self._exchange.create_order(
+            symbol, "limit", side, amount, price, params={"client_id": client_order_id, "timeInForce": "GTC"}
+        )
+
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Check current Spot API permission and base sizing before review."""
+        with self.lock:
+            self.market(symbol)
+            coinex_activity.market_order_amount(self._exchange, self._exchange.market(symbol), amount)
+        return {}
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Send one Spot order with the base currency explicitly set on either side."""
+        market = self._exchange.market(symbol)
+        try:
+            quantity = coinex_activity.market_order_amount(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder("CoinEx market order rules could not be satisfied.") from error
+        request = {
+            "market": market["id"],
+            "market_type": "SPOT",
+            "side": side,
+            "type": "market",
+            "ccy": market["baseId"],
+            "amount": quantity,
+            "client_id": client_order_id,
+        }
+        response = self._exchange.v2PrivatePostSpotOrder(request)
+        return coinex_activity.market_order_ack(self._exchange, market, request, response)
+
+    def _order(self, row: dict) -> dict:
+        """Preserve v2 lifecycle states and keep currency-selected market sizing explicit."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            order["status"] = coinex_activity.STATUS.get(native.get("status"), order["status"])
+            kind = native.get("type")
+            if kind in coinex_activity.INSTRUCTIONS:
+                order.update(type="limit", timeInForce=coinex_activity.INSTRUCTIONS[kind])
+            elif kind == "market":
+                market = self._exchange.markets.get(order["symbol"], {})
+                order.update(coinex_activity.market_quantities(native, market.get("baseId")))
+        return order
 
 
 class BitMartClient(CCXTClient):
@@ -222,26 +651,125 @@ class BitMartClient(CCXTClient):
     # Avoid coupling spot reads to the separate deposit/withdrawal currency endpoint.
     fetch_currencies = False
     id = "bitmart"
+    history_kind = "bitmart-window"
     balance_params = {"type": "spot"}
+
+    def format_client_order_id(self, identity: str) -> str:
+        """BitMart requires an alphanumeric ID of at most 32 characters."""
+        return identity.replace("-", "")
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep native filled sizes separate from a market buy's quote-currency budget."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict):
+            kind = native.get("type")
+            if kind == "limit":
+                order["timeInForce"] = "GTC"
+            elif kind == "market" and native.get("side") == "buy":
+                order.update(
+                    amount=None,
+                    remaining=None,
+                    filled=number(native.get("filledSize", native.get("filled_size"))),
+                    average=number(native.get("priceAvg", native.get("price_avg"))),
+                )
+        return order
 
 
 class PhemexClient(CCXTClient):
     """Phemex spot wallet and optional testnet."""
 
     id = "phemex"
+    history_kind = "phemex-spot"
     balance_params = {"type": "spot"}
+
+    def _order(self, row: dict) -> dict:
+        """Correct native spot scaling and quote-sized requests across every order read."""
+        from sibyl.exchanges.phemex_activity import parse_order
+
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("symbol"):
+            row = parse_order(self._exchange, native, self._exchange.market(row["symbol"]))
+        return CCXTClient._order(row)
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Use spot base quantities and native IOC without a quote budget or reference price."""
+        return self._exchange.create_order(
+            symbol,
+            "market",
+            side,
+            amount,
+            params={
+                "clientOrderId": client_order_id,
+                "qtyType": "ByBase",
+                "timeInForce": "ImmediateOrCancel",
+            },
+        )
+
+    def _submit_limit_order(self, symbol, side, amount, price, client_order_id):
+        """Phemex spot accepts native GoodTillCancel rather than unified GTC."""
+        return self._exchange.create_order(
+            symbol,
+            "limit",
+            side,
+            amount,
+            price,
+            params={"clientOrderId": client_order_id, "timeInForce": "GoodTillCancel"},
+        )
 
 
 class PoloniexClient(CCXTClient):
     """Poloniex spot account; no sandbox is exposed by Sibyl."""
 
     id = "poloniex"
+    history_kind = "poloniex-page"
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Preserve native spot costs and keep a pending cancellation active until confirmed."""
+        from sibyl.exchanges.poloniex_orders import STATUS
+
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if isinstance(native, dict) and native.get("accountType") == "SPOT":
+            order["status"] = STATUS.get(native.get("state"), order["status"])
+            if "filledAmount" in native:
+                order["cost"] = number(native["filledAmount"])
+            if native.get("type") == "MARKET" and native.get("side") == "BUY":
+                order.update(
+                    amount=None,
+                    remaining=None,
+                    filled=number(native.get("filledQuantity")),
+                    average=number(native.get("avgPrice")),
+                )
+        return order
 
 
 class UpbitClient(CCXTClient):
     """Upbit default endpoint; regional API variants require their own adapter."""
 
     id = "upbit"
+    history_kind = "upbit-orders"
+
+    @staticmethod
+    def _order(row: dict) -> dict:
+        """Keep executed funds separate from quote budgets and unexecuted limit prices."""
+        order = CCXTClient._order(row)
+        native = row.get("info")
+        if not isinstance(native, dict):
+            return order
+        cost = number(native.get("executed_funds"))
+        trades = native.get("trades")
+        if cost is None and isinstance(trades, list) and trades:
+            funds = [number(trade.get("funds")) if isinstance(trade, dict) else None for trade in trades]
+            if all(value is not None and value >= 0 for value in funds):
+                cost = sum(funds)
+        filled = number(native.get("executed_volume"))
+        order.update(cost=cost, average=cost / filled if cost is not None and filled else None)
+        if native.get("ord_type") == "price":
+            order.update(amount=None, remaining=None, filled=filled)
+        return order
 
 
 CLIENTS = {

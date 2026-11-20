@@ -1,7 +1,9 @@
 """Read-only native funding pages; no addresses, raw payloads or write endpoints."""
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from urllib.parse import quote, unquote
 
 import ccxt
 
@@ -26,7 +28,7 @@ def funding_streams(exchange: str) -> list[str]:
         "demo": ["deposit", "withdrawal", "transfer"],
         "binance": ["deposit", "withdrawal"],
         "kraken": ["deposit", "withdrawal", "transfer"],
-        "bybit": ["withdrawal"],
+        "bybit": ["withdrawal", "transfer"],
     }.get(exchange, [])
 
 
@@ -99,6 +101,8 @@ def fetch_funding_page(exchange, provider: str, stream: str, cursor: dict, limit
     if not 1 <= limit <= 50:
         raise ValueError("Funding pages support 1–50 records.")
     start, end = cursor["start"], cursor["end"]
+    if provider == "bybit" and stream == "transfer":
+        return _bybit_wallet_transfers(exchange, cursor, limit)
     if provider == "bybit":
         # The endpoint permits less than thirty days per request. Freeze and
         # paginate each 29-day slice; the user-selected range can be longer.
@@ -221,3 +225,86 @@ def fetch_funding_page(exchange, provider: str, stream: str, cursor: dict, limit
     # deliberate expansion; the raw page still controls cursor advancement.
     rows = [row for row in rows if row["timestamp_ms"] is None or start <= row["timestamp_ms"] <= end]
     return FundingPage(rows, {**cursor, "page": following}, not following)
+
+
+def _bybit_wallet_transfers(exchange, cursor, limit):
+    """Read one bounded same-UID page and keep only movements across the UNIFIED wallet."""
+    start, end = cursor["start"], cursor["end"]
+    window_start = cursor.get("window_start", start)
+    # Align internal slice boundaries to whole seconds, since Bybit ignores the
+    # millisecond part of the bounds. Trim the outer edge after the native read.
+    window_end = min(end, (window_start // 1000) * 1000 + 7 * DAY - 1)
+    request = {
+        "startTime": (window_start // 1000) * 1000,
+        "endTime": window_end,
+        "limit": limit,
+    }
+    if cursor.get("page"):
+        # CCXT's Bybit signing strips one URL-encoding layer from parameters.
+        request["cursor"] = quote(cursor["page"], safe="")
+    result = exchange.privateGetV5AssetTransferQueryInterTransferList(request).get("result")
+    if not isinstance(result, dict) or not isinstance(result.get("list"), list):
+        raise ccxt.ExchangeError("Invalid Bybit wallet transfer page.")
+    rows = result["list"]
+    if "nextPageCursor" not in result:
+        raise ccxt.ExchangeError("Missing Bybit wallet transfer cursor.")
+    following = _token(result["nextPageCursor"])
+    if following:
+        following = unquote(following)
+        if not following.isascii() or any(not 32 < ord(char) < 127 for char in following):
+            raise ccxt.ExchangeError("Invalid Bybit wallet transfer cursor.")
+    if len(rows) > limit or (following and (not rows or following == cursor.get("page"))):
+        raise ccxt.ExchangeError("Bybit wallet transfer cursor did not advance.")
+
+    items = []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ccxt.ExchangeError("Invalid Bybit wallet transfer record.")
+        source, target = row.get("fromAccountType"), row.get("toAccountType")
+        if (
+            not all(
+                isinstance(wallet, str) and re.fullmatch(r"[A-Z][A-Z0-9_]{0,23}", wallet)
+                for wallet in (source, target)
+            )
+            or source == target
+        ):
+            raise ccxt.ExchangeError("Invalid Bybit wallet transfer route.")
+        if "UNIFIED" not in (source, target):
+            continue
+        raw_stamp = row.get("timestamp")
+        stamp = number(raw_stamp)
+        if (
+            isinstance(raw_stamp, bool)
+            or stamp is None
+            or not stamp.is_integer()
+            or not request["startTime"] <= stamp <= window_end // 1000 * 1000 + 999
+        ):
+            raise ccxt.ExchangeError("Invalid Bybit wallet transfer time.")
+        if not window_start <= stamp <= window_end:
+            continue
+        status = row.get("status")
+        items.append(
+            {
+                "native_id": row.get("transferId"),
+                "reference": None,
+                "asset": exchange.safe_currency_code(row.get("coin")),
+                "timestamp_ms": stamp,
+                "kind": "transfer",
+                "direction": "in" if target == "UNIFIED" else "out",
+                "quantity": row.get("amount"),
+                "fee": {"currency": None, "cost": None},
+                "status": {"SUCCESS": "completed", "PENDING": "pending", "FAILED": "failed"}.get(
+                    status, "unknown"
+                )
+                if isinstance(status, str)
+                else "unknown",
+                "internal": True,
+                "amount_basis": "provider_reported",
+                "wallet_scope": "configured",
+                "wallet_route": {"from": source, "to": target},
+            }
+        )
+    next_cursor = {**cursor, "window_start": window_start, "page": following}
+    if not following and window_end < end:
+        return FundingPage(items, {**next_cursor, "window_start": window_end + 1}, False)
+    return FundingPage(items, next_cursor, not following)

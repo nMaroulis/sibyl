@@ -39,6 +39,7 @@ class InvestigationRun(Request):
     """A caller-generated identity makes a repeated HTTP submission idempotent."""
 
     request_id: str = Field(pattern=r"^[a-f0-9]{32}$")
+    checkpoints: bool = Field(default=False, strict=True)
 
 
 class Finding(Request):
@@ -64,3 +65,12 @@ class InvestigationReport(Request):
         if any(not value.strip() or len(value) > 2000 for value in values):
             raise ValueError("Report list entries must contain 1–2000 characters.")
         return values
+
+
+class WorkflowContinuation(Request):
+    """Answer only the currently displayed native interruption and fingerprint."""
+
+    kind: Literal["continue", "answer", "approve", "reject"]
+    request_id: str | None = Field(default=None, max_length=200)
+    fingerprint: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    answer: str | None = Field(default=None, min_length=1, max_length=4000)

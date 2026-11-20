@@ -1,12 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarClock, CalendarDays, Sun } from 'lucide-react';
 import { Modal } from '../ui';
 import { useResource } from '../../lib/hooks';
 import { post } from '../../lib/api';
-import type { MessagingSettingsData } from '../messaging-settings';
+import {
+  PrivateDestinationPicker,
+  targetKey,
+  bindingKey,
+  type NotificationTarget,
+} from '../messaging/notification-targets';
 import type { BriefingInput, BriefingSchedule } from './briefing-types';
-import { weekdays } from './briefing-types';
+import { weekdays, scheduledChannel } from './briefing-types';
 
 const commonZones = [
   'UTC',
@@ -40,52 +45,43 @@ export function BriefingForm({
   onSaved: () => void;
 }) {
   const [original] = useState(initial);
-  const settings = useResource<MessagingSettingsData>('/settings/messaging');
-  const channel = settings.data?.channels.find((item) => item.id === 'telegram');
+  const formatHelp = useId();
+  const settings = useResource<{ items: NotificationTarget[] }>('/message-deliveries/targets');
+  const [destination, setDestination] = useState(
+    initial
+      ? bindingKey(scheduledChannel(initial), initial.delivery_binding || initial.telegram_binding)
+      : '',
+  );
+  const selected = settings.data?.items.find(
+    (row) => !!row.target && targetKey(row) === destination,
+  );
   const [values, setValues] = useState<BriefingInput>({
     frequency: initial?.frequency ?? 'daily',
     local_time: initial?.local_time ?? '08:00',
     timezone: initial?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC',
     weekday: initial?.weekday ?? 0,
-    telegram: initial?.telegram ?? false,
-    telegram_format: initial?.telegram_format ?? 'text',
+    channel: initial ? scheduledChannel(initial) : null,
+    message_format: initial?.message_format ?? initial?.telegram_format ?? 'text',
     delivery_format: initial?.delivery_format ?? 'summary',
     keep_reports: initial?.keep_reports ?? 20,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [targetNotice, setTargetNotice] = useState('');
-  const target = useRef('');
-  useEffect(() => {
-    if (!channel) return;
-    const current =
-      channel.bot_id && channel.allowed_user_id
-        ? `${channel.bot_id}:${channel.allowed_user_id}`
-        : '';
-    const previous = original?.telegram_binding
-      ? `${original.telegram_binding.bot_id}:${original.telegram_binding.recipient_id}`
-      : '';
-    if (
-      (target.current && target.current !== current) ||
-      (!target.current && original?.telegram && previous !== current)
-    ) {
-      setValues((value) => ({ ...value, telegram: false }));
-      setTargetNotice(
-        'The checked Telegram connection changed. Choose its current private recipient below to enable delivery.',
-      );
-    }
-    target.current = current;
-  }, [channel?.bot_id, channel?.allowed_user_id]);
   const save = async (paused = false) => {
     if (busy) return;
     setBusy(true);
     setError('');
     try {
+      if (destination && !selected)
+        throw new Error(
+          'The checked connection changed. Select its current private destination or choose Local only.',
+        );
       const payload = {
         ...values,
-        telegram_target: values.telegram
-          ? { bot_id: channel?.bot_id, user_id: channel?.allowed_user_id }
-          : null,
+        channel: selected?.channel || null,
+        message_format: selected?.channel === 'telegram' ? values.message_format : 'text',
+        telegram_target: selected?.channel === 'telegram' ? selected.target : null,
+        private_target: selected && selected.channel !== 'telegram' ? selected.target : null,
         ...(original ? { revision: original.revision } : { enabled: !paused }),
       };
       await post(
@@ -186,73 +182,101 @@ export function BriefingForm({
           Daylight-saving changes follow this time zone. Nonexistent local times are skipped; a
           repeated hour runs once. Missed times do not create catch-up reports.
         </p>
-        <label className={`briefing-telegram-choice ${values.telegram ? 'selected' : ''}`}>
-          <img src="/messaging/telegram.svg" width="26" height="26" alt="" />
-          <span>
-            <strong>Deliver to Telegram</strong>
-            <small>
-              {channel?.briefings_ready
-                ? `@${channel.bot_username} · private user ${channel.allowed_user_id}`
-                : 'Check your saved bot in Settings → Messaging first.'}
-            </small>
-          </span>
-          <input
-            type="checkbox"
-            checked={values.telegram}
-            onChange={(event) => setValues({ ...values, telegram: event.target.checked })}
-            disabled={busy || (!channel?.briefings_ready && !values.telegram)}
+        {settings.error ? (
+          <p className="inline-alert">
+            {settings.error}{' '}
+            <button type="button" className="text-link" onClick={settings.retry}>
+              Reload destinations
+            </button>
+          </p>
+        ) : (
+          <PrivateDestinationPicker
+            targets={settings.data?.items || []}
+            value={destination}
+            disabled={busy}
+            label="Private briefing destination"
+            onChange={(key) => {
+              setDestination(key);
+              const choice = settings.data?.items.find((row) => targetKey(row) === key);
+              if (choice?.channel !== 'telegram')
+                setValues((current) => ({ ...current, message_format: 'text' }));
+            }}
           />
-        </label>
-        {targetNotice && <p className="footnote">{targetNotice}</p>}
-        {values.telegram ? (
+        )}
+        {destination && !selected && (
+          <p className="inline-alert">
+            The saved private connection changed or is unavailable. Select its current checked card
+            or choose Local only; it will not be replaced automatically.
+          </p>
+        )}
+        {selected && (
           <>
-            <label className="briefing-format">
-              Telegram delivery
-              <select
-                value={values.telegram_format}
-                disabled={busy}
-                onChange={(e) =>
-                  setValues({
-                    ...values,
-                    telegram_format: e.target.value as BriefingInput['telegram_format'],
-                  })
-                }
-              >
-                <option value="text">Text messages</option>
-                <option value="document">One text document · up to 64 KiB</option>
-              </select>
-              <small>
-                Documents preserve the complete selected content. Oversized documents stay local
-                with a delivery error; they are never silently truncated.
-              </small>
-            </label>
+            {selected.channel === 'telegram' && (
+              <label className="briefing-format">
+                Delivery format
+                <select
+                  aria-label="Delivery format"
+                  aria-describedby={formatHelp}
+                  value={values.message_format}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setValues({
+                      ...values,
+                      message_format: event.target.value as BriefingInput['message_format'],
+                    })
+                  }
+                >
+                  <option value="text">Text messages</option>
+                  <option value="document">One text document · up to 64 KiB</option>
+                </select>
+                <small id={formatHelp}>
+                  Documents preserve selected content; oversized documents stay local with a
+                  delivery error.
+                </small>
+              </label>
+            )}
             <label className="briefing-format">
               Message content
               <select
+                aria-label="Message content"
                 value={values.delivery_format}
+                disabled={busy}
                 onChange={(event) =>
                   setValues({
                     ...values,
                     delivery_format: event.target.value as BriefingInput['delivery_format'],
                   })
                 }
-                disabled={busy}
               >
                 <option value="summary">Summary & uncertainty</option>
                 <option value="full">Full briefing</option>
               </select>
             </label>
             <p className="footnote">
-              Briefings can contain private account research. Only this checked bot and private user
-              are authorized.{' '}
-              {!channel?.enabled && 'Telegram is paused; reports stay local until it is enabled.'}
+              Private account research may pass through {selected.label}. Text follows its message
+              limits; the full report remains in Sibyl.
             </p>
+            {!selected.enabled && (
+              <p className="inline-alert">
+                {selected.label} is paused. Briefings accepted while this connection is paused stay
+                local, even if you enable it before the report finishes.
+              </p>
+            )}
+            {selected.channel === 'whatsapp' && (
+              <p className="inline-alert">
+                {selected.note} A closed window at acceptance keeps that briefing local; no
+                templates or delayed sends are used.
+              </p>
+            )}
           </>
-        ) : (
-          <p className="footnote">
-            Reports are saved in Sibyl. <Link to="/settings?tab=messaging">Manage Telegram ↗</Link>
-          </p>
         )}
+        <p className="footnote">
+          Reports are always saved locally. A connection pause, replacement or recipient change
+          after acceptance cannot redirect a running briefing.
+        </p>
+        <Link className="text-link" to="/settings?tab=messaging">
+          Manage messaging ↗
+        </Link>
         <details className="briefing-retention">
           <summary>
             Report retention <span>Keep {values.keep_reports} scheduled versions</span>

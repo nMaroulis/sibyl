@@ -11,6 +11,7 @@ import ccxt
 from sibyl.exchanges.history import TradePage, normalize_trade
 
 KINDS = {"bitstamp-transactions", "gemini-trades"}
+BREAK_PRIORITY = {"unverified": 1, "manual": 2, "full": 3}
 
 
 def identity(value):
@@ -32,9 +33,7 @@ def rows_list(rows, maximum):
 
 
 def gemini_trade(exchange, row, market, order_id=None):
-    """Retain reported fees; reject bust/reversal flags until their accounting is implemented."""
-    if row.get("break"):
-        raise ccxt.ExchangeError("Gemini trade reversal requires separate settlement review.")
+    """Normalize the original execution and retain any explicit Gemini break evidence."""
     if row.get("symbol", market["id"]).upper() != market["id"].upper():
         raise ccxt.ExchangeError("Unexpected Gemini execution market.")
     native_id = identity(row.get("tid"))
@@ -49,7 +48,16 @@ def gemini_trade(exchange, row, market, order_id=None):
     parsed = exchange.parse_trade(
         {**row, "timestampms": stamp, "tid": native_id, "order_id": native_order}, market
     )
-    return normalize_trade(parsed)
+    return normalize_gemini_trade(parsed, row)
+
+
+def normalize_gemini_trade(row: dict, native: object) -> dict:
+    """Expose a normalized break classification without returning the raw venue response."""
+    fill = normalize_trade(row)
+    native_break = native.get("break") if isinstance(native, dict) else None
+    if native_break is not None and native_break != "":
+        fill["trade_break"] = native_break if native_break in ("manual", "full") else "unverified"
+    return fill
 
 
 def fetch_venue_page(exchange, kind, symbol, cursor, limit):
@@ -81,6 +89,13 @@ def fetch_venue_page(exchange, kind, symbol, cursor, limit):
     if type(after) is not int or after < 0 or not isinstance(seen, list) or len(seen) > 500:
         raise ccxt.ExchangeError("Invalid Gemini history checkpoint.")
     seen = {identity(value) for value in seen}
+    seen_breaks = cursor.get("seen_breaks", {})
+    if (
+        not isinstance(seen_breaks, dict)
+        or not seen_breaks.keys() <= seen
+        or any(not isinstance(kind, str) or kind not in BREAK_PRIORITY for kind in seen_breaks.values())
+    ):
+        raise ccxt.ExchangeError("Invalid Gemini break checkpoint.")
     raw = rows_list(
         exchange.privatePostV1Mytrades({"symbol": market["id"], "timestamp": after, "limit_trades": 500}), 500
     )
@@ -90,7 +105,13 @@ def fetch_venue_page(exchange, kind, symbol, cursor, limit):
     ) != len(parsed):
         raise ccxt.ExchangeError("Gemini history ignored its timestamp boundary or repeated an execution ID.")
     ordered = sorted(parsed, key=lambda row: (row["timestamp"], int(row["id"])))
-    remaining = [row for row in ordered if row["timestamp"] != after or row["id"] not in seen]
+    remaining = [
+        row
+        for row in ordered
+        if row["timestamp"] != after
+        or row["id"] not in seen
+        or BREAK_PRIORITY.get(row.get("trade_break"), 0) > BREAK_PRIORITY.get(seen_breaks.get(row["id"]), 0)
+    ]
     if not remaining and len(raw) == 500:
         raise ccxt.ExchangeError(
             "Gemini timestamp group saturated; its complete history cannot be proven. Check native exports."
@@ -98,12 +119,16 @@ def fetch_venue_page(exchange, kind, symbol, cursor, limit):
     selected = remaining[:limit]
     stamp = int(selected[-1]["timestamp"]) if selected else after
     boundary = seen if stamp == after else set()
-    boundary.update(row["id"] for row in selected if row["timestamp"] == stamp)
-    return TradePage(
-        selected,
-        {"after_ms": stamp, "seen_ids": sorted(boundary)},
-        len(raw) < 500 and len(remaining) <= limit,
-    )
+    boundary_breaks = dict(seen_breaks) if stamp == after else {}
+    for row in selected:
+        if row["timestamp"] == stamp:
+            boundary.add(row["id"])
+            if trade_break := row.get("trade_break"):
+                boundary_breaks[row["id"]] = trade_break
+    next_cursor = {"after_ms": stamp, "seen_ids": sorted(boundary)}
+    if boundary_breaks:
+        next_cursor["seen_breaks"] = boundary_breaks
+    return TradePage(selected, next_cursor, len(raw) < 500 and len(remaining) <= limit)
 
 
 def fetch_venue_order_page(exchange, kind, order_id, symbol, cursor, limit):

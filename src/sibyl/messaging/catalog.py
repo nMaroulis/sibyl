@@ -13,6 +13,13 @@ CHANNELS = [
         "docs_url": "https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started",
         "fields": [
             {
+                "id": "api_version",
+                "label": "Graph API version",
+                "type": "text",
+                "placeholder": "Version shown in your Meta API setup, e.g. v24.0",
+                "help": "Choose the supported version configured in your Meta app. Sibyl never silently upgrades it.",
+            },
+            {
                 "id": "access_token",
                 "label": "Access token",
                 "type": "password",
@@ -44,7 +51,7 @@ CHANNELS = [
                 "help": "Your personal number, in international format.",
             },
         ],
-        "setup_note": "A public HTTPS webhook URL will be needed when this integration is available.",
+        "setup_note": "Configure a public HTTPS callback ending /api/v1/webhooks/whatsapp, using the same verify token, and subscribe to messages. Sibyl verifies the raw HMAC signature and only replies to your configured number inside the reply window; templates and groups are unsupported.",
     },
     {
         "id": "telegram",
@@ -73,7 +80,7 @@ CHANNELS = [
         "id": "discord",
         "name": "Discord",
         "description": "Chat with Sibyl through a Discord bot.",
-        "planned_transport": "gateway",
+        "planned_transport": "private_dm_polling",
         "docs_url": "https://docs.discord.com/developers/quick-start/getting-started",
         "fields": [
             {
@@ -96,7 +103,7 @@ CHANNELS = [
                 "help": "Available through Discord's Developer Mode.",
             },
         ],
-        "setup_note": "The planned bot uses Discord's Gateway and will need the relevant message intents enabled.",
+        "setup_note": "Direct bot HTTP polling of your checked private DM only; no Gateway or online presence is advertised. Large pending pages stop for review rather than claiming complete backfill.",
     },
     {
         "id": "slack",
@@ -115,7 +122,7 @@ CHANNELS = [
             },
             {"id": "allowed_user_id", "label": "Your Slack member ID", "type": "text", "placeholder": "U…"},
         ],
-        "setup_note": "The planned connection uses Socket Mode, so a public webhook URL is not required.",
+        "setup_note": "Uses Socket Mode with an app-level connections:write token, a bot token with chat:write and im:write/im:history access, and message.im event subscription. Only the bound member’s checked private DM is processed; no public webhook is needed.",
     },
     {
         "id": "signal",
@@ -146,12 +153,12 @@ CHANNELS = [
                 "help": "The stable sender ID reported by signal-cli, rather than a display name or username.",
             },
         ],
-        "setup_note": "Requires the unofficial signal-cli bridge, linked separately. There is no Signal bot token to enter; no bridge or account linking is implemented here.",
+        "setup_note": "Requires a separately linked, current unofficial signal-cli multi-account HTTP daemon on loopback. Use default automatic receiving and the linked phone number when present. The daemon retains only a limited SSE replay buffer; bridge restarts can leave gaps. No linking or account registration is performed by Sibyl.",
     },
     {
         "id": "email",
         "name": "Email",
-        "description": "Email Sibyl at a dedicated mailbox and receive replies in the same thread.",
+        "description": "Email Sibyl at a dedicated mailbox and receive private replies.",
         "planned_transport": "imap_smtp",
         "docs_url": "https://support.mozilla.org/en-US/kb/manual-account-configuration",
         "fields": [
@@ -169,6 +176,14 @@ CHANNELS = [
                 "placeholder": "you@example.com",
                 "group": "Mailbox",
                 "help": "The personal address allowed to contact Sibyl.",
+            },
+            {
+                "id": "reply_code",
+                "label": "Private email pairing phrase",
+                "type": "password",
+                "placeholder": "24–100 letters, digits, hyphens or underscores",
+                "group": "Mailbox",
+                "help": "Put [Sibyl:YOUR_PAIRING_PHRASE] at the start of each subject. From alone does not authenticate the sender; keep this phrase private.",
             },
             {
                 "id": "imap_host",
@@ -252,6 +267,6 @@ CHANNELS = [
                 "group": "Outgoing · SMTP",
             },
         ],
-        "setup_note": "Planned for mailboxes supporting IMAP and SMTP with a password or app password. Provider-specific OAuth sign-in is outside this preview. No mailbox is read and no email is sent.",
+        "setup_note": "Uses a dedicated IMAP/SMTP mailbox with verified TLS and app passwords; provider OAuth sign-in is not implemented. Only your fixed sender plus pairing phrase authorizes plain-text questions. Replies always go to that saved address; Reply-To/CC and attachments are ignored. Enabling starts at new mailbox UIDs, without changing read flags.",
     },
 ]

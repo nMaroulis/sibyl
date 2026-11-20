@@ -20,16 +20,21 @@ from sibyl.agents.utils.model_selection import ModelConflict
 from sibyl.agents.utils.registry import AgentRegistry
 from sibyl.alerts.delivery.service import AlertDelivery
 from sibyl.api.dashboard import mount_dashboard
+from sibyl.blockchain.watches import BitcoinWatches
 from sibyl.config import Settings
+from sibyl.exchanges.streams.service import PrivateAccountStreams
 from sibyl.forecasting.service import ForecastModels
 from sibyl.investigations.scheduling.service import BriefingScheduler
 from sibyl.investigations.service import Investigations
 from sibyl.local_models.ollama import OllamaService
 from sibyl.market_data.backfills import CandleHistory
 from sibyl.market_data.control import ProviderDeferred
+from sibyl.messaging.channels.service import PrivateChannels
 from sibyl.messaging.service import TelegramService
 from sibyl.operations.archives import WorkspaceArchives
 from sibyl.operations.health import WorkerHealth
+from sibyl.operations.jobs.handlers import application_handlers
+from sibyl.operations.jobs.service import LocalJobs
 from sibyl.research_library.service import ResearchLibrary
 from sibyl.services.accounts.service import Accounts
 from sibyl.services.accounts.sync import AccountSync
@@ -80,6 +85,10 @@ class Services:
     library: ResearchLibrary
     workers: WorkerHealth
     archives: WorkspaceArchives
+    jobs: LocalJobs
+    private_channels: PrivateChannels
+    account_streams: PrivateAccountStreams
+    bitcoin_watches: BitcoinWatches
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -101,7 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         data_settings.apply_startup()
         market = Market(config, store, data_settings)
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
-        library = ResearchLibrary(config.data_dir, research.news_service.repository)
+        library = ResearchLibrary(config.data_dir, research.news_service.repository, store=store)
         workers = WorkerHealth(store)
         workers.recovery_required = recovery
         archives = WorkspaceArchives(store)
@@ -130,14 +139,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         await agents.network.start()
         investigations = Investigations(store, agents.network)
-        messaging = TelegramService(store, agents.network)
+        try:
+            await investigations.start_runtime()
+        except BaseException:
+            await agents.network.close()
+            raise
+        messaging = TelegramService(store, agents.network, library=library)
+        private_channels = PrivateChannels(store, agents.network)
+        messaging.notifications.use_channels(private_channels)
         briefings = BriefingScheduler(investigations, messaging)
         ollama = OllamaService(agents.models)
         trading = ExchangeTrading(market, store)
+        account_streams = PrivateAccountStreams(store, trading)
+        trading.account_streams = account_streams
         strategies.attach_execution(trading)
         alerts = PriceAlerts(market, store)
+        bitcoin_watches = BitcoinWatches(store, research.bitcoin, recovery_required=recovery)
         alert_delivery = AlertDelivery(store, messaging)
         history = CandleHistory(market, store)
+        local_jobs = LocalJobs(store, application_handlers(performance, forecasts, workers, strategies))
+        workers.jobs = local_jobs
         app.state.services = Services(
             config,
             store,
@@ -166,6 +187,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             library,
             workers,
             archives,
+            local_jobs,
+            private_channels,
+            account_streams,
+            bitcoin_watches,
         )
 
         def background_call(method):
@@ -191,6 +216,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         # One record per actual worker iteration; provider phases retain their ordering.
         jobs = [
+            ("private-account-streams", "Private order observers", account_streams.tick, 1, 60),
+            ("local-jobs", "Local scheduled jobs", local_jobs.tick, 1, 300),
             ("strategies", "Strategy execution", lambda: background_call(strategies.tick), 30, 120),
             ("news", "News collection", news_tick, 30, 120),
             ("accounts", "Account and funding imports", account_tick, 1, 120),
@@ -206,6 +233,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 120,
             ),
             ("execution-alerts", "Order and fill notifications", trading.alerts.tick, 1, 60),
+            ("bitcoin-watches", "Bitcoin output watches", bitcoin_watches.tick, 15, 60),
             ("notification-retention", "Read-notification retention", alerts._inbox.history.tick, 60, 60),
             ("forecast-observations", "Forecast outcomes", forecasts.forward.tick, 60, 120),
             ("history", "Candle history", lambda: background_call(history.tick), 1, 120),
@@ -214,7 +242,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ("messaging", "Telegram messaging", messaging.tick, 0.5, 120),
             ("library", "Retained-news search index", library.synchronize_news, 30, 120),
             ("retrieval-evaluations", "Research retrieval evaluations", library.evaluations.tick, 1, 120),
+            ("retrieval-calibration", "Semantic search calibration", library.calibration.tick, 1, 120),
         ]
+        for channel in ("discord", "slack", "signal", "whatsapp", "email"):
+
+            async def channel_tick(channel=channel):
+                await private_channels.tick(channel)
+
+            jobs.append(("messaging-" + channel, channel.capitalize() + " messaging", channel_tick, 2, 120))
         for name, label, action, interval, deadline in jobs:
             workers.start(
                 name,
@@ -231,23 +266,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "messaging",
                     "library",
                     "retrieval-evaluations",
+                    "retrieval-calibration",
                     "execution-alerts",
+                    "bitcoin-watches",
                     "forecast-observations",
                 }
                 else (),
                 paused=recovery,
             )
+        if not recovery:
+            workers.watchdog.start()
         try:
             yield
         finally:
             await market.live.close()
             await workers.close()
+            await account_streams.close()
             await asyncio.to_thread(library.evaluations.close)
+            await asyncio.to_thread(library.calibration.close)
             await asyncio.to_thread(alerts._inbox.history.close)
             await asyncio.to_thread(alert_delivery.close)
             await asyncio.to_thread(trading.alerts.close)
             await asyncio.to_thread(forecasts.forward.close)
             await briefings.close()
+            await private_channels.close()
             await messaging.close()
             await investigations.close()
             await asyncio.to_thread(ollama.close)
@@ -278,6 +320,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def access_control(request: Request, call_next):
+        # This exact provider route authenticates its own HMAC/token before parsing.
+        # No settings, prefix siblings or other HTTP methods bypass workspace auth.
+        if request.url.path == "/api/v1/webhooks/whatsapp" and request.method in {"GET", "POST"}:
+            return await call_next(request)
         if request.url.path.startswith("/api/") and request.method != "OPTIONS":
             origin = request.headers.get("origin")
             allowed = set(config.cors_origins) | {str(request.base_url).rstrip("/")}
@@ -353,6 +399,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     for exception in (ccxt.BaseError, httpx.HTTPError):
         app.add_exception_handler(exception, provider_error)
 
+    from sibyl.api.jobs import router as local_jobs_router
+
+    app.include_router(local_jobs_router)
+    from sibyl.api.asset_accounting import router as asset_accounting_router
+
+    app.include_router(asset_accounting_router)
+    from sibyl.api.transfer_groups import router as transfer_groups_router
+
+    app.include_router(transfer_groups_router)
     from sibyl.api.account_returns import router as returns_router
     from sibyl.api.advanced_orders import router as advanced_orders_router
     from sibyl.api.notification_history import router as notification_history_router
@@ -387,6 +442,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.messaging import router as messaging_router
 
     app.include_router(messaging_router)
+    from sibyl.api.account_streams import router as account_streams_router
+
+    app.include_router(account_streams_router)
+    from sibyl.api.channels import router as channels_router
+
+    app.include_router(channels_router)
+    from sibyl.api.whatsapp import router as whatsapp_router
+
+    app.include_router(whatsapp_router)
     from sibyl.api.local_models import router as local_models_router
 
     app.include_router(local_models_router)
@@ -431,6 +495,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from sibyl.api.alert_delivery import router as alert_delivery_router
 
     app.include_router(alert_delivery_router)
+
+    from sibyl.api.message_deliveries import router as message_deliveries_router
+
+    app.include_router(message_deliveries_router)
 
     @app.get("/health", tags=["System"])
     def health():

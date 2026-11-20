@@ -10,6 +10,7 @@ import ccxt
 import pandas as pd
 import pytest
 
+from sibyl.accounting.executions import versions
 from sibyl.exchanges.history import TradePage
 from sibyl.models import ConnectionCreate
 from sibyl.services.markets.service import Market
@@ -17,6 +18,7 @@ from sibyl.services.trading.service import ExchangeTrading
 from sibyl.strategies import Strategies
 from sibyl.strategies.execution import cancellation, runner, venue
 from sibyl.strategies.execution.contracts import ExchangeStrategyRequest
+from sibyl.strategies.execution.ownership import ledger as ownership_ledger
 
 
 class Venue:
@@ -130,10 +132,17 @@ class Venue:
 
 
 @pytest.fixture
-def execution(settings, store, monkeypatch):
+def execution(settings, store, monkeypatch, request):
     settings.allow_live_trading = settings.allow_strategy_execution = True
+    exchange = getattr(request, "param", "binance-testnet")
     connection = store.add_connection(
-        ConnectionCreate(exchange="binance-testnet", label="Isolated test", api_key="FAKE", secret="FAKE")
+        ConnectionCreate(
+            exchange=exchange,
+            label="Isolated test",
+            api_key="FAKE",
+            secret="FAKE",
+            passphrase="FAKE" if exchange == "coinbase-sandbox" else "",
+        )
     )
     market = Market(settings, store)
     native = Venue()
@@ -197,6 +206,61 @@ def test_approval_is_read_only_and_start_waits_for_a_new_candle(execution):
     assert quantity * price * 1.01 <= 1000
     strategies.tick()
     assert len(native.calls) == 1
+
+
+@pytest.mark.parametrize("execution", ["coinbase-sandbox"], indirect=True)
+def test_coinbase_sandbox_requires_reported_settlement_and_rechecks_corrections(execution, monkeypatch):
+    strategies, trading, native, _ = execution
+    job, intent = submit(execution)
+    identity = intent["id"]
+    native.settle(intent["exchange_order_id"])
+    observed = reconcile(trading, identity)
+    assert observed["reconciliation"]["settlement"]["state"] == "unobserved"
+    native.fills[0]["venue_settled"] = False
+    pending = reconcile(trading, identity)
+    assert pending["reconciliation"]["status"] == "matched"
+    assert pending["reconciliation"]["settlement"] == {
+        "state": "pending",
+        "settled": 0,
+        "pending": 1,
+        "unknown": 0,
+    }
+    assert pending["fill_revision"] == observed["fill_revision"] + 1
+    assert pending["fills"][0]["venue_settled"] is False
+
+    monkeypatch.setattr(runner, "signals", lambda frame, *args: pd.Series([-1] * len(frame)))
+    native.clock += 60
+    strategies.tick()
+    assert len(native.calls) == 1
+    monitor = strategies.journal.job(job["id"])
+    assert monitor["unresolved_orders"] == [
+        {"id": identity, "status": "closed", "reconciliation": "settlement_pending"},
+    ]
+    with trading.store.db() as db:
+        pin = ownership_ledger.pin(db, monitor)
+        assert not ownership_ledger.current(db, pin)
+
+    native.fills[0]["venue_settled"] = True
+    reported = reconcile(trading, identity)
+    assert reported["reconciliation"]["settlement"]["state"] == "reported_settled"
+    assert reported["reconciliation"]["settlement_final"] is False
+    assert reported["fill_revision"] == pending["fill_revision"] + 1
+    assert reconcile(trading, identity)["fill_revision"] == reported["fill_revision"]
+    with trading.store.db() as db:
+        assert ownership_ledger.current(db, pin)
+
+    native.fills[0]["venue_settled"] = False
+    corrected = reconcile(trading, identity)
+    assert corrected["fill_revision"] == reported["fill_revision"] + 1
+    with trading.store.db() as db:
+        assert not ownership_ledger.current(db, pin)
+    history = versions.history(trading.store, corrected["fills"][0]["id"])
+    assert history["total"] == 4
+
+    native.fills[0]["venue_settled"] = True
+    reconcile(trading, identity)
+    strategies.tick()
+    assert len(native.calls) == 2 and native.calls[-1][0] == "sell"
 
 
 def test_native_fills_not_acknowledgments_drive_ownership_and_sell_size(execution, monkeypatch):

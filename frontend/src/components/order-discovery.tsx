@@ -23,6 +23,8 @@ type DiscoveryJob = {
   error: string | null;
   last_success_at: string | null;
   completed_at: string | null;
+  recent_enabled: boolean;
+  history_requires_symbols: boolean;
 };
 type Discovery = {
   accounts: {
@@ -32,7 +34,10 @@ type Discovery = {
     environment: string;
     active: boolean;
     supported: boolean;
+    open_requires_symbols?: boolean;
     history_requires_symbols: boolean;
+    history_supported: boolean;
+    coverage_note?: string | null;
   }[];
   jobs: DiscoveryJob[];
   note: string;
@@ -62,9 +67,11 @@ export function OrderDiscovery({ active }: { active: boolean }) {
   const [error, setError] = useState('');
   const toast = useToast();
   const accounts = resource.data?.accounts.filter((row) => row.active && row.supported) ?? [];
-  const binance = accounts.some(
-    (row) => (!account || row.id === account) && row.history_requires_symbols,
-  );
+  const selectedAccounts = accounts.filter((row) => !account || row.id === account);
+  const needsOpenPairs = selectedAccounts.some((row) => row.open_requires_symbols);
+  const needsHistoryPairs = selectedAccounts.some((row) => row.history_requires_symbols);
+  const hasHistory = selectedAccounts.some((row) => row.history_supported);
+  const coverageNotes = [...new Set(selectedAccounts.flatMap((row) => row.coverage_note || []))];
   const start = async (job?: DiscoveryJob) => {
     setBusy(true);
     setError('');
@@ -125,8 +132,7 @@ export function OrderDiscovery({ active }: { active: boolean }) {
           ) : !accounts.length ? (
             <p className="inline-alert">
               Activate a supported exchange account or Demo in{' '}
-              <Link to="/settings?tab=exchanges">Settings ↗</Link>. Binance, Coinbase, Kraken and
-              their dedicated test/demo clients support discovery.
+              <Link to="/settings?tab=exchanges">Settings ↗</Link> to sync open and recent orders.
             </p>
           ) : (
             <form
@@ -151,23 +157,26 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                   ))}
                 </select>
               </label>
-              <label>
-                Recent history
-                <select
-                  value={days}
-                  onChange={(event) => setDays(Number(event.target.value))}
-                  disabled={busy}
-                >
-                  <option value={1}>Last 24 hours</option>
-                  <option value={3}>Last 3 days</option>
-                  <option value={7}>Last 7 days</option>
-                </select>
-              </label>
-              {binance && (
+              {hasHistory && (
+                <label>
+                  Recent history
+                  <select
+                    value={days}
+                    onChange={(event) => setDays(Number(event.target.value))}
+                    disabled={busy}
+                  >
+                    <option value={1}>Last 24 hours</option>
+                    <option value={3}>Last 3 days</option>
+                    <option value={7}>Last 7 days</option>
+                  </select>
+                </label>
+              )}
+              {needsHistoryPairs && (
                 <label className="order-discovery-pairs">
-                  Binance history pairs · optional
+                  {needsOpenPairs ? 'Pairs to sync · required' : 'History pairs · optional'}
                   <input
                     value={symbols}
+                    required={needsOpenPairs}
                     onChange={(event) => setSymbols(event.target.value)}
                     placeholder="BTC/USDT, ETH/USDT"
                     disabled={busy}
@@ -180,12 +189,19 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                 {busy ? 'Queuing…' : 'Start read-only sync'}
               </button>
               <p className="footnote" id={pairNoteId}>
-                Open orders cover all supported spot pairs.{' '}
-                {binance &&
-                  'Binance recent history needs up to 12 exact pairs; leave this blank for open orders only on Binance. '}
+                {needsOpenPairs
+                  ? 'Phemex open and recent orders cover the selected exact pairs.'
+                  : 'Open orders cover all supported spot pairs.'}{' '}
+                {needsHistoryPairs &&
+                  (needsOpenPairs
+                    ? 'Enter up to 12 exact pairs to start the selected sync. '
+                    : 'Enter up to 12 exact pairs for exchanges that need them. Leave blank to sync open orders on those exchanges. ')}
                 Enabled discovery checks again about every five minutes while the account is active.
                 Individual order tracking is separate.
               </p>
+              {coverageNotes.map((note) => (
+                <p className="footnote" key={note}>{note}</p>
+              ))}
             </form>
           )}
         </div>
@@ -211,17 +227,13 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                     ? ` · Read ${new Date(job.last_success_at).toLocaleTimeString()}`
                     : ''}
                 </small>
-                {job.exchange.startsWith('binance') && (
-                  <small>
-                    Recent history:{' '}
-                    {job.symbols.length
-                      ? job.symbols.join(', ')
-                      : 'not selected · open orders only'}
-                  </small>
+                {!job.recent_enabled && <small>Open orders only</small>}
+                {job.recent_enabled && job.history_requires_symbols && (
+                  <small>Recent history · {job.symbols.join(', ')}</small>
                 )}
                 {job.skipped > 0 && (
                   <small>
-                    {job.skipped} observations excluded: unsupported/delisted or margin instruments.
+                    {job.skipped} observations excluded by the selected range or supported spot scope.
                   </small>
                 )}
                 {job.deferred > 0 && (

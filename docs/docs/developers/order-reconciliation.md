@@ -19,10 +19,55 @@ Demo's explicit Check executions action includes the existing managed-status che
 | OKX                       | Cash spot `ordId`/`instId`, native bill-ID pages within the adapter's 89-day window. Uses reported execution time rather than bill-generation time.                                                        |
 | Bybit UTA                 | Spot `orderId`, native execution cursor and seven-day slices beginning one day before the local intent's creation. Exact symbol/order checks still apply because native order-ID filtering takes priority. |
 | KuCoin classic            | Exact HF `orderId`/`symbol` and native `lastId`; seven-day inactive-order retention. Ledger identity is the account fill-detail ID.                                                                        |
+| Bitget Classic            | Exact spot `orderId` and `symbol`, with native `tradeId` pagination within the adapter’s 89-day window. |
+| MEXC                      | Exact `orderId` and `symbol` through spot `myTrades`. Uses a rolling 27-day coverage window and bounded time-window splits. |
+| Gate                      | Verify the exact cash spot parent, then read `spot/my_trades` for its `order_id` and pair. Fixed seven-day finish-time query and native page numbers. |
+| HTX                       | Verify the exact spot parent wallet, then read its native match-results list. App pages retain the internal execution ID. |
+| CoinEx                    | Exact `order_id`, `market` and `market_type=SPOT` through native `spot/order-deals` pages. Requires explicit `pagination.has_next`. |
 | Demo                      | Read the exact virtual order's persisted paper fill. Reading executions never advances the matcher.                                                                                                        |
+| Poloniex                  | Verified unborrowed cash parent followed by `/orders/{id}/trades`; bounded native snapshot and exact trade-ID app pages. |
+| Bitfinex                  | Exact cash native order ID and symbol through the order-trades snapshot. Native endpoint coverage is up to ten days old. |
+| Crypto.com Exchange       | Selected-instrument execution ranges filtered to the exact native order, with verified regular cash parent/account/direction. |
+| Phemex                    | Dedicated spot trades-by-order-ID snapshot with exact UUIDs and currency-scaled fees. |
+| Upbit Korea               | Exact parent UUID and native execution snapshot, checking reported trades_count. Per-execution fees remain unknown. |
+| BitMart                   | Exact native `orderId` through the v4 order-trades query. App pages traverse a bounded native execution list. |
 | Other adapters            | Explicitly unsupported; no all-account scan or Demo fallback.                                                                                                                                              |
 
+Bitget Classic’s exact-order reads use the same native trade identities as Account history. Regular fees keep their reported currency. Discounted fee breakdowns stay unknown when their wallet effects cannot be verified. [Bitget Classic spot fills](https://www.bitget.com/legacy-docs/classic/spot/trade/Get-Fills).
+
+MEXC requires the matching native market, order ID and side before committing a page. The exact-order read shares deal IDs scoped to each native order with Account history, so importing both paths preserves the same execution and two orders in a self-trade can remain separate. [MEXC account trade list](https://www.mexc.com/api-docs/spot-v3/spot-account-trade/account-trade-list).
+
 Provider permissions, retention and actual authenticated account acceptance still require testing. Coinbase Advanced and Exchange Sandbox are different APIs. Native read contracts follow the [Binance account trade list](https://developers.binance.com/en/docs/catalog/core-trading-spot-trading/api/rest-api/account), [Coinbase Advanced fills](https://docs.cdp.coinbase.com/api-reference/advanced-trade-api/rest-api/orders/list-fills), Kraken's [order queries](https://docs.kraken.com/api-reference/account-data/query-orders-info) and [trade queries](https://docs.kraken.com/api-reference/account-data/query-trades-info). The installed CCXT Exchange adapter supplies sandbox fill parsing and authenticated transport.
+
+## Gate and HTX order executions
+
+Gate validates the order’s native `account=spot`, exact instrument and side before requesting executions. Its deprecated fill-account filter cannot establish wallet scope on its own. The native finish-time query is fixed across page reads, and fills keep their reported execution times. Native fee and GT amounts retain their currencies. Nonzero point-card charges stop for review. Each pass ends on an empty page. [Gate spot executions](https://www.gate.com/docs/developers/apiv4/en/spot/#query-personal-trading-records).
+
+HTX resolves the unambiguous spot wallet and verifies the parent order before reading its exact match-results list. Lists above 10,000 rows stop for review. Up to 100 rows commit per app page using the internal `id`, preserving the original reported record time. Repeated passes revisit earlier fee observations. Unverified deduction effects remain unknown, and maker rebate observations do not establish payment. API-cancelled parent orders become unavailable after two hours. [HTX match results](https://huobiapi.github.io/docs/spot/v1/en/#get-the-match-result-of-an-order).
+
+Gate and HTX use `order_fill_kind` separately from `history_kind`. Settings now shows exact-order reconciliation and selected-market parent-verified cash history as separate implemented paths, with provider scope and fee gaps. Authenticated acceptance for these adapters remains pending.
+
+## CoinEx order executions
+
+CoinEx reads individual order executions through v2 `spot/order-deals`, checking the exact market and order ID and rejecting margin evidence. Native `deal_id` values are scoped to their native order in the ledger, preserving both sides of a self-trade when returned. Account history imports use the same identities, so either path can correct a reported fee while retaining prior observations. Fees keep their reported currency and unknown fee data stays explicit. Each page follows the native `has_next` field. Private-account acceptance remains pending. [CoinEx order executions](https://docs.coinex.com/api/v2/spot/deal/http/list-user-order-deals).
+
+## BitMart order executions
+
+BitMart’s v4 order-trades read returns individual native execution records for the exact order. Sibyl checks the order ID, instrument, side and spot mode, bounds the native list to 10,000 records and commits at most 100 per app page. Native IDs define deterministic local pagination. Later passes revisit corrections. Fees retain their reported currency, and missing fee currencies stay unknown. Account history uses the same order-scoped identities. Private-account acceptance remains pending. [BitMart order trades](https://developer-pro.bitmart.com/en/spot/#order-trade-list-v4-signed).
+
+## Poloniex cash order executions
+
+Poloniex first verifies the native parent ID, exact instrument, side and explicit `loan=false` spot scope. Its exact-order execution endpoint supplies a snapshot bounded to 10,000 records; app pages retain at most 100 fills using exact numeric trade IDs. Wrong parents, duplicate identities and mismatched executions reject the page. Missing/archived parents need review. Native fee signs and currencies stay explicit, including unknown currencies. Selected-market Account history uses the same native trade/order identities, so later imports update fee corrections without duplicating fills. [Poloniex order trades](https://api-docs.poloniex.com/spot/api/private/trade#trades-by-order-id).
+
+## Bitfinex exchange-wallet executions
+
+Bitfinex's order-trades endpoint returns executions for the exact symbol and native order ID, with coverage for trades up to ten days old. Sibyl verifies native `EXCHANGE` cash types, signed base quantity, instrument and parent identity. A bounded snapshot of at most 10,000 rows is paged locally by exact numeric trade ID, with at most 100 retained fills per page. Native fee wallet effects are negated into the ledger's cost convention; unknown fee currencies/amounts stay unknown. Account history reuses the same identities and revisits corrections. Empty or expired evidence never proves complete history or absence of earlier fills. [Bitfinex order trades](https://docs.bitfinex.com/reference/rest-auth-order-trades).
+
+## Phemex and Upbit executions
+
+Phemex uses the dedicated native spot trades-by-order-ID endpoint, checks exact pair/order identity, bounds its snapshot to 10,000 executions and retains at most 100 per app page. Native UUIDs are shared with selected-market history. Native Ep/Ev values are decoded with provider scales; missing currency scale metadata or unverified discount-token charges leave fees unknown. Quote order budgets never become executed amounts. [Phemex spot execution contract](https://github.com/phemex/phemex-api-docs/blob/master/Public-Spot-API-en.md#spotDataTradesByIds).
+
+Upbit reads the exact parent order UUID, verifies pair/direction and requires `trades_count` to match the bounded native execution array. Each execution keeps its UUID, price, quantity, timestamp and funds. The parent reports aggregate `paid_fee`, which does not establish per-execution fee allocation, so fee gaps remain visible. No synthetic fills or fee allocation is introduced. [Upbit order details](https://docs.upbit.com/kr/reference/get-order).
 
 ## Identity, validation and atomicity
 
@@ -46,7 +91,7 @@ Checkpoint, enabled state and next attempt survive restart. Failures retain the 
 
 The ledger maintains an order execution revision keyed by account, exact pair and native order ID. New or changed fills advance that revision in the same transaction as the execution upsert. Identical reimports do not advance it; a rolled-back import changes neither data nor revision. Both account-history and exact-order imports use this writer. The retained detail response includes `fill_revision`, read in the same SQLite snapshot as its fills and native observation.
 
-Strategy cancellation follow-ups compare this revision and the native status/quantity/cost with the evidence they checked. A later imported execution or fee correction reopens completed follow-ups and blocks another strategy signal/position exit immediately, before the strategy worker refreshes its saved monitor. Three matching native checks against unchanged evidence are required again; mismatches never exhaust the follow-up counter. This does not create an unlimited settlement scanner or remove executions omitted from later pages.
+Strategy cancellation follow-ups compare this revision and the native status/quantity/cost with the evidence they checked. A later imported execution, fee correction or sandbox settlement change reopens completed follow-ups and blocks another strategy signal/position exit immediately, before the strategy worker refreshes its saved monitor. Three matching native checks against unchanged evidence are required again; mismatches never exhaust the follow-up counter. This does not create an unlimited settlement scanner or remove executions omitted from later pages.
 
 | State                        | Meaning                                                                                                                                                                                     |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -59,6 +104,8 @@ Strategy cancellation follow-ups compare this revision and the native status/qua
 | `limit_reached`              | More than 10,000 retained fills match this order; comparison is bounded and must not be treated as complete.                                                                                |
 
 Quantities use Decimal comparisons with tolerance `max(1e-10, requested quantity × 1e-8)`. Native quote-cost comparison uses `max(1e-8, abs(native cost) × 1e-6)` for venue rounding. The full bounded selection supplies totals; the dialog displays at most its first 200 fills. Fee totals stay separate by asset, and base-asset fees do not alter gross executed quantity. Every summary reports `settlement_final: false`.
+
+Coinbase Exchange Sandbox provides a separate `settlement` summary and a `venue_settled` flag on fills with an explicit venue report. The summary counts settled, pending and unknown fills. It reports `reported_settled` once the filled terminal order matches, the exact-order pass finishes successfully and every retained fill reports settlement. A flag change advances the order's fill revision and appears in Account history observations. A missing flag leaves the fill's settlement unknown. The bounded reads can discover later corrections during a scheduled pass or a manual recheck. [Coinbase Exchange fill contract](https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/orders/get-all-fills).
 
 ## HTTP contracts
 
@@ -75,7 +122,7 @@ All paths start with `/api/v1`.
 
 ## Remaining work
 
-Broader recovery adapters, private streams, additional provider adapters, execution bust/removal handling, fee-currency valuation, unlimited historical imports and definitive settlement reconciliation remain separate work. Automatic scans upsert returned facts; they do not delete a retained execution merely because a later page omits it. Initial Binance Testnet native workflows have [scoped acceptance results](exchange-acceptance.md); authenticated partial-fill/cancellation-race, late-correction and broader venue acceptance remain pending. Controlled tests cover identity rejection, pagination, restart, transaction rollback, duplicate imports, partial cancellation, late fee corrections, inactive accounts, renewed matching follow-ups, final-submission evidence changes and isolated Demo/example contracts.
+Broader recovery adapters, private balance/account streams beyond the implemented [private order signals](private-order-streams.md), additional provider adapters, broader execution bust/removal handling and verification of Gemini manual adjustments, fee-currency valuation, unlimited historical imports and definitive settlement reconciliation remain separate work. Automatic scans upsert returned facts; they do not delete a retained execution merely because a later page omits it. Initial Binance Testnet native workflows have [scoped acceptance results](exchange-acceptance.md); authenticated partial-fill/cancellation-race, late-correction and broader venue acceptance remain pending. Controlled tests cover identity rejection, pagination, restart, transaction rollback, duplicate imports, partial cancellation, late fee corrections, inactive accounts, renewed matching follow-ups, final-submission evidence changes and isolated Demo/example contracts.
 
 [Account order discovery](order-discovery.md) links native IDs to this same evidence without creating duplicate executions. Imported orders are read-only, including when checked from this dialog.
 
@@ -83,4 +130,8 @@ Broader recovery adapters, private streams, additional provider adapters, execut
 
 Both clients now support the existing reviewed reconciliation workflow through `venue_history.py`. Bitstamp reads native order status with its transaction list and requires an exact spot market and parent side. Gemini requests `include_trades=true` and validates the parent/child identities and market. Native trade IDs match selected-market history identities, so upserts remain idempotent. Reported fee currencies/signs are retained; missing fees do not become zero.
 
-The native embedded list is bounded to 10,000 records, sorted by exact IDs and exposed in at most 100-fill app pages. Each subsequent pass starts over to observe corrections; existing terminal follow-ups remain in place. Bitstamp’s closed-order status window is 30 days; missing legacy market/side evidence fails explicitly. Gemini reversal flags require separate settlement review. This adds neither client-ID recovery nor definitive settlement guarantees. Contract: [Gemini order status](https://developer.gemini.com/trading/rest-api/orders/get-order-status).
+The native embedded list is bounded to 10,000 records, sorted by exact IDs and exposed in at most 100-fill app pages. Each subsequent pass starts over to observe corrections; existing terminal follow-ups remain in place. Bitstamp’s closed-order status window is 30 days; missing legacy market/side evidence fails explicitly. Gemini trade-break observations share the same ledger and native fill IDs. A `full` break excludes the original quantity, notional and fees from execution and accounting totals. A `manual` break requires separately posted adjustments. Sibyl retains the fill for audit, excludes it from modeled totals and marks the affected accounting and balance checks as incomplete. Unrecognized break markers follow the same review path. These orders report `trade_break_review` instead of a match. An unflagged detail response or a missing row cannot clear an earlier explicit break. [Gemini trade history and break types](https://developer.gemini.com/trading/rest-api/orders/list-past-trades#break-types). This adds neither client-ID recovery nor definitive settlement guarantees. Contract: [Gemini order status](https://developer.gemini.com/trading/rest-api/orders/get-order-status).
+
+## Crypto.com exact executions
+
+Exact-order checks verify the native parent before reading its selected-instrument execution history. Queries begin at the later of parent creation and thirty days before the fixed read boundary. Saved one-day ranges split at the 20-fill native request cap and filter the exact order ID locally; no synthetic executions are derived from cumulative quantities. Older execution coverage may be incomplete and a missing parent stops for review. Shared native IDs and fee observations let Account history corrections update the same evidence. Fee-credit consumption stays unknown. The thirty-day bound is Sibyl's reviewed query policy, not a guarantee of venue retention. [Native trade contract](https://exchange-developer.crypto.com/exchange/v1/docs/api/rest-single-page/#privateget-trades).

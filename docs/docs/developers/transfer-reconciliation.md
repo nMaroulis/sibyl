@@ -99,3 +99,7 @@ Invalid pair facts return 400, missing records/links 404, stale facts or reserva
 Remaining work includes many-to-one transfer allocation, historical fee valuation, other fee currencies/rebates and cross-market basis, verified chain/settlement evidence where appropriate, reviewed external-funding classifications, historical flow conversion and complete account returns. A confirmed link alone is not a tax or accounting conclusion.
 
 **Review amount & fee allocation** now checks source-version-frozen amount conventions, distinct same-asset fee charges and explicit assertions for missing fee data. It saves inside the existing audited review payload. See [transfer fee allocations](transfer-fees.md).
+
+## Split and merged movements
+
+Use **Split & merged transfers** below the pair list for explicit 3–16-record groups. Review amount/fee conventions, enter the exact principal matrix and preview conservation before confirming ownership and wallet scope. Source corrections invalidate the whole group; records cannot belong to both a pair and group. See [transfer groups](transfer-groups.md) for the accounting limits and review API.

@@ -1,6 +1,7 @@
 """A small launcher shared by source checkouts, installed wheels and Homebrew."""
 
 import argparse
+import copy
 import sys
 import threading
 import webbrowser
@@ -11,7 +12,10 @@ from sibyl import __version__
 
 def parser() -> argparse.ArgumentParser:
     """Describe launch options without importing the application or initializing services."""
-    command = argparse.ArgumentParser(description="Run Sibyl's local dashboard and Python API.")
+    command = argparse.ArgumentParser(
+        description="Run Sibyl's local dashboard and Python API.",
+        epilog="Background services: sibyl service --help",
+    )
     command.add_argument("--version", action="version", version=f"Sibyl {__version__}")
     command.add_argument("--host", help="Bind address (default: SIBYL_HOST or 127.0.0.1).")
     command.add_argument("--port", type=int, help="HTTP port (default: SIBYL_PORT or 8000).")
@@ -31,6 +35,8 @@ def parser() -> argparse.ArgumentParser:
     command.add_argument(
         "--open-browser", action="store_true", help="Open the dashboard after the server is ready."
     )
+    command.add_argument("--log-file", type=Path, help="Write rotating private backend logs to this path.")
+    command.add_argument("--no-access-log", action="store_true", help="Do not write HTTP access/query logs.")
     return command
 
 
@@ -51,8 +57,13 @@ def _open_when_ready(server, stopped: threading.Event, url: str) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     """Resolve CLI overrides once and serve that exact configuration without mutating the environment."""
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == "service":
+        from sibyl.installation.services.cli import main as service_main
+
+        return service_main(arguments[1:])
     command = parser()
-    args = command.parse_args(argv)
+    args = command.parse_args(arguments)
     if args.env_file is not None and not args.env_file.is_file():
         command.error("--env-file must name an existing file.")
 
@@ -80,7 +91,17 @@ def main(argv: list[str] | None = None) -> None:
         app = create_app(settings)
     except ValueError as exc:
         command.error(str(exc))
-    server = uvicorn.Server(uvicorn.Config(app, host=settings.host, port=settings.port))
+    options = {"host": settings.host, "port": settings.port}
+    if args.no_access_log:
+        options["access_log"] = False
+    if args.log_file:
+        try:
+            options["log_config"] = file_logging(args.log_file)
+        except (OSError, ValueError):
+            command.error(
+                "The backend log path could not be opened safely. Check permissions and symbolic links."
+            )
+    server = uvicorn.Server(uvicorn.Config(app, **options))
     stopped = threading.Event()
     if args.open_browser:
         host = {"0.0.0.0": "127.0.0.1", "::": "::1"}.get(settings.host, settings.host)
@@ -92,3 +113,35 @@ def main(argv: list[str] | None = None) -> None:
         server.run()
     finally:
         stopped.set()
+
+
+def file_logging(path: Path) -> dict:
+    """Use native rotating logging handlers; no console streams, colors or access/query logs in services."""
+    from uvicorn.config import LOGGING_CONFIG
+
+    path = path.expanduser().absolute()
+    if path.is_symlink():
+        raise ValueError("Backend log files must not be symbolic links.")
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # Precreate with restrictive permissions even if the interactive parent has a permissive umask.
+    import os
+
+    os.umask(0o077)
+    with path.open("a"):
+        os.chmod(path, 0o600)
+    config = copy.deepcopy(LOGGING_CONFIG)
+    config["formatters"]["default"]["use_colors"] = False
+    config["formatters"]["access"]["use_colors"] = False
+    config["handlers"] = {
+        "default": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "default",
+            "filename": str(path),
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 3,
+            "encoding": "utf-8",
+        },
+    }
+    config["loggers"]["uvicorn.access"] = {"handlers": [], "level": "WARNING", "propagate": False}
+    config["root"] = {"handlers": ["default"], "level": "WARNING"}
+    return config

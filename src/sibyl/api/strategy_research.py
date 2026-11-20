@@ -1,14 +1,21 @@
 """Historical strategy research endpoints, separate from paper-run lifecycle."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Response
 
 from sibyl.api.routes import S
 from sibyl.market_data.research import current_backtest, rerun_backtest
 from sibyl.models import BacktestRequest
 from sibyl.strategies.plugins.contracts import PluginBacktest
+from sibyl.strategies.portfolio.contracts import PortfolioStudy
+from sibyl.strategies.research.adaptive.contracts import AdaptiveStudy
 from sibyl.strategies.validation import WalkForwardEngine, WalkForwardRequest
 
-router = APIRouter(prefix="/api/v1/strategies", tags=["Broker"])
+
+def private(response: Response):
+    response.headers["Cache-Control"] = "no-store"
+
+
+router = APIRouter(prefix="/api/v1/strategies", tags=["Broker"], dependencies=[Depends(private)])
 
 
 @router.post("/backtest/demo")
@@ -90,3 +97,75 @@ def plugin_rerun(identity: str, s: S):
 @router.delete("/plugins/backtests/{identity}", status_code=204)
 def plugin_delete(identity: str, s: S):
     s.strategies.plugins.delete(identity)
+
+
+@router.get("/adaptive/options")
+def adaptive_options(s: S):
+    """Read optional sampler presence and actual builtin/installed plugin distributions."""
+    return s.strategies.adaptive.options()
+
+
+@router.get("/adaptive")
+def adaptive_studies(s: S, demo: bool | None = None):
+    """Read saved train/test summaries without sampling or fetching providers."""
+    return s.strategies.adaptive.list(demo)
+
+
+@router.post("/adaptive", status_code=201)
+def adaptive_run(body: AdaptiveStudy, s: S):
+    """Run a bounded offline study; longer UI requests use the local job queue."""
+    return s.strategies.adaptive.run(body)
+
+
+@router.get("/adaptive/{identity}")
+def adaptive_detail(identity: str, s: S):
+    """Read retained trials, independent test executions, source pins and sampler evidence."""
+    return s.strategies.adaptive.get(identity)
+
+
+@router.post("/adaptive/{identity}/rerun", status_code=201)
+def adaptive_replay(identity: str, s: S):
+    """Require matching sampler/engine/plugin revisions and exact reproduced trial/test evidence."""
+    return s.strategies.adaptive.rerun(identity)
+
+
+@router.delete("/adaptive/{identity}", status_code=204)
+def adaptive_delete(identity: str, s: S):
+    """Remove one local research artifact; no exchange or job is changed."""
+    s.strategies.adaptive.delete(identity)
+
+
+@router.get("/portfolios")
+def portfolio_studies(s: S, demo: bool | None = None):
+    """Read saved multi-asset research summaries without provider calls."""
+    return s.strategies.portfolios.list(demo)
+
+
+@router.post("/portfolios", status_code=201)
+def portfolio_study(body: PortfolioStudy, s: S):
+    """Simulate cost-aware multi-asset targets from exact captured or saved candle inputs."""
+    return s.strategies.portfolios.run(body)
+
+
+@router.get("/portfolios/inputs")
+def portfolio_inputs(s: S):
+    """List all bounded immutable dataset metadata for multi-asset input selection."""
+    return s.strategies.portfolios.inputs()
+
+
+@router.get("/portfolios/{identity}")
+def portfolio_report(identity: str, s: S):
+    """Inspect actual simulated fills, costs, allocations and immutable source receipts."""
+    return s.strategies.portfolios.get(identity)
+
+
+@router.post("/portfolios/{identity}/rerun", status_code=201)
+def portfolio_replay(identity: str, s: S):
+    """Replay retained datasets offline and verify exact trade/equity reproduction."""
+    return s.strategies.portfolios.rerun(identity)
+
+
+@router.delete("/portfolios/{identity}", status_code=204)
+def portfolio_delete(identity: str, s: S):
+    """Remove a local research artifact, retaining input datasets and all trading state."""
+    s.strategies.portfolios.delete(identity)

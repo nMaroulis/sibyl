@@ -60,6 +60,7 @@ class ExchangeSpec:
     uid: bool = False
     sandbox: bool = False
     market_orders: bool = False
+    market_sell_only: bool = False
     limit_only: bool = False
     account: str = "Spot trading wallet"
     credentials_required: bool = True
@@ -73,13 +74,24 @@ class ExchangeSpec:
         """Whether Sibyl has reviewed an order submission and cancellation path."""
         return self.market_orders or self.limit_only or self.simulated
 
-    def supports_order(self, order_type: str) -> bool:
+    @property
+    def market_order_sides(self) -> tuple[str, ...]:
+        """List the sides Sibyl supports for base-sized spot market orders."""
+        if not self.market_orders:
+            return ()
+        return ("sell",) if self.market_sell_only else ("buy", "sell")
+
+    def supports_order(self, order_type: str, side: str | None = None) -> bool:
         """Keep domain and adapter execution gates aligned, including limit-only venues."""
         if order_type in {"stop_loss_limit", "take_profit_limit"}:
             return self.id in {"binance", "binance-testnet"}
         if order_type == "limit":
             return self.spot_trading
-        return order_type == "market" and self.market_orders
+        return (
+            order_type == "market"
+            and self.market_orders
+            and (side is None or side in self.market_order_sides)
+        )
 
     def public(self) -> dict:
         """Return non-secret metadata consumed by connection forms and API clients."""
@@ -87,6 +99,7 @@ class ExchangeSpec:
             **asdict(self),
             "ccxt_id": self.ccxt_id or self.id,
             "verification": "Adapter-tested; verify this account separately with Check access.",
+            "market_order_sides": list(self.market_order_sides),
             "limit_orders": self.spot_trading,
             "cancel_orders": self.spot_trading,
             "conditional_orders": self.id in {"binance", "binance-testnet"},
@@ -126,19 +139,41 @@ EXCHANGES = (
         passphrase=True,
         account="Spot trading account; main/funding wallet excluded",
     ),
-    ExchangeSpec("gate", "Gate", sandbox=True),
-    ExchangeSpec("bitget", "Bitget", "API key + secret + passphrase", passphrase=True),
-    ExchangeSpec("mexc", "MEXC"),
-    ExchangeSpec("htx", "HTX"),
-    ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True),
+    ExchangeSpec(
+        "gate",
+        "Gate",
+        sandbox=True,
+        market_orders=True,
+        market_sell_only=True,
+        account="Spot wallet; unified/margin excluded",
+    ),
+    ExchangeSpec(
+        "bitget",
+        "Bitget",
+        "API key + secret + passphrase",
+        passphrase=True,
+        market_orders=True,
+        market_sell_only=True,
+        account="Classic spot account; UTA excluded",
+    ),
+    ExchangeSpec("mexc", "MEXC", market_orders=True),
+    ExchangeSpec("htx", "HTX", market_orders=True, market_sell_only=True),
+    ExchangeSpec("cryptocom", "Crypto.com Exchange", sandbox=True, market_orders=True),
     ExchangeSpec("bitstamp", "Bitstamp", market_orders=True),
     ExchangeSpec("gemini", "Gemini", sandbox=True, limit_only=True),
-    ExchangeSpec("bitfinex", "Bitfinex", account="Exchange wallet; margin/funding wallets excluded"),
-    ExchangeSpec("coinex", "CoinEx"),
-    ExchangeSpec("bitmart", "BitMart", "API key + secret + API memo", uid=True),
-    ExchangeSpec("phemex", "Phemex", sandbox=True),
-    ExchangeSpec("poloniex", "Poloniex"),
-    ExchangeSpec("upbit", "Upbit", account="Global CCXT endpoint; regional variants are not configured"),
+    ExchangeSpec(
+        "bitfinex", "Bitfinex", market_orders=True, account="Exchange wallet; margin/funding wallets excluded"
+    ),
+    ExchangeSpec("coinex", "CoinEx", market_orders=True),
+    ExchangeSpec("bitmart", "BitMart", "API key + secret + API memo", uid=True, limit_only=True),
+    ExchangeSpec("phemex", "Phemex", sandbox=True, market_orders=True),
+    ExchangeSpec("poloniex", "Poloniex", limit_only=True),
+    ExchangeSpec(
+        "upbit",
+        "Upbit",
+        limit_only=True,
+        account="Default api.upbit.com endpoint; regional variants are not configured",
+    ),
 )
 DEMO = ExchangeSpec(
     "demo",

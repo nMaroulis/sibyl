@@ -16,6 +16,7 @@ from sibyl.services.trading.lifecycle import TERMINAL
 from sibyl.strategies.execution.accounting import project
 from sibyl.strategies.execution.cancellation import pending_evidence
 from sibyl.strategies.execution.contracts import ClosePositionRequest, ExecutionGuard
+from sibyl.strategies.execution.liquidation import active_plan, order_cap
 from sibyl.strategies.execution.venue import is_dust, order_book, order_size
 
 
@@ -61,10 +62,14 @@ class ClosePositions:
                 "entry_cost",
                 "realized_pnl",
                 "fee_assets",
+                "foreign_fees_quote",
+                "foreign_fee_reserve",
                 "accounting_incomplete",
                 "unvalued_fees",
                 "unresolved_orders",
                 "_native_fills",
+                "ownership_events",
+                "ownership_net_value",
             )
         }
         digest = hashlib.sha256(json.dumps([self._scope(job), evidence], sort_keys=True).encode()).hexdigest()
@@ -93,7 +98,7 @@ class ClosePositions:
             )
         if job["accounting_incomplete"] or job["unvalued_fees"]:
             raise ExecutionGuard(
-                "Native costs and fees must be complete and valued in the pair's base/quote assets before closing."
+                "Reconcile native costs and fees, and approve any other-asset fee prices in the run monitor before closing."
             )
         if job["quantity"] <= 1e-12:
             raise ExecutionGuard("This strategy has no retained position to close.")
@@ -114,6 +119,7 @@ class ClosePositions:
             reason = None
             try:
                 self._check(values, db)
+                self._plan(db, values)
             except ExecutionGuard as error:
                 reason = str(error)
         return {
@@ -128,7 +134,15 @@ class ClosePositions:
             "close_position": job.get("close_position"),
         }
 
-    def _quote(self, connection, values, policy, *, fixed=None):
+    def _plan(self, db, job, liquidation_id=None, *, intent=None):
+        """Keep standalone approvals separate from worker-owned plan children."""
+        if liquidation_id:
+            return self.runner.liquidation.require_child(db, job, liquidation_id, intent=intent)
+        if active_plan(db, job["id"]):
+            raise ExecutionGuard("Stop the active liquidation plan before reviewing a standalone exit.")
+        return None
+
+    def _quote(self, connection, values, policy, *, fixed=None, floor=None, max_base=None):
         """Size within owned units, native maxima and a conservative base-fee reserve."""
         symbol = values["parameters"]["symbol"]
         base = symbol.split("/")[0]
@@ -138,6 +152,8 @@ class ClosePositions:
                 observed = order_book(client, symbol)
                 if observed["spread_bps"] > policy.max_spread_bps:
                     raise ExecutionGuard("The current spread exceeds this exit's reviewed limit.")
+                if floor is not None and observed["bid"] < floor:
+                    raise ExecutionGuard("The current bid is below the approved liquidation price floor.")
                 full_value = values["quantity"] * observed["ask"]
                 if not math.isfinite(full_value):
                     raise ExecutionGuard("The strategy position cannot be valued for a finite exit.")
@@ -151,6 +167,16 @@ class ClosePositions:
                         observed,
                         "sell",
                     )
+                    if max_base is not None and quantity > max_base:
+                        quantity = float(client.amount_to_precision(symbol, max_base))
+                        if not 0 < quantity <= max_base:
+                            raise ExecutionGuard("The approved order size is below market precision.")
+                    if floor is not None:
+                        price = floor
+                        if float(client.price_to_precision(symbol, price)) != price:
+                            raise ExecutionGuard(
+                                "The approved liquidation price no longer matches native precision."
+                            )
                 else:
                     quantity, price = fixed["quantity"], fixed["limit_price"]
                 for field, amount in (("amount", quantity), ("price", price), ("cost", quantity * price)):
@@ -162,7 +188,9 @@ class ClosePositions:
                             "The exit is outside current native size/price limits. Fee-reserved dust may be too small to trade."
                         )
                 reserve = quantity * policy.fee_reserve_bps / 10000
-                available = float(client.fetch_balance().get("free", {}).get(base) or 0)
+                balance = client.fetch_balance()
+                self.runner.ownership.require_backed(values, balance)
+                available = float(balance.get("free", {}).get(base) or 0)
                 if not math.isfinite(available) or available + 1e-12 < quantity + reserve:
                     raise ExecutionGuard(
                         f"Not enough free {base} for the reviewed exit and base-fee reserve. Resolve account balances in Trade."
@@ -171,6 +199,7 @@ class ClosePositions:
                 dust = is_dust(client, symbol, residual, observed["bid"])
             return {
                 "quantity": quantity,
+                "account_total_base": (balance.get("total") or {}).get(base),
                 "limit_price": price,
                 "reference_bid": observed["bid"],
                 "spread_bps": observed["spread_bps"],
@@ -188,7 +217,7 @@ class ClosePositions:
                 "Could not verify the native exit book, precision and free funds. Check account access and tradable minimums."
             ) from error
 
-    def preview(self, identity, policy: ClosePositionRequest):
+    def preview(self, identity, policy: ClosePositionRequest, *, liquidation_id=None):
         """Save a 60-second fixed sell review without stopping, canceling or placing an order."""
         with self.runner.lock:
             job = self.journal.job(identity)
@@ -196,11 +225,19 @@ class ClosePositions:
                 db.execute("BEGIN")
                 values, digest = self._snapshot(job, db)
                 connection = self._check(values, db)
-            quote = self._quote(connection, values, policy)
+                plan = self._plan(db, values, liquidation_id)
+            quote = self._quote(
+                connection,
+                values,
+                policy,
+                floor=plan["minimum_price"] if plan else None,
+                max_base=order_cap(plan) if plan else None,
+            )
             review = {
                 "id": uuid4().hex,
                 "job_id": identity,
                 "scope": self._scope(job),
+                "liquidation_id": liquidation_id,
                 "account": job["account"],
                 "exchange": job["exchange"],
                 "environment": job["environment"],
@@ -218,7 +255,7 @@ class ClosePositions:
                 )
             return review
 
-    def confirm(self, identity, confirmation):
+    def confirm(self, identity, confirmation, *, liquidation_id=None):
         """Submit this exact approved sell once; repeated calls only return retained state."""
         with self.runner.lock:
             with self.store.db() as db:
@@ -228,6 +265,8 @@ class ClosePositions:
             if row is None:
                 raise LookupError("Close position review not found.")
             review = json.loads(row[0])
+            if review.get("liquidation_id") != liquidation_id:
+                raise ExecutionGuard("Only the worker can submit an authorized liquidation child.")
             if confirmation != review["confirmation"]:
                 raise ExecutionGuard("Type " + review["confirmation"] + " to approve this exit.")
             job = self.journal.job(review["job_id"])
@@ -244,6 +283,7 @@ class ClosePositions:
                 current = self.journal.job(job["id"])
                 values, digest = self._snapshot(current, db, intent["id"] if intent else None)
                 connection = self._check(values, db, intent["id"] if intent else None)
+                self._plan(db, values, liquidation_id, intent=intent)
                 if self._scope(current) != review["scope"] or digest != review["evidence"]:
                     raise ExecutionGuard(
                         "Strategy ownership or order evidence changed. Review the exit again."
@@ -252,12 +292,23 @@ class ClosePositions:
                     raise ExecutionGuard(
                         "The reviewed quantity and fee reserve exceed current strategy ownership."
                     )
+                if intent is not None:
+                    base = values["parameters"]["symbol"].split("/")[0]
+                    self.runner.ownership.require_backed(
+                        values, {"total": {base: fresh_quote["account_total_base"]}}, db
+                    )
                 return connection, values
 
             with self.store.db() as db:
                 db.execute("BEGIN")
                 connection, values = validate(db)
-            self._quote(connection, values, policy, fixed=review)
+            fresh_quote = self._quote(
+                connection,
+                values,
+                policy,
+                fixed=review,
+                floor=review["limit_price"] if liquidation_id else None,
+            )
             try:
                 intent = self.trading.preview(
                     ExchangeOrderRequest(
@@ -284,6 +335,7 @@ class ClosePositions:
                 job["close_position"] = {
                     "review_id": identity,
                     "intent_id": intent["id"],
+                    "liquidation_id": liquidation_id,
                     "state": "approved",
                     "message": "Exit approved; native submission is not yet confirmed.",
                     "checked_at": now(),
@@ -294,8 +346,12 @@ class ClosePositions:
                     job["close_position"]["message"],
                     order_id=intent["id"],
                     close_review_id=identity,
+                    liquidation_id=liquidation_id,
                 )
                 with self.store.db() as db:
+                    db.execute("BEGIN IMMEDIATE")
+                    if liquidation_id:
+                        self.runner.liquidation.link(db, job["id"], liquidation_id, intent["id"])
                     db.execute(
                         "UPDATE strategy_close_reviews SET payload=? WHERE id=?",
                         (json.dumps(review), identity),
@@ -337,6 +393,8 @@ class ClosePositions:
             return
         with self.store.db() as db:
             intent = self.trading.lifecycle.read(db, previous["intent_id"])
+            plan = active_plan(db, job["id"]) if previous.get("liquidation_id") else None
+        in_plan = plan and plan["id"] == previous["liquidation_id"]
         if intent.get("strategy_abandoned") or intent["status"] == "preview":
             state, message = "interrupted", "Prepared exit was not submitted. A fresh review is required."
         elif intent["status"] == "rejected" and not intent.get("exchange_order_id"):
@@ -349,7 +407,9 @@ class ClosePositions:
         elif intent["status"] not in TERMINAL:
             state, message = (
                 "submitted",
-                "Native exit remains open; partial executions are retained. No replacement or additional sell is automatic.",
+                "Sell remains open; the liquidation plan is waiting for reconciliation."
+                if in_plan
+                else "Native exit remains open; partial executions are retained. No replacement or additional sell is automatic.",
             )
         elif any(row["id"] == intent["id"] for row in job["unresolved_orders"]):
             state, message = (
@@ -359,7 +419,9 @@ class ClosePositions:
         else:
             state, message = (
                 "reconciled",
-                "Exit fills currently reconcile. Remaining units stay owned; any further sell needs a fresh review.",
+                "Exit fills currently reconcile. The liquidation plan controls any further sell."
+                if in_plan
+                else "Exit fills currently reconcile. Remaining units stay owned; any further sell needs a fresh review.",
             )
         job["close_position"] = {
             **previous,
@@ -380,5 +442,6 @@ class ClosePositions:
                     message,
                     order_id=intent["id"],
                     close_review_id=previous["review_id"],
+                    liquidation_id=previous.get("liquidation_id"),
                 ),
             )

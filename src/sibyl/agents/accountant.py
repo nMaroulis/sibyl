@@ -10,6 +10,7 @@ from typing import Annotated
 from protolink import Agent, Tool, ToolRejectedError
 from pydantic import Field
 
+from sibyl.accounting.executions.service import ASSET
 from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.accountant import GUIDES, Topic
 from sibyl.agents.utils.common import COMMON_PROMPT, Services, page_context, selected
@@ -18,6 +19,7 @@ NAME = "Accountant"
 TAGLINE = "Know what you own"
 DESCRIPTION = "Explain account holdings, valuation, retained fills, FIFO performance, funding and transfers; guide Account workflows."
 SYSTEM_PROMPT = (
+    "Use account_asset_books for cross-pair account/asset FIFO and dated fee conversions; unknown basis and approximate candle marks remain qualified. "
     "Use basket_risk for saved current-weight historical covariance/tail studies. These are frictionless daily-rebalanced basket descriptions, not measured account performance, optimized allocations or future risk probabilities. Disclose subset coverage, dates and sample size. "
     "Use investment_returns for cash-flow-adjusted measured periods. Source-bound values and completeness reviews are user assertions, not audited provider guarantees. Missing coverage, stale reviews or ambiguous boundaries mean the return is unavailable; do not substitute raw value growth or FIFO profit. "
     "For how-to or navigation questions call page_help; instructions do not require reading balances. "
@@ -78,14 +80,10 @@ def create_agent(services: Services, **runtime) -> Agent:
     def investment_returns(
         period_id: str | None = None, flow_offset: Annotated[int, Field(ge=0, le=2000)] = 0
     ) -> dict:
-        """Explain a measured account return using its saved valuations and reviewed cash flows.
-
-        Omit period_id to follow the selected Account performance period, or list periods
-        when none is selected. Returns at most 20 flow observations; increase flow_offset
-        by 20 for more. Disclose partial readings, coverage/timing blockers and user assertions.
-        Modified Dietz is an approximate period return; it is separate from market FIFO,
-        taxes, raw value change and drawdown. Internal transfers cancel only within the
-        measured combined account set. This tool cannot capture valuations or edit reviews.
+        """Read a saved account return period with external-flow adjustments, boundary valuations and
+        coverage. Omit period_id for the page selection. Returns actual missing-basis/price/flow
+        evidence; incomplete inputs cannot establish investment performance. Never imports or
+        classifies transactions.
         """
         if not performance:
             return {"available": False, "items": []}
@@ -158,7 +156,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             ],
             "evidence": evidence,
             "url": "/alerts?tab=risk",
-            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. Historical basket watches use current weights, dated consecutive daily history and empirical tails, never future loss guarantees. This tool cannot change rules, trade or send messages. Optional Telegram delivery is selected separately for each rule.",
+            "scope": "Read-only saved evidence. Values include cash movements; drawdown is not investment return. Historical basket watches use current weights, dated consecutive daily history and empirical tails, never future loss guarantees. This tool cannot change rules, trade or send messages. Optional Telegram, Discord, Slack, Signal, WhatsApp or email delivery is selected separately for each rule with a checked private recipient.",
         }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:
@@ -169,7 +167,10 @@ def create_agent(services: Services, **runtime) -> Agent:
         retention limits. A selected accounting report keeps its own report scope.
         Use page_help(topic='history') for instructions on starting an import.
         """
-        if any(page_context().get(view) for view in ("transfer_view", "funding_view", "performance_view")):
+        if any(
+            page_context().get(view)
+            for view in ("transfer_view", "funding_view", "performance_view", "account_books_view")
+        ):
             return accountant_snapshot()
         sync = services.account_sync
         if sync is None:
@@ -193,16 +194,15 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def balance_check_report(account_id: str = "", asset: str = "") -> dict:
-        """Explain saved balance comparisons, per-asset differences and missing accounting evidence.
-
-        Use a saved account ID, or the page's individual account selection. Without
-        one, list available accounts so the user can choose. Returns the latest
-        saved comparison with at most forty asset rows. Supply an exact native
-        asset code to inspect that asset, including one beyond those first rows.
-        It does not read current
-        balances, import history, replace checkpoints or alter exchange funds.
+        """Read saved account balance reconciliation, explaining matched assets and missing
+        historical/opening evidence. Omit account_id for the selected account. Differences do not
+        prove a missing deposit or authorize an adjustment. Never refreshes balances or changes the
+        ledger.
         """
-        if any(page_context().get(view) for view in ("transfer_view", "funding_view", "performance_view")):
+        if any(
+            page_context().get(view)
+            for view in ("transfer_view", "funding_view", "performance_view", "account_books_view")
+        ):
             return accountant_snapshot()
         checks = services.balance_checks
         if checks is None:
@@ -250,20 +250,63 @@ def create_agent(services: Services, **runtime) -> Agent:
         fee_example: bool = False,
         funding_view: bool = False,
         transfer_view: bool = False,
+        group_id: Annotated[str | None, Field(pattern=r"^[a-f0-9]{32}$")] = None,
         asset: str = "",
         kind: str = "",
         status: str = "",
     ) -> dict:
-        """Explain the selected Account holdings or retained accounting report from its evidence.
-
-        Defaults to the page's report and filters. Holdings use scope='all', an exchange
-        scope or account scope. For explicit report requests choose performance_view,
-        funding_view or transfer_view with account_id, exact symbol or asset and environment.
-        Returns valuation coverage or retained FIFO/funding/transfer evidence and limitations.
-        Selected report/example views cannot be switched to balances or another report.
-        example and the example variants are only for explicitly requested illustrative data.
+        """Read the selected combined, exchange or individual account view and its valuation evidence.
+        Omit scope to follow the page. Demo/test funds, missing prices and incomplete totals are
+        explicit. Uses active accounts; setup instructions need no account read. Never trades or
+        activates accounts. Set group_id from observed evidence to inspect a split/merged transfer review.
         """
+        if group_id:
+            group = transfers.groups.detail(group_id)
+            reviewed = group["reviewed"]
+            return {
+                "view": "transfer_group",
+                "id": group["id"],
+                "status": group["status"],
+                "revision": group["revision"],
+                "review_note": group["review_note"],
+                "changed_members": group["changed_members"],
+                "reviewed": {
+                    **{
+                        key: reviewed[key]
+                        for key in (
+                            "asset",
+                            "environment",
+                            "source_debit",
+                            "destination_credit",
+                            "fee_quantity",
+                            "lot_order",
+                            "edges",
+                            "warnings",
+                            "note",
+                        )
+                    },
+                    **{
+                        side: [
+                            {
+                                "event_id": leg["event"]["id"],
+                                "account": leg["event"]["account"],
+                                "reported_quantity": leg["event"]["quantity"],
+                                "amount": leg["amount"],
+                                "fee": leg["fee"],
+                                "wallet_quantity": leg["wallet_quantity"],
+                                "principal": leg["principal"],
+                            }
+                            for leg in reviewed[side]
+                        ]
+                        for side in ("outgoing", "incoming")
+                    },
+                },
+            }
         selection = page_context()
+        if selection.get("account_books_view") and not any(
+            selection.get(view) for view in ("transfer_view", "funding_view", "performance_view")
+        ):
+            return account_asset_books()
         # Offline report selections cannot turn into private balance reads, even if a model asks.
         if selection.get("transfer_view"):
             transfer_view, example = True, bool(selection.get("transfer_example"))
@@ -311,6 +354,22 @@ def create_agent(services: Services, **runtime) -> Agent:
                 **result,
                 "view": "transfers",
                 "candidates": result["candidates"][:6],
+                "groups": [
+                    {
+                        "id": group["id"],
+                        "status": group["status"],
+                        "asset": group["reviewed"]["asset"],
+                        "source_debit": group["reviewed"]["source_debit"],
+                        "destination_credit": group["reviewed"]["destination_credit"],
+                        "fee_quantity": group["reviewed"]["fee_quantity"],
+                        "changed_members": group["changed_members"],
+                        "note": group["reviewed"]["note"],
+                    }
+                    for group in transfers.groups.report(account_id, asset, environment, limit=5)["items"]
+                ]
+                if transfers and not example
+                else [],
+                "evidence_group_limit": 5,
                 "evidence_link_limit": 10,
                 "evidence_suggestion_limit": 6,
             }
@@ -445,6 +504,57 @@ def create_agent(services: Services, **runtime) -> Agent:
         """
         return read_guide(GUIDES, topic)
 
+    def account_asset_books(
+        currency: Annotated[str | None, Field(pattern=ASSET)] = None,
+        source: str | None = None,
+    ) -> dict:
+        """Explain retained cross-pair asset FIFO, fee conversions, transfer lots and unknown basis in one reporting unit."""
+        page = page_context()
+        if any(page.get(view) for view in ("transfer_view", "funding_view", "performance_view")):
+            return accountant_snapshot()
+        if page.get("account_books_view"):
+            currency, source = (
+                page.get("account_books_currency", "USDT"),
+                page.get("market_source", "binance"),
+            )
+        if not performance:
+            return {"available": False, "url": "/trade?tab=history&history_view=performance"}
+        result = performance.account_books.report(
+            selected("performance_account_id", None, ""),
+            selected("performance_environment", None, ""),
+            selected("account_books_currency", currency, "USDT"),
+            selected("market_source", source, "binance"),
+        )
+        return {
+            **{
+                key: result[key]
+                for key in (
+                    "currency",
+                    "source",
+                    "method",
+                    "as_of",
+                    "input_fingerprint",
+                    "fill_count",
+                    "funding_count",
+                    "note",
+                    "complete_history",
+                )
+            },
+            "reports": [
+                {
+                    "environment": group["environment"],
+                    "items": group["items"][:30],
+                    "asset_count": len(group["items"]),
+                    "disposals": group["disposals"][:12],
+                    "conversions": group["conversions"][:12],
+                    "transfers": group["transfers"][:6],
+                }
+                for group in result["reports"]
+            ],
+            "kind": "account_asset_books",
+            "url": "/trade?tab=history&history_view=performance",
+        }
+
     agent = Agent(
         name="sibyl-accountant",
         description=DESCRIPTION,
@@ -455,6 +565,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             risk_alerts,
             Tool.from_callable(page_help, sync_execution="inline"),
             investment_returns,
+            account_asset_books,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

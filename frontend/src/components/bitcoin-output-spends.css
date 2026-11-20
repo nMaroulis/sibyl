@@ -72,3 +72,19 @@
   color: #926d31;
   background: #fbf0d9;
 }
+
+.bitcoin-proof-result {
+  margin-top: 0.65rem;
+}
+.bitcoin-proof-result summary {
+  cursor: pointer;
+}
+.bitcoin-proof-result dl {
+  margin: 0.65rem 0 0;
+  font-size: 0.73rem;
+}
+.bitcoin-proof-result dd {
+  margin: 0.15rem 0 0.55rem;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}

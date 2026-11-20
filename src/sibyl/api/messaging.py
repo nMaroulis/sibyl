@@ -5,6 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, Query, Response
 
 from sibyl.api.routes import S
+from sibyl.messaging.media.contracts import MediaSettings
 from sibyl.messaging.review import DeliveryDecision
 from sibyl.messaging.settings import TelegramSettingsRequest
 
@@ -74,3 +75,17 @@ def delivery_review(identity: str, body: DeliveryDecision, s: S, response: Respo
     return (
         s.messaging.replies if identity.startswith("reply-") else s.messaging.notifications.review
     ).decide(identity, body)
+
+
+@router.get("/attachments")
+def attachment_settings(s: S, response: Response):
+    """Read local retention consent and installed OCR/transcription dependency presence."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.messaging.media.public()
+
+
+@router.put("/attachments")
+def save_attachments(body: MediaSettings, s: S, response: Response):
+    """Opt in to selected private attachment imports; never install programs or models."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.messaging.media.save(body)

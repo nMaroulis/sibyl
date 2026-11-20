@@ -539,3 +539,9 @@
     display: none;
   }
 }
+
+.workflow-mode {font-size:12px;margin:12px 0;color:var(--muted);}
+.workflow-waiting {border-radius:22px;padding:20px;background:linear-gradient(125deg,#e9edf3cc,#ecebf788);margin:16px 0;}
+.workflow-waiting .form {margin-top:14px;}
+.workflow-note-preview {background:#ffffffb0;border-radius:15px;padding:16px;margin:14px 0;max-height:360px;overflow:auto;}
+.workflow-note-preview p {white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;}

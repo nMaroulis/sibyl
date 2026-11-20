@@ -1,3 +1,4 @@
+import { WorkerIncidents } from './worker-incidents';
 import { Link } from 'react-router-dom';
 import { Activity, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useResource } from '../../lib/hooks';
@@ -240,6 +241,7 @@ export function WorkerHealthPanel() {
               ))}
             </div>
           </details>
+          <WorkerIncidents />
           <details className="worker-history">
             <summary>Recent lifecycle and fault history</summary>
             <div>

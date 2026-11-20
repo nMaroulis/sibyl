@@ -4,6 +4,8 @@ import { Badge, Empty, Loading, Panel, PanelTitle, useToast } from './ui';
 import { downloadFile } from '../lib/api';
 import { date, formatted } from '../lib/strategy-monitor';
 import { useResource } from '../lib/hooks';
+import { OwnershipRepairDialog } from './strategies/ownership-repair';
+import { RunFeeReceipt } from './strategies/run-fee-review';
 import type { StrategyEventPage } from '../lib/types';
 
 /** An event journal page stays fixed while browsing history; the latest page can poll. */
@@ -19,6 +21,8 @@ export function DecisionJournal({
   const [action, setAction] = useState('all');
   const [before, setBefore] = useState<number>();
   const [exporting, setExporting] = useState(false);
+  const [feeReceipt, setFeeReceipt] = useState<string>();
+  const [repairReceipt, setRepairReceipt] = useState<string>();
   const toast = useToast();
   const events = useResource<StrategyEventPage>(
     `/strategies/jobs/${encodeURIComponent(jobId)}/events?action=${action}&limit=50${before ? `&before=${before}` : ''}`,
@@ -63,6 +67,11 @@ export function DecisionJournal({
             <option value="ORDER_PLANNED">Exchange order plans</option>
             <option value="ORDER_SUBMITTED">Exchange order submissions</option>
             <option value="FILL_CORRECTION">Native fill corrections</option>
+            <option value="FEE_VALUATION">Approved fee prices</option>
+            <option value="OWNERSHIP">Ownership reviews & handoffs</option>
+            <option value="OWNERSHIP_REPAIR">Ownership repairs</option>
+            <option value="ARCHIVE">Run archives</option>
+            <option value="RESTORE">Run restores</option>
             <option value="CANCEL_QUEUED">Cancellation queued</option>
             <option value="CANCEL_REQUESTED">Cancellation requested</option>
             <option value="CANCEL_UNKNOWN">Cancellation uncertain</option>
@@ -71,6 +80,7 @@ export function DecisionJournal({
             <option value="CANCEL_RECONCILED">Cancellation evidence matched</option>
             <option value="STOP_CANCEL">Stop &amp; cancel approvals</option>
             <option value="CLOSE_APPROVED">Exit approvals</option>
+            <option value="LIQUIDATION">Liquidation plans</option>
             <option value="CLOSE_SUBMITTED">Exit orders submitted</option>
             <option value="CLOSE_UNKNOWN">Exit outcome uncertain</option>
             <option value="CLOSE_RECONCILING">Exit fill checks</option>
@@ -157,7 +167,25 @@ export function DecisionJournal({
                       Cash {formatted(event.cash, 6)} · Position {formatted(event.position, 8)}
                     </small>
                   </td>
-                  <td>{event.reason}</td>
+                  <td>
+                    {event.reason}
+                    {event.ownership_repair_id && (
+                      <button
+                        className="text-button"
+                        onClick={() => setRepairReceipt(event.ownership_repair_id)}
+                      >
+                        View repair
+                      </button>
+                    )}
+                    {event.fee_review_id && (
+                      <button
+                        className="text-button"
+                        onClick={() => setFeeReceipt(event.fee_review_id)}
+                      >
+                        View receipt
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -168,6 +196,20 @@ export function DecisionJournal({
           New decisions are recorded once per newly closed candle. Lifecycle events appear
           immediately.
         </Empty>
+      )}
+      {repairReceipt && (
+        <OwnershipRepairDialog
+          jobId={jobId}
+          receiptId={repairReceipt}
+          close={() => setRepairReceipt(undefined)}
+        />
+      )}
+      {feeReceipt && (
+        <RunFeeReceipt
+          jobId={jobId}
+          receiptId={feeReceipt}
+          close={() => setFeeReceipt(undefined)}
+        />
       )}
       <div className="chart-footnote">
         <span>

@@ -406,7 +406,7 @@ def test_scan_reports_and_observed_versions_have_bounded_reads(workspace):
     [
         ("binance", False, ["deposit", "withdrawal"]),
         ("kraken", False, ["deposit", "withdrawal", "transfer"]),
-        ("bybit", False, ["withdrawal"]),
+        ("bybit", False, ["withdrawal", "transfer"]),
         ("binance", True, []),
         ("binance-testnet", True, []),
         ("demo", False, []),

@@ -9,6 +9,7 @@ import numpy as np
 
 from sibyl.forecasting.engine import (
     COVERAGE,
+    calibrated_radius,
     engine_for,
     features,
     fingerprint,
@@ -17,6 +18,7 @@ from sibyl.forecasting.engine import (
     score_horizon,
     validate,
 )
+from sibyl.forecasting.families.arima import ARIMAForecaster
 from sibyl.market_data.archive import iso, step_ms
 
 ROLLING_ENGINE = "chronos-rolling-1"
@@ -25,10 +27,14 @@ ROLLING_ENGINE = "chronos-rolling-1"
 def evaluate(candles, recipe, request):
     """Refit a fixed recipe at each boundary; retain all fits, boundaries and test traces."""
     logs, times = validate(candles, 360)
-    n, lags, h = len(logs), recipe["lags"], request.horizon
+    n, lags, h = len(logs), recipe.get("lags", 0), request.horizon
     family = recipe.get("family", "ridge")
     if family == "mlp" and (n > 1000 or h > 14):
         raise ValueError("Neural rolling studies support at most 1,000 candles and 14 forecast days.")
+    if family == "huber" and n > 2000:
+        raise ValueError("Huber rolling studies support at most 2,000 actual input candles.")
+    if family == "arima" and (n > 1000 or h > 14):
+        raise ValueError("ARIMA rolling studies support at most 1,000 candles and 14 forecast days.")
     if h > recipe["max_horizon"]:
         raise ValueError("Choose a horizon supported by the selected model recipe.")
     if min(request.test_days, request.calibration_days) - h < 20:
@@ -37,6 +43,8 @@ def evaluate(candles, recipe, request):
     minimum_training = (
         lags + max(60, 3 * (lags + (6 if recipe.get("feature_set") == "returns_context" else 0))) + h
     )
+    if family == "arima":
+        minimum_training = 120
     earliest_end = first - request.calibration_days
     available = earliest_end if request.window == "expanding" else request.training_days
     if earliest_end < minimum_training or available < minimum_training:
@@ -47,7 +55,8 @@ def evaluate(candles, recipe, request):
         raise ValueError(
             "The fixed training window starts before the saved input. Use fewer training days or fewer folds."
         )
-    x, folds = features(logs, lags, recipe.get("feature_set", "returns")), []
+    x = None if family == "arima" else features(logs, lags, recipe.get("feature_set", "returns"))
+    folds = []
 
     def partition(start, end):
         return {
@@ -66,7 +75,34 @@ def evaluate(candles, recipe, request):
         training = np.arange(train_start + lags, train_end - h)
         calibration = np.arange(train_end, test_start - h)
         test = np.arange(test_start, test_end - h)
-        model, predictions = fit_horizon(logs, x, lags, recipe["alpha"], h, training, calibration, family)
+        if family == "arima":
+            arima = ARIMAForecaster.fit(
+                logs[train_start:train_end],
+                recipe["arima_p"],
+                recipe["arima_q"],
+                season=recipe.get("arima_season", 0),
+            )
+            panel = ARIMAForecaster.panel(arima, logs, range(train_end, test_end), h)
+            predictions = panel[:, h - 1]
+            model = {
+                "horizon": h,
+                "arima": arima,
+                "radius": calibrated_radius(logs, predictions, calibration, h),
+                "training_samples": arima["training"]["training_returns"],
+                "calibration_samples": len(calibration),
+            }
+        else:
+            model, predictions = fit_horizon(
+                logs,
+                x,
+                lags,
+                recipe["alpha"],
+                h,
+                training,
+                calibration,
+                family,
+                recipe.get("huber_delta", 1.35),
+            )
         drift = float(np.diff(logs[train_start:train_end]).mean())
         evidence = score_horizon(logs, times, predictions, model, test, drift, lags)
         folds.append(
@@ -105,7 +141,9 @@ def evaluate(candles, recipe, request):
     )
     result = {
         "engine": ROLLING_ENGINE,
-        "ridge_engine": engine_for(recipe.get("feature_set", "returns"), family),
+        "ridge_engine": engine_for(
+            recipe.get("feature_set", "returns"), family, recipe.get("arima_season", 0)
+        ),
         "numpy_version": np.__version__,
         "parameters": request.model_dump(),
         "recipe": recipe,

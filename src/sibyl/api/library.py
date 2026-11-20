@@ -1,4 +1,4 @@
-"""Explicit local imports and read-only source retrieval for the Research workspace."""
+"""Explicit local imports and attributable source retrieval for the Research workspace."""
 
 import base64
 import binascii
@@ -11,8 +11,10 @@ from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
 from sibyl.api.uploads import bounded_body
+from sibyl.research_library.calibration.contracts import CalibrationCreate, CalibrationPolicy
 from sibyl.research_library.evaluations.contracts import EvaluationRun, EvaluationSuite
 from sibyl.research_library.semantic.contracts import (
+    HostedSemanticSettings,
     IndexBatch,
     LocalEndpoint,
     SemanticRevision,
@@ -155,6 +157,12 @@ def semantic_settings(body: SemanticSettings, s: S):
     return s.library.semantic.configure(body)
 
 
+@router.post("/semantic/hosted-settings")
+def hosted_semantic_settings(body: HostedSemanticSettings, s: S):
+    """Check one hosted embedding model after explicit text-processing consent, using a separate key."""
+    return s.library.semantic.configure_hosted(body)
+
+
 @router.post("/semantic/index")
 def semantic_index(body: IndexBatch, s: S):
     """Explicitly embed one bounded passage batch; publish only unchanged current sources."""
@@ -207,3 +215,39 @@ def evaluation_stop(identity: str, s: S):
 def evaluation_delete(identity: str, s: S):
     """Explicitly remove an inactive suite and its saved reports, keeping sources."""
     s.library.evaluations.delete(identity)
+
+
+@router.get("/calibrations")
+def calibrations(s: S):
+    """Read semantic calibration receipts and current exact-scope cutoff states without inference."""
+    return s.library.calibration.status()
+
+
+@router.post("/calibrations", status_code=202)
+def calibration_start(body: CalibrationCreate, s: S):
+    """Queue independent labeled fit/validation queries; never automatically enable a cutoff."""
+    return s.library.calibration.start(body)
+
+
+@router.get("/calibrations/{identity}")
+def calibration_report(identity: str, s: S):
+    """Read the actual cutoff, held-out counts and exact top-passage evidence."""
+    return s.library.calibration.get(identity)
+
+
+@router.post("/calibrations/{identity}/stop")
+def calibration_stop(identity: str, s: S):
+    """Stop future queries and fence late results without undoing already sent provider queries."""
+    return s.library.calibration.stop(identity)
+
+
+@router.delete("/calibrations/{identity}", status_code=204)
+def calibration_delete(identity: str, s: S):
+    """Delete an inactive report only after its cutoff is disabled."""
+    s.library.calibration.delete(identity)
+
+
+@router.post("/calibration-policy/{kind}")
+def calibration_policy(kind: str, body: CalibrationPolicy, s: S):
+    """Explicitly enable a validated current cutoff or disable filtering with a revision check."""
+    return s.library.calibration.set_policy(kind, body)

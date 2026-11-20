@@ -222,3 +222,13 @@ def test_deactivated_account_cannot_confirm_an_existing_preview(trading):
         service.preview(request(connection, idempotency_key="inactive-preview"))
     assert adapter.calls == 0
     assert service.list_orders()[0]["status"] == "preview"
+
+
+def test_native_id_collision_is_rejected_before_submitting_or_persisting_another_review(trading, monkeypatch):
+    service, adapter, connection = trading
+    monkeypatch.setattr(adapter, "format_client_order_id", lambda _identity: "same-native-id")
+    service.preview(request(connection))
+    with pytest.raises(ValueError, match="collision"):
+        service.preview(request(connection, idempotency_key="different-native-intent"))
+    assert len(service.list_orders()) == 1
+    assert adapter.calls == 0

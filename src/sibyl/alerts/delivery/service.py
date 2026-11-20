@@ -1,4 +1,4 @@
-"""Transfer explicitly selected future inbox events into the existing Telegram outbox.
+"""Transfer explicitly selected future inbox events into the shared private notification outbox.
 
 The local inbox remains the authoritative trigger record. Cursor advancement and
 outbox insertion share one transaction, so restarts cannot replay processed events.
@@ -54,7 +54,7 @@ class AlertDelivery:
         ).fetchone()
         if row and row["kind"] != kind:
             raise LookupError("Alert delivery policy not found.")
-        return (
+        result = (
             json.loads(row["payload"])
             if row
             else {
@@ -70,6 +70,9 @@ class AlertDelivery:
                 "updated_at": None,
             }
         )
+        result.setdefault("channel", "telegram")
+        result.setdefault("delivery_binding", result.get("telegram_binding"))
+        return result
 
     @staticmethod
     def _write(db, policy):
@@ -96,7 +99,12 @@ class AlertDelivery:
                     ).fetchall()
                 )
         return [
-            {"rule_id": item["rule_id"], "kind": item["kind"], "enabled": True}
+            {
+                "rule_id": item["rule_id"],
+                "kind": item["kind"],
+                "enabled": True,
+                "channel": item.get("channel", "telegram"),
+            }
             for item in (json.loads(row[0]) for row in rows)
         ]
 
@@ -119,7 +127,7 @@ class AlertDelivery:
     def save(self, kind, identity, body):
         """Save explicit opt-in for future notices only, without sending any messages."""
         now = self.clock()
-        with self.store.db() as db:
+        with self.store.vault.lock, self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             rule = self._rule(db, kind, identity)
             policy = self._read(db, kind, identity)
@@ -128,9 +136,17 @@ class AlertDelivery:
                     "This rule or delivery setting changed. Refresh and review it before saving."
                 )
             if body.enabled and rule["status"] == "archived":
-                raise AlertConflict("Restore the alert rule before enabling Telegram delivery.")
-            binding = policy["telegram_binding"]
-            if body.enabled:
+                raise AlertConflict("Restore the alert rule before enabling message delivery.")
+            channel = (
+                body.channel if "channel" in body.model_fields_set else policy.get("channel", "telegram")
+            )
+            binding = policy.get("delivery_binding") or policy.get("telegram_binding")
+            if body.enabled and channel != "telegram":
+                try:
+                    binding = self.outbox.routes.binding(channel, body.private_target)
+                except ValueError as exc:
+                    raise AlertConflict(str(exc)) from exc
+            elif body.enabled:
                 profile = self.messaging.settings.profile()
                 if not profile.get("verified") or not profile.get("bot_id") or not profile.get("bot_token"):
                     raise AlertConflict("Save and check a Telegram bot in Settings → Messaging first.")
@@ -147,7 +163,9 @@ class AlertDelivery:
             tail = db.execute("SELECT COALESCE(MAX(rowid),0) FROM alert_notifications").fetchone()[0]
             policy.update(
                 enabled=body.enabled,
-                telegram_binding=binding,
+                channel=channel,
+                delivery_binding=binding,
+                telegram_binding=binding if channel == "telegram" else None,
                 cooldown_seconds=body.cooldown_seconds,
                 expiry_seconds=body.expiry_seconds,
                 cursor=tail,
@@ -186,11 +204,19 @@ class AlertDelivery:
             notice = db.execute(
                 "SELECT rule_id FROM alert_notifications WHERE id=?", (delivery.get("notification_id"),)
             ).fetchone()
-        binding = policy["telegram_binding"] or {}
+        binding = policy.get("delivery_binding") or policy.get("telegram_binding") or {}
         return bool(
             notice
             and notice[0] == identity
             and policy["enabled"]
+            and policy.get("channel", "telegram") == delivery.get("channel", "telegram")
+            and (
+                policy.get("channel", "telegram") == "telegram"
+                or (
+                    binding.get("connection_revision") == delivery["connection_revision"]
+                    and binding.get("target_id") == delivery.get("target_id")
+                )
+            )
             and policy["revision"] == delivery["policy_revision"]
             and rule["status"] in {"armed", "triggered"}
             and rule["revision"] == delivery["rule_revision"]
@@ -211,7 +237,7 @@ class AlertDelivery:
 
     def _tick(self):
         now = self.clock()
-        with self.store.db() as db:
+        with self.store.vault.lock, self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute(
                 "SELECT p.payload FROM alert_delivery_policies p WHERE p.enabled=1 AND EXISTS(SELECT 1 FROM alert_notifications n WHERE n.rule_id=p.rule_id AND n.rowid>p.cursor) ORDER BY p.cursor,p.rowid LIMIT 1"
@@ -242,11 +268,11 @@ class AlertDelivery:
                     and now.timestamp() < policy["last_queued_at"] + policy["cooldown_seconds"]
                 ):
                     error = (
-                        "Telegram cooldown suppressed this alert. Its evidence remains in the local inbox."
+                        "Delivery cooldown suppressed this alert. Its evidence remains in the local inbox."
                     )
                 receipt = self.outbox.enqueue_message(
                     "alert:" + notice["id"],
-                    policy["telegram_binding"] or {},
+                    policy.get("delivery_binding") or policy.get("telegram_binding") or {},
                     alert_text(notice),
                     now,
                     expiry,
@@ -260,6 +286,7 @@ class AlertDelivery:
                     },
                     error=error,
                     db=db,
+                    channel=policy.get("channel", "telegram"),
                 )
                 if receipt["status"] == "pending":
                     policy["last_queued_at"] = now.timestamp()

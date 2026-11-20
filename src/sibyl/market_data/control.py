@@ -18,6 +18,10 @@ from uuid import uuid4
 
 import ccxt
 
+from sibyl.market_data.quotas.budgets import Quotas
+from sibyl.market_data.quotas.hooks import bind as bind_quotas
+from sibyl.market_data.quotas.policies import Call, family
+
 READS = {
     "load_markets",
     "fetch_ticker",
@@ -135,6 +139,7 @@ class ProviderControl:
         self.max_inflight = max_inflight
         self.max_wait = max_wait
         self.history = history
+        self.quotas = Quotas()
         self.started_at = utc()
         self._condition = threading.Condition(threading.RLock())
         self._local = threading.local()
@@ -172,6 +177,7 @@ class ProviderControl:
                     "deferred": 0,
                     "cache_hits": 0,
                     "waiting_http": 0,
+                    "waiting_quota": 0,
                     "last_success_at": None,
                     "last_request_at": None,
                     "latency_ms": None,
@@ -186,11 +192,19 @@ class ProviderControl:
             return self._sources[identity]
 
     def _bucket(self, source):
-        key = (source["provider"], source["environment"])
+        key = (family(source["provider"]), source["environment"])
         with self._condition:
             return self._buckets.setdefault(
                 key,
-                {"busy": False, "queue": [], "next": 0.0, "cooldown": 0.0, "failures": 0, "waiting_http": 0},
+                {
+                    "busy": False,
+                    "queue": [],
+                    "next": 0.0,
+                    "cooldown": 0.0,
+                    "failures": 0,
+                    "waiting_http": 0,
+                    "waiting_quota": 0,
+                },
             )
 
     @contextmanager
@@ -254,12 +268,92 @@ class ProviderControl:
                     bucket["busy"] = False
                     self._condition.notify_all()
 
-    def transport(self, loader, headers=None):
+    def _quota_call(self, source):
+        return getattr(self._local, "quota", None) or Call(
+            family(source["provider"]), source["environment"], "unverified"
+        )
+
+    def wait_quota(self, source, call):
+        """Wait for reviewed read allowance before native signing, within existing queue bounds."""
+        context = getattr(self._local, "operation", None)
+        if not context or not context["read"] or getattr(self._local, "mutation", False):
+            return
+        state, bucket = self.register(source), self._bucket(source)
+        deadline = time.monotonic() + (2 if getattr(self._local, "background", False) else self.max_wait)
+        with self._condition:
+            state["waiting_quota"] += 1
+            bucket["waiting_quota"] += 1
+            try:
+                while True:
+                    mono = time.monotonic()
+                    delay = self.quotas.delay(call, mono, time.time())
+                    if self._closed or delay > deadline - mono:
+                        state["deferred"] += 1
+                        self.quotas.deferred(source, state, call, time.time())
+                        raise ProviderDeferred(max(1, delay))
+                    if delay <= 0:
+                        return
+                    self._condition.wait(min(delay, max(0.001, deadline - mono)))
+            finally:
+                state["waiting_quota"] -= 1
+                bucket["waiting_quota"] -= 1
+                self._condition.notify_all()
+
+    def _quota_observation(self, reservation, headers, result):
+        """A telemetry failure cannot turn a possibly successful native write into a retry."""
+        try:
+            self.quotas.observe(
+                reservation, headers() if headers else None, result, time.monotonic(), time.time()
+            )
+        except Exception:
+            self.quotas.gaps += 1
+
+    def _uncoordinated(self, loader, headers, source):
+        """Observe bypassed attempts without introducing mutation admission, retry or delay."""
+        with self._condition:
+            reservation = self.quotas.charge(
+                source,
+                self.register(source),
+                self._quota_call(source),
+                time.monotonic(),
+                time.time(),
+                bypass=True,
+            )
+        result = None
+        try:
+            result = loader()
+            return result
+        except (ccxt.RateLimitExceeded, ccxt.DDoSProtection):
+            # A bypassed write still must not be retried. Its rate-limit hint
+            # can cool future reads, without fabricating a failed-read event.
+            with self._condition:
+                try:
+                    raw = (headers() if headers else None) or {}
+                    hint = retry_after(
+                        next(
+                            (v for k, v in raw.items() if isinstance(k, str) and k.lower() == "retry-after"),
+                            None,
+                        )
+                    )
+                    bucket = self._bucket(source)
+                    bucket["cooldown"] = max(bucket["cooldown"], time.monotonic() + max(2, hint or 0))
+                except Exception:
+                    self.quotas.gaps += 1
+            raise
+        finally:
+            with self._condition:
+                self._quota_observation(reservation, headers, result)
+                self._condition.notify_all()
+
+    def transport(self, loader, headers=None, source=None):
         """Count and space one real transport read; never replay a signed/native request here."""
         context = getattr(self._local, "operation", None)
         if not context or not context["read"] or getattr(self._local, "mutation", False):
-            return loader()  # mutations keep the existing one-attempt execution contract
+            if source is None:
+                return loader()
+            return self._uncoordinated(loader, headers, source)
         source = context["source"]
+        call = self._quota_call(source)
         state = self.register(source)
         with self._condition:
             bucket = self._bucket(source)
@@ -282,6 +376,11 @@ class ProviderControl:
             try:
                 while True:
                     now = time.monotonic()
+                    quota_delay = self.quotas.delay(call, now, time.time())
+                    if quota_delay > 0:
+                        state["deferred"] += 1
+                        self.quotas.deferred(source, state, call, time.time())
+                        raise ProviderDeferred(quota_delay)
                     delay = max(bucket["next"], bucket["cooldown"]) - now
                     if self._closed or (delay > deadline - now):
                         state["deferred"] += 1
@@ -298,6 +397,7 @@ class ProviderControl:
                         context["counter"]["calls"] += 1
                         state["requests"] += 1
                         state["last_request_at"] = utc()
+                        reservation = self.quotas.charge(source, state, call, now, time.time())
                         break
                     remaining = deadline - now
                     if remaining <= 0:
@@ -311,6 +411,7 @@ class ProviderControl:
                 self._condition.notify_all()
         start = time.monotonic()
         outcome = None
+        result = None
         try:
             result = loader()
             with self._condition:
@@ -331,6 +432,7 @@ class ProviderControl:
         finally:
             latency = round((time.monotonic() - start) * 1000, 1)
             with self._condition:
+                self._quota_observation(reservation, headers, result)
                 state["latency_ms"] = latency
                 self._inflight -= 1
                 self._condition.notify_all()
@@ -456,13 +558,16 @@ class ProviderControl:
             return client
         native = getattr(client, "_exchange", None)
         if native is not None and callable(getattr(native, "fetch", None)):
+            bind_quotas(native, self, source)
             original = native.fetch
 
             @wraps(original)
             def fetch(*args, **kwargs):
                 native.last_response_headers = None
                 return self.transport(
-                    lambda: original(*args, **kwargs), lambda: getattr(native, "last_response_headers", None)
+                    lambda: original(*args, **kwargs),
+                    lambda: getattr(native, "last_response_headers", None),
+                    source,
                 )
 
             native.fetch = fetch
@@ -582,9 +687,11 @@ class ProviderControl:
                         "retry_after": math.ceil(delay),
                         "retry_at": utc(wall + delay) if delay else None,
                         "queued": sum(t["source"] == source["id"] for t in queue)
-                        + (state["waiting_http"] if state else 0),
-                        "shared_queued": len(queue) + bucket["waiting_http"],
+                        + (state["waiting_http"] + state["waiting_quota"] if state else 0),
+                        "shared_queued": len(queue) + bucket["waiting_http"] + bucket["waiting_quota"],
                         "shared_busy": bucket["busy"],
+                        "quota_waiters": state["waiting_quota"] if state else 0,
+                        "quotas": self.quotas.snapshot(source, state, now, wall),
                     }
                 )
             return {
@@ -592,7 +699,9 @@ class ProviderControl:
                 "as_of": utc(),
                 "started_at": self.started_at,
                 "in_flight": self._inflight,
-                "queued": sum(len(b["queue"]) + b["waiting_http"] for b in self._buckets.values()),
+                "queued": sum(
+                    len(b["queue"]) + b["waiting_http"] + b["waiting_quota"] for b in self._buckets.values()
+                ),
                 "policy": {
                     "min_interval_ms": round(self.min_interval * 1000),
                     "max_inflight": self.max_inflight,

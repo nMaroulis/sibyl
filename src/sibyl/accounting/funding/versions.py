@@ -15,6 +15,7 @@ FIELDS = tuple(key for key in FACTS if key not in {"id", "account_id", "exchange
     "reference",
     "wallet_scope",
     "posted_ms",
+    "wallet_route",
 )
 NOTE = "Changes observed locally, not a complete provider revision history or independent settlement verification. Earlier unobserved versions may be unavailable."
 
@@ -23,7 +24,11 @@ def source_version(row):
     """Bind material source facts, including references used by transfer review."""
     fields = ("id", "native_id", "account_id", "exchange", "environment", *FIELDS)
     return hashlib.sha256(
-        json.dumps({key: row.get(key) for key in fields}, sort_keys=True, allow_nan=False).encode()
+        json.dumps(
+            {key: row.get(key) for key in fields if key != "wallet_route" or row.get(key) is not None},
+            sort_keys=True,
+            allow_nan=False,
+        ).encode()
     ).hexdigest()
 
 

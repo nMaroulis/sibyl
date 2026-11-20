@@ -5,6 +5,10 @@ export type LimitPolicy = {
   max_allocated: number | null;
   max_exposure: number | null;
   max_daily_loss: number | null;
+  max_account_exposure: number | null;
+  max_asset_exposure: number | null;
+  loss_window_hours: number;
+  max_window_loss: number | null;
 };
 
 export type PortfolioLimitState = {
@@ -13,6 +17,7 @@ export type PortfolioLimitState = {
   policy: LimitPolicy;
   locked: boolean;
   tripped_day: string | null;
+  window_locked_until?: string | null;
   fresh: boolean;
   error: string | null;
   sample: null | {
@@ -25,6 +30,12 @@ export type PortfolioLimitState = {
     exposure: number;
     daily_pnl: number;
     daily_loss: number;
+    window_loss: number;
+    window_pnl: number;
+    window_started_at: string;
+    window_hours: number;
+    accounts: { id: string; label: string; exposure: number }[];
+    assets: { asset: string; exposure: number }[];
     source: { source_label: string };
     rates: Record<string, { price: number; path: string[]; observed_at: string | null }>;
     runs: {

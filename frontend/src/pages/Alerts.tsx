@@ -47,6 +47,7 @@ import { MarketSourcePicker } from '../components/market-source-picker';
 import {
   conditionLabel,
   NotificationText,
+  notificationURL,
   type Inbox,
   type PriceCondition,
 } from '../components/notifications';
@@ -569,15 +570,63 @@ export function Alerts() {
                     <div className="notification-copy">
                       <NotificationText item={item} />
                       <small>
-                        {item.kind === 'risk'
-                          ? `Valuation sample ${item.sample_id}`
-                          : item.kind === 'strategy'
-                            ? `Journal event ${item.event_id}`
-                            : item.kind === 'connection'
-                              ? `Transport read ${item.event_id}`
-                              : `Price cycle ${item.cycle}`}{' '}
+                        {item.kind === 'bitcoin'
+                          ? `Watch observation ${item.cycle}`
+                          : item.kind === 'workspace'
+                            ? 'Local worker observation'
+                            : item.kind === 'risk'
+                              ? `Valuation sample ${item.sample_id}`
+                              : item.kind === 'strategy'
+                                ? `Journal event ${item.event_id}`
+                                : item.kind === 'connection'
+                                  ? `Transport read ${item.event_id}`
+                                  : `Price cycle ${item.cycle}`}{' '}
                         · observed {new Date(item.observed_at).toLocaleString()}
                       </small>
+                      {item.kind === 'bitcoin' && !example && (
+                        <>
+                          <details className="bitcoin-change-evidence">
+                            <summary>Observed change evidence</summary>
+                            <p>
+                              Transaction <code>{item.transaction_id}</code> · Output #
+                              {item.output_index}
+                            </p>
+                            {(
+                              [
+                                ['Previous', item.previous],
+                                ['Current', item.current],
+                              ] as const
+                            ).map(([label, observation]) => (
+                              <div key={label}>
+                                <strong>
+                                  {label} · {new Date(observation.observed_at).toLocaleString()}
+                                </strong>
+                                <p>
+                                  Parent block{' '}
+                                  <code>{observation.parent_block_hash ?? 'Unconfirmed'}</code>
+                                </p>
+                                {observation.spending_txid && (
+                                  <p>
+                                    Spending transaction <code>{observation.spending_txid}</code> ·
+                                    Input #{observation.spending_input_index}
+                                    <br />
+                                    Spending block{' '}
+                                    <code>{observation.spending_block_hash ?? 'Unconfirmed'}</code>
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </details>
+                          <Link className="text-button" to={notificationURL(item)}>
+                            Open output watches <ArrowUpRight size={12} />
+                          </Link>
+                        </>
+                      )}
+                      {item.kind === 'workspace' && !example && (
+                        <Link className="text-button" to="/settings?tab=workspace">
+                          View incident evidence <ArrowUpRight size={12} />
+                        </Link>
+                      )}
                       {item.kind === 'risk' && !example && (
                         <Link className="text-button" to={riskURL(item.rule_id, item.sample_id)}>
                           View valuation evidence <ArrowUpRight size={12} />

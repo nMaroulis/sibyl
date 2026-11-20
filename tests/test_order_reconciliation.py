@@ -60,6 +60,7 @@ def test_native_executions_share_ledger_and_do_not_duplicate(reconciliation):
     assert first["reconciliation"]["status"] == "matched"
     assert first["reconciliation"]["fees"] == [{"currency": "USDT", "cost": 0.5}]
     assert first["reconciliation"]["settlement_final"] is False
+    assert "settlement" not in first["reconciliation"]
     with ThreadPoolExecutor(4) as pool:
         list(pool.map(lambda _: service.reconciliation.sync(identity, manual=True), range(4)))
     retained = AccountLedger(service.store, recover=False).fills(account_id=connection.id)
@@ -295,6 +296,17 @@ def test_native_order_filter_and_provider_cursor(kind):
         assert params.get("order_ids", params.get("order_id")) in (["native-123"], "native-123")
         assert page.cursor == {"page": "next-token"}
     assert not page.caught_up
+
+
+def test_coinbase_order_fill_settlement_is_exchange_only_and_strict():
+    transport = FillTransport([execution(info={"settled": True, "private": "opaque"})])
+    exact = fetch_order_fill_page(transport, "coinbase-exchange-cursor", "native-123", "BTC/USDT", {}, 100)
+    assert exact.items[0]["venue_settled"] is True and "info" not in exact.items[0]
+    advanced = fetch_order_fill_page(transport, "coinbase-cursor", "native-123", "BTC/USDT", {}, 100)
+    assert "venue_settled" not in advanced.items[0]
+    transport.rows = [execution(info={"settled": "true"})]
+    with pytest.raises(ccxt.ExchangeError, match="Invalid Coinbase Exchange settlement"):
+        fetch_order_fill_page(transport, "coinbase-exchange-cursor", "native-123", "BTC/USDT", {}, 100)
 
 
 def test_kraken_snapshots_ids_and_reads_bounded_batches():

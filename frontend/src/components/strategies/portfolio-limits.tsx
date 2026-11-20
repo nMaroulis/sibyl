@@ -107,7 +107,7 @@ function LimitDetails({
         action === 'save'
           ? 'Shared limits saved. Affected runs stay paused for your review.'
           : action === 'release'
-            ? 'Daily-loss lock released. Runs remain paused.'
+            ? 'Loss lock released. Runs remain paused.'
             : 'Portfolio assessment updated.',
       );
     } catch (reason) {
@@ -125,7 +125,7 @@ function LimitDetails({
           tone={state.locked ? 'rose' : state.fresh && state.policy.enabled ? 'sage' : 'neutral'}
         >
           {state.locked
-            ? 'Daily-loss lock active'
+            ? 'Loss lock active'
             : !state.policy.enabled
               ? 'Shared limits off'
               : state.fresh
@@ -153,6 +153,11 @@ function LimitDetails({
                 ['Allocated capital', sample.allocated, state.policy.max_allocated],
                 ['Gross exposure', sample.exposure, state.policy.max_exposure],
                 ['Observed daily loss', sample.daily_loss, state.policy.max_daily_loss],
+                [
+                  `${sample.window_hours ?? 24}h observed loss`,
+                  sample.window_loss ?? 0,
+                  state.policy.max_window_loss,
+                ],
               ] as const
             ).map(([label, value, cap]) => (
               <div className={cap && value >= cap ? 'at-limit' : ''} key={label}>
@@ -177,6 +182,42 @@ function LimitDetails({
             {new Date(sample.period_started_at).toLocaleString()}. Later days carry the last
             observed mark; this is not an exact midnight valuation or whole-account return.
           </p>
+          {sample.window_started_at && (
+            <p className="footnote">
+              Rolling window starts at the observed mark{' '}
+              {new Date(sample.window_started_at).toLocaleString()}. Gaps carry the preceding mark;
+              this is sampled strategy P&amp;L, not an exact window return.
+            </p>
+          )}
+          {!!sample.assets?.length && (
+            <details className="advanced-options">
+              <summary>Exposure by account &amp; asset</summary>
+              <div className="limit-metrics">
+                {sample.accounts.map((row) => (
+                  <div key={row.id}>
+                    <span>{row.label}</span>
+                    <strong>{number(row.exposure, 2)}</strong>
+                    <small>
+                      {state.policy.max_account_exposure == null
+                        ? 'No account cap'
+                        : `of ${number(state.policy.max_account_exposure, 2)} USDT`}
+                    </small>
+                  </div>
+                ))}
+                {sample.assets.map((row) => (
+                  <div key={row.asset}>
+                    <span>{row.asset}</span>
+                    <strong>{number(row.exposure, 2)}</strong>
+                    <small>
+                      {state.policy.max_asset_exposure == null
+                        ? 'No asset cap'
+                        : `of ${number(state.policy.max_asset_exposure, 2)} USDT`}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
           {!!sample.runs.length && (
             <details className="advanced-options">
               <summary>Contributions · {sample.runs.length} retained runs</summary>
@@ -239,12 +280,19 @@ function LimitDetails({
       )}
       {state.locked && (
         <div className="limit-lock form">
-          <strong>Daily-loss limit reached · {state.tripped_day}</strong>
+          <strong>
+            {state.window_locked_until ? 'Rolling-loss' : 'Daily-loss'} limit reached ·{' '}
+            {state.tripped_day}
+          </strong>
           <p>
             Affected exchange strategies are paused. Existing orders can still fill. Review orders
             and holdings before taking action; no liquidation or cancellation was requested.
           </p>
-          {state.tripped_day && state.tripped_day < utcDay ? (
+          {(
+            state.window_locked_until
+              ? new Date(state.window_locked_until).getTime() <= Date.now()
+              : state.tripped_day && state.tripped_day < utcDay
+          ) ? (
             <>
               <label>
                 Type {current.release_confirmation}
@@ -264,9 +312,9 @@ function LimitDetails({
             </>
           ) : (
             <p className="footnote">
-              This lock can be reviewed for release on the next UTC day. Restarting or raising
-              limits does not clear it. Separately reviewed exits and cancellations remain
-              available.
+              This lock can be reviewed after its recorded release time (next UTC day for daily
+              loss, or after the rolling window). Restarting or raising limits does not clear it.
+              Separately reviewed exits and cancellations remain available.
             </p>
           )}
         </div>
@@ -307,6 +355,9 @@ function LimitDetails({
               ['max_allocated', 'Maximum allocated capital'],
               ['max_exposure', 'Maximum gross exposure'],
               ['max_daily_loss', 'Maximum daily loss'],
+              ['max_account_exposure', 'Maximum exposure per account · optional'],
+              ['max_asset_exposure', 'Maximum exposure per base asset · optional'],
+              ['max_window_loss', 'Maximum rolling-window loss · optional'],
             ] as const
           ).map(([key, label]) => (
             <label key={key}>
@@ -316,7 +367,10 @@ function LimitDetails({
                 min="0.00000001"
                 max="1000000000000"
                 step="any"
-                required={policy.enabled}
+                required={
+                  policy.enabled &&
+                  ['max_allocated', 'max_exposure', 'max_daily_loss'].includes(key)
+                }
                 value={policy[key] ?? ''}
                 onChange={(e) =>
                   setPolicy({
@@ -327,6 +381,26 @@ function LimitDetails({
               />
             </label>
           ))}
+          <label>
+            Rolling-loss window
+            <select
+              value={policy.loss_window_hours ?? 24}
+              onChange={(event) =>
+                setPolicy({ ...policy, loss_window_hours: Number(event.target.value) })
+              }
+            >
+              {[1, 4, 12, 24, 48, 72, 168].map((hours) => (
+                <option value={hours} key={hours}>
+                  {hours} hours
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="footnote">
+            Account and asset caps include held positions and outstanding buys across retained runs.
+            A rolling-loss breach pauses runs and stays locked for its recorded window; release also
+            requires a fresh assessment below the cap. UTC daily limits remain independent.
+          </p>
           <p className="footnote">
             Allocated capital includes active/paused approvals and terminal runs retaining positions
             or unresolved orders. Outstanding buys consume exposure; pending sells do not release

@@ -52,6 +52,17 @@ def main() -> None:
             str(workspace),
         ]
         version = subprocess.check_output(command[:4] + ["--version"], cwd=root, env=env, text=True).strip()
+        preview = json.loads(
+            subprocess.check_output(
+                command[:4] + ["service", "preview", "--data-dir", str(workspace), "--port", str(port)],
+                cwd=root,
+                env=env,
+                text=True,
+            )
+        )
+        assert preview["config"]["data_dir"] == str(workspace)
+        assert preview["config"]["port"] == port and "--no-env-file" in preview["arguments"]
+        assert "--no-access-log" in preview["arguments"] and "--log-file" in preview["arguments"]
         url = f"http://127.0.0.1:{port}"
         with (root / "server.log").open("w+", encoding="utf-8") as log:
             process = subprocess.Popen(command, cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT)
@@ -115,9 +126,15 @@ def main() -> None:
                 assert any(worker["id"] == "library" for worker in workers["workers"])
                 assert "rss_bytes" in workers["resources"] and "cpu_percent" in workers["resources"]
                 retention = request_json("/notifications/retention")
-                assert not retention["policy"]["enabled"], "Installation enabled automatic notification deletion."
+                assert not retention["policy"]["enabled"], (
+                    "Installation enabled automatic notification deletion."
+                )
                 assert retention["preview"]["eligible"] == 0
                 assert request_json("/notifications/export")["items"] == []
+                assert request_json("/strategies/portfolios")["items"] == []
+                calibration = request_json("/library/calibrations")
+                assert calibration["reports"] == []
+                assert all(not row["enabled"] for row in calibration["policies"].values())
                 passphrase = "isolated installation archive passphrase"
                 archive = request_json("/workspace/backups", {"passphrase": passphrase})
                 inspected = request_json(
@@ -145,7 +162,7 @@ def main() -> None:
                     [sys.executable, "-I", "-c", check, str(recovered)], cwd=root, env=env, check=True
                 )
                 print(
-                    f"{version}: installed CLI, dashboard, API boundaries, research, worker health and encrypted recovery OK."
+                    f"{version}: installed CLI, service preview, dashboard, API boundaries, research, worker health and encrypted recovery OK."
                 )
             except BaseException:
                 log.flush()

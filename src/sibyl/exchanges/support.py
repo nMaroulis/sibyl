@@ -7,10 +7,22 @@ submission, resumable imports or recovery. Those require Sibyl's explicit gates.
 from sibyl.exchanges.catalog import STRATEGY_EXECUTION_PROVIDERS
 from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import funding_streams
-from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS
+from sibyl.exchanges.order_discovery import DISCOVERY_NOTES, DISCOVERY_OPEN_ONLY, DISCOVERY_PROVIDERS
 from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
-from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS
+from sibyl.exchanges.order_lookup import RECOVERY_NOTES, RECOVERY_PROVIDERS
 from sibyl.exchanges.spot_history import history_note
+from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
+
+MARKET_NOTES = {
+    "htx": " Market sells use the verified spot wallet and the pair's native base limits. Market buys require a quote-currency budget. GTC limit buys are available.",
+    "bitget": " Classic spot sells use the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
+    "gate": " IOC sells are sized in the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
+    "coinex": " Both sides explicitly use the native base currency. The pair must be online and allow API trading.",
+    "mexc": " Exact-pair rules must allow the selected side and market order type. Both sides use a base quantity.",
+    "bitfinex": " Exchange-wallet EXCHANGE MARKET with a signed base amount and saved int45 cid; margin flags are excluded.",
+    "phemex": " Spot ByBase IOC market orders preserve baseQtyEv and clOrdID; no quote budget is substituted.",
+    "cryptocom": " Cash SPOT IOC market orders preserve native quantity and client_oid, including buys; no notional substitution.",
+}
 
 KEY_STORAGE = (
     "API keys are stored locally and encrypted on the machine running Sibyl's Python backend. "
@@ -19,9 +31,10 @@ KEY_STORAGE = (
 )
 
 
-def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
+def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_kind: str = "") -> list[dict]:
     """Describe implemented app paths and explicit gaps without probing private accounts."""
     demo = spec.simulated
+    order_fills = order_fill_kind or history
 
     def feature(identity, label, available, detail, *, unavailable=False):
         return {
@@ -86,9 +99,14 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
             "features": [
                 feature(
                     "market_orders",
-                    "Market buy & sell",
+                    "Market sell · IOC"
+                    if spec.id == "gate"
+                    else "Market sell"
+                    if spec.market_sell_only
+                    else "Market buy & sell",
                     market_orders,
                     "Reviewed base-asset quantity; preview and explicit confirmation required."
+                    + MARKET_NOTES.get(spec.id, "")
                     if market_orders
                     else "Native market orders are unavailable through the installed Gemini adapter; GTC limits are available."
                     if spec.id == "gemini"
@@ -125,6 +143,14 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
             "id": "history",
             "label": "History & synchronization",
             "features": [
+                feature(
+                    "private_orders",
+                    "Private order signals",
+                    spec.id in PRIVATE_STREAM_PROVIDERS,
+                    "Opt-in native private order signals wake separately enabled REST status/fill/discovery readers; no direct ledger writes or execution."
+                    if spec.id in PRIVATE_STREAM_PROVIDERS
+                    else "Private account/order streams are not implemented for this adapter.",
+                ),
                 read(
                     "order_status",
                     "Order status & partial fills",
@@ -154,35 +180,41 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "fill_reconciliation",
                     "Order fill reconciliation",
-                    (demo or history in ORDER_FILL_KINDS) and spec.spot_trading,
+                    (demo or order_fills in ORDER_FILL_KINDS) and spec.spot_trading,
                     "Match native fills and fees to orders with bounded, resumable pages. "
                     + history_note(spec.id)
-                    if (demo or history in ORDER_FILL_KINDS) and spec.spot_trading
+                    if (demo or order_fills in ORDER_FILL_KINDS) and spec.spot_trading
                     else "Detailed fill/fee reconciliation is pending; cumulative native order status is separate.",
                 ),
                 feature(
                     "recovery",
                     "Recover uncertain submissions",
                     spec.id in RECOVERY_PROVIDERS,
-                    "Read existing orders by the persisted client ID; never resubmit an uncertain order."
+                    RECOVERY_NOTES.get(
+                        spec.id,
+                        "Read existing orders by the persisted client ID; never resubmit an uncertain order.",
+                    )
                     if spec.id in RECOVERY_PROVIDERS
                     else "Automatic client-ID recovery is pending. Resolve an ambiguous submission at the exchange; never retry it blindly.",
                 ),
                 feature(
                     "discovery",
-                    "Import account orders",
+                    "Import open orders" if spec.id in DISCOVERY_OPEN_ONLY else "Import account orders",
                     spec.id in DISCOVERY_PROVIDERS,
-                    "Read-only discovery of account orders, including orders placed outside Sibyl."
+                    DISCOVERY_NOTES.get(
+                        spec.id,
+                        "Read-only discovery of account orders, including orders placed outside Sibyl.",
+                    )
                     if spec.id in DISCOVERY_PROVIDERS
                     else "Account-wide order discovery is not implemented; exact-pair open-order reads are separate.",
                 ),
                 feature(
                     "funding",
                     "On-chain withdrawal history"
-                    if funding == ["withdrawal"]
+                    if "withdrawal" in funding and "deposit" not in funding
                     else "Deposit / withdrawal history",
                     "deposit" in funding or "withdrawal" in funding,
-                    "Master-UID on-chain withdrawal reads, native cursors and status/fee rescans. Deposits, off-chain transfers, additional tax charges and sub-UID reads remain pending; unavailable in optional sandboxes."
+                    "Master-UID on-chain withdrawal reads, native cursors and status/fee rescans. Deposits, off-chain withdrawals, additional tax charges and sub-UID withdrawal reads remain pending; unavailable in optional sandboxes."
                     if spec.id == "bybit" and funding
                     else "Read-only funding imports; unavailable in optional sandboxes."
                     if funding
@@ -192,7 +224,9 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                     "transfers",
                     "Transfer history",
                     "transfer" in funding,
-                    "Read-only transfer ledger imports; unavailable in optional sandboxes."
+                    "Same-UID transfers into or out of the Unified Trading Account. Cross-UID transfers and test accounts are unavailable."
+                    if spec.id == "bybit"
+                    else "Read-only transfer ledger imports; unavailable in optional sandboxes."
                     if "transfer" in funding
                     else "Transfer history imports are not implemented for this provider/environment.",
                 ),
@@ -220,9 +254,9 @@ def support_groups(spec, capabilities: dict, history: str | None) -> list[dict]:
                 feature(
                     "websocket",
                     "Live WebSocket streams",
-                    spec.id in {"binance", "binance-testnet", "kraken"},
-                    "On-demand public ticker/candle streams, shared connections, reconnect and visible REST fallback. Kraken supports native intervals and labels local receipt timing; account/order tracking remains REST-based."
-                    if spec.id in {"binance", "binance-testnet", "kraken"}
+                    spec.id in {"binance", "binance-testnet", "coinbase", "kraken"},
+                    "On-demand public ticker/candle streams, shared connections, reconnect and visible REST fallback. Kraken supports native intervals and labels local receipt timing; Coinbase candles are native 5m only. Financial order/fill evidence remains REST-based."
+                    if spec.id in {"binance", "binance-testnet", "coinbase", "kraken"}
                     else "This source uses REST snapshots; streaming is not implemented for this adapter.",
                 ),
             ],

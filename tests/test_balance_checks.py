@@ -72,6 +72,24 @@ def test_observed_match_uses_native_quantities_and_does_not_claim_complete_recon
     assert rows(result)["USDT"]["difference"] == 0
 
 
+def test_gemini_full_break_has_no_wallet_effect_and_invalidates_an_old_checkpoint():
+    voided = trade(trade_break="full")
+    compared = compare(observation(), current(fills=[voided]))
+    assert compared["status"] == "observed_match" and compared["activity"]["fills"] == 0
+    original = trade(timestamp_ms=50_000)
+    corrected = compare(observation(fills=[original]), current(fills=[{**original, "trade_break": "full"}]))
+    assert rows(corrected)["BTC"]["expected"] is None
+    assert any("voided a trade" in issue for issue in rows(corrected)["USDT"]["issues"])
+
+
+@pytest.mark.parametrize("marker", ["manual", "unverified"])
+def test_unresolved_gemini_break_needs_review_for_base_quote_and_third_asset(marker):
+    reversed_trade = trade(trade_break=marker, fees=[{"currency": "BNB", "cost": 0.01}])
+    result = compare(observation(), current(fills=[reversed_trade]))
+    assert result["status"] == "incomplete" and result["activity"]["fills"] == 0
+    assert all(row["expected"] is None for row in rows(result).values())
+
+
 def test_cross_market_trades_and_third_asset_rebates_are_combined_by_asset():
     first = trade(fees=[{"currency": "BNB", "cost": 0.001}])
     second = trade(

@@ -9,7 +9,13 @@ from sibyl.exchanges.catalog import exchange_spec
 from sibyl.exchanges.data import CANDLE_HISTORY_PROVIDERS
 from sibyl.exchanges.funding import FundingPage, fetch_funding_page, funding_streams
 from sibyl.exchanges.history import TradePage, fetch_trade_page, normalize_trade
-from sibyl.exchanges.order_discovery import DISCOVERY_PROVIDERS, OrderDiscoveryPage, discovery_page
+from sibyl.exchanges.order_discovery import (
+    DISCOVERY_HISTORY_PAIRS,
+    DISCOVERY_OPEN_PAIRS,
+    DISCOVERY_PROVIDERS,
+    OrderDiscoveryPage,
+    discovery_page,
+)
 from sibyl.exchanges.order_fills import fetch_order_fill_page
 from sibyl.exchanges.order_lookup import RECOVERY_PROVIDERS, OrderLookupPage, lookup_order_page
 
@@ -217,10 +223,14 @@ class CCXTClient(ExchangeClient):
         """Preserve unknown values and the provider's update-time hint for strict balance checks."""
         return self._balance_snapshot(strict=True)
 
+    def balance_parameters(self) -> dict:
+        """Return a fresh provider wallet selection for one private balance read."""
+        return deepcopy(self.balance_params)
+
     def _balance_snapshot(self, *, strict):
         with self.lock:
             self._require("fetchBalance", private=True)
-            row = self._exchange.fetch_balance(params=deepcopy(self.balance_params))
+            row = self._exchange.fetch_balance(params=self.balance_parameters())
             result = {
                 kind: {
                     asset: None if strict and isinstance(value, bool) else number(value)
@@ -310,7 +320,9 @@ class CCXTClient(ExchangeClient):
             if not self._private:
                 raise ccxt.AuthenticationError("A saved account is required.")
             markets = self.load_markets()
-            if self.id in {"binance", "binanceus", "binance-testnet"} and stream == "recent":
+            if self.id in DISCOVERY_OPEN_PAIRS and not symbols:
+                raise ValueError("Choose exact pairs for this exchange’s open-order discovery.")
+            if self.id in DISCOVERY_OPEN_PAIRS or (self.id in DISCOVERY_HISTORY_PAIRS and stream == "recent"):
                 for symbol in symbols:
                     self.market(symbol)
             page = discovery_page(self._exchange, self.id, stream, cursor, start, end, symbols)
@@ -326,14 +338,15 @@ class CCXTClient(ExchangeClient):
         """Read executions only for the reviewed execution providers and their test clients."""
         from sibyl.exchanges.order_fills import ORDER_FILL_KINDS
 
-        if not self.spec.spot_trading or self.history_kind not in ORDER_FILL_KINDS:
+        kind = self.order_fill_kind or self.history_kind
+        if not self.spec.spot_trading or kind not in ORDER_FILL_KINDS:
             return super().fetch_order_fill_page(order_id, symbol, cursor, limit)
         if not 1 <= limit <= 100:
             raise ValueError("Order execution page size must be between 1 and 100.")
         with self.lock:
-            self._require("fetchMyTrades", private=True)
+            self._require("fetchOrder" if self.id == "upbit" else "fetchMyTrades", private=True)
             self.market(symbol)
-            return fetch_order_fill_page(self._exchange, self.history_kind, order_id, symbol, cursor, limit)
+            return fetch_order_fill_page(self._exchange, kind, order_id, symbol, cursor, limit)
 
     def fetch_my_trades(self, symbol: str, since: int | None = None, limit: int = 100) -> list[dict]:
         """Read a bounded fill page; callers must explicitly paginate historical imports."""
@@ -343,6 +356,10 @@ class CCXTClient(ExchangeClient):
             self._require("fetchMyTrades", private=True)
             self.market(symbol)
             rows = self._exchange.fetch_my_trades(symbol, since=since, limit=limit)
+            if self.history_kind == "gemini-trades":
+                from sibyl.exchanges.venue_history import normalize_gemini_trade
+
+                return [normalize_gemini_trade(row, row.get("info")) for row in rows[:limit]]
             return [normalize_trade(row) for row in rows[:limit]]
 
     def fetch_trade_page(self, symbol: str, cursor: dict, limit: int = 100) -> TradePage:
@@ -352,7 +369,7 @@ class CCXTClient(ExchangeClient):
         if not self.history_kind:
             return super().fetch_trade_page(symbol, cursor, limit)
         with self.lock:
-            self._require("fetchMyTrades", private=True)
+            self._require("fetchOrder" if self.id == "upbit" else "fetchMyTrades", private=True)
             self.market(symbol)
             return fetch_trade_page(self._exchange, self.history_kind, symbol, cursor, limit)
 
@@ -361,14 +378,12 @@ class CCXTClient(ExchangeClient):
         if self._sandbox or stream not in funding_streams(self.id):
             return super().fetch_funding_page(stream, cursor, limit)
         with self.lock:
-            self._require(
-                "fetchLedger"
-                if self.id == "kraken"
-                else "fetchDeposits"
-                if stream == "deposit"
-                else "fetchWithdrawals",
-                private=True,
-            )
+            method = {
+                "deposit": "fetchDeposits",
+                "withdrawal": "fetchWithdrawals",
+                "transfer": "fetchTransfers",
+            }
+            self._require("fetchLedger" if self.id == "kraken" else method[stream], private=True)
             return fetch_funding_page(self._exchange, self.id, stream, cursor, limit)
 
     def create_order(
@@ -382,7 +397,7 @@ class CCXTClient(ExchangeClient):
         price: float | None = None,
     ) -> dict:
         """Submit once for reviewed production providers and dedicated test environments."""
-        if not self.spec.supports_order(type):
+        if not self.spec.supports_order(type, side):
             raise ccxt.NotSupported(f"{type.title()} orders are not enabled for this provider.")
         if (
             type not in {"market", "limit"}

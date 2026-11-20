@@ -1,19 +1,28 @@
 """Rebuild strategy ownership from linked native fills, including later corrections."""
 
 import json
+import math
 from collections import defaultdict
 from contextlib import nullcontext
 
-from sibyl.services.trading.reconciliation import summarize
+from sibyl.services.trading.reconciliation import settlement_blocker, summarize
 from sibyl.strategies.execution.contracts import ExecutionGuard
+from sibyl.strategies.execution.fees import foreign_fees
+from sibyl.strategies.execution.ownership.acquisitions import Acquisitions
+from sibyl.strategies.execution.ownership.ledger import replay
+from sibyl.strategies.execution.ownership.sale_funding import (
+    UNIT_TOLERANCE,
+    active_funding,
+    matches_funding,
+)
 
 
-def project(job, trading, *, db=None):
-    """Attribute only this strategy's orders; account deposits and unrelated holdings are excluded.
+def project(job, trading, *, db=None, repair=None):
+    """Rebuild this run from linked orders and explicit ownership receipts.
 
     Recalculation prevents duplicate fills and incorporates late fee corrections.
-    Base/quote fees affect owned units/cash. Other fee currencies remain explicit
-    and block new orders until reviewed; no invented conversion enters P&L.
+    Base/quote fees affect units and cash. Reviewed other-asset fees affect
+    marked equity and risk while their native debits remain separate.
     """
     base, quote = job["parameters"]["symbol"].split("/")
     with trading.store.db() if db is None else nullcontext(db) as connection:
@@ -35,6 +44,16 @@ def project(job, trading, *, db=None):
             "WHERE json_extract(o.payload,'$.strategy_job_id')=? ORDER BY f.timestamp_ms,o.rowid,f.id LIMIT 10001",
             (job["id"],),
         ).fetchall()
+        fills = [json.loads(row[0]) for row in rows]
+        fee_entries = foreign_fees(db, job, fills) if len(rows) <= 10000 else []
+        ownership, ownership_stale = (repair.events, False) if repair else replay(db, job["id"])
+        funding_version, previous_funding = active_funding(db, job["id"])
+        acquisitions = Acquisitions(db)
+        valid_sources = {
+            fill["id"]
+            for fill in fills
+            if (funding := previous_funding.get(fill["id"])) and acquisitions.still_matches(funding, fill)
+        }
         sync = {
             row[0]: json.loads(row[1])
             for row in db.execute(
@@ -46,7 +65,6 @@ def project(job, trading, *, db=None):
         raise ExecutionGuard(
             "This strategy reached its 10,000-fill accounting limit. Review and start a new run."
         )
-    fills = [json.loads(row[0]) for row in rows]
     grouped = defaultdict(list)
     for fill in fills:
         grouped[fill["order_id"]].append(fill)
@@ -56,16 +74,38 @@ def project(job, trading, *, db=None):
             continue
         if order["status"] == "rejected" and not order.get("exchange_order_id"):
             continue
-        status = summarize(order, grouped[order.get("exchange_order_id")], sync.get(order["id"]))["status"]
+        summary = summarize(order, grouped[order.get("exchange_order_id")], sync.get(order["id"]))
+        status = summary["status"]
+        if status == "matched":
+            status = settlement_blocker(summary) or status
         if order["status"] not in {"closed", "canceled", "expired"} or status != "matched":
             unresolved.append({"id": order["id"], "status": order["status"], "reconciliation": status})
     if len({fill["id"] for fill in fills}) != len(fills):
         raise ExecutionGuard("A native order identity is linked more than once. Review strategy orders.")
     cash, quantity, basis, realized = job["parameters"]["capital"], 0.0, 0.0, 0.0
     fees, returns, exits, rendered = defaultdict(float), [], {}, []
-    unknown = False
+    unknown = ownership_stale
+    native_costs_incomplete = False
+    funded_sales = {}
+    net_value, consumed, next_event = 0.0, set(), 0
+
+    def attributions():
+        nonlocal quantity, basis, net_value, next_event, unknown
+        while next_event < len(ownership) and set(ownership[next_event]["after_fills"]) <= consumed:
+            event = ownership[next_event]
+            if repair:
+                repair.revalue(event, quantity, basis, consumed)
+            quantity += event["quantity"]
+            basis += event["cost_basis"]
+            net_value += event["reference_value"]
+            if quantity < -1e-10 or basis < -1e-8:
+                unknown = True
+            quantity, basis = max(0.0, quantity), max(0.0, basis)
+            next_event += 1
+
+    attributions()
     for fill in fills:
-        unknown |= not fill["fees_known"] or fill["notional"] is None
+        native_costs_incomplete |= not fill["fees_known"] or fill["notional"] is None
         by_currency = defaultdict(float)
         for fee in fill["fees"]:
             if fee["currency"] and fee["cost"] is not None:
@@ -80,7 +120,32 @@ def project(job, trading, *, db=None):
                 raise ExecutionGuard("Native base fees exceed acquired units. Review strategy accounting.")
         else:
             disposed = fill["quantity"] + by_currency[base]
-            if disposed > quantity + max(1e-10, quantity * 1e-8):
+            previous = previous_funding.get(fill["id"])
+            tolerance = UNIT_TOLERANCE if repair or previous else max(UNIT_TOLERANCE, quantity * 1e-8)
+            if repair and disposed < 0:
+                raise ExecutionGuard("A native rebate exceeds the disposed quantity in the repair.")
+            deficit = disposed - quantity
+            funding = None
+            if repair:
+                funding = repair.sale_funding.resolve(job, fill, deficit, previous)
+            elif previous and not ownership_stale:
+                if fill["id"] in valid_sources and matches_funding(previous, fill, deficit):
+                    funding = previous
+                else:
+                    ownership_stale = unknown = True
+            if funding:
+                # These base units enter at the fill and are consumed immediately.
+                # Only the native sale proceeds affect cash.
+                quantity = disposed
+                basis += funding["cost_basis"]
+                net_value += funding["reference_value"]
+                funded_sales[fill["id"]] = funding
+            elif disposed > quantity + tolerance and not ownership_stale:
+                if repair:
+                    raise ExecutionGuard(
+                        f"Native executions exceed the strategy-owned position by {disposed - quantity:.8g} "
+                        f"{base} in run {job['id'][:8]} at fill {fill['id'][:8]}."
+                    )
                 raise ExecutionGuard(
                     "Native executions exceed the strategy-owned position. Review fills before resuming."
                 )
@@ -93,6 +158,8 @@ def project(job, trading, *, db=None):
             totals = exits.setdefault(fill["order_id"], [0, 0])
             totals[0] += proceeds - allocated
             totals[1] += allocated
+        consumed.add(fill["id"])
+        attributions()
         rendered.append(
             {
                 "id": fill["id"],
@@ -105,24 +172,65 @@ def project(job, trading, *, db=None):
                 "event_recorded": True,
             }
         )
+    if previous_funding and previous_funding.keys() - {
+        fill["id"] for fill in fills if fill["side"] == "sell"
+    }:
+        if repair:
+            raise ExecutionGuard("A previously funded sale is missing from the native ledger.")
+        ownership_stale = unknown = True
+    if next_event != len(ownership):
+        unknown = True
+        ownership_stale = True
     for identity, (pnl, allocated) in exits.items():
         if allocated and any(
             o.get("exchange_order_id") == identity and o["status"] in {"closed", "canceled", "expired"}
             for o in orders
         ):
             returns.append(pnl / allocated * 100)
+    approved, missing_costs = [], defaultdict(float)
+    for entry in fee_entries:
+        if entry["receipt"]:
+            approved.extend(row["quote_fee"] for row in entry["receipt"]["rows"])
+        else:
+            for asset, amount in entry["amounts"]:
+                missing_costs[asset] += amount
     return {
         "cash": cash,
+        "_foreign_fees": fee_entries,
+        "_sale_funding_version": funding_version,
+        "_sale_funding": funded_sales,
+        "_previous_sale_funding": previous_funding,
+        "foreign_fees_quote": math.fsum(approved),
+        "foreign_fee_reserve": math.fsum(max(fee, 0.0) for fee in approved),
+        "ownership_net_value": net_value,
+        "ownership_stale": ownership_stale,
+        "ownership_events": [
+            {
+                key: event.get(key)
+                for key in (
+                    "id",
+                    "action",
+                    "quantity",
+                    "cost_basis",
+                    "reference_value",
+                    "created_at",
+                    "note",
+                    "peer_id",
+                    "repair_id",
+                )
+            }
+            for event in ownership[-100:]
+        ],
+        "ownership_event_count": len(ownership) + len(funded_sales),
         "quantity": quantity,
         "entry_cost": basis,
         "entry_price": basis / quantity if quantity else 0,
         "realized_pnl": realized,
         "fees_paid": fees.get(quote, 0.0),
         "fee_assets": dict(fees),
-        "unvalued_fees": {
-            asset: value for asset, value in fees.items() if asset not in {base, quote} and value
-        },
-        "accounting_incomplete": unknown,
+        "unvalued_fees": dict(missing_costs),
+        "accounting_incomplete": unknown or native_costs_incomplete,
+        "_native_costs_incomplete": native_costs_incomplete,
         "completed_returns": returns,
         "round_trips": len(returns),
         "fills": rendered[-100:],

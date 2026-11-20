@@ -133,12 +133,21 @@ class ExchangeTrading:
         return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def recover(self, intent_id: str) -> dict:
-        """Read one client-ID lookup page, then check status/fills only after identity is confirmed."""
-        intent = self.recovery.check(intent_id, manual=True)
-        if intent.get("exchange_order_id"):
-            return self.refresh(intent_id)
-        detail = self.reconciliation.detail(intent_id)
-        return {**detail["order"], "reconciliation": detail["reconciliation"]}
+        """Read one client-ID page and check fills after adopting its native observation."""
+        with self.lifecycle.lock(intent_id):
+            with self.store.db() as db:
+                existing = self.lifecycle.read(db, intent_id)
+            if existing.get("exchange_order_id"):
+                return self.refresh(intent_id)
+            intent = self.recovery.check(intent_id, manual=True)
+            if intent.get("exchange_order_id") and intent["exchange"] == "demo":
+                return self.refresh(intent_id)
+            detail = (
+                self.reconciliation.sync(intent_id, manual=True)
+                if intent.get("exchange_order_id")
+                else self.reconciliation.detail(intent_id)
+            )
+            return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def preview(
         self,
@@ -165,7 +174,12 @@ class ExchangeTrading:
             self._enabled()
         if not connection.active:
             raise ValueError("Activate this exchange account in Settings before reviewing an order.")
-        if not (demo or exchange_spec(connection.exchange).supports_order(request.order_type)):
+        spec = exchange_spec(connection.exchange)
+        if not (demo or spec.supports_order(request.order_type, request.side)):
+            if request.order_type == "market" and spec.market_sell_only:
+                raise ValueError(
+                    f"{spec.name} market buys require a quote-currency budget. Choose a GTC limit buy."
+                )
             raise ValueError(
                 "Manual exchange orders are not enabled for this provider. Read access is available."
             )
@@ -197,6 +211,7 @@ class ExchangeTrading:
                 raise ValueError(
                     f"Quantity exceeds market precision. Use {precise} or another valid quantity."
                 )
+            limits_by_field = market.get("limits") or {}
             if request.order_type != "market":
                 price = request.limit_price
                 precise_price = client.price_to_precision(request.symbol, price)
@@ -205,6 +220,8 @@ class ExchangeTrading:
                         f"Price exceeds market precision. Use {precise_price} or another valid price."
                     )
             else:
+                if (market_order_limits := getattr(client, "market_order_limits", None)) is not None:
+                    limits_by_field = market_order_limits(request.symbol, request.side, request.quantity)
                 ticker = client.fetch_ticker(request.symbol)
                 price = ticker.get("ask" if request.side == "buy" else "bid") or ticker.get("last")
             if not price or not math.isfinite(price) or price <= 0:
@@ -216,7 +233,7 @@ class ExchangeTrading:
             if request.order_type != "market":
                 fields.append(("price", price))
             for field, value in fields:
-                limits = (market.get("limits") or {}).get(field) or {}
+                limits = limits_by_field.get(field) or {}
                 if limits.get("min") is not None and value < limits["min"]:
                     raise ValueError(f"Order is below the exchange minimum {field} of {limits['min']}.")
                 if limits.get("max") is not None and value > limits["max"]:
@@ -284,6 +301,15 @@ class ExchangeTrading:
             )
         try:
             with self.store.db() as db:
+                db.execute("BEGIN IMMEDIATE")
+                collision = db.execute(
+                    "SELECT 1 FROM exchange_orders WHERE json_extract(payload,'$.request.connection_id')=? AND json_extract(payload,'$.client_order_id')=?",
+                    (request.connection_id, client_order_id),
+                ).fetchone()
+                if collision:
+                    raise ValueError(
+                        "A native client order ID collision was detected before submission. Prepare a new review."
+                    )
                 db.execute(
                     "INSERT INTO exchange_orders VALUES (?, ?, ?)",
                     (intent["id"], request.idempotency_key, json.dumps(intent, allow_nan=False)),

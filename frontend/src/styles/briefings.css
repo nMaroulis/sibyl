@@ -78,7 +78,7 @@
   color: #939fb3;
   line-height: 1.6;
 }
-.briefing-telegram-tag {
+.briefing-channel-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -186,44 +186,6 @@
     grid-template-columns: 1fr;
   }
 }
-.briefing-telegram-choice {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 16px;
-  margin: 22px 0 12px;
-  border: 1px solid #e4eaf4;
-  border-radius: 15px;
-  background: #fbfcff;
-  cursor: pointer;
-  transition:
-    border-color 200ms,
-    background 200ms;
-}
-.briefing-telegram-choice.selected {
-  border-color: #bfd1ec;
-  background: #f2f7ff;
-}
-.briefing-telegram-choice > span {
-  flex: 1;
-}
-.briefing-telegram-choice strong {
-  display: block;
-  color: #6a7c9b;
-  font-weight: 500;
-  font-size: 12px;
-}
-.briefing-telegram-choice small {
-  display: block;
-  color: #96a1b6;
-  font-size: 10px;
-  margin-top: 5px;
-}
-.briefing-telegram-choice input {
-  width: 16px;
-  height: 16px;
-  accent-color: #7b9ac8;
-}
 .briefing-format {
   display: flex;
   align-items: center;
@@ -311,53 +273,8 @@
   gap: 4px;
   margin: 12px 0 0;
 }
-.briefing-delivery {
+.briefing-message-receipt {
   margin-top: 14px;
-  border: 1px solid #e8edf6;
-  border-radius: 13px;
-  padding: 13px 15px;
-  background: #fafcff;
-}
-.briefing-delivery > div {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  color: #8397b8;
-}
-.briefing-delivery strong {
-  font-size: 11px;
-  font-weight: 500;
-}
-.briefing-delivery > div > span {
-  font-size: 10px;
-  margin-left: auto;
-  color: #a1adbf;
-}
-.briefing-delivery > details {
-  margin-top: 12px;
-}
-.briefing-delivery summary {
-  cursor: pointer;
-  font-size: 10px;
-  color: #a0aec3;
-}
-.briefing-part {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid #edf1f7;
-  font-size: 11px;
-  color: #899ab6;
-}
-.briefing-part small {
-  color: #a0acbe;
-  font-size: 10px;
-}
-.briefing-part p {
-  width: 100%;
-  margin: 0;
 }
 .telegram-briefing-summary {
   display: flex;

@@ -1,3 +1,4 @@
+import { AdaptiveWorkspace } from './adaptive-workspace';
 import { useEffect, useState } from 'react';
 import { ChevronDown, FlaskConical, Play } from 'lucide-react';
 import { Badge, Panel } from '../ui';
@@ -463,6 +464,7 @@ export function ValidationWorkspace({
           )}
         </div>
       </details>
+      <AdaptiveWorkspace dataset={dataset} parameters={parameters} demo={demo} />
     </Panel>
   );
 }

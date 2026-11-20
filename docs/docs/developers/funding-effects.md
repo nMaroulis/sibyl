@@ -8,7 +8,7 @@ Kraken's posted ledger defines the balance change as **signed amount minus same-
 
 Binance's [capital history](https://developers.binance.com/en/docs/catalog/core-trading-wallet/api/rest-api/capital) reports amount and transaction fee separately. Sibyl does not infer fee inclusion from example amounts. `walletType=0` identifies the configured Spot scope; `1` identifies Funding, outside that scope. Missing, unknown or malformed wallet types remain unknown. `completeTime` is retained as `posted_ms`, distinct from creation/application time. Older records without completion time cannot be placed in a balance-check interval.
 
-Bybit withdrawal history does not retain the initiating `feeType` or establish the wallet effect on Sibyl's UNIFIED balance. It remains unresolved without local review. This batch does not add Bybit wallet transfers or infer completion time from last-update time.
+Bybit withdrawal history does not retain the initiating `feeType` or establish the wallet effect on Sibyl's UNIFIED balance. It remains unresolved without local review. The separate Bybit same-UID transfer endpoint reports whether a movement enters or leaves UNIFIED, with fees and posting time unavailable. This import does not add cross-UID transfers or infer completion time from last-update time.
 
 Completed, explicitly zero-fee movements in a known configured wallet use their signed amount. Known outside-wallet records have zero effect on the configured wallet. Failed/cancelled records are not applied; pending/restricted/unknown records remain unresolved. These are quantity effects, not settlement verification or proof of complete history.
 

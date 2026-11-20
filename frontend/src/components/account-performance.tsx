@@ -9,6 +9,9 @@ import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast }
 import { ExchangeMark } from './exchange-mark';
 import { ValueChart } from './charts';
 import { AgentButton } from './agents';
+import { AccountBooks } from './account-books';
+import { SectionTabs } from './section-tabs';
+import { ChartNoAxesCombined, Layers } from 'lucide-react';
 import type { FeeAllocationPlan } from './transfer-fee-allocation';
 
 type Opening = {
@@ -142,7 +145,7 @@ const preciseAmount = (value: number | null, currency: string) =>
 const dateTime = (value: string) => new Date(value).toLocaleString();
 
 /** Read local FIFO on refresh; balance/price reads occur only after the explicit marks action. */
-export function AccountPerformance({
+function MarketPerformancePanel({
   accountId,
   symbol,
   environment,
@@ -984,5 +987,26 @@ function OpeningEditor({
         </details>
       )}
     </Modal>
+  );
+}
+
+/** Preserve exact-market reports while offering an account/asset view across trading pairs. */
+export function AccountPerformance(props: Parameters<typeof MarketPerformancePanel>[0]) {
+  const [view, setView] = useState('market');
+  return (
+    <>
+      <SectionTabs
+        id="account-basis"
+        label="Accounting method"
+        value={view}
+        onChange={setView}
+        compact
+        items={[
+          { id: 'market', label: 'By market', icon: ChartNoAxesCombined },
+          { id: 'asset', label: 'Across pairs', icon: Layers },
+        ]}
+      />
+      {view === 'asset' ? <AccountBooks {...props} /> : <MarketPerformancePanel {...props} />}
+    </>
   );
 }

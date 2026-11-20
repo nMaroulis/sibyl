@@ -22,8 +22,15 @@ MESSAGES = {
     "incomplete": "The lookup reached its page budget. No ID was attached; inspect the venue before creating another order.",
     "mismatch": "Returned order evidence does not match the reviewed submission. No ID was attached; inspect the venue.",
     "error": "Lookup is temporarily unavailable. Retained evidence is preserved; no order was resubmitted.",
-    "unsupported": "Client-ID lookup is unavailable for this client. Inspect the venue using the saved client order ID.",
+    "unsupported": "Client-ID lookup is unavailable for this order. Inspect the venue using the saved client order ID.",
 }
+
+
+def recovery_supported(intent: dict) -> bool:
+    """Advertise only the reviewed lookup for this provider and order type."""
+    if intent["exchange"] == "bitstamp":
+        return intent["request"].get("order_type") == "limit"
+    return intent["exchange"] in RECOVERY_PROVIDERS
 
 
 def window(intent: dict) -> tuple[int, int]:
@@ -107,7 +114,7 @@ class OrderRecovery:
     def summary(self, db, intent: dict) -> dict:
         """Expose safe progress only; GET never starts a lookup or returns native cursor tokens."""
         job = self.read(db, intent["id"]) or {}
-        supported = intent["exchange"] in RECOVERY_PROVIDERS
+        supported = recovery_supported(intent)
         eligible = intent["status"] in ELIGIBLE and not intent.get("exchange_order_id")
         state = job.get(
             "state", "available" if eligible and supported else "unsupported" if eligible else "not_needed"
@@ -181,8 +188,8 @@ class OrderRecovery:
             if manual:
                 job["failures"] = 0
             try:
-                if intent["exchange"] not in RECOVERY_PROVIDERS:
-                    raise ccxt.NotSupported("Unreviewed recovery provider.")
+                if not recovery_supported(intent):
+                    raise ccxt.NotSupported("Unreviewed recovery provider or order type.")
                 connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
                 if connection.exchange != intent["exchange"] or connection.sandbox != intent["sandbox"]:
                     raise ValueError("Account environment differs.")

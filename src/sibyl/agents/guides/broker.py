@@ -29,6 +29,8 @@ StrategyTopic = Literal[
     "halt",
     "limits",
     "benchmarks",
+    "ownership",
+    "portfolio",
 ]
 
 TRADE = {
@@ -61,7 +63,7 @@ TRADE = {
         "/alerts?tab=orders",
         (
             "Open Alerts → Orders & fills and create one subscription for a saved account.",
-            "Choose fill/correction, cancellation, problem or status categories; Telegram delivery is a separate per-rule opt-in.",
+            "Choose fill/correction, cancellation, problem or status categories; Private delivery to a checked Telegram, Discord, Slack, Signal, WhatsApp or email connection is a separate per-rule opt-in; WhatsApp requires an open reply window.",
             "Inspect Inbox, pause/resume or edit rules. Edits save paused and resume uses a fresh future-only baseline.",
         ),
         (
@@ -106,7 +108,7 @@ TRADE = {
         (
             "Open Trade → Account history → Fills & imports.",
             "Choose an active supported account and exact spot market, then Sync market history; saved progress supports pause/resume and later Sync again.",
-            "Bitstamp and Gemini support resumable selected-market fills and exact-order fee reconciliation. Bitstamp uses transaction IDs and retains closed-order status for 30 days; Gemini preserves millisecond-boundary IDs and stops on saturated groups or reversals needing review. Neither adds client-ID recovery or complete settlement accounting.",
+            "Bitstamp and Gemini support resumable selected-market fills and exact-order fee reconciliation. Bitstamp uses transaction IDs and retains closed-order status for 30 days; Gemini preserves millisecond-boundary IDs and stops on saturated groups or reversals needing review. Check provider-specific client-ID recovery separately; neither import establishes complete settlement accounting.",
             "Filter retained fills and inspect native IDs and fees. Pause active work before Rescan available history to revisit older available fills and corrections.",
             "Use Performance for retained market FIFO, Funding for deposits/withdrawals, and Reconcile transfers within Funding for own-account links.",
         ),
@@ -120,7 +122,19 @@ TRADE = {
         (
             "Open Executions and filter by account, symbol, record ID, mode, side, status or date.",
             "Use Order monitor for submitted orders and their filled/remaining quantities. Open Executions on an order for retained fill and fee evidence.",
-            "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. Imported · read-only orders are managed at the exchange.",
+            "Use Sync exchange orders to discover supported open/recent orders placed outside Sibyl. For Binance, KuCoin Classic, MEXC, HTX and Crypto.com Exchange, enter exact pairs to add recent history to the open-order scan. Phemex requires exact pairs for both open and recent discovery. Imported · read-only orders are managed at the exchange.",
+            "MEXC supports manual spot market buys and sells using the entered base quantity. Preview checks current pair and side permissions and market sizing. Recover order verifies the saved client ID, original base size and zero quote budget. If the sizing evidence is missing, inspect the order at MEXC.",
+            "Bitstamp Recover order can identify a resting spot GTC limit using the saved client ID and its matching original size and price in the pair’s open list. If the order is already closed or was a market order, inspect it on Bitstamp using the saved client ID.",
+            "Crypto.com Exchange supports regular cash open/recent discovery, manual base-sized IOC market orders and exact client_oid GTC/market recovery, individual execution checks and selected-market history. Recent discovery needs exact pairs. Imports start with seven days; exact-order reads cover at most thirty days since creation. Explicit native execution flags and matching parent account evidence exclude margin and advanced orders. Missing evidence needs review; fee-credit consumption remains unknown. These are Exchange APIs, not the retail mobile app.",
+            "HTX supports market sells in the entered base quantity from the connected spot wallet. Select Sell and Market in Trade. Choose a GTC limit to buy. Recover order matches the original size, pair and client ID on that spot wallet. Older terminal orders may no longer be available by client ID.",
+            "Bitget Classic supports spot market sells in the entered base quantity. Select Sell and Market in Trade. Choose a GTC limit for a Bitget buy. Recover order matches the saved client ID and original base quantity on the exact order detail endpoint.",
+            "Gate supports cash spot market sells in the entered base quantity. Select Sell and Market · IOC in Trade. For Gate buys choose a GTC limit, since its native market buy uses a quote-currency budget. Recover order first checks the saved client ID and then scans bounded finished orders for the same pair.",
+            "CoinEx supports manual spot market buys and sells in the entered base quantity. Recovery checks pending and bounded finished pages for the saved client ID and original sizing currency and quantity. CoinEx removes cancelled orders that had no executions, so inspect a missing record at the exchange.",
+            "BitMart provides open/recent spot order discovery, exact-order executions and selected-pair fill imports. Its unfilled API-cancelled records may disappear from order queries after 20 minutes. Inspect the provider coverage note if recovery cannot find one.",
+            "Phemex supports manual base-sized spot IOC market orders, selected-pair order discovery and GTC/market recovery and native execution/history imports. Enter exact pairs before starting order sync. Currency scale gaps leave fees unknown. Gemini now also imports a bounded recent closed-order snapshot, including cancellations with no fills; a full 500-order response needs review.",
+            "Bitfinex supports ordinary unflagged cash order discovery, manual cash market orders, GTC/market cid recovery and exact-order executions and selected-market Account history. Closed orders have up to two weeks of native coverage and exact-order trades up to ten days. Historical partial fills have cancelled remainders; margin activity stays separate. Account imports start with 90 days and preserve native fee costs and rebates.",
+            "Upbit Korea supports regular open/recent spot order discovery and GTC identifier recovery. Recent orders use creation time and capped windows split. Exact executions and regular-order history are available. Per-fill fees stay unknown because only an aggregate fee is reported; closed orders created before the selected recent range may be missing. Reserved orders and other regions remain outside this coverage.",
+            "Poloniex discovery covers explicitly unborrowed cash spot orders. Recent history uses update time, so an older order changed recently can appear. Pending cancellation stays active until confirmed. GTC client-ID recovery, parent-verified exact fills and selected-market Account history are available. Fill imports start with seven days; unavailable or borrowed parents need review.",
         ),
         (
             "A preview reference is not a fill or realized P&L. Refresh records reloads local data; Check exchange performs a provider read.",
@@ -132,6 +146,7 @@ TRADE = {
         (
             "Find the order in Order monitor and inspect status, cumulative filled quantity and remaining quantity.",
             "Check exchange reads status; Check executions imports retained native fills and fees. Enable tracking to continue supported background reads.",
+            "Gate and HTX support exact-order checks and selected-market cash Account history. Imports start with seven days, verify parent wallets and keep fee-deduction gaps explicit. Inspect Settings → Exchanges for each provider’s retention and fee limits.",
             "Inspect incomplete pages, missing fees and differing evidence before treating an order as reconciled.",
         ),
         (
@@ -163,6 +178,32 @@ TRADE = {
 }
 
 STRATEGIES = {
+    "portfolio": Guide(
+        "Research a multi-asset portfolio",
+        "/strategies?view=portfolio",
+        (
+            "Open Portfolio lab, choose 2–8 exact pairs sharing one quote, and set weights; unallocated capital remains quote cash. Demo is explicit through the account mode.",
+            "Choose current closed candles or compatible immutable datasets, then interval or previous-close drift rebalancing. Expand costs to set per-fill quote fees and adverse slippage.",
+            "Run the historical study. Inspect equity/drawdown/allocation or asset price/trade charts, cost-matched buy-and-hold/cash, paged fills and source receipts. Save/export and rerun exact inputs offline; ask Broker with the selected study.",
+        ),
+        (
+            "No currency conversion, leverage, source mixing, gap filling, order submission or strategy deployment. Inputs share one consecutive common UTC window. Post-cost quantities use the execution open; sells fund buys. Fractional units/unlimited modeled liquidity/zero cash yield are assumptions. Both portfolios liquidate at the final close; allocations are marked before that exit. User-chosen weights/assets and repeated experiments can overfit; historical returns are not forecast performance.",
+        ),
+    ),
+    "ownership": Guide(
+        "Review strategy position ownership",
+        "/strategies?view=monitor",
+        (
+            "Open the exchange run’s Position ownership panel and select Check exchange balance for native totals/free funds, all same-account base owners, unassigned units, shortfalls and exact-pair dust limits.",
+            "Pause and resolve order/fill/fee evidence before Adopt existing units. Enter base quantity, asserted total quote cost and a reason; review and type the displayed confirmation. Resume is separate.",
+            "Stop before Release to unmanaged, or use Hand off to a new run and select that exact source during new-run approval. A handoff carries all retained units/original basis and adds the new quote budget separately.",
+            "Inspect ownership receipts and OWNERSHIP journal/CSV entries. Source corrections invalidate inherited evidence; missing account backing blocks attributed execution.",
+            "Use Lifetime performance for flow-adjusted quote gains and returns. Refresh valuation mark reads the exact venue midpoint. Archive is available for flat terminal runs after execution evidence reconciles. Choose Archived under Run visibility to reopen and restore one.",
+        ),
+        (
+            "Ownership receipts record local attributions. They leave trading cash unchanged. The lifetime estimate weights each signed reference-valued flow by time remaining in the period. Open Review fee prices in Lifetime performance to approve exact-feed historical fees as part of risk accounting. The approval leaves the run paused. Open Approved fee prices in the Decision journal for immutable evidence. A manual-fill label requires an exact native match to a recorded Sibyl order. Use Review basis repair on reconciled paused runs. Enable Recalculate handed-off units to carry corrected quantities and paired reference flows at the original price. Use Fix underfunded releases to recalculate local releases up to their original approved quantities. Review sale funding can link an earlier reconciled same-account buy for fee-adjusted basis or accept a cost assertion. The user still confirms historical unmanaged availability. Venue-discovered records identify the native order, while the placing client stays unknown.",
+        ),
+    ),
     "benchmarks": Guide(
         "Compare cost-aware reference portfolios",
         "/strategies",
@@ -204,7 +245,7 @@ STRATEGIES = {
         (
             "Choose current feed or an immutable saved dataset under Research input, then configure the strategy and trading costs.",
             "Run the backtest and inspect the retained input provenance, fingerprint and engine version.",
-            "Custom Python strategies expands research-only installed plugins with separate controls, source revisions, saved results and exact-input reruns. Install reviewed code in the backend environment, explicitly set SIBYL_STRATEGY_PLUGINS and restart; plugin jobs/optimization remain unavailable.",
+            "Custom Python strategies expands research-only installed plugins with separate controls, source revisions, saved results and exact-input reruns. Install reviewed code in the backend environment, explicitly set SIBYL_STRATEGY_PLUGINS and restart; pinned queued backtests and adaptive Optuna training/test studies are available as one-off research, without paper/exchange deployment.",
             "Rerun exact input recomputes the same saved data/settings with the current engine; Load settings lets you edit a new experiment.",
         ),
         (
@@ -278,10 +319,11 @@ STRATEGIES = {
         (
             "Inspect the selected run and its outstanding orders before using Pause or Stop; neither alone liquidates holdings.",
             "If separately approved, Stop & cancel requests cancellation. Wait for reconciled fills/fees and three matching native status checks; later execution or fee changes restart these checks. New automatic signal orders also wait.",
-            "Close position is a new typed, one-order sell review for a stopped/completed exchange run after reconciliation. Inspect blockers and any residual units.",
+            "Close position is a typed one-order sell review for a stopped/completed exchange run after reconciliation. Inspect blockers and residual units.",
+            "Liquidation plan is a separate typed approval for up to five sequential sells on the same stopped run. Review the fixed minimum price, size, spread and deadlines. The worker waits for fills and late checks before another sell. Stop future sells withdraws authority; submitted orders retain their expiry.",
         ),
         (
-            "A cancel request or sell acknowledgment does not prove a position is flat. Residual ownership stays with the stopped run; automatic handoff to a new run is unavailable.",
+            "A cancel request or sell acknowledgment does not prove a position is flat. Residual ownership stays with the stopped run until a separately reviewed release or new-run handoff. It is never adopted automatically.",
         ),
     ),
     "halt": Guide(

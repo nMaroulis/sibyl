@@ -32,7 +32,7 @@ GUIDES = {
             "More → Agents shows registered specialists and their actual tools. Completed observations and consulted agents appear with answers.",
         ),
         (
-            "Assistants provide read-only explanations. They cannot submit orders, change settings, start strategies or send messages.",
+            "Ordinary chat assistants are read-only. Investigations optionally uses native checkpoints for questions and separately approved local research notes; it never trades, changes settings or sends messages.",
         ),
     ),
     "models": Guide(
@@ -52,7 +52,7 @@ GUIDES = {
             "Open the bot's private chat and press Start. Setup/help work without a model; AI answers require Sibyl's model.",
         ),
         (
-            "WhatsApp, Discord, Slack, Signal and Email are unavailable previews. The agents cannot configure or send messages themselves.",
+            "Discord bot DMs, Slack Socket Mode, signed WhatsApp webhooks, paired TLS email and the local unofficial Signal bridge are also implemented in Settings → Messaging. The agents cannot configure connections or send messages themselves.",
         ),
     ),
 }

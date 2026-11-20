@@ -105,7 +105,8 @@ GUIDES = {
         "Review retained FIFO performance",
         "/trade?tab=history",
         (
-            "Choose Performance in Account history and select an account, exact market and environment.",
+            "Choose Performance in Account history. By market retains exact-pair reports; Across pairs combines acquisition lots for each account/asset in a chosen reporting unit, with separate environments.",
+            "Across pairs uses retained closed candles for dated conversion, at most 24 hours old, and reported execution ratios. Import missing conversion history in Market history; no stablecoin parity or missing acquisition basis is assumed. Opening asset saves an audited assertion before retained executions.",
             "Expand Calculation details for matched results, fees, exclusions and disposal calculations; Export summary retains the report.",
             "Use Opening inventory only for holdings acquired before retained fills, with an asserted quantity, optional cost and acquisition date.",
             "Recalculate uses local history. Refresh current marks separately reads active account balances and reference prices.",
@@ -122,11 +123,11 @@ GUIDES = {
             "Filter retained movements by account, asset, type, status or environment; inspect amounts and fees in their native currencies.",
             "In Wallet balance effect, distinguish Provider rule from Your review. Use Review balance effect for ambiguous records, verify the affected wallet and amount convention against your statement, then save an evidence note. You can withdraw a review; native records stay unchanged.",
             "Pause/resume preserves progress. Rescan range revisits available records for corrections; Export this page downloads displayed rows.",
-            "For Binance deposits/withdrawals or Bybit on-chain withdrawals, select the account and enable Pending updates per stream. Choose 5 minutes, 15 minutes or 1 hour. Check now explicitly retries missing records; Turn off stops future checks.",
+            "For Binance deposits/withdrawals or Bybit withdrawals and same-UID wallet transfers, select the account and enable Pending updates per stream. Choose 5 minutes, 15 minutes or 1 hour. Check now explicitly retries missing records; Turn off stops future checks.",
             "Expand Recent history sync to choose a 24-hour, 7-day or 30-day lookback and enable scans for an implemented Binance/Kraken/Bybit stream. Scan now queues a fresh window. Use a record's Source record → Observed versions to inspect locally observed changes.",
         ),
         (
-            "Completed totals exclude pending, restricted and failed observations. Funding records do not establish investment returns or acquisition cost.",
+            "Completed totals exclude pending, restricted and failed records. Bybit same-UID transfers show the UNIFIED wallet direction and are ineligible for cross-account pairing. Funding records alone cannot establish acquisition cost.",
             "Pending updates only revisit existing unfinished records. Five exhausted misses require review, not a completion/cancellation assumption. Pausing imports or deactivating the account disables updates. Kraken's source contains posted entries, not pending requests. Recent history sync or manual range imports handle completed corrections and new funding separately.",
             "Recent sync can find new funding and completed corrections inside its chosen window. Older/late-outside-window records and provider retention remain gaps. Missing records are retained, and observed revisions are not a complete native correction history. Unfetched intervals remain flagged until a completed import/scan covers them; this is not settlement verification.",
             "Kraken posted ledger effects subtract the same-asset fee from the signed amount. Other fee conventions require explicit review. Changed source facts invalidate a local review. Reviews affect new Balance checks, not transfer ownership or FIFO basis.",
@@ -139,6 +140,7 @@ GUIDES = {
             "From Funding, choose Reconcile transfers and inspect a suggestion or use Match records.",
             "Compare both source records before Confirm own-account transfer; unusual timing or differing amounts require a review note.",
             "For fee-bearing links use Review amount & fee allocation. Recalculate Performance to inspect carried lots and unapplied links.",
+            "For splits/merges open Split & merged transfers → Create group. Select 3–16 same-asset funding records, explain fee inclusion, enter the principal matrix and preview its exact conservation. Confirm ownership, configured-wallet scope and your evidence note before saving. Use Performance → Across pairs for group lot carryover; open Review for changed facts or withdraw the group to release records.",
         ),
         (
             "Suggestions are heuristics and confirmations are user assertions. Changed sources need review; an unmatched deposit is not automatically external cash flow or known basis.",
@@ -150,7 +152,7 @@ GUIDES = {
         (
             "Open Alerts → Account risk and pin a fixed set of active accounts in one environment plus a reference feed.",
             "Choose a value floor, asset/top-three/HHI concentration, observed-value drawdown, or hourly historical basket volatility/95% daily expected shortfall. For historical watches choose up to eight currently held assets and 60/90/180 days, then arm the rule. Evidence retains dated basket weights and subset coverage; it is not account performance or a future loss guarantee.",
-            "Use View evidence for retained valuation details and Inbox for notices. A rule’s Delivery control can opt into Telegram notifications with a checked private recipient, cooldown and freshness window. Edits save paused; Resume starts a new observation window.",
+            "Use View evidence for retained valuation details and Inbox for notices. A rule’s Delivery control can opt into Telegram, Discord, Slack, Signal, WhatsApp or email notifications with a checked private recipient, cooldown and freshness window. Edits save paused; Resume starts a new observation window.",
         ),
         (
             "Rules require complete usable valuation coverage. Drawdown includes cash movements and is not cash-flow-adjusted return. Alerts do not control trading.",

@@ -7,6 +7,7 @@ import time
 from datetime import UTC, datetime
 
 from sibyl.operations.resources import ProcessResources
+from sibyl.operations.watchdog import WorkerWatchdog
 
 
 def timestamp():
@@ -30,6 +31,7 @@ class WorkerHealth:
         self.workers, self.tasks = {}, []
         self.inflight = set()
         self.recovery_required = False
+        self.jobs = None
         self.lock = threading.RLock()
         self.started_at = timestamp()
         self.resources = ProcessResources(store)
@@ -37,6 +39,8 @@ class WorkerHealth:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS worker_events (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,kind TEXT NOT NULL,at TEXT NOT NULL,error TEXT)"
             )
+
+        self.watchdog = WorkerWatchdog(store, self.observations, clock=clock)
 
     def _event(self, name, kind, error=None):
         try:
@@ -68,7 +72,8 @@ class WorkerHealth:
             "since": self.clock(),
             "next_due": self.clock(),
         }
-        self.workers[name] = row
+        with self.lock:
+            self.workers[name] = row
         if not paused:
             self.tasks.append(
                 asyncio.create_task(self._periodic(name, action, retryable), name=f"sibyl-{name}")
@@ -131,8 +136,8 @@ class WorkerHealth:
             if row["state"] != "failed":
                 row["state"] = "stopped"
 
-    def snapshot(self):
-        """Report current progress plus retained fault transitions; never expose exception messages."""
+    def observations(self):
+        """Read actual progress under the worker lock, without resource/database sampling."""
         now = self.clock()
         with self.lock:
             rows = []
@@ -148,7 +153,15 @@ class WorkerHealth:
                     round(max(0, now - row["since"]), 1) if row["state"] == "running" else None
                 )
                 rows.append(item)
-        issues = sum(row["state"] in {"failed", "stalled", "overdue", "retrying", "stopped"} for row in rows)
+        return rows
+
+    def snapshot(self):
+        """Report current progress plus retained fault transitions; never expose exception messages."""
+        rows = self.observations()
+        observer = self.watchdog.status()
+        issues = int(observer["status"] in {"failed", "overdue"}) + sum(
+            row["state"] in {"failed", "stalled", "overdue", "retrying", "stopped"} for row in rows
+        )
         with self.store.db() as db:
             events = [
                 dict(row) for row in db.execute("SELECT * FROM worker_events ORDER BY id DESC LIMIT 30")
@@ -165,11 +178,13 @@ class WorkerHealth:
             "observed_at": timestamp(),
             "workers": rows,
             "events": events,
+            "watchdog": observer,
             "scope": "Current-process progress. Counters reset on restart; bounded fault history is retained. Healthy ticks do not prove provider access or completed trades. Restart to recover a failed worker after reviewing its domain state.",
         }
 
     async def close(self):
         """Cancel and drain supervised tasks; domain services retain ownership of their outstanding threads."""
+        await asyncio.to_thread(self.watchdog.close)
         for task in self.tasks:
             task.cancel()
         await asyncio.gather(*self.tasks, return_exceptions=True)

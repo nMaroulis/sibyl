@@ -19,9 +19,19 @@ def history_note(provider: str) -> str:
         "okx": "Spot fills in the last 89 days; OKX retains up to three months. Pagination uses bill IDs; execution times use fillTime when reported.",
         "bybit": "UTA spot fills in the last 730 days, read in seven-day windows. Pre-upgrade/classic, margin and derivatives history are excluded.",
         "kucoin": "Classic spot HF fills in the last seven days. KuCoin limits inactive-order history to seven days; UTA and abandoned endpoints are excluded.",
-        "bitget": "Classic spot fills in the last 89 days. Bitget retains up to 90 days; UTA and margin history are excluded.",
+        "bitget": "Classic spot fills in the last 89 days, including exact-order reads. Discounted fee breakdowns without verified wallet effects stay unknown. Bitget retains up to 90 days.",
+        "bitfinex": "Exchange-wallet fills start with a frozen 90-day selected-market query and split capped time ranges. Margin fills are excluded; missing cash-type evidence requires review. Native trade IDs and fee-currency wallet effects are shared with exact-order reads. The order-trades endpoint covers trades up to ten days old; closed order details cover up to two weeks.",
+        "poloniex": "Cash spot fills start with seven days and overlap one day on later passes. Native pageId advances history; exact-order checks share trade/order IDs and reported fees. Each distinct parent must prove unborrowed scope. Missing/archived parents or borrowed evidence require review. History commits at most 20 fills per page to bound parent reads.",
+        "bitmart": "BitMart v4 selected-pair fill imports start with a seven-day query, split capped date ranges and overlap one day on later passes. Exact-order reads inspect the native execution list. Retention and timestamp saturation can limit coverage.",
+        "coinex": "CoinEx v2 cash spot imports request the last 30 days by default and overlap one day on subsequent passes. Exact-order reads scan available native pages. Provider retention and page limits qualify coverage.",
+        "gate": "Exact-order and selected-market cash fill imports verify the native parent wallet. History starts with seven days and overlaps one day, with at most 20 fills and parent checks per page. GT fees retain their currency; point-card fees need review.",
+        "htx": "Selected-market cash history starts with seven days in saved 48-hour ranges. Exact-order and history imports verify one spot wallet. Unavailable parents need review; unverified fee deductions stay unknown. API-cancelled order details can expire after two hours.",
+        "mexc": "Selected-pair spot fills and exact-order checks within a rolling 27-day window. Timestamp splits protect capped responses; a saturated single millisecond stops for review.",
         "bitstamp": "Selected spot transactions by ascending native IDs. Embedded order fill details require native market/side evidence; closed-order status is retained by Bitstamp for 30 days. Rescan to revisit old fill/fee corrections; settlement/bust accounting remains separate.",
-        "gemini": "Selected spot history by millisecond boundary with retained edge IDs. Saturated 500-trade timestamp groups and reversal/bust flags stop for review; master-key subaccount routing and settlement corrections are excluded. Exact-order reads use include_trades.",
+        "gemini": "Selected spot history by millisecond boundary with retained edge IDs. Saturated 500-trade timestamp groups stop for review. Reported full busts void fills in accounting; manual and unverified breaks remain available for review. Master-key subaccount routing is pending. Exact-order reads use include_trades.",
+        "cryptocom": "Crypto.com Exchange cash history starts with seven days in saved native one-day ranges. Exact-order reads cover at most thirty days since creation and share native trade IDs. Explicit parent execution flags and account identity exclude margin/advanced scope; missing parent proof stops for review. Fee-credit consumption remains unknown. Saturated timestamp groups require review.",
+        "phemex": "Selected-pair spot history starts with seven days, saves native offsets and overlaps one day on later passes. Exact-order executions share native IDs. Unknown currency scales or unverified discount-token charges leave fees unknown. Open-order discovery also requires selected pairs.",
+        "upbit": "Regular current open orders and closed orders created in the last seven days supply native execution UUIDs. Older closed orders can be missing. Per-execution fees stay unknown because the order reports only an aggregate paid fee. Native trade-count gaps require review.",
         "demo": "Existing manual Demo fills only; strategy simulations use a separate ledger.",
     }.get(
         provider,
@@ -88,8 +98,18 @@ def fetch_spot_page(exchange, kind, symbol, cursor, limit, *, order_id=None) -> 
             request["idLessThan"] = page
         if order_id:
             request["orderId"] = order_id
-        raw = exchange.privateSpotGetV2SpotTradeFills(request)["data"]
-        following = _numeric_token(raw[-1].get("tradeId")) if raw else None
+        response = exchange.privateSpotGetV2SpotTradeFills(request)
+        raw = response.get("data") if isinstance(response, dict) and response.get("code") == "00000" else None
+        if not isinstance(raw, list) or len(raw) > limit or any(not isinstance(row, dict) for row in raw):
+            raise ccxt.ExchangeError("Invalid Bitget Classic fill page.")
+        keys = [_numeric_token(row.get("tradeId")) for row in raw]
+        if (
+            any(key is None for key in keys)
+            or len(set(keys)) != len(keys)
+            or (page and any(int(key) >= int(page) for key in keys))
+        ):
+            raise ccxt.ExchangeError("Bitget fill cursor did not advance across native IDs.")
+        following = min(keys, key=int) if keys else None
 
     if not isinstance(raw, list) or len(raw) > limit or any(not isinstance(row, dict) for row in raw):
         raise ccxt.ExchangeError("Invalid spot history page.")
@@ -113,6 +133,8 @@ def fetch_spot_page(exchange, kind, symbol, cursor, limit, *, order_id=None) -> 
     for row in raw:
         native_symbol = row.get("instId") if kind == "okx-bill" else row.get("symbol")
         native_order = row.get("ordId") if kind == "okx-bill" else row.get("orderId")
+        if kind == "bitget-id" and isinstance(native_symbol, str):
+            native_symbol = native_symbol.upper()
         if native_symbol != market["id"] or (order_id and str(native_order) != order_id):
             raise ccxt.ExchangeError("Unexpected market or order in spot history.")
         if kind == "okx-bill" and (row.get("instType") != "SPOT" or row.get("subType") not in {"1", "2"}):
@@ -127,6 +149,12 @@ def fetch_spot_page(exchange, kind, symbol, cursor, limit, *, order_id=None) -> 
             row.get("tradeType") != "TRADE" or (row.get("tax") not in (None, "") and number(row["tax"]) != 0)
         ):
             raise ccxt.NotSupported("Margin executions or additional tax require a separate adapter.")
+        if kind == "bitget-id":
+            detail = row.get("feeDetail")
+            if detail is not None and not isinstance(detail, dict):
+                raise ccxt.ExchangeError("Invalid Bitget Classic fee detail.")
+            if detail and detail.get("deduction") not in (None, "", "no"):
+                row = {**row, "feeDetail": None}
         trade = normalize_trade(exchange.parse_trade(row, market))
         if kind == "kucoin-hf":
             # tradeId identifies a match; id identifies this account's fill leg.

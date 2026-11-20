@@ -1,14 +1,16 @@
-"""Local vector indexing, coherent cited retrieval and rank fusion over the retained library."""
+"""Local vector storage, explicit embedding-provider selection and coherent cited retrieval and rank fusion over the retained library."""
 
 import hashlib
 import json
 import threading
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from uuid import uuid4
 
 import numpy as np
 
 from sibyl.research_library.semantic.contracts import SemanticNotReady
+from sibyl.research_library.semantic.hosted import HostedEmbeddings, catalog
 from sibyl.research_library.semantic.provider import OllamaEmbeddings
 
 MAX_PASSAGES = 5000
@@ -21,6 +23,7 @@ class SemanticIndex:
     def __init__(self, library, provider=None):
         self.library = library
         self.provider = provider or OllamaEmbeddings()
+        self.hosted = HostedEmbeddings()
         self.operations = threading.BoundedSemaphore(2)
         self.indexing = threading.Lock()
         with library.db() as db:
@@ -33,7 +36,7 @@ class SemanticIndex:
     @contextmanager
     def operation(self):
         if not self.operations.acquire(blocking=False):
-            raise ValueError("Two local semantic operations are already running. Try again shortly.")
+            raise ValueError("Two semantic operations are already running. Try again shortly.")
         try:
             yield
         finally:
@@ -70,11 +73,13 @@ class SemanticIndex:
             return {
                 "configured": bool(profile),
                 "revision": revision,
-                "profile": profile,
+                "profile": {key: value for key, value in profile.items() if key != "credential_ref"},
+                "has_api_key": bool(profile.get("credential_ref")),
+                "hosted": catalog(),
                 "coverage": {kind: self.coverage(db, kind) for kind in ("all", "document", "news")},
                 "indexing": self.indexing.locked(),
                 "limits": {"passages": MAX_PASSAGES, "bytes": MAX_BYTES},
-                "note": "Saved local configuration and index coverage; server reachability is checked only during explicit operations.",
+                "note": "Saved configuration and index coverage; provider reachability is checked only during explicit operations. Hosted names cannot attest unchanged weights.",
             }
 
     def configure(self, body):
@@ -87,12 +92,13 @@ class SemanticIndex:
             )
         with self.library.db() as db:
             db.execute("BEGIN IMMEDIATE")
-            self.revision(db, body.revision)
+            previous = self.revision(db, body.revision)
             db.execute("DELETE FROM semantic_vectors")
             db.execute(
                 "UPDATE semantic_settings SET revision=?,payload=? WHERE id=1",
                 (body.revision + 1, json.dumps(profile)),
             )
+        self._forget(previous)
         return self.status()
 
     def clear(self, revision, *, disable=False):
@@ -104,6 +110,66 @@ class SemanticIndex:
                 "UPDATE semantic_settings SET revision=?,payload=? WHERE id=1",
                 (revision + 1, json.dumps({} if disable else profile)),
             )
+        if disable:
+            self._forget(profile)
+        return self.status()
+
+    def _forget(self, profile):
+        """Remove only a superseded immutable hosted secret; a newer selection has another reference."""
+        if profile.get("credential_ref") and self.library.store:
+            self.library.store.delete_data_profile(profile["credential_ref"])
+
+    def _key(self, profile):
+        if not self.library.store or not profile.get("credential_ref"):
+            raise SemanticNotReady("Save a separate encrypted embedding key before using this provider.")
+        return self.library.store.data_profile(profile["credential_ref"]).get("api_key", "")
+
+    def embed(self, profile, texts):
+        """Use the accepted vector-space profile; never borrow chat keys or substitute a provider."""
+        if profile.get("provider") in {"openai", "mistral"}:
+            return self.hosted.embed(profile, texts, self._key(profile))
+        return self.provider.embed(profile, texts)
+
+    def configure_hosted(self, body):
+        """Probe only a fixed phrase, then atomically publish a new revision with an opaque vault reference.
+
+        The vault and library are separate SQLite files. Stage an immutable encrypted
+        reference first; clean it on failed publication and release the old reference
+        only after commit. A crash can leave encrypted unreferenced material, never an
+        active model with another request's key. Already sent text cannot be recalled.
+        """
+        if not self.library.store:
+            raise SemanticNotReady("Hosted setup requires the workspace credential vault.")
+        with self.library.db() as db:
+            previous = self.revision(db, body.revision)
+        key = (
+            body.api_key.get_secret_value()
+            if body.api_key
+            else (self._key(previous) if previous.get("provider") == body.provider else "")
+        )
+        if not key:
+            raise SemanticNotReady("Enter this provider's embedding API key; chat credentials are separate.")
+        with self.operation():
+            profile, _ = self.hosted.embed(
+                {"provider": body.provider, "model": body.model, "remote_consent": body.remote_consent},
+                ["Sibyl embedding model compatibility check."],
+                key,
+            )
+        reference = "research-embedding:" + uuid4().hex
+        self.library.store.save_data_profile(reference, {"api_key": key})
+        try:
+            with self.library.db() as db:
+                db.execute("BEGIN IMMEDIATE")
+                previous = self.revision(db, body.revision)
+                db.execute("DELETE FROM semantic_vectors")
+                db.execute(
+                    "UPDATE semantic_settings SET revision=?,payload=? WHERE id=1",
+                    (body.revision + 1, json.dumps({**profile, "credential_ref": reference})),
+                )
+        except BaseException:
+            self.library.store.delete_data_profile(reference)
+            raise
+        self._forget(previous)
         return self.status()
 
     def build(self, body):
@@ -120,7 +186,7 @@ class SemanticIndex:
             db.execute("BEGIN")
             profile = self.revision(db, body.revision)
             if not profile:
-                raise SemanticNotReady("Configure a local embedding model first.")
+                raise SemanticNotReady("Configure an embedding model first.")
             count, size = db.execute(
                 "SELECT COUNT(*),COALESCE(SUM(length(vector)),0) FROM semantic_vectors"
             ).fetchone()
@@ -137,7 +203,7 @@ class SemanticIndex:
             )
         rows = rows[:capacity]
         with self.operation():
-            _, vectors = self.provider.embed(profile, [row["text"] for row in rows])
+            _, vectors = self.embed(profile, [row["text"] for row in rows])
         added, skipped = 0, 0
         with self.library.db() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -183,9 +249,9 @@ class SemanticIndex:
                 coverage = self.coverage(db, kind)
             if not profile or not coverage["indexed"]:
                 raise SemanticNotReady(
-                    "Configure and index a local embedding model first, or choose keyword search."
+                    "Configure and index an embedding model first, or choose keyword search."
                 )
-            _, vectors = self.provider.embed(profile, [query])
+            _, vectors = self.embed(profile, [query])
             vector = vectors[0]
             with self.library.db() as db:
                 db.execute("BEGIN")
@@ -250,7 +316,9 @@ class SemanticIndex:
             else "reciprocal-rank fusion (keyword + semantic)",
             "semantic": {
                 "model": profile["model"],
-                "model_digest": profile["model_digest"],
+                "model_digest": profile.get("model_digest"),
+                "provider": profile.get("provider", "ollama"),
+                "identity": profile.get("identity", "Observed local digest and server version"),
                 "dimensions": profile["dimensions"],
                 "revision": revision,
                 "coverage": coverage,

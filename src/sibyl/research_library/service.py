@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from sibyl.research_library.calibration.service import RetrievalCalibration
 from sibyl.research_library.evaluations.service import RetrievalEvaluations
 from sibyl.research_library.extraction import extract, passages
 from sibyl.research_library.semantic.service import SemanticIndex
@@ -18,15 +19,16 @@ from sibyl.research_library.semantic.service import SemanticIndex
 class ResearchLibrary:
     """Keep original uploads, extracted pages and search rows in one transactional database.
 
-    Keyword retrieval uses BM25; optional local embeddings add semantic/hybrid ranking.
+    Keyword retrieval uses BM25; optional local or consented hosted embeddings add semantic/hybrid ranking.
     Ranking does not establish confidence or source truth. News is an
     explicitly synchronized copy of the retained public archive, never a network
     refresh. Excerpts are untrusted source text, not agent instructions.
     """
 
-    def __init__(self, directory: Path, news_repository):
+    def __init__(self, directory: Path, news_repository, *, store=None):
         self.path = directory / "research-library.sqlite"
         self.news = news_repository
+        self.store = store
         self.extraction_slots = threading.BoundedSemaphore(2)
         with self.db() as db:
             db.execute("PRAGMA journal_mode=WAL")
@@ -48,6 +50,7 @@ class ResearchLibrary:
         self.path.chmod(0o600)
         self.semantic = SemanticIndex(self)
         self.evaluations = RetrievalEvaluations(self)
+        self.calibration = RetrievalCalibration(self)
 
     @contextmanager
     def db(self):
@@ -239,8 +242,10 @@ class ResearchLibrary:
             (expression, kind, kind, limit),
         ).fetchall()
 
-    def search(self, query, kind="all", limit=8, method="keyword"):
+    def search(self, query, kind="all", limit=8, method="keyword", calibrated=True):
         """Rank exact passages by the selected retrieval method; never infer an answer."""
+        if method == "semantic" and calibrated:
+            return self.calibration.search(query, kind, limit)
         if method != "keyword":
             return self.semantic.search(query, kind, limit, method)
         if kind not in {"all", "document", "news"}:

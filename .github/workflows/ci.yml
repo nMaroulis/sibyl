@@ -19,9 +19,9 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Install locked Python development dependencies
-        run: uv sync --frozen --group dev
+        run: uv sync --frozen --group dev --extra optimization
       - name: Run backend and agent tests
-        run: uv run pytest
+        run: uv run --extra optimization pytest
       - name: Lint Python code
         run: uv run ruff check src tests scripts/distribution hatch_build.py
       - name: Install locked JavaScript dependencies

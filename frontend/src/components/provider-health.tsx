@@ -5,6 +5,7 @@ import { Badge, ErrorState, Loading, Panel, PanelTitle } from './ui';
 import { MarketSourceMark } from './config-helper';
 import { useResource } from '../lib/hooks';
 import { ProviderReadHistory } from './provider-read-history';
+import { ProviderQuotaDetails } from './provider-quotas';
 import {
   healthLabels,
   type ProviderHealth,
@@ -30,7 +31,13 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
   const [environment, setEnvironment] = useState('all');
   const rows = (report.data?.items ?? []).filter(
     (s) =>
-      (all || s.default || s.requests > 0 || s.queued > 0 || s.last_error || s.history_available) &&
+      (all ||
+        s.default ||
+        s.requests > 0 ||
+        (s.quotas?.attempts ?? 0) > 0 ||
+        s.queued > 0 ||
+        s.last_error ||
+        s.history_available) &&
       (environment === 'all' || s.environment === environment) &&
       `${s.name} ${s.provider}`.toLowerCase().includes(query.toLowerCase()),
   );
@@ -134,6 +141,9 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
                     <span className="source-health-latency">
                       {s.latency_ms === null ? '—' : `${Math.round(s.latency_ms)} ms`}
                       <small>{s.shared_queued} queued on provider</small>
+                      {!!s.quotas?.retry_after && (
+                        <small>Read budget · {s.quotas.retry_after}s</small>
+                      )}
                     </span>
                     <ChevronDown size={14} className={expanded === s.id ? 'expanded' : ''} />
                   </button>
@@ -195,6 +205,7 @@ export function SourceHealthPanel({ active = true }: { active?: boolean }) {
                           process. A saved key or selectable card does not establish connectivity.
                         </p>
                       )}
+                      {s.quotas && <ProviderQuotaDetails value={s.quotas} />}
                       <ProviderReadHistory source={s.id} demo={s.status === 'demo'} />
                       <Link
                         className="text-link"
@@ -269,6 +280,9 @@ export function SourceHealthSummary({ source }: { source: string }) {
       {s.data_status === 'stale' && <Badge tone="sand">Latest quote sample stale</Badge>}
       {s.data_status === 'undated' && <Badge tone="sand">Undated quote sample</Badge>}
       {s.data_status === 'invalid' && <Badge tone="rose">Invalid quote sample</Badge>}
+      {!!s.quotas?.retry_after && (
+        <Badge tone="sand">Read budget wait · {s.quotas.retry_after}s</Badge>
+      )}
       {s.retry_at && <small>Retry after {new Date(s.retry_at).toLocaleTimeString()}</small>}
       <Link to="/settings?tab=market">
         Source health <ArrowUpRight size={11} />

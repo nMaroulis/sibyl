@@ -40,7 +40,7 @@ The top-bar bell shows unread price, account-risk, strategy and connection notif
 
 Use **Alerts → Inbox** for retained notification pages, **Mark read** for one notification or **Mark all read** for the whole inbox. Acknowledgment persists across restarts and never deletes the observed price/source evidence. Demo alerts are labeled in the bell and inbox too.
 
-In-app delivery is always on. Select **Delivery** on a rule for optional [Telegram notifications](alert-delivery.md), with a reviewed private recipient, minimum interval and freshness window. Email, webhooks and native push remain pending; alerts cannot place orders or start strategies.
+In-app delivery is always on. Select **Delivery** on a rule for optional [private notifications](alert-delivery.md) through Telegram, Discord, Slack, Signal, WhatsApp or email, with a reviewed private recipient, minimum interval and freshness window. Generic outbound webhooks and native push remain pending; alerts cannot place orders or start strategies.
 
 ## Keep the API running
 
@@ -67,7 +67,7 @@ Armed rules keep their position across an API restart. Events committed after th
 
 Notifications appear in the shared **Inbox** and top-bar bell with the exact run, source, Paper/Exchange mode, Demo/test attribution, original journal reason and event time. Receipt time and journal time are distinct. The bell's strategy entries and **Open strategy monitor** link lead back to that run; opening them does not acknowledge unread state. Use **Mark read** or **Mark all read** for acknowledgment.
 
-Only recorded journal changes are monitored. An `ERROR` notice does not imply the run stopped, a manual pause is not necessarily a failure, and a Stop & cancel notice reports the request, not successful native cancellation. A completion notice does not prove an exchange position is flat. Inspect the monitor's orders, fills and holdings. Notifications cannot control execution, cancel orders or liquidate. Silent-worker outage and every-fill/order policies remain pending. Account-risk and connection alerts are available below. Telegram delivery is opt-in separately on each rule; enabling chat alone does not select alerts.
+Only recorded journal changes are monitored. An `ERROR` notice does not imply the run stopped, a manual pause is not necessarily a failure, and a Stop & cancel notice reports the request, not successful native cancellation. A completion notice does not prove an exchange position is flat. Inspect the monitor's orders, fills and holdings. Notifications cannot control execution, cancel orders or liquidate. Silent-worker outage and every-fill/order policies remain pending. Account-risk and connection alerts are available below. Private message delivery is opt-in separately on each rule; enabling chat alone does not select alerts.
 
 ## Connection read-failure alerts
 
@@ -79,7 +79,7 @@ The inbox says **Read failures observed** or **Successful reads resumed**, with 
 
 Counters restart after a session/profile change, missing/out-of-order evidence or more than five minutes between reads. Retired profiles' late reads are ignored. Cache hits, admission deferrals, Demo and order submission/cancellation/preflight reads supply no evidence. Read evidence is retained for up to 14 days and globally bounded to 50,000 observations; recording or retention gaps may prevent a notice and are disclosed. An unresolved recorded incident remains historical evidence until enough confirming reads of the same operation arrive.
 
-Each source permits one non-archived rule, with a separate budget of 50 connection rules. **Edit** saves paused; **Resume** starts from the current read-history tail and forgets old incident/count state. **Pause** and **Archive** stop processing only. **Restore paused** preserves past notifications without rearming. Armed cursors survive API restarts and catch up on retained evidence, so a notice can arrive after its observation time. Local delivery requires the API running; no LLM is involved. A separate per-rule Delivery selection can forward fresh incidents to Telegram.
+Each source permits one non-archived rule, with a separate budget of 50 connection rules. **Edit** saves paused; **Resume** starts from the current read-history tail and forgets old incident/count state. **Pause** and **Archive** stop processing only. **Restore paused** preserves past notifications without rearming. Armed cursors survive API restarts and catch up on retained evidence, so a notice can arrive after its observation time. Local delivery requires the API running; no LLM is involved. A separate per-rule Delivery selection can forward fresh incidents to its checked private connection.
 
 ## Account risk watches
 
@@ -93,7 +93,7 @@ Automatic cleanup is **off by default**. Choose an age of at least seven days, t
 
 Disabling the policy prevents later automatic passes; it cannot restore deleted notices. Cleanup never removes alert rules, financial ledgers, conversations or the separate messaging delivery history. Recent cleanup receipts remain visible. Restored workspaces keep automatic workers paused until recovery review and restart.
 
-Account-risk rules also support **Overall asset concentration · HHI** and **Top three assets reaching a combined allocation limit**. HHI uses a 0–100 index; top-three uses percent. Both include every valued asset in the fixed account set, require fresh complete coverage, and recover only below the configured lower reset level. Saved evidence and optional Telegram messages retain the exact observed value and units. Concentration does not measure correlation-adjusted investment risk.
+Account-risk rules also support **Overall asset concentration · HHI** and **Top three assets reaching a combined allocation limit**. HHI uses a 0–100 index; top-three uses percent. Both include every valued asset in the fixed account set, require fresh complete coverage, and recover only below the configured lower reset level. Saved evidence and optional private messages retain the exact observed value and units. Concentration does not measure correlation-adjusted investment risk.
 
 ## Historical basket watches
 

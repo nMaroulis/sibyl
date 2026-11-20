@@ -1,0 +1,103 @@
+.provider-quotas {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(130deg, #f8faff, #fbfcfe);
+}
+.provider-quota-title,
+.provider-quota-title > span,
+.provider-quota-budget > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.provider-quota-title {
+  justify-content: space-between;
+}
+.provider-quota-title strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.provider-quota-title svg {
+  color: #6d8bd2;
+}
+.provider-quota-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.provider-quota-budget {
+  background: #fff;
+  border: 1px solid #e8edf7;
+  border-radius: 15px;
+  padding: 15px;
+  min-width: 0;
+}
+.provider-quota-budget > div:first-child {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.provider-quota-budget strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.provider-quota-budget p {
+  margin: 14px 0 8px;
+}
+.provider-quota-budget b {
+  font-size: 20px;
+  font-weight: 500;
+}
+.provider-quota-budget p > span,
+.provider-quota-budget small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.provider-quota-budget small {
+  display: block;
+  line-height: 1.65;
+  margin-top: 7px;
+}
+.provider-quota-meter {
+  height: 5px;
+  border-radius: 6px;
+  background: #edf1f9;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.provider-quota-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #b1c5f0, #7c9fe1);
+}
+.provider-quota-meter.busy > span {
+  background: linear-gradient(90deg, #f1dab1, #d4ac70);
+}
+.provider-quota-notes {
+  font-size: 12px;
+  color: var(--muted);
+}
+.provider-quota-notes > summary {
+  cursor: pointer;
+  color: var(--ink);
+  padding: 5px 0;
+}
+.provider-quota-wait {
+  font-size: 12px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: #faf1e2;
+  color: #8a6a3e;
+}
+@media (max-width: 600px) {
+  .provider-quotas {
+    padding: 13px;
+  }
+  .provider-quota-title {
+    align-items: flex-start;
+  }
+}

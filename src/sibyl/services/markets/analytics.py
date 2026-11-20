@@ -144,7 +144,12 @@ def forecast(candles: list[dict], horizon: int = 14) -> dict:
 
 
 def correlation(
-    histories: dict[str, list[dict]], method: str = "pearson", transform: str = "log_returns", *, seconds=None
+    histories: dict[str, list[dict]],
+    method: str = "pearson",
+    transform: str = "log_returns",
+    *,
+    seconds=None,
+    robust=False,
 ) -> dict:
     """Measure same-window association with explicit undefined values and bounded nonlinear work."""
     from sibyl.market_data.analysis.relationships import aligned, distance_matrix, regressions
@@ -167,7 +172,7 @@ def correlation(
         "transform": transform,
         "start": observations.index[0].isoformat() if len(observations) else None,
         "end": observations.index[-1].isoformat() if len(observations) else None,
-        "regression": regressions(histories, seconds=seconds),
+        "regression": regressions(histories, seconds=seconds, robust=robust),
         "note": "Distance correlation is unsigned empirical dependence on at most 360 recent observations; small samples have upward bias. Constant series are unavailable, not zero association. Price-level relationships can be spurious; no causality or significance is established.",
     }
 
