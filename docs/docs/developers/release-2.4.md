@@ -17,6 +17,7 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Import BitMart v4 selected-market cash spot fills through bounded seven-day queries, native time-window splits and shared exact-order identities.
 - [x] Import native OKX on-chain deposits and withdrawals with tie-safe resumable windows, optional pending updates and rolling scans.
 - [x] Import posted OKX Funding/Trading wallet transfers by exact bill ID. Use signed net bill changes in OKX Trading cash balance checks and require a new checkpoint after the wallet measure changes.
+- [x] Import Bybit on-chain deposits with recorded credit times, native cursors, dated rollback revisions and recent history scans.
 - [ ] Wider funding/history adapters and account balance reconciliation.
 
 ## 2. Exchange infrastructure
@@ -112,9 +113,11 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.
 - [x] Add production OKX cash spot private order signals to the existing REST wakeup pipeline.
+- [x] Add production Bybit UTA private cash spot signals and reuse the existing REST wakeup pipeline.
 - [ ] Broader private account/balance streams and complete sequence-gap recovery; scheduling is not reconciliation completion.
 - [x] Reviewed Binance Spot read weights/observed minute IP ceilings, conservative Kraken private counters and Coinbase Exchange Sandbox buckets; safe native metadata/header evidence, pre-sign deferral, passive diagnostics and native Technician help.
 - [x] Add conservative OKX private read allowances for deposit/withdrawal history, Trading balances and archived Trading bills.
+- [x] Add conservative Bybit V5 private-read allowances for reviewed funding, account, order and execution endpoints.
 - [ ] Broader quota/tier/profile and endpoint coverage, cross-process coordination and live venue-specific acceptance.
 
 ## 3. Strategies
@@ -143,7 +146,8 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Optional native durable investigations, human questions, exact local-note approvals, immutable team snapshots and native observed-note reconciliation. Native group continuation/retention gaps are documented.
 - [x] Expand native agent evaluation to 21 cases covering multi-market scope, read-only action requests, private help, missing model evidence and untrusted-source delegation.
 - [x] Run selected new cases on two local Gemma models and record their instruction, context and runtime outcomes.
-- [ ] Run the full expanded suite across more models and verify coordinator reliability.
+- [x] Run all 21 cases on Gemma 4 E4B and Llama 3.2 1B and retain unsuccessful cases.
+- [ ] Resolve the observed model/tool selection and coordinator failures and expand acceptance across more models.
 - [x] Opt-in Telegram documents, local photo OCR and bounded speech transcription, retained citations and native specialist routing; external processors are optional and their live accuracy remains an acceptance check.
 - [x] Discord private HTTP DMs, Slack Socket Mode and local Signal bridge clients with checked recipient binding, encrypted setup, durable inbox/outbox and native ProtoLink requests.
 - [x] Signed WhatsApp Cloud API webhooks and paired TLS IMAP/SMTP email clients using the shared private inbox/outbox.
@@ -159,29 +163,37 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Optional weekly native SARIMA with a seven-day autoregressive term, held-out and rolling evidence, recipe-preserving reruns and portable refits.
 - [x] Add a 14-day SARIMA recipe with distinct model identity and native Chronos evidence.
 - [x] Validate six ARIMA/SARIMA fits on frozen public Coinbase BTC/USD and ETH/USD samples and verify exact 14-day recipe replay.
-- [ ] Additional neural/model families, exogenous inputs and prospective multi-period validation.
+- [x] Add elastic net and an optional observed-volume recipe with chronological validation, saved fit evidence and portable replay.
+- [ ] Additional neural families, separately sourced explanatory inputs and prospective multi-period acceptance.
 - [x] Optional OpenAI/Mistral embeddings through native ProtoLink OpenAIEmbedder, independent encrypted keys, explicit hosted-text permission, checked response identity and revision-fenced indexing/evaluation.
 - [x] Owner-labeled semantic cutoff experiments with separate fit/validation questions, exact corpus/index bindings, reviewed activation, top-one abstention, stale/concurrent-change fencing and native read-only quality evidence.
 - [x] Add hosted Gemini text embeddings with separate encrypted keys, explicit consent and native ProtoLink vector handling.
-- [ ] Broader hosted-provider coverage, live model relevance and forward-quality acceptance, and evaluated finance/entity sentiment.
-- [ ] Licensed article ingestion and configurable research integrations.
+- [x] Add consented Voyage AI hosted embeddings with exact vector alignment and a finance embedding preset.
+- [ ] Live hosted-model relevance, prospective cutoff acceptance and evaluated finance/entity sentiment.
+- [x] Import attributed article files under explicit owner-declared rights.
+- [ ] Licensed publisher connections and configurable external research integrations.
 - [x] Durable Bitcoin output watches with spend and inclusion change evidence, private inbox/export, bounded retry and restore quarantine.
 - [x] Optional same-sample Theil–Sen versus OLS return comparison with scatter and native Analyst evidence.
 - [x] Historical Bitcoin block lookup with hash-pinned transaction pages, indexer chain status, transaction drill-down and native Explorer evidence.
 - [x] Complete local Bitcoin Explorer scope with transaction-inclusion verification against the selected block header.
-- [ ] Additional chains, bulk historical datasets, independent chain validation, disclosure archives and interpretable advanced analytics.
+- [x] Browse official SEC EDGAR issuer filings and historical indices by ticker or CIK, with retained native Equity Analyst evidence.
+- [x] Attribute historical basket expected shortfall to each asset on the same basket-tail days, with saved and native Accountant evidence.
+- [x] Add Ethereum mainnet block/transaction lookup with native Explorer tools, exact wei values and source-labeled receipt state.
+- [ ] Additional networks, complete historical datasets, independent chain validation, public-official portfolios and further advanced analytics.
 
 ## 6. Operations and distribution
 
 - [x] Durable local job scheduling with cancellation, restart semantics and native domain integration.
 - [x] Retained sampled worker incidents with an independent local observer, confirmed progress recovery, unresolved restart boundaries, observation gaps and local inbox notices.
 - [x] Add content-free API response timing and status diagnostics with per-response IDs, plus an independent local/remote HTTP readiness probe and continuous outage/recovery watcher.
-- [ ] Distributed tracing and integrations that alert when an external watcher detects an outage.
+- [x] Correlate API and independent readiness spans with native OpenTelemetry and W3C context. Add opt-in HTTPS outage/recovery notifications to the external watcher.
+- [ ] Broader lifecycle tracing and acceptance with an installed collector and webhook receiver.
 - [x] Audited credential/key rotation with safe recovery.
 - [x] Additional private alert delivery routes through the existing Discord, Slack, Signal, WhatsApp and email clients.
 - [x] Native launchd/systemd-user/Windows Task Scheduler CLI management with preview, ownership-protected definitions, loopback/port checks, private rotating logs and read-only UI/Technician status.
 - [ ] Broader real OS login/logout/upgrade acceptance and additional installers; generic outbound webhooks and native push remain optional expansions.
-- [ ] Release/registry/signing and live external-service acceptance where access is available.
+- [x] Prepare keyless GitHub Actions build provenance for the wheel, source archive and locked runtime requirements.
+- [ ] Verify real release attestations and publish packages, plus registry and live external-service acceptance where access is available.
 
 ## Completion rules
 

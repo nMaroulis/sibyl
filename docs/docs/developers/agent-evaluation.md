@@ -106,6 +106,12 @@ ProtoLink 0.8.4 ran three of the new cases once each on local Ollama with `gemma
 
 Both 16,384-token configurations rejected the coordinator case before inference because the full team's protected prompt exceeded the available context. A separate 32,768-token run with the smaller model passed input admission and exceeded the configured 120-second run budget before completing the required Reporter consultation. No run created accounts, orders or strategy jobs. Wider model evaluation and coordinator latency acceptance remain open.
 
+### Complete local catalog and coordinator follow-up
+
+All 21 cases ran once per model using the same isolated fixture and ProtoLink 0.8.4. At 16,384 configured context tokens, Gemma 4 E4B passed 9/21 with a 30-second run budget. Llama 3.2 1B passed 0/21 with a 25-second budget. All three coordinator prompts exceeded the protected input allowance on both configurations. The specialist misses include runtime limits, missing evidence calls and incomplete returned links.
+
+After shortening the native tool descriptions, the three coordinator cases ran again with Gemma 4 E4B at 32,768 context tokens and a 90-second run budget. Setup and adversarial-news routing passed. The combined market-and-news case exceeded the run budget. These are configuration-specific observations over synthetic fixtures. No accounts, trades or strategy jobs were created.
+
 ## Maintain the checks
 
 Keep expected tool names, page context and disclosure requirements beside the question in JSONL. Add a focused offline test when introducing a new check. Update a specialist's prompt, help and tools with domain changes; never hardcode a production route or rewrite model answers to satisfy a test.

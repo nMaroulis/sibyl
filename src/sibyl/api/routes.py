@@ -1046,10 +1046,46 @@ def crypto_profile(asset_id: str, s: S):
     return s.research.crypto.profile(asset_id)
 
 
+@router.get("/ethereum/blocks/{reference}", tags=["Explorer"])
+def ethereum_block(
+    reference: str,
+    s: S,
+    offset: int = Query(default=0, ge=0, le=200000),
+    limit: int = Query(default=25, ge=1, le=50),
+):
+    """Read one Ethereum mainnet block and an ordered page of its transaction hashes."""
+    return s.research.ethereum.block(reference, offset=offset, limit=limit)
+
+
+@router.get("/ethereum/transactions/{transaction_hash}", tags=["Explorer"])
+def ethereum_transaction(transaction_hash: str, s: S):
+    """Read one Ethereum mainnet transaction and the matching receipt when available."""
+    return s.research.ethereum.transaction(transaction_hash)
+
+
 @router.get("/blocks", tags=["Explorer"])
 def blocks(s: S, count: int = Query(10, ge=1, le=100)):
     """Read recent Bitcoin block summaries."""
     return s.research.blocks(count)
+
+
+@router.get("/equities/disclosures/status", tags=["Stocks"])
+def disclosure_status(s: S):
+    """Read EDGAR setup without contacting its servers."""
+    return s.research.edgar.status()
+
+
+@router.get("/equities/disclosures", tags=["Stocks"])
+def stock_disclosures(
+    s: S,
+    issuer: str = Query(min_length=1, max_length=12),
+    archive: str | None = Query(default=None, max_length=64),
+    form: str | None = Query(default=None, max_length=24),
+    offset: int = Query(default=0, ge=0, le=15000),
+    limit: int = Query(default=25, ge=1, le=50),
+):
+    """Read a bounded page of one company's selected official SEC index."""
+    return s.research.edgar.page(issuer, archive, form, offset=offset, limit=limit)
 
 
 @router.get("/stocks/{symbol}", tags=["Stocks"])

@@ -329,7 +329,8 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Add bounded fixed-scale Huber autoregression with training-only robust target scaling, deterministic IRLS, actual convergence/downweight diagnostics, purged held-out/rolling evaluation and portable recipe-preserving refits.
 - [x] Add native statsmodels nonseasonal ARIMA(p,1,q) with training-only normalization/maximum-likelihood fitting, fixed 90-close filtering, actual optimizer/likelihood diagnostics and existing held-out, rolling, portable and candidate workflows.
 - [x] Add seven-day and 14-day SARIMA recipes with distinct model identities, native coefficient evidence, causal filtering and held-out, rolling and portable workflows.
-- [ ] Add additional neural/model families, other seasonal orders, exogenous inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
+- [x] Add elastic net and a same-feed causal observed-volume recipe for direct forecast families.
+- [ ] Add further neural families, separately sourced explanatory inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 
@@ -338,12 +339,13 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 - [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
 - [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
 - [x] Add owner-labeled saved retrieval evaluations over pinned corpora/indexes, exact rankings/citations and precision/recall/MRR/nDCG/hit-rate reports.
-- [x] Add reviewed OpenAI, Mistral and Gemini embedding adapters through native ProtoLink, independent encrypted keys, explicit text-processing permission, bounded raw response checks, provider identity and existing index/evaluation revision fences.
+- [x] Add reviewed OpenAI, Mistral, Gemini and Voyage AI embedding adapters through native ProtoLink, independent encrypted keys, explicit text-processing permission, bounded raw response checks, provider identity and existing index/evaluation revision fences.
 - [x] Fit optional owner-labeled top-one semantic cutoffs using separate fit/held-out questions, exact complete corpus/index bindings, observed-error activation rules, revision-checked opt-in and stale/concurrent-change abstention. See [calibration contracts](search-calibration.md). Raw ranking evaluations remain unfiltered.
 - [ ] Evaluate semantic relevance/answer grounding and forward cutoff quality across real models/corpora, with broader hosted-provider coverage and live acceptance. Small labeled sets and controlled-vector tests do not establish general relevance or confidence.
 - [ ] Add cited web-search tools; local hybrid retrieval is implemented.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
-- [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.
+- [x] Import attributable article files with an explicit owner rights declaration.
+- [ ] Add licensed publisher ingestion and evaluated finance-trained/entity-targeted sentiment models.
 - [ ] Add configurable external research API credentials/endpoints where integrations need them.
 
 ### 10a. Bitcoin Explorer — complete for v2.4
@@ -358,11 +360,14 @@ The local Bitcoin workspace covers block, transaction and address inspection, ou
 
 ### 10b. Chain expansion, equities and advanced analytics — partial
 
-- [ ] Add bulk historical chain datasets, additional chains, wallet aggregation and independent chain validation.
-- [ ] Implement the planned public-official portfolio/disclosure archive.
+- [x] Add Ethereum mainnet blocks and receipts using a bounded read-only JSON-RPC source with native Explorer evidence.
+- [ ] Add bulk historical chain datasets, further networks, wallet aggregation and independent chain validation.
+- [x] Browse SEC EDGAR recent and historical issuer filing indices.
+- [ ] Implement portfolio disclosures for public officials.
 - [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
 - [x] Add bounded fixed-order Granger tests with training-only classical inference, request-family adjustment, residual qualifications, independent later-target errors and exact-source UI/agent evidence.
 - [x] Add an optional descriptive Theil–Sen fit alongside OLS on identical bounded return samples, with scatter evidence, comparable residuals and native Analyst results.
+- [x] Attribute the basket’s observed tail mean loss to its assets using the same tail days.
 - [ ] Add MIC, SHAP, robust/nonlinear causal inference and broader real-data/model evaluation.
 
 ## Cross-cutting and optional expansion
@@ -370,14 +375,14 @@ The local Bitcoin workspace covers block, transaction and address inspection, ou
 ### Distribution — Python package and user services ready; publication pending
 
 - [x] Add native macOS LaunchAgent, Linux systemd user unit and SID-specific Windows login-task CLI controls, safe preview/ownership/port handling, private rotating logs and read-only Settings/Technician status.
-- [ ] Complete real platform login/logout/upgrade/outage acceptance; broader installers, signing and registry publication remain separate work.
+- [ ] Complete real platform login/logout/upgrade/outage acceptance and broader installers. Registry publication and live provenance verification need a release run.
 
 The release path is a complete Python wheel and source archive published from the existing repository. Source checkout and local Docker Compose remain available. No Homebrew repository or registry is required; see [distribution](distribution.md).
 
 - [x] Bundle React in wheels/source archives, resolve installed assets, add a per-user installed workspace and launcher, and preserve source workspaces.
 - [x] Synchronize release metadata and lock entries in one version command; derive current docs/install examples from metadata while preserving history.
 - [x] Exercise a clean installed wheel and add Linux, Windows and both Mac architectures to package CI.
-- [x] Add a Python-package release workflow with dry-run artifacts, checksums and GitHub Release uploads.
+- [x] Add a Python-package release workflow with dry-run artifacts, checksums, keyless build provenance and GitHub Release uploads.
 - [ ] Complete remote CI acceptance and publish the wheel/source assets.
 - [ ] Add Homebrew optionally after the package release; a recipe can live in this repository or a separate tap.
 - [ ] Validate local Docker runtime and optionally publish prebuilt amd64/arm64 registry images in a separate workflow.
@@ -400,7 +405,7 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add saved explicit current-holding basket studies with observed historical conversion routes, consecutive sample covariance/correlations, volatility, empirical tails, variance contributions, full input export and native Accountant evidence.
 - [x] Add hourly current-weight basket volatility and historical 95% daily expected-shortfall alerts, explicit asset/window selection, complete fresh valuation, exact observed history and retained scope/input evidence.
 - [x] Retain worker incidents through an independent local observer, confirmed progress recovery and explicit observation gaps. See [worker incidents](worker-incidents.md).
-- [ ] Add broader correlation-aware enforcement and external process/host outage monitoring; local observation cannot establish host uptime.
+- [ ] Add broader correlation-aware risk enforcement. Independent HTTP readiness monitoring is available.
 - [x] Add opt-in Telegram, Discord, Slack, Signal, WhatsApp and email delivery per price/risk/strategy/connection/order rule, checked private recipients, future-only cursors, transactional admission, cooldown/expiry and native part outcomes. See [contracts](alert-delivery.md).
 - [x] Add app-origin delivery text/target inspection, queued-remainder withdrawal and separate user review history with optimistic evidence tokens.
 - [x] Extend the review contract to grouped conversation replies while preserving native delivery outcomes and unknown legacy bot identities.
@@ -410,7 +415,8 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
 - [x] Add lightweight process resource counters and fixed latency histograms with scoped, honest coverage.
 - [x] Add explicit read-only bounded SQLite quick checks and privacy-allowlisted downloadable workspace health reports, with passive native Technician evidence.
-- [ ] Add tracing, broader host diagnostics and external uptime monitoring.
+- [x] Add OpenTelemetry API/readiness tracing and observer-owned HTTPS outage/recovery notifications.
+- [ ] Add broader tracing/host diagnostics and verify deployment through an external collector and receiver.
 - [x] Add passphrase-encrypted managed archives, authenticated inspection/download/import and validated separate-directory restore. Recovery quarantines automatic work and requires explicit review/restart.
 - [x] Add private filtered notification JSON/CSV exports and opt-in bounded read-history retention, protected unread/delivery evidence, cleanup receipts and monotonic cursor-safe notification sequences.
 - [x] Add explicit same-account API replacement and audited local wrapping-key rotation with interruption recovery, concurrent-writer guards, Workspace controls and encrypted-backup compatibility. See [credential rotation](credential-rotation.md).

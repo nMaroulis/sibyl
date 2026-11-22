@@ -42,6 +42,7 @@ type Study = Summary & {
     weight_pct: number;
     annualized_volatility_pct: number;
     variance_contribution_pct: number | null;
+    tail_loss_contribution_pp?: number;
   }[];
   correlation: (number | null)[][];
   daily_returns: { timestamp: string; return_pct: number; index: number }[];
@@ -228,7 +229,7 @@ export function PortfolioRisk({ portfolio, scope }: { portfolio: Portfolio; scop
               loss.
             </p>
             <details>
-              <summary>Weights, correlations &amp; variance contributions</summary>
+              <summary>Weights, correlations &amp; risk contributions</summary>
               <div className="table-scroll">
                 <table>
                   <thead>
@@ -237,6 +238,7 @@ export function PortfolioRisk({ portfolio, scope }: { portfolio: Portfolio; scop
                       <th>Basket weight</th>
                       <th>Annualized volatility</th>
                       <th>Share of variance</th>
+                      <th>Tail loss contribution</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -250,6 +252,11 @@ export function PortfolioRisk({ portfolio, scope }: { portfolio: Portfolio; scop
                             ? 'Undefined'
                             : `${number(row.variance_contribution_pct)}%`}
                         </td>
+                        <td>
+                          {row.tail_loss_contribution_pp == null
+                            ? '—'
+                            : `${number(row.tail_loss_contribution_pp, 2)} pp`}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -257,7 +264,8 @@ export function PortfolioRisk({ portfolio, scope }: { portfolio: Portfolio; scop
               </div>
               <p className="footnote">
                 Variance contributions can be negative for offsetting assets. Undefined correlations
-                indicate a constant series, not zero dependence.
+                indicate a constant series. Tail contributions use the same basket-tail days and sum
+                to the tail mean loss in percentage points.
               </p>
               <div className="table-scroll">
                 <table>

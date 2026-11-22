@@ -119,15 +119,8 @@ def test_bybit_range_import_revises_record_without_guessing_posting_fee_or_cross
     )
     accounts = client.get("/api/v1/funding-sync").json()["accounts"]
     row = next(row for row in accounts if row["id"] == account.id)
-    assert (
-        row["funding_streams"]
-        == row["pending_update_streams"]
-        == row["recent_sync_streams"]
-        == [
-            "withdrawal",
-            "transfer",
-        ]
-    )
+    assert row["funding_streams"] == row["recent_sync_streams"] == ["deposit", "withdrawal", "transfer"]
+    assert row["pending_update_streams"] == ["withdrawal", "transfer"]
     body = {"streams": ["transfer"], "start": "2024-01-01T00:00:00Z", "end": "2024-01-03T00:00:00Z"}
     path = f"/api/v1/connections/{account.id}/funding-sync"
     assert client.post(path, json=body).status_code == 202

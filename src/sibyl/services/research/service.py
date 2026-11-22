@@ -6,11 +6,13 @@ from datetime import UTC, datetime
 import httpx
 
 from sibyl.blockchain.bitcoin import BitcoinExplorer
+from sibyl.blockchain.ethereum import EthereumExplorer
 from sibyl.config import Settings
 from sibyl.news import NewsService
 from sibyl.news.fear_greed import FearGreed
 from sibyl.services.markets.analytics import performance_metrics
 from sibyl.services.research.crypto_library import CryptoLibrary
+from sibyl.services.research.edgar import Edgar
 from sibyl.services.workspace.data_settings import DataSettings
 
 KNOWLEDGE = [
@@ -93,6 +95,8 @@ class Research:
     """Provide bounded, source-labeled research reads without hidden model downloads."""
 
     def __init__(self, settings: Settings, data_settings: DataSettings | None = None):
+        self.edgar = Edgar(settings.sec_contact.get_secret_value())
+        self.ethereum = EthereumExplorer()
         self.settings = settings
         self.bitcoin = BitcoinExplorer()
         self.crypto = CryptoLibrary(settings.data_dir)

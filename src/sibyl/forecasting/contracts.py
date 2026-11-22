@@ -16,12 +16,12 @@ class TrainForecast(Request):
     symbol: str = Field(default="BTC/USDT", pattern=r"^[A-Z0-9]{1,12}/[A-Z0-9]{1,12}$")
     candles: int = Field(default=720, ge=360, le=5000, strict=True)
     lags: Literal[5, 14, 30] = 14
-    family: Literal["ridge", "mlp", "huber", "arima"] = "ridge"
+    family: Literal["ridge", "mlp", "huber", "arima", "elastic_net"] = "ridge"
     arima_p: Literal[1, 2, 3] = 1
     arima_q: Literal[0, 1, 2] = 1
     arima_season: Literal[0, 7, 14] = 0
     huber_delta: float = Field(default=1.35, ge=0.25, le=5, strict=True)
-    feature_set: Literal["returns", "returns_context"] = "returns"
+    feature_set: Literal["returns", "returns_context", "returns_volume"] = "returns"
     max_horizon: int = Field(default=30, ge=1, le=30, strict=True)
     alpha: float = Field(default=1.0, ge=0.01, le=1000, strict=True)
 

@@ -415,8 +415,9 @@ def test_catalog_separates_import_reconciliation_and_funding_support():
     assert catalog["binance-testnet"]["history_import"] == "binance-id"
     bybit = {row["id"]: row for group in catalog["bybit"]["support"] for row in group["features"]}
     assert bybit["funding"]["status"] == "available"
-    assert bybit["funding"]["label"] == "On-chain withdrawal history"
-    assert "Deposits" in bybit["funding"]["detail"] and "pending" in bybit["funding"]["detail"]
+    assert bybit["funding"]["label"] == "On-chain deposit / withdrawal history"
+    assert "Dated on-chain deposits" in bybit["funding"]["detail"]
+    assert "Undated deposits" in bybit["funding"]["detail"]
     assert (
         bybit["transfers"]["status"] == "available"
         and "Unified Trading Account" in bybit["transfers"]["detail"]

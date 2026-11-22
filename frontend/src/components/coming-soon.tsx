@@ -45,7 +45,7 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'knowledge',
       title: 'Deeper research retrieval',
-      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, additional hosted providers and cited web search. Private documents/news, exact citations and optional local Ollama or consented OpenAI, Mistral or Gemini semantic search are available now.',
+      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, additional hosted providers and cited web search. Private documents/news, exact citations and optional local Ollama or consented OpenAI, Mistral, Gemini or Voyage AI semantic search are available now.',
     },
     {
       module: 'news',
@@ -55,12 +55,12 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'stocks',
       title: 'Public portfolio archive',
-      text: 'Senator portfolio aggregation, disclosure filters, and historical allocation views.',
+      text: 'Public-official portfolios and historical allocation views. SEC issuer filings are available in Equities.',
     },
     {
       module: 'explorer',
       title: 'Beyond Bitcoin',
-      text: 'Additional chains, complete historical network datasets and wallet aggregation. Bitcoin historical block and transaction/address inspection, paginated activity and source-labeled fee/confirmation evidence are available now.',
+      text: 'More networks, full historical datasets and wallet aggregation. Ethereum blocks and receipts and the Bitcoin inspector are available now.',
     },
     {
       module: 'markets',

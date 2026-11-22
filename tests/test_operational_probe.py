@@ -1,12 +1,23 @@
 """Verify remote readiness and the privacy of bounded local API observations."""
 
 import json
+from contextlib import contextmanager
 
 import httpx
 import pytest
+from opentelemetry.trace import (
+    NonRecordingSpan,
+    SpanContext,
+    SpanKind,
+    TraceFlags,
+    get_current_span,
+    use_span,
+)
 
 from sibyl.cli import main
+from sibyl.operations import traces
 from sibyl.operations.probe import health_url, probe
+from sibyl.operations.probe_notifications import WatchNotifications
 from sibyl.operations.traffic import SAMPLE_LIMIT, ApiTraffic
 
 
@@ -124,3 +135,92 @@ def test_watcher_reports_outages_and_recovery_only_on_change(monkeypatch, capsys
     events = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert [event["status"] for event in events] == ["ok", "unreachable", "ok"]
     assert all("observed_at" in event for event in events)
+
+
+def test_readiness_uses_native_w3c_context_without_baggage_or_private_attributes(client, monkeypatch):
+    records = []
+
+    class Recorder:
+        @contextmanager
+        def start_as_current_span(self, name, *, context=None, kind, **kwargs):
+            parent = get_current_span(context).get_span_context()
+            ctx = SpanContext(
+                trace_id=parent.trace_id if parent.is_valid else 321,
+                span_id=987 if kind is SpanKind.CLIENT else 654,
+                is_remote=False,
+                trace_flags=TraceFlags(TraceFlags.SAMPLED),
+            )
+            with use_span(NonRecordingSpan(ctx), end_on_exit=False) as span:
+                records.append((name, kind, parent, ctx))
+                yield span
+
+    monkeypatch.setattr(traces, "tracer", Recorder())
+
+    def transport(request):
+        assert request.headers["traceparent"] == "00-00000000000000000000000000000141-00000000000003db-01"
+        assert "baggage" not in request.headers
+        forwarded = client.get(
+            "/health?unlogged=PRIVATE-PATH",
+            headers={"traceparent": request.headers["traceparent"], "baggage": "secret=PRIVATE-VALUE"},
+        )
+        return httpx.Response(forwarded.status_code, stream=httpx.ByteStream(forwarded.content))
+
+    assert (
+        probe("https://dashboard.example/health", 1, transport=httpx.MockTransport(transport))["status"]
+        == "ok"
+    )
+    probe_span, server_span = records
+    assert probe_span[:2] == ("sibyl.readiness.probe", SpanKind.CLIENT)
+    assert server_span[:2] == ("sibyl.readiness", SpanKind.SERVER)
+    assert server_span[2].is_remote and server_span[2].span_id == probe_span[3].span_id
+    assert server_span[2].trace_id == probe_span[3].trace_id
+    assert "PRIVATE" not in repr(records)
+
+    client.get("/api/v1/system", headers={"traceparent": "invalid", "baggage": "secret=PRIVATE"})
+    assert records[-1][:2] == ("sibyl.api", SpanKind.SERVER)
+    assert not records[-1][2].is_valid
+
+
+def test_webhook_reports_an_outage_and_recovery_once_with_safe_receipts(monkeypatch, capsys):
+    from sibyl.operations import probe as module
+
+    events = []
+    sequence = iter(["timeout", "ok", "unreachable", "timeout", "unreachable", "ok", "ok"])
+    monkeypatch.setattr(module, "probe", lambda *args, **kwargs: {"status": next(sequence), "private": "NO"})
+    monkeypatch.setattr(module, "sleep", lambda _: None)
+
+    def transport(request):
+        assert request.method == "POST" and request.url.host == "sink.example"
+        assert request.headers["Authorization"] == "Bearer TOKEN"
+        data = json.loads(request.content)
+        assert set(data) == {"schema", "id", "service", "event", "observed_at", "status"}
+        events.append(data)
+        if data["event"] == "outage":
+            return httpx.Response(302, headers={"Location": "https://other.example/unsafe"})
+        raise httpx.ReadTimeout("PRIVATE-RESPONSE")
+
+    notifier = WatchNotifications(
+        "https://sink.example/events", "TOKEN", transport=httpx.MockTransport(transport)
+    )
+    with pytest.raises(StopIteration):
+        module.watch("https://dashboard.example/health", 1, 10, notifications=notifier)
+    assert [row["event"] for row in events] == ["outage", "recovery"]
+    assert [row["status"] for row in events] == ["timeout", "ok"]
+    receipts = capsys.readouterr().err
+    assert [json.loads(line)["delivery"] for line in receipts.splitlines()] == ["rejected", "unconfirmed"]
+    assert "PRIVATE" not in receipts and "TOKEN" not in receipts and "example" not in receipts
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://sink.example/events",
+        "https://key@sink.example/events",
+        "https://sink.example/events?token=private",
+        "https://sink.example/events\n",
+        "",
+    ],
+)
+def test_webhook_requires_an_explicit_https_destination(url):
+    with pytest.raises(ValueError, match="HTTPS"):
+        WatchNotifications(url)

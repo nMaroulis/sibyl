@@ -29,6 +29,11 @@ PROVIDERS = {
         "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai",
         "models": ["gemini-embedding-001"],
     },
+    "voyage": {
+        "label": "Voyage AI",
+        "endpoint": "https://api.voyageai.com/v1",
+        "models": ["voyage-finance-2", "voyage-4", "voyage-4-lite"],
+    },
 }
 INSTALL = "uv pip install 'sibyl[openai]'"
 
@@ -53,16 +58,17 @@ def catalog():
 class CheckedClient:
     """Check the SDK receipt before native adaptation, preserving exact passage-to-vector alignment."""
 
-    def __init__(self, client, *, model_aliases=()):
+    def __init__(self, client, *, model_aliases=(), request_options=None):
         self.client = client
         self.embeddings = self
         self.model_aliases = model_aliases
+        self.request_options = request_options or {}
 
     async def create(self, **kwargs):
         # SDK parsing can coerce boolean/string coordinates and indices. Check
         # bounded raw JSON first, then let ProtoLink adapt/order the valid batch.
         async with self.client.embeddings.with_streaming_response.create(
-            **kwargs, encoding_format="float"
+            **kwargs, encoding_format="float", extra_body=self.request_options
         ) as response:
             chunks, size = [], 0
             async for chunk in response.iter_bytes():
@@ -164,5 +170,9 @@ class HostedEmbeddings:
     async def _embed(self, provider, endpoint, model, texts, api_key):
         aliases = (f"models/{model}",) if provider == "gemini" else ()
         async with self.client_factory(api_key, endpoint) as client:
-            embedder = OpenAIEmbedder(CheckedClient(client, model_aliases=aliases), model=model)
+            # Voyage uses null for JSON float arrays. The native SDK's extra body
+            # replaces the OpenAI wire format and explicitly disables truncation.
+            options = {"encoding_format": None, "truncation": False} if provider == "voyage" else None
+            checked = CheckedClient(client, model_aliases=aliases, request_options=options)
+            embedder = OpenAIEmbedder(checked, model=model)
             return await embedder.embed_documents(texts)

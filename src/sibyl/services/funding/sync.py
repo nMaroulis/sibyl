@@ -81,7 +81,7 @@ class FundingSync(ImportWorker):
                         if row.exchange == "binance-testnet" or (row.exchange == "binance" and row.sandbox)
                         else "Kraken imports posted ledger entries for the default wallet. Pending funding requests are outside this source."
                         if row.exchange == "kraken"
-                        else "Bybit imports master-UID on-chain withdrawals and same-UID wallet transfers that enter or leave UNIFIED. Deposits, transfers between UIDs and extra withdrawal tax charges remain outside this import."
+                        else "Bybit imports dated on-chain deposits for the key’s UID, master-UID on-chain withdrawals and same-UID wallet transfers that enter or leave UNIFIED. Undated deposits, off-chain activity, cross-UID transfers and extra withdrawal tax charges are outside this import."
                         if row.exchange == "bybit" and supported(row)
                         else "OKX imports on-chain deposits and withdrawals and posted Funding/Trading wallet transfers. Transfers cover the last 89 days. On-chain records leave Trading wallet impact unresolved."
                         if row.exchange == "okx" and supported(row)

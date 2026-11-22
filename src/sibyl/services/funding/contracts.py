@@ -36,7 +36,7 @@ def scan_streams(connection):
             "binance": ["deposit", "withdrawal"],
             "kraken": ["deposit", "withdrawal", "transfer"],
             "okx": ["deposit", "withdrawal", "transfer"],
-            "bybit": ["withdrawal", "transfer"],
+            "bybit": ["deposit", "withdrawal", "transfer"],
         }.get(connection.exchange, [])
     )
 

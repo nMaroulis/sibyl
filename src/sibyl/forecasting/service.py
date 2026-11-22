@@ -192,7 +192,7 @@ class ForecastModels:
                         for row in artifact["models"]
                     ]
                 }
-                if artifact["parameters"].get("family") in {"mlp", "huber"}
+                if artifact["parameters"].get("family") in {"mlp", "huber", "elastic_net"}
                 else {}
             ),
             "evaluation": [

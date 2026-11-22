@@ -11,7 +11,7 @@ GUIDES = {
         "/research?tab=library",
         (
             "Add a text PDF, UTF-8 text or Markdown source, optionally naming its author, URL and publication date.",
-            "Search uploads and retained news by keyword, then open exact passages/page numbers. Optionally expand Semantic search, choose local Ollama or hosted OpenAI/Mistral, check/save the embedding model and explicitly index passages; choose Semantic or Hybrid next to the query. Check scoped coverage and continue missing batches when needed.",
+            "Search uploads and retained news by keyword, then open exact passages and page numbers. Add a research source to import an article file when you have permission. Choose the applicable rights and provide its title, publisher and original URL. This records your declaration. Optionally expand Semantic search, choose local Ollama or hosted OpenAI, Mistral, Gemini or Voyage AI, check/save the embedding model and explicitly index passages; choose Semantic or Hybrid next to the query. Check scoped coverage and continue missing batches when needed.",
             "Ask Wiki or Reporter to retrieve and cite passages. Reindex uploads from their retained originals; remove a source to delete its original and search entries.",
         ),
         (

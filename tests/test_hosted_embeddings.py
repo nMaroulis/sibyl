@@ -31,10 +31,15 @@ class HostedServer:
         endpoints = {
             "api.openai.com": "/v1/embeddings",
             "api.mistral.ai": "/v1/embeddings",
+            "api.voyageai.com": "/v1/embeddings",
             "generativelanguage.googleapis.com": "/v1beta/openai/embeddings",
         }
         assert request.method == "POST" and request.url.path == endpoints[request.url.host]
-        assert not request.url.query and body["encoding_format"] == "float"
+        assert not request.url.query
+        if request.url.host == "api.voyageai.com":
+            assert body.get("encoding_format") is None and body["truncation"] is False
+        else:
+            assert body["encoding_format"] == "float"
         assert request.headers["authorization"] == "Bearer " + SECRET
         assert "OTHER-PRIVATE-ORG" not in str(request.headers)
         assert "OTHER-PRIVATE-PROJECT" not in str(request.headers)
@@ -109,7 +114,7 @@ def build(owner):
     return owner.semantic.build(IndexBatch(revision=owner.semantic.status()["revision"], kind="document"))
 
 
-@pytest.mark.parametrize("provider", ["openai", "mistral", "gemini"])
+@pytest.mark.parametrize("provider", ["openai", "mistral", "gemini", "voyage"])
 def test_real_sdk_and_native_protolink_preserve_ordered_cited_hosted_vectors(hosted, provider, monkeypatch):
     owner, remote = hosted
     docs = sources(owner)
@@ -163,7 +168,12 @@ def test_passive_startup_catalog_and_keyword_search_never_send_text(hosted):
     owner, remote = hosted
     sources(owner)
     assert not owner.semantic.status()["configured"] and remote.calls == []
-    assert {r["id"] for r in owner.semantic.status()["hosted"]["items"]} == {"openai", "mistral", "gemini"}
+    assert {r["id"] for r in owner.semantic.status()["hosted"]["items"]} == {
+        "openai",
+        "mistral",
+        "gemini",
+        "voyage",
+    }
     setup(owner)
     build(owner)
     before = len(remote.calls)

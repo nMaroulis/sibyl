@@ -113,11 +113,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     def strategy_context(
         symbol: str | None = None, parameters: dict | None = None, job_id: str | None = None
     ) -> dict:
-        """Inspect a selected strategy monitor, study or simulation settings. Omit job_id to follow the
-        page; an empty ID lists current runs. Returns status, observations, events and execution
-        evidence. symbol is BASE/QUOTE; parameters overrides simulation defaults. Never starts a
-        strategy.
-        """
+        """Inspect a selected strategy run, saved study or simulation inputs. Omit job_id for the current page."""
         job_id = selected("job_id", job_id, "")
         symbol = selected("symbol", symbol, "BTC/USDT")
         parameters = selected("parameters", parameters, None)
@@ -207,12 +203,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def strategy_alerts(job_id: str | None = None) -> dict:
-        """Explain a strategy's saved notification rules and its latest journal-related notices.
-
-        Use a known job_id or the selected run; omit both for all strategy rules/notices.
-        Returns at most ten notices and the Strategy alerts link. Notifications do not
-        prove an order was canceled or a position closed.
-        """
+        """List notification rules and recent journal notices for a saved strategy run."""
         job_id = selected("job_id", job_id, "")
         if job_id:
             strategies.journal.job(job_id)
@@ -237,28 +228,15 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def execution_controls() -> dict:
-        """Check whether automatic strategy submissions are halted and inspect the control history.
-
-        Use for the workspace's actual halt state; strategy_help(topic='halt') explains
-        how the user can operate it. Halt does not liquidate holdings or cancel all orders.
-        """
+        """Read the automatic strategy submission halt and its saved control history."""
         return {**strategies.execution.controls.state(), "url": "/strategies?view=monitor"}
 
     def portfolio_limits() -> dict:
-        """Inspect shared strategy budgets, position and pending-buy exposure, daily loss and lock history.
-
-        Returns separate production/test policies, assessment dates, reference prices
-        and per-run contributions. Check freshness before interpreting headroom. Manual
-        trades and unrelated holdings are outside this strategy-only policy.
-        """
+        """Inspect strategy capital and exposure limits, daily losses and lock history for an account."""
         return {**strategies.execution.portfolio_limits.state(), "url": "/strategies?view=monitor"}
 
     def strategy_guide() -> dict:
-        """List implemented strategy rules and explain backtest, paper and exchange execution methods.
-
-        Use to compare supported algorithms or understand fill/cost assumptions and
-        validation methodology. strategy_help provides practical workspace steps.
-        """
+        """Explain supported strategy rules and the backtest, paper and approved exchange modes."""
         return {
             "catalog": CATALOG,
             "execution": "Paper runs use isolated virtual capital. Approved exchange runs use account-bound price-capped GTC limits and native fills; both backend execution flags are required. This agent cannot approve, start or submit orders.",
@@ -268,11 +246,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def backtest_report(run_id: str = "") -> dict:
-        """Inspect a saved single/multi-asset backtest; omit run_id for the page selection.
-
-        Returns pinned inputs/plugin revisions, costs, metrics and ten recent simulated
-        executions/rebalances. Historical research only; cannot rerun or deploy.
-        """
+        """Read saved single- or multi-asset returns, costs and trades. Omit run_id for the selected study."""
         import json
 
         run_id = selected("backtest_id", run_id or None, "")
@@ -317,12 +291,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def exchange_support(exchange: str = "binance") -> dict:
-        """Check implemented spot-trading capabilities and gaps for an exchange catalog ID.
-
-        Use exchange='binance', 'kraken' or another supported ID. Returns the provider's
-        actual support matrix, permission guidance and whether manual execution is
-        enabled on this server. Support does not verify the user's account credentials.
-        """
+        """List implemented spot order types, synchronization and limitations for an exchange catalog ID."""
         provider = next((item for item in provider_catalog()["items"] if item["id"] == exchange), None)
         return {
             "provider": provider,
@@ -333,11 +302,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def adaptive_report(study_id: str | None = None, window: int | None = None) -> dict:
-        """Read a saved Bayesian/distribution study's training trials and independent test evidence.
-        Omit study_id/window for page selections; '' lists recent studies. Windows are one-based.
-        Returns source/version pins, eligibility, metrics and ten test round trips. Never runs or
-        deploys research.
-        """
+        """Read a saved optimization study’s distributions, training trials and independent test evidence."""
         identity = selected("adaptive_study_id", study_id, "")
         window = selected("adaptive_window", window, 1)
         if not identity:
@@ -388,11 +353,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def validation_report(validation_id: str = "", window: int = 1) -> dict:
-        """Read a saved walk-forward study's training rankings, selected parameters and later test
-        metrics. Omit validation_id for the page selection; window is one-based. Includes nested
-        selection, search-plan provenance and ten round trips. Never runs a search or deploys
-        settings.
-        """
+        """Read a saved walk-forward study’s training ranks, selected parameters, later tests and benchmarks."""
         validation_id = selected("validation_id", validation_id or None, "")
         if not validation_id:
             return {"note": "Choose a saved walk-forward study first.", "url": "/strategies"}
@@ -447,14 +408,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def position_ownership(job_id: str | None = None) -> dict:
-        """Explain a strategy’s recorded units, residual dust, last native balance check and reviewed ownership changes.
-
-        Use the selected run or a known job_id. The saved check compares all same-account
-        base-asset owners and shows unassigned units, shortfalls and its observation time.
-        Adoption basis is a user assertion; a handoff carries recorded original basis.
-        Affected source runs flag stale evidence. Repair IDs identify revised basis receipts.
-        Read-only local evidence. Use strategy_help for the repair workflow.
-        """
+        """Explain strategy-owned units, native balance comparisons, dust, handoffs, funding and repair receipts."""
         job_id = selected("job_id", job_id, "")
         if not job_id:
             return {
@@ -467,11 +421,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def exit_readiness(job_id: str | None = None) -> dict:
-        """Explain why an exchange strategy position is or is not ready for a reviewed close.
-
-        Use a known job_id or the selected monitor. Returns retained position ownership,
-        reconciliation requirements, closing blockers and the latest liquidation plan with its child orders.
-        """
+        """Explain a saved strategy position’s readiness for a reviewed close and identify blocking evidence."""
         job_id = selected("job_id", job_id, "")
         if not job_id:
             return {"ready": False, "reason": "Open a specific exchange strategy monitor first."}
@@ -481,14 +431,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def execution_alerts(account_id: str = "") -> dict:
-        """Inspect saved order/fill subscriptions and recent observed execution notifications.
-
-        Filter recent notices by account_id or omit it for the workspace. Imported fills
-        can be historical; cumulative order status and individual executions are separate
-        observations. Subscriptions use existing observations and do not enable polling,
-        place orders or send messages. Guide setup in Alerts → Orders & fills; Telegram
-        delivery is selected separately for each saved rule.
-        """
+        """Read order/fill alert subscriptions and actual notification receipts for the selected account."""
         execution = strategies.execution
         if not execution:
             return {"items": [], "available": False}
@@ -510,11 +453,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         status: Literal["", "active", "terminal"] = "",
         order_id: str = "",
     ) -> dict:
-        """Read retained order/fill evidence for an exact order ID or the selected Trade
-        account/filter. Returns dates, native cumulative quantities, reconciliation and recovery
-        limits. These observations can be stale; Trade's explicit checks refresh them. Never submits
-        or cancels orders.
-        """
+        """Read observed status, fills and remaining quantity for an exact saved order ID or the Trade view."""
         execution = strategies.execution
         if execution is None:
             return {"items": [], "note": "Order monitoring is unavailable.", "url": "/trade?tab=executions"}
@@ -597,13 +536,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def advanced_order_evidence(list_id: str | None = None) -> dict:
-        """Inspect saved native OCO groups and each leg's observed status, trigger, fills and uncertainty.
-
-        Omit list_id to list up to ten saved groups. Use an exact group ID from
-        these results or recorded_orders to inspect its two legs. Returns retained
-        observations only; canceled siblings and partially filled active legs remain
-        separate facts. This tool cannot submit, replace, cancel or refresh orders.
-        """
+        """Read recorded OCO groups, each leg’s triggers, fills, and uncertain states or replacements."""
         execution = strategies.execution
         if execution is None:
             return {"items": [], "url": "/trade?tab=executions"}
@@ -629,10 +562,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             ) from error
 
     def private_order_signals() -> dict:
-        """Read saved Binance/Testnet, Coinbase and Kraken private order signal health and REST wakeup
-        counts. These are optional read hints, not verified fills or completed reconciliation. Setup
-        lives in Settings → Exchanges; this tool cannot subscribe or change work.
-        """
+        """Read opt-in private order signal status and scheduled REST wakeups. A wakeup is not reconciliation."""
         execution = strategies.execution
         owner = getattr(execution.trading, "account_streams", None) if execution else None
         if owner is None:
@@ -641,20 +571,11 @@ def create_agent(services: Services, **runtime) -> Agent:
         return {**result, "accounts": result["accounts"][:8], "url": "/settings?tab=exchanges"}
 
     def trade_help(topic: TradeTopic = "overview") -> dict:
-        """Explain Trade workflows: accounts, spot orders, account history, executions, tracking, cancellation or recovery.
-
-        Choose history for 'How can I see my account history?' or another topic for
-        concrete UI steps and a destination link. overview lists the available topics.
-        This tool provides instructions, not the user's order or balance evidence.
-        """
+        """Explain Trade account selection, order types, history, tracking, cancellation and recovery."""
         return read_guide(TRADE, topic)
 
     def strategy_help(topic: StrategyTopic = "overview") -> dict:
-        """Explain Strategies workflows: backtesting, results/trade markers, validation, paper/exchange runs, monitoring, stopping or halt.
-
-        Choose a topic for concrete steps and relevant limitations, or overview for
-        orientation. Use the report/run tools when asked about a saved result's actual numbers.
-        """
+        """Explain the Strategies workspace, visible tabs, backtest/validation reports and execution controls."""
         return read_guide(STRATEGIES, topic)
 
     agent = Agent(

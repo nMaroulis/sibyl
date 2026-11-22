@@ -16,9 +16,9 @@ from sibyl.blockchain.bitcoin import BLOCK_PAGE, MAX_BLOCK_TRANSACTIONS, MAX_HEI
 
 NAME = "Explorer"
 TAGLINE = "Follow the chain"
-DESCRIPTION = "Inspect Bitcoin transactions, output spends, address activity, fees and confirmations; explain the explorer."
+DESCRIPTION = "Inspect Bitcoin transactions, output spends, address activity, fees and confirmations; read Ethereum block and receipt metadata; explain the explorer."
 SYSTEM_PROMPT = (
-    "Use page_help for explorer controls and navigation. Explain Bitcoin blocks, confirmations "
+    "For Ethereum references, use ethereum_block or ethereum_transaction. Explain exact wei, receipt status and RPC-reported finality. Never send a wallet write. Use page_help for explorer controls and navigation. Explain Bitcoin blocks, confirmations "
     "and chain mechanics. Use bitcoin_lookup for an exact transaction/address or the selected page, "
     "bitcoin_address_history for further confirmed pages or pending transactions, bitcoin_output_spends for output spending evidence, and bitcoin_blocks for block lookup or recent blocks. "
     "Output-spend observations distinguish unspent, pending, confirmed and incomplete details. Unspent does not mean spendable or prove ownership. Never infer unspent from a failed lookup. "
@@ -161,6 +161,17 @@ def create_agent(services: Services, **runtime) -> Agent:
         """
         return read_guide(GUIDES, topic)
 
+    def ethereum_block(reference: str = "finalized") -> dict:
+        """Read Ethereum mainnet block time, gas use and a page of transaction hashes.
+
+        Use a decimal height, exact block hash, latest, or finalized.
+        """
+        return research.ethereum.block(reference, limit=8)
+
+    def ethereum_transaction(transaction_hash: str) -> dict:
+        """Read an exact Ethereum transaction, RPC receipt status and execution gas cost in wei, excluding blob fees."""
+        return research.ethereum.transaction(transaction_hash)
+
     agent = Agent(
         name="sibyl-explorer",
         description=DESCRIPTION,
@@ -171,6 +182,8 @@ def create_agent(services: Services, **runtime) -> Agent:
             bitcoin_blocks,
             Tool.from_callable(blockchain_help, sync_execution="inline"),
             Tool.from_callable(page_help, sync_execution="inline"),
+            ethereum_block,
+            ethereum_transaction,
         ],
         system_prompt=COMMON_PROMPT + SYSTEM_PROMPT,
         **runtime,

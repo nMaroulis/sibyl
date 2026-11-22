@@ -35,7 +35,7 @@ export type ForecastModel = {
     recorded_fit_matches_local: boolean;
   };
   parameters: {
-    family?: 'ridge' | 'mlp' | 'huber' | 'arima';
+    family?: 'ridge' | 'mlp' | 'huber' | 'arima' | 'elastic_net';
     arima_p?: number;
     arima_q?: number;
     arima_season?: 7 | 14;
@@ -45,7 +45,7 @@ export type ForecastModel = {
     lags?: number;
     alpha?: number;
     max_horizon: number;
-    feature_set?: 'returns' | 'returns_context';
+    feature_set?: 'returns' | 'returns_context' | 'returns_volume';
   };
 };
 export type ForecastMetrics = { mae: number; rmse: number; mape_pct: number };
@@ -75,7 +75,7 @@ export type ForecastDetail = {
   nominal_coverage: number;
   notes: string[];
   partitions: Record<string, { start: string; end: string; candles: number }>;
-  training?: (NeuralTraining | HuberTraining)[];
+  training?: (NeuralTraining | HuberTraining | ElasticTraining)[];
   arima_training?: ARIMATraining;
   evaluation: ForecastEvaluation[];
   test_trace: ForecastChartPoint[];
@@ -180,6 +180,17 @@ export type HuberTraining = {
   training_samples: number;
   effective_weight_sum: number;
   minimum_weight: number;
+};
+
+export type ElasticTraining = {
+  family: 'elastic_net';
+  horizon: number;
+  library: string;
+  library_version: string;
+  l1_share: number;
+  penalty_weight: number;
+  active_features: number;
+  feature_count: number;
 };
 
 export type ARIMATraining = {

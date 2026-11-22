@@ -80,11 +80,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     def investment_returns(
         period_id: str | None = None, flow_offset: Annotated[int, Field(ge=0, le=2000)] = 0
     ) -> dict:
-        """Read a saved account return period with external-flow adjustments, boundary valuations and
-        coverage. Omit period_id for the page selection. Returns actual missing-basis/price/flow
-        evidence; incomplete inputs cannot establish investment performance. Never imports or
-        classifies transactions.
-        """
+        """Read a saved external-flow-adjusted period, boundary valuations, return methods and missing evidence."""
         if not performance:
             return {"available": False, "items": []}
         identity = selected("return_period_id", period_id)
@@ -132,12 +128,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             ) from exc
 
     def risk_alerts(rule_id: str = "") -> dict:
-        """Inspect account-risk rules and recent notices to explain what a saved watch observed.
-
-        Supply a known rule_id for its retained valuation evidence and matching notices;
-        omit it to list rules and the latest ten notices. This is recorded alert evidence,
-        not a current account valuation or a newly created watch.
-        """
+        """Read account-risk rules and explain what the latest saved notifications actually observed."""
         with services.store.db() as db:
             rows = db.execute(
                 "SELECT payload,created_at FROM alert_notifications "
@@ -160,13 +151,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def account_history(account_id: str = "", symbol: str = "") -> dict:
-        """Inspect imported spot fills, fees and history-import coverage for an account or market.
-
-        Filter by account_id and an exact symbol such as ETH/USDT, or omit either for
-        a broader selection. Returns up to ten fills plus import progress and provider
-        retention limits. A selected accounting report keeps its own report scope.
-        Use page_help(topic='history') for instructions on starting an import.
-        """
+        """Inspect imported spot fills, reported fees and history coverage for an account or market."""
         if any(
             page_context().get(view)
             for view in ("transfer_view", "funding_view", "performance_view", "account_books_view")
@@ -194,11 +179,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def balance_check_report(account_id: str = "", asset: str = "") -> dict:
-        """Read saved account balance reconciliation, explaining matched assets and missing
-        historical/opening evidence. Omit account_id for the selected account. Differences do not
-        prove a missing deposit or authorize an adjustment. Never refreshes balances or changes the
-        ledger.
-        """
+        """Read a saved wallet balance check, matched quantities, differences and unresolved evidence."""
         if any(
             page_context().get(view)
             for view in ("transfer_view", "funding_view", "performance_view", "account_books_view")
@@ -255,11 +236,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         kind: str = "",
         status: str = "",
     ) -> dict:
-        """Read the selected combined, exchange or individual account view and its valuation evidence.
-        Omit scope to follow the page. Demo/test funds, missing prices and incomplete totals are
-        explicit. Uses active accounts; setup instructions need no account read. Never trades or
-        activates accounts. Set group_id from observed evidence to inspect a split/merged transfer review.
-        """
+        """Read the selected combined, exchange or individual account with exact valuation coverage."""
         if group_id:
             group = transfers.groups.detail(group_id)
             reviewed = group["reviewed"]
@@ -497,11 +474,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def page_help(topic: Topic = "overview") -> dict:
-        """Explain Account workflows: combined accounts, valuation, history, FIFO, funding, transfers or risk alerts.
-
-        Choose a topic for concrete UI steps, limitations and a destination link.
-        Use overview for orientation; use the evidence tools for the user's actual figures.
-        """
+        """Explain Account navigation, combined scopes, balance checks, history, FIFO, funding and risk."""
         return read_guide(GUIDES, topic)
 
     def account_asset_books(
@@ -573,12 +546,7 @@ def create_agent(services: Services, **runtime) -> Agent:
 
     @agent.tool
     def basket_risk(study_id: str | None = None) -> dict:
-        """Read or list saved historical basket-risk studies using study_id/page scope.
-
-        Explain volatility, correlations, variance contributions and historical tails.
-        Disclose weights, coverage, dates and assumptions: these are neither measured
-        account returns nor future-loss guarantees. Setup: page_help(basket_risk).
-        """
+        """Read saved basket volatility, correlations, variance and tail-loss contributions on common historical days."""
         identity = selected("risk_study_id", study_id, "")
         if not identity:
             return {

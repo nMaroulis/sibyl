@@ -25,6 +25,10 @@ type Source = {
   kind: 'document' | 'news';
   publisher: string;
   source_url: string;
+  article_rights?: {
+    basis: 'license' | 'publisher_permission' | 'rights_holder';
+    confirmed_at: string;
+  };
   published_at: string;
   imported_at: string;
   indexed_at: string;
@@ -441,7 +445,13 @@ function DocumentReader({
       ) : (
         <>
           <div className="library-reader-meta">
-            <Badge>{data?.kind === 'news' ? 'Retained news excerpt' : 'Uploaded document'}</Badge>
+            <Badge>
+              {data?.kind === 'news'
+                ? 'Retained news excerpt'
+                : data?.article_rights
+                  ? 'Article · rights declared'
+                  : 'Uploaded document'}
+            </Badge>
             <span>Indexed {date(data?.indexed_at ?? '')}</span>
             {data?.source_url && /^https?:\/\//.test(data.source_url) && (
               <a className="text-link" href={data.source_url} target="_blank" rel="noreferrer">
@@ -521,6 +531,10 @@ function ImportDocument({
   const [publisher, setPublisher] = useState('');
   const [url, setUrl] = useState('');
   const [publishedAt, setPublishedAt] = useState('');
+  const [articleRights, setArticleRights] = useState<
+    'license' | 'publisher_permission' | 'rights_holder' | ''
+  >('');
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
@@ -547,6 +561,9 @@ function ImportDocument({
         publisher,
         source_url: url,
         published_at: publishedAt || null,
+        ...(articleRights
+          ? { article_rights: articleRights, article_rights_confirmed: rightsConfirmed }
+          : {}),
       });
       toast(
         result.duplicate
@@ -576,17 +593,34 @@ function ImportDocument({
           Title
           <input
             value={title}
+            required={!!articleRights}
             maxLength={200}
             placeholder={file?.name || 'Use the filename'}
             onChange={(event) => setTitle(event.target.value)}
           />
         </label>
-        <details>
+        <label>
+          Source type
+          <select
+            value={articleRights}
+            onChange={(event) => {
+              setArticleRights(event.target.value as typeof articleRights);
+              setRightsConfirmed(false);
+            }}
+          >
+            <option value="">Document</option>
+            <option value="license">Article · covered by a licence</option>
+            <option value="publisher_permission">Article · publisher permission</option>
+            <option value="rights_holder">Article · I hold the rights</option>
+          </select>
+        </label>
+        <details open={articleRights ? true : undefined}>
           <summary>Source information</summary>
           <label>
             Publisher or author
             <input
               value={publisher}
+              required={!!articleRights}
               maxLength={160}
               onChange={(event) => setPublisher(event.target.value)}
             />
@@ -596,6 +630,7 @@ function ImportDocument({
             <input
               type="url"
               value={url}
+              required={!!articleRights}
               maxLength={2000}
               onChange={(event) => setUrl(event.target.value)}
             />
@@ -609,6 +644,19 @@ function ImportDocument({
             />
           </label>
         </details>
+        {articleRights && (
+          <label>
+            <span>
+              <input
+                type="checkbox"
+                required
+                checked={rightsConfirmed}
+                onChange={(event) => setRightsConfirmed(event.target.checked)}
+              />{' '}
+              I can store, search and use this article with my selected AI providers.
+            </span>
+          </label>
+        )}
         <p className="footnote">
           Files stay in this workspace. Retrieved passages can be sent to your configured AI
           provider when you ask an agent. Text extraction does not verify a document's claims.
@@ -618,7 +666,11 @@ function ImportDocument({
             {error}
           </p>
         )}
-        <button className="button primary" type="submit" disabled={!file || busy}>
+        <button
+          className="button primary"
+          type="submit"
+          disabled={!file || busy || Boolean(articleRights && !rightsConfirmed)}
+        >
           {busy ? 'Extracting and indexing…' : 'Add document'}
         </button>
       </form>

@@ -26,7 +26,7 @@ export type SemanticStatus = {
 };
 
 export type HostedEmbeddingProvider = {
-  id: 'openai' | 'mistral' | 'gemini';
+  id: 'openai' | 'mistral' | 'gemini' | 'voyage';
   label: string;
   endpoint: string;
   models: string[];

@@ -5,7 +5,7 @@ description: Bounded ingestion, coherent SQLite retrieval, exact citations and n
 
 # Research library contracts
 
-`research_library/` owns ingestion, text extraction and retrieval; its `ResearchLibrary` instance is shared by FastAPI and the existing Wiki/Reporter agent declarations. It does not add an agent router or vector framework. Local embeddings use HTTPX/NumPy; hosted OpenAI/Mistral embeddings use ProtoLink’s native OpenAIEmbedder with the existing optional OpenAI SDK. That SDK is included in development dependencies for offline HTTP contract tests, not required in the base production package.
+`research_library/` owns ingestion, text extraction and retrieval; its `ResearchLibrary` instance is shared by FastAPI and the existing Wiki/Reporter agent declarations. It does not add an agent router or vector framework. Local embeddings use HTTPX/NumPy; reviewed hosted embeddings use ProtoLink’s native OpenAIEmbedder with the existing optional OpenAI SDK. That SDK is included in development dependencies for offline HTTP contract tests, not required in the base production package.
 
 ## Persistence and extraction
 
@@ -40,6 +40,12 @@ The SDK response boundary streams at most 8 MiB of successful JSON and checks ex
 `POST /semantic/hosted-settings` requires explicit strict `remote_consent=true` and a separate SecretStr key, or deliberate reuse of the current **same-provider embedding key**. The probe sends one fixed compatibility phrase, never library content. It stages an immutable opaque `research-embedding:<id>` reference in the existing encrypted Store, then revision-checks/publicizes the safe profile and clears vectors in the library transaction. Failed publication removes the staged secret; replacement/disable removes only the superseded reference after commit. Since the two SQLite files are separate, a process crash can leave encrypted unreferenced material; no cross-database atomic erase is claimed. Existing vault rotation and encrypted workspace backups include the credential. Keys/opaque references are absent from API/agent/evaluation metadata. Source/vector records retain their existing local file protection rather than credential encryption.
 
 Indexing/searches use the accepted profile and private credential snapshot. Existing revision/source checks fence late results; revocation prevents later queued evaluation queries, but cannot unsend an admitted request. Hosted model names and dimensions are observed aliases, never invented weight digests. Same-name weight changes remain undetectable, so retrieval quality/grounding is not asserted. Saved evaluation snapshots include provider and identity caveats with the existing revision/index fingerprints. Tests exercise real SDK HTTP and native ProtoLink calls for both providers, safe single-attempt failures, invalid reply rejection, key privacy/rotation, stale configuration, disable during a batch, and native read-only agent/evaluation integration. Live account/model acceptance and broader semantic calibration remain outstanding.
+
+Voyage AI provides the `voyage-finance-2`, `voyage-4` and `voyage-4-lite` presets through its fixed API origin. Sibyl requests float vectors with truncation disabled and uses the same input representation for passages and queries. The existing raw-response, exact model, batch identity and credential checks apply. [Voyage AI embeddings API](https://docs.voyageai.com/reference/embeddings-api).
+
+## Attributed article imports
+
+The document endpoint also accepts an article rights basis and strict confirmation when a title, publisher and HTTP(S) source URL are present. The original file, exact passages and recorded declaration share the existing private document lifecycle. A duplicate with conflicting attribution or rights requires reviewing the saved source. The app does not verify the declaration or fetch publisher pages from the attribution URL.
 
 ## Retained news
 

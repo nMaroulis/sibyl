@@ -108,6 +108,12 @@ Tests cover future-price perturbations, fixed-window isolation, later-fold admis
 
 Predict, rolling evaluation and bundle validation dispatch from the recorded recipe, never current UI settings. Bundle request, metadata and artifact engines/parameters must agree; offline imports refit that exact recipe. Tests perturb held-out prices, compare prefix feature vectors, retain default behavior, refit bundles and exercise the actual rolling engine. More features do not establish better generalization or calibrated drift detection.
 
+## Observed-volume recipe and elastic net
+
+`returns_volume` adds three same-feed covariates to return lags. They are the latest change in log-transformed volume, its deviation from the previous window’s mean, and trailing change volatility. Training, rolling and inference share the same closed-candle feature function. Each non-ARIMA family has a distinct volume recipe version. Missing, negative and nonfinite volumes reject the recipe.
+
+`elastic_net` uses native statsmodels with a fixed half-L1, half-L2 penalty, training-only target scaling and at most 200 optimizer iterations. Each horizon stores the penalty weight, feature activity and statsmodels version. Successful fits use the same calibration and held-out comparison machinery as ridge. [Statsmodels regularized OLS](https://www.statsmodels.org/stable/generated/statsmodels.regression.linear_model.OLS.fit_regularized.html).
+
 ## Bounded neural family
 
 `TrainForecast.family` accepts `ridge` (default), `mlp` or `huber`. Default ridge parameters and engine identity remain unchanged. `forecasting/families/neural.py` implements one 8-unit tanh layer and scalar standardized cumulative-log-return output in NumPy. Each horizon uses seed `1729 + horizon`, 120 full-batch Adam steps, learning rate 0.02, mean squared standardized-target error plus `alpha/n` weight L2. Inputs and targets are normalized from training rows only; fixed iterations avoid hidden test-driven stopping. JSON stores finite weights, normalization and actual initial/final objective. No executable serialization is accepted.

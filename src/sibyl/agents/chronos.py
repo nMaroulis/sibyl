@@ -22,6 +22,7 @@ DESCRIPTION = (
 SYSTEM_PROMPT = (
     "Read the selected model's numerical family, saved feature recipe and notes. Optional causal trend/volatility context does not establish better future accuracy. "
     "For a Huber model, inspect its retained delta, training-only median/MAD scale, convergence/step cap and downweighted residual counts. Downweighting does not establish that an observation is erroneous and does not protect against extreme feature leverage. A step-limit fit is not converged. Training loss and convergence are not held-out accuracy or future coverage; compare naive/drift test errors and empirical bands. "
+    "Elastic net is a fixed native statsmodels L1/L2 fit. Explain per-horizon feature shrinkage, held-out error and calibration separately. The optional observed-volume recipe uses closed candles from the selected feed through the forecast origin. It requires complete daily volume and provides no evidence of causal effects. "
     "ARIMA optionally adds one weekly AR term on daily returns. Read the saved order, seasonal coefficient, convergence and held-out errors. All horizons share a training-only native fit and a causal 90-close filter. AIC/BIC describe training fit only and need identical input/scaling. "
     "Drift compares training returns with later non-overlapping retained observations, using descriptive Jensen–Shannon divergence. Saved policies can retain candidates through local jobs; candidates never replace a model automatically. Missing recent days are not evidence of stability. "
     "Portable imported models are locally refitted research with unverified source origin, never prospective live evidence. Archived models keep saved evidence and existing outcome monitors; they must be restored for new forecasts. Use page_help models/portability for library controls. "
@@ -158,10 +159,16 @@ def create_agent(services: Services, **runtime) -> Agent:
         trained. Returns the implemented assumptions and calibration limitations.
         """
         return {
-            "method": "Trained direct ridge, fixed-scale Huber, native ARIMA(p,1,q) with optional seven-day or 14-day seasonality or a small tanh neural network; the untrained log-return baseline is separate",
+            "method": "Trained direct ridge, fixed-scale Huber, elastic net, native ARIMA(p,1,q) with optional seven-day or 14-day seasonality or a small tanh neural network; the untrained log-return baseline is separate",
             "training": "Frozen daily input and chronological 60/20/20 train/calibration/test partitions. Ridge/Huber/neural fit per horizon with purged targets. ARIMA fits one return model on the training partition, fixes parameters, then filters exactly 90 observed closes per origin; calibration/test targets crossing their boundaries are purged.",
             "trained_intervals": "Nominal 90% bands from calibration log errors; held-out coverage is reported and future coverage is not guaranteed.",
-            "horizon_days": {"ridge": [1, 30], "huber": [1, 30], "small_neural": [1, 14], "arima": [1, 14]},
+            "horizon_days": {
+                "ridge": [1, 30],
+                "huber": [1, 30],
+                "elastic_net": [1, 30],
+                "small_neural": [1, 14],
+                "arima": [1, 14],
+            },
             "baseline_intervals": "Approximate 95% theoretical bands from constant historical drift/volatility, without empirical calibration.",
             "interpretation": "Neither model's bands are probabilities of profitable trades.",
         }
@@ -200,7 +207,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Inspect a trained model's test errors, naive/drift benchmarks and interval coverage.
 
         Omit model_id to use the Forecasting page selection. Returns dataset/source
-        provenance, version, training/calibration/test dates, metrics, actual Huber/neural/ARIMA training diagnostics and interpretation notes. Huber residual weights are not labels of incorrect market data; inspect convergence separately from held-out skill.
+        provenance, version, training/calibration/test dates, metrics, actual Huber/neural/elastic-net/ARIMA training diagnostics and interpretation notes. Huber residual weights are not labels of incorrect market data; inspect convergence separately from held-out skill.
         """
         identity = selected("forecast_model_id", model_id)
         if not identity or not services.forecasts:

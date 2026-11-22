@@ -152,7 +152,9 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
                     "private_orders",
                     "Private order signals",
                     spec.id in PRIVATE_STREAM_PROVIDERS,
-                    "Opt-in native private order signals wake separately enabled REST status/fill/discovery readers; no direct ledger writes or execution."
+                    "Opt-in regular cash spot signals for production Unified Trading Accounts. Signals wake separately enabled REST status/fill/discovery readers."
+                    if spec.id == "bybit"
+                    else "Opt-in native private order signals wake separately enabled REST status/fill/discovery readers; no direct ledger writes or execution."
                     if spec.id in PRIVATE_STREAM_PROVIDERS
                     else "Private account/order streams are not implemented for this adapter.",
                 ),
@@ -215,11 +217,13 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
                 ),
                 feature(
                     "funding",
-                    "On-chain withdrawal history"
+                    "On-chain deposit / withdrawal history"
+                    if spec.id == "bybit" and funding
+                    else "On-chain withdrawal history"
                     if "withdrawal" in funding and "deposit" not in funding
                     else "Deposit / withdrawal history",
                     "deposit" in funding or "withdrawal" in funding,
-                    "Master-UID on-chain withdrawal reads, native cursors and status/fee rescans. Deposits, off-chain withdrawals, additional tax charges and sub-UID withdrawal reads remain pending; unavailable in optional sandboxes."
+                    "Dated on-chain deposits for the key’s UID and master-UID on-chain withdrawals, with native cursors and recent sync. Undated deposits, off-chain activity, additional withdrawal tax and sub-UID withdrawal reads are outside this production adapter."
                     if spec.id == "bybit" and funding
                     else "On-chain deposits and withdrawals, with saved window splits and funding status rescans. The Trading wallet impact is unresolved; unavailable in sandbox."
                     if spec.id == "okx"

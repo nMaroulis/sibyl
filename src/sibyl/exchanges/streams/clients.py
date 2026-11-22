@@ -7,7 +7,10 @@ complete sequence, balance snapshot or normalized financial ledger.
 
 from abc import ABC, abstractmethod
 
+import ccxt
 import ccxt.pro as pro
+
+from sibyl.exchanges.bybit_orders import regular_spot_order
 
 
 class AccountOrderStream(ABC):
@@ -109,12 +112,37 @@ class OKXOrderStream(CCXTOrderStream):
         )
 
 
+class BybitOrderStream(CCXTOrderStream):
+    """Use Bybit's native Unified Trading Account private stream for regular cash spot orders."""
+
+    provider = "bybit"
+    options = {"defaultSettle": "USDT"}
+
+    async def receive(self):
+        _, unified = await self.native.is_unified_enabled()
+        if unified is not True:
+            raise ccxt.NotSupported("Bybit private order signals require a Unified Trading Account.")
+        return await super().receive()
+
+    def accepts_order(self, row: dict) -> bool:
+        native = row.get("info")
+        return (
+            isinstance(native, dict)
+            and native.get("category") == "spot"
+            and regular_spot_order(native)
+            and isinstance(row.get("id"), str)
+            and bool(row["id"])
+            and native.get("orderId") == row["id"]
+        )
+
+
 CLIENTS = {
     "binance": BinanceOrderStream,
     "binance-testnet": BinanceOrderStream,
     "coinbase": CoinbaseOrderStream,
     "kraken": KrakenOrderStream,
     "okx": OKXOrderStream,
+    "bybit": BybitOrderStream,
 }
 PROVIDERS = frozenset(CLIENTS)
 
@@ -125,6 +153,6 @@ def create_stream(connection, credentials):
         connection.sandbox and connection.exchange not in {"binance", "binance-testnet"}
     ):
         raise ValueError(
-            "Private order streams support Binance production, Binance Testnet, Coinbase Advanced, Kraken and OKX production."
+            "Private order streams support Binance production, Binance Testnet, Coinbase Advanced, Kraken, OKX and Bybit UTA production."
         )
     return CLIENTS[connection.exchange](connection, credentials)

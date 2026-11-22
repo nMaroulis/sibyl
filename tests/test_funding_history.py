@@ -631,3 +631,67 @@ def test_funding_page_budget_stops_before_an_extra_provider_read(funding, monkey
         funding.ledger.write_job(db, current)
     funding.tick()
     assert job(funding)["status"] == "error" and "smaller date range" in job(funding)["error"]
+
+
+def test_bybit_deposit_native_cursor_deduplicates_second_boundaries_and_preserves_fee_uncertainty(
+    monkeypatch,
+):
+    client = create_client("bybit", credentials={"apiKey": "key", "secret": "secret"})
+    native = client._exchange
+    start = START + 511
+    end = start + 29 * DAY + 450
+    key = "90210100300300001"
+    item = {
+        "id": key,
+        "amount": "500.00",
+        "coin": "USDT",
+        "chain": "TRX",
+        "successAt": str(start),
+        "depositFee": "0.10",
+        "status": 3,
+        "txID": "discard-private-tx",
+        "toAddress": "discard-private-address",
+    }
+    boundary = start + 29 * DAY
+    pages = iter(
+        [
+            {"rows": [item, {"successAt": "0"}], "nextPageCursor": "first"},
+            {
+                "rows": [{**item, "id": "3", "successAt": str(boundary), "status": 70011}],
+                "nextPageCursor": "",
+            },
+            {
+                "rows": [{**item, "id": "3", "successAt": str(boundary), "status": 70011}],
+                "nextPageCursor": "",
+            },
+        ]
+    )
+    calls = []
+
+    def read(params):
+        calls.append(params)
+        return {"retCode": 0, "result": next(pages)}
+
+    monkeypatch.setattr(native, "privateGetV5AssetDepositQueryRecord", read)
+    cursor = {"start": start, "end": end}
+    first = fetch_funding_page(native, "bybit", "deposit", cursor)
+    assert not first.caught_up and first.cursor["page"] == "first"
+    assert first.items[0]["native_id"] == key and first.items[0]["status"] == "completed"
+    assert first.items[0]["fee"] == {"currency": None, "cost": "0.10"}
+    assert "private" not in json.dumps(first.items)
+    second = fetch_funding_page(native, "bybit", "deposit", first.cursor)
+    assert not second.caught_up and not second.items and calls[1]["cursor"] == "first"
+    third = fetch_funding_page(native, "bybit", "deposit", second.cursor)
+    assert third.caught_up and third.items[0]["status"] == "failed"
+    assert third.items[0]["timestamp_ms"] == boundary and "posted_ms" not in third.items[0]
+
+
+def test_bybit_deposit_rejects_repeated_native_cursor(monkeypatch):
+    client = create_client("bybit", credentials={"apiKey": "key", "secret": "secret"})
+    monkeypatch.setattr(
+        client._exchange,
+        "privateGetV5AssetDepositQueryRecord",
+        lambda params: {"retCode": 0, "result": {"rows": [{"successAt": "0"}], "nextPageCursor": "same"}},
+    )
+    with pytest.raises(ccxt.ExchangeError, match="did not advance"):
+        fetch_funding_page(client._exchange, "bybit", "deposit", {"start": START, "end": END, "page": "same"})

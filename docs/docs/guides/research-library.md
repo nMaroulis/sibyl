@@ -19,6 +19,10 @@ The library accepts up to 100 uploaded documents, 8 MiB each and 200 MiB of orig
 
 **Synchronize news** updates the search copy from the existing news archive. It does not contact publishers. A background worker also updates this copy. News entries identify their publisher, publication date, original link and retained-excerpt status; they do not imply access to the full article. Expired archive entries disappear from search on the next synchronization.
 
+## Import an article you have permission to use
+
+Choose **Add a research source**, select an article source type, and add the original title, publisher and URL. Upload the PDF, plain text or Markdown file and confirm you can store and use it with your chosen AI providers. Sibyl records your declaration and indexes the uploaded passages. Use the original-source link in the reader to check attribution. Publisher feeds still contribute their retained excerpts separately.
+
 ## Optional local semantic search
 
 Expand **Semantic search** in My research. This has its own embedding-model configuration, independent of your chat model. A paid API key or chat LLM is not required.
@@ -43,7 +47,7 @@ Only loopback HTTP endpoints are supported. In a container, loopback refers to t
 
 In **Research → My research → Semantic search**, choose the **OpenAI** or **Mistral** card. This is independent of the assistant's model/provider. It does not require an active chat LLM.
 
-1. Choose a reviewed embedding preset: OpenAI `text-embedding-3-small`, `text-embedding-3-large` or `text-embedding-ada-002`, Mistral `mistral-embed`, or Google Gemini `gemini-embedding-001` for text.
+1. Choose a reviewed embedding preset: OpenAI `text-embedding-3-small`, `text-embedding-3-large` or `text-embedding-ada-002`, Mistral `mistral-embed`, or Google Gemini `gemini-embedding-001`, or Voyage AI `voyage-finance-2`, `voyage-4` and `voyage-4-lite`.
 2. Enter a separate embedding API key. Sibyl encrypts it in the local backend vault; it never returns the key to the UI or gives it to agents. Chat/environment keys are not borrowed. **API key saved → Edit key** replaces an existing hidden credential.
 3. Read the hosted-processing notice and explicitly allow text processing. **Check & save hosted model** sends only a fixed compatibility phrase; it can incur a small provider charge. A failed check preserves the previous setup/index.
 4. Select which retained sources to index and choose **Index passages**. This sends those text passages to the saved provider. Later **Semantic/Hybrid** searches send query text too, including agent searches and retrieval-quality evaluations. Imports and news synchronization do not automatically embed documents.

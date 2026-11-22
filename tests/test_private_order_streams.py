@@ -213,9 +213,78 @@ async def test_okx_native_login_and_cash_spot_subscription():
         await stream.close()
 
 
-def test_okx_sandbox_cannot_create_a_private_order_stream():
-    with pytest.raises(ValueError, match="OKX production"):
-        create_stream(SimpleNamespace(exchange="okx", sandbox=True), {})
+@pytest.mark.parametrize("exchange", ["okx", "bybit"])
+def test_production_only_provider_cannot_create_a_sandbox_order_stream(exchange):
+    with pytest.raises(ValueError, match="Private order streams support"):
+        create_stream(SimpleNamespace(exchange=exchange, sandbox=True), {})
+
+
+async def test_bybit_native_uta_login_and_ordinary_cash_spot_signals():
+    stream = create_stream(
+        SimpleNamespace(exchange="bybit", sandbox=False),
+        {"apiKey": "BYBIT-KEY", "secret": "BYBIT-SECRET"},
+    )
+    sent = []
+    approved = {"category": "spot", "isLeverage": "0", "orderId": "native-id", "orderType": "Limit"}
+    login = asyncio.get_running_loop().create_future()
+    native = stream.native
+
+    async def markets(*args, **kwargs):
+        return {}
+
+    async def account(*args, **kwargs):
+        return {"retCode": 0, "result": {"unifiedMarginStatus": 5}}
+
+    async def permissions(*args, **kwargs):
+        return {"retCode": 0, "result": {"uta": 1, "unified": 0}}
+
+    def watch(url, message_hash, message, *args, **kwargs):
+        sent.append((url, message_hash, message))
+        login.set_result({"success": True})
+        return login
+
+    async def watch_multiple(url, message_hashes, message, *args, **kwargs):
+        sent.append((url, message_hashes, message))
+        return Cache(
+            [
+                {"id": "native-id", "symbol": "BTC/USDT", "info": row}
+                for row in [
+                    approved,
+                    {**approved, "isLeverage": "1"},
+                    {**approved, "category": "linear"},
+                    {**approved, "stopOrderType": "Stop"},
+                    {**approved, "orderId": "unrelated"},
+                    {**approved, "triggerPrice": "10"},
+                ]
+            ]
+        )
+
+    native.load_markets = markets
+    native.privateGetV5AccountInfo = account
+    native.privateGetV5UserQueryApi = permissions
+    native.client = lambda url: SimpleNamespace(subscriptions={}, reusableFuture=lambda key: login)
+    native.watch = watch
+    native.watch_multiple = watch_multiple
+    native.milliseconds = lambda: 1700000000000
+    try:
+        result = await stream.receive()
+        assert len(result) == 1 and result[0]["id"] == "native-id" and "info" not in result[0]
+        url = "wss://stream.bybit.com/v5/private"
+        expires = "1700000010000"
+        signature = hmac.new(b"BYBIT-SECRET", ("GET/realtime" + expires).encode(), hashlib.sha256).hexdigest()
+        assert sent[0] == (
+            url,
+            "authenticated",
+            {"op": "auth", "args": ["BYBIT-KEY", expires, signature]},
+        )
+        assert sent[1][:2] == (url, ["orders"])
+        assert sent[1][2]["op"] == "subscribe" and sent[1][2]["args"] == ["order"]
+        native.options["enableUnifiedAccount"] = False
+        with pytest.raises(ccxt.NotSupported, match="Unified Trading Account"):
+            await stream.receive()
+        assert len(sent) == 2
+    finally:
+        await stream.close()
 
 
 class QueueStream:

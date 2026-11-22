@@ -72,13 +72,17 @@ export function ForecastWorkspace() {
   const [datasetId, setDatasetId] = useState('');
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [lags, setLags] = useState(14);
-  const [family, setFamily] = useState<'ridge' | 'mlp' | 'huber' | 'arima'>('ridge');
+  const [family, setFamily] = useState<'ridge' | 'mlp' | 'huber' | 'arima' | 'elastic_net'>(
+    'ridge',
+  );
   const [huberDelta, setHuberDelta] = useState(1.35);
   const [arimaP, setArimaP] = useState(1);
   const [arimaQ, setArimaQ] = useState(1);
   const [arimaSeason, setArimaSeason] = useState(0);
   const [alpha, setAlpha] = useState(1);
-  const [featureSet, setFeatureSet] = useState<'returns' | 'returns_context'>('returns');
+  const [featureSet, setFeatureSet] = useState<'returns' | 'returns_context' | 'returns_volume'>(
+    'returns',
+  );
   const [maxHorizon, setMaxHorizon] = useState(30);
   const [candles, setCandles] = useState(720);
   const [output, setOutput] = useState<ForecastOutput>();
@@ -258,6 +262,7 @@ export function ForecastWorkspace() {
               <option value="huber">Huber · robust autoregression</option>
               <option value="arima">ARIMA · returns &amp; innovations</option>
               <option value="mlp">Small neural network · 8 tanh units</option>
+              <option value="elastic_net">Elastic net · L1/L2 regularization</option>
             </select>
           </label>
           {family === 'huber' && (
@@ -324,13 +329,14 @@ export function ForecastWorkspace() {
           ) : (
             <>
               <label>
-                Price features
+                Daily features
                 <select
                   value={featureSet}
                   onChange={(e) => setFeatureSet(e.target.value as typeof featureSet)}
                 >
                   <option value="returns">Daily return lags</option>
                   <option value="returns_context">Returns + trend &amp; volatility</option>
+                  <option value="returns_volume">Returns + observed volume</option>
                 </select>
               </label>
               <label>
@@ -537,7 +543,9 @@ export function ForecastWorkspace() {
                         ·{' '}
                         {report.model.parameters.feature_set === 'returns_context'
                           ? 'Returns + 6 context features'
-                          : 'Return lags only'}
+                          : report.model.parameters.feature_set === 'returns_volume'
+                            ? 'Returns + 3 volume features'
+                            : 'Return lags only'}
                       </>
                     )}
                   </span>
@@ -651,7 +659,9 @@ export function ForecastWorkspace() {
                                           : 'Trained ARIMA model'
                                         : report.model.parameters.family === 'huber'
                                           ? 'Trained Huber model'
-                                          : 'Trained ridge model',
+                                          : report.model.parameters.family === 'elastic_net'
+                                            ? 'Trained elastic-net model'
+                                            : 'Trained ridge model',
                                   naive: 'Naïve · last close',
                                   drift: 'Training-mean log drift',
                                 }[method]

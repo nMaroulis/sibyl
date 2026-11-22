@@ -1,6 +1,6 @@
 # Private order signals
 
-**Settings → Exchanges → Live order updates** offers opt-in private observers for Binance production, Binance Spot Testnet, Coinbase Advanced Trade, Kraken and OKX production. They use native **CCXT Pro**, already included in the locked CCXT dependency. Binance Spot Testnet is the supported test environment.
+**Settings → Exchanges → Live order updates** offers opt-in private observers for Binance production, Binance Spot Testnet, Coinbase Advanced Trade, Kraken, OKX and Bybit UTA production. They use native **CCXT Pro**, already included in the locked CCXT dependency. Binance Spot Testnet is the supported test environment.
 
 These are **read-only order signals backed by existing REST readers**, not a complete account stream, a financial ledger or a WebSocket execution engine. No stream method places, cancels or replaces orders.
 
@@ -35,7 +35,9 @@ Targets, bounded duplicate fingerprints and wakeup acknowledgment are transactio
 | Kraken | Native v2 `executions`, authenticated using Kraken's short-lived REST WebSocket token. |
 | OKX production | Native private `orders` channel with `instType=SPOT` and signed WebSocket login. Only explicitly confirmed cash spot orders with matching native IDs schedule reads. |
 
-Source contracts: [CCXT Pro manual](https://github.com/ccxt/ccxt/wiki/ccxt.pro.manual), [Binance user streams](https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/user-data-stream-requests), [Coinbase WebSocket overview](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/websocket/websocket-overview), [Kraken executions](https://docs.kraken.com/exchange/api-reference/spot-websocket-v2/executions), [OKX orders](https://www.okx.com/docs-v5/en/#order-book-trading-trade-ws-order-channel).
+| Bybit UTA production | Native private `order` stream. Sibyl requires the account’s UTA capability and checks exact regular cash spot scope and matching order IDs before scheduling reads. |
+
+Source contracts: [CCXT Pro manual](https://github.com/ccxt/ccxt/wiki/ccxt.pro.manual), [Binance user streams](https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/user-data-stream-requests), [Coinbase WebSocket overview](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/websocket/websocket-overview), [Kraken executions](https://docs.kraken.com/exchange/api-reference/spot-websocket-v2/executions), [OKX orders](https://www.okx.com/docs-v5/en/#order-book-trading-trade-ws-order-channel), [Bybit orders](https://bybit-exchange.github.io/docs/v5/websocket/private/order).
 
 `exchanges/streams/service.py` owns opt-in state, clients and persistent wakeups; `wakeups.py` schedules existing domain reads. `GET /api/v1/account-streams` is passive; `PUT /api/v1/account-streams/{account_id}` uses an explicit enabled flag and displayed revision. Broker's native `private_order_signals` tool reads compact observations without opening a connection or changing settings.
 

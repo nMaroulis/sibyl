@@ -82,7 +82,7 @@ Trained forecast origins and chart targets use the daily candle close time, when
 
 **Model library → Export portable bundle** downloads a JSON package with the training recipe, recorded numerical evidence and complete immutable daily input. In another workspace, expand **Import a model from another workspace**, choose the file and select **Import & verify**. Sibyl verifies the data and hashes, then fits the recipe locally; uploaded coefficients and scores never become trusted computed results.
 
-Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the supported ridge/Huber/ARIMA/neural engines with each family’s input bounds (at least 360 closed daily candles) and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
+Imports are explicitly **Imported · unverified source**, with a separate imported namespace. They support saved-input forecasts and historical evaluation; they cannot use a claimed provider identity for current-feed forecasting or prospective tracking. Repeated identical imports reuse the saved version. Bundles accept the supported ridge, Huber, elastic-net, ARIMA and neural engines with each family’s input bounds (at least 360 closed daily candles) and at most 16 MiB, within the workspace’s existing model/dataset budgets. They include research prices, not account credentials or assistant models.
 
 **Archive model** hides a version from the default picker and disables new saved forecasts. **Show archived versions → Restore model** brings it back. Saved outputs, evaluations and any existing outcome monitors remain intact; archiving neither deletes storage nor silently pauses monitors. Pause outcome tracking separately if needed. Read-only Chronos help explains these controls and can inspect archived versions on request.
 
@@ -93,6 +93,12 @@ In **Train model → Model settings & assumptions**, choose **Returns + trend & 
 The recipe is shown beside the saved model's engine and parameters. Training-only scaling, purged chronological train/calibration/test boundaries, empirical calibration bands and naive/drift comparisons still apply. Compare recorded held-out results; extra features can make performance worse. This feature recipe is available to ridge, Huber and the small neural model; it is not automatic feature selection.
 
 Exact reruns, rolling studies, saved/current-input forecasts, portable bundle imports and prospective tracking keep that model's feature recipe. Older returns-only artifacts remain supported unchanged. Chronos can explain which recipe a selected model actually uses.
+
+## Try elastic net or observed volume
+
+Choose **Elastic net** to fit a regularized linear model with a fixed balance of L1 and L2 penalties. Its training evidence shows how many coefficients remain active at each horizon. Use the separate held-out scores and observed coverage to judge the forecast.
+
+Choose **Returns + observed volume** under **Daily features** to add three trailing volume features from the same daily candles. The features use completed observations through the forecast origin. Complete reported volume is required. ARIMA retains its price-only recipe.
 
 ## Try a small neural model
 

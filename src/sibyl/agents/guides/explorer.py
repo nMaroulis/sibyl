@@ -4,8 +4,16 @@ from typing import Literal
 
 from sibyl.agents.guides import Guide
 
-Topic = Literal["overview", "blocks", "transactions"]
+Topic = Literal["overview", "blocks", "transactions", "ethereum"]
 GUIDES = {
+    "ethereum": Guide(
+        "Inspect Ethereum blocks and transactions",
+        "/research?tab=explorer&chain=ethereum",
+        (
+            "Choose Ethereum in Research → Block explorer. Enter a block height or hash, or load the RPC-reported finalized head. Page by the exact displayed block hash.",
+            "Enter an exact transaction hash or select Read receipt beside a block transaction. Gas cost excludes separate blob fees. A matching receipt is an observation from the public RPC.",
+        ),
+    ),
     "overview": Guide(
         "Explore Bitcoin blocks",
         "/research?tab=explorer",

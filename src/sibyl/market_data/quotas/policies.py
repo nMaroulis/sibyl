@@ -18,6 +18,24 @@ OKX_PRIVATE_READS = {
     "account/bills-archive": ("Trading bills archive read", "bill_reads", 2, 1.5),
     "account/balance": ("Trading balance read", "balance_reads", 2, 3),
 }
+BYBIT_DOCS = "https://bybit-exchange.github.io/docs/v5/rate-limit"
+BYBIT_PRIVATE_READS = {
+    "v5/asset/deposit/query-record": ("Deposit history read", "deposit_reads", 2, 0.9),
+    "v5/asset/withdraw/query-record": ("Withdrawal history read", "withdrawal_reads", 2, 2),
+    "v5/asset/transfer/query-inter-transfer-list": (
+        "Internal transfer history read",
+        "transfer_reads",
+        2,
+        0.75,
+    ),
+    "v5/account/info": ("Account configuration read", "account_info_reads", 2, 3),
+    "v5/account/wallet-balance": ("Wallet balance read", "balance_reads", 2, 4),
+    "v5/user/query-api": ("API permissions read", "permission_reads", 2, 3),
+    "v5/order/realtime": ("Current order read", "order_reads", 2, 4),
+    "v5/order/history": ("Order history read", "order_history_reads", 2, 4),
+    "v5/execution/list": ("Execution history read", "execution_reads", 2, 4),
+}
+PRIVATE_READS = {"okx": OKX_PRIVATE_READS, "bybit": BYBIT_PRIVATE_READS}
 REVIEWED = "2026-11-09"
 
 
@@ -65,6 +83,15 @@ def describe(provider):
             "coverage": "Public reads and reviewed private account/history POST reads. Trading-engine limits are separate.",
             "identity": "Public budget shared locally; private budgets share identical API keys, without exposing their identity.",
             "headroom": "Public: one request per second. Private: capacity 12, decay 0.30/sec, history cost 4 and other reviewed reads cost 1. Tier is unknown; this is a conservative application estimate.",
+        }
+    if name == "bybit":
+        return {
+            "name": "Bybit V5 private read allowances",
+            "reviewed_at": "2026-11-22",
+            "reference": BYBIT_DOCS,
+            "coverage": "Selected V5 funding, account configuration, permissions, wallet, order and execution GET reads.",
+            "identity": "Local saved profiles share each reviewed allowance per environment. API keys do not identify native UID quotas.",
+            "headroom": "Conservative local limits by endpoint. Provider tier, other clients and current server headroom are unknown.",
         }
     if name == "okx":
         return {
@@ -195,8 +222,8 @@ def request(source, api, method, path, params, partition="shared"):
             if path in history | ordinary:
                 label = "Private history estimate" if path in history else "Private account estimate"
                 charges, reviewed = (("private_counter", 4 if path in history else 1),), True
-    elif name == "okx" and group == "private" and method == "GET" and path in OKX_PRIVATE_READS:
-        label, bucket, _, _ = OKX_PRIVATE_READS[path]
+    elif group == "private" and method == "GET" and path in PRIVATE_READS.get(name, {}):
+        label, bucket, _, _ = PRIVATE_READS[name][path]
         charges, reviewed = ((bucket, 1),), True
     elif name == "coinbase-sandbox" and method == "GET":
         if group == "public" and (path in {"time", "products", "currencies"} or path.startswith("products/")):
@@ -222,10 +249,10 @@ def specifications(call):
             "public_reads": ("Public read allowance", "provider_environment", 1, None, 1),
             "private_counter": ("Conservative private counter", "credential", 12, None, 0.30),
         }
-    if call.family == "okx":
+    if call.family in PRIVATE_READS:
         return {
             key: (label + " allowance", "all_local_profiles", capacity, None, refill)
-            for label, key, capacity, refill in OKX_PRIVATE_READS.values()
+            for label, key, capacity, refill in PRIVATE_READS[call.family].values()
         }
     if call.family == "coinbase-sandbox":
         return {

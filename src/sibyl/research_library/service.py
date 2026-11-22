@@ -91,7 +91,9 @@ class ResearchLibrary:
         finally:
             self.extraction_slots.release()
 
-    def import_document(self, filename, content, *, title="", publisher="", url="", published_at=""):
+    def import_document(
+        self, filename, content, *, title="", publisher="", url="", published_at="", article_rights=None
+    ):
         """Extract before admission, then atomically publish the document and all its passages."""
         pages = self._extract(filename, content)
         digest = hashlib.sha256(content).hexdigest()
@@ -109,13 +111,24 @@ class ResearchLibrary:
             "characters": sum(len(p["text"]) for p in pages),
             "extraction": "pypdf text" if filename.lower().endswith(".pdf") else "UTF-8 text",
         }
+        if article_rights:
+            metadata["article_rights"] = {"basis": article_rights, "confirmed_at": now}
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
             duplicate = db.execute(
-                "SELECT id FROM documents WHERE kind='document' AND fingerprint=?", (digest,)
+                "SELECT id,metadata FROM documents WHERE kind='document' AND fingerprint=?", (digest,)
             ).fetchone()
             if duplicate:
-                identifier, duplicate_found = duplicate[0], True
+                if article_rights:
+                    retained = json.loads(duplicate["metadata"])
+                    if retained.get("article_rights", {}).get("basis") != article_rights or any(
+                        retained.get(key) != metadata[key]
+                        for key in ("title", "publisher", "source_url", "published_at")
+                    ):
+                        raise ValueError(
+                            "These bytes already exist with different attribution or rights. Review the saved source before replacing it."
+                        )
+                identifier, duplicate_found = duplicate["id"], True
             else:
                 count, size = db.execute(
                     "SELECT COUNT(*),COALESCE(SUM(length(original)),0) FROM documents WHERE kind='document'"

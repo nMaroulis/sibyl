@@ -107,7 +107,7 @@ A passed quick check is not a full integrity check, a credential test or proof t
 
 ### Check readiness from another machine
 
-Run `sibyl probe --url https://your-sibyl-host.example` from a process or host that can reach the backend. The command checks `/health` and exits 0 when Sibyl answers with its service identity and version. An outage, unexpected response or optional `--expect-version` mismatch returns a nonzero exit code. Add `--watch --interval 30` to report readiness changes continuously as JSON lines. Run the monitor outside the Sibyl process to observe outages and recovery.
+Run `sibyl probe --url https://your-sibyl-host.example` from a process or host that can reach the backend. The command checks `/health` and exits 0 when Sibyl answers with its service identity and version. An outage, unexpected response or optional `--expect-version` mismatch returns a nonzero exit code. Add `--watch --interval 30` to report readiness changes continuously as JSON lines. Run the monitor outside the Sibyl process to observe outages and recovery. Add `--notify-webhook` and configure its HTTPS destination in the watcher environment to receive transitions. [External watcher setup](../developers/distribution.md#external-watcher-notifications).
 
 ### Read allowances and quota evidence
 

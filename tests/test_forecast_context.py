@@ -80,3 +80,57 @@ def test_context_rolling_study_retains_feature_recipe_and_purges_each_fold(porta
     # Exercise the same pure engine used by saved rolling reports.
     result = evaluate(data, artifact["parameters"], RollingEvaluationRequest(horizon=7))
     assert result["ridge_engine"] == CONTEXT_ENGINE
+
+
+def test_observed_volume_features_use_closed_candles_and_reject_invalid_data():
+    data = candles()[:10]
+    logs = np.log([row["close"] for row in data])
+    for index, row in enumerate(data):
+        row["volume"] = index * 13.0
+    actual = features(logs, 5, "returns_volume", candles=data)
+    first = features(logs[:6], 5, "returns_volume", candles=data[:6])[0]
+    np.testing.assert_array_equal(actual[0], first)
+    v = np.log1p([row["volume"] for row in data[:6]])
+    np.testing.assert_allclose(first[-3:], [v[-1] - v[-2], v[-1] - v[:-1].mean(), np.diff(v).std()])
+    for invalid in (None, True, -1, float("nan")):
+        broken = [{**data[0], "volume": invalid}, *data[1:]]
+        with pytest.raises(ValueError, match="observed volume"):
+            features(logs, 5, "returns_volume", candles=broken)
+
+
+def test_elastic_net_volume_receipt_rolling_replay_and_bundle_use_same_recipe(portable_model):
+    from sibyl.forecasting.contracts import RollingEvaluationRequest
+    from sibyl.forecasting.rolling import evaluate
+
+    service, data, _, body = portable_model
+    recipe = body.model_copy(
+        update={"family": "elastic_net", "feature_set": "returns_volume", "max_horizon": 7}
+    )
+    trained = service.train(recipe)
+    metadata = trained["model"]
+    assert metadata["engine"] == "chronos-elastic-net-volume-1"
+    assert trained["training"][0]["library"] == "statsmodels"
+    assert trained["training"][0]["feature_count"] == recipe.lags + 3
+    bundle = service.bundles.export(metadata["id"])
+    artifact = bundle["model"]["artifact"]
+    assert predict(artifact, data[-90:], 7)["shift"]["features"] == recipe.lags + 3
+    refit = service.bundles.import_bundle(json.dumps(bundle).encode())
+    assert refit["training"] == trained["training"]
+    result = evaluate(data, metadata["parameters"], RollingEvaluationRequest(horizon=7))
+    assert result["ridge_engine"] == metadata["engine"]
+    assert result["folds"][0]["fitted"]["training"]["l1_share"] == 0.5
+
+
+def test_future_volume_does_not_change_elastic_fit_or_calibration():
+    data = candles()
+    for index, row in enumerate(data):
+        row["volume"] = (index % 13) * 20.0 + 50
+    request = TrainForecast(family="elastic_net", feature_set="returns_volume", max_horizon=1)
+    before = train(data, request)
+    changed = deepcopy(data)
+    for row in changed[576:]:
+        row["volume"] *= 5
+    after = train(changed, request)
+    assert before["models"] == after["models"]
+    assert before["models"][0]["training"]["active_features"] > 0
+    assert predict(before, data[-30:], 1)["points"] != predict(before, changed[-30:], 1)["points"]

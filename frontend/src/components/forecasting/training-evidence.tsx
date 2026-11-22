@@ -1,14 +1,57 @@
 import { Badge } from '../ui';
 import { number } from '../../lib/api';
-import type { ForecastDetail, HuberTraining, NeuralTraining } from '../../lib/forecast-types';
+import type {
+  ElasticTraining,
+  ForecastDetail,
+  HuberTraining,
+  NeuralTraining,
+} from '../../lib/forecast-types';
 
 /** Training receipts explain fitting; independent test errors remain the accuracy evidence. */
 export function ForecastTrainingEvidence({ report }: { report: ForecastDetail }) {
   if (report.arima_training) return <ARIMAEvidence report={report} />;
   if (!report.training?.length) return null;
+  const elastic = report.training.filter(
+    (fit): fit is ElasticTraining => fit.family === 'elastic_net',
+  );
+  if (elastic.length) {
+    return (
+      <details className="forecast-advanced">
+        <summary>Elastic-net training evidence</summary>
+        <p className="footnote">
+          Native {elastic[0].library} {elastic[0].library_version} · fixed 50% L1 and 50% L2.
+          Inactive coefficients show shrinkage in this fit.
+        </p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Horizon</th>
+                <th>Active features</th>
+                <th>Penalty weight</th>
+              </tr>
+            </thead>
+            <tbody>
+              {elastic.map((fit) => (
+                <tr key={fit.horizon}>
+                  <td>{fit.horizon}d</td>
+                  <td>
+                    {fit.active_features}/{fit.feature_count}
+                  </td>
+                  <td>{number(fit.penalty_weight, 6)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    );
+  }
   const huber = report.model.parameters.family === 'huber';
   const robust = report.training.filter((fit): fit is HuberTraining => fit.family === 'huber');
-  const neural = report.training.filter((fit): fit is NeuralTraining => fit.family !== 'huber');
+  const neural = report.training.filter(
+    (fit): fit is NeuralTraining => fit.family !== 'huber' && fit.family !== 'elastic_net',
+  );
   return (
     <details className="forecast-advanced">
       <summary>{huber ? 'Huber training evidence' : 'Neural training evidence'}</summary>

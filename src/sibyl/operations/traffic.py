@@ -6,7 +6,10 @@ from threading import Lock
 from time import monotonic
 from uuid import uuid4
 
-from starlette.datastructures import MutableHeaders
+from opentelemetry.trace import SpanKind, Status, StatusCode
+from starlette.datastructures import Headers, MutableHeaders
+
+from sibyl.operations import traces
 
 REQUEST_ID_HEADER = "X-Request-ID"
 SAMPLE_LIMIT = 256
@@ -45,18 +48,39 @@ class ApiTrafficMiddleware:
         self.traffic = traffic
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or not scope["path"].startswith("/api/v1/"):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        api = scope["path"].startswith("/api/v1/")
+        if not api and scope["path"] != "/health":
             await self.app(scope, receive, send)
             return
 
-        request_id = uuid4().hex
+        request_id = uuid4().hex if api else None
         started = monotonic()
-        scope.setdefault("state", {})["request_id"] = request_id
+        if request_id is not None:
+            scope.setdefault("state", {})["request_id"] = request_id
+        # Only trace context crosses the boundary. Do not import baggage or
+        # collect route parameters, request content, or provider diagnostics.
+        parent = traces.propagator.extract(Headers(scope=scope))
+        with traces.tracer.start_as_current_span(
+            "sibyl.api" if api else "sibyl.readiness",
+            context=parent,
+            kind=SpanKind.SERVER,
+            record_exception=False,
+            set_status_on_exception=False,
+        ) as span:
 
-        async def observe(message):
-            if message["type"] == "http.response.start":
-                MutableHeaders(scope=message)[REQUEST_ID_HEADER] = request_id
-                self.traffic.record(message["status"], monotonic() - started)
-            await send(message)
+            async def observe(message):
+                if message["type"] == "http.response.start":
+                    traces.record_response(span, message["status"])
+                    if request_id is not None:
+                        MutableHeaders(scope=message)[REQUEST_ID_HEADER] = request_id
+                        self.traffic.record(message["status"], monotonic() - started)
+                await send(message)
 
-        await self.app(scope, receive, observe)
+            try:
+                await self.app(scope, receive, observe)
+            except Exception:
+                span.set_status(Status(StatusCode.ERROR))
+                raise

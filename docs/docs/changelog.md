@@ -57,6 +57,14 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Bybit imports dated on-chain deposits and rollback revisions, with local allowances for reviewed V5 private reads. Production Unified Trading Accounts can opt into cash spot order signals that wake enabled REST readers.
+- Chronos adds a native elastic-net family and optional trailing observed-volume features for direct forecasting recipes, including rolling evaluation and portable refits.
+- Research Library supports Voyage AI embeddings with separate encrypted credentials and adds attributed article-file imports with an explicit rights declaration.
+- Account basket studies show each asset’s signed contribution to observed tail mean loss.
+- Explorer adds Ethereum mainnet block and transaction lookup with hash-pinned pages, exact wei amounts and source-attributed receipt state.
+- Equities can browse public SEC EDGAR filings by ticker or CIK, filter exact forms, and open historical index ranges and official filing links.
+- The independent readiness watcher can deliver opt-in HTTPS outage/recovery notifications. Manual OpenTelemetry spans correlate probes with API observations using W3C trace context.
+- The GitHub release workflow prepares keyless build provenance for Python distributions and their locked runtime requirements.
 - OKX imports on-chain deposits and withdrawals and posted Funding/Trading transfers. Balance checks apply native net transfer changes and compare Trading wallet cash quantities. Added local read allowances for the reviewed OKX endpoints.
 - Upbit Korea Trade order discovery can scan 30 days through resumable seven-day windows. Upbit Account’s initial fill import uses the same 30-day range. Gemini can scan recent closed orders separately by selected pair, with explicit saturation limits.
 - Bitstamp can recover a terminal or market order when exact status and a recent verified private creation event establish the original submitted terms.

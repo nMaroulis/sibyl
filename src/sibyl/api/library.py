@@ -3,10 +3,11 @@
 import base64
 import binascii
 from datetime import date
+from typing import Literal
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
@@ -39,6 +40,18 @@ class DocumentImport(BaseModel):
     publisher: str = Field(default="", max_length=160)
     source_url: str = Field(default="", max_length=2000)
     published_at: date | None = None
+    article_rights: Literal["license", "publisher_permission", "rights_holder"] | None = None
+    article_rights_confirmed: bool = Field(default=False, strict=True)
+
+    @model_validator(mode="after")
+    def valid_attribution(self):
+        if self.article_rights_confirmed != (self.article_rights is not None):
+            raise ValueError("Confirm the applicable rights before importing an article.")
+        if self.article_rights and not all(
+            value.strip() for value in (self.title, self.publisher, self.source_url)
+        ):
+            raise ValueError("Article imports require a title, publisher and original source URL.")
+        return self
 
     @field_validator("source_url")
     @classmethod
@@ -103,7 +116,7 @@ async def import_document(request: Request, s: S):
     except ValidationError:
         raise HTTPException(
             422,
-            "Invalid document metadata. Choose PDF/text/Markdown, valid source information and a file up to 8 MiB.",
+            "Use PDF/text/Markdown up to 8 MiB. Articles also need a title, publisher, source URL and permission confirmation.",
         ) from None
     try:
         content = base64.b64decode(body.data_base64, validate=True)
@@ -117,6 +130,7 @@ async def import_document(request: Request, s: S):
         publisher=body.publisher,
         url=body.source_url,
         published_at=body.published_at.isoformat() if body.published_at else "",
+        article_rights=body.article_rights,
     )
 
 

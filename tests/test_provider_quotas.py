@@ -11,7 +11,13 @@ import pytest
 import requests
 from test_provider_control import source
 
-from sibyl.exchanges.providers import BinanceClient, CoinbaseSandboxClient, KrakenClient, OKXClient
+from sibyl.exchanges.providers import (
+    BinanceClient,
+    BybitClient,
+    CoinbaseSandboxClient,
+    KrakenClient,
+    OKXClient,
+)
 from sibyl.market_data.control import ProviderControl, ProviderDeferred
 from sibyl.market_data.quotas.budgets import Quotas
 from sibyl.market_data.quotas.policies import request
@@ -552,5 +558,28 @@ def test_actual_okx_funding_get_is_classified_before_native_signing():
         assert observed["reviewed_attempts"] == 1
         assert captured == [{"method": "GET", "path": "/api/v5/asset/withdrawal-history"}]
         assert "FAKE" not in json.dumps(observed)
+    finally:
+        client.close()
+
+
+def test_bybit_native_deposit_read_uses_shared_v5_endpoint_allowance_before_signing():
+    control = ProviderControl(min_interval=0, max_wait=0.01)
+    meta = source("connection:bybit-test", "bybit", "production")
+    client, captured, replies = native(
+        control, BybitClient, meta, {"apiKey": "PRIVATE-BYBIT", "secret": "FAKE-SECRET"}
+    )
+    replies.append({"body": {"retCode": 0, "result": {"rows": [], "nextPageCursor": ""}}})
+    try:
+        invoke(control, meta, client._exchange.privateGetV5AssetDepositQueryRecord, limit=5)
+        assert captured[0]["path"] == "/v5/asset/deposit/query-record"
+        receipt = control.snapshot([meta], meta["id"])["items"][0]["quotas"]
+        assert budgets(receipt)["deposit_reads"]["used"] > 0 and "PRIVATE-BYBIT" not in json.dumps(receipt)
+        deposit = next(b for key, b in control.quotas.buckets.items() if key[-1] == "deposit_reads")
+        deposit.tokens = -20
+        with pytest.raises(ProviderDeferred):
+            invoke(control, meta, client._exchange.privateGetV5AssetDepositQueryRecord)
+        assert len(captured) == 1
+        write = request(meta, "private", "POST", "v5/order/create", {})
+        assert not write.charges and not write.reviewed
     finally:
         client.close()

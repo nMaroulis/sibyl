@@ -8,6 +8,7 @@ from urllib.parse import quote, unquote
 import ccxt
 
 from sibyl.exchanges.base import number
+from sibyl.exchanges.bybit_deposits import deposit_page as bybit_deposit_page
 from sibyl.exchanges.history import _token
 from sibyl.exchanges.okx_funding import onchain_page as okx_onchain_page
 from sibyl.exchanges.okx_funding import transfer_page as okx_transfer_page
@@ -31,7 +32,7 @@ def funding_streams(exchange: str) -> list[str]:
         "binance": ["deposit", "withdrawal"],
         "kraken": ["deposit", "withdrawal", "transfer"],
         "okx": ["deposit", "withdrawal", "transfer"],
-        "bybit": ["withdrawal", "transfer"],
+        "bybit": ["deposit", "withdrawal", "transfer"],
     }.get(exchange, [])
 
 
@@ -108,6 +109,8 @@ def fetch_funding_page(exchange, provider: str, stream: str, cursor: dict, limit
         if stream == "transfer":
             return FundingPage(*okx_transfer_page(exchange, cursor, limit))
         return FundingPage(*okx_onchain_page(exchange, stream, cursor, limit))
+    if provider == "bybit" and stream == "deposit":
+        return FundingPage(*bybit_deposit_page(exchange, cursor, limit))
     if provider == "bybit" and stream == "transfer":
         return _bybit_wallet_transfers(exchange, cursor, limit)
     if provider == "bybit":

@@ -64,7 +64,7 @@ GUIDES = {
         "steps": [
             "Choose an exchange, give the account a label and enter its required credentials in Settings, never in chat.",
             "Inspect the exchange feature tabs before connecting. Use balance/order-history read permissions; add spot trading permission only for supported manual orders or explicitly approved exchange strategies. Keep withdrawals and wallet transfers disabled; restrict IPs where supported.",
-            "Save the connection and use its connection check to verify it. Saving metadata alone is not verification. Optional Live order updates supports Binance/Testnet, Coinbase Advanced, Kraken and OKX production private signals; activate that account and Enable signals. It only wakes separately enabled REST order/fill/discovery readers, preserves pauses and never trades. Signal and scheduling timestamps do not prove reconciliation.",
+            "Save the connection and use its connection check to verify it. Saving metadata alone is not verification. Optional Live order updates supports Binance/Testnet, Coinbase Advanced, Kraken, OKX and Bybit Unified Trading Account production private signals; activate that account and Enable signals. It only wakes separately enabled REST order/fill/discovery readers, preserves pauses and never trades. Signal and scheduling timestamps do not prove reconciliation.",
             "Open Account after activating the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
             "To replace API credentials for the same account, use Saved accounts → Update keys, deactivate the connection, enter a complete key set and confirm the same-account assertion/phrase. Check access and reactivate explicitly. History remains attached to this account ID. Use a new connection for a different account; existing venue orders are not cancelled.",
             "For a preview, explicitly enable Demo. Actual active accounts turn Demo off; test environments remain clearly labeled.",
@@ -127,7 +127,7 @@ GUIDES = {
         "url": "/settings?tab=workspace",
         "steps": [
             "Workspace displays Python process CPU (one busy CPU = 100%), resident memory, threads, database/WAL bytes, free workspace-volume space and process uptime. CPU requires two observations at least five seconds apart; Ollama/browser/other processes are excluded. Provider saved read history exposes latency histogram upper bounds and sample coverage, not external uptime.",
-            "Inspect server configuration, actual background-worker progress/faults, encrypted backup controls and documentation links in Workspace. Use workspace_operations for current diagnostics. Run health check in Workspace explicitly creates a bounded read-only SQLite check and content-free JSON report; download is passive, and reports expire on restart. A quick check does not verify account data or every database invariant. A worker heartbeat does not prove provider readiness or successful trades.",
+            "Inspect server configuration, actual background-worker progress/faults, encrypted backup controls and documentation links in Workspace. Use workspace_operations for current diagnostics. Run health check in Workspace explicitly creates a bounded read-only SQLite check and content-free JSON report; download is passive, and reports expire on restart. A quick check does not verify account data or every database invariant. Run sibyl probe from a separate process or host for HTTP readiness. Watch mode can send configured HTTPS outage and recovery events. A worker heartbeat does not prove provider readiness or successful trades.",
             "Complete release wheels include the dashboard and can run with sibyl --open-browser, without Node.js. Use sibyl --version or --help for launcher options. Public wheel URLs require a published GitHub Release. Homebrew, PyPI and prebuilt registry images remain optional future work; no new repository is needed for the Python package.",
             "Source checkouts keep their repository .sibyl workspace. Installed apps default to per-user application data: macOS Application Support/Sibyl, Windows Local AppData/Sibyl or Linux XDG data/sibyl. Use --data-dir or SIBYL_DATA_DIR to open an existing workspace; no installer moves or deletes it.",
             "Background service in Workspace reads native launchd/systemd/Task Scheduler status. Use sibyl service preview to inspect generated choices, install to register next-login startup without starting now, then start deliberately. Stop disables future login starts until the next start. Reinstall with --replace after stopping when the Python environment moves. No admin/root service or password is requested; Windows requires the user to be logged in and task termination may be abrupt. Uninstall retains workspace/vault/logs. A private --env-file path can be supplied explicitly; shell-only environment values are not copied.",
@@ -156,12 +156,7 @@ def create_agent(services: Services, **runtime) -> Agent:
     """
 
     def connection_status() -> dict:
-        """Inspect configured accounts, active/Demo flags, model setup and history-import progress.
-
-        Use to understand the workspace's saved setup or missing configuration. This
-        metadata does not verify exchange connectivity or model-provider availability.
-        settings_guide and exchange_setup provide instructions without needing account details.
-        """
+        """Read configured/active/Demo accounts, model readiness and retained history-import progress."""
         return {
             "connections": [item.model_dump(mode="json") for item in services.store.connections()],
             "mode": services.settings.mode,
@@ -174,11 +169,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def connection_alerts() -> dict:
-        """Explain configured connection alerts and the last ten recorded read-failure/recovery notices.
-
-        Returns saved rules, observed transport notices and the Connections alerts link.
-        These observations do not establish continuous uptime or current credential validity.
-        """
+        """Read configured connection alert rules and their ten most recent observed failure/recovery notices."""
         with services.store.db() as db:
             rows = db.execute(
                 "SELECT payload,created_at FROM alert_notifications "
@@ -195,14 +186,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         }
 
     def source_health(source_id: str = "") -> dict:
-        """Explain observed connection reads, queued work, read allowances and reported quota evidence.
-
-        Supply a known source ID such as binance, kraken or connection:<saved ID>;
-        omit it for up to twelve default/observed sources. Returns observation times,
-        transport outcomes, application budget estimates, provider counters and
-        unreviewed-cost gaps. These do not establish current credentials, account
-        tier, complete quota coverage or external uptime. No provider check is run.
-        """
+        """Read connection and source health, queued work and reported rate limits for an account or provider."""
         report = services.market.provider_health(source_id or None)
         rows = report["items"]
         if not source_id:
@@ -234,20 +218,11 @@ def create_agent(services: Services, **runtime) -> Agent:
             "workspace",
         ] = "overview",
     ) -> dict:
-        """Explain setup steps and controls for a settings section. overview lists sections; choose
-        exchanges, models, news, market, messaging, alerts, strategies or workspace. Returns
-        practical instructions and exact in-app links. Never changes settings or needs credentials
-        in chat.
-        """
+        """Explain an existing Settings section, its steps, available choices and destination link."""
         return {"section": section, **GUIDES[section], "sections": list(GUIDES)}
 
     def exchange_setup(exchange: str = "binance", feature_details: bool = False) -> dict:
-        """Explain how to connect a particular exchange and which features Sibyl implements for it.
-
-        Supply the catalog exchange ID, such as binance, kraken, okx or demo. Returns
-        required form fields, feature statuses, local key-storage details,
-        environment labels and setup steps. Set feature_details for each feature's full limitations. Never paste credentials in chat.
-        """
+        """Explain how to connect one exchange, its credential fields and the capabilities Sibyl implements."""
         if exchange not in CATALOG:
             return {"error": "Choose a supported exchange.", "exchanges": list(CATALOG)}
         spec = exchange_spec(exchange)
@@ -307,21 +282,12 @@ def create_agent(services: Services, **runtime) -> Agent:
 
     @agent.tool
     def notification_history() -> dict:
-        """Inspect the saved inbox retention policy, eligible counts and recent cleanup receipts.
-
-        Explains which old read notices are eligible, and which unread or unfinished
-        delivery records are protected. Includes the export/retention controls link.
-        This tool cannot acknowledge, export or delete notices or change the policy.
-        """
+        """Read workspace notification retention, eligible counts and recent cleanup receipts."""
         return {**NotificationHistory.read_status(services.store), "url": "/alerts?tab=inbox"}
 
     @agent.tool
     def workspace_operations() -> dict:
-        """Inspect worker progress, Python process resources, the last explicit database check and
-        local job outcomes. Explain encrypted backup/restore controls. Counts do not prove provider
-        readiness or completed trades. Never restarts workers, decrypts archives or asks for
-        passphrases in chat.
-        """
+        """Read worker progress, process resources, database check and local backup availability."""
         return {
             "health": services.workers.snapshot() if services.workers else {"available": False},
             "last_health_report": services.workers.diagnostics.last() if services.workers else None,
@@ -341,14 +307,7 @@ def create_agent(services: Services, **runtime) -> Agent:
 
     @agent.tool
     def background_service_status() -> dict:
-        """Inspect the current user's installed OS service, observed process state and CLI controls.
-
-        Use for startup-at-login, installation, start/stop, log locations or moved
-        Python environments. Returns verified service ownership and workspace matching.
-        Check HTTP readiness separately with sibyl probe from a separate process or host.
-        OS state does not establish worker progress. Changes require
-        explicit local CLI commands; this tool cannot manage a service.
-        """
+        """Read installed user-service status and explain the platform’s supported CLI controls."""
         from sibyl.installation.services.manager import service_status
 
         return {
@@ -358,11 +317,7 @@ def create_agent(services: Services, **runtime) -> Agent:
 
     @agent.tool
     def worker_incidents() -> dict:
-        """Read five recent worker stalls, observer freshness and sample gaps. First detection is
-        sampled; recovery requires a later successful iteration. Observation ending leaves recovery
-        unknown. Local incidents do not establish host/exchange uptime or authorize worker
-        restart/cancellation.
-        """
+        """Read recent worker stalls, observer freshness and confirmed recovery or observation gaps."""
         if not services.workers:
             return {"available": False}
         result = services.workers.watchdog.snapshot()
@@ -376,11 +331,7 @@ def create_agent(services: Services, **runtime) -> Agent:
 
     @agent.tool
     def telegram_delivery_review() -> dict:
-        """Inspect app-origin notification outcomes by channel and Telegram reply outcomes, without private text or targets.
-
-        Explain Settings → Messaging review controls: unsent withdrawal and separate
-        user acknowledgments. Reviews never resend or replace native confirmation.
-        """
+        """Read private message delivery outcomes by channel without message text or recipient identities."""
         return {
             **delivery_evidence(services.store),
             "reply_items": reply_evidence(services.store),
