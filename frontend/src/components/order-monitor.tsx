@@ -14,6 +14,7 @@ export type ManagedOrder = {
   id: string;
   request: Omit<OrderInput, 'quantity'> & {
     quantity: number | null;
+    quote_budget?: number | null;
     connection_id: string;
     order_type?: string;
     limit_price?: number;
@@ -299,7 +300,9 @@ export function OrderMonitor({ active = true }: { active?: boolean }) {
                       <small>Trigger {display(order.request.trigger_price)}</small>
                     )}
                     <small className="table-subline">
-                      {display(order.request.quantity)}
+                      {order.request.quote_budget != null
+                        ? `${display(order.request.quote_budget)} ${order.request.symbol.split('/')[1]} budget`
+                        : display(order.request.quantity)}
                       {order.request.order_type !== 'market'
                         ? ` @ ${display(order.request.limit_price ?? order.price)}${order.origin === 'imported' ? (order.time_in_force ? ` · ${order.time_in_force}` : '') : ' · GTC'}`
                         : ''}

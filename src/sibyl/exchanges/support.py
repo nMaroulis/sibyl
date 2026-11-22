@@ -16,7 +16,7 @@ from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDER
 MARKET_NOTES = {
     "bitmart": " Spot market sells use the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
     "htx": " Market sells use the verified spot wallet and the pair's native base limits. Market buys require a quote-currency budget. GTC limit buys are available.",
-    "bitget": " Classic spot sells use the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
+    "bitget": " Classic spot only.",
     "gate": " IOC sells are sized in the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
     "coinex": " Both sides explicitly use the native base currency. The pair must be online and allow API trading.",
     "mexc": " Exact-pair rules must allow the selected side and market order type. Both sides use a base quantity.",
@@ -106,7 +106,11 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
                     if spec.market_sell_only
                     else "Market buy & sell",
                     market_orders,
-                    "Reviewed base-asset quantity; preview and explicit confirmation required."
+                    (
+                        "Buys use the entered quote budget. Sells use the entered base quantity."
+                        if spec.market_buy_budget
+                        else "Reviewed base-asset quantity with preview and explicit confirmation."
+                    )
                     + MARKET_NOTES.get(spec.id, "")
                     if market_orders
                     else "Native market orders are unavailable through the installed Gemini adapter; GTC limits are available."

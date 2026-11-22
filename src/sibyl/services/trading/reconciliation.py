@@ -51,6 +51,7 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
         cost_known = all(fill["notional"] is not None for fill in fills)
         cost = sum((Decimal(str(fill["notional"])) for fill in fills), Decimal(0)) if cost_known else None
         native_cost = intent.get("cost")
+        budget = intent["request"].get("quote_budget")
         cost_difference = (
             cost - Decimal(str(native_cost)) if cost is not None and native_cost is not None else None
         )
@@ -71,7 +72,11 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
             status = "limit_reached"
         elif any(trade_breaks[kind] for kind in BREAK_REVIEW):
             status = "trade_break_review"
-        elif identity_conflict or (difference is not None and difference > tolerance):
+        elif (
+            identity_conflict
+            or (difference is not None and difference > tolerance)
+            or (budget is not None and cost is not None and cost > Decimal(str(budget)))
+        ):
             status = "mismatch"
         elif difference is not None and difference < -tolerance:
             status = "missing_fills"
@@ -79,6 +84,8 @@ def summarize(intent: dict, fills: list[dict], job: dict | None) -> dict:
             status = "mismatch"
         elif expected is None:
             status = "unverified" if fills or job else "not_checked"
+        elif budget is not None and fills and cost is None and native_cost is None:
+            status = "unverified"
         elif unknown_fees:
             status = "fees_missing"
         elif intent["status"] not in TERMINAL or (job and not job.get("caught_up")):

@@ -57,6 +57,8 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Poloniex and Upbit Korea support reviewed spot market buys and sells, with current pair checks and client-ID recovery. Poloniex orders use unborrowed spot funds.
+- Trade supports explicit quote-budget market buys on Bitget Classic, Poloniex and Upbit Korea. Review, recovery and order history keep the original budget separate from base fills and actual execution cost.
 - BitMart supports reviewed spot market sells in the entered base quantity. Sibyl checks the current increment and pair limits and can recover the submission through its saved client ID, original size, and spot scope.
 - HTX supports reviewed base-sized spot market sells. Sibyl checks current pair permissions and native sell-size limits and recovers uncertain submissions by the saved client ID on the verified spot wallet.
 - Bitget Classic supports reviewed spot market sells in the entered base quantity. An uncertain submission can recover using its saved client ID and the original quantity from exact order details. Fill quantities and fees stay separate from the original size.

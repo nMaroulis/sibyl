@@ -12,10 +12,10 @@ Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native 
 | Gemini                                                                                         | No                         | Yes                   | Yes                  | REST native order ID                |
 | Bitfinex, Phemex, Crypto.com Exchange, MEXC, CoinEx                                                           | Yes · base quantity        | Yes                   | Yes                  | Cash scope and native client ID     |
 | Gate | Sell · base quantity · IOC | Yes | Yes | Cash wallet and native client text |
-| Bitget Classic | Sell · base quantity | Yes | Yes | Classic v2 spot and native clientOid |
+| Bitget Classic | Buy · quote budget / sell · base quantity | Yes | Yes | Classic v2 spot and native clientOid |
 | HTX | Sell · base quantity | Yes | Yes | Verified spot wallet and native client ID |
 | BitMart | Sell · base quantity | Yes | Yes | Spot v2 submission and v4 lookup |
-| Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
+| Poloniex, Upbit Korea | Buy · quote budget / sell · base quantity | Yes | Yes | Cash IOC on Poloniex, current account/pair rules on Upbit |
 
 Native account acceptance testing remains outstanding. Contract tests use controlled transports; they do not establish production account permissions, regional availability or authenticated exchange acceptance. Coinbase Advanced and Coinbase Exchange Sandbox use different APIs.
 
@@ -33,11 +33,15 @@ CoinEx sets `ccy` to the pair’s base currency on both sides of a native market
 
 Gate sends a cash spot IOC market sell with the reviewed base `amount` and persisted native `text`. Preview and confirmation check current exact-pair sell eligibility, base precision and native base limits. Preview also checks the reference notional against the reported quote limits. Market buys require an explicit quote-currency budget and remain pending. [Gate spot order and currency-pair contracts](https://www.gate.com/docs/developers/apiv4/en/spot/).
 
-Bitget Classic submits spot market sells with native base `size` and the saved `clientOid`. Preview and confirmation check current pair status and base precision. The preview compares the reference notional with published USDT bounds on USDT pairs. Bitget applies its native value limits at execution. The placement acknowledgment confirms identity, while exact order details provide cumulative fills. Market buys require an explicit quote budget. [Bitget Classic trade](https://www.bitget.com/docs/catalog/classic-spot-trade/classic-spot-trade) · [Bitget symbol rules](https://www.bitget.com/legacy-docs/classic/spot/market/Get-Symbols).
+Bitget Classic sends a quote budget for buys and base quantity for sells in native `size`, with the saved `clientOid`. Review and confirmation check current pair status and the applicable precision. Published USDT value bounds are applied in the preview for USDT pairs. Bitget applies its native value limits at execution. The placement acknowledgment confirms identity, while exact order details provide cumulative fills. [Bitget Classic trade](https://www.bitget.com/docs/catalog/classic-spot-trade/classic-spot-trade) · [Bitget symbol rules](https://www.bitget.com/legacy-docs/classic/spot/market/Get-Symbols).
 
 HTX sends a native `sell-market` with a base amount, exact spot account ID, and `spot-api` source. Review and confirmation check the current pair, API-trading flag, base precision and base market-sell bounds. The placement acknowledgment supplies the native order ID. Order details and exact executions supply status, fills and fees. [HTX market-symbol settings](https://huobiapi.github.io/docs/spot/v1/en/#get-market-symbols-setting) · [HTX spot placement](https://huobiapi.github.io/docs/spot/v1/en/#place-a-new-order).
 
 BitMart submits a cash spot market sell with native base `size` and the saved `client_order_id`. Review checks the published base minimum, current increment and indicative quote value using the sell minimum. Confirmation rechecks the pair’s trading state and base sizing. The placement acknowledgment supplies the native ID, while exact v4 order details and execution reads supply fills and fees. Pair metadata reports listing status. BitMart applies account and API trading eligibility at submission. [BitMart pair details](https://developer-pro.bitmart.com/en/spot/#get-trading-pair-details-v1) · [BitMart spot placement](https://developer-pro.bitmart.com/en/spot/#new-order-v2-signed).
+
+Poloniex submits cash IOC markets with `allowBorrow=false`. Buys use `amount` in quote units. Sells use `quantity` in base units. Upbit Korea reads the authenticated pair policy and uses `ord_type=price` with a quote `price` for buys or `ord_type=market` with base `volume` for sells. [Poloniex orders](https://api-docs.poloniex.com/spot/api/private/order) · [Upbit order placement](https://docs.upbit.com/kr/reference/new-order) · [Upbit pair policy](https://docs.upbit.com/kr/reference/available-order-information).
+
+A quote-sized market-buy request supplies `quote_budget` instead of `quantity`. The budget persists with the reviewed intent and limits cumulative execution cost, excluding fees. Order history labels the budget separately from executed base size and native fills.
 
 ## Native advanced orders
 

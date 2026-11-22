@@ -70,6 +70,8 @@ def normalized_order(row: dict) -> dict:
         if row.get(key) is not None and (value is None or value < 0):
             raise ValueError("Invalid native order values.")
         result[key] = value if key not in {"amount", "price", "average", "timestamp"} or value else None
+    if (budget := number(row.get("quote_budget"))) is not None and budget > 0:
+        result["quote_budget"] = budget
     if result["timestamp"] is not None and result["timestamp"] > time.time() * 1000 + 300_000:
         raise ValueError("Invalid native creation time.")
     amount, filled, remaining = (result[key] for key in ("amount", "filled", "remaining"))
@@ -310,6 +312,7 @@ class OrderDiscovery:
                 "symbol": order["symbol"],
                 "side": order["side"],
                 "quantity": order["amount"],
+                **({"quote_budget": order["quote_budget"]} if "quote_budget" in order else {}),
                 "order_type": order["type"],
                 "limit_price": order["price"] if order["type"] == "limit" else None,
             },

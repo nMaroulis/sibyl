@@ -397,6 +397,8 @@ class CCXTClient(ExchangeClient):
         price: float | None = None,
     ) -> dict:
         """Submit once for reviewed production providers and dedicated test environments."""
+        if type == "market" and side == "buy" and self.spec.market_buy_budget:
+            raise ccxt.NotSupported("This market buy requires an explicit quote budget.")
         if not self.spec.supports_order(type, side):
             raise ccxt.NotSupported(f"{type.title()} orders are not enabled for this provider.")
         if (
@@ -422,6 +424,17 @@ class CCXTClient(ExchangeClient):
                 else self._submit_market_order(symbol, side, amount, params["clientOrderId"])
             )
             return self._order(result)
+
+    def create_market_buy(self, symbol: str, budget: float, client_order_id: str) -> dict:
+        """Use the dedicated quote-budget path; the base-quantity API never converts units."""
+        if not self.spec.market_buy_budget:
+            return super().create_market_buy(symbol, budget, client_order_id)
+        if number(budget) is None or budget <= 0 or not client_order_id:
+            raise ValueError("A positive finite quote budget and client ID are required.")
+        with self.lock:
+            self._require("createOrder", private=True)
+            self.market(symbol)
+            return self._order(self._submit_market_buy(symbol, budget, client_order_id))
 
     def _submit_limit_order(
         self, symbol: str, side: str, amount: float, price: float, client_order_id: str

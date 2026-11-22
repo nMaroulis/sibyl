@@ -224,4 +224,5 @@ def test_settings_only_enable_implemented_upbit_reads():
     for name in ("automated",):
         assert features[name]["status"] == "pending"
     assert features["history_import"]["status"] == features["fill_reconciliation"]["status"] == "available"
-    assert not provider["market_orders"]
+    assert provider["market_order_sides"] == ["buy", "sell"]
+    assert provider["market_buy_budget"]

@@ -464,14 +464,8 @@ def test_native_limit_and_cancel_adapter_contract(monkeypatch, identity):
     assert client.cancel_order("native", "BTC/USDT")["status"] == "canceled"
 
 
-@pytest.mark.parametrize(
-    "identity",
-    [
-        "poloniex",
-        "upbit",
-    ],
-)
-def test_limit_only_provider_keeps_market_execution_disabled(monkeypatch, identity):
+def test_limit_only_provider_keeps_market_execution_disabled(monkeypatch):
+    identity = "gemini"
     client = fake_client(monkeypatch, identity)
     assert client.spec.limit_only and not client.spec.market_orders
     with pytest.raises(ccxt.NotSupported):

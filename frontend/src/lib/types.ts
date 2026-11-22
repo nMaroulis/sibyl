@@ -911,6 +911,7 @@ export type ExchangeProvider = {
   sandbox: boolean;
   market_orders: boolean;
   market_order_sides?: Array<'buy' | 'sell'>;
+  market_buy_budget?: boolean;
   limit_orders: boolean;
   cancel_orders: boolean;
   verification: string;

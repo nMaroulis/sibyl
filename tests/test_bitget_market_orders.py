@@ -217,7 +217,7 @@ def test_confirmation_revalidates_pair_before_any_write(bitget, monkeypatch, fau
 
 @pytest.mark.parametrize(
     "change",
-    [{"side": "buy"}, {"orderSource": "spot_trader_sell"}, {"quoteCoin": "USDC"}, {"clientOid": "wrong"}],
+    [{"orderSource": "spot_trader_sell"}, {"quoteCoin": "USDC"}, {"clientOid": "wrong"}],
 )
 def test_recovery_refuses_other_order_types_origin_units_or_identity(bitget, monkeypatch, change):
     _, _, adapter = bitget
@@ -244,7 +244,8 @@ def test_catalog_offers_market_sells_and_rejects_quote_budget_buys_before_io(bit
     owner, account, adapter = bitget
     monkeypatch.setattr(adapter._exchange, "fetch2", lambda *args, **kwargs: pytest.fail("Unexpected I/O"))
     provider = next(row for row in provider_catalog()["items"] if row["id"] == "bitget")
-    assert provider["market_order_sides"] == ["sell"] and provider["limit_orders"]
+    assert provider["market_order_sides"] == ["buy", "sell"] and provider["limit_orders"]
+    assert provider["market_buy_budget"]
     with pytest.raises(ValueError, match="quote-currency budget"):
         owner.trading.preview(market_request(account, side="buy"))
     assert owner.trading.preview(order_request(account))["request"]["order_type"] == "limit"

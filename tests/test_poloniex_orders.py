@@ -235,4 +235,5 @@ def test_settings_expose_only_the_implemented_cash_order_reads():
         assert features[name]["status"] == "available"
     for name in ("automated",):
         assert features[name]["status"] == "pending"
-    assert not provider["market_orders"]
+    assert provider["market_order_sides"] == ["buy", "sell"]
+    assert provider["market_buy_budget"]

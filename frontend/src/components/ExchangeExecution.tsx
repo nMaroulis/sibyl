@@ -30,6 +30,7 @@ export function ExchangeExecution({
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('0.001');
+  const [quoteBudget, setQuoteBudget] = useState('');
   const [requestedOrderType, setOrderType] = useState<
     'market' | 'limit' | 'stop_loss_limit' | 'take_profit_limit'
   >(demo ? 'limit' : 'market');
@@ -56,6 +57,8 @@ export function ExchangeExecution({
       ['stop_loss_limit', 'take_profit_limit'].includes(requestedOrderType))
       ? 'limit'
       : requestedOrderType;
+  const quoteSized =
+    orderType === 'market' && side === 'buy' && !!selectedProvider?.market_buy_budget;
   const reset = () => {
     setIntent(undefined);
     setConfirmation('');
@@ -72,7 +75,9 @@ export function ExchangeExecution({
               connection_id: accountId,
               symbol: symbol.trim().toUpperCase(),
               side,
-              quantity: Number(quantity),
+              ...(quoteSized
+                ? { quote_budget: Number(quoteBudget) }
+                : { quantity: Number(quantity) }),
               order_type: orderType,
               ...(orderType !== 'market' ? { limit_price: Number(limitPrice) } : {}),
               ...(['stop_loss_limit', 'take_profit_limit'].includes(orderType)
@@ -141,6 +146,7 @@ export function ExchangeExecution({
                         setOrderType('limit');
                       }
                       setConnectionId(nextId);
+                      setQuoteBudget('');
                       reset();
                     }}
                   >
@@ -161,6 +167,7 @@ export function ExchangeExecution({
                       disabled={busy}
                       onChange={(event) => {
                         setSymbol(event.target.value);
+                        setQuoteBudget('');
                         reset();
                       }}
                       placeholder="BTC/USDT"
@@ -215,16 +222,18 @@ export function ExchangeExecution({
                     </select>
                   </label>
                   <label>
-                    Base asset quantity
+                    {quoteSized
+                      ? `Quote budget · ${symbol.split('/')[1] || 'quote asset'}`
+                      : 'Base asset quantity'}
                     <input
                       required
                       type="number"
                       min="0.00000001"
                       step="any"
-                      value={quantity}
+                      value={quoteSized ? quoteBudget : quantity}
                       disabled={busy}
                       onChange={(event) => {
-                        setQuantity(event.target.value);
+                        (quoteSized ? setQuoteBudget : setQuantity)(event.target.value);
                         reset();
                       }}
                     />
@@ -292,7 +301,11 @@ export function ExchangeExecution({
                       </div>
                       <div>
                         <span>
-                          {orderType !== 'market' ? 'Order notional' : 'Reference notional'}
+                          {quoteSized
+                            ? 'Reviewed quote budget'
+                            : orderType !== 'market'
+                              ? 'Order notional'
+                              : 'Reference notional'}
                         </span>
                         <strong>
                           {intent.notional == null ? '—' : number(intent.notional, 8)}{' '}
@@ -306,7 +319,9 @@ export function ExchangeExecution({
                         Review expires at {new Date(intent.expires_at).toLocaleTimeString()}.{' '}
                         {orderType !== 'market'
                           ? 'Once submitted, GTC remains open until filled or canceled.'
-                          : 'Market fills may differ from this quote.'}
+                          : quoteSized
+                            ? 'The budget covers the order amount. Exchange fees are separate.'
+                            : 'Market fills may differ from this quote.'}
                       </small>
                     </div>
                     <label>

@@ -193,7 +193,6 @@ test('replacement shows both non-atomic outcomes and requires a new typed review
 
 for (const [exchange, venue, label] of [
   ['gate', 'Gate', 'Market · IOC'],
-  ['bitget', 'Bitget', 'Market'],
   ['htx', 'HTX', 'Market'],
   ['bitmart', 'BitMart', 'Market'],
 ]) {
@@ -226,6 +225,28 @@ for (const [exchange, venue, label] of [
     await expect(form.getByText('Reference notional', { exact: true })).toHaveCount(0);
     await expect(orderType).toHaveValue('limit');
     await expect(orderType.locator('option[value="market"]')).toHaveCount(0);
+    expect(writes).toHaveLength(1);
+  });
+}
+
+for (const venue of ['bitget', 'poloniex', 'upbit']) {
+  test(`${venue} market buy reviews an explicit quote budget`, async ({ page }) => {
+    const writes = await tradeFixture(page, false, venue);
+    await page.goto('/trade');
+    const form = page.locator('.exchange-execution-grid');
+    await form
+      .getByRole('combobox', { name: 'Account', exact: true })
+      .selectOption('browser-testnet');
+    const budget = form.getByLabel('Quote budget · USDT', { exact: true });
+    await expect(budget).toHaveValue('');
+    await budget.fill('25');
+    await form.getByRole('button', { name: 'Review exchange order', exact: true }).click();
+    await expect(form.getByText('Reviewed quote budget', { exact: true })).toBeVisible();
+    expect(writes[0].body).toMatchObject({ quote_budget: 25, side: 'buy', order_type: 'market' });
+    expect(writes[0].body).not.toHaveProperty('quantity');
+    await form.getByRole('combobox', { name: 'Side', exact: true }).selectOption('sell');
+    await expect(form.getByLabel('Base asset quantity', { exact: true })).toHaveValue('0.001');
+    await expect(form.getByText('Reviewed quote budget', { exact: true })).toHaveCount(0);
     expect(writes).toHaveLength(1);
   });
 }

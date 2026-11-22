@@ -54,7 +54,9 @@ def trading_report(store, trading) -> dict:
                 "quantity": request["quantity"],
                 "price": intent.get("average") or intent["price"],
                 "notional": intent["notional"],
-                "notional_kind": "Preview reference",
+                "notional_kind": "Quote budget"
+                if request.get("quote_budget") is not None
+                else "Preview reference",
                 "quote": request["symbol"].split("/")[1],
                 "fee": None,
                 "status": intent["status"],

@@ -61,6 +61,7 @@ class ExchangeSpec:
     sandbox: bool = False
     market_orders: bool = False
     market_sell_only: bool = False
+    market_buy_budget: bool = False
     limit_only: bool = False
     account: str = "Spot trading wallet"
     credentials_required: bool = True
@@ -76,7 +77,7 @@ class ExchangeSpec:
 
     @property
     def market_order_sides(self) -> tuple[str, ...]:
-        """List the sides Sibyl supports for base-sized spot market orders."""
+        """List the sides Sibyl supports for manual spot market orders."""
         if not self.market_orders:
             return ()
         return ("sell",) if self.market_sell_only else ("buy", "sell")
@@ -153,7 +154,7 @@ EXCHANGES = (
         "API key + secret + passphrase",
         passphrase=True,
         market_orders=True,
-        market_sell_only=True,
+        market_buy_budget=True,
         account="Classic spot account; UTA excluded",
     ),
     ExchangeSpec("mexc", "MEXC", market_orders=True),
@@ -174,11 +175,12 @@ EXCHANGES = (
         market_sell_only=True,
     ),
     ExchangeSpec("phemex", "Phemex", sandbox=True, market_orders=True),
-    ExchangeSpec("poloniex", "Poloniex", limit_only=True),
+    ExchangeSpec("poloniex", "Poloniex", market_orders=True, market_buy_budget=True),
     ExchangeSpec(
         "upbit",
         "Upbit",
-        limit_only=True,
+        market_orders=True,
+        market_buy_budget=True,
         account="Default api.upbit.com endpoint; regional variants are not configured",
     ),
 )

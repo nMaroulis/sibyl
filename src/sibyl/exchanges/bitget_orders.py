@@ -26,8 +26,8 @@ def valid_client_id(client_id) -> bool:
     return isinstance(client_id, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{1,32}", client_id))
 
 
-def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
-    """Verify current Classic spot rules and keep the reviewed base quantity exact."""
+def market_terms(exchange, market, side, amount) -> tuple[str, dict]:
+    """Validate the current Classic spot pair and the order's native sizing units."""
     rows = order_rows(exchange.publicSpotGetV2SpotPublicSymbols({"symbol": market["id"]}), 1)
     if not rows or (rows[0].get("symbol"), rows[0].get("baseCoin"), rows[0].get("quoteCoin")) != (
         market["id"],
@@ -37,14 +37,18 @@ def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
         raise ValueError("Bitget returned rules for a different pair.")
     rules = rows[0]
     if rules.get("status") != "online" or 0 < (number(rules.get("offTime")) or 0) <= exchange.milliseconds():
-        raise ValueError("Bitget Classic market sells are unavailable for this pair.")
-    digits = str(rules.get("quantityPrecision"))
+        raise ValueError("Bitget Classic market orders are unavailable for this pair.")
+    digits = str(rules.get("quotePrecision" if side == "buy" else "quantityPrecision"))
     if not re.fullmatch(r"[0-9]{1,2}", digits) or int(digits) > 30:
-        raise ValueError("Bitget did not report valid base quantity precision.")
+        raise ValueError("Bitget did not report valid base or quote precision.")
     quantity = Decimal(str(amount))
-    precise = exchange.amount_to_precision(market["symbol"], amount)
+    precise = format(quantity.normalize(), "f")
+    if side == "sell":
+        precise = exchange.amount_to_precision(market["symbol"], amount)
     if Decimal(precise) != quantity or quantity.normalize().as_tuple().exponent < -int(digits):
-        raise ValueError("Quantity exceeds the Bitget market's base precision.")
+        raise ValueError(
+            f"Order exceeds the Bitget market's {'quote' if side == 'buy' else 'base'} precision."
+        )
     # These bounds are in USDT even for pairs whose quote is another currency.
     cost = {}
     if market["quoteId"] == "USDT":
@@ -56,10 +60,12 @@ def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
                     raise ValueError(f"Bitget returned an invalid {key} rule.")
                 if value:
                     cost[bound] = value
+    if side == "buy" and (amount < cost.get("min", 0) or ("max" in cost and amount > cost["max"])):
+        raise ValueError("Quote budget is outside the Bitget market limits.")
     return precise, {"cost": cost}
 
 
-def market_sell_ack(response, client_id) -> dict:
+def market_ack(response, client_id) -> dict:
     """Accept the exact native ID and clientOid from the placement acknowledgment."""
     row = response.get("data") if isinstance(response, dict) and response.get("code") == "00000" else None
     if not isinstance(row, dict) or row.get("clientOid") != client_id:
@@ -105,6 +111,8 @@ def parse_order(exchange, row, market, *, detail=False):
     order = exchange.parse_order({**row, "symbol": market["id"], "feeDetail": None}, market)
     if row.get("orderType") == "market":
         order.update(market_quantities(row, detail=detail))
+        if detail and row.get("side") == "buy":
+            order["quote_budget"] = number(row.get("size"))
     elif row.get("orderType") == "limit" and row.get("price") not in (None, ""):
         order["price"] = number(row["price"])
     order["id"] = identity(row.get("orderId"))
@@ -136,7 +144,7 @@ def order_detail(exchange, market, **query) -> dict | None:
 
 
 def lookup_order(exchange, client_id, symbol):
-    """Recover a reviewed Classic spot GTC limit or base-sized market sell."""
+    """Recover a reviewed Classic spot GTC limit or market order."""
     if not valid_client_id(client_id):
         raise ValueError("Invalid persisted Bitget client order ID.")
     market = exchange.market(symbol)
@@ -149,14 +157,14 @@ def lookup_order(exchange, client_id, symbol):
         and row.get("force") in (None, "", "gtc", "GTC")
         and (number(row.get("price")) or 0) > 0
     )
-    sell = (
+    market_order = (
         row.get("orderType") == "market"
-        and row.get("side") == "sell"
+        and row.get("side") in ("buy", "sell")
         and row.get("orderSource") in ("market", "normal")
         and row.get("stpMode") in (None, "", "none")
     )
     if (
-        not (limit or sell)
+        not (limit or market_order)
         or row.get("status") not in OPEN | TERMINAL
         or row.get("tpslType") != "normal"
         or row.get("enterPointSource") != "API"

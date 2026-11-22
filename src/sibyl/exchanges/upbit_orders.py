@@ -9,6 +9,7 @@ outside this adapter.
 import hashlib
 import json
 import re
+from decimal import Decimal
 from uuid import UUID
 
 import ccxt
@@ -26,6 +27,67 @@ def native_id(value):
     if not isinstance(value, str) or str(UUID(value)) != value:
         raise ValueError("Invalid Upbit native order UUID.")
     return value
+
+
+def market_terms(exchange, market, side, amount):
+    """Verify the selected account's pair permissions and native quote-value bounds."""
+    data = exchange.privateGetOrdersChance({"market": market["id"]})
+    rules = data.get("market") if isinstance(data, dict) else None
+    if not isinstance(rules, dict) or rules.get("id") != market["id"]:
+        raise ValueError("Upbit did not return trading rules for this pair.")
+    bid, ask = rules.get("bid"), rules.get("ask")
+    if (
+        not isinstance(bid, dict)
+        or not isinstance(ask, dict)
+        or (bid.get("currency"), ask.get("currency")) != (market["quoteId"], market["baseId"])
+    ):
+        raise ValueError("Upbit did not return trading rules for these assets.")
+    native_side, kind = ("bid", "price") if side == "buy" else ("ask", "market")
+    supported = rules.get(native_side + "_types")
+    sides = rules.get("order_sides")
+    if (
+        rules.get("state") != "active"
+        or not isinstance(sides, list)
+        or native_side not in sides
+        or (not isinstance(supported, list) or kind not in supported)
+    ):
+        raise ValueError("Upbit market orders are unavailable for this pair and side.")
+    minimum = number((bid if side == "buy" else ask).get("min_total"))
+    maximum = number(rules.get("max_total"))
+    if minimum is None or maximum is None or not 0 <= minimum <= maximum or maximum <= 0:
+        raise ValueError("Upbit did not report valid quote-value limits.")
+    if side == "buy" and not minimum <= amount <= maximum:
+        raise ValueError("Quote budget is outside the Upbit market limits.")
+    value = Decimal(str(amount))
+    if side == "sell" and Decimal(exchange.amount_to_precision(market["symbol"], amount)) != value:
+        raise ValueError("Quantity exceeds the Upbit base precision.")
+    return format(value.normalize(), "f"), {"cost": {"min": minimum, "max": maximum}}
+
+
+def submit_market(exchange, market, side, amount, client_id):
+    """Use Upbit's native market-sell or quote-budget buy instruction."""
+    if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", client_id):
+        raise ccxt.InvalidOrder("Invalid Upbit client order ID.")
+    try:
+        size, _ = market_terms(exchange, market, side, amount)
+    except (ValueError, ccxt.NetworkError) as error:
+        raise ccxt.InvalidOrder("Upbit market rules could not be satisfied.") from error
+    request = {
+        "market": market["id"],
+        "side": "bid" if side == "buy" else "ask",
+        "ord_type": "price" if side == "buy" else "market",
+        "identifier": client_id,
+        "price" if side == "buy" else "volume": size,
+    }
+    row = exchange.privatePostOrders(request)
+    if not isinstance(row, dict) or any(
+        row.get(key) != request[key] for key in ("market", "side", "ord_type", "identifier")
+    ):
+        raise ValueError("Upbit did not acknowledge the reviewed market order.")
+    original = number(row.get("price" if side == "buy" else "volume"))
+    if original != amount:
+        raise ValueError("Upbit did not acknowledge the reviewed order size.")
+    return {"id": native_id(row.get("uuid")), "clientOrderId": client_id}
 
 
 def regular_order(row):
@@ -115,7 +177,7 @@ def discover_page(exchange, stream, cursor, start, end, *, instrument=None):
 
 
 def lookup_order(exchange, client_id, symbol):
-    """Read the saved identifier and require unchanged regular GTC limit instructions."""
+    """Read the saved identifier and verify the original regular spot instructions."""
     if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", client_id):
         raise ValueError("Invalid persisted Upbit client identifier.")
     try:
@@ -128,16 +190,18 @@ def lookup_order(exchange, client_id, symbol):
         or not regular_order(row)
         or row.get("identifier") != client_id
         or row.get("market") != market["id"]
-        or row.get("ord_type") != "limit"
         or row.get("state") not in OPEN | TERMINAL
-        or row.get("time_in_force") not in (None, "", "gtc")
+        or row.get("time_in_force")
+        not in ((None, "", "gtc") if row.get("ord_type") == "limit" else (None, ""))
         or row.get("smp_type") not in (None, "", "none")
-        or (number(row.get("volume")) or 0) <= 0
-        or (number(row.get("price")) or 0) <= 0
+        or (row["ord_type"] != "price" and (number(row.get("volume")) or 0) <= 0)
+        or (row["ord_type"] != "market" and (number(row.get("price")) or 0) <= 0)
+        or (row["ord_type"] == "price" and row.get("volume") not in (None, "") and number(row["volume"]) != 0)
+        or (row["ord_type"] == "market" and row.get("price") not in (None, "") and number(row["price"]) != 0)
         or any(
             row.get(key) not in (None, "") and number(row[key]) != 0
             for key in ("prevented_volume", "prevented_locked")
         )
     ):
-        raise ValueError("Upbit order evidence differs from the reviewed spot GTC limit.")
+        raise ValueError("Upbit order evidence differs from the reviewed regular spot submission.")
     return [parse_order(exchange, row, recent=row["state"] in TERMINAL)]

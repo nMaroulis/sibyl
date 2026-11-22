@@ -15,7 +15,7 @@ type ReportRow = {
   account: string;
   symbol: string;
   side: string;
-  quantity: number;
+  quantity: number | null;
   price: number;
   notional: number;
   notional_kind: string;
@@ -159,7 +159,7 @@ export function ExecutionHistory({ active = true }: { active?: boolean }) {
                     r.account,
                     r.symbol,
                     r.side,
-                    r.quantity,
+                    r.quantity ?? '',
                     r.price,
                     r.notional,
                     r.notional_kind,
@@ -245,7 +245,7 @@ export function ExecutionHistory({ active = true }: { active?: boolean }) {
                       {r.symbol}
                       <small className="table-subline">{r.side}</small>
                     </td>
-                    <td>{number(r.quantity, 8)}</td>
+                    <td>{r.quantity == null ? '—' : number(r.quantity, 8)}</td>
                     <td>
                       {number(r.price, 8)} {r.quote}
                     </td>

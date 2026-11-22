@@ -65,9 +65,15 @@ def validate_candidate(intent: dict, order: dict) -> None:
     ):
         if order.get(key) != expected:
             raise ValueError("Recovery identity or order type differs.")
-    amount = number(order.get("amount"))
-    if amount is None or Decimal(str(amount)) != Decimal(str(request["quantity"])):
-        raise ValueError("Recovery quantity differs.")
+    budget = request.get("quote_budget")
+    if budget is not None:
+        original = number(order.get("quote_budget"))
+        if original is None or Decimal(str(original)) != Decimal(str(budget)):
+            raise ValueError("Recovery quote budget differs.")
+    else:
+        amount = number(order.get("amount"))
+        if amount is None or Decimal(str(amount)) != Decimal(str(request["quantity"])):
+            raise ValueError("Recovery quantity differs.")
     if request.get("order_type", "market") != "market":
         if order.get("timeInForce") not in {None, "GTC"}:
             raise ValueError("Recovery time in force differs.")

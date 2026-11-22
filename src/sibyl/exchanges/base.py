@@ -150,6 +150,14 @@ class ExchangeClient(ABC):
         """Submit one spot market/GTC limit only for reviewed execution clients."""
         raise ccxt.NotSupported("Order execution is not enabled for this provider.")
 
+    def market_buy_limits(self, symbol: str, budget: float) -> dict:
+        """Validate the reviewed quote budget against native spot market rules."""
+        raise ccxt.NotSupported("Quote-budget market buys are unavailable for this provider.")
+
+    def create_market_buy(self, symbol: str, budget: float, client_order_id: str) -> dict:
+        """Submit a reviewed market buy whose size is a quote amount."""
+        raise ccxt.NotSupported("Quote-budget market buys are unavailable for this provider.")
+
     def price_to_precision(self, symbol: str, price: float) -> str:
         """Format a reviewed limit price using native market tick precision."""
         raise ccxt.NotSupported("Limit price precision is unavailable for this client.")
