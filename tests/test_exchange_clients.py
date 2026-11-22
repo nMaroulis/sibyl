@@ -461,7 +461,7 @@ def test_provider_catalog_and_private_routes_are_secret_free(client, monkeypatch
     assert client.get(f"/api/v1/connections/{connection['id']}/trades?limit=501").status_code == 422
     trading = client.app.state.services.trading
     trading.market.settings.allow_live_trading = True
-    with pytest.raises(ValueError, match="not enabled"):
+    with pytest.raises(ValueError, match="quote-currency budget"):
         trading.preview(
             ExchangeOrderRequest(
                 connection_id=connection["id"], side="buy", quantity=1, idempotency_key="unsupported-intent"

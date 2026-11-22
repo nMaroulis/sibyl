@@ -206,12 +206,19 @@ class ExchangeTrading:
             market = client.market(request.symbol)
             if not market.get("spot", False) or market.get("active") is False:
                 raise ValueError("Choose an active spot market.")
-            precise = client.amount_to_precision(request.symbol, request.quantity)
-            if Decimal(precise) <= 0 or Decimal(precise) != Decimal(str(request.quantity)):
-                raise ValueError(
-                    f"Quantity exceeds market precision. Use {precise} or another valid quantity."
-                )
-            limits_by_field = market.get("limits") or {}
+            market_order_limits = (
+                getattr(client, "market_order_limits", None) if request.order_type == "market" else None
+            )
+            # A provider's market-specific rules include its quantity precision.
+            if market_order_limits is not None:
+                limits_by_field = market_order_limits(request.symbol, request.side, request.quantity)
+            else:
+                precise = client.amount_to_precision(request.symbol, request.quantity)
+                if Decimal(precise) <= 0 or Decimal(precise) != Decimal(str(request.quantity)):
+                    raise ValueError(
+                        f"Quantity exceeds market precision. Use {precise} or another valid quantity."
+                    )
+                limits_by_field = market.get("limits") or {}
             if request.order_type != "market":
                 price = request.limit_price
                 precise_price = client.price_to_precision(request.symbol, price)
@@ -220,8 +227,6 @@ class ExchangeTrading:
                         f"Price exceeds market precision. Use {precise_price} or another valid price."
                     )
             else:
-                if (market_order_limits := getattr(client, "market_order_limits", None)) is not None:
-                    limits_by_field = market_order_limits(request.symbol, request.side, request.quantity)
                 ticker = client.fetch_ticker(request.symbol)
                 price = ticker.get("ask" if request.side == "buy" else "bid") or ticker.get("last")
             if not price or not math.isfinite(price) or price <= 0:

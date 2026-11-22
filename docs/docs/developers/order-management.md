@@ -14,7 +14,8 @@ Sibyl persists reviewed spot **market and GTC limit orders**, cumulative native 
 | Gate | Sell · base quantity · IOC | Yes | Yes | Cash wallet and native client text |
 | Bitget Classic | Sell · base quantity | Yes | Yes | Classic v2 spot and native clientOid |
 | HTX | Sell · base quantity | Yes | Yes | Verified spot wallet and native client ID |
-| BitMart, Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
+| BitMart | Sell · base quantity | Yes | Yes | Spot v2 submission and v4 lookup |
+| Poloniex, Upbit                                  | No                         | Yes                   | Yes                  | Reviewed GTC/cancel adapters         |
 
 Native account acceptance testing remains outstanding. Contract tests use controlled transports; they do not establish production account permissions, regional availability or authenticated exchange acceptance. Coinbase Advanced and Coinbase Exchange Sandbox use different APIs.
 
@@ -35,6 +36,8 @@ Gate sends a cash spot IOC market sell with the reviewed base `amount` and persi
 Bitget Classic submits spot market sells with native base `size` and the saved `clientOid`. Preview and confirmation check current pair status and base precision. The preview compares the reference notional with published USDT bounds on USDT pairs. Bitget applies its native value limits at execution. The placement acknowledgment confirms identity, while exact order details provide cumulative fills. Market buys require an explicit quote budget. [Bitget Classic trade](https://www.bitget.com/docs/catalog/classic-spot-trade/classic-spot-trade) · [Bitget symbol rules](https://www.bitget.com/legacy-docs/classic/spot/market/Get-Symbols).
 
 HTX sends a native `sell-market` with a base amount, exact spot account ID, and `spot-api` source. Review and confirmation check the current pair, API-trading flag, base precision and base market-sell bounds. The placement acknowledgment supplies the native order ID. Order details and exact executions supply status, fills and fees. [HTX market-symbol settings](https://huobiapi.github.io/docs/spot/v1/en/#get-market-symbols-setting) · [HTX spot placement](https://huobiapi.github.io/docs/spot/v1/en/#place-a-new-order).
+
+BitMart submits a cash spot market sell with native base `size` and the saved `client_order_id`. Review checks the published base minimum, current increment and indicative quote value using the sell minimum. Confirmation rechecks the pair’s trading state and base sizing. The placement acknowledgment supplies the native ID, while exact v4 order details and execution reads supply fills and fees. Pair metadata reports listing status. BitMart applies account and API trading eligibility at submission. [BitMart pair details](https://developer-pro.bitmart.com/en/spot/#get-trading-pair-details-v1) · [BitMart spot placement](https://developer-pro.bitmart.com/en/spot/#new-order-v2-signed).
 
 ## Native advanced orders
 

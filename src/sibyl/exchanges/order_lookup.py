@@ -69,7 +69,7 @@ RECOVERY_NOTES = {
     "gate": "Recover cash spot GTC limits and base-sized IOC market sells by saved client ID. A direct miss checks bounded finished orders on the same pair.",
     "bitget": "Recover a reviewed Classic spot GTC limit or base-sized market sell using its exact clientOid and original terms. Bitget retains API-cancelled records for up to two hours.",
     "poloniex": "Recover reviewed unborrowed spot GTC limits through the exact saved client ID. Native retention and archived orders can limit lookup coverage.",
-    "bitmart": "Recover reviewed spot limits through the exact saved client ID. BitMart limits API-cancelled unfilled order queries to 20 minutes.",
+    "bitmart": "Recover spot GTC limits and base-sized market sells through the exact saved client ID. BitMart limits unfilled API-cancelled order queries to 20 minutes.",
     "coinex": "Find cash GTC limits and base-sized market orders through pending and bounded finished pages. Market recovery requires explicit base currency. CoinEx deletes cancelled orders that had no fills; missing records remain uncertain.",
     "htx": "Recover spot GTC limits and base-sized market sells by exact client ID on the verified wallet. HTX documents up to eight hours for open orders and two hours from creation for terminal orders.",
     "mexc": "Recover reviewed spot GTC limits and base-sized market orders by saved client ID on the exact pair. Market evidence must explicitly show zero original quote budget. MEXC order lookup covers up to seven days.",

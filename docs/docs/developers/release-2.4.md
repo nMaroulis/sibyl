@@ -91,12 +91,14 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Recover CoinEx cash market orders through bounded pending and finished pages when the original base currency and quantity match.
 - [x] Submit Gate cash spot IOC market sells in the reviewed base quantity, with exact-pair sell status and sizing checks.
 - [x] Recover Gate market sells through exact client text and bounded finished-order pages, with original base sizing and partial-fill reconciliation.
-- [ ] Add explicit quote-budget market buys for Gate, Bitget Classic and HTX, including preview, fill bounds and persisted recovery terms.
+- [ ] Add explicit quote-budget market buys for Gate, Bitget Classic, HTX and BitMart, including preview, fill bounds and persisted recovery terms.
 - [x] Submit Bitget Classic spot market sells in the reviewed base quantity, with fresh pair status and base precision checks.
 - [x] Recover Bitget Classic market sells through exact `clientOid` details, with verified original size and separate cumulative fills.
 - [x] Submit HTX spot market sells in the reviewed base quantity with verified wallet, API permission and native sell-size limits.
 - [x] Recover HTX market sells through exact client-ID details scoped to the spot wallet and original order terms.
-- [ ] Review BitMart market-order sizing and client-ID recovery next. Review Poloniex and Upbit afterward.
+- [x] Submit BitMart cash spot market sells with exact base sizing, fresh pair state, native increment and distinct size and value minimums.
+- [x] Recover BitMart market sells through exact v4 client-ID details and preserve partial-fill and fee evidence.
+- [ ] Review Poloniex market-order sizing and unborrowed spot recovery next. Review Upbit afterward.
 - [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
 - [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.

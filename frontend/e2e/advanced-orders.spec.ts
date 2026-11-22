@@ -195,6 +195,7 @@ for (const [exchange, venue, label] of [
   ['gate', 'Gate', 'Market · IOC'],
   ['bitget', 'Bitget', 'Market'],
   ['htx', 'HTX', 'Market'],
+  ['bitmart', 'BitMart', 'Market'],
 ]) {
   test(`${venue} market orders require an explicit sell selection`, async ({ page }) => {
     const writes = await tradeFixture(page, false, exchange);

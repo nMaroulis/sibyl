@@ -165,7 +165,14 @@ EXCHANGES = (
         "bitfinex", "Bitfinex", market_orders=True, account="Exchange wallet; margin/funding wallets excluded"
     ),
     ExchangeSpec("coinex", "CoinEx", market_orders=True),
-    ExchangeSpec("bitmart", "BitMart", "API key + secret + API memo", uid=True, limit_only=True),
+    ExchangeSpec(
+        "bitmart",
+        "BitMart",
+        "API key + secret + API memo",
+        uid=True,
+        market_orders=True,
+        market_sell_only=True,
+    ),
     ExchangeSpec("phemex", "Phemex", sandbox=True, market_orders=True),
     ExchangeSpec("poloniex", "Poloniex", limit_only=True),
     ExchangeSpec(

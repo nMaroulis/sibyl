@@ -1,4 +1,4 @@
-"""Native BitMart v4 spot activity with bounded date windows and exact order reads.
+"""BitMart spot sizing, exact order reads and bounded v4 activity windows.
 
 The v4 query endpoints use authenticated POST requests to read account data.
 Capped lists have no continuation token, so saturated ranges split without
@@ -6,7 +6,9 @@ advancing over timestamp ties. One-order execution lists page locally by their
 native IDs. All paths require reported spot scope and strip native metadata.
 """
 
+import json
 import re
+from decimal import Decimal, InvalidOperation
 
 import ccxt
 
@@ -38,6 +40,109 @@ def data(response):
     if not isinstance(response, dict) or str(response.get("code")) != "1000" or "data" not in response:
         raise ccxt.ExchangeError("Invalid BitMart activity response.")
     return response["data"]
+
+
+def valid_client_id(client_id) -> bool:
+    """Recognize an exact native BitMart client ID."""
+    return isinstance(client_id, str) and bool(re.fullmatch(r"[A-Za-z0-9]{1,32}", client_id))
+
+
+def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
+    """Check the current market's base-size increment and published sell minimums."""
+    payload = data(exchange.publicGetSpotV1SymbolsDetails({}))
+    rows = payload.get("symbols") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        raise ValueError("BitMart did not provide current spot pair details.")
+    selected = [row for row in rows if isinstance(row, dict) and row.get("symbol") == market["id"]]
+    if len(selected) != 1 or (selected[0].get("base_currency"), selected[0].get("quote_currency")) != (
+        market["baseId"],
+        market["quoteId"],
+    ):
+        raise ValueError("BitMart did not return rules for the selected pair.")
+    row = selected[0]
+    if row.get("trade_status") != "trading" or (
+        0 < (number(row.get("planned_down_time")) or 0) <= exchange.milliseconds()
+    ):
+        raise ValueError("BitMart market sells are unavailable for this pair.")
+    try:
+        step = Decimal(str(row.get("quote_increment")))
+        minimum = Decimal(str(row.get("base_min_size")))
+        maximum = Decimal(str(row["base_max_size"])) if row.get("base_max_size") not in (None, "") else None
+    except InvalidOperation as error:
+        raise ValueError("BitMart did not report valid base quantity rules.") from error
+    if (
+        not step.is_finite()
+        or step <= 0
+        or not minimum.is_finite()
+        or minimum < 0
+        or (maximum is not None and (not maximum.is_finite() or maximum <= 0 or maximum < minimum))
+    ):
+        raise ValueError("BitMart did not report valid base quantity rules.")
+    quantity = Decimal(str(amount))
+    if quantity < minimum:
+        raise ValueError(f"Order is below the BitMart minimum base quantity of {minimum}.")
+    if maximum is not None and quantity > maximum:
+        raise ValueError(f"Order exceeds the BitMart maximum base quantity of {maximum}.")
+    try:
+        aligned = quantity % step == 0
+    except InvalidOperation:
+        aligned = False
+    if not aligned:
+        raise ValueError("Quantity does not match the BitMart market's base increment.")
+    raw_min_cost = row.get("min_sell_amount")
+    cost = number(raw_min_cost)
+    if raw_min_cost not in (None, "") and (cost is None or cost < 0):
+        raise ValueError("BitMart returned an invalid minimum sell amount.")
+    return format(quantity.normalize(), "f"), {"cost": {"min": cost}}
+
+
+def submit_market_sell(exchange, market, quantity, client_id) -> dict:
+    """Submit once and attach an order ID only after a usable native acknowledgment."""
+    try:
+        response = exchange.privatePostSpotV2SubmitOrder(
+            {
+                "symbol": market["id"],
+                "side": "sell",
+                "type": "market",
+                "size": quantity,
+                "client_order_id": client_id,
+            }
+        )
+    except ccxt.ExchangeError as error:
+        # The SDK reports internal and duplicate-ID errors as definitive exchange errors.
+        # The saved client ID may already exist, so keep the outcome recoverable.
+        payload = str(error).removeprefix(f"{exchange.id} ")
+        try:
+            payload = json.loads(payload)
+        except ValueError:
+            payload = None
+        if isinstance(payload, dict) and str(payload.get("code")) in {"59002", "50042"}:
+            raise ValueError("BitMart could not confirm the submission outcome.") from error
+        raise
+    try:
+        row = data(response)
+        order_id = native_id(row.get("order_id") if isinstance(row, dict) else None)
+    except ccxt.ExchangeError as error:
+        raise ValueError("BitMart did not confirm a usable market order ID.") from error
+    return {"id": order_id, "clientOrderId": client_id}
+
+
+def market_quantities(row) -> dict:
+    """Keep native base fills and quote proceeds separate from the original sizing."""
+    amount = number(row.get("size")) if row.get("side") == "sell" else None
+    filled = number(row.get("filledSize", row.get("filled_size")))
+    cost = number(row.get("filledNotional", row.get("filled_notional")))
+    average = number(row.get("priceAvg", row.get("price_avg")))
+    remaining = None
+    if amount is not None and filled is not None and 0 <= filled <= amount:
+        remaining = float(Decimal(str(amount)) - Decimal(str(filled)))
+    return {
+        "amount": amount,
+        "remaining": remaining,
+        "filled": filled,
+        "cost": cost,
+        "average": average or (cost / filled if cost is not None and filled and filled > 0 else None),
+    }
 
 
 def cash_order(row):
@@ -104,8 +209,8 @@ def discover_page(exchange, stream, cursor, start, end):
 
 
 def lookup_order(exchange, client_id, symbol):
-    """Recover a reviewed spot limit from the exact client-ID query and original terms."""
-    if not isinstance(client_id, str) or not re.fullmatch(r"[A-Za-z0-9]{1,32}", client_id):
+    """Recover a reviewed spot GTC limit or base-sized market sell."""
+    if not valid_client_id(client_id):
         raise ValueError("Invalid persisted BitMart client order ID.")
     market = exchange.market(symbol)
     try:
@@ -117,16 +222,23 @@ def lookup_order(exchange, client_id, symbol):
         or not cash_order(row)
         or row.get("clientOrderId") != client_id
         or row.get("symbol") != market["id"]
-        or row.get("type") != "limit"
+        or row.get("side") not in ("buy", "sell")
         or row.get("state") not in OPEN | TERMINAL
         or (number(row.get("size")) or 0) <= 0
-        or (number(row.get("price")) or 0) <= 0
+        or not (
+            (row.get("type") == "limit" and (number(row.get("price")) or 0) > 0)
+            or (
+                row.get("type") == "market"
+                and row["side"] == "sell"
+                and row.get("stpMode") in (None, "", "none")
+            )
+        )
         or any(
             row.get(key) not in (None, "") and number(row[key]) != 0
             for key in ("trigger_price", "triggerPrice")
         )
     ):
-        raise ValueError("BitMart order evidence differs from the reviewed spot GTC limit.")
+        raise ValueError("BitMart order evidence differs from the reviewed regular spot submission.")
     identity(row.get("createTime"))
     return [parse_order(exchange, row, market)]
 

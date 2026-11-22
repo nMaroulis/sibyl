@@ -20,7 +20,7 @@ When a provider accepts an order but its acknowledgment is lost, Sibyl can retai
 | HTX                                    | Exact `clientOrderId`, spot wallet and pair for reviewed GTC limits and market sells. HTX documents up to eight hours for open orders and two hours from creation for terminal orders. |
 | CoinEx                                 | Client-filtered pending spot orders and a bounded exact-pair finished scan for GTC limits and explicit base-sized market orders. Cancelled orders with no fills are removed by CoinEx. |
 | Demo                                   | Local virtual limit lookup by its persisted client key. No matching or wallet mutation occurs in the lookup itself.                                 |
-| BitMart                               | Exact client-ID query for a regular spot limit. BitMart limits queries for unfilled API-cancelled orders to 20 minutes. |
+| BitMart                               | Exact client-ID query for a regular spot GTC limit or base-sized market sell. BitMart limits queries for unfilled API-cancelled orders to 20 minutes. |
 | Poloniex                              | Exact `cid:` order-detail lookup for API-origin cash spot GTC limits, requiring explicit unborrowed evidence. |
 | Upbit Korea                           | Exact `identifier` details for regular spot GTC limits. Non-GTC, reserved and self-match-prevention instructions are excluded. |
 | Bitfinex                              | Exact saved int45 cid filtered across the symbol's open snapshot and bounded creation-time closed pages. Ordinary API-origin EXCHANGE LIMIT/MARKET terms with original signed base size. |
@@ -56,7 +56,7 @@ Completed no-match passes wait at least 60 seconds, then 300 seconds. After thre
 
 **An empty result is not proof that no order was placed.** Coinbase Exchange can return 404 for a canceled order without matches. Provider retention, missing permissions or delayed indexing can also hide evidence. No-match, ambiguous, incomplete and mismatch states retain the uncertain intent. Never infer a rejection, release external funds, or automatically submit a replacement from those outcomes.
 
-BitMart’s v4 client-order query reads both open and historical states when `queryState` is omitted. Sibyl requires the returned `orderMode=spot`, exact client ID, instrument, regular limit type and original reviewed terms. Native query misses preserve the uncertain outcome. [BitMart client-ID query](https://developer-pro.bitmart.com/en/spot/#query-order-by-clientorderid-v4-signed).
+BitMart’s v4 client-order query reads both open and historical states when `queryState` is omitted. Sibyl requires the returned `orderMode=spot`, exact client ID, instrument, regular GTC limit or base-sized market sell and original reviewed terms. Market sell recovery uses native `size` independently of `filledSize` and `filledNotional`. A missing record preserves the uncertain outcome. [BitMart client-ID query](https://developer-pro.bitmart.com/en/spot/#query-order-by-clientorderid-v4-signed).
 
 ## Dashboard and HTTP
 

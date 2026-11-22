@@ -10,7 +10,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Account synchronization        | partial       | Widen funding coverage and historical depth. Spot fill imports are already available for the configured exchanges.                              |
 | Portfolio accounting           | partial       | Complete history/flows, wider fee policies and wallet coverage beyond retained cross-pair FIFO.                                                   |
-| Order management               | partial       | BitMart market-order sizing and recovery, quote-budget market buys, Bitstamp closed-order coverage, and broader conditional and replacement orders.                 |
+| Order management               | partial       | Poloniex market-order sizing and recovery, quote-budget market buys, Bitstamp closed-order coverage, and broader conditional and replacement orders.                 |
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Venue and failure-case acceptance, ownership repair and definitive venue settlement.                      |
@@ -28,7 +28,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Twenty production spot-exchange clients, Binance Testnet, Coinbase Exchange Sandbox, and the persistent offline Demo account.
 - Public markets, candles, order-book snapshots, indicators, correlations and account balance reads.
 - Portfolio/account views, allocation, observed account-value snapshots and explicit unpriced holdings.
-- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for thirteen production providers, including Bitfinex, Phemex, Crypto.com Exchange, MEXC and CoinEx, plus the two dedicated test clients. Gate, Bitget Classic and HTX add base-sized market sells, GTC limits and cancellation. The other four configured production providers have reviewed GTC limits and cancellation. Recovery, exact executions and the separate strategy execution allowlist have provider-specific scope; Settings shows the implemented features and gaps.
+- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for thirteen production providers, including Bitfinex, Phemex, Crypto.com Exchange, MEXC and CoinEx, plus the two dedicated test clients. Gate, Bitget Classic, HTX and BitMart add base-sized market sells, GTC limits and cancellation. The other three configured production providers have reviewed GTC limits and cancellation. Recovery, exact executions and the separate strategy execution allowlist have provider-specific scope; Settings shows the implemented features and gaps.
 - Six rule-based strategies, cost-aware historical backtests, exact-input reruns, chart execution overlays, round-trip accounting, comparable saved runs and explicit Demo research/paper runs.
 - Sibyl orchestration and ten ProtoLink module agents with a startup runtime registry, client routing, contextual read-only tools, saved conversations and consultation evidence.
 - Live Sibyl consultation progress, request-specific cancellation and retained outcomes/evidence for completed, stopped, failed or interrupted requests. Startup marks unfinished requests interrupted without replaying them.
@@ -98,12 +98,14 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Recover CoinEx cash market orders through bounded pending and finished pages when the original base currency and quantity match.
 - [x] Submit Gate cash spot IOC market sells in the reviewed base quantity, with exact-pair sell status and sizing checks.
 - [x] Recover Gate market sells through exact client text and bounded finished-order pages, with original base sizing and partial-fill reconciliation.
-- [ ] Add explicit quote-budget market buys for Gate, Bitget Classic and HTX, including preview, fill bounds and persisted recovery terms.
+- [ ] Add explicit quote-budget market buys for Gate, Bitget Classic, HTX and BitMart, including preview, fill bounds and persisted recovery terms.
 - [x] Submit Bitget Classic spot market sells in the reviewed base quantity, with fresh pair status and base precision checks.
 - [x] Recover Bitget Classic market sells through exact `clientOid` details, with verified original size and separate cumulative fills.
 - [x] Submit HTX spot market sells in the reviewed base quantity with verified wallet, API permission and native sell-size limits.
 - [x] Recover HTX market sells through exact client-ID details scoped to the spot wallet and original order terms.
-- [ ] Review BitMart market-order sizing and client-ID recovery next. Review Poloniex and Upbit afterward.
+- [x] Submit BitMart cash spot market sells with exact base sizing, fresh pair state, native increment and distinct size and value minimums.
+- [x] Recover BitMart market sells through exact v4 client-ID details and preserve partial-fill and fee evidence.
+- [ ] Review Poloniex market-order sizing and unborrowed spot recovery next. Review Upbit afterward.
 - [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
 - [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
@@ -419,7 +421,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 
 ## Local implementation sequence
 
-1. **Reconciliation and venues.** Review BitMart market-order sizing and client-ID recovery first. Follow with remaining venue market adapters, Bitstamp closed-order evidence, deeper order history, wider funding coverage and authenticated failure-case acceptance.
+1. **Reconciliation and venues.** Review Poloniex market-order sizing and unborrowed spot recovery first. Follow with remaining venue market adapters, Bitstamp closed-order evidence, deeper order history, wider funding coverage and authenticated failure-case acceptance.
 2. **Strategy ownership and deployment:** reviewed residual/manual inventory and explicitly approved multi-asset allocation execution beyond the implemented historical portfolio lab and separate causal ML/RL/Freqtrade research.
 3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
 4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.

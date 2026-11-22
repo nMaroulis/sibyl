@@ -467,7 +467,6 @@ def test_native_limit_and_cancel_adapter_contract(monkeypatch, identity):
 @pytest.mark.parametrize(
     "identity",
     [
-        "bitmart",
         "poloniex",
         "upbit",
     ],

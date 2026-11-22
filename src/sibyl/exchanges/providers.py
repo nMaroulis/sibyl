@@ -2,7 +2,7 @@
 
 import ccxt
 
-from sibyl.exchanges import bitget_orders, coinex_activity, gate_orders, htx_orders
+from sibyl.exchanges import bitget_orders, bitmart_activity, coinex_activity, gate_orders, htx_orders
 from sibyl.exchanges.base import number
 from sibyl.exchanges.binance_advanced import BinanceAdvanced
 from sibyl.exchanges.ccxt_client import CCXTClient
@@ -658,22 +658,39 @@ class BitMartClient(CCXTClient):
         """BitMart requires an alphanumeric ID of at most 32 characters."""
         return identity.replace("-", "")
 
+    def market_order_limits(self, symbol: str, side: str, amount: float) -> dict:
+        """Review a base-sized market sell against BitMart's current pair rules."""
+        if side != "sell":
+            raise ccxt.NotSupported("BitMart market buys require a quote-currency budget.")
+        with self.lock:
+            self.market(symbol)
+            _, limits = bitmart_activity.market_sell_terms(
+                self._exchange, self._exchange.market(symbol), amount
+            )
+        return limits
+
+    def _submit_market_order(self, symbol, side, amount, client_order_id):
+        """Submit one cash spot sell with the reviewed native size."""
+        if side != "sell" or not bitmart_activity.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("BitMart requires a market sell with a valid native client order ID.")
+        market = self._exchange.market(symbol)
+        try:
+            quantity, _ = bitmart_activity.market_sell_terms(self._exchange, market, amount)
+        except (ValueError, ccxt.NetworkError) as error:
+            raise ccxt.InvalidOrder("BitMart market sell rules could not be satisfied.") from error
+        return bitmart_activity.submit_market_sell(self._exchange, market, quantity, client_order_id)
+
     @staticmethod
     def _order(row: dict) -> dict:
-        """Keep native filled sizes separate from a market buy's quote-currency budget."""
+        """Keep native execution units and preserve original size for market sells."""
         order = CCXTClient._order(row)
         native = row.get("info")
         if isinstance(native, dict):
             kind = native.get("type")
             if kind == "limit":
                 order["timeInForce"] = "GTC"
-            elif kind == "market" and native.get("side") == "buy":
-                order.update(
-                    amount=None,
-                    remaining=None,
-                    filled=number(native.get("filledSize", native.get("filled_size"))),
-                    average=number(native.get("priceAvg", native.get("price_avg"))),
-                )
+            elif kind == "market":
+                order.update(bitmart_activity.market_quantities(native))
         return order
 
 

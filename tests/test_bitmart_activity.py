@@ -266,4 +266,6 @@ def test_settings_are_derived_from_the_implemented_read_paths():
     features = {feature["id"]: feature for group in provider["support"] for feature in group["features"]}
     for name in ("recovery", "discovery", "history_import", "fill_reconciliation"):
         assert features[name]["status"] == "available"
-    assert features["automated"]["status"] == "pending" and not provider["market_orders"]
+    assert features["automated"]["status"] == "pending"
+    assert provider["market_order_sides"] == ["sell"]
+    assert features["market_orders"]["status"] == "available"
