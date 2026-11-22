@@ -19,9 +19,11 @@ def refresh_streams(connection):
     return (
         []
         if connection.sandbox
-        else {"binance": ["deposit", "withdrawal"], "bybit": ["withdrawal", "transfer"]}.get(
-            connection.exchange, []
-        )
+        else {
+            "binance": ["deposit", "withdrawal"],
+            "bybit": ["withdrawal", "transfer"],
+            "okx": ["deposit", "withdrawal"],
+        }.get(connection.exchange, [])
     )
 
 
@@ -33,6 +35,7 @@ def scan_streams(connection):
         else {
             "binance": ["deposit", "withdrawal"],
             "kraken": ["deposit", "withdrawal", "transfer"],
+            "okx": ["deposit", "withdrawal", "transfer"],
             "bybit": ["withdrawal", "transfer"],
         }.get(connection.exchange, [])
     )

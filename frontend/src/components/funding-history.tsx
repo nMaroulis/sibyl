@@ -315,10 +315,8 @@ export function FundingHistory({ active }: { active: boolean }) {
               )
             ) : (
               <p className="footnote padded">
-                Choose an active account to import an explicit range. Binance supports crypto
-                deposits/withdrawals; Kraken supports deposit, withdrawal and transfer ledger
-                entries; Bybit supports on-chain withdrawals and transfers into or out of its
-                Unified Trading Account.
+                Choose an active account to see its supported deposit, withdrawal, and transfer
+                streams and import an explicit date range.
               </p>
             )}
           </>

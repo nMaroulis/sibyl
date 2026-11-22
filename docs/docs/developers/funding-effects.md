@@ -10,6 +10,8 @@ Binance's [capital history](https://developers.binance.com/en/docs/catalog/core-
 
 Bybit withdrawal history does not retain the initiating `feeType` or establish the wallet effect on Sibyl's UNIFIED balance. It remains unresolved without local review. The separate Bybit same-UID transfer endpoint reports whether a movement enters or leaves UNIFIED, with fees and posting time unavailable. This import does not add cross-UID transfers or infer completion time from last-update time.
 
+OKX Trading bills report the posted account-level balance change for Funding/Trading transfers. Sibyl uses that signed net change directly without applying the reported fee a second time. The exact posted timestamp determines the comparison interval. Strict balance checks read Trading wallet `cashBal`; earlier OKX checkpoints based on equity require a new capture. On-chain deposits and withdrawals do not establish the Trading wallet effect or its posting time. [OKX Trading bills](https://www.okx.com/docs-v5/en/#trading-account-rest-api-get-bills-details-last-3-months) · [OKX account balance](https://www.okx.com/docs-v5/en/#trading-account-rest-api-get-balance).
+
 Completed, explicitly zero-fee movements in a known configured wallet use their signed amount. Known outside-wallet records have zero effect on the configured wallet. Failed/cancelled records are not applied; pending/restricted/unknown records remain unresolved. These are quantity effects, not settlement verification or proof of complete history.
 
 ## Local review

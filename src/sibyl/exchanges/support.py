@@ -221,6 +221,8 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
                     "deposit" in funding or "withdrawal" in funding,
                     "Master-UID on-chain withdrawal reads, native cursors and status/fee rescans. Deposits, off-chain withdrawals, additional tax charges and sub-UID withdrawal reads remain pending; unavailable in optional sandboxes."
                     if spec.id == "bybit" and funding
+                    else "On-chain deposits and withdrawals, with saved window splits and funding status rescans. The Trading wallet impact is unresolved; unavailable in sandbox."
+                    if spec.id == "okx"
                     else "Read-only funding imports; unavailable in optional sandboxes."
                     if funding
                     else "Funding history imports are not implemented for this provider/environment.",
@@ -231,6 +233,8 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
                     "transfer" in funding,
                     "Same-UID transfers into or out of the Unified Trading Account. Cross-UID transfers and test accounts are unavailable."
                     if spec.id == "bybit"
+                    else "Posted transfers between Funding and Trading wallets over the last 89 days. Balance checks use the reported Trading wallet balance change."
+                    if spec.id == "okx"
                     else "Read-only transfer ledger imports; unavailable in optional sandboxes."
                     if "transfer" in funding
                     else "Transfer history imports are not implemented for this provider/environment.",

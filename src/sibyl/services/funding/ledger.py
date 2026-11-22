@@ -65,8 +65,9 @@ def funding_event(row: dict, job: dict) -> dict:
     ):
         raise ValueError("Invalid funding event.")
     route = row.get("wallet_route")
+    wallet = {"bybit": "UNIFIED", "okx": "TRADING"}.get(job["exchange"])
     if route is not None and (
-        job["exchange"] != "bybit"
+        wallet is None
         or job["stream"] != "transfer"
         or not row["internal"]
         or row.get("wallet_scope") != "configured"
@@ -76,10 +77,19 @@ def funding_event(row: dict, job: dict) -> dict:
             not isinstance(wallet, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,23}", wallet)
             for wallet in route.values()
         )
-        or (route["to"] == "UNIFIED") == (route["from"] == "UNIFIED")
-        or (row["direction"] == "in") != (route["to"] == "UNIFIED")
+        or (route["to"] == wallet) == (route["from"] == wallet)
+        or (row["direction"] == "in") != (route["to"] == wallet)
+        or (
+            job["exchange"] == "okx"
+            and (
+                set(route.values()) != {"TRADING", "FUNDING"}
+                or row["status"] != "completed"
+                or row["amount_basis"] != "ledger_amount"
+                or posted != stamp
+            )
+        )
     ):
-        raise ValueError("Invalid Bybit funding wallet route.")
+        raise ValueError("Invalid funding wallet route.")
     return {
         "id": hashlib.sha256(json.dumps([job["account_id"], job["stream"], identity]).encode()).hexdigest(),
         "native_id": identity,

@@ -383,7 +383,10 @@ class CCXTClient(ExchangeClient):
                 "withdrawal": "fetchWithdrawals",
                 "transfer": "fetchTransfers",
             }
-            self._require("fetchLedger" if self.id == "kraken" else method[stream], private=True)
+            if self.id == "kraken" or (self.id == "okx" and stream == "transfer"):
+                self._require("fetchLedger", private=True)
+            else:
+                self._require(method[stream], private=True)
             return fetch_funding_page(self._exchange, self.id, stream, cursor, limit)
 
     def create_order(

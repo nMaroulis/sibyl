@@ -15,6 +15,8 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Import selected-pair MEXC fills over a bounded rolling window with durable bisection, one-day overlap and both self-trade legs retained.
 - [x] Import CoinEx selected-market cash spot fills through frozen 30-day queries, native page checkpoints and one-day incremental overlap.
 - [x] Import BitMart v4 selected-market cash spot fills through bounded seven-day queries, native time-window splits and shared exact-order identities.
+- [x] Import native OKX on-chain deposits and withdrawals with tie-safe resumable windows, optional pending updates and rolling scans.
+- [x] Import posted OKX Funding/Trading wallet transfers by exact bill ID. Use signed net bill changes in OKX Trading cash balance checks and require a new checkpoint after the wallet measure changes.
 - [ ] Wider funding/history adapters and account balance reconciliation.
 
 ## 2. Exchange infrastructure
@@ -109,8 +111,10 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [ ] Verify lossless continuation for saturated Gemini results.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.
+- [x] Add production OKX cash spot private order signals to the existing REST wakeup pipeline.
 - [ ] Broader private account/balance streams and complete sequence-gap recovery; scheduling is not reconciliation completion.
 - [x] Reviewed Binance Spot read weights/observed minute IP ceilings, conservative Kraken private counters and Coinbase Exchange Sandbox buckets; safe native metadata/header evidence, pre-sign deferral, passive diagnostics and native Technician help.
+- [x] Add conservative OKX private read allowances for deposit/withdrawal history, Trading balances and archived Trading bills.
 - [ ] Broader quota/tier/profile and endpoint coverage, cross-process coordination and live venue-specific acceptance.
 
 ## 3. Strategies

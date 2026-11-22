@@ -16,6 +16,7 @@ The panel shows unfinished counts, source updates, last exhausted check, upcomin
 | --- | --- | --- |
 | Binance production | Deposits, withdrawals | Existing crypto capital-history endpoints; original creation-time windows and native pagination |
 | Bybit production | On-chain withdrawals, same-UID UNIFIED wallet transfers | Native withdrawal windows and transfer windows with per-stream cursors |
+| OKX production | On-chain deposits and withdrawals | Fixed creation-time windows split at native page capacity. Posted transfers use manual or recent history sync. |
 | Kraken | Unavailable | Its current source contains posted ledger entries, not pending requests |
 | Demo, test environments, other clients | Unavailable | No pending-source adapter advertised |
 

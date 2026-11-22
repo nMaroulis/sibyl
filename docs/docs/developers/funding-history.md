@@ -9,6 +9,7 @@
 | Binance production                                                                 | Crypto deposits and withdrawals                 | Explicit time window, native offsets; fiat purchases/bank funding, universal transfers, earn and subaccounts remain outside this importer        |
 | Kraken production                                                                  | Deposit, withdrawal and transfer ledger entries | Default wallet and posted ledger entries; pending funding requests, earn/staking and other ledger categories are not imported                    |
 | Bybit production | On-chain withdrawals and same-UID wallet transfers that enter or leave UNIFIED | Master UID for on-chain withdrawals. Native 29-day withdrawal and seven-day transfer slices. Deposits, cross-UID transfers, off-chain withdrawals and additional withdrawal taxes remain outside the importer |
+| OKX production | On-chain deposits and withdrawals, plus posted Funding/Trading transfers | Native on-chain date windows and exact bill IDs. Trading transfer ranges must start within the last 89 days. |
 | Demo                                                                               | Empty funding history                           | Virtual seed inventory is not a fabricated deposit; the isolated example demonstrates the UI without account mutations                           |
 | Binance.US, Coinbase Advanced Trade, Coinbase Exchange Sandbox and other providers | Coming soon                                     | No generic timestamp-pagination fallback or unreviewed endpoint substitution                                                                     |
 | Binance Spot Test Network                                                          | Unavailable in this importer                    | Production wallet capital endpoints are never used for a sandbox                                                                                 |
@@ -22,6 +23,14 @@ These native contracts have offline tests. Authenticated account acceptance test
 The adapter reads the [same-UID transfer history endpoint](https://bybit-exchange.github.io/docs/v5/asset/transfer/inter-transfer-list) using native cursors and slices no longer than seven days. It filters out routes that never touch UNIFIED. It normalizes each retained record as incoming or outgoing relative to that wallet and keeps the reported source and destination wallet types. Slice boundaries account for the provider’s second-resolution filtering, while the ledger retains exact reported milliseconds. The endpoint supplies a creation timestamp and amount. Posting time and fee stay unavailable. Source observations do not establish an external cash flow or a transfer between two saved accounts.
 
 **Trade → Account history → Funding → Import range** offers **Transfers** for a supported active Bybit account. Recent history sync and pending updates can also revisit this stream if enabled. Wallet types appear in the table and CSV. Open **Source record → Observed versions** to see changes. Accountant reads the same retained evidence.
+
+### OKX funding and Trading wallet transfers
+
+OKX on-chain deposit and withdrawal history uses a fixed creation-time interval and the provider’s on-chain filter. Capped windows split without dropping timestamp ties. A saturated single millisecond stops with a coverage limit. Native deposit and withdrawal IDs stay exact; addresses, transaction hashes and account identifiers are discarded. The withdrawal fee retains its reported currency when available. These reports do not establish the Trading cash effect or posting time. Credited deposits with withdrawal restrictions stay **restricted**. Converted xStock deposits need separate accounting. [OKX deposit history](https://www.okx.com/docs-v5/en/#funding-account-rest-api-get-deposit-history) · [OKX withdrawal history](https://www.okx.com/docs-v5/en/#funding-account-rest-api-get-withdrawal-history).
+
+Posted transfers use authenticated Trading bills. Sibyl checks the Funding/Trading route, direction code, signed balance change and posting time. The native bill ID checkpoints advance to older IDs. The amount represents the net Trading balance change; the fee is shown separately. The route is excluded from cross-account transfer matching. [OKX Trading bills](https://www.okx.com/docs-v5/en/#trading-account-rest-api-get-bills-details-last-3-months).
+
+Manual range imports and opt-in recent scans cover all three streams. Pending updates cover on-chain deposits and withdrawals only. OKX sandbox funding is unavailable.
 
 ## Importing a range
 
@@ -37,7 +46,7 @@ The shared `ImportWorker` supplies scheduling, a per-service work lock, sanitize
 
 Funding pages contain at most 50 records. A 2,000-page budget stops an overly large import with an explicit error; choose a smaller date range. Repeated cursors and repeated record pages fail instead of looping. A rejected page cannot advance the cursor or partially insert records.
 
-**Range fetched** only means the selected provider pagination ended. Late records, old pending statuses and provider retention can leave gaps. A new manual date range does not itself refresh older pending records. Optional [pending updates](funding-pending-updates.md) revisit retained unfinished Binance/Bybit records independently of manual ranges. They default off. Optional [recent history sync](funding-recent-sync.md) discovers new arrivals and completed corrections inside a chosen rolling window. Older/outside-window history still needs explicit imports.
+**Range fetched** only means the selected provider pagination ended. Late records, old pending statuses and provider retention can leave gaps. A new manual date range does not itself refresh older pending records. Optional [pending updates](funding-pending-updates.md) revisit retained unfinished Binance, Bybit and OKX records independently of manual ranges. They default off. Optional [recent history sync](funding-recent-sync.md) discovers new arrivals and completed corrections inside a chosen rolling window. Older/outside-window history still needs explicit imports.
 
 ## Observation contract
 

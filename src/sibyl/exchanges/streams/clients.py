@@ -9,8 +9,6 @@ from abc import ABC, abstractmethod
 
 import ccxt.pro as pro
 
-PROVIDERS = frozenset({"binance", "binance-testnet", "coinbase", "kraken"})
-
 
 class AccountOrderStream(ABC):
     """The minimal async contract owned by one connection's stream task."""
@@ -63,8 +61,12 @@ class CCXTOrderStream(AccountOrderStream):
         return [
             {key: row.get(key) for key in ("id", "symbol", "status", "filled", "cost", "lastTradeTimestamp")}
             for row in result
-            if isinstance(row, dict)
+            if isinstance(row, dict) and self.accepts_order(row)
         ]
+
+    def accepts_order(self, row: dict) -> bool:
+        """Keep normalized rows within the reviewed scope of this subscription."""
+        return True
 
     async def close(self):
         await self.native.close()
@@ -89,12 +91,32 @@ class KrakenOrderStream(CCXTOrderStream):
     provider = "kraken"
 
 
+class OKXOrderStream(CCXTOrderStream):
+    """Observe production cash spot orders via OKX's native authenticated channel."""
+
+    provider = "okx"
+    params = {"type": "spot"}
+
+    def accepts_order(self, row: dict) -> bool:
+        native = row.get("info")
+        return (
+            isinstance(native, dict)
+            and native.get("instType") == "SPOT"
+            and native.get("tdMode") == "cash"
+            and isinstance(row.get("id"), str)
+            and bool(row["id"])
+            and native.get("ordId") == row["id"]
+        )
+
+
 CLIENTS = {
     "binance": BinanceOrderStream,
     "binance-testnet": BinanceOrderStream,
     "coinbase": CoinbaseOrderStream,
     "kraken": KrakenOrderStream,
+    "okx": OKXOrderStream,
 }
+PROVIDERS = frozenset(CLIENTS)
 
 
 def create_stream(connection, credentials):
@@ -103,6 +125,6 @@ def create_stream(connection, credentials):
         connection.sandbox and connection.exchange not in {"binance", "binance-testnet"}
     ):
         raise ValueError(
-            "Private order streams support Binance production, Binance Testnet, Coinbase Advanced production and Kraken production."
+            "Private order streams support Binance production, Binance Testnet, Coinbase Advanced, Kraken and OKX production."
         )
     return CLIENTS[connection.exchange](connection, credentials)

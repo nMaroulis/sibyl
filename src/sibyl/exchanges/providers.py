@@ -106,9 +106,18 @@ class OKXClient(CCXTClient):
     """OKX trading wallet, passphrase signing, and explicit simulated-trading mode."""
 
     id = "okx"
+    balance_snapshot_revision = 2
     history_kind = "okx-bill"
     options = {"fetchMarkets": {"types": ["spot"]}}
     balance_params = {"type": "spot"}
+
+    def fetch_balance_snapshot(self) -> dict:
+        """Compare ledger balance changes to the Trading wallet's native cash quantity."""
+        from sibyl.exchanges.okx_funding import cash_snapshot
+
+        with self.lock:
+            self._require("fetchBalance", private=True)
+            return cash_snapshot(self._exchange)
 
     def format_client_order_id(self, identity: str) -> str:
         """OKX accepts at most 32 alphanumeric characters; persist the native ID."""

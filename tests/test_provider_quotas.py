@@ -11,7 +11,7 @@ import pytest
 import requests
 from test_provider_control import source
 
-from sibyl.exchanges.providers import BinanceClient, CoinbaseSandboxClient, KrakenClient
+from sibyl.exchanges.providers import BinanceClient, CoinbaseSandboxClient, KrakenClient, OKXClient
 from sibyl.market_data.control import ProviderControl, ProviderDeferred
 from sibyl.market_data.quotas.budgets import Quotas
 from sibyl.market_data.quotas.policies import request
@@ -509,3 +509,48 @@ def test_clock_rollback_does_not_refund_window_and_source_reset_does_not_invent_
     before = budgets(pool.snapshot(source(), state(), 100, WALL + 20))["local_weight"]["used"]
     after = budgets(pool.snapshot(source(), state(), 101, WALL - 20))["local_weight"]["used"]
     assert before == after == 20
+
+
+def test_okx_bill_reads_share_local_profiles_but_keep_stream_and_environment_budgets_separate():
+    pool = Quotas()
+    production = source("connection:okx-one", "okx", "production")
+    other = source("connection:okx-two", "okx", "production")
+    test = source("connection:okx-demo", "okx", "test")
+    bills = request(production, "private", "GET", "account/bills-archive", {"ccy": "PRIVATE"}, "key-a")
+    assert bills.reviewed and bills.charges == (("bill_reads", 1),)
+    assert "PRIVATE" not in repr(bills)
+    for _ in range(2):
+        record(pool, bills, production)
+    assert pool.delay(
+        request(other, "private", "GET", "account/bills-archive", {}, "key-b"), 100, WALL
+    ) == pytest.approx(1 / 1.5)
+    for path in ("account/balance", "asset/deposit-history", "asset/withdrawal-history"):
+        allowed = request(other, "private", "GET", path, {})
+        assert allowed.reviewed and pool.delay(allowed, 100, WALL) == 0
+    assert pool.delay(request(test, "private", "GET", "account/bills-archive", {}), 100, WALL) == 0
+    assert not request(production, "private", "POST", "asset/withdrawal", {}).reviewed
+    observed = pool.snapshot(production, state(), 100, WALL)
+    assert budgets(observed)["bill_reads"]["used"] == 2
+    assert budgets(observed)["bill_reads"]["scope"] == "all_local_profiles"
+    assert "key-a" not in json.dumps(observed)
+
+
+def test_actual_okx_funding_get_is_classified_before_native_signing():
+    control = ProviderControl(min_interval=0)
+    meta = source("connection:okx-native", "okx", "production")
+    client, captured, replies = native(
+        control,
+        OKXClient,
+        meta,
+        credentials={"apiKey": "FAKE-KEY", "secret": "FAKE-SECRET", "password": "FAKE-PASS"},
+    )
+    try:
+        replies.append({"body": {"code": "0", "data": []}})
+        invoke(control, meta, client._exchange.privateGetAssetWithdrawalHistory, type="4", limit="50")
+        observed = control.snapshot([meta], meta["id"])["items"][0]["quotas"]
+        assert budgets(observed)["withdrawal_reads"]["used"] == 1
+        assert observed["reviewed_attempts"] == 1
+        assert captured == [{"method": "GET", "path": "/api/v5/asset/withdrawal-history"}]
+        assert "FAKE" not in json.dumps(observed)
+    finally:
+        client.close()

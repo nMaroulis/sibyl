@@ -131,6 +131,93 @@ async def test_actual_native_subscription_signing_endpoints_and_safe_signal_fiel
         await stream.close()
 
 
+async def test_okx_native_login_and_cash_spot_subscription():
+    credentials = {"apiKey": "OKX-KEY", "secret": "OKX-SECRET", "password": "OKX-PASSPHRASE"}
+    stream = create_stream(SimpleNamespace(exchange="okx", sandbox=False), credentials)
+    native = stream.native
+    sent = []
+    login = asyncio.get_running_loop().create_future()
+    good = {
+        "id": "370257534141235201",
+        "symbol": "ETH/USDT",
+        "info": {
+            "ordId": "370257534141235201",
+            "instType": "SPOT",
+            "tdMode": "cash",
+            "tag": "PRIVATE-NATIVE-TAG",
+        },
+    }
+
+    async def markets(*args, **kwargs):
+        return {}
+
+    def watch(url, message_hash, message, *args, **kwargs):
+        sent.append((url, message_hash, message))
+        if message_hash == "authenticated":
+            login.set_result({"code": "0"})
+            return login
+
+        async def updates():
+            return Cache(
+                [
+                    good,
+                    {**good, "id": "wrong-id"},
+                    {**good, "info": {**good["info"], "tdMode": "cross"}},
+                    {**good, "info": {**good["info"], "instType": "SWAP"}},
+                    {**good, "info": None},
+                ]
+            )
+
+        return updates()
+
+    native.load_markets = markets
+    native.seconds = lambda: 1234567890
+    native.client = lambda url: SimpleNamespace(subscriptions={}, reusableFuture=lambda message_hash: login)
+    native.watch = watch
+
+    try:
+        result = await stream.receive()
+        assert result == [
+            {
+                "id": good["id"],
+                "symbol": "ETH/USDT",
+                "status": None,
+                "filled": None,
+                "cost": None,
+                "lastTradeTimestamp": None,
+            }
+        ]
+        url = "wss://ws.okx.com:8443/ws/v5/private"
+        signature = base64.b64encode(
+            hmac.new(b"OKX-SECRET", b"1234567890GET/users/self/verify", hashlib.sha256).digest()
+        ).decode()
+        assert sent == [
+            (
+                url,
+                "authenticated",
+                {
+                    "op": "login",
+                    "args": [
+                        {
+                            "apiKey": "OKX-KEY",
+                            "passphrase": "OKX-PASSPHRASE",
+                            "timestamp": "1234567890",
+                            "sign": signature,
+                        }
+                    ],
+                },
+            ),
+            (url, "orders", {"op": "subscribe", "args": [{"channel": "orders", "instType": "SPOT"}]}),
+        ]
+    finally:
+        await stream.close()
+
+
+def test_okx_sandbox_cannot_create_a_private_order_stream():
+    with pytest.raises(ValueError, match="OKX production"):
+        create_stream(SimpleNamespace(exchange="okx", sandbox=True), {})
+
+
 class QueueStream:
     def __init__(self):
         self.queue = asyncio.Queue()

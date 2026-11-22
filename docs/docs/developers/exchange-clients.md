@@ -141,7 +141,7 @@ These routes have the same workspace access controls as other APIs. Account read
 - [x] Add reviewed Binance/Testnet conditional GTC limits, native OCO and unfilled-only replacement. See [advanced orders](advanced-orders.md).
 - [ ] Extend conditional/OCO/replacement and other native instructions to additional providers.
 - [x] Add public Binance/Testnet and Kraken ticker/OHLC previews with shared bounded sockets and explicit timing/fallback.
-- [x] Add optional native private order signals with persisted REST wakeups for Binance/Testnet, Coinbase Advanced and Kraken.
+- [x] Add optional native private order signals with persisted REST wakeups for Binance/Testnet, Coinbase Advanced, Kraken and OKX production.
 - [ ] Extend private balance/account streams, complete gap recovery and broader providers; financial evidence still uses existing REST contracts.
 - [ ] Additional funding/earn/staking/subaccount wallets, transfer execution, derivatives and unified-account variants beyond the reviewed scopes. Funding history reads and withdrawal execution are separate; withdrawal writes remain unavailable.
 - [x] Held-asset spot valuation through exact direct/inverse/bridge routes and observed stablecoin/fiat rates; see [portfolio valuation](portfolio-valuation.md). Broader aggregator catalogs and external FX sources remain future work.

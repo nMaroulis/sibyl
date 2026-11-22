@@ -9,6 +9,7 @@ from pydantic import AwareDatetime, Field, model_validator
 
 from sibyl.accounting.funding import balance_effect
 from sibyl.exchanges.funding import DAY, funding_streams
+from sibyl.exchanges.okx_funding import TRANSFER_LOOKBACK
 from sibyl.models import Connection, Request
 from sibyl.services.accounts.import_worker import ImportLimitError, ImportWorker
 from sibyl.services.accounts.ledger import now_iso
@@ -82,6 +83,8 @@ class FundingSync(ImportWorker):
                         if row.exchange == "kraken"
                         else "Bybit imports master-UID on-chain withdrawals and same-UID wallet transfers that enter or leave UNIFIED. Deposits, transfers between UIDs and extra withdrawal tax charges remain outside this import."
                         if row.exchange == "bybit" and supported(row)
+                        else "OKX imports on-chain deposits and withdrawals and posted Funding/Trading wallet transfers. Transfers cover the last 89 days. On-chain records leave Trading wallet impact unresolved."
+                        if row.exchange == "okx" and supported(row)
                         else "Funding import is coming soon for this exchange/environment."
                         if not supported(row)
                         else ""
@@ -101,6 +104,12 @@ class FundingSync(ImportWorker):
         if any(stream not in supported(connection) for stream in request.streams):
             raise ValueError("Funding import is coming soon for this exchange or selected stream.")
         start, end = int(request.start.timestamp() * 1000), int(request.end.timestamp() * 1000)
+        if (
+            connection.exchange == "okx"
+            and "transfer" in request.streams
+            and start < datetime.now(UTC).timestamp() * 1000 - TRANSFER_LOOKBACK
+        ):
+            raise ValueError("Choose an OKX Trading wallet transfer range within the last 89 days.")
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             if not db.execute("SELECT 1 FROM connections WHERE id=?", (connection.id,)).fetchone():

@@ -11,6 +11,13 @@ from dataclasses import dataclass
 BINANCE_DOCS = "https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#limits"
 KRAKEN_DOCS = "https://docs.kraken.com/exchange/guides/rest/ratelimits"
 EXCHANGE_DOCS = "https://docs.cdp.coinbase.com/exchange/rest-api/rate-limits"
+OKX_DOCS = "https://www.okx.com/docs-v5/en/#trading-account-rest-api-get-bills-details-last-3-months"
+OKX_PRIVATE_READS = {
+    "asset/deposit-history": ("Deposit history read", "deposit_reads", 2, 3),
+    "asset/withdrawal-history": ("Withdrawal history read", "withdrawal_reads", 2, 3),
+    "account/bills-archive": ("Trading bills archive read", "bill_reads", 2, 1.5),
+    "account/balance": ("Trading balance read", "balance_reads", 2, 3),
+}
 REVIEWED = "2026-11-09"
 
 
@@ -58,6 +65,15 @@ def describe(provider):
             "coverage": "Public reads and reviewed private account/history POST reads. Trading-engine limits are separate.",
             "identity": "Public budget shared locally; private budgets share identical API keys, without exposing their identity.",
             "headroom": "Public: one request per second. Private: capacity 12, decay 0.30/sec, history cost 4 and other reviewed reads cost 1. Tier is unknown; this is a conservative application estimate.",
+        }
+    if name == "okx":
+        return {
+            "name": "OKX private account read allowances",
+            "reviewed_at": "2026-11-22",
+            "reference": OKX_DOCS,
+            "coverage": "Reviewed private GET requests for on-chain deposit and withdrawal history, archived Trading bills and Trading balances.",
+            "identity": "Saved profiles share local allowances within each environment because API keys do not establish the native User ID scope.",
+            "headroom": "These conservative local estimates do not measure provider headroom or other processes.",
         }
     if name == "coinbase-sandbox":
         return {
@@ -179,6 +195,9 @@ def request(source, api, method, path, params, partition="shared"):
             if path in history | ordinary:
                 label = "Private history estimate" if path in history else "Private account estimate"
                 charges, reviewed = (("private_counter", 4 if path in history else 1),), True
+    elif name == "okx" and group == "private" and method == "GET" and path in OKX_PRIVATE_READS:
+        label, bucket, _, _ = OKX_PRIVATE_READS[path]
+        charges, reviewed = ((bucket, 1),), True
     elif name == "coinbase-sandbox" and method == "GET":
         if group == "public" and (path in {"time", "products", "currencies"} or path.startswith("products/")):
             label, charges, reviewed = "Exchange public read", (("public_reads", 1),), True
@@ -202,6 +221,11 @@ def specifications(call):
         return {
             "public_reads": ("Public read allowance", "provider_environment", 1, None, 1),
             "private_counter": ("Conservative private counter", "credential", 12, None, 0.30),
+        }
+    if call.family == "okx":
+        return {
+            key: (label + " allowance", "all_local_profiles", capacity, None, refill)
+            for label, key, capacity, refill in OKX_PRIVATE_READS.values()
         }
     if call.family == "coinbase-sandbox":
         return {

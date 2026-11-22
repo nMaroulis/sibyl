@@ -9,6 +9,8 @@ import ccxt
 
 from sibyl.exchanges.base import number
 from sibyl.exchanges.history import _token
+from sibyl.exchanges.okx_funding import onchain_page as okx_onchain_page
+from sibyl.exchanges.okx_funding import transfer_page as okx_transfer_page
 
 DAY = 86_400_000
 
@@ -28,6 +30,7 @@ def funding_streams(exchange: str) -> list[str]:
         "demo": ["deposit", "withdrawal", "transfer"],
         "binance": ["deposit", "withdrawal"],
         "kraken": ["deposit", "withdrawal", "transfer"],
+        "okx": ["deposit", "withdrawal", "transfer"],
         "bybit": ["withdrawal", "transfer"],
     }.get(exchange, [])
 
@@ -101,6 +104,10 @@ def fetch_funding_page(exchange, provider: str, stream: str, cursor: dict, limit
     if not 1 <= limit <= 50:
         raise ValueError("Funding pages support 1–50 records.")
     start, end = cursor["start"], cursor["end"]
+    if provider == "okx":
+        if stream == "transfer":
+            return FundingPage(*okx_transfer_page(exchange, cursor, limit))
+        return FundingPage(*okx_onchain_page(exchange, stream, cursor, limit))
     if provider == "bybit" and stream == "transfer":
         return _bybit_wallet_transfers(exchange, cursor, limit)
     if provider == "bybit":

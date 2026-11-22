@@ -1,6 +1,6 @@
 # Private order signals
 
-**Settings → Exchanges → Live order updates** offers opt-in private observers for Binance production, Binance Spot Testnet, Coinbase Advanced Trade production and Kraken production. They use native **CCXT Pro**, already included in the locked CCXT dependency. Coinbase Exchange sandbox and other providers are not enabled.
+**Settings → Exchanges → Live order updates** offers opt-in private observers for Binance production, Binance Spot Testnet, Coinbase Advanced Trade, Kraken and OKX production. They use native **CCXT Pro**, already included in the locked CCXT dependency. Binance Spot Testnet is the supported test environment.
 
 These are **read-only order signals backed by existing REST readers**, not a complete account stream, a financial ledger or a WebSocket execution engine. No stream method places, cancels or replaces orders.
 
@@ -33,9 +33,10 @@ Targets, bounded duplicate fingerprints and wakeup acknowledgment are transactio
 | Binance / Spot Testnet | Native `userDataStream.subscribe.signature` on the environment's WebSocket API, using CCXT signing. No legacy spot listen-key implementation is added. |
 | Coinbase Advanced | Native authenticated `user` channel and CDP JWT signing. The installed SDK uses the traditional Advanced WebSocket endpoint, which Coinbase documents as a supported alternative to the dedicated user endpoint. |
 | Kraken | Native v2 `executions`, authenticated using Kraken's short-lived REST WebSocket token. |
+| OKX production | Native private `orders` channel with `instType=SPOT` and signed WebSocket login. Only explicitly confirmed cash spot orders with matching native IDs schedule reads. |
 
-Source contracts: [CCXT Pro manual](https://github.com/ccxt/ccxt/wiki/ccxt.pro.manual), [Binance user streams](https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/user-data-stream-requests), [Coinbase WebSocket overview](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/websocket/websocket-overview), [Kraken executions](https://docs.kraken.com/exchange/api-reference/spot-websocket-v2/executions).
+Source contracts: [CCXT Pro manual](https://github.com/ccxt/ccxt/wiki/ccxt.pro.manual), [Binance user streams](https://developers.binance.com/docs/binance-spot-api-docs/websocket-api/user-data-stream-requests), [Coinbase WebSocket overview](https://docs.cdp.coinbase.com/coinbase-app/advanced-trade-apis/websocket/websocket-overview), [Kraken executions](https://docs.kraken.com/exchange/api-reference/spot-websocket-v2/executions), [OKX orders](https://www.okx.com/docs-v5/en/#order-book-trading-trade-ws-order-channel).
 
 `exchanges/streams/service.py` owns opt-in state, clients and persistent wakeups; `wakeups.py` schedules existing domain reads. `GET /api/v1/account-streams` is passive; `PUT /api/v1/account-streams/{account_id}` uses an explicit enabled flag and displayed revision. Broker's native `private_order_signals` tool reads compact observations without opening a connection or changing settings.
 
-Offline tests capture actual installed-SDK signed subscriptions/endpoints, including Testnet isolation, Coinbase signature verification and Kraken token requests. They also check duplicate messages, no stream-to-ledger writes, preserved pauses, credential changes, restart/backstop scheduling, authentication blocking, native close/drain and restored quarantine. No real account socket or order is used in these tests. Authenticated venue acceptance remains a separate deployment check.
+Offline tests capture actual installed-SDK signed subscriptions/endpoints, including Testnet isolation, Coinbase signature verification, Kraken token requests and OKX signed login, cash spot filtering and sandbox exclusion. They also check duplicate messages, no stream-to-ledger writes, preserved pauses, credential changes, restart/backstop scheduling, authentication blocking, native close/drain and restored quarantine. No real account socket or order is used in these tests. Authenticated venue acceptance remains a separate deployment check.

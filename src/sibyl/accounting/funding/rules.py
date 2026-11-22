@@ -1,8 +1,8 @@
 """Resolve a movement in its account's configured wallet without guessing fee inclusion.
 
-Kraken's posted ledger defines signed amount minus same-asset fee. Other nonzero
-fee conventions require an explicit local review. Neither rule proves ownership,
-external cash flow, settlement finality, tax basis or complete history coverage.
+Kraken's posted ledger defines signed amount minus same-asset fee. OKX wallet
+transfer bills report the posted net change. Other fee conventions need evidence
+or an explicit local review. These observations establish wallet effects only.
 """
 
 import hashlib
@@ -11,6 +11,7 @@ from decimal import Decimal, localcontext
 
 KRAKEN_RULE = "kraken-ledger-v1"
 KRAKEN_SOURCE = "https://support.kraken.com/articles/360001169383-how-to-interpret-ledger-history-fields"
+OKX_SOURCE = "https://www.okx.com/docs-v5/en/#trading-account-rest-api-get-bills-details-last-3-months"
 FACTS = (
     "id",
     "account_id",
@@ -123,6 +124,22 @@ def balance_effect(row, review=None):
                 provenance="provider",
                 rule="outside-wallet-v1",
                 reason="The provider identifies a wallet outside the configured balance scope.",
+            )
+        elif (
+            scope == "configured"
+            and row.get("exchange") == "okx"
+            and row["kind"] == "transfer"
+            and row.get("amount_basis") == "ledger_amount"
+            and row.get("wallet_route")
+            and row.get("posted_ms") is not None
+            and row["posted_ms"] == row.get("timestamp_ms")
+        ):
+            result.update(
+                quantity=str(signed),
+                provenance="provider",
+                rule="okx-trading-bill-net-v1",
+                source_url=OKX_SOURCE,
+                reason="OKX Trading bill reports the signed posted balance change. The fee is already reflected in that change.",
             )
         elif scope == "configured" and kraken and row["fee_known"] and fee["currency"] == row["asset"]:
             result.update(
