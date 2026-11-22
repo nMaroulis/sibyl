@@ -158,7 +158,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         trained. Returns the implemented assumptions and calibration limitations.
         """
         return {
-            "method": "Trained direct ridge, fixed-scale Huber, native ARIMA(p,1,q) with optional weekly seasonality or a small tanh neural network; the untrained log-return baseline is separate",
+            "method": "Trained direct ridge, fixed-scale Huber, native ARIMA(p,1,q) with optional seven-day or 14-day seasonality or a small tanh neural network; the untrained log-return baseline is separate",
             "training": "Frozen daily input and chronological 60/20/20 train/calibration/test partitions. Ridge/Huber/neural fit per horizon with purged targets. ARIMA fits one return model on the training partition, fixes parameters, then filters exactly 90 observed closes per origin; calibration/test targets crossing their boundaries are purged.",
             "trained_intervals": "Nominal 90% bands from calibration log errors; held-out coverage is reported and future coverage is not guaranteed.",
             "horizon_days": {"ridge": [1, 30], "huber": [1, 30], "small_neural": [1, 14], "arima": [1, 14]},

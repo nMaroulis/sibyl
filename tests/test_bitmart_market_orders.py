@@ -219,7 +219,8 @@ def test_confirmation_reads_fresh_rules_before_sending(market_account, monkeypat
 
 
 @pytest.mark.parametrize(
-    "change", [{"side": "buy"}, {"orderMode": "iso_margin"}, {"stpMode": "cancel_both"}, {"size": ""}]
+    "change",
+    [{"side": "buy", "notional": ""}, {"orderMode": "iso_margin"}, {"stpMode": "cancel_both"}, {"size": ""}],
 )
 def test_recovery_refuses_other_sizing_modes_and_unreviewed_terms(market_account, monkeypatch, change):
     _, _, adapter = market_account
@@ -237,10 +238,12 @@ def test_market_buy_read_never_converts_quote_budget_to_requested_base(market_ac
     monkeypatch.setattr(native, "privatePostSpotV4QueryOrder", lambda _: response(row))
     result = adapter.fetch_order(ORDER_ID, "BTC/USDT")
     assert result["amount"] is None and result["remaining"] is None
-    assert result["filled"] == 0.001 and result["cost"] == 50
+    assert result["filled"] == 0.001 and result["cost"] == 50 and result["quote_budget"] == 60
 
 
-def test_buy_budget_is_rejected_before_io_and_gtc_buy_remains_available(market_account, monkeypatch):
+def test_base_sized_market_buy_is_rejected_before_io_and_gtc_buy_remains_available(
+    market_account, monkeypatch
+):
     owner, account, adapter = market_account
     monkeypatch.setattr(adapter._exchange, "fetch2", lambda *args, **kwargs: pytest.fail("Unexpected I/O"))
     with pytest.raises(ValueError, match="quote-currency budget"):

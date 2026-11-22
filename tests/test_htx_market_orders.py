@@ -198,7 +198,7 @@ def test_confirmation_requires_wallet_and_current_sell_rules_before_writing(htx,
         ({"account-id": 4321}, ccxt.ExchangeError),
         ({"symbol": "ethusdt"}, ccxt.ExchangeError),
         ({"source": "super-margin-api"}, ValueError),
-        ({"type": "buy-market"}, ValueError),
+        ({"type": "buy-ioc"}, ValueError),
         ({"stop-price": "13.2"}, ValueError),
     ],
 )
@@ -211,7 +211,7 @@ def test_recovery_refuses_wrong_wallet_pair_or_native_terms(htx, monkeypatch, ch
         adapter.fetch_order_lookup_page("saved", "BTC/USDT", {}, 1, 2)
 
 
-def test_known_market_buys_keep_their_execution_but_hide_quote_sizing(htx, monkeypatch):
+def test_known_market_buys_keep_their_execution_and_quote_sizing(htx, monkeypatch):
     _, _, adapter = htx
     native = adapter._exchange
     row = htx_order(
@@ -228,13 +228,15 @@ def test_known_market_buys_keep_their_execution_but_hide_quote_sizing(htx, monke
     result = adapter.fetch_order(ORDER_ID, "BTC/USDT")
     assert result["amount"] is None and result["remaining"] is None
     assert result["filled"] == 0.01 and result["cost"] == 500 and result["average"] == 50000
+    assert result["quote_budget"] == 510
 
 
-def test_catalog_offers_market_sells_and_rejects_quote_budget_buys_before_io(htx, monkeypatch):
+def test_catalog_offers_markets_and_rejects_base_sized_market_buys_before_io(htx, monkeypatch):
     owner, account, adapter = htx
     monkeypatch.setattr(adapter._exchange, "fetch2", lambda *args, **kwargs: pytest.fail("Unexpected I/O"))
     provider = next(row for row in provider_catalog()["items"] if row["id"] == "htx")
-    assert provider["market_order_sides"] == ["sell"] and provider["limit_orders"]
+    assert provider["market_order_sides"] == ["buy", "sell"] and provider["limit_orders"]
+    assert provider["market_buy_budget"]
     with pytest.raises(ValueError, match="quote-currency budget"):
         owner.trading.preview(market_request(account, side="buy"))
     assert owner.trading.preview(order_request(account))["request"]["order_type"] == "limit"

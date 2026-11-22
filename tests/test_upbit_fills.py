@@ -1,5 +1,6 @@
 """Upbit native UUID executions retain honest fee gaps and checkpoint parent discovery."""
 
+from itertools import pairwise
 from uuid import UUID
 
 import ccxt
@@ -57,18 +58,25 @@ def test_history_resumes_order_uuids_and_deduplicates_open_to_closed_transition(
     monkeypatch.setattr(
         native, "privateGetOrdersOpen", lambda params: reads.append(params.copy()) or [order()]
     )
-    monkeypatch.setattr(
-        native, "privateGetOrdersClosed", lambda params: reads.append(params.copy()) or [parent]
-    )
+
+    def closed(params):
+        reads.append(params.copy())
+        stamp = native.parse8601(parent["created_at"])
+        return [parent] if int(params["start_time"]) <= stamp <= int(params["end_time"]) else []
+
+    monkeypatch.setattr(native, "privateGetOrdersClosed", closed)
     monkeypatch.setattr(native, "privateGetOrder", lambda _: parent)
     owner.account_sync.enqueue(account, ["BTC/USDT"])
     owner.account_sync.tick()
     restarted = AccountSync(owner.market, owner.store)
-    for _ in range(3):
+    for _ in range(6):
         restarted.tick()
     assert restarted.snapshot()["jobs"][0]["status"] == "caught_up", restarted.snapshot()["jobs"]
     assert restarted.ledger.fills(account_id=account.id)["total"] == 1
     assert all(row["market"] == "USDT-BTC" for row in reads)
+    windows = [row for row in reads if "start_time" in row]
+    assert len(windows) == 5
+    assert all(int(a["end_time"]) + 1 == int(b["start_time"]) for a, b in pairwise(windows))
     assert not native.has["fetchMyTrades"]  # Explicit native order reads do not forge SDK capability.
 
 

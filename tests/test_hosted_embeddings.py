@@ -28,8 +28,12 @@ class HostedServer:
     def respond(self, request):
         body = json.loads(request.content)
         self.calls.append((request, body))
-        assert request.method == "POST" and request.url.path == "/v1/embeddings"
-        assert request.url.host in {"api.openai.com", "api.mistral.ai"}
+        endpoints = {
+            "api.openai.com": "/v1/embeddings",
+            "api.mistral.ai": "/v1/embeddings",
+            "generativelanguage.googleapis.com": "/v1beta/openai/embeddings",
+        }
+        assert request.method == "POST" and request.url.path == endpoints[request.url.host]
         assert not request.url.query and body["encoding_format"] == "float"
         assert request.headers["authorization"] == "Bearer " + SECRET
         assert "OTHER-PRIVATE-ORG" not in str(request.headers)
@@ -50,7 +54,11 @@ class HostedServer:
             200,
             json={
                 "object": "list",
-                "model": body["model"],
+                "model": (
+                    "models/" + body["model"]
+                    if request.url.host == "generativelanguage.googleapis.com"
+                    else body["model"]
+                ),
                 "data": list(reversed(data)),
                 "usage": {"prompt_tokens": 4, "total_tokens": 4},
             },
@@ -101,7 +109,7 @@ def build(owner):
     return owner.semantic.build(IndexBatch(revision=owner.semantic.status()["revision"], kind="document"))
 
 
-@pytest.mark.parametrize("provider", ["openai", "mistral"])
+@pytest.mark.parametrize("provider", ["openai", "mistral", "gemini"])
 def test_real_sdk_and_native_protolink_preserve_ordered_cited_hosted_vectors(hosted, provider, monkeypatch):
     owner, remote = hosted
     docs = sources(owner)
@@ -121,7 +129,7 @@ def test_real_sdk_and_native_protolink_preserve_ordered_cited_hosted_vectors(hos
     ]
     assert state["profile"]["provider"] == provider and state["has_api_key"]
     assert "credential_ref" not in state["profile"] and "model_digest" not in state["profile"]
-    assert remote.calls[0][0].url.host == ("api.openai.com" if provider == "openai" else "api.mistral.ai")
+    assert str(remote.calls[0][0].url) == PROVIDERS[provider]["endpoint"] + "/embeddings"
     assert remote.options[0]["follow_redirects"] is False and remote.options[0]["trust_env"] is False
     assert build(owner)["added"] == 2
     result = owner.search("safekeeping secrets", method="semantic")
@@ -155,7 +163,7 @@ def test_passive_startup_catalog_and_keyword_search_never_send_text(hosted):
     owner, remote = hosted
     sources(owner)
     assert not owner.semantic.status()["configured"] and remote.calls == []
-    assert {r["id"] for r in owner.semantic.status()["hosted"]["items"]} == {"openai", "mistral"}
+    assert {r["id"] for r in owner.semantic.status()["hosted"]["items"]} == {"openai", "mistral", "gemini"}
     setup(owner)
     build(owner)
     before = len(remote.calls)

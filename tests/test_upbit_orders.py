@@ -226,3 +226,33 @@ def test_settings_only_enable_implemented_upbit_reads():
     assert features["history_import"]["status"] == features["fill_reconciliation"]["status"] == "available"
     assert provider["market_order_sides"] == ["buy", "sell"]
     assert provider["market_buy_budget"]
+
+
+def test_older_closed_orders_keep_frozen_windows_and_resumable_native_bounds(upbit, monkeypatch):
+    from datetime import UTC, datetime
+
+    _, _, adapter = upbit
+    start = 1_785_000_000_000
+    day = 86_400_000
+    end = start + 30 * day
+    requests = []
+
+    def read(params):
+        requests.append(params.copy())
+        stamp = int(params["start_time"])
+        date = datetime.fromtimestamp(stamp / 1000, tz=UTC).isoformat()
+        return [order(len(requests), state="done", created_at=date)]
+
+    monkeypatch.setattr(adapter._exchange, "privateGetOrdersClosed", read)
+    cursor, seen = {}, []
+    while len(requests) < 5:
+        orders, cursor, complete, _ = discover_page(
+            adapter._exchange, "recent", cursor, start, end, instrument="USDT-BTC"
+        )
+        seen.extend(row["id"] for row in orders)
+    assert complete and not cursor and len(set(seen)) == 5
+    assert [int(row["start_time"]) for row in requests] == [
+        start + shift * day for shift in [0, 7, 14, 21, 28]
+    ]
+    assert int(requests[-1]["end_time"]) == end - 1
+    assert all(row["market"] == "USDT-BTC" for row in requests)

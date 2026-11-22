@@ -370,7 +370,7 @@ def test_http_reads_are_local_filters_validate_and_examples_stay_isolated(client
 
 def test_request_limits_are_explicit():
     for values in (
-        {"days": 8},
+        {"days": 31},
         {"symbols": ["BTC/USDT:USDT"]},
         {"symbols": [f"COIN{i}/USD" for i in range(13)]},
     ):

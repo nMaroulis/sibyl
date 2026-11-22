@@ -23,11 +23,11 @@ class WorkerHealth:
     heartbeat timer. This is process-local observation, not an uptime guarantee.
     """
 
-    def __init__(self, store, *, clock=time.monotonic):
+    def __init__(self, store, *, clock=time.monotonic, traffic=None):
         self.store, self.clock = store, clock
         from sibyl.operations.diagnostics import WorkspaceDiagnostics
 
-        self.diagnostics = WorkspaceDiagnostics(store, self)
+        self.diagnostics = WorkspaceDiagnostics(store, self, traffic=traffic)
         self.workers, self.tasks = {}, []
         self.inflight = set()
         self.recovery_required = False

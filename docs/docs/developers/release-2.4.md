@@ -101,9 +101,12 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Add Poloniex cash spot IOC market buys and sells with current pair rules, no borrowing and original-term client-ID recovery.
 - [x] Add Upbit Korea market buys and sells with account-specific pair rules and exact identifier recovery.
 - [x] Submit and recover Bitget Classic quote-budget market buys using the exact original size.
-- [ ] Extend explicit quote-budget market buys to Gate, HTX and BitMart.
-- [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
-- [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
+- [x] Extend explicit quote-budget market buys and original-budget recovery to Gate, HTX and BitMart.
+- [x] Recover Bitstamp closed and market orders with verified original terms from recent private creation events.
+- [ ] Extend Bitstamp event coverage beyond exact recovery once broader freshness, pagination and order-type contracts are verified.
+- [x] Add selected-pair Gemini closed-order scans and 30-day Upbit Trade discovery through seven-day native windows.
+- [x] Extend Upbit Account fill imports to an initial 30 days with resumable seven-day creation windows.
+- [ ] Verify lossless continuation for saturated Gemini results.
 - [ ] Extended native order instructions and amendment support, with actual capabilities only.
 - [x] Native Binance/Testnet, Coinbase Advanced and Kraken private order signals with persisted reconnect/restart REST wakeups and periodic backstops.
 - [ ] Broader private account/balance streams and complete sequence-gap recovery; scheduling is not reconciliation completion.
@@ -134,7 +137,9 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 ## 4. Agents and messaging
 
 - [x] Optional native durable investigations, human questions, exact local-note approvals, immutable team snapshots and native observed-note reconciliation. Native group continuation/retention gaps are documented.
-- [ ] Broader evidence/grounding/adversarial evaluation.
+- [x] Expand native agent evaluation to 21 cases covering multi-market scope, read-only action requests, private help, missing model evidence and untrusted-source delegation.
+- [x] Run selected new cases on two local Gemma models and record their instruction, context and runtime outcomes.
+- [ ] Run the full expanded suite across more models and verify coordinator reliability.
 - [x] Opt-in Telegram documents, local photo OCR and bounded speech transcription, retained citations and native specialist routing; external processors are optional and their live accuracy remains an acceptance check.
 - [x] Discord private HTTP DMs, Slack Socket Mode and local Signal bridge clients with checked recipient binding, encrypted setup, durable inbox/outbox and native ProtoLink requests.
 - [x] Signed WhatsApp Cloud API webhooks and paired TLS IMAP/SMTP email clients using the shared private inbox/outbox.
@@ -148,10 +153,13 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 - [x] Add trained fixed-scale Huber autoregression, validated delta, training diagnostics and existing chronological/rolling/portable/recalibration workflows.
 - [x] Native statsmodels nonseasonal ARIMA(p,1,q) with explicit bounded orders, training-only scaling/fit, fixed-context causal filtering, real diagnostics and existing rolling/portable/recalibration contracts.
 - [x] Optional weekly native SARIMA with a seven-day autoregressive term, held-out and rolling evidence, recipe-preserving reruns and portable refits.
-- [ ] Additional neural/model families, other seasonal orders, exogenous inputs and larger real-market validation.
+- [x] Add a 14-day SARIMA recipe with distinct model identity and native Chronos evidence.
+- [x] Validate six ARIMA/SARIMA fits on frozen public Coinbase BTC/USD and ETH/USD samples and verify exact 14-day recipe replay.
+- [ ] Additional neural/model families, exogenous inputs and prospective multi-period validation.
 - [x] Optional OpenAI/Mistral embeddings through native ProtoLink OpenAIEmbedder, independent encrypted keys, explicit hosted-text permission, checked response identity and revision-fenced indexing/evaluation.
 - [x] Owner-labeled semantic cutoff experiments with separate fit/validation questions, exact corpus/index bindings, reviewed activation, top-one abstention, stale/concurrent-change fencing and native read-only quality evidence.
-- [ ] Additional hosted providers, live provider/model relevance/grounding and forward-quality acceptance, and evaluated finance/entity sentiment.
+- [x] Add hosted Gemini text embeddings with separate encrypted keys, explicit consent and native ProtoLink vector handling.
+- [ ] Broader hosted-provider coverage, live model relevance and forward-quality acceptance, and evaluated finance/entity sentiment.
 - [ ] Licensed article ingestion and configurable research integrations.
 - [x] Durable Bitcoin output watches with spend and inclusion change evidence, private inbox/export, bounded retry and restore quarantine.
 - [x] Optional same-sample Theil–Sen versus OLS return comparison with scatter and native Analyst evidence.
@@ -163,7 +171,8 @@ v2.4.0 targets the remaining planned implementation work. The following release 
 
 - [x] Durable local job scheduling with cancellation, restart semantics and native domain integration.
 - [x] Retained sampled worker incidents with an independent local observer, confirmed progress recovery, unresolved restart boundaries, observation gaps and local inbox notices.
-- [ ] Broader cross-request tracing, diagnostics and external process/host outage monitoring.
+- [x] Add content-free API response timing and status diagnostics with per-response IDs, plus an independent local/remote HTTP readiness probe and continuous outage/recovery watcher.
+- [ ] Distributed tracing and integrations that alert when an external watcher detects an outage.
 - [x] Audited credential/key rotation with safe recovery.
 - [x] Additional private alert delivery routes through the existing Discord, Slack, Signal, WhatsApp and email clients.
 - [x] Native launchd/systemd-user/Windows Task Scheduler CLI management with preview, ownership-protected definitions, loopback/port checks, private rotating logs and read-only UI/Technician status.

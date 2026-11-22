@@ -1,4 +1,4 @@
-"""Bounded ARIMA and weekly seasonal ARIMA with native statsmodels fitting/filtering.
+"""Bounded nonseasonal and seasonal ARIMA with native statsmodels fitting/filtering.
 
 ARMA(p,q) on daily log returns is ARIMA(p,1,q) on log prices with a drift.
 Training-only normalization improves numerical conditioning; one frozen native
@@ -19,9 +19,9 @@ MAX_STEPS = 100
 
 
 def seasonal_order(period):
-    """Use one seasonal autoregressive term for the supported seven-day period."""
-    if type(period) is not int or period not in (0, 7):
-        raise ValueError("ARIMA seasonality supports Off or a seven-day lag.")
+    """Use one seasonal autoregressive term for the selected seasonal period."""
+    if type(period) is not int or period not in (0, 7, 14):
+        raise ValueError("ARIMA seasonality supports Off, seven days or 14 days.")
     return (1, 0, 0, period) if period else (0, 0, 0, 0)
 
 

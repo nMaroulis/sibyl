@@ -119,9 +119,15 @@ def discover_page(exchange, stream, cursor, start, end, *, instrument=None):
     """Read one open page or split a capped recent creation-time window."""
     recent = stream == "recent"
     if recent:
-        (lower, upper), *pending = cursor.get("windows") or [[start, end]]
-        if not 0 < lower < upper or upper - lower > 7 * 86400000:
-            raise ValueError("Upbit recent orders require a window of at most seven days.")
+        window_size = 7 * 86400000
+        if not 0 < start < end or end - start > 30 * 86400000:
+            raise ValueError("Upbit recent orders require a range of at most 30 days.")
+        windows = cursor.get("windows") or [
+            [left, min(left + window_size, end)] for left in range(start, end, window_size)
+        ]
+        (lower, upper), *pending = windows
+        if not start <= lower < upper <= end or upper - lower > window_size:
+            raise ValueError("Invalid Upbit closed-order window.")
         rows = rows_list(
             exchange.privateGetOrdersClosed(
                 {

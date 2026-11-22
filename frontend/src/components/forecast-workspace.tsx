@@ -316,8 +316,9 @@ export function ForecastWorkspace() {
                 >
                   <option value={0}>Off</option>
                   <option value={7}>Weekly · 7 daily candles</option>
+                  <option value={14}>Two weeks · 14 daily candles</option>
                 </select>
-                <small>Adds one autoregressive term at a seven-day lag.</small>
+                <small>Adds one autoregressive term at the selected lag.</small>
               </label>
             </>
           ) : (
@@ -368,11 +369,11 @@ export function ForecastWorkspace() {
         </div>
         {family === 'arima' ? (
           <p className="footnote">
-            {arimaSeason ? 'Weekly SARIMA' : 'ARIMA'}({arimaP}, 1, {arimaQ})
-            {arimaSeason ? ' × (1, 0, 0, 7)' : ''} · log prices with drift. One training-only fit
-            serves every horizon. The latest 90 observed closes feed the same filter in testing and
-            inference. Supports up to 1,000 candles and 14 days. Compare held-out errors with the
-            benchmarks to see how the selected recipe performed.
+            {arimaSeason ? 'SARIMA' : 'ARIMA'}({arimaP}, 1, {arimaQ})
+            {arimaSeason ? ` × (1, 0, 0, ${arimaSeason})` : ''} · log prices with drift. One
+            training-only fit serves every horizon. The latest 90 observed closes feed the same
+            filter in testing and inference. Supports up to 1,000 candles and 14 days. Compare
+            held-out errors with the benchmarks to see how the selected recipe performed.
           </p>
         ) : (
           <p className="footnote">
@@ -525,7 +526,7 @@ export function ForecastWorkspace() {
                   <span>
                     {report.model.engine}
                     {report.model.parameters.family === 'arima' ? (
-                      ` · ${report.model.parameters.arima_season ? 'Weekly SARIMA' : 'ARIMA'}(${report.model.parameters.arima_p},1,${report.model.parameters.arima_q})${report.model.parameters.arima_season ? ' × (1,0,0,7)' : ''} · 90-close filter context`
+                      ` · ${report.model.parameters.arima_season ? 'SARIMA' : 'ARIMA'}(${report.model.parameters.arima_p},1,${report.model.parameters.arima_q})${report.model.parameters.arima_season ? ` × (1,0,0,${report.model.parameters.arima_season})` : ''} · 90-close filter context`
                     ) : (
                       <>
                         {' '}
@@ -646,7 +647,7 @@ export function ForecastWorkspace() {
                                       ? 'Trained neural model'
                                       : report.model.parameters.family === 'arima'
                                         ? report.model.parameters.arima_season
-                                          ? 'Trained weekly SARIMA model'
+                                          ? 'Trained SARIMA model'
                                           : 'Trained ARIMA model'
                                         : report.model.parameters.family === 'huber'
                                           ? 'Trained Huber model'

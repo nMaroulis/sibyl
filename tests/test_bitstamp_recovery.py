@@ -108,18 +108,75 @@ def test_snapshot_miss_can_retry_but_duplicate_client_ids_require_review(bitstam
         lookup_order(adapter._exchange, CLIENT_ID, "BTC/USDT")
 
 
-def test_closed_lookup_does_not_substitute_remaining_for_original_amount(bitstamp, monkeypatch):
+def creation_event(status, **changes):
+    """Mirror the private order-created event's exact IDs and original terms."""
+    timestamp = datetime.fromisoformat(status["datetime"])
+    return {
+        "event": "order_created",
+        "event_id": "019f4ac8-1234-abcd-af00-3e9012000020",
+        "order_source": "orderbook",
+        "trade_account_id": 11,
+        "data": {
+            "id": status["id"],
+            "id_str": str(status["id"]),
+            "microtimestamp": str(int(timestamp.timestamp()) * 1_000_000),
+            "client_order_id": status["client_order_id"],
+            "trade_account_id": 11,
+            "order_type": int(status["type"]),
+            "is_liquidation": False,
+            "amount_at_create": "0.01",
+            "price_str": "50000",
+            **changes,
+        },
+    }
+
+
+def test_closed_lookup_requires_private_creation_evidence(bitstamp, monkeypatch):
     _, _, adapter = bitstamp
     status, _ = evidence()
-    monkeypatch.setattr(
-        adapter._exchange, "privatePostOrderStatus", lambda _: {**status, "status": "Finished"}
-    )
+    status.update(status="Finished", amount_remaining="0")
+    monkeypatch.setattr(adapter._exchange, "privatePostOrderStatus", lambda _: status)
     monkeypatch.setattr(adapter._exchange, "privatePostOpenOrdersPair", lambda _: pytest.fail("Closed order"))
-    with pytest.raises(ValueError, match="closed"):
+
+    def read(path, api, method, params):
+        assert (path, api, method) == ("account_order_data/", "private", "POST")
+        assert params == {"market": "BTC/USDT", "order_source": "orderbook"}
+        return [creation_event(status)]
+
+    monkeypatch.setattr(adapter._exchange, "request", read)
+    (found,) = lookup_order(adapter._exchange, CLIENT_ID, "BTC/USDT")
+    assert (found["status"], found["type"], found["amount"], found["price"]) == (
+        "closed",
+        "limit",
+        0.01,
+        50000,
+    )
+    monkeypatch.setattr(adapter._exchange, "request", lambda *_: [])
+    assert lookup_order(adapter._exchange, CLIENT_ID, "BTC/USDT") == []
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"amount_at_create": None},
+        {"client_order_id": "wrong"},
+        {"trade_account_id": 12},
+        {"order_type": 1},
+        {"is_liquidation": True},
+        {"stop_price": "49000"},
+    ],
+)
+def test_bitstamp_creation_conflicts_keep_order_id_uncertain(bitstamp, monkeypatch, changes):
+    _, _, adapter = bitstamp
+    status, _ = evidence()
+    status.update(status="Finished", amount_remaining="0")
+    monkeypatch.setattr(adapter._exchange, "privatePostOrderStatus", lambda _: status)
+    monkeypatch.setattr(adapter._exchange, "request", lambda *_: [creation_event(status, **changes)])
+    with pytest.raises(ValueError, match="differs"):
         lookup_order(adapter._exchange, CLIENT_ID, "BTC/USDT")
 
 
-def test_market_intent_shows_lookup_as_unavailable_and_never_calls_bitstamp(bitstamp, monkeypatch):
+def test_uncertain_market_submission_recovers_original_base_size_and_partial_execution(bitstamp, monkeypatch):
     owner, account, adapter = bitstamp
     owner.settings.allow_live_trading = True
     monkeypatch.setattr(adapter, "fetch_balance", lambda: {"free": {"USDT": 10000}})
@@ -131,8 +188,14 @@ def test_market_intent_shows_lookup_as_unavailable_and_never_calls_bitstamp(bits
     monkeypatch.setattr(adapter._exchange, "create_order", timeout)
     intent = submit(owner.trading, account, order_type="market", limit_price=None)
     assert intent["status"] == "unknown"
-    assert not owner.trading.reconciliation.detail(intent["id"])["order"]["recovery"]["supported"]
-    monkeypatch.setattr(
-        adapter._exchange, "privatePostOrderStatus", lambda _: pytest.fail("Unsupported market lookup")
-    )
-    assert owner.trading.recover(intent["id"])["recovery"]["state"] == "unsupported"
+    assert owner.trading.reconciliation.detail(intent["id"])["order"]["recovery"]["supported"]
+    status, _ = evidence(intent["client_order_id"])
+    status.update(status="Canceled", subtype="MARKET")
+    monkeypatch.setattr(adapter._exchange, "privatePostOrderStatus", lambda _: status)
+    monkeypatch.setattr(adapter._exchange, "request", lambda *_: [creation_event(status, price_str="0")])
+    monkeypatch.setattr(adapter._exchange, "create_order", lambda *_: pytest.fail("Unexpected second write"))
+    recovered = owner.trading.recover(intent["id"])
+    assert recovered["recovery"]["state"] == "found"
+    assert recovered["exchange_order_id"] == str(ORDER_ID)
+    assert recovered["status"] == "canceled" and recovered["filled"] == 0.004
+    assert recovered.get("cost") is None

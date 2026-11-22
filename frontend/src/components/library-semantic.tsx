@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Cpu, LoaderCircle, RefreshCw, Play, Square } from 'lucide-react';
 import { api, post, refresh } from '../lib/api';
-import type { SemanticCoverage, SemanticStatus } from '../lib/semantic-types';
+import type {
+  HostedEmbeddingProvider,
+  SemanticCoverage,
+  SemanticStatus,
+} from '../lib/semantic-types';
 import { Badge, ErrorState, Panel } from './ui';
 import { ProviderMark } from './provider-mark';
 import { LibraryHostedSetup } from './library-hosted-setup';
@@ -18,7 +22,7 @@ export function LibrarySemantic({
   state: { data?: SemanticStatus; error: string; loading: boolean };
   retry: () => void;
 }) {
-  const [provider, setProvider] = useState<'ollama' | 'openai' | 'mistral'>('ollama');
+  const [provider, setProvider] = useState<'ollama' | HostedEmbeddingProvider['id']>('ollama');
   const [endpoint, setEndpoint] = useState('http://127.0.0.1:11434');
   const [model, setModel] = useState(presets[0]);
   const [custom, setCustom] = useState(false);
@@ -182,7 +186,10 @@ export function LibrarySemantic({
                 role="group"
                 aria-label="Embedding provider"
               >
-                {(['ollama', 'openai', 'mistral'] as const).map((name) => (
+                {[
+                  { id: 'ollama', label: 'Ollama' } as const,
+                  ...(current?.hosted?.items ?? []),
+                ].map(({ id: name, label }) => (
                   <button
                     key={name}
                     type="button"
@@ -197,9 +204,7 @@ export function LibrarySemantic({
                   >
                     <ProviderMark provider={name} size={25} />
                     <span>
-                      <strong>
-                        {name === 'ollama' ? 'Ollama' : name === 'openai' ? 'OpenAI' : 'Mistral'}
-                      </strong>
+                      <strong>{label}</strong>
                       <small>
                         {name === 'ollama'
                           ? 'Local · installed models'

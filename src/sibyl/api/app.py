@@ -35,6 +35,7 @@ from sibyl.operations.archives import WorkspaceArchives
 from sibyl.operations.health import WorkerHealth
 from sibyl.operations.jobs.handlers import application_handlers
 from sibyl.operations.jobs.service import LocalJobs
+from sibyl.operations.traffic import REQUEST_ID_HEADER, ApiTraffic, ApiTrafficMiddleware
 from sibyl.research_library.service import ResearchLibrary
 from sibyl.services.accounts.service import Accounts
 from sibyl.services.accounts.sync import AccountSync
@@ -94,6 +95,7 @@ class Services:
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create an isolated ASGI app; start persistence and workers only on startup."""
     config = settings or Settings()
+    traffic = ApiTraffic()
     if config.host not in {"127.0.0.1", "localhost", "::1"} and not config.api_token.get_secret_value():
         raise ValueError("Set SIBYL_API_TOKEN before exposing the API beyond loopback.")
 
@@ -111,7 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         market = Market(config, store, data_settings)
         portfolio, research = Portfolio(market, store), Research(config, data_settings)
         library = ResearchLibrary(config.data_dir, research.news_service.repository, store=store)
-        workers = WorkerHealth(store)
+        workers = WorkerHealth(store, traffic=traffic)
         workers.recovery_required = recovery
         archives = WorkspaceArchives(store)
         strategies = Strategies(market, store)
@@ -316,6 +318,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_origins=config.cors_origins,
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
+        expose_headers=[REQUEST_ID_HEADER],
     )
 
     @app.middleware("http")
@@ -340,6 +343,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             if not expected and host not in {"localhost", "127.0.0.1", "[", "testserver"}:
                 return JSONResponse({"detail": "Local workspace access only."}, status_code=403)
         return await call_next(request)
+
+    app.add_middleware(ApiTrafficMiddleware, traffic=traffic)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(_request, exc):
@@ -503,7 +508,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health", tags=["System"])
     def health():
         """Report process readiness without exposing account or provider configuration."""
-        return {"status": "ok", "version": __version__}
+        return {"service": "sibyl", "status": "ok", "version": __version__}
 
     mount_dashboard(app, config.dashboard_dir)
     return app

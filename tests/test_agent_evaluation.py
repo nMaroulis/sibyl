@@ -140,7 +140,7 @@ async def test_instruction_case_flags_unnecessary_reads_and_does_not_inflate_oth
 
 def test_case_catalog_matches_real_native_tools_and_validated_page_contracts(client):
     cases = selected_cases()
-    assert len(cases) == 15
+    assert len(cases) == 21
     validate_tools(cases, client.app.state.services.agents)
     with pytest.raises(ValueError, match="Unknown cases"):
         selected_cases(["invented"])
@@ -244,3 +244,29 @@ async def test_native_application_evaluation_uses_real_discovery_context_fixture
     assert await run_cases(args, selected, baseline=report) == 0
     compared = json.loads(args.output.with_suffix(".provenance.json").read_text())
     assert compared["comparison"]["passed"]
+
+
+@pytest.mark.parametrize("extra", [None, "SOL/USDT"])
+async def test_scope_allows_two_expected_observations_and_rejects_unrequested_third_market(extra):
+    selected = case()
+    second = {
+        "agent": "analyst",
+        "tool": "market_analysis",
+        "result": {"symbol": "BTC/USDT", "source": "demo"},
+    }
+    selected.metadata["required"].append(second)
+    selected.metadata["scope"].append(second)
+    symbols = ["BTC/USDT", "ETH/USDT", *([extra] if extra else [])]
+    report = await native_report(
+        [
+            *[
+                {"type": "tool_call", "tool": "market_analysis", "args": {"symbol": symbol}}
+                for symbol in symbols
+            ],
+            "Demo ETH/USDT and BTC/USDT RSI both 60.5.",
+        ],
+        selected,
+    )
+    assert report.passed is (extra is None)
+    scores = {score.name: score.value for score in report.samples[0].scores}
+    assert scores["required_evidence"] == 1 and scores["selection_scope"] == float(extra is None)

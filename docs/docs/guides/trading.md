@@ -22,7 +22,7 @@ Exchange execution is disabled by default. To enable it, set:
 SIBYL_ALLOW_LIVE_TRADING=true
 ```
 
-Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp, Bitfinex, Phemex, Crypto.com Exchange, MEXC and CoinEx, plus the dedicated test clients. Bitget Classic, Poloniex and Upbit Korea support market buys with an explicit quote budget and market sells with a base quantity. Gate, HTX and BitMart support base-sized market sells. Use a GTC limit for a buy on those three providers. Gemini supports reviewed GTC limits and cancellation. Settings → Exchanges shows the current support and gaps for each provider.
+Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp, Bitfinex, Phemex, Crypto.com Exchange, MEXC and CoinEx, plus the dedicated test clients. Bitget Classic, Poloniex, Upbit Korea, Gate, HTX and BitMart support market buys with an explicit quote budget and market sells with a base quantity. Gemini supports reviewed GTC limits and cancellation. Settings → Exchanges shows the current support and gaps for each provider.
 
 For a quote-budget market buy, enter the amount in the pair’s quote currency. Trade shows that amount in review and in the order monitor. The eventual base fill depends on execution prices. Fees are separate from the order budget.
 
@@ -64,7 +64,7 @@ Manual orders use the reviewed endpoint. [Approved exchange strategies](strategy
 
 Crypto.com Exchange supports regular cash open-order sync and recent history for exact selected pairs, manual base-sized IOC market buys/sells, GTC/market client-ID recovery and individual cash executions. Account history starts with seven days; exact-order reads inspect at most thirty days since creation. Missing cash-parent evidence and unverified fee-credit effects need review. Margin and advanced orders are excluded.
 
-Phemex supports manual base-sized spot IOC market buys/sells and GTC/market client-ID recovery. Open and recent order sync requires exact pairs. Gemini recent sync includes a bounded native closed-order snapshot, including cancellations without fills; a full 500-order response asks for review. Check the coverage note before treating a completed sync as complete history.
+Phemex supports manual base-sized spot IOC market buys/sells and GTC/market client-ID recovery. Open and recent order sync requires exact pairs. Gemini recent sync includes unfilled cancellations and can scan selected pairs independently. A full 500-order response asks for review. With only Upbit Korea selected, Trade can scan up to 30 days of closed-order creation history. Check the coverage note before treating a completed sync as complete history.
 
 ## Public order book
 

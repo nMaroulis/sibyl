@@ -32,9 +32,10 @@ class WorkspaceDiagnostics:
     private names/content and are deliberately excluded from the report.
     """
 
-    def __init__(self, store, workers, *, budget_seconds=2, clock=time.monotonic):
+    def __init__(self, store, workers, *, budget_seconds=2, clock=time.monotonic, traffic=None):
         self.store, self.workers = store, workers
         self.budget, self.clock = budget_seconds, clock
+        self.traffic = traffic
         self.lock, self._last = threading.Lock(), None
 
     def last(self):
@@ -106,9 +107,10 @@ class WorkspaceDiagnostics:
                 "database": database,
                 "resources": resources,
                 "worker_states": dict(counts),
+                "api_traffic": self.traffic.summary() if self.traffic is not None else None,
                 "worker_observation": observation,
                 "scope": "One explicit local observation. No provider requests, repairs or account actions. Worker counts and process resources do not prove exchange readiness or external uptime.",
-                "privacy": "Allowlisted versions, numeric process/storage counters, aggregate worker states and generic database outcomes only. Excludes credentials, tokens, paths, hostnames, account identifiers, balances, chats, articles, plugin code and raw error messages.",
+                "privacy": "Allowlisted versions, numeric process/storage counters, aggregate API timing and worker states and generic database outcomes only. Excludes credentials, tokens, paths, hostnames, account identifiers, balances, chats, articles, plugin code and raw error messages.",
             }
             self._last = report
             return self.last()

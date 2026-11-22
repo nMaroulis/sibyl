@@ -28,8 +28,8 @@ def cash_order(row: dict) -> bool:
     )
 
 
-def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
-    """Read current exact-pair rules and validate the reviewed base quantity."""
+def market_rules(exchange, market, side: str) -> dict:
+    """Read the selected cash pair and verify its current side is tradeable."""
     rules = exchange.publicSpotGetCurrencyPairsCurrencyPair({"currency_pair": market["id"]})
     if not isinstance(rules, dict) or (rules.get("id"), rules.get("base"), rules.get("quote")) != (
         market["id"],
@@ -39,13 +39,43 @@ def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
         raise ValueError("Gate returned rules for a different pair.")
     now = exchange.seconds()
     if (
-        rules.get("trade_status") not in ("sellable", "tradable")
+        rules.get("trade_status") not in ("buyable" if side == "buy" else "sellable", "tradable")
         or rules.get("type") not in (None, "normal")
-        or (number(rules.get("sell_start")) or 0) > now
+        or (number(rules.get(f"{side}_start")) or 0) > now
         or 0 < (number(rules.get("delisting_time")) or 0) <= now
     ):
-        raise ValueError("Gate market sells are unavailable for this pair.")
+        raise ValueError(f"Gate market {side}s are unavailable for this pair.")
+    return rules
 
+
+def market_buy_terms(exchange, market, budget) -> tuple[str, dict]:
+    """Check published quote limits and send the original budget as an exact decimal."""
+    rules = market_rules(exchange, market, "buy")
+    amount = Decimal(str(budget))
+    minimum = pair_limit(rules, "min_quote_amount")
+    maximum = min(
+        (
+            value
+            for key in ("max_quote_amount", "market_order_max_money")
+            if (value := pair_limit(rules, key)) is not None
+        ),
+        default=None,
+    )
+    if minimum is not None and amount < minimum:
+        raise ValueError(f"Order is below the Gate minimum quote budget of {minimum}.")
+    if maximum is not None and amount > maximum:
+        raise ValueError(f"Order exceeds the Gate maximum quote budget of {maximum}.")
+    return format(amount, "f"), {
+        "cost": {
+            "min": float(minimum) if minimum is not None else None,
+            "max": float(maximum) if maximum is not None else None,
+        }
+    }
+
+
+def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
+    """Validate the reviewed base quantity against current Gate sell rules."""
+    rules = market_rules(exchange, market, "sell")
     digits = rules.get("amount_precision")
     if type(digits) is not int or not 0 <= digits <= 30:
         raise ValueError("Gate did not report valid base quantity precision.")
@@ -93,12 +123,12 @@ def valid_client_id(client_id) -> bool:
     return isinstance(client_id, str) and bool(re.fullmatch(r"t-[A-Za-z0-9_.-]{1,28}", client_id))
 
 
-def reviewed_market_sell(row: dict) -> bool:
-    """Only attribute an ordinary cash IOC sell with original base sizing."""
+def reviewed_market(row: dict) -> bool:
+    """Only attribute an ordinary cash IOC order with original sizing."""
     return (
         cash_order(row)
         and row.get("type") == "market"
-        and row.get("side") == "sell"
+        and row.get("side") in ("buy", "sell")
         and row.get("time_in_force") == "ioc"
         and row.get("status") in ("open", "closed", "cancelled")
         and (number(row.get("amount")) or 0) > 0
@@ -129,22 +159,37 @@ def market_sell_status(row) -> str:
     return "unknown"
 
 
-def parse_market_sell_ack(exchange, market, request, row) -> dict:
+def market_buy_status(row) -> str:
+    """Use native terminal evidence without comparing base fills to a quote budget."""
+    status, reason = row.get("status"), row.get("finish_as")
+    if status == "open":
+        return "open" if reason in (None, "", "open") else "unknown"
+    if status == "cancelled" and reason not in ("filled", "open"):
+        return "canceled"
+    if status == "closed":
+        if reason == "filled":
+            return "closed"
+        if reason not in (None, "", "open"):
+            return "canceled"
+    return "unknown"
+
+
+def parse_market_ack(exchange, market, request, row) -> dict:
     """Verify original reviewed terms before attaching the native order ID."""
     try:
         if (
             not isinstance(row, dict)
-            or not reviewed_market_sell(row)
-            or any(row.get(key) != request[key] for key in ("currency_pair", "text"))
+            or not reviewed_market(row)
+            or any(row.get(key) != request[key] for key in ("currency_pair", "text", "side"))
             or Decimal(str(row.get("amount"))) != Decimal(request["amount"])
         ):
-            raise ValueError("Gate did not confirm the original market sell.")
+            raise ValueError("Gate did not confirm the original market order.")
         native_id = identity(row.get("id"))
         if int(native_id) <= 0:
             raise ValueError("Invalid Gate order identity.")
         parsed = exchange.parse_order(row, market)
     except (ccxt.ExchangeError, InvalidOperation) as error:
-        raise ValueError("Gate did not confirm usable market sell details.") from error
+        raise ValueError("Gate did not confirm usable market order details.") from error
     parsed["id"] = native_id
     return parsed
 

@@ -40,12 +40,12 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'forecast',
       title: 'More forecasting models and evaluation',
-      text: 'Additional neural families, exogenous inputs and broader real-market validation. Weekly SARIMA, candidate recalibration and prospective outcome tracking are already available.',
+      text: 'Additional neural families, exogenous inputs and broader real-market validation. Seven-day and 14-day SARIMA, candidate recalibration and prospective outcome tracking are already available.',
     },
     {
       module: 'knowledge',
       title: 'Deeper research retrieval',
-      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, additional hosted providers and cited web search. Private documents/news, exact citations and optional local Ollama or consented OpenAI/Mistral semantic search are available now.',
+      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, additional hosted providers and cited web search. Private documents/news, exact citations and optional local Ollama or consented OpenAI, Mistral or Gemini semantic search are available now.',
     },
     {
       module: 'news',

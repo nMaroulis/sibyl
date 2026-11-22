@@ -101,13 +101,13 @@ function ARIMAEvidence({ report }: { report: ForecastDetail }) {
   const params = report.model.parameters;
   return (
     <details className="forecast-advanced">
-      <summary>{params.arima_season ? 'Weekly SARIMA' : 'ARIMA'} training evidence</summary>
+      <summary>{params.arima_season ? 'SARIMA' : 'ARIMA'} training evidence</summary>
       <p className="footnote">
         {params.arima_season ? 'SARIMA' : 'ARIMA'}({params.arima_p},1,{params.arima_q})
-        {params.arima_season ? ' × (1,0,0,7)' : ''} · {fit.library} {fit.library_version}. One
-        training-only fit serves all horizons. Parameters stay fixed while the native filter
-        processes the latest 90 observed closes at each origin; no future-price smoothing or
-        test-driven order search.
+        {params.arima_season ? ` × (1,0,0,${params.arima_season})` : ''} · {fit.library}{' '}
+        {fit.library_version}. One training-only fit serves all horizons. Parameters stay fixed
+        while the native filter processes the latest 90 observed closes at each origin; no
+        future-price smoothing or test-driven order search.
       </p>
       <div className="forecast-partitions forecast-arima-evidence">
         <div>

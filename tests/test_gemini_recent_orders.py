@@ -42,3 +42,24 @@ def test_saturated_native_snapshot_reports_coverage_limit(manual_client, monkeyp
     end = int(time.time() * 1000)
     with pytest.raises(ccxt.NotSupported, match="capacity"):
         adapter.fetch_account_order_page("recent", {}, end - 10000, end, [])
+
+
+def test_explicit_pair_can_read_closed_orders_when_account_snapshot_saturates(manual_client, monkeypatch):
+    owner = manual_client.app.state.services
+    account, adapter = saved_account(owner, "gemini", "btcusd", quote="USD")
+    native, calls = adapter._exchange, []
+    parent = gemini_order(is_live=False, is_cancelled=True, timestampms=int(time.time() * 1000) - 1000)
+    monkeypatch.setattr(native, "privatePostV1Orders", lambda _: [])
+
+    def read(path, api, method, params):
+        calls.append(params.copy())
+        return [parent] if params.get("symbol") == "btcusd" else [parent] * 500
+
+    monkeypatch.setattr(native, "request", read)
+    owner.trading.discovery.enqueue(OrderDiscoveryRequest(account_id=account.id, symbols=["BTC/USD"]))
+    advance(owner.trading, account)
+    advance(owner.trading, account)
+    assert job(owner.trading, account)["complete"]
+    assert calls[0]["symbol"] == "btcusd"
+    (saved,) = owner.trading.monitor(account_id=account.id)["items"]
+    assert saved["status"] == "canceled"

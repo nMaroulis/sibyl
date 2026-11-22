@@ -8,6 +8,11 @@ type Report = {
   generated_at: string;
   database: { status: string; duration_ms: number; note: string };
   worker_observation: string;
+  api_traffic?: {
+    sample_size: number;
+    status_classes: Record<string, number>;
+    median_response_start_ms: number | null;
+  } | null;
   privacy: string;
   scope: string;
 };
@@ -85,6 +90,13 @@ export function WorkspaceDiagnostics() {
             {current.database.duration_ms} ms · worker observation {current.worker_observation}.{' '}
             {current.scope}
           </p>
+          {!!current.api_traffic?.sample_size && (
+            <p className="footnote">
+              Last {current.api_traffic.sample_size} API responses ·{' '}
+              {current.api_traffic.status_classes['5xx'] ?? 0} server errors ·{' '}
+              {current.api_traffic.median_response_start_ms} ms median to response start
+            </p>
+          )}
         </div>
       )}
       <p className="footnote">

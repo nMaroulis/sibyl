@@ -345,7 +345,8 @@ def create_agent(services: Services, **runtime) -> Agent:
 
         Use for startup-at-login, installation, start/stop, log locations or moved
         Python environments. Returns verified service ownership and workspace matching.
-        OS state does not prove HTTP readiness or worker progress. Changes require
+        Check HTTP readiness separately with sibyl probe from a separate process or host.
+        OS state does not establish worker progress. Changes require
         explicit local CLI commands; this tool cannot manage a service.
         """
         from sibyl.installation.services.manager import service_status

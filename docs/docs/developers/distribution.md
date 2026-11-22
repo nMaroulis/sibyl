@@ -113,6 +113,10 @@ The workflow runs backend tests/lint, builds React, packages and inspects the wh
 
 Manual runs and relevant pull requests produce reviewable artifacts. A published GitHub Release triggers the upload after those same checks. Homebrew, Docker runtime tests and container registries do not gate Python-package publication.
 
+## Independent readiness check
+
+`sibyl probe --url http://127.0.0.1:8000` checks the backend from a separate process without starting it or opening a workspace. For a remote deployment, supply its HTTPS origin. `--expect-version 2.4.0` can verify an upgrade, while `--timeout` sets a bounded network timeout. The command prints one JSON observation and exits nonzero on failure. Add `--watch` for a continuously running monitor that prints a timestamped JSON line on state changes. Run it from a separate host to observe network or host loss. This checks process readiness; worker progress stays in Workspace diagnostics.
+
 ## Optional future delivery methods
 
 Homebrew can be added later as a small recipe pointing at published packages. That recipe can live in this repository; a separate conventional tap is an optional organizational choice. No Homebrew install command is currently advertised.

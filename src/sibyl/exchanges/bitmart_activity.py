@@ -47,8 +47,8 @@ def valid_client_id(client_id) -> bool:
     return isinstance(client_id, str) and bool(re.fullmatch(r"[A-Za-z0-9]{1,32}", client_id))
 
 
-def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
-    """Check the current market's base-size increment and published sell minimums."""
+def market_rules(exchange, market) -> dict:
+    """Read the selected pair and confirm cash spot trading is available."""
     payload = data(exchange.publicGetSpotV1SymbolsDetails({}))
     rows = payload.get("symbols") if isinstance(payload, dict) else None
     if not isinstance(rows, list):
@@ -63,7 +63,28 @@ def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
     if row.get("trade_status") != "trading" or (
         0 < (number(row.get("planned_down_time")) or 0) <= exchange.milliseconds()
     ):
-        raise ValueError("BitMart market sells are unavailable for this pair.")
+        raise ValueError("BitMart market orders are unavailable for this pair.")
+    return row
+
+
+def market_buy_terms(exchange, market, budget) -> tuple[str, dict]:
+    """Check the quote minimum without applying the base-size increment to a budget."""
+    row = market_rules(exchange, market)
+    try:
+        minimum = Decimal(str(row.get("min_buy_amount")))
+    except InvalidOperation as error:
+        raise ValueError("BitMart did not report a valid minimum buy amount.") from error
+    if not minimum.is_finite() or minimum < 0:
+        raise ValueError("BitMart did not report a valid minimum buy amount.")
+    amount = Decimal(str(budget))
+    if amount < minimum:
+        raise ValueError(f"Order is below the BitMart minimum quote budget of {minimum}.")
+    return format(amount, "f"), {"cost": {"min": float(minimum)}}
+
+
+def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
+    """Check the current market's base-size increment and published sell minimums."""
+    row = market_rules(exchange, market)
     try:
         step = Decimal(str(row.get("quote_increment")))
         minimum = Decimal(str(row.get("base_min_size")))
@@ -96,15 +117,15 @@ def market_sell_terms(exchange, market, amount) -> tuple[str, dict]:
     return format(quantity.normalize(), "f"), {"cost": {"min": cost}}
 
 
-def submit_market_sell(exchange, market, quantity, client_id) -> dict:
+def submit_market(exchange, market, side, amount, client_id) -> dict:
     """Submit once and attach an order ID only after a usable native acknowledgment."""
     try:
         response = exchange.privatePostSpotV2SubmitOrder(
             {
                 "symbol": market["id"],
-                "side": "sell",
+                "side": side,
                 "type": "market",
-                "size": quantity,
+                ("notional" if side == "buy" else "size"): amount,
                 "client_order_id": client_id,
             }
         )
@@ -138,6 +159,7 @@ def market_quantities(row) -> dict:
         remaining = float(Decimal(str(amount)) - Decimal(str(filled)))
     return {
         "amount": amount,
+        "quote_budget": number(row.get("notional")) if row.get("side") == "buy" else None,
         "remaining": remaining,
         "filled": filled,
         "cost": cost,
@@ -209,7 +231,7 @@ def discover_page(exchange, stream, cursor, start, end):
 
 
 def lookup_order(exchange, client_id, symbol):
-    """Recover a reviewed spot GTC limit or base-sized market sell."""
+    """Recover a reviewed spot GTC limit or market order."""
     if not valid_client_id(client_id):
         raise ValueError("Invalid persisted BitMart client order ID.")
     market = exchange.market(symbol)
@@ -224,12 +246,15 @@ def lookup_order(exchange, client_id, symbol):
         or row.get("symbol") != market["id"]
         or row.get("side") not in ("buy", "sell")
         or row.get("state") not in OPEN | TERMINAL
-        or (number(row.get("size")) or 0) <= 0
         or not (
-            (row.get("type") == "limit" and (number(row.get("price")) or 0) > 0)
+            (
+                row.get("type") == "limit"
+                and (number(row.get("price")) or 0) > 0
+                and (number(row.get("size")) or 0) > 0
+            )
             or (
                 row.get("type") == "market"
-                and row["side"] == "sell"
+                and (number(row.get("notional" if row["side"] == "buy" else "size")) or 0) > 0
                 and row.get("stpMode") in (None, "", "none")
             )
         )

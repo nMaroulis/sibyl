@@ -82,15 +82,14 @@ def required_evidence(sample):
 
 def selection_scope(sample):
     """Reject extra observations on the wrong market/source instead of accepting one correct call."""
-    wrong = []
+    scopes = {}
     for rule in sample.case.metadata.get("scope", []):
-        for item in observations(sample):
-            if (
-                item.agent_name == "sibyl-" + rule["agent"]
-                and item.tool_name == rule["tool"]
-                and not matches(item, rule)
-            ):
-                wrong.append(f"{rule['agent']}.{rule['tool']}")
+        scopes.setdefault(("sibyl-" + rule["agent"], rule["tool"]), []).append(rule)
+    wrong = []
+    for item in observations(sample):
+        rules = scopes.get((item.agent_name, item.tool_name))
+        if rules and not any(matches(item, rule) for rule in rules):
+            wrong.append(f"{item.agent_name}.{item.tool_name}")
     return EvaluationScore(
         "selection_scope",
         float(not wrong),

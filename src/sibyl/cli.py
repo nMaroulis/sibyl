@@ -14,7 +14,7 @@ def parser() -> argparse.ArgumentParser:
     """Describe launch options without importing the application or initializing services."""
     command = argparse.ArgumentParser(
         description="Run Sibyl's local dashboard and Python API.",
-        epilog="Background services: sibyl service --help",
+        epilog="Background services: sibyl service --help. Remote health checks: sibyl probe --help.",
     )
     command.add_argument("--version", action="version", version=f"Sibyl {__version__}")
     command.add_argument("--host", help="Bind address (default: SIBYL_HOST or 127.0.0.1).")
@@ -62,6 +62,10 @@ def main(argv: list[str] | None = None) -> None:
         from sibyl.installation.services.cli import main as service_main
 
         return service_main(arguments[1:])
+    if arguments and arguments[0] == "probe":
+        from sibyl.operations.probe import main as probe_main
+
+        return probe_main(arguments[1:])
     command = parser()
     args = command.parse_args(arguments)
     if args.env_file is not None and not args.env_file.is_file():

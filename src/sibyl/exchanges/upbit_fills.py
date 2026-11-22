@@ -3,7 +3,7 @@
 Single-order responses contain native execution UUIDs but only an aggregate
 paid_fee. Per-execution fees stay unknown rather than allocating a guessed fee.
 History covers current regular open orders and regular closed orders created in
-the selected seven-day range; older closed-order coverage remains incomplete.
+the initial thirty-day range. Native closed-order queries cover seven days each.
 """
 
 import ccxt
@@ -56,7 +56,7 @@ def fetch_fill_page(exchange, symbol, cursor, limit, *, order_id=None):
     if order_id is not None:
         return order_fills(exchange, market, order_id, cursor.get("after_id", ""), limit)
     end = cursor.get("end", exchange.milliseconds() + 1)
-    start = cursor.get("start", max(1, end - 7 * DAY_MS))
+    start = cursor.get("start", max(1, end - 30 * DAY_MS))
     state = {"start": start, "end": end, "phase": cursor.get("phase", "open"), **cursor}
     pending = state.get("ids", [])
     if pending:

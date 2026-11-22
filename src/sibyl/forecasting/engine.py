@@ -34,7 +34,7 @@ def engine_for(feature_set="returns", family="ridge", arima_season=0):
         seasonal_order(arima_season)
         if feature_set != "returns":
             raise ValueError("ARIMA does not use the optional context-feature recipe.")
-        return "chronos-sarima-weekly-1" if arima_season else "chronos-arima-1"
+        return {0: "chronos-arima-1", 7: "chronos-sarima-weekly-1", 14: "chronos-sarima-14d-1"}[arima_season]
     if family == "huber":
         return "chronos-huber-context-1" if feature_set == "returns_context" else "chronos-huber-1"
     if family == "mlp":
@@ -336,14 +336,20 @@ def train(candles, request):
             f"Nonseasonal ARIMA({request.arima_p},1,{request.arima_q}) on log prices with drift"
         )
         if request.arima_season:
+            label = "Weekly SARIMA" if request.arima_season == 7 else "SARIMA"
             artifact["algorithm"] = (
-                f"Weekly SARIMA({request.arima_p},1,{request.arima_q}) × (1,0,0,7) on log prices with drift"
+                f"{label}({request.arima_p},1,{request.arima_q}) × (1,0,0,{request.arima_season}) on log prices with drift"
             )
         artifact["arima"] = arima
         artifact["notes"].append(
-            "Native statsmodels fits one SARIMA model with a seven-day seasonal AR term on "
-            "training-standardized daily returns. The one log-price difference is nonseasonal. "
-            "The weekly lag is chosen explicitly; a fitted seasonal coefficient does not establish a weekly trading edge."
+            {
+                7: "Native statsmodels fits one SARIMA model with a seven-day seasonal AR term on "
+                "training-standardized daily returns. The one log-price difference is nonseasonal. "
+                "The weekly lag is chosen explicitly; a fitted seasonal coefficient does not establish a weekly trading edge.",
+                14: "Native statsmodels fits one explicitly selected 14-day seasonal AR term on "
+                "training-standardized daily returns. The one log-price difference is nonseasonal. "
+                "A fitted seasonal coefficient does not establish a trading edge.",
+            }[request.arima_season]
             if request.arima_season
             else "One native statsmodels ARMA fit on training-only standardized daily log returns defines ARIMA(p,1,q) on log prices with drift. Stationarity/invertibility are enforced; failed or degenerate fits are rejected. Orders are chosen explicitly, never by test scores."
         )

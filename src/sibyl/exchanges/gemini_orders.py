@@ -11,11 +11,19 @@ from sibyl.exchanges.venue_history import identity, rows_list
 
 
 def recent_page(exchange, cursor, start, end, symbols):
-    """Read a bounded native closed-order snapshot, including unfilled cancellations."""
-    rows = rows_list(
-        exchange.request("v1/orders/history", "private", "POST", {"timestamp": start, "limit_orders": 500}),
-        500,
-    )
+    """Read a bounded account snapshot or one explicitly selected native pair per page."""
+    index = cursor.get("market", 0)
+    if type(index) is not int or not 0 <= index < max(1, len(symbols)):
+        raise ValueError("Invalid Gemini history checkpoint.")
+    market = exchange.market(symbols[index]) if symbols else None
+    if market is not None and not market.get("spot"):
+        raise ValueError("Gemini history requires a spot pair.")
+    params = {"timestamp": start, "limit_orders": 500}
+    if market is not None:
+        params["symbol"] = market["id"]
+    rows = rows_list(exchange.request("v1/orders/history", "private", "POST", params), 500)
+    if market is not None and any(str(row.get("symbol")).upper() != market["id"].upper() for row in rows):
+        raise ccxt.ExchangeError("Gemini returned closed orders for a different pair.")
     if len(rows) == 500:
         raise ccxt.NotSupported("Gemini closed-order snapshot reached its reviewed history capacity.")
     markets = {
@@ -41,4 +49,5 @@ def recent_page(exchange, cursor, start, end, symbols):
         parsed = exchange.parse_order(row, market)
         parsed["id"] = native_id
         selected.append(parsed)
-    return selected, {}, True, len(rows) - len(selected)
+    complete = index + 1 >= len(symbols)
+    return selected, {} if complete else {"market": index + 1}, complete, len(rows) - len(selected)

@@ -14,10 +14,10 @@ from sibyl.exchanges.spot_history import history_note
 from sibyl.exchanges.streams.clients import PROVIDERS as PRIVATE_STREAM_PROVIDERS
 
 MARKET_NOTES = {
-    "bitmart": " Spot market sells use the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
-    "htx": " Market sells use the verified spot wallet and the pair's native base limits. Market buys require a quote-currency budget. GTC limit buys are available.",
+    "bitmart": " Uses the current pair minimum quote amount and base increment for the applicable side.",
+    "htx": " Requires a verified spot wallet, pair-level API trading and the native bounds for the selected side.",
     "bitget": " Classic spot only.",
-    "gate": " IOC sells are sized in the base asset. Market buys require a quote-currency budget. GTC limit buys are available.",
+    "gate": " Cash spot IOC only. The current pair must permit the selected side.",
     "coinex": " Both sides explicitly use the native base currency. The pair must be online and allow API trading.",
     "mexc": " Exact-pair rules must allow the selected side and market order type. Both sides use a base quantity.",
     "bitfinex": " Exchange-wallet EXCHANGE MARKET with a signed base amount and saved int45 cid; margin flags are excluded.",
@@ -100,7 +100,7 @@ def support_groups(spec, capabilities: dict, history: str | None, *, order_fill_
             "features": [
                 feature(
                     "market_orders",
-                    "Market sell · IOC"
+                    "Market buy & sell · IOC"
                     if spec.id == "gate"
                     else "Market sell"
                     if spec.market_sell_only

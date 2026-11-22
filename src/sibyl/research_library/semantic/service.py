@@ -10,7 +10,7 @@ from uuid import uuid4
 import numpy as np
 
 from sibyl.research_library.semantic.contracts import SemanticNotReady
-from sibyl.research_library.semantic.hosted import HostedEmbeddings, catalog
+from sibyl.research_library.semantic.hosted import PROVIDERS, HostedEmbeddings, catalog
 from sibyl.research_library.semantic.provider import OllamaEmbeddings
 
 MAX_PASSAGES = 5000
@@ -126,7 +126,7 @@ class SemanticIndex:
 
     def embed(self, profile, texts):
         """Use the accepted vector-space profile; never borrow chat keys or substitute a provider."""
-        if profile.get("provider") in {"openai", "mistral"}:
+        if profile.get("provider") in PROVIDERS:
             return self.hosted.embed(profile, texts, self._key(profile))
         return self.provider.embed(profile, texts)
 

@@ -218,7 +218,9 @@ def test_confirmation_rechecks_sell_eligibility_before_any_write(gate, monkeypat
     assert not result["tracking"]
 
 
-@pytest.mark.parametrize("change", [{"side": "buy"}, {"account": "margin"}, {"amend_text": "t-revised"}])
+@pytest.mark.parametrize(
+    "change", [{"time_in_force": "fok"}, {"account": "margin"}, {"amend_text": "t-revised"}]
+)
 def test_recovery_refuses_native_evidence_from_other_order_paths(gate, monkeypatch, change):
     _, _, adapter = gate
     row = native_sell(text="t-saved", **change)
@@ -227,14 +229,15 @@ def test_recovery_refuses_native_evidence_from_other_order_paths(gate, monkeypat
         adapter.fetch_order_lookup_page("t-saved", "BTC/USDT", {}, 1, 2)
 
 
-def test_gate_buy_limit_remains_available_and_quote_budget_buys_fail_before_reading(gate, monkeypatch):
+def test_gate_buy_limit_remains_available_and_base_sized_market_buys_are_rejected(gate, monkeypatch):
     owner, account, adapter = gate
     monkeypatch.setattr(adapter._exchange, "fetch2", lambda *args, **kwargs: pytest.fail("Unexpected I/O"))
     provider = next(row for row in provider_catalog()["items"] if row["id"] == "gate")
-    assert provider["market_order_sides"] == ["sell"] and provider["limit_orders"]
+    assert provider["market_order_sides"] == ["buy", "sell"] and provider["limit_orders"]
+    assert provider["market_buy_budget"]
     spot = next(group for group in provider["support"] if group["id"] == "spot")
     market = next(feature for feature in spot["features"] if feature["id"] == "market_orders")
-    assert market["label"] == "Market sell · IOC" and "quote-currency budget" in market["detail"]
+    assert "quote budget" in market["detail"]
     with pytest.raises(ValueError, match="quote-currency budget"):
         owner.trading.preview(market_request(account, side="buy"))
     assert owner.trading.preview(order_request(account))["request"]["order_type"] == "limit"

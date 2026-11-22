@@ -57,7 +57,7 @@ RECOVERY_PROVIDERS = {
 
 
 RECOVERY_NOTES = {
-    "bitstamp": "Recover resting spot GTC limits by exact client order ID and matching original size and price from the pair’s open-order list. Market and closed-order recovery remain pending.",
+    "bitstamp": "Recover resting spot GTC limits through the pair’s open list. Terminal and market orders require exact status and original terms from a recent private creation event.",
     "cryptocom": "Recover base-sized cash GTC limits and IOC markets by exact client_oid with verified account, sizing and creation evidence. Missing or margin/advanced evidence remains uncertain.",
     "phemex": "Recover base-sized spot GTC limits and IOC market orders by exact clOrdID on the selected pair. Original native terms and creation time must match; missing client evidence remains uncertain.",
     "bitfinex": "Recover ordinary EXCHANGE LIMIT/MARKET orders by saved int45 cid, verified original terms and API origin. Open and bounded closed matches are inspected; closed history covers up to two weeks. Margin, flagged and linked orders are excluded.",
@@ -66,12 +66,12 @@ RECOVERY_NOTES = {
     "bybit": "Look up the saved client ID in Bybit UTA spot realtime and dated history. Coverage depends on Bybit's order retention.",
     "kucoin": "Look up the saved client ID in KuCoin Classic spot, with a legacy fallback. History retention depends on native order status.",
     "gemini": "Look up a reviewed Gemini spot GTC limit order with its exact saved client ID and original order details.",
-    "gate": "Recover cash spot GTC limits and base-sized IOC market sells by saved client ID. A direct miss checks bounded finished orders on the same pair.",
+    "gate": "Recover cash spot GTC limits and IOC market buys and sells by saved client ID and original sizing. A direct miss checks bounded finished orders on the same pair.",
     "bitget": "Recover Classic spot GTC limits and market orders by exact clientOid and original sizing units. Bitget retains API-cancelled records for up to two hours.",
     "poloniex": "Recover unborrowed spot GTC limits and IOC market orders through the exact saved client ID. Native retention and archived orders can limit lookup coverage.",
-    "bitmart": "Recover spot GTC limits and base-sized market sells through the exact saved client ID. BitMart limits unfilled API-cancelled order queries to 20 minutes.",
+    "bitmart": "Recover spot GTC limits and market buys and sells through the exact saved client ID and original sizing. BitMart limits unfilled API-cancelled order queries to 20 minutes.",
     "coinex": "Find cash GTC limits and base-sized market orders through pending and bounded finished pages. Market recovery requires explicit base currency. CoinEx deletes cancelled orders that had no fills; missing records remain uncertain.",
-    "htx": "Recover spot GTC limits and base-sized market sells by exact client ID on the verified wallet. HTX documents up to eight hours for open orders and two hours from creation for terminal orders.",
+    "htx": "Recover spot GTC limits and market buys and sells by exact client ID and original sizing on the verified wallet. HTX documents up to eight hours for open orders and two hours from creation for terminal orders.",
     "mexc": "Recover reviewed spot GTC limits and base-sized market orders by saved client ID on the exact pair. Market evidence must explicitly show zero original quote budget. MEXC order lookup covers up to seven days.",
 }
 
@@ -395,7 +395,7 @@ def _gate_lookup(exchange, client_id, symbol, cursor, start) -> OrderLookupPage:
             not isinstance(row, dict)
             or row.get("text") != client_id
             or row.get("currency_pair") != instrument
-            or not (gate_orders.reviewed_limit(row) or gate_orders.reviewed_market_sell(row))
+            or not (gate_orders.reviewed_limit(row) or gate_orders.reviewed_market(row))
         ):
             raise ValueError("Gate order evidence differs from the reviewed cash spot order.")
         native_id = identity(row.get("id"))

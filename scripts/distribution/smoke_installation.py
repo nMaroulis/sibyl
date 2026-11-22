@@ -80,6 +80,16 @@ def main() -> None:
                         if time.monotonic() >= deadline:
                             raise RuntimeError("Installed application did not become ready.") from None
                         time.sleep(0.15)
+                probe = json.loads(
+                    subprocess.check_output(
+                        command[:4] + ["probe", "--url", url, "--expect-version", health["version"]],
+                        cwd=root,
+                        env=env,
+                        text=True,
+                        timeout=10,
+                    )
+                )
+                assert probe == {"status": "ok", "version": health["version"]}
                 with urlopen(url + "/strategies?view=monitor", timeout=5) as response:
                     assert response.headers.get_content_type() == "text/html"
                     html = response.read().decode()

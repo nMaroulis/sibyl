@@ -29,7 +29,7 @@ MESSAGES = {
 def recovery_supported(intent: dict) -> bool:
     """Advertise only the reviewed lookup for this provider and order type."""
     if intent["exchange"] == "bitstamp":
-        return intent["request"].get("order_type") == "limit"
+        return intent["request"].get("order_type", "market") in {"limit", "market"}
     return intent["exchange"] in RECOVERY_PROVIDERS
 
 

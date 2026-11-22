@@ -57,8 +57,14 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Upbit Korea Trade order discovery can scan 30 days through resumable seven-day windows. Upbit Account’s initial fill import uses the same 30-day range. Gemini can scan recent closed orders separately by selected pair, with explicit saturation limits.
+- Bitstamp can recover a terminal or market order when exact status and a recent verified private creation event establish the original submitted terms.
+- Research Library adds consented Gemini text embeddings with a separate encrypted embedding key.
+- Chronos adds a 14-day SARIMA option with actual native fit evidence and separately versioned recipes.
+- Native agent evaluation adds six cases for multi-market grounding, read-only controls, private help, missing-model evidence and untrusted news passed through Sibyl.
+- Workspace diagnostics report bounded API timing and status counts. `sibyl probe` checks backend readiness independently from another process or host and can watch for outage and recovery transitions.
 - Poloniex and Upbit Korea support reviewed spot market buys and sells, with current pair checks and client-ID recovery. Poloniex orders use unborrowed spot funds.
-- Trade supports explicit quote-budget market buys on Bitget Classic, Poloniex and Upbit Korea. Review, recovery and order history keep the original budget separate from base fills and actual execution cost.
+- Trade supports explicit quote-budget market buys on Bitget Classic, Poloniex, Upbit Korea, Gate, HTX and BitMart. Review, recovery and order history keep the original budget separate from base fills and actual execution cost.
 - BitMart supports reviewed spot market sells in the entered base quantity. Sibyl checks the current increment and pair limits and can recover the submission through its saved client ID, original size, and spot scope.
 - HTX supports reviewed base-sized spot market sells. Sibyl checks current pair permissions and native sell-size limits and recovers uncertain submissions by the saved client ID on the verified spot wallet.
 - Bitget Classic supports reviewed spot market sells in the entered base quantity. An uncertain submission can recover using its saved client ID and the original quantity from exact order details. Fill quantities and fees stay separate from the original size.

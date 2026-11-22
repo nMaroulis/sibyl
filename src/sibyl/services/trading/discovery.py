@@ -34,7 +34,7 @@ class OrderDiscoveryRequest(Request):
 
     account_id: str = Field(default="", max_length=100)
     symbols: list[str] = Field(default_factory=list, max_length=12)
-    days: int = Field(default=1, ge=1, le=7)
+    days: int = Field(default=1, ge=1, le=30)
 
     @field_validator("symbols")
     @classmethod
@@ -203,6 +203,8 @@ class OrderDiscovery:
         accounts = [row for row in accounts if row.active and row.exchange in DISCOVERY_PROVIDERS]
         if not accounts or len(accounts) > 20:
             raise ValueError("Choose up to twenty active accounts with reviewed order discovery.")
+        if body.days > 7 and any(row.exchange != "upbit" for row in accounts):
+            raise ValueError("Choose only Upbit Korea accounts to scan more than seven days.")
         if not body.symbols and any(row.exchange in DISCOVERY_OPEN_PAIRS for row in accounts):
             raise ValueError("Choose up to twelve exact pairs for Phemex open and recent orders.")
         with self.store.db() as db:

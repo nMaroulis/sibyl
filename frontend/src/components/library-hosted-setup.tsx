@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Cloud, KeyRound, LoaderCircle } from 'lucide-react';
 import { post, refresh } from '../lib/api';
-import type { SemanticStatus } from '../lib/semantic-types';
+import type { HostedEmbeddingProvider, SemanticStatus } from '../lib/semantic-types';
 import { SecretField } from './secret-field';
 
 /** Explicit remote-text permission and an independent encrypted key, never a chat-provider fallback. */
@@ -12,7 +12,7 @@ export function LibraryHostedSetup({
   setBusy,
   saved,
 }: {
-  provider: 'openai' | 'mistral';
+  provider: HostedEmbeddingProvider['id'];
   current: SemanticStatus;
   busy: string;
   setBusy: (value: string) => void;
@@ -134,8 +134,8 @@ export function LibraryHostedSetup({
       </div>
       {!spec?.available && (
         <p className="footnote">
-          The optional OpenAI-compatible SDK is required for both hosted providers. Install it in
-          the backend environment: <code>{current.hosted?.install}</code>, then restart Sibyl.
+          The optional OpenAI-compatible SDK is required for hosted providers. Install it in the
+          backend environment: <code>{current.hosted?.install}</code>, then restart Sibyl.
         </p>
       )}
       <div className="library-semantic-actions">

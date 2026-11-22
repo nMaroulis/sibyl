@@ -11,7 +11,7 @@ export type SemanticStatus = {
   has_api_key?: boolean;
   hosted?: { items: HostedEmbeddingProvider[]; install: string };
   profile: {
-    provider?: 'openai' | 'mistral';
+    provider?: HostedEmbeddingProvider['id'];
     remote_consent?: boolean;
     identity?: string;
     endpoint?: string;
@@ -26,7 +26,7 @@ export type SemanticStatus = {
 };
 
 export type HostedEmbeddingProvider = {
-  id: 'openai' | 'mistral';
+  id: 'openai' | 'mistral' | 'gemini';
   label: string;
   endpoint: string;
   models: string[];

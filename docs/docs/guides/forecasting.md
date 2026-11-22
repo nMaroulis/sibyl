@@ -113,7 +113,7 @@ Huber supports 360–2,000 consecutive closed daily candles and up to 30 forecas
 
 ## Try ARIMA
 
-In **Train model → Model settings & assumptions → Numerical model**, choose **ARIMA · returns & innovations**. Set autoregressive order **p** (1–3) and moving-average order **q** (0–2). One log-price difference (**d = 1**) and drift are fixed. Under **Seasonality**, choose **Weekly · 7 daily candles** to add one autoregressive term at a seven-day lag. Leave it **Off** for nonseasonal ARIMA. Lag/penalty controls for the other families are hidden because they do not apply. Ridge stays the default.
+In **Train model → Model settings & assumptions → Numerical model**, choose **ARIMA · returns & innovations**. Set autoregressive order **p** (1–3) and moving-average order **q** (0–2). One log-price difference (**d = 1**) and drift are fixed. Under **Seasonality**, choose **Weekly · 7 daily candles** or **Two weeks · 14 daily candles** to add one autoregressive term at that lag. Leave it **Off** for nonseasonal ARIMA. Lag/penalty controls for the other families are hidden because they do not apply. Ridge stays the default.
 
 One native statsmodels model is fitted only on the training partition, using training-only return normalization. Its parameters stay fixed across all horizons. At each forecast origin, the native filter processes exactly the latest 90 observed closes and predicts the following returns; it does not refit or use future smoothing. Historical evaluation and saved/current-feed forecasts use this same context. Point prices exponentiate predicted log prices; they are not a variance-adjusted expected price.
 

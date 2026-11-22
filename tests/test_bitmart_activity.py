@@ -267,5 +267,5 @@ def test_settings_are_derived_from_the_implemented_read_paths():
     for name in ("recovery", "discovery", "history_import", "fill_reconciliation"):
         assert features[name]["status"] == "available"
     assert features["automated"]["status"] == "pending"
-    assert provider["market_order_sides"] == ["sell"]
+    assert provider["market_order_sides"] == ["buy", "sell"]
     assert features["market_orders"]["status"] == "available"

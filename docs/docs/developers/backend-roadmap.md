@@ -10,7 +10,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 | ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Account synchronization        | partial       | Widen funding coverage and historical depth. Spot fill imports are already available for the configured exchanges.                              |
 | Portfolio accounting           | partial       | Complete history/flows, wider fee policies and wallet coverage beyond retained cross-pair FIFO.                                                   |
-| Order management               | partial       | Quote-budget market buys for Gate, HTX and BitMart, Bitstamp closed-order coverage, and broader conditional and replacement orders.                 |
+| Order management               | partial       | Remaining provider history caps, confirmed private event coverage, and broader conditional and replacement orders.                 |
 | Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
 | Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
 | Automated strategy execution   | partial       | Venue and failure-case acceptance, ownership repair and definitive venue settlement.                      |
@@ -108,9 +108,12 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Add Poloniex cash spot IOC market buys and sells with current pair rules, no borrowing and original-term client-ID recovery.
 - [x] Add Upbit Korea market buys and sells with account-specific pair rules and exact identifier recovery.
 - [x] Submit and recover Bitget Classic quote-budget market buys using the exact original size.
-- [ ] Extend explicit quote-budget market buys to Gate, HTX and BitMart.
-- [ ] Extend Bitstamp recovery to closed and market orders when original terms can be verified. Review recent Bitstamp order-event coverage separately.
-- [ ] Extend capped Gemini closed-order history and Upbit older closed-order coverage where native pagination can preserve every order.
+- [x] Extend explicit quote-budget market buys and original-budget recovery to Gate, HTX and BitMart.
+- [x] Recover Bitstamp closed and market orders with verified original terms from recent private creation events.
+- [ ] Extend Bitstamp event coverage beyond exact recovery once broader freshness, pagination and order-type contracts are verified.
+- [x] Add selected-pair Gemini closed-order scans and 30-day Upbit Trade discovery through seven-day native windows.
+- [x] Extend Upbit Account fill imports to an initial 30 days with resumable seven-day creation windows.
+- [ ] Verify lossless continuation for saturated Gemini results.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
 - [x] Add native Binance/Testnet unfilled-only manual GTC replacement with estimated reservation release, STOP_ON_FAILURE/ONLY_NEW, durable compound-command admission and retained non-atomic outcomes. See [advanced orders](advanced-orders.md).
 - [ ] Extend replacement to additional providers, partially filled orders and complete amendment/lifecycle history.
@@ -324,7 +327,7 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Add a small fixed-seed NumPy tanh neural model with training-only normalization, purged chronological calibration/testing, actual training-loss evidence, rolling refits and portable recipe validation.
 - [x] Add bounded fixed-scale Huber autoregression with training-only robust target scaling, deterministic IRLS, actual convergence/downweight diagnostics, purged held-out/rolling evaluation and portable recipe-preserving refits.
 - [x] Add native statsmodels nonseasonal ARIMA(p,1,q) with training-only normalization/maximum-likelihood fitting, fixed 90-close filtering, actual optimizer/likelihood diagnostics and existing held-out, rolling, portable and candidate workflows.
-- [x] Add optional weekly SARIMA in Chronos with a fixed seven-day seasonal order, native coefficient evidence, identical causal filtering and held-out, rolling and portable validation.
+- [x] Add seven-day and 14-day SARIMA recipes with distinct model identities, native coefficient evidence, causal filtering and held-out, rolling and portable workflows.
 - [ ] Add additional neural/model families, other seasonal orders, exogenous inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
@@ -334,7 +337,7 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 - [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
 - [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
 - [x] Add owner-labeled saved retrieval evaluations over pinned corpora/indexes, exact rankings/citations and precision/recall/MRR/nDCG/hit-rate reports.
-- [x] Add reviewed OpenAI/Mistral embedding adapters through native ProtoLink, independent encrypted keys, explicit text-processing permission, bounded raw response checks, provider identity and existing index/evaluation revision fences.
+- [x] Add reviewed OpenAI, Mistral and Gemini embedding adapters through native ProtoLink, independent encrypted keys, explicit text-processing permission, bounded raw response checks, provider identity and existing index/evaluation revision fences.
 - [x] Fit optional owner-labeled top-one semantic cutoffs using separate fit/held-out questions, exact complete corpus/index bindings, observed-error activation rules, revision-checked opt-in and stale/concurrent-change abstention. See [calibration contracts](search-calibration.md). Raw ranking evaluations remain unfiltered.
 - [ ] Evaluate semantic relevance/answer grounding and forward cutoff quality across real models/corpora, with broader hosted-provider coverage and live acceptance. Small labeled sets and controlled-vector tests do not establish general relevance or confidence.
 - [ ] Add cited web-search tools; local hybrid retrieval is implemented.
@@ -424,7 +427,7 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 
 ## Local implementation sequence
 
-1. **Reconciliation and venues.** Extend quote-budget market buys to Gate, HTX and BitMart. Follow with Bitstamp closed-order evidence, deeper order history, wider funding coverage and authenticated failure-case acceptance.
+1. **Reconciliation and venues.** Extend verified event and order-history coverage, add funding adapters and run authenticated failure-case acceptance.
 2. **Strategy ownership and deployment:** reviewed residual/manual inventory and explicitly approved multi-asset allocation execution beyond the implemented historical portfolio lab and separate causal ML/RL/Freqtrade research.
 3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
 4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.

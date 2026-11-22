@@ -24,6 +24,11 @@ PROVIDERS = {
         "models": ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"],
     },
     "mistral": {"label": "Mistral", "endpoint": "https://api.mistral.ai/v1", "models": ["mistral-embed"]},
+    "gemini": {
+        "label": "Gemini",
+        "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "models": ["gemini-embedding-001"],
+    },
 }
 INSTALL = "uv pip install 'sibyl[openai]'"
 
@@ -48,9 +53,10 @@ def catalog():
 class CheckedClient:
     """Check the SDK receipt before native adaptation, preserving exact passage-to-vector alignment."""
 
-    def __init__(self, client):
+    def __init__(self, client, *, model_aliases=()):
         self.client = client
         self.embeddings = self
+        self.model_aliases = model_aliases
 
     async def create(self, **kwargs):
         # SDK parsing can coerce boolean/string coordinates and indices. Check
@@ -68,7 +74,7 @@ class CheckedClient:
         count = len(kwargs["input"])
         if (
             not isinstance(result, dict)
-            or result.get("model") != kwargs["model"]
+            or result.get("model") not in (kwargs["model"], *self.model_aliases)
             or not isinstance(result.get("data"), list)
             or len(result["data"]) != count
         ):
@@ -127,7 +133,9 @@ class HostedEmbeddings:
                 "Embed one to thirty-two nonempty passages of at most 1,600 characters with a saved provider key."
             )
         try:
-            raw = asyncio.run(self._embed(spec["endpoint"], profile["model"], texts, api_key))
+            raw = asyncio.run(
+                self._embed(profile["provider"], spec["endpoint"], profile["model"], texts, api_key)
+            )
             vectors = [normalized(row) for row in raw]
             dimensions = len(vectors[0])
             if (
@@ -153,7 +161,8 @@ class HostedEmbeddings:
             "identity": "Hosted model name and dimensions; weight changes cannot be independently detected.",
         }, vectors
 
-    async def _embed(self, endpoint, model, texts, api_key):
+    async def _embed(self, provider, endpoint, model, texts, api_key):
+        aliases = (f"models/{model}",) if provider == "gemini" else ()
         async with self.client_factory(api_key, endpoint) as client:
-            embedder = OpenAIEmbedder(CheckedClient(client), model=model)
+            embedder = OpenAIEmbedder(CheckedClient(client, model_aliases=aliases), model=model)
             return await embedder.embed_documents(texts)

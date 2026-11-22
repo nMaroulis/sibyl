@@ -1,11 +1,25 @@
 """Exercise native sizing and durable recovery for the reviewed market order adapters."""
 
+from decimal import Decimal
+
 import ccxt
 import pytest
 from test_bitget_market_orders import market_order as bitget_order
 from test_bitget_market_orders import response
 from test_bitget_market_orders import rules as bitget_rules
+from test_bitmart_market_orders import bitmart as bitmart
+from test_bitmart_market_orders import market_account as market_account
+from test_bitmart_market_orders import market_order as bitmart_market
+from test_bitmart_market_orders import response as bitmart_response
+from test_bitmart_market_orders import rules as bitmart_rules
 from test_expanded_order_adapters import saved_account
+from test_gate_market_orders import gate as gate
+from test_gate_market_orders import native_sell as gate_sell
+from test_gate_market_orders import rules as gate_rules
+from test_htx_market_orders import htx as htx
+from test_htx_market_orders import response as htx_response
+from test_htx_market_orders import rules as htx_rules
+from test_htx_market_orders import sell as htx_sell
 from test_order_management import request as order_request
 from test_poloniex_orders import FIRST_ID
 from test_poloniex_orders import order as poloniex_order
@@ -284,3 +298,150 @@ def test_budget_reconciliation_requires_reported_execution_cost(fill_cost, nativ
         "fees": [],
     }
     assert summarize(intent, [fill], None)["status"] == expected_status
+
+
+@pytest.mark.parametrize("name", ["gate", "htx", "bitmart"])
+@pytest.mark.parametrize("fault", [None, "budget mismatch", "cost exceeds budget"])
+def test_additional_venue_buys_recover_exact_budget_and_native_fills(request, monkeypatch, name, fault):
+    owner, account, adapter = request.getfixturevalue(
+        {"gate": "gate", "htx": "htx", "bitmart": "market_account"}[name]
+    )
+    native = adapter._exchange
+    budget = Decimal("1250.25")
+    terms = order_request(
+        account, side="buy", order_type="market", limit_price=None, quantity=None, quote_budget=float(budget)
+    )
+    _enable_budget_rules(native, monkeypatch, name)
+    confirmed_id = str(2**60 + 17)
+    writes = []
+
+    if name == "gate":
+        submit_path = "privateSpotPostOrders"
+        details_path = "privateSpotGetOrdersOrderId"
+        expected = {
+            "currency_pair": "BTC_USDT",
+            "account": "spot",
+            "type": "market",
+            "side": "buy",
+            "amount": str(budget),
+            "time_in_force": "ioc",
+        }
+        client_field = "text"
+    elif name == "htx":
+        submit_path = "spotPrivatePostV1OrderOrdersPlace"
+        details_path = "spotPrivateGetV1OrderOrdersGetClientOrder"
+        expected = {
+            "account-id": "1234",
+            "symbol": "btcusdt",
+            "type": "buy-market",
+            "source": "spot-api",
+            "amount": str(budget),
+        }
+        client_field = "client-order-id"
+    else:
+        submit_path = "privatePostSpotV2SubmitOrder"
+        details_path = "privatePostSpotV4QueryClientOrder"
+        expected = {"symbol": "BTC_USDT", "side": "buy", "type": "market", "notional": str(budget)}
+        client_field = "client_order_id"
+
+    def timeout(payload):
+        writes.append(payload.copy())
+        raise ccxt.RequestTimeout("Order response timed out")
+
+    monkeypatch.setattr(native, submit_path, timeout)
+
+    review = owner.trading.preview(terms)
+    client_id = review["client_order_id"]
+    assert owner.trading.execute(review["id"], review["confirmation"])["status"] == "unknown"
+    assert writes == [{**expected, client_field: client_id}]
+
+    original = str(budget + 1 if fault == "budget mismatch" else budget)
+    cost = str(budget + 1 if fault == "cost exceeds budget" else Decimal("1150"))
+    if name == "gate":
+        row = gate_sell(
+            id=confirmed_id,
+            text=client_id,
+            side="buy",
+            amount=original,
+            filled_amount="0.023",
+            filled_total=cost,
+            left="100.25",
+        )
+    elif name == "htx":
+        row = htx_response(
+            htx_sell(
+                id=confirmed_id,
+                **{
+                    "client-order-id": client_id,
+                    "type": "buy-market",
+                    "amount": original,
+                    "field-amount": "0.023",
+                    "field-cash-amount": cost,
+                },
+            )
+        )
+    else:
+        row = bitmart_response(
+            bitmart_market(
+                orderId=confirmed_id,
+                side="buy",
+                clientOrderId=client_id,
+                notional=original,
+                size="",
+                filledSize="0.023",
+                filledNotional=cost,
+            )
+        )
+    monkeypatch.setattr(native, details_path, lambda _: row)
+    owner.settings.allow_live_trading = False
+    restored = ExchangeTrading(owner.market, owner.store).recover(review["id"])
+    if fault:
+        assert restored["status"] == "unknown" and not restored.get("exchange_order_id")
+    else:
+        assert restored["recovery"]["state"] == "found"
+        assert restored["exchange_order_id"] == confirmed_id and restored["status"] == "canceled"
+        assert restored["request"]["quantity"] is None and restored["request"]["quote_budget"] == float(
+            budget
+        )
+        assert restored["filled"] == 0.023 and restored["cost"] == 1150
+    assert len(writes) == 1
+
+
+def _enable_budget_rules(native, monkeypatch, name):
+    """Provide valid native rules for each quote-sized fixture."""
+    if name == "gate":
+        monkeypatch.setattr(
+            native,
+            "publicSpotGetCurrencyPairsCurrencyPair",
+            lambda _: gate_rules(trade_status="buyable", market_order_max_money="1300"),
+        )
+    elif name == "htx":
+        monkeypatch.setattr(
+            native,
+            "spotPublicGetV1SettingsCommonMarketSymbols",
+            lambda _: htx_rules(vp=2, minov="1", bmmaxov="1300"),
+        )
+    else:
+        monkeypatch.setattr(native, "publicGetSpotV1SymbolsDetails", lambda _: bitmart_rules())
+
+
+@pytest.mark.parametrize(
+    ("name", "budget", "message"),
+    [
+        ("gate", 1301, "maximum quote"),
+        ("htx", 1250.251, "value precision"),
+        ("bitmart", 999, "minimum quote"),
+    ],
+)
+def test_additional_venue_budget_review_rejects_native_limit_violations(
+    request, monkeypatch, name, budget, message
+):
+    owner, account, adapter = request.getfixturevalue(
+        {"gate": "gate", "htx": "htx", "bitmart": "market_account"}[name]
+    )
+    _enable_budget_rules(adapter._exchange, monkeypatch, name)
+    terms = order_request(
+        account, side="buy", order_type="market", limit_price=None, quantity=None, quote_budget=budget
+    )
+    with pytest.raises(ValueError, match=message):
+        owner.trading.preview(terms)

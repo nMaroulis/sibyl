@@ -101,9 +101,13 @@ When choosing Local → Ollama, inspect actual server status, installed and load
 
 ### Workspace health report
 
-Choose **Run health check** in Workspace to run a read-only SQLite quick check and collect content-free runtime diagnostics. **Download health report** exports the last completed report; neither opening Settings nor downloading reruns the check. Versions, numeric process/storage counters, aggregate worker states and generic check outcomes are included. Credentials, account identifiers/balances, chats, articles, paths, hostnames, plugin code and raw SQLite messages are excluded. Review the JSON before sharing.
+Choose **Run health check** in Workspace to run a read-only SQLite quick check and collect content-free runtime diagnostics. **Download health report** exports the last completed report; neither opening Settings nor downloading reruns the check. Versions, numeric process/storage counters, aggregate worker states and API status and response-start timing for up to 256 responses are included. API responses carry a generated request ID. The report omits request IDs and request contents. Credentials, account identifiers/balances, chats, articles, paths, hostnames, plugin code and raw SQLite messages are excluded. Review the JSON before sharing.
 
 A passed quick check is not a full integrity check, a credential test or proof that account data is correct. Interrupted, busy or inaccessible checks make no integrity conclusion. The check has a two-second execution budget plus a short lock wait; it never repairs data. Reports stay in memory until restart. Technician can read an existing report but cannot start a check or download it.
+
+### Check readiness from another machine
+
+Run `sibyl probe --url https://your-sibyl-host.example` from a process or host that can reach the backend. The command checks `/health` and exits 0 when Sibyl answers with its service identity and version. An outage, unexpected response or optional `--expect-version` mismatch returns a nonzero exit code. Add `--watch --interval 30` to report readiness changes continuously as JSON lines. Run the monitor outside the Sibyl process to observe outages and recovery.
 
 ### Read allowances and quota evidence
 

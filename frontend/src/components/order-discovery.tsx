@@ -71,6 +71,9 @@ export function OrderDiscovery({ active }: { active: boolean }) {
   const needsOpenPairs = selectedAccounts.some((row) => row.open_requires_symbols);
   const needsHistoryPairs = selectedAccounts.some((row) => row.history_requires_symbols);
   const hasHistory = selectedAccounts.some((row) => row.history_supported);
+  const extendedHistory =
+    selectedAccounts.length > 0 && selectedAccounts.every((row) => row.exchange === 'upbit');
+  const historyDays = extendedHistory ? days : Math.min(days, 7);
   const coverageNotes = [...new Set(selectedAccounts.flatMap((row) => row.coverage_note || []))];
   const start = async (job?: DiscoveryJob) => {
     setBusy(true);
@@ -84,7 +87,7 @@ export function OrderDiscovery({ active }: { active: boolean }) {
             .toUpperCase()
             .split(/[\s,]+/)
             .filter(Boolean),
-        days: job?.days ?? days,
+        days: job?.days ?? historyDays,
       });
       refresh();
       toast('Order discovery queued. Imported orders remain read-only.');
@@ -161,17 +164,18 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                 <label>
                   Recent history
                   <select
-                    value={days}
+                    value={historyDays}
                     onChange={(event) => setDays(Number(event.target.value))}
                     disabled={busy}
                   >
                     <option value={1}>Last 24 hours</option>
                     <option value={3}>Last 3 days</option>
                     <option value={7}>Last 7 days</option>
+                    {extendedHistory && <option value={30}>Last 30 days</option>}
                   </select>
                 </label>
               )}
-              {needsHistoryPairs && (
+              {(needsHistoryPairs || selectedAccounts.some((row) => row.exchange === 'gemini')) && (
                 <label className="order-discovery-pairs">
                   {needsOpenPairs ? 'Pairs to sync · required' : 'History pairs · optional'}
                   <input
@@ -200,7 +204,9 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                 Individual order tracking is separate.
               </p>
               {coverageNotes.map((note) => (
-                <p className="footnote" key={note}>{note}</p>
+                <p className="footnote" key={note}>
+                  {note}
+                </p>
               ))}
             </form>
           )}
@@ -233,7 +239,8 @@ export function OrderDiscovery({ active }: { active: boolean }) {
                 )}
                 {job.skipped > 0 && (
                   <small>
-                    {job.skipped} observations excluded by the selected range or supported spot scope.
+                    {job.skipped} observations excluded by the selected range or supported spot
+                    scope.
                   </small>
                 )}
                 {job.deferred > 0 && (

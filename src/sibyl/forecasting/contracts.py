@@ -19,7 +19,7 @@ class TrainForecast(Request):
     family: Literal["ridge", "mlp", "huber", "arima"] = "ridge"
     arima_p: Literal[1, 2, 3] = 1
     arima_q: Literal[0, 1, 2] = 1
-    arima_season: Literal[0, 7] = 0
+    arima_season: Literal[0, 7, 14] = 0
     huber_delta: float = Field(default=1.35, ge=0.25, le=5, strict=True)
     feature_set: Literal["returns", "returns_context"] = "returns"
     max_horizon: int = Field(default=30, ge=1, le=30, strict=True)

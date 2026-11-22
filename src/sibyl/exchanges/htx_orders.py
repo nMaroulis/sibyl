@@ -44,8 +44,8 @@ def valid_client_id(client_id) -> bool:
     return isinstance(client_id, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{1,64}", client_id))
 
 
-def market_sell_amount(exchange, market, amount) -> str:
-    """Check exact-pair API permission, base precision and native sell bounds."""
+def market_rules(exchange, market) -> dict:
+    """Read current exact-pair API trading rules."""
     rules = rows_list(
         response_data(exchange.spotPublicGetV1SettingsCommonMarketSymbols({"symbols": market["id"]})),
         1,
@@ -59,6 +59,32 @@ def market_sell_amount(exchange, market, amount) -> str:
     row = rules[0]
     if row.get("state") != "online" or row.get("at") != "enabled":
         raise ValueError("HTX spot API trading is unavailable for this pair.")
+    return row
+
+
+def market_buy_terms(exchange, market, budget) -> tuple[str, dict]:
+    """Check native value precision and market-buy bounds in the quote asset."""
+    row = market_rules(exchange, market)
+    digits = row.get("vp")
+    amount = Decimal(str(budget))
+    if type(digits) is not int or not 0 <= digits <= 30:
+        raise ValueError("HTX did not report valid quote value precision.")
+    if amount.normalize().as_tuple().exponent < -digits:
+        raise ValueError("Quote budget exceeds the HTX market's value precision.")
+    try:
+        minimum, maximum = (Decimal(str(row.get(key))) for key in ("minov", "bmmaxov"))
+    except InvalidOperation as error:
+        raise ValueError("HTX did not report valid market buy bounds.") from error
+    if not (minimum.is_finite() and maximum.is_finite() and 0 <= minimum <= maximum and maximum > 0):
+        raise ValueError("HTX did not report valid market buy bounds.")
+    if not minimum <= amount <= maximum:
+        raise ValueError(f"HTX requires a market buy budget from {minimum} to {maximum}.")
+    return format(amount, "f"), {"cost": {"min": float(minimum), "max": float(maximum)}}
+
+
+def market_sell_amount(exchange, market, amount) -> str:
+    """Check base precision and native sell bounds on the current spot pair."""
+    row = market_rules(exchange, market)
     digits = row.get("ap")
     if type(digits) is not int or not 0 <= digits <= 30:
         raise ValueError("HTX did not report valid base quantity precision.")
@@ -79,7 +105,7 @@ def market_sell_amount(exchange, market, amount) -> str:
     return precise
 
 
-def market_sell_ack(response, client_id) -> dict:
+def market_ack(response, client_id) -> dict:
     """Attach an exact native ID only after HTX acknowledges the submission."""
     try:
         order_id = identity(response_data(response))
@@ -91,7 +117,7 @@ def market_sell_ack(response, client_id) -> dict:
 
 
 def market_quantities(row) -> dict:
-    """Use the native execution fields and retain original sizing only for market sells."""
+    """Separate native base fills and quote spend from the originally requested size."""
     raw_filled = row.get("filled-amount", row.get("field-amount"))
     filled = number(raw_filled)
     cost = number(row.get("filled-cash-amount", row.get("field-cash-amount")))
@@ -102,6 +128,7 @@ def market_quantities(row) -> dict:
         remaining = float(Decimal(str(raw_amount)) - Decimal(str(raw_filled)))
     return {
         "amount": amount,
+        "quote_budget": number(row.get("amount")) if row.get("type") == "buy-market" else None,
         "remaining": remaining,
         "filled": filled,
         "cost": cost,
@@ -128,7 +155,7 @@ def parse_order(exchange, row, market):
 
 
 def lookup_order(exchange, client_id, symbol):
-    """Recover a wallet-bound API spot GTC limit or base-sized market sell."""
+    """Recover a wallet-bound API spot GTC limit or market order."""
     if not valid_client_id(client_id):
         raise ValueError("Invalid persisted HTX client order ID.")
     account, market = spot_account(exchange), exchange.market(symbol)
@@ -139,12 +166,12 @@ def lookup_order(exchange, client_id, symbol):
     account_order(row, account, market)
     if (
         row.get("client-order-id") != client_id
-        or row.get("type") not in ("buy-limit", "sell-limit", "sell-market")
+        or row.get("type") not in ("buy-limit", "sell-limit", "buy-market", "sell-market")
         or row.get("source") != "spot-api"
         or (row.get("stop-price") not in (None, "") and number(row["stop-price"]) != 0)
         or row.get("operator")
         or (number(row.get("amount")) or 0) <= 0
-        or (row["type"] != "sell-market" and (number(row.get("price")) or 0) <= 0)
+        or (row["type"].endswith("-limit") and (number(row.get("price")) or 0) <= 0)
     ):
         raise ValueError("HTX order evidence differs from the reviewed spot submission.")
     if int(identity(row["id"])) <= 0:

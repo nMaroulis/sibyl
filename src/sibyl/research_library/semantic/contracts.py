@@ -64,7 +64,7 @@ class HostedSemanticSettings(Request):
     """Deliberately check hosted embeddings and authorize text processing independently of chat models."""
 
     revision: int = Field(ge=0, strict=True)
-    provider: Literal["openai", "mistral"]
+    provider: Literal["openai", "mistral", "gemini"]
     model: str = Field(min_length=1, max_length=180)
     api_key: SecretStr | None = Field(default=None, max_length=4096)
     remote_consent: bool = Field(default=False, strict=True)

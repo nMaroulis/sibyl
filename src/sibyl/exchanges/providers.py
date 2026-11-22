@@ -223,26 +223,44 @@ class GateClient(CCXTClient):
             _, limits = gate_orders.market_sell_terms(self._exchange, self._exchange.market(symbol), amount)
         return limits
 
+    def market_buy_limits(self, symbol: str, budget: float) -> dict:
+        """Check the quote budget against fresh native limits."""
+        with self.lock:
+            self.market(symbol)
+            _, limits = gate_orders.market_buy_terms(self._exchange, self._exchange.market(symbol), budget)
+        return limits
+
     def _submit_market_order(self, symbol, side, amount, client_order_id):
-        """Send a single native cash IOC sell with the reviewed base quantity."""
-        if side != "sell" or not gate_orders.valid_client_id(client_order_id):
-            raise ccxt.InvalidOrder("Gate requires a market sell with a valid native client order ID.")
+        """Send a native cash sell with reviewed base sizing."""
+        if side != "sell":
+            raise ccxt.InvalidOrder("Gate market buys require a reviewed quote budget.")
+        return self._submit_cash_market(symbol, side, amount, client_order_id)
+
+    def _submit_market_buy(self, symbol, budget, client_order_id):
+        """Send a native cash buy with explicit quote sizing."""
+        return self._submit_cash_market(symbol, "buy", budget, client_order_id)
+
+    def _submit_cash_market(self, symbol, side, amount, client_order_id):
+        """Recheck rules and send one native cash IOC order."""
+        if not gate_orders.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("Gate requires a valid native client order ID.")
         market = self._exchange.market(symbol)
+        terms = gate_orders.market_buy_terms if side == "buy" else gate_orders.market_sell_terms
         try:
-            quantity, _ = gate_orders.market_sell_terms(self._exchange, market, amount)
+            quantity, _ = terms(self._exchange, market, amount)
         except (ValueError, ccxt.NetworkError) as error:
-            raise ccxt.InvalidOrder("Gate market sell rules could not be satisfied.") from error
+            raise ccxt.InvalidOrder(f"Gate market {side} rules could not be satisfied.") from error
         request = {
             "currency_pair": market["id"],
             "account": "spot",
             "type": "market",
-            "side": "sell",
+            "side": side,
             "amount": quantity,
             "time_in_force": "ioc",
             "text": client_order_id,
         }
         row = self._exchange.privateSpotPostOrders(request)
-        return gate_orders.parse_market_sell_ack(self._exchange, market, request, row)
+        return gate_orders.parse_market_ack(self._exchange, market, request, row)
 
     @staticmethod
     def _order(row: dict) -> dict:
@@ -258,7 +276,11 @@ class GateClient(CCXTClient):
                     remaining=None,
                     filled=filled,
                     cost=number(native.get("filled_total")),
+                    quote_budget=number(native.get("amount")),
                 )
+                if gate_orders.reviewed_market(native):
+                    status = gate_orders.market_buy_status(native)
+                    order["status"] = status if status != "unknown" else None
             elif native.get("type") == "market" and native.get("side") == "sell":
                 order.update(
                     status=gate_orders.market_sell_status(native),
@@ -457,29 +479,50 @@ class HTXClient(CCXTClient):
             htx_orders.market_sell_amount(self._exchange, self._exchange.market(symbol), amount)
         return {}
 
+    def market_buy_limits(self, symbol: str, budget: float) -> dict:
+        """Check current native quote rules and require the verified cash wallet."""
+        with self.lock:
+            self.market(symbol)
+            self._spot_account()
+            _, limits = htx_orders.market_buy_terms(self._exchange, self._exchange.market(symbol), budget)
+        return limits
+
     def _submit_market_order(self, symbol, side, amount, client_order_id):
-        """Send one native sell-market order scoped to the verified cash wallet."""
-        if side != "sell" or not htx_orders.valid_client_id(client_order_id):
-            raise ccxt.InvalidOrder("HTX requires a market sell with a valid native client order ID.")
+        """Send a native base-sized market sell from the verified spot wallet."""
+        if side != "sell":
+            raise ccxt.InvalidOrder("HTX market buys require a reviewed quote budget.")
+        return self._submit_cash_market(symbol, side, amount, client_order_id)
+
+    def _submit_market_buy(self, symbol, budget, client_order_id):
+        """Send a native quote-sized market buy from the verified spot wallet."""
+        return self._submit_cash_market(symbol, "buy", budget, client_order_id)
+
+    def _submit_cash_market(self, symbol, side, amount, client_order_id):
+        """Recheck cash wallet and pair rules before sending one native request."""
+        if not htx_orders.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("HTX requires a valid native client order ID.")
         market = self._exchange.market(symbol)
         try:
             account = self._spot_account()
-            quantity = htx_orders.market_sell_amount(self._exchange, market, amount)
+            if side == "buy":
+                quantity, _ = htx_orders.market_buy_terms(self._exchange, market, amount)
+            else:
+                quantity = htx_orders.market_sell_amount(self._exchange, market, amount)
         except (ValueError, ccxt.NetworkError) as error:
             raise ccxt.InvalidOrder(
-                "HTX market sell rules or wallet requirements could not be satisfied."
+                f"HTX market {side} rules or wallet requirements could not be satisfied."
             ) from error
         row = self._exchange.spotPrivatePostV1OrderOrdersPlace(
             {
                 "account-id": account,
                 "symbol": market["id"],
-                "type": "sell-market",
+                "type": f"{side}-market",
                 "source": "spot-api",
                 "amount": quantity,
                 "client-order-id": client_order_id,
             }
         )
-        return htx_orders.market_sell_ack(row, client_order_id)
+        return htx_orders.market_ack(row, client_order_id)
 
     @staticmethod
     def _order(row: dict) -> dict:
@@ -696,16 +739,36 @@ class BitMartClient(CCXTClient):
             )
         return limits
 
+    def market_buy_limits(self, symbol: str, budget: float) -> dict:
+        """Validate the venue's current minimum quote budget."""
+        with self.lock:
+            self.market(symbol)
+            _, limits = bitmart_activity.market_buy_terms(
+                self._exchange, self._exchange.market(symbol), budget
+            )
+        return limits
+
     def _submit_market_order(self, symbol, side, amount, client_order_id):
-        """Submit one cash spot sell with the reviewed native size."""
-        if side != "sell" or not bitmart_activity.valid_client_id(client_order_id):
-            raise ccxt.InvalidOrder("BitMart requires a market sell with a valid native client order ID.")
+        """Send one cash sell with the reviewed native base size."""
+        if side != "sell":
+            raise ccxt.InvalidOrder("BitMart market buys require a reviewed quote budget.")
+        return self._submit_cash_market(symbol, side, amount, client_order_id)
+
+    def _submit_market_buy(self, symbol, budget, client_order_id):
+        """Send one cash buy with the reviewed native quote notional."""
+        return self._submit_cash_market(symbol, "buy", budget, client_order_id)
+
+    def _submit_cash_market(self, symbol, side, amount, client_order_id):
+        """Recheck the appropriate market rules before native submission."""
+        if not bitmart_activity.valid_client_id(client_order_id):
+            raise ccxt.InvalidOrder("BitMart requires a valid native client order ID.")
         market = self._exchange.market(symbol)
+        terms = bitmart_activity.market_buy_terms if side == "buy" else bitmart_activity.market_sell_terms
         try:
-            quantity, _ = bitmart_activity.market_sell_terms(self._exchange, market, amount)
+            quantity, _ = terms(self._exchange, market, amount)
         except (ValueError, ccxt.NetworkError) as error:
-            raise ccxt.InvalidOrder("BitMart market sell rules could not be satisfied.") from error
-        return bitmart_activity.submit_market_sell(self._exchange, market, quantity, client_order_id)
+            raise ccxt.InvalidOrder(f"BitMart market {side} rules could not be satisfied.") from error
+        return bitmart_activity.submit_market(self._exchange, market, side, quantity, client_order_id)
 
     @staticmethod
     def _order(row: dict) -> dict:

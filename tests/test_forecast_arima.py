@@ -256,7 +256,7 @@ def test_rolling_arima_refits_purged_windows_and_pools_actual_price_errors(model
     assert retained["result"]["recipe"]["family"] == "arima"
 
 
-@pytest.mark.parametrize("season", [0, 7])
+@pytest.mark.parametrize("season", [0, 7, 14])
 def test_native_chronos_reads_actual_arima_fit_without_training_or_provider_calls(
     model_input, client, monkeypatch, season
 ):
@@ -291,7 +291,7 @@ def test_native_chronos_reads_actual_arima_fit_without_training_or_provider_call
     evidence = response.json()["evidence"]
     assert evidence["arima_training"]["converged"] and evidence["model"]["parameters"]["arima_p"] == 1
     assert evidence["model"]["parameters"].get("arima_season", 0) == season
-    assert ("ar.S.L7" in evidence["arima_training"]["parameter_values"]) == bool(season)
+    assert (f"ar.S.L{season}" in evidence["arima_training"]["parameter_values"]) == bool(season)
 
 
 def test_actual_demo_http_fit_has_real_evidence_and_does_not_activate_demo_account(manual_client):
@@ -382,7 +382,7 @@ def test_weekly_fit_recovers_seasonality_and_matches_native_causal_filter():
 
 def test_weekly_request_and_saved_workflows_preserve_engine(manual_client, monkeypatch):
     client = manual_client
-    invalid_values = [False, 7.0, "7", 14, -7]
+    invalid_values = [False, 7.0, "7", 28, -7]
     for value in invalid_values:
         with pytest.raises(ValidationError):
             recipe(arima_season=value)
