@@ -4,6 +4,13 @@ import type { LucideIcon } from 'lucide-react';
 
 export type SectionTab = { id: string; label: string; icon: LucideIcon; detail?: string };
 
+function keepTabInView(rail: HTMLDivElement, tab: HTMLButtonElement) {
+  const left = tab.offsetLeft - 4;
+  const right = tab.offsetLeft + tab.offsetWidth + 4 - rail.clientWidth;
+  if (left < rail.scrollLeft) rail.scrollLeft = left;
+  else if (right > rail.scrollLeft) rail.scrollLeft = right;
+}
+
 /** A horizontal counterpart to the floating navigation dock, with keyboard tab selection. */
 export function SectionTabs({
   id,
@@ -32,6 +39,8 @@ export function SectionTabs({
       element.dataset.ready = 'true';
     };
     measure();
+    const active = element.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+    if (active) keepTabInView(element, active);
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     for (const button of element.querySelectorAll('button')) observer.observe(button);
@@ -65,17 +74,7 @@ export function SectionTabs({
               const button =
                 rail.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next];
               button?.focus({ preventScroll: true });
-              if (button && rail.current) {
-                const container = rail.current;
-                if (button.offsetLeft < container.scrollLeft)
-                  container.scrollLeft = button.offsetLeft;
-                else if (
-                  button.offsetLeft + button.offsetWidth >
-                  container.scrollLeft + container.clientWidth
-                )
-                  container.scrollLeft =
-                    button.offsetLeft + button.offsetWidth - container.clientWidth;
-              }
+              if (button && rail.current) keepTabInView(rail.current, button);
             }}
           >
             <item.icon size={16} />

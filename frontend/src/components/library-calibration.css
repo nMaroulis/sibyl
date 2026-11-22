@@ -39,7 +39,7 @@
 .calibration-evidence {
   margin-top: 18px;
   padding: 15px;
-  background: #f7f9fd;
+  background: light-dark(#f7f9fd, var(--surface-soft));
   border: 1px solid var(--border);
   border-radius: 16px;
 }
@@ -62,13 +62,13 @@
   gap: 5px;
   padding: 12px;
   border-radius: 12px;
-  background: #edf1f9;
+  background: light-dark(#edf1f9, var(--dark-blue));
   font-size: 12px;
   transition: background 160ms;
 }
 .calibration-partitions button.is-active {
-  background: #dce7ff;
-  color: #365fbd;
+  background: light-dark(#dce7ff, var(--dark-blue));
+  color: light-dark(#365fbd, var(--dark-info-text));
 }
 .calibration-partitions button span {
   font-size: 10px;
@@ -124,7 +124,7 @@
   display: grid;
   gap: 10px;
   border-radius: 14px;
-  background: linear-gradient(125deg, #f0f4ff, #fafbff);
+  background: linear-gradient(125deg, light-dark(#f0f4ff, var(--dark-blue)), light-dark(#fafbff, var(--surface)));
   padding: 15px;
 }
 .calibration-statistics span {

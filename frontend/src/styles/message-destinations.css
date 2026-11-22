@@ -23,7 +23,7 @@
   border: 1px solid var(--border);
   border-radius: 15px;
   text-align: left;
-  background: #fff;
+  background: var(--surface);
   transition:
     border-color 180ms,
     background 180ms,
@@ -31,13 +31,13 @@
 }
 .message-destination.selected {
   border-color: #a8bee9;
-  background: linear-gradient(130deg, #f0f5ff, #fafcff);
+  background: linear-gradient(130deg, light-dark(#f0f5ff, var(--dark-blue)), light-dark(#fafcff, var(--surface)));
   box-shadow: 0 3px 15px #4273d609;
 }
 .message-destination:hover:not(:disabled),
 .message-destination:focus-visible {
   border-color: #b7c9e8;
-  background: #f7faff;
+  background: light-dark(#f7faff, var(--surface-soft));
 }
 .message-destination > img {
   flex: 0 0 25px;

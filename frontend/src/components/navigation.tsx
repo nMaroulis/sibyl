@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { NavigationIcon } from './navigation-icon';
+import { useInterfacePreferences } from '../lib/interface-preferences';
 import { LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -16,6 +17,7 @@ export function NavigationDock({
   moreItems: Destination[];
 }) {
   const location = useLocation();
+  const { navigation, showLabels } = useInterfacePreferences();
   const dock = useRef<HTMLElement>(null);
   const moreButton = useRef<HTMLButtonElement>(null);
   const morePanel = useRef<HTMLDivElement>(null);
@@ -63,7 +65,7 @@ export function NavigationDock({
 
   useEffect(() => {
     setExpanded(false);
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, navigation]);
   useEffect(() => {
     if (!expanded) return;
     const outside = (event: PointerEvent) => {
@@ -92,7 +94,7 @@ export function NavigationDock({
 
   useLayoutEffect(() => {
     const element = dock.current;
-    if (!element) return;
+    if (!element || navigation === 'bottom') return;
     const surface = element.parentElement?.querySelector('.workspace-surface');
     const measure = () => {
       const active = element.querySelector<HTMLElement>(
@@ -125,10 +127,15 @@ export function NavigationDock({
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [location.pathname]);
+  }, [location.pathname, navigation]);
 
   return (
-    <nav ref={dock} className="side-dock" aria-label="Main navigation">
+    <nav
+      ref={dock}
+      className="side-dock"
+      aria-label="Main navigation"
+      data-show-labels={showLabels}
+    >
       <span className="dock-selection" aria-hidden="true">
         <span className="dock-connector">
           <span key={location.pathname} className="dock-page-marker" />
@@ -176,7 +183,7 @@ export function NavigationDock({
           }
         }}
         onKeyDown={(event) => {
-          if (event.key === 'ArrowRight') {
+          if (event.key === (navigation === 'bottom' ? 'ArrowUp' : 'ArrowRight')) {
             event.preventDefault();
             setExpanded(true);
             requestAnimationFrame(() =>
@@ -211,7 +218,10 @@ export function NavigationDock({
             morePanel.current?.querySelectorAll<HTMLAnchorElement>('a') ?? [],
           );
           const index = links.indexOf(document.activeElement as HTMLAnchorElement);
-          if (event.key === 'ArrowLeft' && index === 0) {
+          if (
+            (navigation === 'left' && event.key === 'ArrowLeft' && index === 0) ||
+            (navigation === 'bottom' && event.key === 'ArrowDown')
+          ) {
             event.preventDefault();
             moreButton.current?.focus({ preventScroll: true });
             return;
@@ -267,27 +277,17 @@ export function PageView({ children }: { children: ReactNode }) {
     const element = view.current;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (!element?.animate || reducedMotion.matches) return;
-    const button = document.querySelector(
-      '.side-dock [aria-current="page"], .side-dock [data-current="true"]',
-    );
-    if (!button) return;
-    const origin = button.getBoundingClientRect();
-    const bounds = element.getBoundingClientRect();
-    const y = Math.max(0, Math.min(bounds.height, origin.top + origin.height / 2 - bounds.top));
-    const top = Math.max(0, y - 30);
-    const bottom = Math.max(0, bounds.height - y - 30);
-    const right = Math.max(0, bounds.width - 24);
-    const reveal = element.animate(
-      [
-        {
-          clipPath: `inset(${top}px ${right}px ${bottom}px 0px round 18px)`,
-          opacity: 0.3,
-          transform: 'translateX(-12px)',
-        },
-        { clipPath: 'inset(0px 0px 0px 0px round 0px)', opacity: 1, transform: 'translateX(0)' },
-      ],
-      { duration: 580, easing: 'cubic-bezier(.16,1,.3,1)' },
-    );
+    const reveal =
+      document.documentElement.dataset.navigation === 'bottom'
+        ? element.animate(
+            [
+              { opacity: 0.65, transform: 'translateY(6px)' },
+              { opacity: 1, transform: 'none' },
+            ],
+            { duration: 240, easing: 'ease-out' },
+          )
+        : revealFromSideDock(element);
+    if (!reveal) return;
     const stop = () => reveal.cancel();
     reducedMotion.addEventListener('change', stop);
     return () => {
@@ -299,5 +299,29 @@ export function PageView({ children }: { children: ReactNode }) {
     <div ref={view} className="page-view">
       {children}
     </div>
+  );
+}
+
+function revealFromSideDock(element: HTMLElement) {
+  const button = document.querySelector(
+    '.side-dock [aria-current="page"], .side-dock [data-current="true"]',
+  );
+  if (!button) return;
+  const origin = button.getBoundingClientRect();
+  const bounds = element.getBoundingClientRect();
+  const y = Math.max(0, Math.min(bounds.height, origin.top + origin.height / 2 - bounds.top));
+  const top = Math.max(0, y - 30);
+  const bottom = Math.max(0, bounds.height - y - 30);
+  const right = Math.max(0, bounds.width - 24);
+  return element.animate(
+    [
+      {
+        clipPath: `inset(${top}px ${right}px ${bottom}px 0px round 18px)`,
+        opacity: 0.3,
+        transform: 'translateX(-12px)',
+      },
+      { clipPath: 'inset(0px 0px 0px 0px round 0px)', opacity: 1, transform: 'translateX(0)' },
+    ],
+    { duration: 580, easing: 'cubic-bezier(.16,1,.3,1)' },
   );
 }

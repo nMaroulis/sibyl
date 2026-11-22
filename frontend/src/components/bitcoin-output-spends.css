@@ -1,9 +1,9 @@
 .bitcoin-spends {
   margin: 16px 0;
   padding: 14px;
-  border: 1px solid #e4eaf4;
+  border: 1px solid light-dark(#e4eaf4, var(--border));
   border-radius: 12px;
-  background: #f8faff;
+  background: light-dark(#f8faff, var(--surface-soft));
 }
 .bitcoin-spends-heading,
 .bitcoin-spends-attribution {
@@ -32,7 +32,7 @@
   display: grid;
   gap: 6px;
   padding: 11px 0;
-  border-bottom: 1px solid #e6ecf5;
+  border-bottom: 1px solid light-dark(#e6ecf5, var(--border));
   font-size: 11px;
 }
 .bitcoin-spend-row > div {
@@ -69,8 +69,8 @@
 }
 
 .bitcoin-spends .badge.amber {
-  color: #926d31;
-  background: #fbf0d9;
+  color: light-dark(#926d31, var(--dark-warning-text));
+  background: light-dark(#fbf0d9, var(--dark-amber));
 }
 
 .bitcoin-proof-result {

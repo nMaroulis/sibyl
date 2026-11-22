@@ -19,7 +19,7 @@ from sibyl.services.workspace.llm_settings import ModelSettings
 
 NAME = "Technician"
 TAGLINE = "Keep everything connected"
-DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging and alerts; explain saved diagnostics."
+DESCRIPTION = "Guide settings, exchange connection fields, model/agent setup, data sources, messaging, interface and alerts; explain saved diagnostics."
 SYSTEM_PROMPT = (
     "Use source_health for actual saved read outcomes, quota allowance/counter evidence, waiting work and coverage gaps. Distinguish application estimates from reported provider limits, transport success from credential/data validity, and read deferral from a provider outage. It is passive; do not recommend retrying uncertain writes or bypassing native limits. "
     "Use telegram_delivery_review to explain actual app-origin delivery outcomes and separate user acknowledgments. It cannot read private message bodies or send/review messages. "
@@ -27,7 +27,7 @@ SYSTEM_PROMPT = (
     "Use background_service_status for the local OS login-service state and CLI instructions. Native manager state is not API readiness; the currently viewed server may be a manual process or another workspace. You cannot install/start/stop services. Never request environment-file contents or credentials. "
     "Use worker_incidents for saved stalls, observation gaps and confirmed resumption of progress; observation_ended means recovery is unknown. It cannot establish external uptime or restart a worker. Use workspace_operations for actual worker health and backup/recovery instructions. Never request passphrases in chat. "
     "Help users configure Sibyl, not just diagnose connection counts. For how-to questions call "
-    "settings_guide with exchanges, models, news, market, messaging, alerts, strategies or workspace "
+    "settings_guide with exchanges, models, news, market, messaging, interface, alerts, strategies or workspace "
     "(including installation and launcher help); "
     "overview lists the available sections. For a particular "
     "exchange, call exchange_setup with its catalog ID, e.g. binance. Use connection_status only when "
@@ -45,7 +45,7 @@ GUIDES = {
     "overview": {
         "url": "/settings",
         "steps": [
-            "Settings has Exchanges, AI models, News, Market data, Messaging and Workspace sections.",
+            "Settings has Exchanges, AI models, News, Market data, Messaging, Interface and Workspace sections.",
             "Choose a section for its setup instructions. Alerts and Strategies have dedicated workspaces and help here too.",
             "Enter credentials only in the appropriate settings form, never in an assistant chat. Exchange/API keys are stored locally and encrypted on the Python backend machine.",
         ],
@@ -121,6 +121,15 @@ GUIDES = {
             "Recovery levels prevent repeated notices near a limit. Edits save paused; Resume resets the observed peak and incident state. Drawdown includes deposits and withdrawals, so it is not investment return. View evidence reads retained valuation details without fetching accounts.",
             "Inbox → History export & retention exports JSON/CSV with kind and UTC date filters (up to 2,000 newest notices). Automatic cleanup is off by default; saving an opt-in age policy clears only old read notices in bounded batches. Unread notices and unfinished delivery evidence are protected. Disabling the policy stops later automatic deletion; rules, financial records and delivery receipts remain separate.",
             "No AI model is required. A rule’s Delivery button selects Telegram, Discord, Slack, Signal, WhatsApp or email to its checked private recipient. WhatsApp requires an open private 24-hour reply window; no templates are sent. A changed connection revision or recipient requires selecting the checked target again. Every save starts from future events; existing inbox entries stay local. Cooldowns suppress extra messages and delivery windows reject stale observations. Alerts never trade, stop strategies or cancel orders. Worker incidents are observed separately and do not prove external host uptime.",
+        ],
+    },
+    "interface": {
+        "url": "/settings?tab=interface",
+        "steps": [
+            "In Settings → Interface, choose Light or Dark under Appearance.",
+            "Under Navigation, choose Left or Bottom. The bottom dock stays visible while scrolling, and the page has room to scroll its last controls above it. More opens above the dock.",
+            "Turn off Show labels for icon-only navigation in either dock and its More menu.",
+            "The choices apply immediately and are saved in this browser. Light and Left are the defaults.",
         ],
     },
     "workspace": {
@@ -213,6 +222,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "news",
             "market",
             "messaging",
+            "interface",
             "alerts",
             "strategies",
             "workspace",

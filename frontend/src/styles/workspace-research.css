@@ -135,7 +135,7 @@
 }
 .library-reader {
   scroll-margin-top: 25px;
-  border-color: #c4d3ee;
+  border-color: light-dark(#c4d3ee, var(--border));
 }
 .library-reader-meta {
   margin: 14px 0 20px;
@@ -220,8 +220,8 @@
   background: var(--surface-soft);
 }
 .worker-tile.needs-attention {
-  border-color: #e6bdc6;
-  background: #fff8f8;
+  border-color: light-dark(#e6bdc6, var(--border));
+  background: light-dark(#fff8f8, var(--surface-soft));
 }
 .worker-tile header {
   display: flex;
@@ -287,9 +287,9 @@
   align-items: center;
   padding: 13px 17px;
   border-radius: 15px;
-  background: #fff7ed;
-  color: #84643c;
-  border: 1px solid #efdcc3;
+  background: light-dark(#fff7ed, var(--dark-amber));
+  color: light-dark(#84643c, var(--dark-warning-text));
+  border: 1px solid light-dark(#efdcc3, var(--border));
   font-size: 12px;
   margin-bottom: 18px;
 }
@@ -303,8 +303,8 @@
   gap: 15px;
   align-items: flex-start;
   border-radius: 17px;
-  background: #f1f5fd;
-  border: 1px solid #dbe5f6;
+  background: light-dark(#f1f5fd, var(--dark-blue));
+  border: 1px solid light-dark(#dbe5f6, var(--border));
   padding: 20px;
   margin: 18px 0;
 }
@@ -512,7 +512,7 @@
   background: var(--border);
 }
 .resource-grid > div {
-  background: var(--surface, #fff);
+  background: var(--surface, var(--surface));
   display: grid;
   gap: 5px;
   padding: 13px 16px;

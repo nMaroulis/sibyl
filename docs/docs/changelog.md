@@ -57,6 +57,7 @@ Six batches extend accounting and reconciliation, exchange infrastructure, strat
 
 ### Added
 
+- Settings adds an Interface tab with dark mode, an optional floating glass dock along the bottom, and a toggle for navigation labels. These preferences are saved in the browser.
 - Bybit imports dated on-chain deposits and rollback revisions, with local allowances for reviewed V5 private reads. Production Unified Trading Accounts can opt into cash spot order signals that wake enabled REST readers.
 - Chronos adds a native elastic-net family and optional trailing observed-volume features for direct forecasting recipes, including rolling evaluation and portable refits.
 - Research Library supports Voyage AI embeddings with separate encrypted credentials and adds attributed article-file imports with an explicit rights declaration.

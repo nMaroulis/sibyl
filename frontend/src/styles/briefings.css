@@ -8,12 +8,12 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 15px 16px;
-  border: 1px solid #e4e9f4;
+  border: 1px solid light-dark(#e4e9f4, var(--border));
   border-radius: 17px;
-  background: linear-gradient(125deg, #f5f8ff, #fcfaff);
+  background: linear-gradient(125deg, light-dark(#f5f8ff, var(--dark-blue)), light-dark(#fcfaff, var(--surface)));
 }
 .briefing-add > svg {
-  color: #8799c4;
+  color: light-dark(#8799c4, var(--dark-info-text));
   flex-shrink: 0;
 }
 .briefing-add > div {
@@ -21,13 +21,13 @@
 }
 .briefing-add strong {
   display: block;
-  color: #6c7b98;
+  color: light-dark(#6c7b98, var(--dark-info-text));
   font-weight: 500;
   font-size: 12px;
 }
 .briefing-add span {
   display: block;
-  color: #96a1b6;
+  color: light-dark(#96a1b6, var(--dark-info-text));
   font-size: 10px;
   margin-top: 4px;
 }
@@ -43,13 +43,13 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: #8193c6;
-  border: 1px solid #e5eafa;
-  background: #fff;
+  color: light-dark(#8193c6, var(--dark-info-text));
+  border: 1px solid light-dark(#e5eafa, var(--border));
+  background: var(--surface);
   border-radius: 12px;
 }
 .briefing-strip.paused {
-  background: #fafbfe;
+  background: light-dark(#fafbfe, var(--surface));
 }
 .briefing-strip-copy {
   flex: 1;
@@ -62,7 +62,7 @@
   flex-wrap: wrap;
 }
 .briefing-strip-copy strong {
-  color: #677793;
+  color: light-dark(#677793, var(--dark-info-text));
   font-size: 12px;
   font-weight: 500;
 }
@@ -75,7 +75,7 @@
 .briefing-strip-copy > p {
   margin: 6px 0 0;
   font-size: 10px;
-  color: #939fb3;
+  color: light-dark(#939fb3, var(--dark-info-text));
   line-height: 1.6;
 }
 .briefing-channel-tag {
@@ -83,7 +83,7 @@
   align-items: center;
   gap: 4px;
   font-size: 9px;
-  color: #8d9ab1;
+  color: light-dark(#8d9ab1, var(--dark-info-text));
 }
 .briefing-controls {
   display: flex;
@@ -95,12 +95,12 @@
 .briefing-controls .icon-button {
   width: 29px;
   height: 30px;
-  color: #91a0b9;
+  color: light-dark(#91a0b9, var(--dark-info-text));
   border-radius: 9px;
 }
 .briefing-controls .icon-button:hover {
-  color: #6680bd;
-  background: #eaf0fe;
+  color: light-dark(#6680bd, var(--dark-info-text));
+  background: light-dark(#eaf0fe, var(--dark-blue));
   box-shadow: 0 2px 10px #9baed81a;
 }
 .briefing-attention {
@@ -108,7 +108,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #a78d70;
+  color: light-dark(#a78d70, var(--dark-warning-text));
   font-size: 10px;
   margin-top: 7px;
   text-align: left;
@@ -118,17 +118,17 @@
   align-items: center;
   gap: 5px;
   padding-top: 6px;
-  color: #8297ad;
+  color: light-dark(#8297ad, var(--dark-info-text));
   font-size: 10px;
   border: 0;
   background: none;
   cursor: pointer;
 }
 .briefing-delivery-status[data-state='sent'] {
-  color: #7f9e90;
+  color: light-dark(#7f9e90, var(--dark-success-text));
 }
 .briefing-delivery-status:is([data-state='uncertain'], [data-state='failed']) {
-  color: #b1818b;
+  color: light-dark(#b1818b, var(--rose));
 }
 .briefing-form-dialog {
   max-width: 620px;
@@ -138,8 +138,8 @@
   gap: 6px;
   padding: 5px;
   margin: 20px 0;
-  background: #f3f6fc;
-  border: 1px solid #e9edf6;
+  background: light-dark(#f3f6fc, var(--dark-blue));
+  border: 1px solid light-dark(#e9edf6, var(--border));
   border-radius: 14px;
 }
 .briefing-frequency button {
@@ -152,7 +152,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #8c99b0;
+  color: light-dark(#8c99b0, var(--dark-info-text));
   font-size: 12px;
   transition:
     color 200ms,
@@ -160,8 +160,8 @@
     box-shadow 200ms;
 }
 .briefing-frequency [aria-pressed='true'] {
-  background: #fff;
-  color: #7089bd;
+  background: var(--surface);
+  color: light-dark(#7089bd, var(--dark-info-text));
   box-shadow: 0 2px 7px #8498c716;
 }
 .briefing-form-dialog .form-grid label,
@@ -169,7 +169,7 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  color: #77859e;
+  color: light-dark(#77859e, var(--dark-info-text));
   font-size: 11px;
 }
 .briefing-form-dialog .form-grid {
@@ -192,7 +192,7 @@
   justify-content: space-between;
   gap: 12px;
   font-size: 11px;
-  color: #8090aa;
+  color: light-dark(#8090aa, var(--dark-info-text));
   margin: 16px 0;
 }
 .briefing-format select {
@@ -200,12 +200,12 @@
 }
 .briefing-retention {
   margin: 20px 0;
-  border-top: 1px solid #edf0f6;
+  border-top: 1px solid light-dark(#edf0f6, var(--border));
   padding-top: 16px;
 }
 .briefing-retention summary {
   font-size: 11px;
-  color: #8190aa;
+  color: light-dark(#8190aa, var(--dark-info-text));
   cursor: pointer;
 }
 .briefing-retention summary span {
@@ -227,7 +227,7 @@
   align-items: center;
   gap: 12px;
   font-size: 12px;
-  color: #8391a9;
+  color: light-dark(#8391a9, var(--dark-info-text));
   margin-bottom: 20px;
 }
 .briefing-history-picker select {
@@ -241,7 +241,7 @@
 }
 .briefing-history-list > section {
   padding: 20px 0;
-  border-top: 1px solid #edf0f6;
+  border-top: 1px solid light-dark(#edf0f6, var(--border));
 }
 .briefing-history-list header {
   display: flex;
@@ -253,7 +253,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #7b8ba7;
+  color: light-dark(#7b8ba7, var(--dark-info-text));
   font-size: 12px;
   flex-wrap: wrap;
 }
@@ -263,7 +263,7 @@
 }
 .briefing-history-list p {
   font-size: 12px;
-  color: #8c96aa;
+  color: light-dark(#8c96aa, var(--dark-info-text));
   line-height: 1.8;
 }
 .briefing-history-list .text-link {
@@ -282,10 +282,10 @@
   gap: 12px;
   padding: 15px 18px;
   margin-top: 16px;
-  background: #f8fafd;
-  border: 1px solid #e6edf7;
+  background: light-dark(#f8fafd, var(--surface-soft));
+  border: 1px solid light-dark(#e6edf7, var(--border));
   border-radius: 15px;
-  color: #8498b7;
+  color: light-dark(#8498b7, var(--dark-info-text));
 }
 .telegram-briefing-summary > span {
   flex: 1;
@@ -311,7 +311,7 @@
   .briefing-controls {
     width: 100%;
     margin-left: 0;
-    border-top: 1px solid #e7ecf6;
+    border-top: 1px solid light-dark(#e7ecf6, var(--border));
     padding-top: 9px;
   }
   .briefing-controls .button {

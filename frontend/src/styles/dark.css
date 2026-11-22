@@ -1,0 +1,134 @@
+:root {
+  /* Calm tints for selected items, warnings and other semantic surfaces. */
+  --dark-blue: #233653;
+  --dark-purple: #342b4b;
+  --dark-green: #1e3835;
+  --dark-red: #3d2937;
+  --dark-amber: #3b3126;
+  --dark-info-text: #9cbcf6;
+  --dark-success-text: #8ed6b8;
+  --dark-warning-text: #eac68c;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #101622;
+  --text: #e5ebf8;
+  --muted: #a4b2ca;
+  --subtle: #94a2bb;
+  --surface: #1b2435;
+  --surface-raised: #243048;
+  --surface-soft: #202b40;
+  --border: #32405a;
+  --accent: #93b6ff;
+  --accent-ink: #111d34;
+  --purple: #c4b0f3;
+  --rose: #f0a5b4;
+  --chart-grid: #303e57;
+  --shadow: 0 3px 14px #060b1426;
+  --negative: #f0a2b3;
+}
+
+[data-theme='dark'] ::selection {
+  background: #385382;
+  color: var(--text);
+}
+[data-theme='dark'] .app-brand > img {
+  filter: brightness(0) invert(0.92);
+}
+[data-theme='dark'] .workspace-surface {
+  background: #151e2d;
+  box-shadow: 0 6px 30px #06091229;
+}
+[data-theme='dark'] .section-selection {
+  background: var(--surface-raised);
+}
+[data-theme='dark'] .button.primary {
+  color: var(--accent-ink);
+}
+[data-theme='dark'] .button.primary:hover {
+  background: #b3ceff;
+  border-color: #b3ceff;
+}
+[data-theme='dark'] .recharts-cartesian-axis-tick-value {
+  fill: var(--muted);
+}
+[data-theme='dark'] .recharts-default-tooltip {
+  /* Recharts provides an inline white default for charts without a custom tooltip. */
+  background: var(--surface-raised) !important;
+  border-color: var(--border) !important;
+  color: var(--text);
+}
+[data-theme='dark'] .modal-backdrop {
+  background: #080e1bb3;
+}
+[data-theme='dark'] .dock-connector {
+  background: #4c6489;
+}
+[data-theme='dark'] .dock-page-marker {
+  background: #84a5e8;
+  box-shadow: 0 0 0 4px #1d2a41;
+  animation-name: dock-marker-arrive-dark;
+}
+@keyframes dock-marker-arrive-dark {
+  25% {
+    background: #aec5ff;
+    box-shadow: 0 0 10px 2px #819fdf46;
+  }
+}
+[data-theme='dark'] .dock-item::before,
+[data-theme='dark'] .dock-more-link::before {
+  background:
+    radial-gradient(ellipse at 32% 40%, #618dd04d, transparent 70%),
+    radial-gradient(ellipse at 70% 64%, #a9baff2b, transparent 66%);
+}
+[data-theme='dark'] .dock-item::after,
+[data-theme='dark'] .dock-more-link::after {
+  background: linear-gradient(145deg, #2f4572, #405a88 60%, #536b95);
+  box-shadow:
+    inset 1px 1px 3px #0f1a3280,
+    inset -1px -1px 2px #b8ceff2b;
+}
+[data-theme='dark'] .dock-item.dock-sibyl::after {
+  background: linear-gradient(145deg, #304777, #534777 62%, #6c5479);
+}
+[data-theme='dark'] .dock-item,
+[data-theme='dark'] .dock-more-link {
+  color: var(--muted);
+}
+[data-theme='dark']
+  :is(.side-dock .dock-item, .dock-more-link):is(
+    .active,
+    :hover,
+    :focus-visible,
+    [aria-expanded='true']
+  )
+  .dock-icon {
+  color: #d4e3ff;
+}
+[data-theme='dark'] .side-dock .dock-sibyl.active .sibyl-mark {
+  color: #f4eaff;
+}
+[data-theme='dark']:not([data-navigation='bottom']) .dock-more-panel {
+  background: #202c40f2;
+}
+[data-theme='dark'] .sibyl-conversation {
+  background: radial-gradient(ellipse at 18% 5%, #30284790, transparent 50%), var(--surface);
+}
+:root[data-theme='dark'][data-navigation='bottom'] .side-dock {
+  --glass-fill: #1b263df0;
+  --glass-gradient: linear-gradient(165deg, #91b8ff32, #4b659827 58%, #0e18334d);
+  --glass-edge: #9ab8ef4d;
+  --glass-shadow: 0 15px 36px #03081177, 0 2px 5px #03081180, inset 0 1px 0 #d2e1ff33;
+}
+:root[data-theme='dark'][data-navigation='bottom'] .dock-item::after {
+  background: linear-gradient(145deg, #3b578abf, #6885b8a3);
+}
+:root[data-theme='dark'][data-navigation='bottom'] .dock-item.dock-sibyl::after {
+  background: linear-gradient(145deg, #4c62a3bb, #80649fba);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-theme='dark'][data-navigation='bottom'] .side-dock {
+    --glass-fill: #141e34a3;
+  }
+}

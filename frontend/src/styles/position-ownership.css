@@ -33,8 +33,8 @@
   width: 36px;
   height: 36px;
   border-radius: 13px;
-  color: #6182cf;
-  background: linear-gradient(135deg, #f3f7ff, #edf0fc);
+  color: light-dark(#6182cf, var(--dark-info-text));
+  background: linear-gradient(135deg, light-dark(#f3f7ff, var(--dark-blue)), light-dark(#edf0fc, var(--dark-blue)));
 }
 .ownership-body {
   padding: 0 22px 18px;
@@ -102,7 +102,7 @@
   gap: 10px;
   padding: 18px;
   border-radius: 18px;
-  background: linear-gradient(125deg, #f4f7ff, #f7f8fc);
+  background: linear-gradient(125deg, light-dark(#f4f7ff, var(--dark-blue)), light-dark(#f7f8fc, var(--surface-soft)));
 }
 .ownership-review span,
 .ownership-review small {

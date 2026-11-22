@@ -90,12 +90,12 @@
   border-radius: 13px;
   padding: 14px;
   margin: 5px 0;
-  background: #f7f9fd;
+  background: light-dark(#f7f9fd, var(--surface-soft));
   border: 1px solid transparent;
 }
 .portfolio-saved-list > button.is-selected {
-  border-color: #c2d2f1;
-  background: #edf3ff;
+  border-color: light-dark(#c2d2f1, var(--border));
+  background: light-dark(#edf3ff, var(--dark-blue));
 }
 .portfolio-saved-list strong {
   font-size: 12px;
@@ -109,7 +109,7 @@
   margin-top: 5px;
 }
 .portfolio-method {
-  background: linear-gradient(140deg, #f2f6ff, #fff);
+  background: linear-gradient(140deg, light-dark(#f2f6ff, var(--dark-blue)), var(--surface));
 }
 .portfolio-method h3 {
   font-size: 22px;
@@ -133,7 +133,7 @@
   gap: 9px;
   padding: 15px;
   border-radius: 15px;
-  background: #f4f7fd;
+  background: light-dark(#f4f7fd, var(--dark-blue));
 }
 .portfolio-result-stats span {
   font-size: 10px;

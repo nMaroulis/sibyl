@@ -12,6 +12,7 @@ import {
   Globe2,
   History,
   Search,
+  PanelsTopLeft,
   Settings2,
   Sparkles,
   Waves,
@@ -97,6 +98,7 @@ function WorkspaceSearch({ close }: { close: () => void }) {
     ...destinations,
     { path: '/trade?tab=executions', name: 'Trade · Executions', icon: ArrowDownUp },
     { path: '/trade?tab=history', name: 'Trade · Account history', icon: History },
+    { path: '/settings?tab=interface', name: 'Settings · Interface', icon: PanelsTopLeft },
   ].filter((item) =>
     `${item.name} ${item.path === '/account' ? 'portfolio balances holdings allocation' : item.path === '/settings' ? 'exchanges connections llm models apis workspace messaging whatsapp telegram signal email' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
       .toLowerCase()
@@ -150,9 +152,6 @@ export function App() {
   const { data: runs } = useResource<Run[]>('/runs', 30000);
   const [searchOpen, setSearchOpen] = useState(false);
   const [privateMode, setPrivateMode] = useState(false);
-  useEffect(() => {
-    document.documentElement.dataset.theme = 'standard';
-  }, []);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {

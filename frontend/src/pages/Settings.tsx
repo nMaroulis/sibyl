@@ -14,6 +14,7 @@ import {
   Network,
   MessageCircle,
   Newspaper,
+  PanelsTopLeft,
   ChartNoAxesCombined,
   PlugZap,
   Settings2,
@@ -28,6 +29,7 @@ import { SourceHealthPanel } from '../components/provider-health';
 import { ConfigHelper } from '../components/config-helper';
 import { NewsSettings } from '../components/news-settings';
 import { MessagingSettings } from '../components/messaging-settings';
+import { InterfaceSettings } from '../components/interface-settings';
 import { ModelSettings } from '../components/model-settings';
 import { ExchangeConnections } from '../components/exchange-connections';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
@@ -42,6 +44,7 @@ const sections = [
   { id: 'news', label: 'News', icon: Newspaper },
   { id: 'market', label: 'Market data', icon: ChartNoAxesCombined },
   { id: 'messaging', label: 'Messaging', icon: MessageCircle },
+  { id: 'interface', label: 'Interface', icon: PanelsTopLeft },
   { id: 'workspace', label: 'Workspace', icon: Settings2 },
 ];
 
@@ -133,6 +136,9 @@ export function SettingsPage({ system }: { system?: System }) {
         </div>
         <div hidden={tab !== 'messaging'}>
           <MessagingSettings />
+        </div>
+        <div hidden={tab !== 'interface'}>
+          <InterfaceSettings />
         </div>
         <div hidden={tab !== 'workspace'}>
           <WorkspaceSettings system={system} />

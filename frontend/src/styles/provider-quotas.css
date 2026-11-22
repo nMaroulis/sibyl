@@ -3,7 +3,7 @@
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background: linear-gradient(130deg, #f8faff, #fbfcfe);
+  background: linear-gradient(130deg, light-dark(#f8faff, var(--surface-soft)), light-dark(#fbfcfe, var(--surface)));
 }
 .provider-quota-title,
 .provider-quota-title > span,
@@ -21,7 +21,7 @@
   font-weight: 600;
 }
 .provider-quota-title svg {
-  color: #6d8bd2;
+  color: light-dark(#6d8bd2, var(--dark-info-text));
 }
 .provider-quota-grid {
   display: grid;
@@ -30,8 +30,8 @@
   margin: 16px 0;
 }
 .provider-quota-budget {
-  background: #fff;
-  border: 1px solid #e8edf7;
+  background: var(--surface);
+  border: 1px solid light-dark(#e8edf7, var(--border));
   border-radius: 15px;
   padding: 15px;
   min-width: 0;
@@ -64,7 +64,7 @@
 .provider-quota-meter {
   height: 5px;
   border-radius: 6px;
-  background: #edf1f9;
+  background: light-dark(#edf1f9, var(--dark-blue));
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -90,8 +90,8 @@
   font-size: 12px;
   padding: 11px 13px;
   border-radius: 12px;
-  background: #faf1e2;
-  color: #8a6a3e;
+  background: light-dark(#faf1e2, var(--dark-amber));
+  color: light-dark(#8a6a3e, var(--dark-warning-text));
 }
 @media (max-width: 600px) {
   .provider-quotas {

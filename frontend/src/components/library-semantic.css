@@ -8,7 +8,7 @@
   padding: 17px 22px;
   cursor: pointer;
   list-style: none;
-  background: linear-gradient(110deg, #f5f8ff, #fff 70%);
+  background: linear-gradient(110deg, light-dark(#f5f8ff, var(--dark-blue)), var(--surface) 70%);
 }
 .library-semantic summary > div {
   display: grid;
@@ -93,7 +93,7 @@
 .library-semantic-track {
   height: 4px;
   border-radius: 8px;
-  background: #e9eef7;
+  background: light-dark(#e9eef7, var(--dark-blue));
   overflow: hidden;
 }
 .library-semantic-track > span {
@@ -161,9 +161,9 @@
     box-shadow 0.2s;
 }
 .embedding-provider-card.selected {
-  background: linear-gradient(120deg, #eff4ff, #f8f8ff);
+  background: linear-gradient(120deg, light-dark(#eff4ff, var(--dark-blue)), light-dark(#f8f8ff, var(--surface-soft)));
   border-color: #a8bbe9;
-  color: #375eaa;
+  color: light-dark(#375eaa, var(--dark-info-text));
   box-shadow: 0 3px 14px #b5c6f016;
 }
 .embedding-provider-card:hover:not(:disabled) {
@@ -192,7 +192,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #f7f9fd;
+  background: light-dark(#f7f9fd, var(--surface-soft));
 }
 .embedding-key-saved > div {
   display: grid;
@@ -214,8 +214,8 @@
   padding: 15px 17px;
   border: 1px solid #e5d8b7;
   border-radius: 14px;
-  background: linear-gradient(120deg, #fffbf2, #fffdf9);
-  color: #705c35;
+  background: linear-gradient(120deg, light-dark(#fffbf2, var(--dark-amber)), light-dark(#fffdf9, var(--surface-soft)));
+  color: light-dark(#705c35, var(--dark-warning-text));
 }
 .embedding-remote-consent > svg {
   flex-shrink: 0;

@@ -66,6 +66,12 @@ CoinGecko supplies quotes only in this adapter. CryptoCompare and exchange feeds
 
 Saved choices take precedence over environment defaults. This tab also describes fixed research integrations for CoinPaprika, Wikipedia, mempool.space and optional yfinance. The old `/settings?tab=apis` bookmark opens Market data. See the [backend source contract](../developers/market-data.md).
 
+## Interface
+
+Open `/settings?tab=interface` to choose **Light** or **Dark** appearance and place the navigation on the **Left** or **Bottom**. The bottom dock floats over the workspace and stays visible while you scroll. Scroll to the end of a page to bring its last controls above the dock. **More** opens upward, and you can open it from the keyboard with ↑.
+
+Turn off **Show labels** for icon-only navigation, including the **More** menu. The bottom dock also uses icons alone on narrow screens. Choices apply immediately and are saved in the current browser.
+
 ## Workspace
 
 Open `/settings?tab=workspace` for [background-worker activity](worker-health.md), [encrypted backup/recovery](workspace-backups.md), the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.

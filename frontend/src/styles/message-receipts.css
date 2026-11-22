@@ -1,9 +1,9 @@
 .message-delivery-receipt {
   padding: 14px;
-  border: 1px solid #e7ecf5;
+  border: 1px solid light-dark(#e7ecf5, var(--border));
   border-radius: 14px;
-  background: #fafbff;
-  color: #8695ab;
+  background: light-dark(#fafbff, var(--surface));
+  color: light-dark(#8695ab, var(--dark-info-text));
   font-size: 11px;
 }
 .message-delivery-receipt header {
@@ -35,7 +35,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 9px 0;
-  border-top: 1px solid #e9edf5;
+  border-top: 1px solid light-dark(#e9edf5, var(--border));
 }
 .message-delivery-part p {
   flex-basis: 100%;
@@ -43,7 +43,7 @@
 }
 .message-delivery-title {
   display: block;
-  color: #71839f;
+  color: light-dark(#71839f, var(--dark-info-text));
   font-size: 12px;
   font-weight: 500;
   margin-bottom: 10px;

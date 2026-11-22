@@ -91,6 +91,8 @@ def test_technician_has_complete_settings_orientation_without_account_reads(clie
     overview = tool_call(client, "technician", "settings_guide")
     assert overview["section"] == "overview" and overview["url"] == "/settings"
     assert set(overview["sections"]) >= {"exchanges", "models", "news", "market", "messaging", "workspace"}
+    interface = tool_call(client, "technician", "settings_guide", section="interface")
+    assert interface["url"] == "/settings?tab=interface" and "Light or Dark" in interface["steps"][0]
     messaging = tool_call(client, "technician", "settings_guide", section="messaging")
     assert "Telegram" in messaging["steps"][0] and "are implemented" in messaging["steps"][0]
     assert "IMAP/SMTP" in messaging["steps"][0] and "signed WhatsApp" in messaging["steps"][0]
