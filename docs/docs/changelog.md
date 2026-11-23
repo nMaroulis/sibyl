@@ -47,11 +47,15 @@ docker compose up --build
 
 ## Release notes
 
-## [2.4.0] - Unreleased
+## [2.4.0] - 2026-11-23
 
-:::note[In development]
+:::note[Latest Release]
 
-Six batches extend accounting and reconciliation, exchange infrastructure, strategies, native ProtoLink workflows and messaging, research and forecasting, and local operations/distribution. Only completed changes are listed below; the [release plan](developers/release-2.4.md) tracks work in progress.
+Account and Trade can import more exchange activity, track FIFO cost basis across pairs, and reconcile fills and funding with clearer coverage limits. More exchanges support reviewed spot orders and recovery after an uncertain submission. Strategies adds shared exposure and loss controls, while the Portfolio lab and optional Optuna tuning expand what you can test on historical data.
+
+Private messaging expands to Discord, Slack, WhatsApp, Signal, and email alongside Telegram. Alert delivery and scheduled briefings can use all six channels. ProtoLink investigations can pause for input or approval and resume from saved progress. Research adds Ethereum block and transaction lookup, SEC EDGAR filings, and attributed article imports. Chronos adds trained forecasting options, including elastic net and seasonal ARIMA, plus drift monitoring.
+
+Settings adds dark mode and an optional floating bottom dock with icon-only navigation. Workspace gains scheduled jobs, credential and vault rotation, and diagnostics for worker stalls and API readiness. The [release plan](developers/release-2.4.md) tracks remaining work and live provider verification.
 
 :::
 
