@@ -1,18 +1,21 @@
-"""Explicit local imports and read-only source retrieval for the Research workspace."""
+"""Explicit local imports and attributable source retrieval for the Research workspace."""
 
 import base64
 import binascii
 from datetime import date
+from typing import Literal
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
 from sibyl.api.uploads import bounded_body
+from sibyl.research_library.calibration.contracts import CalibrationCreate, CalibrationPolicy
 from sibyl.research_library.evaluations.contracts import EvaluationRun, EvaluationSuite
 from sibyl.research_library.semantic.contracts import (
+    HostedSemanticSettings,
     IndexBatch,
     LocalEndpoint,
     SemanticRevision,
@@ -37,6 +40,18 @@ class DocumentImport(BaseModel):
     publisher: str = Field(default="", max_length=160)
     source_url: str = Field(default="", max_length=2000)
     published_at: date | None = None
+    article_rights: Literal["license", "publisher_permission", "rights_holder"] | None = None
+    article_rights_confirmed: bool = Field(default=False, strict=True)
+
+    @model_validator(mode="after")
+    def valid_attribution(self):
+        if self.article_rights_confirmed != (self.article_rights is not None):
+            raise ValueError("Confirm the applicable rights before importing an article.")
+        if self.article_rights and not all(
+            value.strip() for value in (self.title, self.publisher, self.source_url)
+        ):
+            raise ValueError("Article imports require a title, publisher and original source URL.")
+        return self
 
     @field_validator("source_url")
     @classmethod
@@ -101,7 +116,7 @@ async def import_document(request: Request, s: S):
     except ValidationError:
         raise HTTPException(
             422,
-            "Invalid document metadata. Choose PDF/text/Markdown, valid source information and a file up to 8 MiB.",
+            "Use PDF/text/Markdown up to 8 MiB. Articles also need a title, publisher, source URL and permission confirmation.",
         ) from None
     try:
         content = base64.b64decode(body.data_base64, validate=True)
@@ -115,6 +130,7 @@ async def import_document(request: Request, s: S):
         publisher=body.publisher,
         url=body.source_url,
         published_at=body.published_at.isoformat() if body.published_at else "",
+        article_rights=body.article_rights,
     )
 
 
@@ -153,6 +169,12 @@ def semantic_models(body: LocalEndpoint, s: S):
 def semantic_settings(body: SemanticSettings, s: S):
     """Check local embedding capability and save a fresh vector space with an empty index."""
     return s.library.semantic.configure(body)
+
+
+@router.post("/semantic/hosted-settings")
+def hosted_semantic_settings(body: HostedSemanticSettings, s: S):
+    """Check one hosted embedding model after explicit text-processing consent, using a separate key."""
+    return s.library.semantic.configure_hosted(body)
 
 
 @router.post("/semantic/index")
@@ -207,3 +229,39 @@ def evaluation_stop(identity: str, s: S):
 def evaluation_delete(identity: str, s: S):
     """Explicitly remove an inactive suite and its saved reports, keeping sources."""
     s.library.evaluations.delete(identity)
+
+
+@router.get("/calibrations")
+def calibrations(s: S):
+    """Read semantic calibration receipts and current exact-scope cutoff states without inference."""
+    return s.library.calibration.status()
+
+
+@router.post("/calibrations", status_code=202)
+def calibration_start(body: CalibrationCreate, s: S):
+    """Queue independent labeled fit/validation queries; never automatically enable a cutoff."""
+    return s.library.calibration.start(body)
+
+
+@router.get("/calibrations/{identity}")
+def calibration_report(identity: str, s: S):
+    """Read the actual cutoff, held-out counts and exact top-passage evidence."""
+    return s.library.calibration.get(identity)
+
+
+@router.post("/calibrations/{identity}/stop")
+def calibration_stop(identity: str, s: S):
+    """Stop future queries and fence late results without undoing already sent provider queries."""
+    return s.library.calibration.stop(identity)
+
+
+@router.delete("/calibrations/{identity}", status_code=204)
+def calibration_delete(identity: str, s: S):
+    """Delete an inactive report only after its cutoff is disabled."""
+    s.library.calibration.delete(identity)
+
+
+@router.post("/calibration-policy/{kind}")
+def calibration_policy(kind: str, body: CalibrationPolicy, s: S):
+    """Explicitly enable a validated current cutoff or disable filtering with a revision check."""
+    return s.library.calibration.set_policy(kind, body)

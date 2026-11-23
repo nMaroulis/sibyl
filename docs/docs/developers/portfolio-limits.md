@@ -6,7 +6,7 @@
 
 Two durable policy rows isolate `production` and `test`. New exchange runs automatically participate in their environment. Demo and paper runs, manual orders and unrelated wallet holdings are excluded. All retained exchange runs are included, including terminal runs' P&L, residual ownership and unresolved orders. More than 100 runs per environment fails closed; each projection retains the existing 10,000-native-fill budget.
 
-Each coherent SQLite snapshot rebuilds cash/units from linked native fills. Observed cumulative base quantity must match imported quantity. Native costs, fees, sides and environments use the existing reconciliation comparison. An ordinary open order with reconciled partial fills is assessable; terminal incomplete pages, unknown writes, missing costs/fees and third-currency fees are not. Prepared unsubmitted orders consume no capacity until admission.
+Each coherent SQLite snapshot rebuilds cash/units from linked native fills. Observed cumulative base quantity must match imported quantity. Native costs, fees, sides and environments use the existing reconciliation comparison. An ordinary open order with reconciled partial fills is assessable; terminal incomplete pages, unknown writes, missing costs/fees and third-currency fees awaiting approval are not. Prepared unsubmitted orders consume no capacity until admission. Immutable fee-price receipts bind the exact run source, native fill fee facts and closed candle evidence. Shared P&L deducts the resulting signed quote expense. Gross exposure and native cash still use the native ledgers. Admission rechecks current fee evidence in the intent transaction even if shared limits are disabled.
 
 Using current reference USDT rates:
 

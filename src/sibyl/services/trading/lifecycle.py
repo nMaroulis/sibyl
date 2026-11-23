@@ -82,9 +82,20 @@ class OrderLifecycle:
         ):
             if expected is not None and result.get(key) is not None and str(result[key]) != str(expected):
                 raise ValueError("Provider order identity does not match the reviewed intent.")
+        budget = request.get("quote_budget")
+        quantity = request["quantity"]
+        if budget is not None:
+            reported = number(result.get("quote_budget"))
+            cost = number(result.get("cost"))
+            if reported is not None and reported != budget:
+                raise ValueError("Provider quote budget differs from the reviewed intent.")
+            if cost is not None and (cost < 0 or cost > budget):
+                raise ValueError("Provider execution cost exceeds the reviewed quote budget.")
+            if cost is not None and intent.get("cost") is not None and cost < intent["cost"]:
+                raise ValueError("Provider returned an older cumulative cost observation.")
         filled = number(result.get("filled"))
         if filled is not None:
-            if filled < 0 or filled > request["quantity"] + max(1e-10, request["quantity"] * 1e-8):
+            if filled < 0 or (quantity is not None and filled > quantity + max(1e-10, quantity * 1e-8)):
                 raise ValueError("Provider returned an invalid filled quantity.")
             if intent.get("filled") is not None and filled < intent["filled"]:
                 raise ValueError(
@@ -93,7 +104,7 @@ class OrderLifecycle:
             intent["filled"] = filled
         remaining = number(result.get("remaining"))
         if remaining is not None and (
-            remaining < 0 or remaining > request["quantity"] + max(1e-10, request["quantity"] * 1e-8)
+            remaining < 0 or quantity is None or remaining > quantity + max(1e-10, quantity * 1e-8)
         ):
             raise ValueError("Provider returned an invalid remaining quantity.")
         status = result.get("status") or intent["status"]
@@ -149,6 +160,8 @@ class OrderLifecycle:
             connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
             if not intent.get("exchange_order_id") and intent["status"] in {"submitting", "unknown"}:
                 intent = self.trading.recovery.check(identity, manual=True)
+                if intent.get("exchange_order_id") and intent["exchange"] != "demo":
+                    return intent
             if not intent.get("exchange_order_id"):
                 raise ValueError(
                     "No exchange order ID is recorded. Check the exchange using the client order ID; do not resubmit an uncertain order."

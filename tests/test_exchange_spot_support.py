@@ -1,6 +1,7 @@
 """Capture real SDK request generation; no credentials, network calls or orders."""
 
 from copy import deepcopy
+from decimal import Decimal
 
 import ccxt
 import pytest
@@ -36,6 +37,19 @@ MARKET = {
 }
 NEW_MARKET = ["binanceus", "okx", "bybit", "kucoin", "bitstamp"]
 NEW_LIMIT = [*NEW_MARKET, "gemini"]
+ADDITIONAL_LIMIT = [
+    "gate",
+    "bitget",
+    "mexc",
+    "htx",
+    "cryptocom",
+    "bitfinex",
+    "coinex",
+    "bitmart",
+    "phemex",
+    "poloniex",
+    "upbit",
+]
 
 
 @pytest.fixture
@@ -49,6 +63,7 @@ def native_client(monkeypatch):
                 "apiKey": "test-key",
                 "secret": "test-secret",
                 **({"password": "test-pass"} if CATALOG[identity].passphrase else {}),
+                **({"uid": "test-memo"} if CATALOG[identity].uid else {}),
             },
         )
         clients.append(client)
@@ -58,8 +73,25 @@ def native_client(monkeypatch):
             "kucoin": "BTC-USDT",
             "bitstamp": "btcusdt",
             "gemini": "btcusdt",
+            "gate": "BTC_USDT",
+            "bitmart": "BTC_USDT",
+            "poloniex": "BTC_USDT",
+            "htx": "btcusdt",
+            "cryptocom": "BTC_USDT",
+            "bitfinex": "tBTCUST",
+            "phemex": "sBTCUSDT",
+            "upbit": "USDT-BTC",
         }.get(identity, "BTCUSDT")
+        if identity == "bitfinex":
+            market["precision"] = {"amount": 8, "price": 5}  # Native significant-digit precision.
+        if identity == "phemex":
+            market.update(valueScale=8, priceScale=4, ratioScale=8)
         client._exchange.set_markets([market])
+        if identity == "htx":
+            client._exchange.accounts = [
+                {"id": "1234", "type": "spot"},
+                {"id": "unrelated-margin", "type": "margin"},
+            ]
         requests = []
 
         def capture(path, api="public", method="GET", params=None, *args, **kwargs):
@@ -233,3 +265,81 @@ def test_okx_preview_persists_native_id_before_ambiguous_submission(
     assert observed[0][0]["clOrdId"] == intent["client_order_id"]
     service.execute(intent["id"], intent["confirmation"])
     assert len(observed) == 1
+
+
+@pytest.mark.parametrize("identity", ADDITIONAL_LIMIT)
+@pytest.mark.parametrize("side", ["buy", "sell"])
+def test_additional_native_limits_preserve_spot_quantity_price_and_the_saved_client_id(
+    native_client, identity, side
+):
+    client, requests = native_client(identity)
+    cid = client.format_client_order_id("135d8630-4dcc-4bfe-8918-41555302a029")
+    with pytest.raises(Captured):
+        client.create_order("BTC/USDT", "limit", side, 0.001, {"clientOrderId": cid}, price=50000)
+    assert len(requests) == 1
+    request, params = requests[0], requests[0]["params"]
+    assert request["method"] == "POST"
+    quantity, price, identity_field = {
+        "gate": ("amount", "price", "text"),
+        "bitget": ("size", "price", "clientOid"),
+        "mexc": ("quantity", "price", "newClientOrderId"),
+        "htx": ("amount", "price", "client-order-id"),
+        "cryptocom": ("quantity", "price", "client_oid"),
+        "bitfinex": ("amount", "price", "cid"),
+        "coinex": ("amount", "price", "client_id"),
+        "bitmart": ("size", "price", "client_order_id"),
+        "phemex": ("baseQtyEv", "priceEp", "clOrdID"),
+        "poloniex": ("quantity", "price", "clientOrderId"),
+        "upbit": ("volume", "price", "identifier"),
+    }[identity]
+    expected_quantity = Decimal("-0.001") if identity == "bitfinex" and side == "sell" else Decimal("0.001")
+    if identity == "phemex":
+        assert Decimal(str(params[quantity])) == expected_quantity * 100_000_000
+        assert Decimal(str(params[price])) == 50000 * 10000
+        assert params["qtyType"] == "ByBase" and params["timeInForce"] == "GoodTillCancel"
+        assert "quoteQtyEv" not in params
+    else:
+        assert Decimal(str(params[quantity])) == expected_quantity
+        assert Decimal(str(params[price])) == 50000
+    assert str(params[identity_field]) == cid
+    if identity == "gate":
+        assert cid.startswith("t-") and len(cid) <= 28
+        assert params["account"] == "spot" and params["time_in_force"] == "gtc"
+    elif identity == "bitget":
+        assert request["path"] == "v2/spot/trade/place-order"
+        assert params["force"] == "gtc" and "timeInForce" not in params
+    elif identity == "cryptocom":
+        assert params["time_in_force"] == "GOOD_TILL_CANCEL" and params["spot_margin"] == "SPOT"
+    elif identity == "bitfinex":
+        assert isinstance(params["cid"], int) and 0 < params["cid"] < 2**45
+        assert params["type"] == "EXCHANGE LIMIT" and "lev" not in params
+    elif identity == "coinex":
+        assert params["market_type"] == "SPOT" and "clientOrderId" not in params
+    elif identity == "htx":
+        assert params["account-id"] == "1234" and params["source"] == "spot-api"
+        assert params["type"] == side + "-limit"
+    elif identity == "poloniex":
+        assert params["timeInForce"] == "GTC" and not params.get("allowBorrow", False)
+    elif identity == "upbit":
+        assert params["ord_type"] == "limit" and "time_in_force" not in params
+    assert not any(key in params for key in ("quoteOrderQty", "notional", "funds", "cost", "reduceOnly"))
+
+
+@pytest.mark.parametrize("identity", ADDITIONAL_LIMIT)
+def test_additional_native_limit_cancellation_is_one_known_order_request(native_client, identity):
+    client, requests = native_client(identity)
+    with pytest.raises(Captured):
+        client.cancel_order("123456", "BTC/USDT")
+    assert len(requests) == 1
+    assert requests[0]["method"] in {"POST", "DELETE"}
+    assert "123456" in str(requests[0]["params"])
+
+
+def test_htx_does_not_fall_back_to_an_unrelated_wallet(native_client):
+    client, requests = native_client("htx")
+    client._exchange.accounts = [{"id": "margin-only", "type": "margin"}]
+    with pytest.raises(ValueError, match="unambiguous spot"):
+        client.create_order("BTC/USDT", "limit", "buy", 0.001, {"clientOrderId": "safe-id"}, price=50000)
+    with pytest.raises(ValueError, match="unambiguous spot"):
+        client.fetch_balance()
+    assert requests == []

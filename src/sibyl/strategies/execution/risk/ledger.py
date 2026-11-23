@@ -31,7 +31,7 @@ def positions(db, trading, environment):
         accounting = project(job, trading, db=db)
         if accounting["accounting_incomplete"] or accounting["unvalued_fees"]:
             raise ExecutionGuard(
-                "Strategy fills have missing costs or unvalued fees. Reconcile them in Trade."
+                "Strategy fills have missing costs or unvalued fees. Reconcile fills and review fees in the monitor."
             )
         rows = db.execute(
             "SELECT o.payload,COALESCE(SUM(json_extract(f.payload,'$.quantity')),0) AS imported "
@@ -86,8 +86,9 @@ def positions(db, trading, environment):
                 "connection_id": job["connection_id"],
                 "symbol": job["parameters"]["symbol"],
                 "status": job["status"],
-                "capital": job["parameters"]["capital"],
+                "capital": job["parameters"]["capital"] + accounting["ownership_net_value"],
                 "cash": accounting["cash"],
+                "foreign_fees_quote": accounting["foreign_fees_quote"],
                 "quantity": accounting["quantity"],
                 "retained": job["status"] not in {"stopped", "completed"}
                 or accounting["quantity"] > 1e-12
@@ -120,10 +121,11 @@ def totals(rows, rates, candidate=None):
         items.append(
             {
                 **{key: row[key] for key in ("id", "account", "connection_id", "symbol", "status")},
-                "allocated": row["capital"] * quote_rate if row["retained"] else 0,
+                "allocated": max(0, row["capital"]) * quote_rate if row["retained"] else 0,
                 "position": position,
                 "pending_buys": pending,
-                "pnl": (row["cash"] - row["capital"]) * quote_rate + position,
+                "pnl": (row["cash"] - row.get("foreign_fees_quote", 0) - row["capital"]) * quote_rate
+                + position,
             }
         )
     values = {
@@ -136,4 +138,29 @@ def totals(rows, rates, candidate=None):
         not math.isfinite(row["pnl"]) for row in items
     ):
         raise ExecutionGuard("Shared strategy accounting produced an invalid reference value.")
-    return {**values, "runs": items}
+    by_account, by_asset = {}, {}
+    for row in items:
+        exposure = row["position"] + row["pending_buys"]
+        account, asset = row["connection_id"], row["symbol"].split("/")[0]
+        by_account.setdefault(account, {"id": account, "label": row["account"], "exposure": 0.0})[
+            "exposure"
+        ] += exposure
+        by_asset.setdefault(asset, {"asset": asset, "exposure": 0.0})["exposure"] += exposure
+    return {
+        **values,
+        "runs": items,
+        "accounts": sorted(by_account.values(), key=lambda row: row["id"]),
+        "assets": sorted(by_asset.values(), key=lambda row: row["asset"]),
+    }
+
+
+def concentration_refusal(metrics, policy):
+    """Refuse new buys above absolute reference-unit account or base-asset caps."""
+    for group, field, label in (
+        ("accounts", "max_account_exposure", "account"),
+        ("assets", "max_asset_exposure", "asset"),
+    ):
+        cap = policy.get(field)
+        if cap is not None and any(row["exposure"] > cap + 1e-8 for row in metrics[group]):
+            return f"This buy exceeds the shared strategy {label} exposure cap, including outstanding buys."
+    return None

@@ -172,3 +172,7 @@ Homebrew, prebuilt registry images, PyPI publication and desktop installers rema
 - **Existing accounts are missing after changing installation method:** select the original workspace using `--data-dir`; installed packages and source checkouts have different defaults.
 - **Vault key missing:** restore the database and vault key together from the same backup. A new key cannot decrypt existing credentials.
 - **A provider or model is unavailable:** check the API process, the selected provider, its required extra and network access. Saving settings alone does not verify access.
+
+## Start at login
+
+After installing/building Sibyl, use its native user-service CLI on macOS, Linux systemd or Windows Task Scheduler. **Settings → Workspace → Background service** shows actual OS status and copyable preview/install/start commands for the current workspace. Installation registers future logins without starting immediately; stop/start and uninstall are explicit. See [Run Sibyl in the background](../guides/background-service.md) for private environment files, logs, upgrades and platform limits.

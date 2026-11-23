@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowUpRight, Bell, CheckCheck, Sparkles, Waves, Radio, ShieldAlert } from 'lucide-react';
+import {
+  bitcoinSpendLabel,
+  bitcoinWatchURL,
+  type BitcoinWatchObservation,
+} from '../lib/bitcoin-types';
 import type { Run } from '../lib/types';
 import { strategyActionLabel, type StrategyAlertRun } from '../lib/strategy-alerts';
 import { operationLabel, connectionSettingsURL } from '../lib/connection-alerts';
@@ -65,6 +70,22 @@ export type AlertNotification = NotificationBase &
         account_ids: string[];
       }
     | {
+        kind: 'bitcoin';
+        transaction_id: string;
+        output_index: number;
+        changes: string[];
+        previous: BitcoinWatchObservation;
+        current: BitcoinWatchObservation;
+      }
+    | {
+        kind: 'workspace';
+        worker_id: string;
+        incident_id: string;
+        action: 'attention' | 'recovered';
+        phase: string;
+        note: string;
+      }
+    | {
         kind: 'order';
         symbol: string;
         action: string;
@@ -97,15 +118,19 @@ export type AlertNotification = NotificationBase &
       })
   );
 export const notificationURL = (item: AlertNotification) =>
-  item.kind === 'order'
-    ? '/trade?tab=executions'
-    : item.kind === 'risk'
-      ? riskURL(item.rule_id, item.sample_id)
-      : item.kind === 'strategy'
-        ? monitorURL(item.job_id)
-        : item.kind === 'connection'
-          ? connectionSettingsURL(item.source)
-          : '/alerts?tab=inbox';
+  item.kind === 'bitcoin'
+    ? bitcoinWatchURL(item.rule_id)
+    : item.kind === 'workspace'
+      ? '/settings?tab=workspace'
+      : item.kind === 'order'
+        ? '/trade?tab=executions'
+        : item.kind === 'risk'
+          ? riskURL(item.rule_id, item.sample_id)
+          : item.kind === 'strategy'
+            ? monitorURL(item.job_id)
+            : item.kind === 'connection'
+              ? connectionSettingsURL(item.source)
+              : '/alerts?tab=inbox';
 export type Inbox = {
   items: AlertNotification[];
   total: number;
@@ -117,6 +142,33 @@ export type Inbox = {
 
 /** Describe observed evidence without implying a trade or an external notification. */
 export function NotificationText({ item }: { item: AlertNotification }) {
+  if (item.kind === 'bitcoin')
+    return (
+      <>
+        <strong>
+          {item.label} · {item.changes.join(' · ')}
+        </strong>
+        <span>
+          {bitcoinSpendLabel[item.previous.state]} → {bitcoinSpendLabel[item.current.state]}
+        </span>
+        <small>
+          {new Date(item.created_at).toLocaleString()} · {item.source_label}
+        </small>
+      </>
+    );
+  if (item.kind === 'workspace')
+    return (
+      <>
+        <strong>
+          {item.worker_id.replaceAll('-', ' ')} ·{' '}
+          {item.action === 'recovered' ? 'Progress resumed' : 'Needs attention'}
+        </strong>
+        <span>
+          Observed {item.phase}. {item.note}
+        </span>
+        <small>{new Date(item.created_at).toLocaleString()} · Local workspace</small>
+      </>
+    );
   if (item.kind === 'order')
     return (
       <>

@@ -32,8 +32,10 @@ import {
 import { AgentButton } from '../components/agents';
 import { NewsWorkspace } from '../components/news-workspace';
 import { ForecastWorkspace } from '../components/forecast-workspace';
+import { EthereumInspector } from '../components/ethereum-inspector';
 import { BitcoinInspector } from '../components/bitcoin-inspector';
 import { ResearchLibrary } from '../components/research-library';
+import { StockDisclosures } from '../components/stock-disclosures';
 import { CryptoLibraryView } from '../components/crypto-library';
 import { SectionTabs, SectionPanel } from '../components/section-tabs';
 import { ComingSoon } from '../components/coming-soon';
@@ -572,6 +574,7 @@ function StocksView() {
           )
         )}
       </Panel>
+      <StockDisclosures key={symbol} symbol={symbol} />
       <ComingSoon module="stocks" />
     </>
   );
@@ -617,7 +620,27 @@ export function ResearchPage() {
         ) : tab === 'crypto' ? (
           <CryptoLibraryView />
         ) : tab === 'explorer' ? (
-          <ExplorerView />
+          <>
+            <div className="filter-pills" aria-label="Blockchain">
+              {['bitcoin', 'ethereum'].map((chain) => (
+                <button
+                  key={chain}
+                  type="button"
+                  className={(params.get('chain') ?? 'bitcoin') === chain ? 'selected' : ''}
+                  onClick={() =>
+                    setParams((previous) => {
+                      const next = new URLSearchParams(previous);
+                      next.set('chain', chain);
+                      return next;
+                    })
+                  }
+                >
+                  {chain === 'bitcoin' ? 'Bitcoin' : 'Ethereum'}
+                </button>
+              ))}
+            </div>
+            {params.get('chain') === 'ethereum' ? <EthereumInspector /> : <ExplorerView />}
+          </>
         ) : (
           <StocksView />
         )}

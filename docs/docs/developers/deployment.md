@@ -59,3 +59,7 @@ If the site displays the README in a GitHub theme, a Jekyll/branch publication i
 Use TLS, an authenticated reverse proxy, a strong workspace token, restricted browser origins, and a persistent protected data directory. Avoid logging credential payloads. The API is a single-user service, not a multi-tenant account system.
 
 Run **one API worker**. Paper-job scheduling is owned by that process, not a distributed queue. Use [managed encrypted archives](workspace-operations.md) for online per-database snapshots and separate-directory recovery. For an exact idle filesystem copy, stop the service and include every database and the vault key. An interrupted exchange submission may remain `submitting` or `unknown`; reconcile with the exchange before retrying through a new intent.
+
+## Native user-login service
+
+Local Python installations can use `sibyl service preview`, `install`, `start`, `status`, `stop`, `restart` and `uninstall` with launchd, systemd user units or a current-user Windows task. No root daemon, Windows service account or automatic lingering is configured. Select the workspace explicitly and preserve the recorded Python environment. Install registers future-login startup and does not start now; the web UI/native agents are read-only observers. See the [user guide](../guides/background-service.md) and [service contracts](user-services.md). Login/outage/upgrade acceptance remains platform-specific work.

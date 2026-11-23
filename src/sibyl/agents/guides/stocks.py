@@ -19,7 +19,7 @@ GUIDES = {
         "/research?tab=stocks",
         (
             "Install the optional stocks dependency on the backend with uv sync --extra stocks and run in live data mode for yfinance observations.",
-            "Demo provides illustrative AAPL, MSFT, NVDA and COIN observations. Other supported symbols require live data.",
+            "Demo provides illustrative quotes. SEC filings are independent of quote mode. Set SIBYL_SEC_CONTACT to the operator email and restart the Python backend to enable the SEC lookup.",
         ),
     ),
     "statistics": Guide(
@@ -38,7 +38,7 @@ GUIDES = {
         "/research?tab=stocks",
         (
             "Use supplied company profile fields and source history; missing earnings or fundamentals must remain unavailable.",
-            "Disclosure archives, public-official portfolios and advanced company analytics are Coming soon.",
+            "Load SEC filings by an exact ticker or CIK. Filter the selected recent or historical index and open official filing links. Public-official portfolios and advanced company analytics remain pending.",
         ),
     ),
 }

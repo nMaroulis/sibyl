@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from decimal import Decimal, localcontext
 
 from sibyl.accounting.balance_checks.contracts import BOUNDARY_MS, NOTE
+from sibyl.accounting.executions.breaks import BREAK_REVIEW, affected_assets
 from sibyl.accounting.funding import balance_effect
 
 
@@ -19,7 +20,7 @@ class Movements:
     @staticmethod
     def assets(row, kind):
         if kind == "fills":
-            return set(row["symbol"].split("/")) | {fee["currency"] for fee in row["fees"] if fee["currency"]}
+            return affected_assets(row)
         return {row["asset"]} | ({row["fee"]["currency"]} if row["fee"]["currency"] else set())
 
     def block(self, assets, reason):
@@ -67,6 +68,12 @@ def _compare(checkpoint: dict, current: dict) -> dict:
         before = {row["id"]: row for row in checkpoint[kind]}
         after = {row["id"]: row for row in current[kind]}
         for identity, row in before.items():
+            if kind == "fills":
+                trade_break = row.get("trade_break")
+                if trade_break == "full":
+                    continue
+                if reason := BREAK_REVIEW.get(trade_break):
+                    book.block(book.assets(row, kind), reason)
             stamp = row["timestamp_ms"] if kind == "fills" else row.get("posted_ms")
             if identity not in after:
                 book.block(book.assets(row, kind), "A checkpoint execution or funding record is now missing.")
@@ -79,7 +86,16 @@ def _compare(checkpoint: dict, current: dict) -> dict:
                 book.block(book.assets(row, kind), "Funding was unresolved at the starting checkpoint.")
         for identity, row in after.items():
             fields = (
-                ("timestamp_ms", "symbol", "side", "quantity", "notional", "fees", "fees_known")
+                (
+                    "timestamp_ms",
+                    "symbol",
+                    "side",
+                    "quantity",
+                    "notional",
+                    "fees",
+                    "fees_known",
+                    "trade_break",
+                )
                 if kind == "fills"
                 else (
                     "timestamp_ms",
@@ -96,6 +112,16 @@ def _compare(checkpoint: dict, current: dict) -> dict:
                 )
             )
             previous = before.get(identity)
+            if kind == "fills" and (trade_break := row.get("trade_break")):
+                if trade_break == "full":
+                    if previous and previous.get("trade_break") != "full":
+                        book.block(
+                            book.assets(row, kind) | book.assets(previous, kind),
+                            "Gemini voided a trade retained at the starting checkpoint. Review it and capture a new checkpoint.",
+                        )
+                else:
+                    book.block(book.assets(row, kind), BREAK_REVIEW[trade_break])
+                continue
             if previous and all(row.get(key) == previous.get(key) for key in fields):
                 continue
             assets = book.assets(row, kind)

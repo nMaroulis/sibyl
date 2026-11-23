@@ -43,7 +43,14 @@ class CheckJournal:
         if row is None:
             raise LookupError("Saved account no longer exists.")
         provider = CLIENTS.get(row[0])
-        values = [row[0], row[1], row[2].hex(), getattr(provider, "balance_params", {}), version("ccxt"), 1]
+        values = [
+            row[0],
+            row[1],
+            row[2].hex(),
+            getattr(provider, "balance_params", {}),
+            version("ccxt"),
+            getattr(provider, "balance_snapshot_revision", 1),
+        ]
         return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
 
     @staticmethod

@@ -76,6 +76,7 @@ type Movement = {
   status: string;
   internal: boolean;
   amount_basis: string;
+  wallet_route?: { from: string; to: string };
   fee: { currency: string | null; cost: number | null };
   fee_known: boolean;
   observed_version_count?: number;
@@ -83,7 +84,12 @@ type Movement = {
   balance_effect?: FundingEffect;
   first_seen_at?: string;
   last_seen_at?: string;
-  reconciliation?: { status: string; link_id: string; counterpart_account: string } | null;
+  reconciliation?: {
+    status: string;
+    link_id: string;
+    group?: boolean;
+    counterpart_account: string;
+  } | null;
 };
 type Funding = {
   example?: boolean;
@@ -309,10 +315,8 @@ export function FundingHistory({ active }: { active: boolean }) {
               )
             ) : (
               <p className="footnote padded">
-                Choose an active account to import an explicit range. Binance supports crypto
-                deposits/withdrawals; Kraken supports deposit, withdrawal and transfer ledger
-                entries; Bybit supports master-UID on-chain withdrawals. Other providers are coming
-                soon.
+                Choose an active account to see its supported deposit, withdrawal, and transfer
+                streams and import an explicit date range.
               </p>
             )}
           </>
@@ -436,6 +440,8 @@ export function FundingHistory({ active }: { active: boolean }) {
                       'Balance effect provenance',
                       'Balance effect rule',
                       'Wallet scope',
+                      'From wallet',
+                      'To wallet',
                       'Review status',
                       'Scope',
                     ],
@@ -464,6 +470,8 @@ export function FundingHistory({ active }: { active: boolean }) {
                       row.balance_effect?.provenance ?? '',
                       row.balance_effect?.rule ?? '',
                       row.balance_effect?.wallet_scope ?? 'unknown',
+                      row.wallet_route?.from ?? '',
+                      row.wallet_route?.to ?? '',
                       row.balance_effect?.review_status ?? '',
                       data.data!.note,
                     ]),
@@ -608,6 +616,11 @@ export function FundingHistory({ active }: { active: boolean }) {
                               {row.direction === 'in' ? 'Received' : 'Sent'}
                               {row.internal ? ' · internal at venue' : ''}
                             </small>
+                            {row.wallet_route && (
+                              <small>
+                                {row.wallet_route.from} → {row.wallet_route.to}
+                              </small>
+                            )}
                             {row.reconciliation && (
                               <small>
                                 <button
@@ -615,7 +628,12 @@ export function FundingHistory({ active }: { active: boolean }) {
                                   onClick={() =>
                                     change({
                                       fund_view: 'transfers',
-                                      fund_link: row.reconciliation!.link_id,
+                                      fund_link: row.reconciliation!.group
+                                        ? ''
+                                        : row.reconciliation!.link_id,
+                                      fund_group: row.reconciliation!.group
+                                        ? row.reconciliation!.link_id
+                                        : '',
                                     })
                                   }
                                 >

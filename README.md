@@ -61,17 +61,18 @@ Execution, imports and recovery vary by provider. Each exchange card in Settings
 Build with six algorithms: **EMA Crossover, RSI Reversion, Bollinger Bands, Bollinger Surge, Impulse Breakout and Quantum Momentum**. Start with a simple configuration, then expand indicator, risk and execution settings.
 
 - **Backtest:** model fees and slippage; inspect buys and sells on the price chart, equity against cost-aware buy-and-hold, cash, installment and 50/50 references, drawdowns and trade-level metrics.
+- **Portfolio lab:** research 2–8 asset target allocations, interval/drift rebalancing, quote cash, cost-matched benchmarks and exact-input replay, with allocation/trade charts and full execution evidence.
 - **Validate:** compare a small grid or sample a larger parameter space with a reproducible seed, then run chronological holdouts and expanding walk-forward tests. Inspect candidate coverage, save inputs and rerun exact studies.
 - **Monitor:** follow paper or separately approved exchange runs through charts, execution markers and a persistent decision journal.
 - **Control:** use account-bound budgets, order limits, a global strategy halt and optional shared exposure and observed daily-loss controls.
 
-[Strategy studio](docs/docs/guides/strategies.md) · [Validation](docs/docs/guides/strategy-validation.md) · [Exchange execution](docs/docs/guides/strategy-execution.md)
+[Strategy studio](docs/docs/guides/strategies.md) · [Portfolio lab](docs/docs/guides/portfolio-research.md) · [Validation](docs/docs/guides/strategy-validation.md) · [Exchange execution](docs/docs/guides/strategy-execution.md)
 
 ### Sibyl & Agents · A team you can talk to
 
 Ask Sibyl a question in its dedicated chat. Powered by [ProtoLink](https://github.com/nMaroulis/protolink), Sibyl discovers the registered specialists, chooses whom to consult and brings their evidence into one answer. Streamed Markdown answers, saved conversations, native live activity, consultation trails and root/specialist usage details make the work inspectable.
 
-Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional text-message or document delivery to your private Telegram bot chat. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
+Save reusable questions in **Investigations** and bring the team’s findings into a structured report with inspectable sources. Rerun a question as a new version, compare saved reports and export the evidence. Schedule daily/weekly briefings in your time zone, with optional text delivery through a checked Telegram, Discord, Slack, Signal, WhatsApp or email connection; Telegram also supports text documents. [Saved investigations](docs/docs/guides/investigations.md) · [Scheduled briefings](docs/docs/guides/briefings.md).
 
 Each specialist has its own prompt, typed tools and page guidance. The **Ask** button opens a conversation in the page you are using. Choose an API model or local inference, with optional model overrides per agent.
 
@@ -91,7 +92,7 @@ Developers can run [repeatable native agent checks](docs/docs/developers/agent-e
 | **Equity Analyst** | Equity prices, company information and statistics |
 | **Oracle** | Portfolio context and an overview of the workspace |
 
-Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot, with optional text documents for long replies. WhatsApp, Discord, Slack, Signal and Email setup previews are marked unavailable.
+Sibyl requires a configured language model; module specialists also offer factual tool mode. Telegram lets an explicitly configured private user talk to Sibyl through a bot, with optional text documents for long replies. Discord private DMs, Slack Socket Mode, signed WhatsApp Cloud API webhooks, paired TLS email and a local Signal bridge add private text connections with encrypted setup and durable send outcomes. Native checkpoint investigations can ask questions and retain an explicitly approved local AI note; ordinary chats stay read-only.
 
 [Sibyl guide](docs/docs/guides/sibyl.md) · [Model setup](docs/docs/guides/settings.md) · [Telegram](docs/docs/guides/telegram.md)
 
@@ -129,7 +130,7 @@ Wiki, Explorer and Equity Analyst help explain the same underlying evidence.
 
 ### Alerts · Keep useful signals close
 
-Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Hourly historical basket watches also track annualized volatility and daily 95% expected shortfall, with explicit asset selection and dated evidence. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram per rule for future alerts, with cooldowns, freshness windows and inspectable delivery outcomes.
+Create price-level and crossing rules, follow strategy lifecycle events, watch recorded connection failures, and monitor selected accounts for value floors, concentration or observed drawdowns. Hourly historical basket watches also track annualized volatility and daily 95% expected shortfall, with explicit asset selection and dated evidence. Per-account execution subscriptions also follow observed partial fills, cancellations, errors and imported fill corrections. A persistent local inbox retains the triggering evidence and unread state. Select Telegram, Discord, Slack, Signal, WhatsApp or email per rule for future alerts, with checked private destinations, cooldowns, freshness windows and inspectable native outcomes. WhatsApp requires an open private reply window.
 
 [Alerts guide](docs/docs/guides/alerts.md) · [Account risk](docs/docs/guides/account-risk.md)
 
@@ -155,7 +156,7 @@ Adapters share an `ExchangeClient` contract and explicit provider subclasses ove
 
 ![Sibyl architecture: React connects to FastAPI; Python domains and the ProtoLink agent team share local persistence and connect to exchanges, research sources and configured models.](docs/static/img/architecture.svg)
 
-The Python application owns the dashboard API and the optional Telegram worker. Domain modules own calculations and state; native ProtoLink agents call their read-only functions. Sibyl uses registry discovery and native delegation to consult specialists. Exchange writes go through the separate reviewed trading pipeline.
+The Python application owns the dashboard API and the optional private messaging workers. Domain modules own calculations and state; native ProtoLink agents call their read-only functions. Sibyl uses registry discovery and native delegation to consult specialists. Exchange writes go through the separate reviewed trading pipeline.
 
 SQLite retains accounts, ledgers, research inputs, runs, conversations and alerts. A local Fernet vault encrypts credentials. Ordinary typed Python tools, lazy model factories, private request context and native run reports keep the AI layer close to ProtoLink's API.
 
@@ -206,6 +207,8 @@ python scripts/distribution/release.py inspect-wheel
 ```
 
 Install the resulting wheel with uv or pipx using the [installation guide](docs/docs/getting-started/installation.md). GitHub download commands become available after a release is published. The package uses per-user application data; select `--data-dir` to open an existing source workspace. Source checkouts keep their repository `.sibyl` directory.
+
+For local background startup, **Settings → Workspace → Background service** provides native OS status and commands for `sibyl service preview`, `install`, `start`, `status`, `stop`, `restart` and `uninstall`. macOS LaunchAgents, Linux systemd user units and per-user Windows login tasks keep the same workspace without a terminal; installation does not start the app immediately. See [background services](docs/docs/guides/background-service.md).
 
 The existing [Docker Compose setup](docs/docs/developers/deployment.md) builds from source. Homebrew, prebuilt registry images, PyPI publication and desktop installers are optional future work. **No new repository is required to publish the Python package.**
 

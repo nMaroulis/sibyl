@@ -17,7 +17,7 @@ DESCRIPTION = (
 )
 SYSTEM_PROMPT = (
     "Use page_help for Equities navigation and controls. Explain the requested equity quote and "
-    "observed daily history using equity_quote, including company fields only when actually returned. Use equity_help "
+    "observed daily history using equity_quote, including company fields only when actually returned. Use equity_disclosures for retained official SEC filing metadata. Use equity_help "
     "to explain available sources and optional setup. State the ticker, quote currency, history period, "
     "demo status and missing fundamentals. Never invent earnings, disclosures or advanced analytics. "
 )
@@ -48,6 +48,13 @@ def create_agent(services: Services, **runtime) -> Agent:
         result = research.stock(symbol)
         return {**result, "history": result["history"][-7:]}
 
+    def equity_disclosures(issuer: str | None = None) -> dict:
+        """List the filing forms, dates and official links most recently loaded for an issuer.
+
+        Accept a ticker or CIK. Omit it to use the selected equity ticker.
+        """
+        return research.edgar.evidence(selected("equity_symbol", issuer, "AAPL"))
+
     def equity_help() -> dict:
         """Explain the live equity-data dependency, sample tickers and research limitations.
 
@@ -57,7 +64,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "source": "Yahoo Finance via the optional yfinance dependency in live mode",
             "installation": "uv sync --extra stocks",
             "demo_tickers": ["AAPL", "MSFT", "NVDA", "COIN"],
-            "note": "Demo data are illustrative. Disclosure archives and advanced company analytics are not implemented.",
+            "note": "Demo quotes are illustrative. Equities can independently open public SEC filings after configuring SIBYL_SEC_CONTACT.",
         }
 
     def page_help(topic: Topic = "overview") -> dict:
@@ -72,6 +79,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         description=DESCRIPTION,
         tools=[
             equity_quote,
+            equity_disclosures,
             Tool.from_callable(equity_help, sync_execution="inline"),
             Tool.from_callable(page_help, sync_execution="inline"),
         ],

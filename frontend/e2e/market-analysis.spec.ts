@@ -61,7 +61,7 @@ test('market readings disclose score weights, units, definitions and export prov
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export statistics', exact: true }).click();
   expect((await download).suggestedFilename()).toBe('sibyl-market-statistics.csv');
-  await page.getByLabel('Observations', { exact: true }).selectOption('365');
+  await page.getByRole('combobox', { name: 'Observations', exact: true }).selectOption('365');
   await expect(statistics).toContainText('365 consecutive candles');
   const sma = statistics
     .locator('dl > div')

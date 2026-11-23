@@ -88,6 +88,9 @@ class Transport:
             "info": "PRIVATE-SENTINEL",
         }
 
+    def load_accounts(self):
+        return [{"id": "1234", "type": "spot"}]
+
     def fetch_balance(self, params):
         self.events.append(("balance", params))
         if self.failure:
@@ -135,6 +138,70 @@ class Transport:
         return {"id": "submitted", "symbol": symbol, "filled": amount, "info": "PRIVATE-SENTINEL"}
 
 
+class BitfinexTransport(Transport):
+    """Provide the native order-read surface for the common metadata privacy contract.
+
+    Full native parsing and history/recovery behavior use real SDK instances in
+    test_bitfinex_activity.py. Other common reads retain the controlled parent.
+    """
+
+    def market(self, symbol):
+        return {"id": "tBTCUST", "symbol": symbol}
+
+    def privatePostAuthROrdersSymbol(self, params):
+        assert params["symbol"] == "tBTCUST" and len(params["id"]) == 1
+        row = [None] * 32
+        for index, value in {
+            0: params["id"][0],
+            2: 1001,
+            3: "tBTCUST",
+            4: 1700000000000,
+            5: 1700000001000,
+            6: "0.9",
+            7: "1",
+            8: "EXCHANGE LIMIT",
+            12: 0,
+            13: "PARTIALLY FILLED",
+            16: "100",
+            17: "100",
+            18: "0",
+            19: "0",
+            31: {"private": "PRIVATE-SENTINEL"},
+        }.items():
+            row[index] = value
+        return [row]
+
+    def parse_order(self, response, market):
+        row = response["result"]
+        return {**self.fetch_order(str(row[0]), market["symbol"]), "info": row}
+
+
+class BitgetTransport(Transport):
+    """Return native Classic detail data for the common read contract."""
+
+    def market(self, symbol):
+        return {"id": "BTCUSDT", "baseId": "BTC", "quoteId": "USDT", "symbol": symbol}
+
+    def privateSpotGetV2SpotTradeOrderInfo(self, params):
+        return {
+            "code": "00000",
+            "data": [
+                {
+                    "orderId": params["orderId"],
+                    "symbol": "BTCUSDT",
+                    "orderType": "limit",
+                    "side": "buy",
+                    "price": "100",
+                    "status": "live",
+                    "private": "PRIVATE-SENTINEL",
+                }
+            ],
+        }
+
+    def parse_order(self, response, market):
+        return {**self.fetch_order(response["orderId"], market["symbol"]), "info": response}
+
+
 def credentials(identity):
     return {
         "apiKey": "PRIVATE-KEY",
@@ -145,7 +212,11 @@ def credentials(identity):
 
 
 def fake_client(monkeypatch, identity="binance", private=True, sandbox=False):
-    monkeypatch.setattr(ccxt, CATALOG[identity].ccxt_id or identity, Transport)
+    monkeypatch.setattr(
+        ccxt,
+        CATALOG[identity].ccxt_id or identity,
+        {"bitfinex": BitfinexTransport, "bitget": BitgetTransport}.get(identity, Transport),
+    )
     return create_client(identity, credentials=credentials(identity) if private else None, sandbox=sandbox)
 
 
@@ -173,8 +244,11 @@ def test_all_provider_classes_implement_normalized_read_contract(monkeypatch, id
     assert book["bids"] == [[99, 1]] and book["asks"] == [[101, 1]]
     balances = client.fetch_balance()
     assert balances == {"total": {"BTC": 2}, "free": {"BTC": 1.5}, "used": {"BTC": 0.5}}
-    assert ("balance", client.balance_params) in client._exchange.events
-    status = client.fetch_order("order-1", "BTC/USDT")
+    assert (
+        "balance",
+        {"type": "spot", "account-id": "1234"} if identity == "htx" else client.balance_params,
+    ) in client._exchange.events
+    status = client.fetch_order("123456" if identity in {"bitfinex", "bitget"} else "order-1", "BTC/USDT")
     orders = client.fetch_open_orders("BTC/USDT")
     trades = client.fetch_my_trades("BTC/USDT", since=123, limit=25)
     assert trades[0]["fee"] == {"cost": 0.1, "currency": "USDT"}
@@ -284,7 +358,9 @@ def test_discrete_book_depth_and_invalid_candles(monkeypatch):
         client.fetch_ohlcv("BTC/USDT")
 
 
-@pytest.mark.parametrize("identity", [spec.id for spec in EXCHANGES if not spec.market_orders])
+@pytest.mark.parametrize(
+    "identity", [spec.id for spec in EXCHANGES if not spec.supports_order("market", "buy")]
+)
 def test_new_adapters_do_not_enable_unreviewed_execution(monkeypatch, identity):
     client = fake_client(monkeypatch, identity)
     with pytest.raises(ccxt.NotSupported, match="not enabled"):
@@ -292,12 +368,22 @@ def test_new_adapters_do_not_enable_unreviewed_execution(monkeypatch, identity):
     assert client._exchange.calls == 0
 
 
-@pytest.mark.parametrize("identity", [spec.id for spec in EXCHANGES if spec.market_orders])
+@pytest.mark.parametrize(
+    "identity",
+    [
+        spec.id
+        for spec in EXCHANGES
+        if spec.supports_order("market", "buy") and not spec.market_buy_budget and spec.id != "coinex"
+    ],
+)
 def test_market_submission_never_retries_ambiguous_response(monkeypatch, identity):
     client = fake_client(monkeypatch, identity)
     client._exchange.failure = ccxt.RequestTimeout("PRIVATE-SENTINEL")
+    if identity == "mexc":
+        monkeypatch.setattr(client, "market_order_limits", lambda *_: {})
+    client_id = client.format_client_order_id("135d8630-4dcc-4bfe-8918-41555302a029")
     with pytest.raises(ccxt.RequestTimeout):
-        client.create_order("BTC/USDT", "market", "buy", 1, {"clientOrderId": "unique-id"})
+        client.create_order("BTC/USDT", "market", "buy", 1, {"clientOrderId": client_id})
     assert client._exchange.calls == 1
     with pytest.raises(ValueError):
         client.create_order("BTC/USDT", "limit", "buy", 1, {"clientOrderId": "unique-id"})
@@ -379,7 +465,7 @@ def test_provider_catalog_and_private_routes_are_secret_free(client, monkeypatch
     assert client.get(f"/api/v1/connections/{connection['id']}/trades?limit=501").status_code == 422
     trading = client.app.state.services.trading
     trading.market.settings.allow_live_trading = True
-    with pytest.raises(ValueError, match="not enabled"):
+    with pytest.raises(ValueError, match="quote-currency budget"):
         trading.preview(
             ExchangeOrderRequest(
                 connection_id=connection["id"], side="buy", quantity=1, idempotency_key="unsupported-intent"

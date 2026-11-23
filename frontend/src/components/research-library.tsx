@@ -14,6 +14,7 @@ import { api, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import { AgentButton } from './agents';
 import { LibraryEvaluations } from './library-evaluations';
+import { LibraryCalibration } from './library-calibration';
 import { LibrarySemantic } from './library-semantic';
 import type { SemanticStatus } from '../lib/semantic-types';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle, useToast } from './ui';
@@ -24,6 +25,10 @@ type Source = {
   kind: 'document' | 'news';
   publisher: string;
   source_url: string;
+  article_rights?: {
+    basis: 'license' | 'publisher_permission' | 'rights_holder';
+    confirmed_at: string;
+  };
   published_at: string;
   imported_at: string;
   indexed_at: string;
@@ -48,6 +53,7 @@ type Matches = {
   items: Passage[];
   note: string;
   retrieval: string;
+  calibration?: { state: string; applied: boolean; abstained: boolean; note?: string };
   semantic?: { model: string; coverage: { indexed: number; total: number; partial: boolean } };
 };
 const date = (value: string) =>
@@ -186,6 +192,7 @@ export function ResearchLibrary() {
       <LibraryEvaluations
         semanticReady={!!semantic.data?.configured && !!semantic.data.coverage.all.indexed}
       />
+      <LibraryCalibration semantic={semantic.data} />
       {query && (
         <Panel>
           <PanelTitle
@@ -214,10 +221,17 @@ export function ResearchLibrary() {
           ) : matches.loading ? (
             <Loading />
           ) : !matches.data?.items.length ? (
-            <Empty title="No matching passages">
-              Try another term, import a source, or synchronize the retained news archive. Semantic
-              searches also need indexed passages. An empty match does not establish that a claim is
-              false.
+            <Empty
+              title={
+                matches.data?.calibration?.abstained
+                  ? 'Search withheld its evidence'
+                  : 'No matching passages'
+              }
+            >
+              {matches.data?.calibration?.abstained
+                ? matches.data.calibration.note ||
+                  'The leading passage did not meet your calibrated cutoff. This does not establish that the claim is false.'
+                : 'Try another term, import a source, or synchronize retained news. Semantic search needs indexed passages; an empty match does not establish that a claim is false.'}
             </Empty>
           ) : (
             <div className="library-results">
@@ -241,6 +255,19 @@ export function ResearchLibrary() {
                 </button>
               ))}
             </div>
+          )}
+          {matches.data?.calibration?.applied && (
+            <p className="footnote">
+              <Badge tone={matches.data.calibration.abstained ? 'neutral' : 'lime'}>
+                {matches.data.calibration.state}
+              </Badge>
+              Calibrated top-one retrieval · this source scope only · not answer confidence.
+            </p>
+          )}
+          {method === 'hybrid' && (
+            <p className="footnote">
+              Hybrid rankings are uncalibrated. Semantic cutoffs do not apply to this method.
+            </p>
           )}
           {matches.data?.semantic && (
             <p className="footnote">
@@ -338,7 +365,8 @@ export function ResearchLibrary() {
         <p className="footnote">
           PDF text extraction supports up to 100 pages and 8 MiB per file. Scans need OCR first. The
           library retains originals for reindexing; publisher news follows the archive's retention
-          policy. Local semantic search is optional; cited web search remains pending.
+          policy. Local or consented hosted semantic search is optional; cited web search remains
+          pending.
         </p>
       </Panel>
       {importing && (
@@ -417,7 +445,13 @@ function DocumentReader({
       ) : (
         <>
           <div className="library-reader-meta">
-            <Badge>{data?.kind === 'news' ? 'Retained news excerpt' : 'Uploaded document'}</Badge>
+            <Badge>
+              {data?.kind === 'news'
+                ? 'Retained news excerpt'
+                : data?.article_rights
+                  ? 'Article · rights declared'
+                  : 'Uploaded document'}
+            </Badge>
             <span>Indexed {date(data?.indexed_at ?? '')}</span>
             {data?.source_url && /^https?:\/\//.test(data.source_url) && (
               <a className="text-link" href={data.source_url} target="_blank" rel="noreferrer">
@@ -497,6 +531,10 @@ function ImportDocument({
   const [publisher, setPublisher] = useState('');
   const [url, setUrl] = useState('');
   const [publishedAt, setPublishedAt] = useState('');
+  const [articleRights, setArticleRights] = useState<
+    'license' | 'publisher_permission' | 'rights_holder' | ''
+  >('');
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
@@ -523,6 +561,9 @@ function ImportDocument({
         publisher,
         source_url: url,
         published_at: publishedAt || null,
+        ...(articleRights
+          ? { article_rights: articleRights, article_rights_confirmed: rightsConfirmed }
+          : {}),
       });
       toast(
         result.duplicate
@@ -552,17 +593,34 @@ function ImportDocument({
           Title
           <input
             value={title}
+            required={!!articleRights}
             maxLength={200}
             placeholder={file?.name || 'Use the filename'}
             onChange={(event) => setTitle(event.target.value)}
           />
         </label>
-        <details>
+        <label>
+          Source type
+          <select
+            value={articleRights}
+            onChange={(event) => {
+              setArticleRights(event.target.value as typeof articleRights);
+              setRightsConfirmed(false);
+            }}
+          >
+            <option value="">Document</option>
+            <option value="license">Article · covered by a licence</option>
+            <option value="publisher_permission">Article · publisher permission</option>
+            <option value="rights_holder">Article · I hold the rights</option>
+          </select>
+        </label>
+        <details open={articleRights ? true : undefined}>
           <summary>Source information</summary>
           <label>
             Publisher or author
             <input
               value={publisher}
+              required={!!articleRights}
               maxLength={160}
               onChange={(event) => setPublisher(event.target.value)}
             />
@@ -572,6 +630,7 @@ function ImportDocument({
             <input
               type="url"
               value={url}
+              required={!!articleRights}
               maxLength={2000}
               onChange={(event) => setUrl(event.target.value)}
             />
@@ -585,6 +644,19 @@ function ImportDocument({
             />
           </label>
         </details>
+        {articleRights && (
+          <label>
+            <span>
+              <input
+                type="checkbox"
+                required
+                checked={rightsConfirmed}
+                onChange={(event) => setRightsConfirmed(event.target.checked)}
+              />{' '}
+              I can store, search and use this article with my selected AI providers.
+            </span>
+          </label>
+        )}
         <p className="footnote">
           Files stay in this workspace. Retrieved passages can be sent to your configured AI
           provider when you ask an agent. Text extraction does not verify a document's claims.
@@ -594,7 +666,11 @@ function ImportDocument({
             {error}
           </p>
         )}
-        <button className="button primary" type="submit" disabled={!file || busy}>
+        <button
+          className="button primary"
+          type="submit"
+          disabled={!file || busy || Boolean(articleRights && !rightsConfirmed)}
+        >
           {busy ? 'Extracting and indexing…' : 'Add document'}
         </button>
       </form>

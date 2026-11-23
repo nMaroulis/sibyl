@@ -64,6 +64,32 @@ def funding_event(row: dict, job: dict) -> dict:
         )
     ):
         raise ValueError("Invalid funding event.")
+    route = row.get("wallet_route")
+    wallet = {"bybit": "UNIFIED", "okx": "TRADING"}.get(job["exchange"])
+    if route is not None and (
+        wallet is None
+        or job["stream"] != "transfer"
+        or not row["internal"]
+        or row.get("wallet_scope") != "configured"
+        or not isinstance(route, dict)
+        or set(route) != {"from", "to"}
+        or any(
+            not isinstance(wallet, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,23}", wallet)
+            for wallet in route.values()
+        )
+        or (route["to"] == wallet) == (route["from"] == wallet)
+        or (row["direction"] == "in") != (route["to"] == wallet)
+        or (
+            job["exchange"] == "okx"
+            and (
+                set(route.values()) != {"TRADING", "FUNDING"}
+                or row["status"] != "completed"
+                or row["amount_basis"] != "ledger_amount"
+                or posted != stamp
+            )
+        )
+    ):
+        raise ValueError("Invalid funding wallet route.")
     return {
         "id": hashlib.sha256(json.dumps([job["account_id"], job["stream"], identity]).encode()).hexdigest(),
         "native_id": identity,
@@ -82,6 +108,7 @@ def funding_event(row: dict, job: dict) -> dict:
         "internal": row["internal"],
         "amount_basis": row["amount_basis"],
         "wallet_scope": row.get("wallet_scope", "unknown"),
+        **({"wallet_route": route} if route is not None else {}),
     }
 
 

@@ -66,6 +66,12 @@ CoinGecko supplies quotes only in this adapter. CryptoCompare and exchange feeds
 
 Saved choices take precedence over environment defaults. This tab also describes fixed research integrations for CoinPaprika, Wikipedia, mempool.space and optional yfinance. The old `/settings?tab=apis` bookmark opens Market data. See the [backend source contract](../developers/market-data.md).
 
+## Interface
+
+Open `/settings?tab=interface` to choose **Light** or **Dark** appearance and place the navigation on the **Left** or **Bottom**. The bottom dock floats over the workspace and stays visible while you scroll. Scroll to the end of a page to bring its last controls above the dock. **More** opens upward, and you can open it from the keyboard with ↑.
+
+Turn off **Show labels** for icon-only navigation, including the **More** menu. The bottom dock also uses icons alone on narrow screens. Choices apply immediately and are saved in the current browser.
+
 ## Workspace
 
 Open `/settings?tab=workspace` for [background-worker activity](worker-health.md), [encrypted backup/recovery](workspace-backups.md), the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
@@ -80,20 +86,20 @@ Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated
 
 [Telegram](./telegram.md) supports private chat and opt-in [scheduled briefing delivery](briefings.md). Setup: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
 
-| App      | Planned setup fields                                                                                                                                                    |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WhatsApp | Cloud API access token, business phone number ID, Meta app secret, webhook verification token, and your personal WhatsApp number                                        |
-| Telegram | Bot token from BotFather and your numeric Telegram user ID                                                                                                              |
-| Discord  | Bot token, application ID, and your numeric Discord user ID                                                                                                             |
-| Slack    | Bot user OAuth token, app-level token for Socket Mode, and your member ID                                                                                               |
-| Signal   | Local signal-cli HTTP bridge URL, linked Signal account (phone number or ACI), and your allowed sender ACI                                                              |
-| Email    | Sibyl mailbox and allowed sender addresses; IMAP host/port, encryption, username, password/app password and folder; SMTP host/port, encryption and separate credentials |
+| App      | Setup                                                                                                           |
+| -------- | --------------------------------------------------------------------------------------------------------------- |
+| Telegram | BotFather token and your numeric user ID                                                                        |
+| Discord  | Bot token, application ID and numeric private user ID; direct DM polling                                        |
+| Slack    | Bot token, Socket Mode app token and private member ID                                                          |
+| WhatsApp | Graph version, access token, business phone ID, app secret, webhook verification token and your personal number |
+| Signal   | Loopback signal-cli origin, separately linked account and personal sender ACI                                   |
+| Email    | Dedicated TLS IMAP/SMTP mailbox, fixed personal sender and a private subject pairing phrase                     |
 
-Telegram enforces your private user ID now; other sender fields describe planned integrations. WhatsApp will also require a public HTTPS callback URL; the planned Telegram polling, Discord Gateway and Slack Socket Mode connections do not need a public webhook. The setup links on each card lead to the providers’ documentation. Only Telegram accepts and encrypts credentials today.
+Every implemented connection encrypts credentials locally and starts paused. Check its identity, then enable private replies. Setup works without an LLM; questions receive model guidance until one is active. Saved secrets remain hidden; Edit requires complete replacement credentials. Pause stays available during a model request. Receipts show actual acceptance/uncertainty rather than claiming the person read a reply.
 
-Signal's planned route uses the **unofficial [signal-cli](https://github.com/AsamK/signal-cli)** JSON-RPC HTTP daemon, linked separately; it does not use a Signal bot API key or collect a Signal PIN. The sender ACI is the stable UUID in received message envelopes. No bridge is started, account linked or Signal message read/sent by Sibyl.
+WhatsApp requires a signed public HTTPS webhook. Discord polls only your checked private DM; Slack uses native Socket Mode. Signal requires the separately linked **unofficial signal-cli** daemon; Sibyl never collects a Signal PIN or links an account. Email uses verified TLS, read-only IMAP UID cursors and a fixed reply address; each subject must start with `[Sibyl:YOUR_PAIRING_PHRASE]`, because From alone is not authentication. Provider OAuth mail sign-in is not implemented.
 
-Email groups its previews into **Mailbox**, **Incoming · IMAP** and **Outgoing · SMTP**. Expand each group to inspect its fields. TLS and STARTTLS choices are shown without a plaintext option. This preview targets password/app-password IMAP/SMTP accounts; provider-specific OAuth sign-in remains future work. No mailbox is accessed or email sent. Server settings come from your mail provider; see [manual mail configuration](https://support.mozilla.org/en-US/kb/manual-account-configuration).
+See [complete channel setup and boundaries](../developers/private-messaging.md) and [Telegram controls](telegram.md).
 
 ## Ollama server controls
 
@@ -101,6 +107,22 @@ When choosing Local → Ollama, inspect actual server status, installed and load
 
 ### Workspace health report
 
-Choose **Run health check** in Workspace to run a read-only SQLite quick check and collect content-free runtime diagnostics. **Download health report** exports the last completed report; neither opening Settings nor downloading reruns the check. Versions, numeric process/storage counters, aggregate worker states and generic check outcomes are included. Credentials, account identifiers/balances, chats, articles, paths, hostnames, plugin code and raw SQLite messages are excluded. Review the JSON before sharing.
+Choose **Run health check** in Workspace to run a read-only SQLite quick check and collect content-free runtime diagnostics. **Download health report** exports the last completed report; neither opening Settings nor downloading reruns the check. Versions, numeric process/storage counters, aggregate worker states and API status and response-start timing for up to 256 responses are included. API responses carry a generated request ID. The report omits request IDs and request contents. Credentials, account identifiers/balances, chats, articles, paths, hostnames, plugin code and raw SQLite messages are excluded. Review the JSON before sharing.
 
 A passed quick check is not a full integrity check, a credential test or proof that account data is correct. Interrupted, busy or inaccessible checks make no integrity conclusion. The check has a two-second execution budget plus a short lock wait; it never repairs data. Reports stay in memory until restart. Technician can read an existing report but cannot start a check or download it.
+
+### Check readiness from another machine
+
+Run `sibyl probe --url https://your-sibyl-host.example` from a process or host that can reach the backend. The command checks `/health` and exits 0 when Sibyl answers with its service identity and version. An outage, unexpected response or optional `--expect-version` mismatch returns a nonzero exit code. Add `--watch --interval 30` to report readiness changes continuously as JSON lines. Run the monitor outside the Sibyl process to observe outages and recovery. Add `--notify-webhook` and configure its HTTPS destination in the watcher environment to receive transitions. [External watcher setup](../developers/distribution.md#external-watcher-notifications).
+
+### Read allowances and quota evidence
+
+Expand a source in **Market data → Source health** for compact allowance cards. **App allowance** is Sibyl’s conservative local budget. **Observed provider ceiling** is a separately reported Binance one-minute IP declaration, with 20% reserved from read admission. The cards show used/estimated remaining units, reset/refill behavior and observation times. Reported order counters are informational and do not grant trading permission.
+
+Reviewed Binance Spot GET requests use their documented weights; Kraken private account/history POST reads use conservative key-scoped estimates. Coinbase Exchange Sandbox has separate public/private/fills allowances. Coinbase Advanced and other unreviewed endpoints keep their existing native limiter and base spacing; their provider headroom is unknown. Actual account tiers and outside traffic are not inferred.
+
+**Read budget wait** means a read was deferred before sending; it does not mean the exchange is offline. Imports retain their saved progress. Native orders/cancellations keep their existing single-attempt contract; this policy never queues or replays them. Extra bypass/coverage details explain what the estimate includes. All quota evidence is local to the current backend process and resets on restart; real provider usage does not. See [policy scope](../developers/provider-control.md#reviewed-quota-policies).
+
+### Background service
+
+Expand **Workspace → Background service** for native current-user service state, workspace matching and copyable CLI controls. It reads the OS only when opened/refreshed; it cannot execute service changes. Preview and install from your local terminal, then start explicitly. See [background service setup](background-service.md).

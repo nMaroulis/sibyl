@@ -5,7 +5,7 @@ description: Trusted installed Python extensions for causal, source-pinned histo
 
 # Custom strategy plugins
 
-Sibyl accepts **installed local Python packages** advertising the `sibyl.strategies` entry-point group. Plugins are historical research extensions. They do not become paper/exchange jobs or optimization candidates. The six built-in algorithms retain their existing execution paths. Freqtrade integration is separate pending work.
+Sibyl accepts **installed local Python packages** advertising the `sibyl.strategies` entry-point group. Plugins are historical research extensions. They do not become paper/exchange runs. Optional adaptive validation and pinned queued research are separate explicit actions. The six built-in algorithms retain their existing execution paths. Freqtrade integration is separate pending work.
 
 ## Install and enable
 
@@ -76,3 +76,8 @@ Before and after a run, source/revision checks reject changed code. Results reta
 - `DELETE /api/v1/strategies/plugins/backtests/{id}`: remove only that local research result.
 
 Broker's existing native `strategy_guide` and `backtest_report` inspect plugin metadata/results. Tools omit full signal/price/equity series and never instantiate plugins, run research, install packages or alter the allowlist. No custom ProtoLink execution plumbing is introduced.
+
+
+## Queued and adaptive research
+
+Custom backtests can queue their exact retained input through **Queue pinned backtest**. The [adaptive research workspace](adaptive-strategy-research.md) also validates trusted plugin distributions with training-only native Optuna suggestions and later tests. Both are one-off research jobs, never continuously deployed strategies; interruption does not authorize automatic replay.

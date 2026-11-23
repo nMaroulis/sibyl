@@ -1,11 +1,11 @@
 ---
 title: Scheduled briefings
-description: Revisit saved research daily or weekly, with optional private Telegram delivery.
+description: Revisit saved research daily or weekly, with optional checked private delivery through six messaging channels.
 ---
 
 # Scheduled briefings
 
-Turn a [saved investigation](investigations.md) into a regular research briefing. Sibyl consults the same native ProtoLink team, saves a new report version and optionally delivers it to your checked Telegram bot chat.
+Turn a [saved investigation](investigations.md) into a regular research briefing. Sibyl consults the same native ProtoLink team, saves a new report version and optionally delivers it to one checked Telegram, Discord, Slack, Signal, WhatsApp or email connection.
 
 :::tip[Start with a useful question]
 
@@ -31,33 +31,37 @@ The Python backend must remain running. Closing the browser is fine. A stopped b
 
 Each accepted briefing freezes the entire team’s model choices, including time spent waiting for capacity. New occurrences use the model settings then configured. Saved starting context selects feeds; workspace defaults resolve again for each new report. A new version uses evidence available at that time, not an exact replay of earlier observations.
 
-## Optional Telegram delivery
+## Optional private delivery {#optional-telegram-delivery}
 
-Set up and **Check bot** in [Settings → Messaging](telegram.md), then enable Telegram. In the schedule editor select **Deliver to Telegram** and review the displayed bot and private user. Choose a short summary or a fuller report with findings and source references.
+Save and check a connection in **Settings → Messaging**. In the schedule editor choose its destination card and review the displayed connection/recipient. **Local only** keeps all reports in Sibyl. Choose **Summary & uncertainty** or **Full briefing** for selected message content. Saving a calendar never probes the messaging service or runs a model.
 
-Delivery is opt-in for each schedule and bound to that checked bot and private user. Changing the bot or user requires editing the schedule and selecting the current recipient again. Rotating a token for the same bot/user preserves the schedule binding, but withdraws messages queued under the previous connection.
+Delivery is opt-in per schedule. All six channels support bounded text messages; Telegram additionally supports one UTF-8 text document up to 64 KiB. The document option is shown only for Telegram. Other destinations reset to text and reject document requests rather than silently changing transport.
 
-The report is saved locally even if Telegram is paused, unavailable or delivery fails. Reports completed while the connection is paused are not saved for later sending. Queued deliveries expire one hour after report completion. Long briefings are split into plain-text message parts; the full report and evidence remain in Investigations.
+Each accepted briefing freezes the connection revision and pause-control generation alongside its private accepted model choices. A paused or unverified connection, closed WhatsApp window, recipient replacement or later pause/resume keeps that accepted briefing local. Enabling a connection before the report finishes cannot turn an earlier local-only/paused acceptance into a send. A changed private identity requires editing the schedule and selecting the checked target again. These controls do not create new inference or redirect a report to another recipient.
 
-:::info[Research leaves your workspace when delivery is selected]
+For WhatsApp, the recipient’s authenticated 24-hour reply window (minus a one-minute safety margin) must be open at acceptance and sending. Closed windows stay local without templates or waiting for a new window. See [private messaging](../developers/private-messaging.md) for setup.
 
-Briefings may contain private account research. Selected content passes through Telegram and the AI providers chosen for the investigation. The local message queue contains plain text; bot/model credentials remain encrypted. Agents have no general send-message or schedule-editing tool.
+Reports are saved regardless of delivery success. Queued delivery expires one hour after the report’s completion; text follows the selected provider’s message limits. Long text is bounded/shortened with a notice, while the full report and its source evidence remain in Investigations. Telegram documents preserve the complete selected content and reject oversized output explicitly.
+
+:::info[Private research]
+
+Selected findings, account labels and uncertainty can pass through your chosen messaging provider and AI providers. Queue bodies are local SQLite text; credentials stay encrypted. Agent schedule tools omit recipient bindings and connection-control details. Agents have no general message-send or schedule-editing tool.
 
 :::
 
 ## Control and inspect
 
-The schedule strip shows its next time, time zone, research state and Telegram delivery outcome.
+The schedule strip shows its next time, time zone, research state, chosen channel and actual message delivery outcome.
 
 - **Run now / Run & deliver** requests one extra briefing with the selected delivery policy. It does not move the regular calendar time.
-- **Pause / Resume** controls future research and withdraws unsent briefing messages. Pause Telegram separately to stop all future bot sends and polling.
+- **Pause / Resume** controls future research and withdraws unsent briefing messages. Pause the connection separately in Messaging to stop its future receive/send work.
 - **Edit** changes the calendar or delivery selection and discards waiting work from the previous revision.
-- **History** shows missed, blocked, completed and interrupted attempts, available report links, delivery errors and confirmed message-part counts.
+- **History** shows missed, blocked, completed and interrupted attempts, available report links, delivery errors and native provider IDs and confirmed message-part counts. **Review delivery** inspects the queued text and recorded target without resending it. The Messaging settings review list includes briefings from all six channels.
 - **Archive** retires the calendar while retaining history. Archive it before deleting its investigation. A new schedule can then be created.
 
-Pausing or archiving does not cancel an already admitted research run. Stop that run in Investigations. A Telegram HTTP request already in flight can still finish; remaining unsent parts are withdrawn.
+Pausing or archiving does not cancel an already admitted research run. Stop that run in Investigations. A native send already admitted can still finish; remaining unsent parts are withdrawn.
 
-Explicit Telegram rate limits retry within the delivery window. A timeout or interrupted send can leave **Uncertain** delivery: check the chat before requesting another briefing. Sibyl never automatically repeats an unconfirmed message, and later parts remain blocked. “Sent” means Telegram confirmed every part, not that you read it.
+Only explicit provider rate-limit rejections retry within the delivery window. A timeout or interrupted send can leave **Uncertain** delivery: check the chat before requesting another briefing. Sibyl never automatically repeats an unconfirmed message, and later parts remain blocked. “Sent” means the provider accepted every part, not that the recipient read it.
 
 ## Keep report history manageable
 

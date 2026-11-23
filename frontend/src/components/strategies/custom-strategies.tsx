@@ -1,7 +1,8 @@
+import { queueResearch } from '../../lib/research-jobs';
 import { useState } from 'react';
-import { FlaskConical, Download, RefreshCw, Trash2 } from 'lucide-react';
+import { FlaskConical, Download, RefreshCw, Trash2, Clock3 } from 'lucide-react';
 import { AgentButton } from '../agents';
-import { Badge, ErrorState, Loading, Panel, PanelTitle } from '../ui';
+import { Badge, ErrorState, Loading, Panel, PanelTitle, useToast } from '../ui';
 import { BacktestChart } from './backtest-chart';
 import { api, downloadFile, number, post } from '../../lib/api';
 import { useResource } from '../../lib/hooks';
@@ -43,6 +44,7 @@ type CustomResult = Omit<Backtest, 'parameters'> & {
     implementation: { distribution: string; version: string };
     spec?: { parameters: Record<string, { label: string }> };
   };
+  dataset?: { id: string; count: number; symbol: string; timeframe: string };
   signal_fingerprint: string;
   note: string;
 };
@@ -57,6 +59,7 @@ export function CustomStrategies({
   datasetId: string;
   demo: boolean;
 }) {
+  const toast = useToast();
   const [open, setOpen] = useState(false),
     [chosen, setChosen] = useState(''),
     [values, setValues] = useState<Record<string, number>>({});
@@ -338,6 +341,38 @@ export function CustomStrategies({
               </div>
             </details>
             <div className="workspace-actions">
+              <button
+                className="text-button"
+                disabled={!!busy || !result.dataset}
+                onClick={async () => {
+                  if (!result.dataset) return;
+                  setBusy('queue');
+                  setError('');
+                  try {
+                    await queueResearch(
+                      'strategy.plugin',
+                      `${result.plugin.name} pinned backtest`.slice(0, 80),
+                      {
+                        ...result.parameters,
+                        plugin_id: result.plugin.id,
+                        revision: result.plugin.revision,
+                        input_kind: 'saved_dataset',
+                        dataset_id: result.dataset.id,
+                        candles: result.dataset.count,
+                      },
+                    );
+                    toast(
+                      'Pinned backtest queued. Follow its receipt in Settings → Workspace → Local jobs.',
+                    );
+                  } catch (reason) {
+                    setError((reason as Error).message);
+                  } finally {
+                    setBusy('');
+                  }
+                }}
+              >
+                <Clock3 size={13} /> Queue pinned backtest
+              </button>
               <button
                 className="text-button"
                 disabled={!!busy}

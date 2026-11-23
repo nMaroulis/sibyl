@@ -51,7 +51,9 @@ def provider_catalog() -> dict:
                 "history_import": CLIENTS[spec.id].history_kind or None,
             }
         )
-        items[-1]["support"] = support_groups(spec, capabilities, items[-1]["history_import"])
+        items[-1]["support"] = support_groups(
+            spec, capabilities, items[-1]["history_import"], order_fill_kind=CLIENTS[spec.id].order_fill_kind
+        )
         session = getattr(adapter, "session", None)
         if session is not None:
             session.close()

@@ -15,6 +15,8 @@ export type ProviderHealth = Pick<
   deferred: number;
   cache_hits: number;
   history_available: boolean;
+  quota_waiters: number;
+  quotas?: ProviderQuotas;
   last_success_at: string | null;
   last_request_at: string | null;
   latency_ms: number | null;
@@ -95,4 +97,55 @@ export const healthLabels: Record<ProviderHealth['status'], string> = {
   stale: 'No recent read',
   healthy: 'Healthy',
   not_checked: 'Not checked',
+};
+
+export type ProviderQuotas = {
+  policy: {
+    name: string;
+    reviewed_at: string | null;
+    reference: string | null;
+    coverage: string;
+    identity: string;
+    headroom: string;
+  };
+  status: 'demo' | 'observed' | 'not_observed';
+  attempts: number;
+  reviewed_attempts: number;
+  unreviewed_attempts: number;
+  bypassed_attempts: number;
+  scope: string;
+  retry_after: number;
+  coverage_gaps: number;
+  last_request: {
+    operation: string;
+    reviewed: boolean;
+    at: string;
+    read_admission: boolean;
+    costs: { budget: string; cost: number }[];
+  } | null;
+  last_deferral: { at: string; operation: string; reason: string } | null;
+  unpaired_ip_weight: { used: number; at: string; provider_limit: null } | null;
+  reported_order_counts: {
+    period_seconds: number;
+    used: number;
+    observed_at: string;
+    provider_limit: number | null;
+    enforced: boolean;
+  }[];
+  budgets: {
+    id: string;
+    name: string;
+    scope: string;
+    capacity: number;
+    used: number;
+    remaining: number;
+    period_seconds: number | null;
+    refill_per_second: number | null;
+    provider_limit: number | null;
+    reported_used: number | null;
+    limit_observed_at: string | null;
+    observed_at: string | null;
+    reset_at: string | null;
+    basis: string;
+  }[];
 };

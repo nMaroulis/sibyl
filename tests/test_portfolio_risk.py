@@ -30,6 +30,12 @@ def test_covariance_weights_quantiles_and_offsets_match_actual_daily_returns():
     q = np.quantile(returns, 0.05)
     assert result["historical_var_95_pct"] == pytest.approx(-q * 100)
     assert result["expected_shortfall_95_pct"] == pytest.approx(-returns[returns <= q].mean() * 100)
+    tail_days = returns <= q
+    asset_returns = np.column_stack((a[1:] / a[:-1] - 1, b[1:] / b[:-1] - 1))
+    contributions = [row["tail_loss_contribution_pp"] for row in result["assets"]]
+    np.testing.assert_allclose(contributions, -asset_returns[tail_days].mean(axis=0) * [75, 25])
+    assert sum(contributions) == pytest.approx(result["expected_shortfall_95_pct"])
+    assert contributions[0] > 0 > contributions[1]
     assert result["correlation"][0][1] == pytest.approx(-1)
     assert sum(a["variance_contribution_pct"] for a in result["assets"]) == pytest.approx(100)
     assert result["assets"][1]["variance_contribution_pct"] < 0
@@ -41,6 +47,7 @@ def test_cash_has_no_fabricated_correlation_and_gaps_never_bridge():
     result = analyze({"A": data["A"], "CASH": data["CASH"]}, {"A": 0.5, "CASH": 0.5})
     assert result["correlation"][0][1] is None
     assert result["assets"][1]["variance_contribution_pct"] == 0
+    assert result["assets"][1]["tail_loss_contribution_pp"] == 0
     del data["A"][sorted(data["A"])[10]]
     result = analyze({"A": data["A"]}, {"A": 1.0})
     assert result["observations"] == 49 and result["discarded_earlier_closes"] == 10

@@ -48,6 +48,28 @@ def canceled_partial(execution, checks=3):
     return job, intent
 
 
+@pytest.mark.parametrize("execution", ["coinbase-sandbox"], indirect=True)
+def test_sandbox_settlement_corrections_reopen_cancellation_checks(execution):
+    strategies, trading, native, _ = execution
+    job, intent = canceled_partial(execution)
+    identity = intent["id"]
+    assert retained(trading, identity)["strategy_cancellation"]["terminal_checks"] == 0
+    assert not strategies.execution.closing.context(job["id"])["ready"]
+
+    native.fills[0]["venue_settled"] = True
+    reconcile(trading, identity)
+    finish_checks(strategies, native)
+    assert retained(trading, identity)["strategy_cancellation"]["terminal_checks"] == 3
+    assert strategies.execution.closing.context(job["id"])["ready"]
+
+    native.fills[0]["venue_settled"] = False
+    reconcile(trading, identity)
+    assert not strategies.execution.closing.context(job["id"])["ready"]
+    finish_checks(strategies, native, 1)
+    assert retained(trading, identity)["strategy_cancellation"]["terminal_checks"] == 0
+    assert len(native.calls) == len(native.cancels) == 1
+
+
 def test_mismatched_totals_cannot_exhaust_the_late_status_checks(execution):
     strategies, trading, native, _ = execution
     job, intent = canceled_partial(execution, checks=2)

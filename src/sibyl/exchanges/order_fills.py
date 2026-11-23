@@ -2,7 +2,7 @@
 
 import ccxt
 
-from sibyl.exchanges.history import TradePage, _token, normalize_trade
+from sibyl.exchanges.history import TradePage, _token, normalize_coinbase_exchange_fill, normalize_trade
 
 ORDER_FILL_KINDS = {
     "binance-id",
@@ -12,6 +12,17 @@ ORDER_FILL_KINDS = {
     "okx-bill",
     "bybit-execution",
     "kucoin-hf",
+    "bitget-id",
+    "mexc-window",
+    "coinex-page",
+    "bitmart-window",
+    "poloniex-page",
+    "bitfinex-window",
+    "upbit-orders",
+    "phemex-spot",
+    "cryptocom-cash",
+    "gate-order",
+    "htx-order",
     "bitstamp-transactions",
     "gemini-trades",
 }
@@ -31,8 +42,48 @@ def fetch_order_fill_page(
 
     if kind in VENUES:
         return fetch_venue_order_page(exchange, kind, order_id, symbol, cursor, limit)
+    if kind == "cryptocom-cash":
+        from sibyl.exchanges.cryptocom_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "phemex-spot":
+        from sibyl.exchanges.phemex_activity import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "upbit-orders":
+        from sibyl.exchanges.upbit_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "bitfinex-window":
+        from sibyl.exchanges.bitfinex_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "poloniex-page":
+        from sibyl.exchanges.poloniex_fills import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "bitmart-window":
+        from sibyl.exchanges.bitmart_activity import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "coinex-page":
+        from sibyl.exchanges.coinex_activity import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
+    if kind == "gate-order":
+        from sibyl.exchanges.gate_fills import fetch_order_fills
+
+        return fetch_order_fills(exchange, order_id, symbol, cursor, limit)
+    if kind == "htx-order":
+        from sibyl.exchanges.htx_orders import fetch_order_fills
+
+        return fetch_order_fills(exchange, order_id, symbol, cursor, limit)
+    if kind == "mexc-window":
+        from sibyl.exchanges.mexc_activity import fetch_fill_page
+
+        return fetch_fill_page(exchange, symbol, cursor, limit, order_id=order_id)
     market = exchange.market(symbol)
-    if kind in {"okx-bill", "bybit-execution", "kucoin-hf"}:
+    if kind in {"okx-bill", "bybit-execution", "kucoin-hf", "bitget-id"}:
         from sibyl.exchanges.spot_history import fetch_spot_page
 
         return fetch_spot_page(exchange, kind, symbol, cursor, limit, order_id=order_id)
@@ -68,9 +119,10 @@ def fetch_order_fill_page(
         parsed = exchange.parse_trades(rows, market)
         if len(parsed) != len(rows):
             raise ccxt.ExchangeError("Unexpected order execution market.")
-        return TradePage(
-            [normalize_trade(row) for row in parsed], {"page": following}, not rows or not following
+        normalize = (
+            normalize_coinbase_exchange_fill if kind == "coinbase-exchange-cursor" else normalize_trade
         )
+        return TradePage([normalize(row) for row in parsed], {"page": following}, not rows or not following)
 
     if kind == "kraken-cursor":
         identities = cursor.get("ids")

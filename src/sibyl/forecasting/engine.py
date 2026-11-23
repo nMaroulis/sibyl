@@ -12,19 +12,50 @@ import math
 
 import numpy as np
 
+from sibyl.forecasting.families.arima import ARIMAForecaster, seasonal_order
+from sibyl.forecasting.families.elastic import fit as fit_elastic_net
+from sibyl.forecasting.families.huber import MAX_CANDLES as HUBER_MAX_CANDLES
+from sibyl.forecasting.families.huber import HuberAR
 from sibyl.forecasting.families.neural import TinyMLP
 from sibyl.market_data.archive import iso, milliseconds, now_ms, step_ms
 
 ENGINE = "chronos-ridge-1"
 CONTEXT_ENGINE = "chronos-ridge-context-1"
+FEATURE_NAMES = {
+    "returns": (),
+    "returns_context": (
+        "mean_return",
+        "return_volatility",
+        "downside_rms",
+        "positive_fraction",
+        "log_distance_from_peak",
+        "log_trend_deviation",
+    ),
+    "returns_volume": ("log_volume_change", "log_volume_deviation", "log_volume_change_volatility"),
+}
 
 
-def engine_for(feature_set="returns", family="ridge"):
+def engine_for(feature_set="returns", family="ridge", arima_season=0):
     """Keep the legacy engine exact and identify the optional richer causal recipe separately."""
-    if feature_set not in {"returns", "returns_context"}:
+    if feature_set not in FEATURE_NAMES:
         raise ValueError("Unsupported forecast feature recipe.")
-    if family not in {"ridge", "mlp"}:
+    if family not in {"ridge", "mlp", "huber", "arima", "elastic_net"}:
         raise ValueError("Unsupported numerical forecast family.")
+    if arima_season and family != "arima":
+        raise ValueError("Seasonality applies only to the ARIMA family.")
+    if family == "arima":
+        seasonal_order(arima_season)
+        if feature_set != "returns":
+            raise ValueError("ARIMA does not use the optional context-feature recipe.")
+        return {0: "chronos-arima-1", 7: "chronos-sarima-weekly-1", 14: "chronos-sarima-14d-1"}[arima_season]
+    if feature_set == "returns_volume":
+        return f"chronos-{family.replace('_', '-')}-volume-1"
+    if family == "elastic_net":
+        return (
+            "chronos-elastic-net-context-1" if feature_set == "returns_context" else "chronos-elastic-net-1"
+        )
+    if family == "huber":
+        return "chronos-huber-context-1" if feature_set == "returns_context" else "chronos-huber-1"
     if family == "mlp":
         return "chronos-mlp-context-1" if feature_set == "returns_context" else "chronos-mlp-1"
     return CONTEXT_ENGINE if feature_set == "returns_context" else ENGINE
@@ -32,7 +63,19 @@ def engine_for(feature_set="returns", family="ridge"):
 
 def parameters(request):
     """Preserve legacy artifact parameters byte-for-byte when richer features are not selected."""
+    if request.family == "arima":
+        return {
+            "family": "arima",
+            "arima_p": request.arima_p,
+            "arima_q": request.arima_q,
+            **({"arima_season": request.arima_season} if request.arima_season else {}),
+            "difference": 1,
+            "context_candles": 90,
+            "max_horizon": request.max_horizon,
+        }
     values = {key: getattr(request, key) for key in ("lags", "alpha", "max_horizon")}
+    if request.family == "huber":
+        values["huber_delta"] = request.huber_delta
     if request.family != "ridge":
         values["family"] = request.family
     if request.feature_set != "returns":
@@ -68,13 +111,26 @@ def validate(candles, minimum=31):
     return np.log(np.asarray([row["close"] for row in candles], dtype=float)), times
 
 
-def features(log_prices, lags, feature_set="returns"):
+def features(log_prices, lags, feature_set="returns", *, candles=()):
     """Build features through close t only; all trend/volatility windows fit inside the lag context."""
     engine_for(feature_set)
     returns = np.diff(log_prices)
     lagged = np.asarray([returns[t - lags : t][::-1] for t in range(lags, len(log_prices))])
     if feature_set == "returns":
         return lagged
+    if feature_set == "returns_volume":
+        volume = [row.get("volume") for row in candles]
+        if len(volume) != len(log_prices) or any(
+            type(value) not in {int, float} or not math.isfinite(value) or value < 0 for value in volume
+        ):
+            raise ValueError(
+                "Volume features require finite nonnegative observed volume on every daily candle."
+            )
+        windows = np.lib.stride_tricks.sliding_window_view(np.log1p(volume), lags + 1)
+        changes = np.diff(windows, axis=1)
+        return np.column_stack(
+            (lagged, changes[:, -1], windows[:, -1] - windows[:, :-1].mean(axis=1), changes.std(axis=1))
+        )
     context = []
     for t, row in zip(range(lags, len(log_prices)), lagged, strict=True):
         past = log_prices[t - lags : t + 1]
@@ -114,7 +170,16 @@ def metrics(actual, predicted):
     return result
 
 
-def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ridge"):
+def calibrated_radius(logs, predictions, calibration, horizon, lags=0):
+    """Fix the empirical log-error radius using only the retained calibration targets."""
+    residuals = np.abs(logs[calibration + horizon] - logs[calibration] - predictions[calibration - lags])
+    rank = math.ceil((len(residuals) + 1) * COVERAGE)
+    if rank > len(residuals):
+        raise ValueError("Not enough calibration observations for the selected interval.")
+    return float(np.sort(residuals)[rank - 1])
+
+
+def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ridge", huber_delta=1.35):
     """Fit one causal numerical model and calibrate it using only the supplied earlier partitions."""
     if len(training) < max(60, 3 * x.shape[1]) or len(calibration) < 20:
         raise ValueError("Use more training and calibration observations for this horizon.")
@@ -126,6 +191,12 @@ def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ri
     if family == "mlp":
         fitted = TinyMLP.fit(z, y, alpha, horizon)
         predictions = TinyMLP.predict(fitted, (x - mean) / scale)
+    elif family == "huber":
+        fitted = HuberAR.fit(z, y, alpha, huber_delta)
+        predictions = fitted["intercept"] + ((x - mean) / scale) @ np.asarray(fitted["coefficients"])
+    elif family == "elastic_net":
+        fitted = fit_elastic_net(z, y, alpha)
+        predictions = fitted["intercept"] + ((x - mean) / scale) @ np.asarray(fitted["coefficients"])
     elif family == "ridge":
         intercept = float(y.mean())
         try:
@@ -138,11 +209,7 @@ def fit_horizon(logs, x, lags, alpha, horizon, training, calibration, family="ri
         predictions = intercept + ((x - mean) / scale) @ coefficients
     else:
         raise ValueError("Unsupported forecast family.")
-    residuals = np.abs(logs[calibration + horizon] - logs[calibration] - predictions[calibration - lags])
-    rank = math.ceil((len(residuals) + 1) * COVERAGE)
-    if rank > len(residuals):
-        raise ValueError("Not enough calibration observations for the selected interval.")
-    radius = float(np.sort(residuals)[rank - 1])
+    radius = calibrated_radius(logs, predictions, calibration, horizon, lags)
     model = {
         "horizon": horizon,
         "mean": mean.tolist(),
@@ -196,13 +263,23 @@ def score_horizon(logs, times, predictions, model, test, drift, lags):
 
 
 def train(candles, request):
-    """Fit independently for each horizon and retain reproducible artifacts and test evidence."""
+    """Fit the selected numerical recipe and retain reproducible artifacts and independent evidence."""
     logs, times = validate(candles, 360)
-    n, lags = len(logs), request.lags
+    n, lags = len(logs), 0 if request.family == "arima" else request.lags
     if request.family == "mlp" and (n > 1000 or request.max_horizon > 14):
         raise ValueError("Neural training is limited to 1,000 candles and 14 forecast days.")
+    if request.family == "huber" and n > HUBER_MAX_CANDLES:
+        raise ValueError("Huber training supports at most 2,000 actual input candles.")
     train_end, calibration_end = math.floor(n * 0.6), math.floor(n * 0.8)
-    x = features(logs, lags, request.feature_set)
+    if request.family == "arima" and (n > 1000 or request.max_horizon > 14):
+        raise ValueError("ARIMA supports at most 1,000 actual input candles and 14 forecast days.")
+    arima = None
+    if request.family == "arima":
+        arima = ARIMAForecaster.fit(
+            logs[:train_end], request.arima_p, request.arima_q, season=request.arima_season
+        )
+        panel = ARIMAForecaster.panel(arima, logs, range(train_end, n), request.max_horizon)
+    x = None if arima else features(logs, lags, request.feature_set, candles=candles)
     fitted, evaluation = [], []
     drift = float(np.diff(logs[:train_end]).mean())
     for horizon in range(1, request.max_horizon + 1):
@@ -211,13 +288,30 @@ def train(candles, request):
         test = np.arange(calibration_end, n - horizon)
         if len(training) < max(60, 3 * lags) or min(len(calibration), len(test)) < 20:
             raise ValueError("The selected horizon needs more training/calibration/test observations.")
-        model, predictions = fit_horizon(
-            logs, x, lags, request.alpha, horizon, training, calibration, request.family
-        )
+        if arima:
+            predictions = panel[:, horizon - 1]
+            model = {
+                "horizon": horizon,
+                "radius": calibrated_radius(logs, predictions, calibration, horizon),
+                "training_samples": arima["training"]["training_returns"],
+                "calibration_samples": len(calibration),
+            }
+        else:
+            model, predictions = fit_horizon(
+                logs,
+                x,
+                lags,
+                request.alpha,
+                horizon,
+                training,
+                calibration,
+                request.family,
+                request.huber_delta,
+            )
         fitted.append(model)
         evaluation.append(score_horizon(logs, times, predictions, model, test, drift, lags))
     artifact = {
-        "engine": engine_for(request.feature_set, request.family),
+        "engine": engine_for(request.feature_set, request.family, request.arima_season),
         "numpy_version": np.__version__,
         "algorithm": "Direct autoregressive ridge on daily log returns",
         "parameters": parameters(request),
@@ -246,22 +340,66 @@ def train(candles, request):
         ],
     }
     if request.feature_set != "returns":
+        artifact["feature_names"] = [f"return_lag_{i + 1}" for i in range(lags)] + list(
+            FEATURE_NAMES[request.feature_set]
+        )
+    if request.feature_set == "returns_context":
         artifact["algorithm"] = "Direct ridge on lagged returns and causal trend/volatility context"
-        artifact["feature_names"] = [f"return_lag_{i + 1}" for i in range(lags)] + [
-            "mean_return",
-            "return_volatility",
-            "downside_rms",
-            "positive_fraction",
-            "log_distance_from_peak",
-            "log_trend_deviation",
-        ]
         artifact["notes"].append(
             "Six context features use only the same trailing lag window; they add no volume, external signals or automatic feature/model selection. More features do not establish better future accuracy."
+        )
+    if request.family == "elastic_net":
+        artifact["algorithm"] = "Direct elastic-net autoregression on causal daily features"
+        artifact["notes"].append(
+            "Each horizon uses a fixed 50/50 L1/L2 mix and training-only centered/scaled targets. "
+            "An inactive coefficient is evidence of shrinkage in this fit. It does not establish causal relevance."
+        )
+    if request.feature_set == "returns_volume":
+        if request.family == "ridge":
+            artifact["algorithm"] = "Direct ridge on lagged returns and observed volume"
+        artifact["notes"].append(
+            "Three volume features use closed candles from the same feed through the forecast origin: "
+            "latest change in log1p volume, deviation from its previous-window mean and trailing change volatility. "
+            "Volume units depend on the source and are never filled from future or alternate feeds."
         )
     if request.family == "mlp":
         artifact["algorithm"] = "Direct small tanh neural network on causal daily price features"
         artifact["notes"].append(
             "A fixed eight-unit tanh network uses 120 full-batch Adam steps per horizon, with training-only input/target scaling and deterministic seeds. No early stopping, architecture search or final refit uses calibration/test data. Additional flexibility can worsen future accuracy."
+        )
+    if request.family == "huber":
+        artifact["algorithm"] = "Direct fixed-scale Huber autoregression on causal daily price features"
+        artifact["notes"].append(
+            "Huber uses training-only median/MAD target scaling, fixed delta and at most 60 deterministic IRLS steps per horizon with feature L2. Large residuals receive reduced weight, not deletion; extreme feature leverage and genuine market shocks are not resolved by this loss. Check actual convergence, independent benchmark skill and coverage. Training-only stopping never selects on calibration/test data."
+        )
+        if any(not model["training"]["converged"] for model in fitted):
+            artifact["notes"].append(
+                "At least one Huber horizon reached its iteration limit. The retained bounded fit is not reported as converged; inspect training evidence before interpreting it."
+            )
+    if arima:
+        artifact["algorithm"] = (
+            f"Nonseasonal ARIMA({request.arima_p},1,{request.arima_q}) on log prices with drift"
+        )
+        if request.arima_season:
+            label = "Weekly SARIMA" if request.arima_season == 7 else "SARIMA"
+            artifact["algorithm"] = (
+                f"{label}({request.arima_p},1,{request.arima_q}) × (1,0,0,{request.arima_season}) on log prices with drift"
+            )
+        artifact["arima"] = arima
+        artifact["notes"].append(
+            {
+                7: "Native statsmodels fits one SARIMA model with a seven-day seasonal AR term on "
+                "training-standardized daily returns. The one log-price difference is nonseasonal. "
+                "The weekly lag is chosen explicitly; a fitted seasonal coefficient does not establish a weekly trading edge.",
+                14: "Native statsmodels fits one explicitly selected 14-day seasonal AR term on "
+                "training-standardized daily returns. The one log-price difference is nonseasonal. "
+                "A fitted seasonal coefficient does not establish a trading edge.",
+            }[request.arima_season]
+            if request.arima_season
+            else "One native statsmodels ARMA fit on training-only standardized daily log returns defines ARIMA(p,1,q) on log prices with drift. Stationarity/invertibility are enforced; failed or degenerate fits are rejected. Orders are chosen explicitly, never by test scores."
+        )
+        artifact["notes"].append(
+            "Every evaluation/inference origin filters exactly the most recent 90 closes with unchanged parameters. Filtering updates state using observed data; it does not refit or smooth with future prices. All horizons share coefficients; each has its own held-out empirical radius. Point prices exponentiate predicted log prices without a lognormal mean correction."
         )
     fingerprint(artifact)  # Reject any non-finite persisted artifact.
     return artifact
@@ -269,15 +407,18 @@ def train(candles, request):
 
 def predict(artifact, candles, horizon):
     """Apply unchanged trained coefficients to a closed causal window, with a descriptive shift check."""
+    recipe = artifact["parameters"]
     if artifact["engine"] != engine_for(
-        artifact["parameters"].get("feature_set", "returns"), artifact["parameters"].get("family", "ridge")
+        recipe.get("feature_set", "returns"), recipe.get("family", "ridge"), recipe.get("arima_season", 0)
     ):
         raise ValueError("This forecast engine version is not supported by the installed application.")
+    if artifact["parameters"].get("family") == "arima":
+        return arima_prediction(artifact, candles, horizon)
     lags = artifact["parameters"]["lags"]
     logs, times = validate(candles, lags + 1)
     if not 1 <= horizon <= len(artifact["models"]):
         raise ValueError("Choose a horizon supported by this trained model.")
-    vector = features(logs, lags, artifact["parameters"].get("feature_set", "returns"))[-1]
+    vector = features(logs, lags, recipe.get("feature_set", "returns"), candles=candles)[-1]
     points, shifts = [], []
     for model in artifact["models"][:horizon]:
         z = (vector - np.asarray(model["mean"])) / np.asarray(model["scale"])
@@ -310,9 +451,52 @@ def predict(artifact, candles, horizon):
             "features": len(vector),
             "note": (
                 "Model features outside observed training ranges; a descriptive warning, not a calibrated regime-change test."
-                if artifact["parameters"].get("feature_set") == "returns_context"
+                if recipe.get("feature_set", "returns") != "returns"
                 else "Lag features outside observed training ranges; a descriptive warning, not a calibrated regime-change test."
             ),
+        },
+        "note": "A fitted research model with empirical calibration. Future coverage and profitable trades are not guaranteed.",
+    }
+
+
+def arima_prediction(artifact, candles, horizon):
+    """Forecast unchanged native ARIMA parameters with the same context used for evaluation."""
+    logs, times = validate(candles, 90)
+    if not 1 <= horizon <= len(artifact["models"]):
+        raise ValueError("Choose a horizon supported by this trained model.")
+    fitted = artifact["arima"]
+    order = seasonal_order(artifact["parameters"].get("arima_season", 0))
+    if tuple(fitted.get("seasonal_order", (0, 0, 0, 0))) != order:
+        raise ValueError("The fitted seasonal order does not match this forecast recipe.")
+    returns = ARIMAForecaster.forecast(fitted, logs, horizon)
+    points = []
+    for h, (change, model) in enumerate(zip(returns, artifact["models"][:horizon], strict=True), 1):
+        low, value, high = prices(
+            [logs[-1] + change - model["radius"], logs[-1] + change, logs[-1] + change + model["radius"]]
+        )
+        points.append(
+            {
+                "timestamp": iso(times[-1] + (h + 1) * step_ms("1d")),
+                "value": float(value),
+                "lower": float(low),
+                "upper": float(high),
+            }
+        )
+    observed = np.diff(logs[-90:])
+    return {
+        "trained": True,
+        "model": artifact["algorithm"],
+        "horizon": horizon,
+        "origin": iso(times[-1] + step_ms("1d")),
+        "last_price": float(np.exp(logs[-1])),
+        "points": points,
+        "nominal_coverage": COVERAGE,
+        "shift": {
+            "outside_training_range": int(
+                np.sum((observed < fitted["return_min"]) | (observed > fitted["return_max"]))
+            ),
+            "features": len(observed),
+            "note": "Recent daily returns outside the observed training range; descriptive, not a calibrated regime-change test.",
         },
         "note": "A fitted research model with empirical calibration. Future coverage and profitable trades are not guaranteed.",
     }

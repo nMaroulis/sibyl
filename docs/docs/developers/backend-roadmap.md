@@ -2,23 +2,23 @@
 
 This is an audit of the current Python backend, not a release schedule. **The main dashboard modules already have backend services.** Most remaining work extends those services or connects them into complete workflows. Optional product expansions are identified separately.
 
-## Audited snapshot — November 6, 2026
+## Audited snapshot — November 18, 2026
 
 The dashboard’s **Coming soon → Implementation status** reads the same audited inventory through `GET /api/v1/roadmap`. This is a capability review, not a completion percentage or release schedule. Unchecked entries bundle broad follow-up scopes and acceptance work; completing an extension does not necessarily close its whole parent entry. Multi-user work is deferred and excluded from the local implementation sequence.
 
 | Area                           | Current state | Next missing foundation                                                                                                    |
 | ------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Account synchronization        | partial       | Import pagination and funding support for remaining providers; fiat, staking and subaccounts.                              |
-| Portfolio accounting           | partial       | Cross-market basis and historical third-currency/transfer-fee valuation.                                                   |
-| Order management               | partial       | Broader conditional/replacement adapters, amendment handling and definitive fee/settlement reconciliation.                 |
-| Market-data infrastructure     | partial       | Broader historical adapters, quota metrics and private/additional-provider WebSockets.                                     |
-| Alerts & local operations      | partial       | Broader risk metrics, external uptime monitoring, tracing and more delivery channels.                                      |
-| Automated strategy execution   | partial       | Broader venue/failure-case acceptance, risk policies, residual exit handling and fee valuation.                            |
-| Strategy research              | partial       | Continuous deployment simulation and broader optimization; nested chronological selection is implemented.                                              |
-| Sibyl & messaging              | partial       | Broader evaluated collaboration, resumable investigations and additional messaging clients.                       |
-| ProtoLink workflows            | partial       | Richer scoped specialist tools, evaluated routing and explicit approval/audit contracts.                                   |
-| Forecasting                    | partial       | More model families, automatic recalibration and calibrated drift monitoring; prospective outcome tracking is implemented. |
-| Research & news                | partial       | Broader semantic quality evaluation, hosted embeddings, calibrated relevance and cited web search.                         |
+| Account synchronization        | partial       | Widen funding coverage and historical depth. Spot fill imports are already available for the configured exchanges.                              |
+| Portfolio accounting           | partial       | Complete history/flows, wider fee policies and wallet coverage beyond retained cross-pair FIFO.                                                   |
+| Order management               | partial       | Remaining provider history caps, confirmed private event coverage, and broader conditional and replacement orders.                 |
+| Market-data infrastructure     | partial       | Broader historical adapters, quota/tier coverage and private/additional-provider WebSockets.                                     |
+| Alerts & local operations      | partial       | Broader risk enforcement, external uptime/tracing, native service acceptance and live six-channel acceptance.                                      |
+| Automated strategy execution   | partial       | Venue and failure-case acceptance, ownership repair and definitive venue settlement.                      |
+| Strategy research              | partial       | Approved multi-asset execution, separate ML/RL pipelines and optional Freqtrade.                                              |
+| Sibyl & messaging              | partial       | Broader grounding evaluation, additional media and live private-channel/processor acceptance.                       |
+| ProtoLink workflows            | partial       | Broader semantic/adversarial evaluation and additional scoped action contracts beyond approved local notes.                                   |
+| Forecasting                    | partial       | Additional trained families, forward calibration/evaluation and broader managed model lifecycles. |
+| Research & news                | partial       | Broader semantic quality evaluation, additional hosted providers, calibrated relevance and cited web search.                         |
 | Explorer, equities & analytics | partial       | Historical chain datasets, additional chains, wallet aggregation and disclosure archives.                                  |
 | Hosted multi-user support      | deferred      | User accounts, workspace ownership, permissions and tenant-isolated data/vaults.                                           |
 
@@ -28,7 +28,7 @@ The dashboard’s **Coming soon → Implementation status** reads the same audit
 - Twenty production spot-exchange clients, Binance Testnet, Coinbase Exchange Sandbox, and the persistent offline Demo account.
 - Public markets, candles, order-book snapshots, indicators, correlations and account balance reads.
 - Portfolio/account views, allocation, observed account-value snapshots and explicit unpriced holdings.
-- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for Binance, Binance.US, Coinbase, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp and the two dedicated test clients; GTC limits and cancellation for Gemini. Settings shows app-level support and gaps per exchange.
+- Manual paper orders, virtual resting limits and guarded manual market/GTC limit orders for thirteen production providers, including Bitfinex, Phemex, Crypto.com Exchange, MEXC and CoinEx, plus the two dedicated test clients. Bitget Classic, Poloniex and Upbit Korea support explicit quote-budget buys, base-sized market sells and GTC limits. Gate, HTX and BitMart support base-sized market sells and GTC limits. Gemini supports GTC limits. Recovery, exact executions and the separate strategy execution allowlist have provider-specific scope; Settings shows the implemented features and gaps.
 - Six rule-based strategies, cost-aware historical backtests, exact-input reruns, chart execution overlays, round-trip accounting, comparable saved runs and explicit Demo research/paper runs.
 - Sibyl orchestration and ten ProtoLink module agents with a startup runtime registry, client routing, contextual read-only tools, saved conversations and consultation evidence.
 - Live Sibyl consultation progress, request-specific cancellation and retained outcomes/evidence for completed, stopped, failed or interrupted requests. Startup marks unfinished requests interrupted without replaying them.
@@ -48,20 +48,28 @@ There are on-demand balances, bounded fill/order reads, and a durable normalized
 - [x] Add explicit observed balance checkpoints and per-asset quantity comparisons across imported markets, native fees/rebates and eligible funding, with gap/timing/scope checks, saved reports, CSV export and read-only Accountant evidence. See [balance checks](balance-checks.md). This does not establish complete account history or settlement.
 - [x] Apply documented Kraken ledger fee effects, retain Binance wallet/completion facts, and add source-version-checked local wallet/amount reviews for ambiguous funding; preserve native observations, audit withdrawal and provenance in Balance checks, exports and read-only Accountant evidence. See [funding effects](funding-effects.md).
 - [x] Add durable native pagination and incremental imports for Demo, Binance, Binance.US, Binance Testnet, Coinbase Advanced Trade, Coinbase Exchange Sandbox, Kraken, OKX, Bybit UTA, KuCoin classic and Bitget classic.
-- [ ] Review durable import pagination for the remaining exchange providers.
+- [x] Add resumable selected-market MEXC fill imports with native deal/order identity, timestamp-window splits and exact-order deduplication.
+- [x] Add resumable CoinEx cash spot fill imports with native `has_next`, frozen date bounds, reported fees and shared exact-order identities.
+- [x] Add resumable BitMart v4 cash spot fill imports with native date bounds, timestamp saturation checks and reported fee corrections.
+- [x] Add bounded, resumable selected-market spot fill imports across the configured production exchanges.
+- [ ] Expand historical depth and reconcile complete account activity across fills, funding and balances.
 - [x] Discover open/recent orders for the reviewed execution clients, retain native observations and link known Sibyl intents and shared fills. See [order discovery](order-discovery.md).
 - [ ] Expand discovery beyond the reviewed providers/ranges and handle complete amendment/lifecycle history.
 - [x] Add a normalized funding ledger and read-only range imports for Binance crypto deposits/withdrawals, Kraken deposit/withdrawal/transfer entries and Bybit master-UID on-chain withdrawals, retaining fee/rebate and status coverage. See [funding history](funding-history.md).
 - [x] Add opt-in, durable pending-record updates for Binance crypto deposits/withdrawals and Bybit on-chain withdrawals, independent of manual import ranges; bounded pagination/retries, missing-source review, control/account revision guards and read-only Accountant status. See [pending updates](funding-pending-updates.md).
 - [x] Add opt-in rolling recent funding sync for implemented Binance/Kraken/Bybit streams, completed-record corrections, persistent fetched-window gaps, concurrent-source guards, lazy pass reports and append-only observed funding revisions across all imports. See [recent sync](funding-recent-sync.md). A bounded authenticated Binance deposit-history read is recorded; live correction behavior and other venues still need acceptance.
-- [ ] Extend funding adapters to remaining exchanges, Bybit deposits/off-chain transfers, fiat, earn/staking and subaccounts; discover older arrivals/corrections outside selected lookbacks and implement native removal/bust semantics.
+- [x] Add Bybit same-UID internal transfers that enter or leave UNIFIED, with directional wallet evidence, opt-in history/status checks and exclusion from cross-account matching.
+- [x] Add OKX on-chain deposit/withdrawal imports and posted Funding/Trading transfer bills, opt-in scans and native Trading cash balance checks. Archived Trading bills and the reviewed funding/balance GETs have separate local allowances.
+- [ ] Extend funding adapters to remaining exchanges, Bybit deposits/cross-UID transfers and off-chain withdrawals, fiat, earn/staking and subaccounts; discover older arrivals/corrections outside selected lookbacks and implement native removal/bust semantics.
 - [x] Add bounded transfer suggestions, manual pairing, audited user confirmation, stale-source review and reversible link removal/restoration. See [transfer review](transfer-reconciliation.md).
 - [x] Carry original acquisition lots/cost basis for current confirmed equal-amount, explicitly zero-fee transfers in one unambiguous exact market. See [carryover scope](transfer-cost-basis.md).
 - [x] Add explicit balanced same-asset fee allocations, missing-fee assertions, distinct-charge acknowledgment and separate fee-unit inventory cost. See [transfer fees](transfer-fees.md).
-- [ ] Add historical fee valuation, other fee currencies/rebates, split/merged transfers, cross-market basis and reviewed external-funding classifications.
+- [x] Add dated closed-candle reporting-currency conversion, cross-pair account/asset FIFO and audited [split/merged transfer groups](transfer-groups.md) with exact allocation and preserved lot origins.
+- [ ] Extend accounting with other funding-fee currencies/rebates, broader fee policies, independent external-flow classifications and verified complete wallet history.
 - [x] Track per-market progress, successful pages/completed passes, failures and bounded retries; support pause/resume and restart recovery.
 - [x] Add available-history rescans, revision guards for stale in-flight responses, repeated-page protection, correction counts and retained execution ranges.
-- [ ] Add complete cash-event coverage, account-wide balance reconciliation, execution bust/removal handling and versioned fill/order correction audits beyond observed funding revisions.
+- [x] Retain append-only normalized fill revisions atomically with ledger/import updates; distinguish legacy baselines and identical observations.
+- [ ] Add complete cash-event coverage, account-wide balance reconciliation, additional provider execution bust/removal handling and complete order amendment audits beyond observed fill/funding revisions.
 - [x] Match discovered native IDs to local submissions and resume saved discovery pages after restart; uncertain client IDs stay on the reviewed recovery path.
 - [ ] Exercise authenticated reads and sandbox order lifecycles against actual test accounts.
 
@@ -72,7 +80,8 @@ Valuation now discovers direct, inverse and short bridge routes for held assets 
 - [x] Price arbitrary held assets through explicit quote/conversion routes, within the selected feed catalog and bounded read budgets.
 - [x] Use observed native stablecoin and fiat conversion rates instead of assuming parity; unavailable routes remain unpriced.
 - [x] Compute retained exact-market FIFO with base/quote fees and explicit gaps; offer balance-checked current reference marks. See [account performance](account-performance.md).
-- [ ] Reconstruct cross-market cost basis and historical third-currency fee conversions for complete exchange P&L.
+- [x] Add retained cross-pair account/asset FIFO, observed historical reporting-unit conversions and third-currency fees/rebates, with explicit unknowns and correction-aware opening assertions. See [cross-pair accounting](cross-pair-accounting.md).
+- [ ] Extend this retained model to complete account P&L, additional fee/transfer conventions and independently established history coverage.
 - [x] Persist audited opening quantity/cost assertions and disclose unknown basis, ambiguous ordering and incomplete coverage.
 - [x] Add new measured periods with fresh opening/closing valuations, user-reviewed external flows, source-bound completeness assertions, manual missing-flow inputs and combined/per-account Modified Dietz estimates. See [measured evidence contracts](performance-outcomes-alerts.md).
 - [ ] Automate independently verified historical flow conversion and wider wallet/accounting coverage; measured returns currently depend on explicit user assertions.
@@ -84,7 +93,28 @@ Reviewed market/GTC limit orders, exact precision checks, durable cancellation r
 
 Known orders now import native execution pages into the shared Account history ledger, compare quantity/cost and expose fee gaps in an in-place dialog. Three bounded terminal passes can pick up delayed evidence. [Client-ID recovery](order-recovery.md) now handles uncertain submissions on the reviewed clients with exact-detail checks and restart-safe bounded lookups; missing/ambiguous evidence remains uncertain. Complete settlement, broader provider support and authenticated acceptance remain pending. See [order/fill reconciliation](order-reconciliation.md).
 
-- [ ] Review and enable execution for the remaining production providers; most added adapters are read-only.
+- [x] Add MEXC base-sized manual cash market buys and sells with exact-pair permission, side, precision and market minimum checks.
+- [x] Recover MEXC base-sized market orders by saved client ID and original quantity, with explicit zero quote-budget evidence.
+- [x] Submit reviewed CoinEx cash market buys and sells using the native base currency in `ccy`, with exact-pair sizing and permission checks.
+- [x] Recover CoinEx cash market orders through bounded pending and finished pages when the original base currency and quantity match.
+- [x] Submit Gate cash spot IOC market sells in the reviewed base quantity, with exact-pair sell status and sizing checks.
+- [x] Recover Gate market sells through exact client text and bounded finished-order pages, with original base sizing and partial-fill reconciliation.
+- [x] Submit Bitget Classic spot market sells in the reviewed base quantity, with fresh pair status and base precision checks.
+- [x] Recover Bitget Classic market sells through exact `clientOid` details, with verified original size and separate cumulative fills.
+- [x] Submit HTX spot market sells in the reviewed base quantity with verified wallet, API permission and native sell-size limits.
+- [x] Recover HTX market sells through exact client-ID details scoped to the spot wallet and original order terms.
+- [x] Submit BitMart cash spot market sells with exact base sizing, fresh pair state, native increment and distinct size and value minimums.
+- [x] Recover BitMart market sells through exact v4 client-ID details and preserve partial-fill and fee evidence.
+- [x] Persist explicit market buy budgets in the quote currency through review, confirmation, monitoring, reconciliation and recovery.
+- [x] Add Poloniex cash spot IOC market buys and sells with current pair rules, no borrowing and original-term client-ID recovery.
+- [x] Add Upbit Korea market buys and sells with account-specific pair rules and exact identifier recovery.
+- [x] Submit and recover Bitget Classic quote-budget market buys using the exact original size.
+- [x] Extend explicit quote-budget market buys and original-budget recovery to Gate, HTX and BitMart.
+- [x] Recover Bitstamp closed and market orders with verified original terms from recent private creation events.
+- [ ] Extend Bitstamp event coverage beyond exact recovery once broader freshness, pagination and order-type contracts are verified.
+- [x] Add selected-pair Gemini closed-order scans and 30-day Upbit Trade discovery through seven-day native windows.
+- [x] Extend Upbit Account fill imports to an initial 30 days with resumable seven-day creation windows.
+- [ ] Verify lossless continuation for saturated Gemini results.
 - [x] Add GTC limit intents, typed cancellation, cumulative partial-fill monitoring and persisted automatic status checks.
 - [x] Add native Binance/Testnet unfilled-only manual GTC replacement with estimated reservation release, STOP_ON_FAILURE/ONLY_NEW, durable compound-command admission and retained non-atomic outcomes. See [advanced orders](advanced-orders.md).
 - [ ] Extend replacement to additional providers, partially filled orders and complete amendment/lifecycle history.
@@ -92,8 +122,75 @@ Known orders now import native execution pages into the shared Account history l
 - [ ] Add these advanced orders to more providers; implement trailing, additional time-in-force, post-only and iceberg support.
 - [x] Extend exact-order fill imports to OKX, Bybit UTA and KuCoin classic; retain their provider limits and fee gaps. Bitstamp/Gemini now also have bounded native imports and exact-order reconciliation, with explicit saturation/reversal/retention limits.
 - [x] Import native individual fills for confirmed local orders, share history-ledger identities, compare cumulative quantities/costs and report fee gaps; retain lifecycle cancellation/rejection observations. See [order reconciliation](order-reconciliation.md).
-- [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
-- [ ] Extend bounded late-fee checks to definitive settlement, execution bust/removal handling and broader discovery/adapters.
+- [x] Add combined/per-account open and recent order discovery for Binance/Testnet, Coinbase Advanced/Sandbox, Kraken, OKX and Demo, with read-only imported rows, persistent progress, filters and shared fill evidence. See [discovery coverage](order-discovery.md).
+- [x] Retain Coinbase Exchange Sandbox's native per-fill settlement flag. Share changes across exact reconciliation and Account history, with versioned evidence and separate settlement status.
+- [x] Preserve explicit Gemini trade breaks with native fill IDs and an append-only history. Exclude full busts from accounting and mark manual or unverified breaks for review.
+- [x] Add account-wide OKX cash spot order discovery with native pending/history endpoints, exact-ID checkpoints, explicit cancellation retention and shared fill evidence.
+- [x] Recover uncertain OKX cash spot market and GTC limit submissions from native instrument/client-ID details, with immutable order checks and abstention on stale or mismatched evidence.
+- [x] Add Bybit UTA account-wide discovery of open and recent cash spot orders with separate native cursor streams.
+- [x] Recover Bybit UTA cash spot submissions by client ID with realtime and history coverage.
+- [x] Recover KuCoin Classic cash spot submissions by client ID with HF and legacy order-detail coverage.
+- [x] Discover KuCoin Classic open spot orders across the account and recent orders for selected pairs using native pagination.
+- [x] Discover account-wide Bitstamp open spot limit orders with explicit open-only coverage in Trade and Settings.
+- [x] Recover uncertain Gemini spot GTC limit submissions through exact client-ID details and verified original terms.
+- [x] Discover account-wide Gemini open spot limit orders.
+- [x] Discover Gate open and recent finished cash spot orders with native page checkpoints.
+- [x] Recover uncertain Gate GTC spot orders by client ID with a bounded finished-order fallback.
+- [x] Discover Bitget Classic open and recent regular spot orders with durable native order-ID checkpoints.
+- [x] Reconcile exact Bitget Classic spot fills through the shared execution ledger.
+- [x] Recover reviewed Bitget Classic spot limits by exact `clientOid` with cancellation retention shown in Settings.
+- [x] Discover MEXC account-wide open and selected-pair recent spot orders with durable timestamp-window checkpoints.
+- [x] Recover reviewed MEXC spot GTC limits by exact pair and client ID within the native query window.
+- [x] Reconcile MEXC exact-order fills through the shared ledger with reported native fees.
+- [x] Reconcile Gate cash spot orders through exact native parent and execution reads with durable seven-day query checkpoints.
+- [x] Discover HTX open spot orders across the verified wallet with native order-ID checkpoints.
+- [x] Discover selected-pair HTX recent orders through bounded 48-hour windows with explicit cancellation retention.
+- [x] Recover reviewed HTX GTC spot limits by exact client ID and verified wallet and original terms.
+- [x] Reconcile HTX exact-order executions using native internal IDs, parent-wallet validation and explicit fee-deduction uncertainty.
+- [x] Discover CoinEx account-wide open cash spot orders with native page checkpoints.
+- [x] Discover recent CoinEx finished orders by filtering creation time across bounded native pages.
+- [x] Recover reviewed CoinEx spot GTC limits through client-filtered pending and bounded finished-order scans.
+- [x] Reconcile exact CoinEx native fills and reported fees with order-scoped deal identities.
+- [x] Discover BitMart v4 open cash spot orders with explicit bounds covering older native orders.
+- [x] Discover recent BitMart finished orders through durable capped-window splits.
+- [x] Recover BitMart spot GTC limits by exact client ID and verified original terms.
+- [x] Reconcile BitMart exact-order executions with native trade IDs and explicitly reported fee currency.
+- [x] Discover Poloniex account-wide open cash spot orders with exact native ID checkpoints.
+- [x] Discover recent Poloniex terminal orders using frozen update-time bounds, including older orders updated recently.
+- [x] Recover Poloniex cash spot GTC limits through exact client-ID details and verified original terms.
+- [x] Reconcile Poloniex exact-order executions with verified cash parents, exact native identities and reported fees.
+- [x] Import Poloniex selected-market cash fills with frozen seven-day queries, native pageId checkpoints and one-day incremental overlap.
+- [x] Discover Upbit Korea regular open spot orders with resumable numbered pages and reserved-order exclusions.
+- [x] Discover Upbit Korea recently created closed orders with durable timestamp splits and explicit saturation limits.
+- [x] Recover Upbit Korea regular GTC limits through exact identifier lookup and verified original terms.
+- [x] Discover account-wide Bitfinex ordinary cash open orders with explicit margin/flagged-order exclusions.
+- [x] Discover Bitfinex recent cash orders through durable creation-time splits and correct historical partial-fill status.
+- [x] Recover Bitfinex regular GTC limits by saved int45 cid through complete bounded open/closed checks.
+- [x] Reconcile Bitfinex exact-order cash executions with native IDs, signed fee effects and documented ten-day query coverage.
+- [x] Import Bitfinex selected-market exchange-wallet fills through frozen 90-day queries, saved timestamp splits and incremental overlap.
+- [x] Discover Phemex selected-pair open spot orders with required-pair controls and explicit cash endpoint scope.
+- [x] Discover Phemex recent spot orders with fixed creation bounds and saved native offsets.
+- [x] Recover Phemex base-sized spot GTC limits through exact clOrdID details and verified original terms.
+- [x] Reconcile Phemex exact-order executions with shared UUIDs and verified native value scales.
+- [x] Import Phemex selected-pair cash fills through resumable seven-day queries and incremental overlap.
+- [x] Import Gate selected-market cash executions with verified native parents and restart-safe numbered pages.
+- [x] Import HTX selected-market spot executions through wallet-verified 48-hour windows and durable saturation splits.
+- [x] Reconcile Upbit Korea native individual executions without guessing per-fill fees from aggregate paid_fee.
+- [x] Import Upbit Korea regular-order executions through saved open/closed listings and execution UUID checkpoints, with older closed-order limits explicit.
+- [x] Discover Gemini recent closed spot limits, including unfilled cancellations, with an explicit 500-order saturation limit.
+- [x] Discover Crypto.com Exchange regular cash open orders with explicit native execution-flag exclusions.
+- [x] Discover Crypto.com Exchange selected-pair recent terminal orders through saved native day ranges and nanosecond saturation splits.
+- [x] Recover Crypto.com Exchange ordinary cash GTC limits through exact client_oid details and verified original terms.
+- [x] Reconcile Crypto.com Exchange individual cash executions with native trade IDs, parent account proof and signed fee observations.
+- [x] Import Crypto.com Exchange selected-market cash history through resumable seven-day queries, one-day overlap and shared exact-order identities.
+- [x] Add reviewed Bitfinex cash EXCHANGE MARKET buys/sells with signed base quantities and saved int45 client IDs.
+- [x] Add reviewed Phemex ByBase spot IOC market buys/sells without quote-budget substitution.
+- [x] Add reviewed Crypto.com Exchange SPOT IOC market buys/sells with native base quantity and client_oid.
+- [x] Recover uncertain Bitfinex ordinary cash market submissions by saved cid, native original size and complete bounded open/closed evidence.
+- [x] Recover uncertain Phemex base-sized IOC market submissions by exact clOrdID and original baseQtyEv evidence.
+- [x] Recover uncertain Crypto.com base-sized cash IOC market submissions by exact client_oid and native original quantity.
+- [x] Recover resting Bitstamp spot GTC limits by exact client order ID, with original size and price corroborated by the selected pair’s open-order snapshot.
+- [ ] Reconcile separately posted Gemini manual adjustments. Expand settlement, execution bust/removal and discovery coverage across providers.
 - [x] Recover uncertain submissions using reviewed client-ID lookups, immutable-detail validation, bounded persisted pagination and explicit abstention on missing/ambiguous evidence.
 - [x] Exercise actual Binance Testnet client-ID recovery after deliberately discarding a successful strategy-entry response, without a second buy.
 - [x] Exercise real Testnet conditional open/cancel, native OCO with deliberately lost response, exact child recovery, sibling cancellation, unfilled cancel/replace, duplicate approval identities and a fill-winning marketable-limit observation. Intermediate partial fills, true outages, late fee corrections and other venues remain unaccepted.
@@ -110,7 +207,7 @@ Known orders now import native execution pages into the shared Account history l
 - [x] Define Pause/Stop: prevent future submissions and retain holdings; previously approved expiry continues.
 - [x] Persist optional order lifetimes at submission; cancel due remainders through the shared pipeline, retain partial fills and recover uncertain attempts by reading only.
 - [x] Add separate typed Stop & cancel approval, durable restart recovery, bounded late native status checks, monitor evidence and journal/CSV events.
-- [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Partial fills and native caps never cause automatic replacement sells.
+- [x] Add separately reviewed position exits for stopped/completed runs: current owned-fill evidence, fresh native book/funds/precision checks, guarded at-most-once submission and realized P&L/residual monitoring. Standalone approvals cover one sell.
 - [x] Enforce per-order notional, allocated-loss latch, spread/freshness and rolling order-count limits; retain fee/precision dust explicitly.
 - [x] Exercise the manual Binance Spot Testnet limit/cancel and market buy/sell lifecycle, native fills/fees, client-ID lookup, duplicate confirmations and retained state after restart; verify read access on one Binance and Coinbase production account.
 - [x] Exercise real Binance Testnet strategy signals and capped orders, duplicate approvals, owned fill/fee accounting, paused restart, shared capital rejection, global halt and a separately reviewed owned-position exit; recover a deliberately discarded entry response by exact native client ID without resubmission.
@@ -118,8 +215,21 @@ Known orders now import native execution pages into the shared Account history l
 - [ ] Extend authenticated acceptance to observed partial fills, cancellation/fill races, late corrections, real connectivity failures and other venues before deliberate production enablement. Controlled response loss does not establish general outage behavior.
 - [x] Add a durable global strategy submission halt: atomically pause exchange runs, invalidate old reviews/unsent signal plans, enforce the shared write boundary, retain audit history and require revision-bound typed release. Release never resumes runs; approved cancellations/manual orders/separately reviewed exits remain available.
 - [x] Add opt-in shared allocated-capital, gross-exposure and observed UTC daily-loss policies across accounts, separately for production/test funds; fresh actual conversion paths, retained/pending exposure, native-write transaction admission, persisted daily baselines/locks, deliberate later-day release, bounded audit and read-only Broker evidence. See [portfolio limits](portfolio-limits.md).
-- [ ] Add broader policy options (asset/account concentration, configurable loss windows and risk sizing), archived-run accounting beyond current bounds, and distributed coordination. Any future automatic multi-order liquidation needs its own explicit policy; current residual exits need fresh reviews.
-- [ ] Add reviewed residual/dust ownership handoff to new runs; value third-currency fees; reconcile/adopt manual position changes; handle definitive settlement/busts and more providers.
+- [x] Add account/base-asset exposure caps, sampled rolling-loss latches and optional stop-distance entry-risk sizing with native-write admission.
+- [x] Archive reconciled flat terminal runs and restore them without deleting order, accounting or journal evidence. Archived runs remain in reconciliation and shared risk.
+- [x] Add a separately approved fixed-price liquidation plan for one stopped strategy. Cap order count, size, lifetime and plan duration; require terminal reconciled fills and cancellation evidence before another child; withdraw future authority on halt, restart or explicit stop.
+- [x] Add explicit native base-balance checks across same-account owners, dust classification, reviewed manual adoption/release and atomic original-basis handoff to a new exact-account/pair run, with flow-neutral shared P&L and inherited correction guards. See [ownership](../guides/strategy-ownership.md).
+- [x] Estimate cash-flow-adjusted lifetime performance from linked fills, local ownership receipts and exact venue marks. Value individual third-currency fees and rebates from eligible closed candles on the run's exact feed for this report.
+- [x] Identify imported fills linked to one recorded Sibyl manual order by exact native identity and account scope. Retain unknown origin for all other unattributed fills.
+- [x] Trace invalidated ownership receipts to the source runs that carry changed order evidence.
+- [x] Approve exact-feed historical prices for signed third-currency fees. Immutable per-fill receipts, native-write rechecks and preserved corrections feed marked equity, quote-budget admission and per-run/shared loss controls.
+- [x] Approve append-only cost-basis repairs across executed handoff descendants. Reconstruct receipts at their original fill checkpoints and recalculate realized P&L while preserving quantities, cash-flow values and original records.
+- [x] Approve corrected handoff quantities and paired reference cash flows using the original price and fill checkpoints. Reflow valid changes through executed descendants, including zero-unit handoffs, and reject oversold histories.
+- [x] Repair underfunded local release receipts with separate consent, retaining their original quantity as a cap and carrying effective basis and reference flows from the original checkpoint.
+- [x] Resolve reconciled historical sale shortfalls with a user-asserted unmanaged contribution and basis, bound to the actual fill and consumed at that fill. Preserve append-only approvals and retire contributions through a new review.
+- [x] Link a verified same-account buy fill from a reconciled Sibyl manual or venue-discovered order to historical sale funding. Derive proportional fee-adjusted basis, reserve quantities across active claims and invalidate revised source evidence.
+- [x] Require venue-reported settlement on filled terminal Coinbase Exchange Sandbox orders before further strategy submissions or linked funding reuse. Reopen checks when reported settlement changes.
+- [ ] Independently verify continuous unmanaged custody and the originating order client. Extend settlement and trade-bust handling beyond the reviewed Sandbox signal.
 
 ### 5. Market-data infrastructure — partial
 
@@ -130,9 +240,11 @@ The backend uses cached REST snapshots, source-specific catalogs/capabilities an
 - [x] Add on-demand Binance production/Testnet public ticker/candle WebSockets, shared bounded queues, reconnect/freshness status, exact-source REST fallback and native Analyst evidence. See [live previews](live-markets.md).
 - [x] Add Kraken v2 public ticker/OHLC previews with exact symbols, native interval filtering, explicit receipt timing and shared lifecycle/fallback.
 - [x] Add Coinbase production public tickers and native five-minute candle previews, connection-wide sequence checks, exact-product alias rejection and REST fallback.
-- [ ] Add private account/order streams, additional public providers and persisted reconnect-gap recovery.
+- [x] Add native Binance/Testnet, Coinbase Advanced, Kraken and OKX production private order signals with persisted REST wakeups/backstops.
+- [ ] Extend private balances/account streams, additional providers and complete sequence-gap recovery.
 - [x] Add shared local read admission, bounded HTTP concurrency, conservative cross-client spacing and read-side cooldowns. See [provider control](provider-control.md).
-- [ ] Review exact endpoint-weight/IP/account quota policies; coordinate multiple processes if hosted.
+- [x] Add reviewed Binance Spot GET weight/IP read ceilings, conservative Kraken key-scoped counters and Coinbase Exchange Sandbox public/private/fills allowances, pre-sign quota deferral, actual native metadata/header evidence and passive UI/Technician diagnostics. See [quota scope](provider-control.md#reviewed-quota-policies).
+- [ ] Extend quota policies to wallet/SAPI, other interval families/providers, discovered tiers/profile identities and live external acceptance; coordinate multiple processes if hosted.
 - [x] Expose observed connectivity, separate quote freshness, sanitized errors and queue state in Settings and feed status lines. Live session counters reset on API restart.
 - [x] Persist bounded hourly HTTP read outcomes, success rate, mean/peak response time and sanitized errors; inspect 24-hour/7-day windows across restart. History never establishes current credential readiness or uptime. See [retained read history](provider-control.md#retained-read-history).
 - [x] Add fixed provider latency histograms with p50/p95 upper bounds and legacy sample coverage, plus current-process CPU/memory/threads, database/WAL and free-volume metrics. External uptime and distributed tracing remain pending.
@@ -146,12 +258,15 @@ Six configurable strategies, fee/slippage-aware backtests, performance metrics a
 - [x] Add reproducible seeded finite random search with an explicit candidate budget, full-space validation, coverage/fingerprints, saved plans, exact-study replay checks and native Broker evidence.
 - [x] Add optional nested chronological candidate selection, retained inner metrics, bounded work and independent outer tests.
 - [x] Add continuous single-market walk-forward replay carrying one cash/asset balance and entry cost across chosen-parameter windows, with actual fills, transition balances, fixed-setting comparison and native Broker evidence.
-- [ ] Add multi-asset deployment/rebalancing and Bayesian/distribution-based optimization; repeated user experiments can still overfit.
+- [x] Add native optional Optuna TPE/random numeric distributions, training-only selection, independent later tests, trial receipts and version-pinned exact replay. See [adaptive research](adaptive-strategy-research.md).
+- [x] Add fixed-target multi-asset historical portfolio studies, exact common-source/quote windows, cost-conserving sizing, interval/previous-close drift rules, full trade/allocation evidence, cost-matched references and checked offline replay. See [portfolio research](portfolio-research.md).
+- [ ] Add reviewed multi-asset paper/exchange deployment and coordinated allocation/execution policy; repeated user experiments can still overfit.
 - [x] Retain immutable input datasets and enable offline backtest replay with recorded fingerprints and engine version; current-feed runs also retain their inputs.
 - [x] Add exact-window cost-aware cash, buy-and-hold, scheduled-installment and 50/50 asset/cash references, selectable equity overlays and actual cost/metric summaries. Saved same-input strategy comparisons remain available; continuous deployment simulation is separate.
 - [ ] Add multi-asset strategy execution and allocation rules if required.
 - [x] Add an explicitly enabled installed-Python research plugin contract, bounded numeric controls, causal prefix observations, source pins, actual cost-aware backtests, saved inputs/signals, exact reruns, charts/exports and Broker evidence.
-- [ ] Extend custom plugins to validation/jobs when reviewed; optional Freqtrade integration remains pending.
+- [x] Extend explicitly trusted plugins to causal native adaptive validation and one-off pinned research jobs.
+- [ ] Add optional Freqtrade integration and separately evaluated ML/RL pipelines.
 - [ ] Implement the planned ML/RL strategies with their own training/evaluation pipeline.
 
 ## AI and research work
@@ -171,9 +286,10 @@ Sibyl and the ten specialists start through ProtoLink 0.8.4 `AgentGroup` with re
 - [x] Sibyl uses native ProtoLink discovery/delegation, with delegation disabled for specialists; saved chats include collaboration evidence.
 - [x] Show live consultation lifecycle events, allow stopping the exact queued/running request, and retain request outcomes and completed consultation evidence separately from successful chat turns.
 - [x] Mark unfinished requests interrupted on startup; block late consultations/answers after Stop and preserve already committed answers.
-- [x] Add daily/weekly investigation calendars, time-zone/DST handling, frozen accepted model choices, bounded waiting, restart/missed-time handling, retention and explicit Telegram briefing delivery with real part outcomes. See [briefing contracts](briefings.md).
-- [ ] Add resumable long-running work. Retained request history is an audit, not workflow resumption.
-- [x] Add saved investigations with progressive starting context, native specialist collaboration, structured report validation, recorded source receipts, versioned reruns, comparison, JSON export, cancellation and restart interruption. See [report contracts](investigations.md). Reruns use newly available evidence; workflow resumption remains pending.
+- [x] Add daily/weekly investigation calendars, time-zone/DST handling, frozen accepted model choices, bounded waiting, restart/missed-time handling, retention and explicit six-channel private briefing delivery with actual part outcomes and frozen acceptance-time route controls. See [briefing contracts](briefings.md).
+- [x] Add optional native durable investigation checkpoints, human questions, exact-argument local-note approvals, immutable team snapshots and explicit continuation. See [native workflow contracts](native-research-workflows.md).
+- [ ] Extend native continuation admission/retention where upstream SDK APIs are needed; ordinary retained chat history is not resumable workflow execution.
+- [x] Add saved investigations with progressive starting context, native specialist collaboration, structured report validation, recorded source receipts, versioned reruns, comparison, JSON export, cancellation and restart interruption. See [report contracts](investigations.md). Reruns use newly available evidence; optional native checkpoint continuation is a separate explicitly selected workflow.
 - [x] Add Ollama installation/server/model detection and explicit local server Start/Stop ownership controls, with setup links.
 - [x] Add per-agent provider/model overrides with shared encrypted profiles, preset/custom IDs, revision-checked edits, frozen delegated request snapshots and accurate model attribution. See [contracts](agent-models.md).
 - [x] Stream native tool/consultation lifecycle activity into browser chats; retain polling for reopened Sibyl requests and cancel native work on stream disconnect. Show safe on-demand run summaries with tool timing/outcomes and available per-call token/cost metrics, labeled estimated, partial or unavailable.
@@ -188,8 +304,11 @@ Sibyl and the ten specialists start through ProtoLink 0.8.4 `AgentGroup` with re
 - [x] Add app-origin Telegram delivery review with exact text/target inspection, unsent withdrawal and separate user acknowledgments preserving native outcomes.
 - [x] Add grouped conversation-reply receipts, original-target metadata, exact text inspection, atomic unsent withdrawal, separate user acknowledgments and UTF-16-safe chunking.
 - [x] Add opt-in outgoing UTF-8 text documents for long replies and scheduled briefings, with bounded complete content, original recipient binding and durable native outcomes.
-- [ ] Add incoming Telegram documents, audio/photos and broader media. WhatsApp, Discord, Slack, Signal and Email remain unavailable previews.
-- [ ] Design approval/action contracts and audit records before introducing mutation tools.
+- [x] Add opt-in Telegram documents, local photo OCR and bounded local audio transcription with retained sources, processor readiness and consent/version guards. See [attachment contracts](telegram-attachments.md).
+- [x] Implement all six configured private text clients and optional per-rule alert delivery through their checked native bindings.
+- [x] Extend scheduled briefings to all six checked private text routes, with shared destination cards, exact connection-generation consent, bounded source-safe native evidence and revision-scoped withdrawal.
+- [ ] Extend media beyond Telegram and verify live external services/processors.
+- [ ] Design additional scoped approval/action contracts before any financial or messaging mutation tool. Ordinary agents remain read-only; native durable research permits an explicitly approved exact-text local note only.
 
 ### 8. Forecasting / Chronos — partial
 
@@ -203,10 +322,15 @@ v2.1.0 adds direct autoregressive ridge models over immutable daily input, along
 - [x] Add bounded expanding/fixed-window historical rolling evaluation of a saved recipe, with causal refits/calibration, purged test boundaries, pooled benchmark metrics, immutable reports/reruns, per-fold charts/exports and native Chronos evidence. This is historical research, not live forward performance.
 - [x] Add prospective exact-source outcome tracking with original-save-time eligibility, corrected actual receipts, equal-horizon benchmarks, pause/resume, explicit refresh and native evidence.
 - [x] Add bounded portable JSON model/input bundles with integrity validation, offline local refitting, unverified imported namespaces and deduplication; archive/restore model versions without deleting evidence or silently stopping monitors.
-- [ ] Add calibrated drift monitoring, automated recalibration and larger managed lifecycles.
+- [x] Add retained-source drift observations, explicit revision-bound candidate recalibration policies and opt-in local schedules without promoting the parent model. See [drift contracts](forecast-drift.md).
+- [ ] Evaluate real-data drift thresholds/calibration and larger managed model lifecycles.
 - [x] Add an optional causal returns-plus-context ridge recipe with six trailing-price features, retained through rolling evaluation, predictions and portable refits.
 - [x] Add a small fixed-seed NumPy tanh neural model with training-only normalization, purged chronological calibration/testing, actual training-loss evidence, rolling refits and portable recipe validation.
-- [ ] Add ARIMA and other neural/model families, additional inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
+- [x] Add bounded fixed-scale Huber autoregression with training-only robust target scaling, deterministic IRLS, actual convergence/downweight diagnostics, purged held-out/rolling evaluation and portable recipe-preserving refits.
+- [x] Add native statsmodels nonseasonal ARIMA(p,1,q) with training-only normalization/maximum-likelihood fitting, fixed 90-close filtering, actual optimizer/likelihood diagnostics and existing held-out, rolling, portable and candidate workflows.
+- [x] Add seven-day and 14-day SARIMA recipes with distinct model identities, native coefficient evidence, causal filtering and held-out, rolling and portable workflows.
+- [x] Add elastic net and a same-feed causal observed-volume recipe for direct forecast families.
+- [ ] Add further neural families, separately sourced explanatory inputs and larger evaluation studies. Historical held-out results do not establish future profitability.
 
 ### 9. Research knowledge and news — partial
 
@@ -215,34 +339,50 @@ Crypto profiles/history are fetched by the backend. Knowledge search is a curate
 - [x] Add bounded PDF/text/Markdown ingestion, original retention, page-bounded exact passages, SQLite full-text retrieval across uploads and retained news, stable citation management, source reader/delete/reindex controls and native Wiki/Reporter tools. See [library contracts](research-library.md).
 - [x] Add optional local Ollama embeddings, bounded checkpointed indexing, cosine search, hybrid reciprocal-rank fusion, exact citations and native search/status tools with visible partial coverage and model-change rejection.
 - [x] Add owner-labeled saved retrieval evaluations over pinned corpora/indexes, exact rankings/citations and precision/recall/MRR/nDCG/hit-rate reports.
-- [ ] Evaluate semantic relevance and answer grounding across real models/corpora, add calibrated no-answer thresholds and support reviewed hosted embedding providers. Controlled-vector tests establish contracts, not real-model relevance.
+- [x] Add reviewed OpenAI, Mistral, Gemini and Voyage AI embedding adapters through native ProtoLink, independent encrypted keys, explicit text-processing permission, bounded raw response checks, provider identity and existing index/evaluation revision fences.
+- [x] Fit optional owner-labeled top-one semantic cutoffs using separate fit/held-out questions, exact complete corpus/index bindings, observed-error activation rules, revision-checked opt-in and stale/concurrent-change abstention. See [calibration contracts](search-calibration.md). Raw ranking evaluations remain unfiltered.
+- [ ] Evaluate semantic relevance/answer grounding and forward cutoff quality across real models/corpora, with broader hosted-provider coverage and live acceptance. Small labeled sets and controlled-vector tests do not establish general relevance or confidence.
 - [ ] Add cited web-search tools; local hybrid retrieval is implemented.
 - [x] Add multiple news providers, deduplication, retained history, source health and filtered sentiment evidence.
-- [ ] Add licensed full-article processing and evaluated finance-trained/entity-targeted sentiment models.
+- [x] Import attributable article files with an explicit owner rights declaration.
+- [ ] Add licensed publisher ingestion and evaluated finance-trained/entity-targeted sentiment models.
 - [ ] Add configurable external research API credentials/endpoints where integrations need them.
 
-### 10. Explorer, equities and advanced analytics — partial
+### 10a. Bitcoin Explorer — complete for v2.4
 
-Recent Bitcoin blocks, mainnet transaction/address inspection, optional equity quotes/history/statistics and Pearson/Spearman/distance dependence and descriptive return regressions exist.
+The local Bitcoin workspace covers block, transaction and address inspection, output monitoring, dated exports and verification of an inclusion branch against a selected header. The indexer supplies chain selection.
 
 - [x] Add read-only mainnet transaction/address inspection with checksum validation, exact fee/confirmation evidence, paged inputs/outputs and confirmed activity, separate pending observations, source-labeled UI/exports, independent Demo and native Explorer tools. See [Bitcoin explorer contracts](bitcoin-explorer.md).
-- [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools. No spendability proof or durable watch is claimed.
-- [ ] Add historical chain datasets, additional chains, wallet aggregation, durable spend/reorg watches and local chain verification.
-- [ ] Implement the planned public-official portfolio/disclosure archive.
+- [x] Add explicit, bounded Bitcoin output-spend observations with confirmed/pending/unspent/unknown states, spending-transaction links, page exports, synthetic graph examples and native Explorer tools.
+- [x] Add durable Bitcoin output watches with isolated Demo, before/after spend and block inclusion observations, local inbox evidence, bounded retry, revision-checked controls and restore quarantine.
+- [x] Add historical Bitcoin block lookup by height/hash, hash-pinned transaction pages, best-chain status, JSON export, Demo and native Explorer evidence.
+- [x] Verify transaction inclusion locally against the exact selected block header, with isolated Demo and known mainnet vectors.
+
+### 10b. Chain expansion, equities and advanced analytics — partial
+
+- [x] Add Ethereum mainnet blocks and receipts using a bounded read-only JSON-RPC source with native Explorer evidence.
+- [ ] Add bulk historical chain datasets, further networks, wallet aggregation and independent chain validation.
+- [x] Browse SEC EDGAR recent and historical issuer filing indices.
+- [ ] Implement portfolio disclosures for public officials.
 - [x] Add bounded unsigned distance dependence and same-interval return OLS, explicit undefined/gap states, scatter inspection/export and native Analyst evidence.
 - [x] Add bounded fixed-order Granger tests with training-only classical inference, request-family adjustment, residual qualifications, independent later-target errors and exact-source UI/agent evidence.
+- [x] Add an optional descriptive Theil–Sen fit alongside OLS on identical bounded return samples, with scatter evidence, comparable residuals and native Analyst results.
+- [x] Attribute the basket’s observed tail mean loss to its assets using the same tail days.
 - [ ] Add MIC, SHAP, robust/nonlinear causal inference and broader real-data/model evaluation.
 
 ## Cross-cutting and optional expansion
 
-### Distribution — Python package ready; publication pending
+### Distribution — Python package and user services ready; publication pending
+
+- [x] Add native macOS LaunchAgent, Linux systemd user unit and SID-specific Windows login-task CLI controls, safe preview/ownership/port handling, private rotating logs and read-only Settings/Technician status.
+- [ ] Complete real platform login/logout/upgrade/outage acceptance and broader installers. Registry publication and live provenance verification need a release run.
 
 The release path is a complete Python wheel and source archive published from the existing repository. Source checkout and local Docker Compose remain available. No Homebrew repository or registry is required; see [distribution](distribution.md).
 
 - [x] Bundle React in wheels/source archives, resolve installed assets, add a per-user installed workspace and launcher, and preserve source workspaces.
 - [x] Synchronize release metadata and lock entries in one version command; derive current docs/install examples from metadata while preserving history.
 - [x] Exercise a clean installed wheel and add Linux, Windows and both Mac architectures to package CI.
-- [x] Add a Python-package release workflow with dry-run artifacts, checksums and GitHub Release uploads.
+- [x] Add a Python-package release workflow with dry-run artifacts, checksums, keyless build provenance and GitHub Release uploads.
 - [ ] Complete remote CI acceptance and publish the wheel/source assets.
 - [ ] Add Homebrew optionally after the package release; a recipe can live in this repository or a separate tap.
 - [ ] Validate local Docker runtime and optionally publish prebuilt amd64/arm64 registry images in a separate workflow.
@@ -264,19 +404,22 @@ Basic [price, strategy and connection alerts](alerts.md), [account-risk watches]
 - [x] Add whole-basket HHI/effective-asset/largest/top-three value concentration and optional HHI/top-three alerts, gated on complete fresh valuations.
 - [x] Add saved explicit current-holding basket studies with observed historical conversion routes, consecutive sample covariance/correlations, volatility, empirical tails, variance contributions, full input export and native Accountant evidence.
 - [x] Add hourly current-weight basket volatility and historical 95% daily expected-shortfall alerts, explicit asset/window selection, complete fresh valuation, exact observed history and retained scope/input evidence.
-- [ ] Add broader correlation-aware enforcement and silent-worker outage detection. Shared strategy exposure/daily-loss enforcement is implemented separately; alerts do not change execution policy.
-- [x] Add opt-in Telegram delivery per price/risk/strategy/connection rule, reviewed recipients, future-only cursors, transactional admission, cooldown suppression, expiry and actual part outcomes. See [contracts](alert-delivery.md).
+- [x] Retain worker incidents through an independent local observer, confirmed progress recovery and explicit observation gaps. See [worker incidents](worker-incidents.md).
+- [ ] Add broader correlation-aware risk enforcement. Independent HTTP readiness monitoring is available.
+- [x] Add opt-in Telegram, Discord, Slack, Signal, WhatsApp and email delivery per price/risk/strategy/connection/order rule, checked private recipients, future-only cursors, transactional admission, cooldown/expiry and native part outcomes. See [contracts](alert-delivery.md).
 - [x] Add app-origin delivery text/target inspection, queued-remainder withdrawal and separate user review history with optimistic evidence tokens.
 - [x] Extend the review contract to grouped conversation replies while preserving native delivery outcomes and unknown legacy bot identities.
-- [ ] Add other external alert channels; live alert-delivery acceptance remains a deployment check.
-- [ ] Add a general job queue/scheduler for tasks beyond the current domain workers.
+- [x] Reuse the shared durable outbox across six native private routes, preserving exact provider IDs, per-channel text bounds, cancellation uncertainty, reviewed receipts and WhatsApp reply windows.
+- [ ] Verify live alert-delivery acceptance; generic outbound webhooks and native push remain optional extensions. Scheduled research briefings can also select any of the six checked private text routes; documents remain Telegram-only.
+- [x] Add durable local jobs with explicit domain handlers, bounded schedules, persistent idempotency identities, restart/cancellation semantics, retained receipts, Workspace controls and native Technician evidence. See [local jobs](local-jobs.md).
 - [x] Supervise actual background iterations with fault/overdue states, sanitized retained fault history, explicit retries, shutdown draining and Workspace/global UI indicators. Technician can inspect progress through native tools. See [operations](workspace-operations.md).
 - [x] Add lightweight process resource counters and fixed latency histograms with scoped, honest coverage.
 - [x] Add explicit read-only bounded SQLite quick checks and privacy-allowlisted downloadable workspace health reports, with passive native Technician evidence.
-- [ ] Add tracing, broader host diagnostics and external uptime monitoring.
+- [x] Add OpenTelemetry API/readiness tracing and observer-owned HTTPS outage/recovery notifications.
+- [ ] Add broader tracing/host diagnostics and verify deployment through an external collector and receiver.
 - [x] Add passphrase-encrypted managed archives, authenticated inspection/download/import and validated separate-directory restore. Recovery quarantines automatic work and requires explicit review/restart.
 - [x] Add private filtered notification JSON/CSV exports and opt-in bounded read-history retention, protected unread/delivery evidence, cleanup receipts and monotonic cursor-safe notification sequences.
-- [ ] Add credential/key rotation tools beyond encrypted backup/restore.
+- [x] Add explicit same-account API replacement and audited local wrapping-key rotation with interruption recovery, concurrent-writer guards, Workspace controls and encrypted-backup compatibility. See [credential rotation](credential-rotation.md).
 
 ### 12. Hosted/multi-user product — deferred
 
@@ -291,13 +434,12 @@ Other optional expansions include derivatives, on-chain wallets/DeFi, exchange t
 
 ## Local implementation sequence
 
-1. **Market-data foundations:** durable candle archive, bounded backfills, gap/health diagnostics and shared read budgets.
-2. **Expand synchronized accounting:** remaining provider imports/funding, fee conversion and complete reconciliation; validate authenticated test-account behavior.
-3. **Close the order loop:** authenticated acceptance of status/fill/recovery/discovery, broader adapters and final-fee reconciliation, then provider-specific conditional and cancel/replace orders.
-4. **Build on local alerts:** broader risk metrics, strategy-event policies and operational diagnostics, then explicit external delivery and backup/restore.
-5. **Sibyl and richer ProtoLink tools:** evaluated collaboration, scoped specialist tools and resumable investigations; per-agent models are implemented. Messaging clients remain a separately scoped future integration.
-6. **Test-environment strategies:** reconcile actual orders/fills and implement risk controls before any production automation.
-7. **Trained forecasts and advanced research:** benchmarked models, RAG, explorer/equities expansions and custom strategies.
+1. **Reconciliation and venues.** Extend verified event and order-history coverage, add funding adapters and run authenticated failure-case acceptance.
+2. **Strategy ownership and deployment:** reviewed residual/manual inventory and explicitly approved multi-asset allocation execution beyond the implemented historical portfolio lab and separate causal ML/RL/Freqtrade research.
+3. **Evaluated intelligence:** broader grounding/adversarial checks, additional trained forecast families and real-data retrieval/sentiment calibration. Native durable investigations and Optuna research are implemented.
+4. **Messaging extensions:** additional media and live provider/processor acceptance. All six private text clients, per-rule alert delivery and scheduled text briefings are implemented; documents remain Telegram-only.
+5. **Research integrations:** additional hosted embeddings and live acceptance, licensed article processing, configurable research sources and chain/disclosure archives; cited web research stays deferred.
+6. **Operations and distribution:** cross-request tracing, external host monitoring, reviewed service/install support and publication/signing/registry acceptance. Durable local jobs, observed worker incidents and local credential rotation are implemented.
 
 Multi-user hosting is deferred. No user accounts, permissions, tenant isolation or distributed-worker work is included in this sequence.
 
@@ -311,3 +453,11 @@ Prospective forecast tracking, measured cash-flow review and execution notificat
 - [x] Add Kraken public live previews through the shared runtime; private-account streams and persisted gap recovery remain pending.
 - [x] Add distance dependence and contemporaneous return-regression evidence; MIC/Granger/SHAP and out-of-sample inference remain outside this feature.
 - [x] Add whole-basket value-concentration metrics and HHI/top-three alerts; broader return/correlation-aware risk and enforcement policies remain separate.
+
+## v2.4 shared strategy risk extension
+
+The shared policy adds optional absolute reference-USDT exposure caps per saved account and base asset. Held units and pending buys are grouped across pairs and accounts at native admission; pending sells do not release capacity. Reducing sells retain the existing non-concentration checks. These are strategy-owned amounts, not total exchange wealth.
+
+An optional 1–168-hour rolling-loss cap supplements UTC daily loss. The first complete mark per minute is retained for eight days plus a preceding boundary. Assessment uses the last mark at or before the cutoff (or first available mark), without interpolation; gaps can make the measured period longer. Newly added runs begin at zero P&L. Corrections remain in observed loss. A breach pauses the environment and latches until its recorded window expires; fresh loss must also be below the cap before explicit release. Policy edits, restarts and price rebounds do not automatically clear a lock or resume jobs.
+
+Approved runs can optionally cap entry risk as a percentage of current strategy equity divided by the configured algorithm stop distance plus two fee reserves. The existing order/cash/native precision caps still apply. This sizes entries only, does not place a native protective stop, and cannot guarantee a loss ceiling. The immutable review displays the approved percentage; the user must provide an algorithm stop-loss distance.

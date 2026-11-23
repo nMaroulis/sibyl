@@ -334,5 +334,7 @@ def test_roadmap_tracks_sibyl_separately_and_keeps_hosting_deferred(client):
     areas = {area["id"]: area for area in roadmap["areas"]}
     assert areas["sibyl"]["status"] == "partial"
     assert "Stop" in areas["sibyl"]["working"]
-    assert any("unavailable" in item for item in areas["sibyl"]["pending"])
+    assert "opt-in bounded document imports" in areas["sibyl"]["working"]
+    assert any("attachment/processor" in item for item in areas["sibyl"]["pending"])
+    assert any("live acceptance" in item for item in areas["sibyl"]["pending"])
     assert areas["multi-user"]["status"] == areas["multi-user"]["priority"] == "deferred"

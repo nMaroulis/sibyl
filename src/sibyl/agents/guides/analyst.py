@@ -86,6 +86,7 @@ GUIDES = {
         (
             "Choose exact provider pairs from the same feed in the correlation section.",
             "Expand Lag predictability for a one-to-five lag Granger comparison against the first pair, in both directions. Run explicitly, inspect training-only adjusted p-values and later-target errors, then export evidence. Gaps, model assumptions and repeated experiments limit interpretation; lag predictability is not causation or profit.",
+            "Expand Return regression and select Compare with Theil–Sen to compare robust and ordinary beta on the same returns.",
             "Select Pearson, Spearman ranks or unsigned distance dependence and log returns, prices or changes. Distance uses at most the latest 360 aligned observations; undefined constant-series results show a dash.",
         ),
         (

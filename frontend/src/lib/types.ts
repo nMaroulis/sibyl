@@ -317,9 +317,16 @@ export type Job = Source & {
   execution_state?: string;
   accounting_incomplete?: boolean;
   dust_position?: boolean;
+  ownership_net_value?: number;
+  ownership_stale?: boolean;
+  ownership_event_count?: number;
+  archived_at?: string;
+  unresolved_orders?: { id: string; reconciliation?: string }[];
   risk_locked?: boolean;
   fee_assets?: Record<string, number>;
   unvalued_fees?: Record<string, number>;
+  foreign_fees_quote?: number;
+  foreign_fee_reserve?: number;
   native_fill_count?: number;
   risk?: Record<string, number | null>;
   stop_cancellation?: { review_id: string; requested_at: string };
@@ -644,12 +651,17 @@ export type Run = {
 /** Page selections accepted by the corresponding read-only agent tool. */
 export type AgentContext = {
   comparison_symbols?: string[];
+  robust_regression?: boolean;
   granger_lags?: number;
   correlation_method?: 'pearson' | 'spearman' | 'distance';
   correlation_transform?: 'log_returns' | 'prices' | 'changes';
   backtest_id?: string;
   validation_id?: string;
+  adaptive_study_id?: string;
+  adaptive_window?: number;
   portfolio_scope?: string;
+  account_books_view?: boolean;
+  account_books_currency?: string;
   performance_view?: boolean;
   performance_account_id?: string;
   performance_environment?: '' | 'demo' | 'test' | 'production';
@@ -670,6 +682,7 @@ export type AgentContext = {
   library_document_id?: string;
   library_passage_id?: string;
   retrieval_evaluation_id?: string;
+  retrieval_calibration_id?: string;
   risk_study_id?: string;
   library_source_type?: 'all' | 'document' | 'news';
   library_query?: string;
@@ -687,6 +700,8 @@ export type AgentContext = {
   forecast_evaluation_id?: string;
   bitcoin_txid?: string;
   bitcoin_address?: string;
+  bitcoin_block_hash?: string;
+  bitcoin_block_offset?: number;
   bitcoin_demo?: boolean;
   bitcoin_output_offset?: number;
   parameters?: StrategyParams;
@@ -712,6 +727,8 @@ export type ModuleId =
 
 export type StrategyEvent = {
   id: number;
+  fee_review_id?: string;
+  ownership_repair_id?: string;
   timestamp: string;
   kind: string;
   action: string;
@@ -893,6 +910,8 @@ export type ExchangeProvider = {
   uid: boolean;
   sandbox: boolean;
   market_orders: boolean;
+  market_order_sides?: Array<'buy' | 'sell'>;
+  market_buy_budget?: boolean;
   limit_orders: boolean;
   cancel_orders: boolean;
   verification: string;

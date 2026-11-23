@@ -254,3 +254,31 @@ def test_invalid_upload_does_not_echo_content_or_metadata(client):
         },
     )
     assert result.status_code == 422 and "PRIVATE" not in result.text
+
+
+def test_article_import_requires_rights_and_retains_immutable_attribution(client):
+    url = "/api/v1/library/documents"
+    body = {
+        "filename": "article.txt",
+        "title": "Example research article",
+        "publisher": "Example publisher",
+        "source_url": "https://publisher.example/research",
+        "article_rights": "license",
+        "data_base64": base64.b64encode(b"Barium has an important role in this example.").decode(),
+    }
+    assert client.post(url, json=body).status_code == 422
+    agreed = {**body, "article_rights_confirmed": True}
+    assert client.post(url, json={**agreed, "publisher": ""}).status_code == 422
+    response = client.post(url, json=agreed)
+    assert response.status_code == 201, response.text
+    item = response.json()
+    assert item["article_rights"]["basis"] == "license"
+    assert item["article_rights"]["confirmed_at"] == item["imported_at"]
+    again = client.post(url, json=agreed).json()
+    assert again["duplicate"] and again["id"] == item["id"]
+    assert client.post(url, json={**agreed, "publisher": "Other publisher"}).status_code == 400
+    result = client.get("/api/v1/library/search", params={"query": "barium"}).json()["items"][0]
+    assert result["source"]["source_url"] == body["source_url"]
+    assert result["source"]["publisher"] == body["publisher"]
+    rebuilt = client.post(f"{url}/{item['id']}/reindex").json()
+    assert rebuilt["article_rights"] == item["article_rights"]

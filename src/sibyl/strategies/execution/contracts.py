@@ -12,6 +12,7 @@ class ExecutionGuard(ValueError):
 class ExecutionRisk(Request):
     """Limits on new orders; these do not guarantee a maximum market loss."""
 
+    risk_per_entry_pct: float | None = Field(default=None, gt=0, le=10, strict=True)
     max_order_quote: float = Field(default=500, gt=0, le=10_000_000)
     max_loss_pct: float = Field(default=10, gt=0, le=90)
     max_orders_per_day: int = Field(default=6, ge=1, le=100)
@@ -31,11 +32,14 @@ class ExchangeStrategyRequest(Request):
     """A fixed strategy, exact market, saved account and allocated quote budget."""
 
     connection_id: str = Field(min_length=1, max_length=100)
+    handoff_from: str | None = Field(default=None, min_length=1, max_length=100)
     parameters: ExecutionParameters
     risk: ExecutionRisk = Field(default_factory=ExecutionRisk)
 
     @model_validator(mode="after")
     def bounded_order(self):
+        if self.risk.risk_per_entry_pct is not None and not self.parameters.stop_loss_pct:
+            raise ValueError("Risk sizing requires the algorithm's stop-loss distance.")
         if self.risk.max_order_quote > self.parameters.capital:
             raise ValueError("Maximum order value cannot exceed the strategy quote budget.")
         return self
@@ -54,3 +58,19 @@ class ClosePositionRequest(Request):
     max_spread_bps: float = Field(default=50, gt=0, le=500)
     fee_reserve_bps: float = Field(default=100, ge=10, le=500)
     order_lifetime_seconds: int | None = Field(default=300, ge=60, le=86_400, strict=True)
+
+
+class LiquidationRequest(ClosePositionRequest):
+    """Limit one sequential sell plan by order count, quantity and elapsed time."""
+
+    max_orders: int = Field(default=3, ge=2, le=5, strict=True)
+    max_order_base: float | None = Field(default=None, gt=0, le=1_000_000)
+    duration_minutes: int = Field(default=20, ge=5, le=60, strict=True)
+    order_lifetime_seconds: int = Field(default=120, ge=60, le=300, strict=True)
+
+    @model_validator(mode="after")
+    def usable_time_window(self):
+        """Leave room for the worker to prepare the first order before expiry."""
+        if self.duration_minutes * 60 <= self.order_lifetime_seconds:
+            raise ValueError("The plan duration must exceed one order lifetime.")
+        return self

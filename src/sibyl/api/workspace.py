@@ -2,13 +2,14 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
 from sibyl.api.uploads import bounded_body
+from sibyl.credentials.rotation import RotateVault, VaultRotation
 from sibyl.operations.archives import MAX_ARCHIVE
 
 
@@ -30,6 +31,14 @@ class Restore(Unlock):
 
 class RecoveryReview(BaseModel):
     confirmation: Literal["I REVIEWED THE RESTORED WORKSPACE"]
+
+
+@router.get("/service")
+def background_service(s: S):
+    """Inspect the current user's OS service; management remains an explicit local CLI action."""
+    from sibyl.installation.services.manager import service_status
+
+    return service_status(s.store.path.parent, s.settings.port)
 
 
 @router.get("/health")
@@ -135,3 +144,22 @@ def export_diagnostics(s: S):
             "Content-Disposition": 'attachment; filename="sibyl-health-report.json"',
         },
     )
+
+
+@router.get("/vault")
+def vault_status(s: S):
+    """Read an opaque key ID, encrypted-record counts and actual local rotation audit."""
+    return VaultRotation(s.store).state()
+
+
+@router.post("/vault/rotate")
+def rotate_vault(body: RotateVault, s: S):
+    """Explicitly rotate local encryption; provider API credentials remain unchanged."""
+    return VaultRotation(s.store).rotate(body)
+
+
+@router.get("/incidents")
+def worker_incidents(s: S, response: Response, offset: int = Query(0, ge=0, le=100000)):
+    """Read actual local stall observations and unresolved process boundaries; no probes or retries."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.workers.watchdog.snapshot(offset)

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from sibyl.agents.utils.network import ModelRequired
 from sibyl.api.routes import S
-from sibyl.investigations.contracts import InvestigationCreate, InvestigationRun
+from sibyl.investigations.contracts import InvestigationCreate, InvestigationRun, WorkflowContinuation
 from sibyl.investigations.repository import InvestigationConflict
 from sibyl.investigations.scheduling.repository import BriefingConflict
 
@@ -80,5 +80,23 @@ async def cancel(identity: str, run_id: str, s: S):
     """Stop the selected attempt without deleting already completed tool observations."""
     try:
         return await s.investigations.cancel(identity, run_id)
+    except InvestigationConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.post("/{identity}/runs/{run_id}/resume", status_code=202)
+async def resume(identity: str, run_id: str, body: WorkflowContinuation, s: S):
+    """Continue only the owned native checkpoint and its exact pending fingerprint."""
+    try:
+        return await s.investigations.workflows.resume(identity, run_id, body)
+    except (ModelRequired, InvestigationConflict) as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.post("/{identity}/runs/{run_id}/verify-note/{action_id}")
+def verify_note(identity: str, run_id: str, action_id: str, s: S):
+    """Observe matching local content and reconcile its native receipt; never save a note."""
+    try:
+        return s.investigations.workflows.verify_note(identity, run_id, action_id)
     except InvestigationConflict as exc:
         raise HTTPException(409, str(exc)) from exc

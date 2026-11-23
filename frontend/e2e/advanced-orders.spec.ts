@@ -5,10 +5,10 @@ test.afterEach(async ({ page }) => {
 });
 
 /** Browser-only native-order fixtures: every exchange write is intercepted, never sent to a server. */
-async function tradeFixture(page: Page, original = false) {
+async function tradeFixture(page: Page, original = false, exchange = 'binance-testnet') {
   const connection = {
     id: 'browser-testnet',
-    exchange: 'binance-testnet',
+    exchange,
     label: 'Browser Testnet',
     sandbox: true,
     active: true,
@@ -190,3 +190,26 @@ test('replacement shows both non-atomic outcomes and requires a new typed review
   await expect(modal).not.toBeVisible();
   expect(writes).toHaveLength(2);
 });
+
+for (const venue of ['bitget', 'poloniex', 'upbit', 'gate', 'htx', 'bitmart']) {
+  test(`${venue} market buy reviews an explicit quote budget`, async ({ page }) => {
+    const writes = await tradeFixture(page, false, venue);
+    await page.goto('/trade');
+    const form = page.locator('.exchange-execution-grid');
+    await form
+      .getByRole('combobox', { name: 'Account', exact: true })
+      .selectOption('browser-testnet');
+    await form.getByRole('combobox', { name: 'Order type', exact: true }).selectOption('market');
+    const budget = form.getByLabel('Quote budget · USDT', { exact: true });
+    await expect(budget).toHaveValue('');
+    await budget.fill('25');
+    await form.getByRole('button', { name: 'Review exchange order', exact: true }).click();
+    await expect(form.getByText('Reviewed quote budget', { exact: true })).toBeVisible();
+    expect(writes[0].body).toMatchObject({ quote_budget: 25, side: 'buy', order_type: 'market' });
+    expect(writes[0].body).not.toHaveProperty('quantity');
+    await form.getByRole('combobox', { name: 'Side', exact: true }).selectOption('sell');
+    await expect(form.getByLabel('Base asset quantity', { exact: true })).toHaveValue('0.001');
+    await expect(form.getByText('Reviewed quote budget', { exact: true })).toHaveCount(0);
+    expect(writes).toHaveLength(1);
+  });
+}

@@ -1,3 +1,4 @@
+import type { NativeWorkflow } from './workflow';
 import type { SibylActivity } from '../sibyl-activity';
 
 export type ResearchContext = {
@@ -40,6 +41,8 @@ export type ResearchRun = {
   report?: ResearchReport | null;
   sources?: ResearchSource[];
   activity?: SibylActivity | null;
+  durable?: boolean;
+  workflow?: NativeWorkflow | null;
   error: string | null;
 };
 export type Investigation = {
@@ -52,8 +55,11 @@ export type Investigation = {
 };
 export const running = (run?: ResearchRun) =>
   Boolean(run && ['queued', 'running', 'cancelling'].includes(run.status));
+export const pending = (run?: ResearchRun) =>
+  Boolean(run && ['queued', 'running', 'cancelling', 'input_required'].includes(run.status));
 export const runLabel = (status: string) =>
   ({
+    input_required: 'Your input needed',
     queued: 'Queued',
     running: 'Researching',
     cancelling: 'Stopping',

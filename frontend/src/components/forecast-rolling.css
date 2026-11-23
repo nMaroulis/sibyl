@@ -1,8 +1,8 @@
 .forecast-rolling {
   margin: 20px 0;
-  border: 1px solid #e2e8f3;
+  border: 1px solid light-dark(#e2e8f3, var(--border));
   border-radius: 16px;
-  background: #fff;
+  background: var(--surface);
   overflow: hidden;
 }
 .forecast-rolling > summary {
@@ -12,7 +12,7 @@
   padding: 18px 22px;
   cursor: pointer;
   list-style: none;
-  background: linear-gradient(110deg, #f5f8ff, #fff 70%);
+  background: linear-gradient(110deg, light-dark(#f5f8ff, var(--dark-blue)), var(--surface) 70%);
 }
 .forecast-rolling > summary div {
   display: grid;

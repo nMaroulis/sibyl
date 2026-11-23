@@ -72,7 +72,9 @@ def analyze(histories, weights):
     daily_vol = math.sqrt(variance)
     standalone = np.sqrt(np.maximum(0, np.diag(covariance)))
     quantile = float(np.quantile(basket, 0.05, method="linear"))
-    tail = basket[basket <= quantile]
+    tail_mask = basket <= quantile
+    tail = basket[tail_mask]
+    tail_contributions = -returns[tail_mask].mean(axis=0) * w * 100
     with np.errstate(over="ignore", invalid="ignore"):
         equity = np.cumprod(np.r_[1, 1 + basket])
     if not np.isfinite(equity).all() or (equity <= 0).any():
@@ -105,6 +107,7 @@ def analyze(histories, weights):
                 "asset": asset,
                 "weight_pct": weights[asset] * 100,
                 "annualized_volatility_pct": float(standalone[i]) * math.sqrt(365) * 100,
+                "tail_loss_contribution_pp": float(tail_contributions[i]),
                 "variance_contribution_pct": float(contributions[i]) if contributions is not None else None,
             }
             for i, asset in enumerate(assets)
@@ -115,11 +118,12 @@ def analyze(histories, weights):
             {"timestamp": iso(stamp), "return_pct": float(value) * 100, "index": float(level) * 100}
             for stamp, value, level in zip(times[1:], basket, equity[1:], strict=True)
         ],
-        "method": "current-weight-daily-basket-v1",
+        "method": "current-weight-daily-basket-v2",
         "assumptions": [
             "Current selected holding values determine fixed weights, hypothetically rebalanced daily with no fees/slippage. This is not the account's historical return or a suggested allocation.",
             "All assets and conversion legs use the same exact-source, most recent common consecutive daily suffix. Missing days are never bridged or forward filled; USDT itself is the denomination identity, other currencies require observed rates.",
             "Covariance uses sample daily simple returns (ddof=1); annualized volatility uses sqrt(365), not a future volatility forecast. Variance contributions can be negative for offsets; constant-series correlations and zero-risk ratios stay undefined.",
+            "Tail-loss attribution averages each weighted asset return on the same basket-tail days. Signed percentage-point contributions sum to expected shortfall. An asset gain offsets the sample loss.",
             "Historical 95% VaR is minus the empirical 5th return percentile (linear interpolation). Expected shortfall is minus the mean of observed returns at or below it, including ties. Negative losses indicate gains in that historical tail. These are not calibrated probabilities or maximum-loss guarantees; small samples and changing correlations limit interpretation.",
         ],
     }

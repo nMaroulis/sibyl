@@ -16,6 +16,7 @@ import { useResource } from '../lib/hooks';
 import type { AgentContext } from '../lib/types';
 import { AgentButton } from './agents';
 import { ExchangeMark } from './exchange-mark';
+import { TransferGroups } from './transfer-groups';
 import { TransferFeeAllocation } from './transfer-fee-allocation';
 import type { FeeAllocationPlan, FeeReview } from './transfer-fee-allocation';
 import { Badge, Empty, ErrorState, Loading, Modal, Panel, PanelTitle } from './ui';
@@ -420,6 +421,16 @@ export function TransferReconciliation({
             )}
           </Panel>
         </>
+      )}
+      {!example && (
+        <TransferGroups
+          key={`${account}:${asset}:${environment}:${removed}`}
+          active={active}
+          account={account}
+          asset={asset}
+          environment={environment}
+          includeRemoved={removed}
+        />
       )}
       {review?.kind === 'manual' && (
         <ManualPair

@@ -22,8 +22,15 @@ MESSAGES = {
     "incomplete": "The lookup reached its page budget. No ID was attached; inspect the venue before creating another order.",
     "mismatch": "Returned order evidence does not match the reviewed submission. No ID was attached; inspect the venue.",
     "error": "Lookup is temporarily unavailable. Retained evidence is preserved; no order was resubmitted.",
-    "unsupported": "Client-ID lookup is unavailable for this client. Inspect the venue using the saved client order ID.",
+    "unsupported": "Client-ID lookup is unavailable for this order. Inspect the venue using the saved client order ID.",
 }
+
+
+def recovery_supported(intent: dict) -> bool:
+    """Advertise only the reviewed lookup for this provider and order type."""
+    if intent["exchange"] == "bitstamp":
+        return intent["request"].get("order_type", "market") in {"limit", "market"}
+    return intent["exchange"] in RECOVERY_PROVIDERS
 
 
 def window(intent: dict) -> tuple[int, int]:
@@ -58,9 +65,15 @@ def validate_candidate(intent: dict, order: dict) -> None:
     ):
         if order.get(key) != expected:
             raise ValueError("Recovery identity or order type differs.")
-    amount = number(order.get("amount"))
-    if amount is None or Decimal(str(amount)) != Decimal(str(request["quantity"])):
-        raise ValueError("Recovery quantity differs.")
+    budget = request.get("quote_budget")
+    if budget is not None:
+        original = number(order.get("quote_budget"))
+        if original is None or Decimal(str(original)) != Decimal(str(budget)):
+            raise ValueError("Recovery quote budget differs.")
+    else:
+        amount = number(order.get("amount"))
+        if amount is None or Decimal(str(amount)) != Decimal(str(request["quantity"])):
+            raise ValueError("Recovery quantity differs.")
     if request.get("order_type", "market") != "market":
         if order.get("timeInForce") not in {None, "GTC"}:
             raise ValueError("Recovery time in force differs.")
@@ -107,7 +120,7 @@ class OrderRecovery:
     def summary(self, db, intent: dict) -> dict:
         """Expose safe progress only; GET never starts a lookup or returns native cursor tokens."""
         job = self.read(db, intent["id"]) or {}
-        supported = intent["exchange"] in RECOVERY_PROVIDERS
+        supported = recovery_supported(intent)
         eligible = intent["status"] in ELIGIBLE and not intent.get("exchange_order_id")
         state = job.get(
             "state", "available" if eligible and supported else "unsupported" if eligible else "not_needed"
@@ -181,8 +194,8 @@ class OrderRecovery:
             if manual:
                 job["failures"] = 0
             try:
-                if intent["exchange"] not in RECOVERY_PROVIDERS:
-                    raise ccxt.NotSupported("Unreviewed recovery provider.")
+                if not recovery_supported(intent):
+                    raise ccxt.NotSupported("Unreviewed recovery provider or order type.")
                 connection = self.trading._connection(intent["request"]["connection_id"], allow_demo=True)
                 if connection.exchange != intent["exchange"] or connection.sandbox != intent["sandbox"]:
                     raise ValueError("Account environment differs.")

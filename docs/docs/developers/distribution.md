@@ -97,7 +97,7 @@ python scripts/distribution/release.py version
 3. Confirm **Test and build release packages** and each **Install and launch on …** job pass. They exercise the wheel on Linux, Windows, Apple Silicon and Intel Macs.
 4. Create and publish a GitHub Release from that tested commit, using `v` followed by the declared version. The release event reruns the checks and attaches the resulting packages after they pass.
 
-No additional repository, PyPI account or registry setup is needed. GitHub's built-in token is used only by the upload job. Existing release assets are not overwritten automatically.
+No additional repository, PyPI account or registry setup is needed. GitHub’s built-in credentials are scoped to provenance and release upload. Existing release assets are not overwritten automatically.
 
 The release contains:
 
@@ -107,16 +107,30 @@ The release contains:
 
 Users can install the wheel URL or downloaded file with uv or pipx. A plain wheel installs core dependencies; users choose SDK extras when needed. The workflow does not publish a package under the `sibyl` name on PyPI.
 
+The release build records GitHub artifact provenance for the wheel, source archive and locked runtime requirements. Verify a downloaded wheel with `gh attestation verify ./sibyl-<version>-py3-none-any.whl --repo nMaroulis/sibyl` after a release is published. Manual candidates and pull requests do not create attestations. [GitHub artifact provenance](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations).
+
 ## What CI verifies
 
 The workflow runs backend tests/lint, builds React, packages and inspects the wheel, then installs it on each target OS. The smoke script starts the installed package outside the checkout with an isolated empty workspace and offline source preferences. It checks command version, readiness, dashboard assets, deep links, API 404 boundaries, database/vault creation and no activated accounts. It never opens a developer's actual workspace.
 
 Manual runs and relevant pull requests produce reviewable artifacts. A published GitHub Release triggers the upload after those same checks. Homebrew, Docker runtime tests and container registries do not gate Python-package publication.
 
+## Independent readiness check
+
+`sibyl probe --url http://127.0.0.1:8000` checks the backend from a separate process without starting it or opening a workspace. For a remote deployment, supply its HTTPS origin. `--expect-version 2.4.0` can verify an upgrade, while `--timeout` sets a bounded network timeout. The command prints one JSON observation and exits nonzero on failure. Add `--watch` for a continuously running monitor that prints a timestamped JSON line on state changes. Run it from a separate host to observe network or host loss. This checks process readiness; worker progress stays in Workspace diagnostics.
+
+### External watcher notifications
+
+Set `SIBYL_PROBE_WEBHOOK` to an HTTPS receiver in the independent watcher process and optionally set `SIBYL_PROBE_WEBHOOK_TOKEN` for its bearer authorization. Run `sibyl probe --url https://sibyl.example --watch --notify-webhook`. The watcher sends an outage event after two consecutive unsuccessful probes and a recovery event on the next healthy result. Set `--failure-threshold` to adjust this. The receiver gets an event ID, service, status and UTC observation time. Delivery receipts go to standard error. This process sends once per transition and reports an unconfirmed outcome after a timeout.
+
+### OpenTelemetry
+
+The native OpenTelemetry API creates content-free API and readiness spans. The independent probe propagates W3C trace context and the backend continues that context. Telemetry export requires a configured OpenTelemetry SDK and exporter. For example, a deployment with the Python distro and OTLP exporter can run `opentelemetry-instrument --traces_exporter otlp --metrics_exporter none --logs_exporter none sibyl` and launch the independent probe through the same wrapper. Configure the collector endpoint using the SDK’s environment variables. Sibyl’s manual spans omit URLs, request bodies, baggage, error text and headers. Configure any separate auto-instrumentation to meet your deployment’s data policy. [OpenTelemetry Python configuration](https://opentelemetry.io/docs/zero-code/python/configuration/).
+
 ## Optional future delivery methods
 
 Homebrew can be added later as a small recipe pointing at published packages. That recipe can live in this repository; a separate conventional tap is an optional organizational choice. No Homebrew install command is currently advertised.
 
-Prebuilt container images, PyPI publishing, optional background-service setup and signed desktop installers also remain future work. Local Docker builds continue through the existing `docker-compose.yaml`. Track these separately in the [pending checklist](backend-roadmap.md), rather than making them prerequisites for the first packaged release.
+Native user-login service setup is available through the [service CLI](../guides/background-service.md). Prebuilt container images, PyPI publishing and signed desktop installers remain future work. Local Docker builds continue through the existing `docker-compose.yaml`. Track these separately in the [pending checklist](backend-roadmap.md), rather than making them prerequisites for the first packaged release.
 
 Installed-package smoke checks also import/search an isolated research document, inspect worker health, and create/authenticate/restore an encrypted test archive. Recovered accounts remain inactive. These checks run outside the checkout with no user credentials.

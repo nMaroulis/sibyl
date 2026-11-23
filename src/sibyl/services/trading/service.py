@@ -133,12 +133,21 @@ class ExchangeTrading:
         return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def recover(self, intent_id: str) -> dict:
-        """Read one client-ID lookup page, then check status/fills only after identity is confirmed."""
-        intent = self.recovery.check(intent_id, manual=True)
-        if intent.get("exchange_order_id"):
-            return self.refresh(intent_id)
-        detail = self.reconciliation.detail(intent_id)
-        return {**detail["order"], "reconciliation": detail["reconciliation"]}
+        """Read one client-ID page and check fills after adopting its native observation."""
+        with self.lifecycle.lock(intent_id):
+            with self.store.db() as db:
+                existing = self.lifecycle.read(db, intent_id)
+            if existing.get("exchange_order_id"):
+                return self.refresh(intent_id)
+            intent = self.recovery.check(intent_id, manual=True)
+            if intent.get("exchange_order_id") and intent["exchange"] == "demo":
+                return self.refresh(intent_id)
+            detail = (
+                self.reconciliation.sync(intent_id, manual=True)
+                if intent.get("exchange_order_id")
+                else self.reconciliation.detail(intent_id)
+            )
+            return {**detail["order"], "reconciliation": detail["reconciliation"]}
 
     def preview(
         self,
@@ -165,7 +174,22 @@ class ExchangeTrading:
             self._enabled()
         if not connection.active:
             raise ValueError("Activate this exchange account in Settings before reviewing an order.")
-        if not (demo or exchange_spec(connection.exchange).supports_order(request.order_type)):
+        spec = exchange_spec(connection.exchange)
+        budget = request.quote_budget
+        if budget is not None and (not spec.market_buy_budget or strategy_job_id is not None):
+            raise ValueError("Quote-budget market buys are unavailable in this order workflow.")
+        if (
+            budget is None
+            and spec.market_buy_budget
+            and (request.side, request.order_type) == ("buy", "market")
+        ):
+            raise ValueError(f"{spec.name} market buys require a quote-currency budget.")
+        terms = request.model_dump(exclude={"quote_budget"} if budget is None else None)
+        if not (demo or spec.supports_order(request.order_type, request.side)):
+            if request.order_type == "market" and spec.market_sell_only:
+                raise ValueError(
+                    f"{spec.name} market buys require a quote-currency budget. Choose a GTC limit buy."
+                )
             raise ValueError(
                 "Manual exchange orders are not enabled for this provider. Read access is available."
             )
@@ -175,7 +199,7 @@ class ExchangeTrading:
             ).fetchone()
         if previous:
             intent = json.loads(previous[0])
-            if intent["request"] != request.model_dump():
+            if intent["request"] != terms:
                 raise ValueError("This idempotency key belongs to a different exchange order.")
             if strategy_job_id is not None and (
                 intent.get("strategy_job_id"),
@@ -192,11 +216,21 @@ class ExchangeTrading:
             market = client.market(request.symbol)
             if not market.get("spot", False) or market.get("active") is False:
                 raise ValueError("Choose an active spot market.")
-            precise = client.amount_to_precision(request.symbol, request.quantity)
-            if Decimal(precise) <= 0 or Decimal(precise) != Decimal(str(request.quantity)):
-                raise ValueError(
-                    f"Quantity exceeds market precision. Use {precise} or another valid quantity."
-                )
+            market_order_limits = (
+                getattr(client, "market_order_limits", None) if request.order_type == "market" else None
+            )
+            # A provider's market-specific rules include its quantity precision.
+            if budget is not None:
+                limits_by_field = client.market_buy_limits(request.symbol, budget)
+            elif market_order_limits is not None:
+                limits_by_field = market_order_limits(request.symbol, request.side, request.quantity)
+            else:
+                precise = client.amount_to_precision(request.symbol, request.quantity)
+                if Decimal(precise) <= 0 or Decimal(precise) != Decimal(str(request.quantity)):
+                    raise ValueError(
+                        f"Quantity exceeds market precision. Use {precise} or another valid quantity."
+                    )
+                limits_by_field = market.get("limits") or {}
             if request.order_type != "market":
                 price = request.limit_price
                 precise_price = client.price_to_precision(request.symbol, price)
@@ -209,14 +243,16 @@ class ExchangeTrading:
                 price = ticker.get("ask" if request.side == "buy" else "bid") or ticker.get("last")
             if not price or not math.isfinite(price) or price <= 0:
                 raise ValueError("No executable reference price is available.")
-            notional = request.quantity * price
+            notional = budget if budget is not None else request.quantity * price
             if not math.isfinite(notional):
                 raise ValueError("Order notional must be finite.")
-            fields = [("amount", request.quantity), ("cost", notional)]
+            fields = [("cost", notional)]
+            if budget is None:
+                fields.insert(0, ("amount", request.quantity))
             if request.order_type != "market":
                 fields.append(("price", price))
             for field, value in fields:
-                limits = (market.get("limits") or {}).get(field) or {}
+                limits = limits_by_field.get(field) or {}
                 if limits.get("min") is not None and value < limits["min"]:
                     raise ValueError(f"Order is below the exchange minimum {field} of {limits['min']}.")
                 if limits.get("max") is not None and value > limits["max"]:
@@ -250,7 +286,7 @@ class ExchangeTrading:
         now = datetime.now(UTC)
         intent = {
             "id": uuid4().hex,
-            "request": request.model_dump(),
+            "request": terms,
             "status": "preview",
             "account": connection.label,
             "exchange": connection.exchange,
@@ -284,6 +320,15 @@ class ExchangeTrading:
             )
         try:
             with self.store.db() as db:
+                db.execute("BEGIN IMMEDIATE")
+                collision = db.execute(
+                    "SELECT 1 FROM exchange_orders WHERE json_extract(payload,'$.request.connection_id')=? AND json_extract(payload,'$.client_order_id')=?",
+                    (request.connection_id, client_order_id),
+                ).fetchone()
+                if collision:
+                    raise ValueError(
+                        "A native client order ID collision was detected before submission. Prepare a new review."
+                    )
                 db.execute(
                     "INSERT INTO exchange_orders VALUES (?, ?, ?)",
                     (intent["id"], request.idempotency_key, json.dumps(intent, allow_nan=False)),
@@ -423,6 +468,10 @@ class ExchangeTrading:
                     if replacement.get("new_result") != "SUCCESS":
                         raise ValueError("Replacement outcome needs native inspection.")
                     result = replacement["order"]
+                elif request.quote_budget is not None:
+                    result = client.create_market_buy(
+                        request.symbol, request.quote_budget, intent["client_order_id"]
+                    )
                 else:
                     result = client.create_order(
                         request.symbol,

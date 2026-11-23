@@ -13,7 +13,15 @@ from pydantic import Field, field_validator
 
 from sibyl.alerts.orders.events import order_changed
 from sibyl.exchanges.base import number
-from sibyl.exchanges.order_discovery import DAY_MS, DISCOVERY_PROVIDERS, OrderDiscoveryPage
+from sibyl.exchanges.order_discovery import (
+    DAY_MS,
+    DISCOVERY_HISTORY_PAIRS,
+    DISCOVERY_NOTES,
+    DISCOVERY_OPEN_ONLY,
+    DISCOVERY_OPEN_PAIRS,
+    DISCOVERY_PROVIDERS,
+    OrderDiscoveryPage,
+)
 from sibyl.market_data.control import ProviderDeferred
 from sibyl.models import OrderRequest, Request
 from sibyl.services.accounts.ledger import now_iso
@@ -26,12 +34,12 @@ class OrderDiscoveryRequest(Request):
 
     account_id: str = Field(default="", max_length=100)
     symbols: list[str] = Field(default_factory=list, max_length=12)
-    days: int = Field(default=1, ge=1, le=7)
+    days: int = Field(default=1, ge=1, le=30)
 
     @field_validator("symbols")
     @classmethod
     def valid_symbols(cls, values):
-        """Binance history uses explicit spot markets; other providers scan account-level pages."""
+        """Normalize the explicit markets required by selected history providers."""
         return list(dict.fromkeys(OrderRequest.valid_symbol(value) for value in values))
 
 
@@ -62,6 +70,8 @@ def normalized_order(row: dict) -> dict:
         if row.get(key) is not None and (value is None or value < 0):
             raise ValueError("Invalid native order values.")
         result[key] = value if key not in {"amount", "price", "average", "timestamp"} or value else None
+    if (budget := number(row.get("quote_budget"))) is not None and budget > 0:
+        result["quote_budget"] = budget
     if result["timestamp"] is not None and result["timestamp"] > time.time() * 1000 + 300_000:
         raise ValueError("Invalid native creation time.")
     amount, filled, remaining = (result[key] for key in ("amount", "filled", "remaining"))
@@ -133,6 +143,14 @@ class OrderDiscovery:
             complete=False,
         )
 
+    @staticmethod
+    def recent_enabled(job: dict) -> bool:
+        """Determine coverage from the stream contract and the saved pair selection."""
+        provider = job["exchange"]
+        return provider not in DISCOVERY_OPEN_ONLY and (
+            provider not in DISCOVERY_HISTORY_PAIRS or bool(job["symbols"])
+        )
+
     def snapshot(self):
         """Return safe local progress/capabilities; no credentials, native tokens or network reads."""
         with self.store.db() as db:
@@ -152,8 +170,11 @@ class OrderDiscovery:
                     **connection.model_dump(mode="json"),
                     "environment": environment(connection),
                     "supported": connection.exchange in DISCOVERY_PROVIDERS,
-                    "history_requires_symbols": connection.exchange
-                    in {"binance", "binanceus", "binance-testnet"},
+                    "coverage_note": DISCOVERY_NOTES.get(connection.exchange),
+                    "open_requires_symbols": connection.exchange in DISCOVERY_OPEN_PAIRS,
+                    "history_requires_symbols": connection.exchange in DISCOVERY_HISTORY_PAIRS,
+                    "history_supported": connection.exchange in DISCOVERY_PROVIDERS
+                    and connection.exchange not in DISCOVERY_OPEN_ONLY,
                 }
                 for connection in self.store.connections()
             ],
@@ -161,6 +182,9 @@ class OrderDiscovery:
                 {
                     **{key: value for key, value in job.items() if key not in private},
                     "retained_orders": counts.get(job["account_id"], 0),
+                    "recent_enabled": self.recent_enabled(job),
+                    "open_requires_symbols": job["exchange"] in DISCOVERY_OPEN_PAIRS,
+                    "history_requires_symbols": job["exchange"] in DISCOVERY_HISTORY_PAIRS,
                 }
                 for job in jobs
             ],
@@ -179,6 +203,10 @@ class OrderDiscovery:
         accounts = [row for row in accounts if row.active and row.exchange in DISCOVERY_PROVIDERS]
         if not accounts or len(accounts) > 20:
             raise ValueError("Choose up to twenty active accounts with reviewed order discovery.")
+        if body.days > 7 and any(row.exchange != "upbit" for row in accounts):
+            raise ValueError("Choose only Upbit Korea accounts to scan more than seven days.")
+        if not body.symbols and any(row.exchange in DISCOVERY_OPEN_PAIRS for row in accounts):
+            raise ValueError("Choose up to twelve exact pairs for Phemex open and recent orders.")
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             for connection in accounts:
@@ -286,6 +314,7 @@ class OrderDiscovery:
                 "symbol": order["symbol"],
                 "side": order["side"],
                 "quantity": order["amount"],
+                **({"quote_budget": order["quote_budget"]} if "quote_budget" in order else {}),
                 "order_type": order["type"],
                 "limit_price": order["price"] if order["type"] == "limit" else None,
             },
@@ -368,7 +397,7 @@ class OrderDiscovery:
                 next_attempt=time.time() + 1,
             )
             if page.complete:
-                if job["stream"] == "open":
+                if job["stream"] == "open" and self.recent_enabled(job):
                     current.update(stream="recent", cursor={}, seen=[])
                 else:
                     current.update(complete=True, completed_at=now_iso(), next_attempt=time.time() + 300)
@@ -482,7 +511,7 @@ class OrderDiscovery:
                         )
                     elif isinstance(error, ccxt.BadSymbol):
                         current["error"] = (
-                            "A selected Binance history pair is unavailable. Choose exact spot pairs supported by this account's environment."
+                            "A selected history pair is unavailable. Choose exact spot pairs supported by this account's environment."
                         )
             self.write(db, current)
 

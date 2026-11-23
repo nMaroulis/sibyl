@@ -32,7 +32,7 @@ upper(h)    = P × exp(μ × h + 1.96 × σ × sqrt(h))
 
 The interface shows 7, 14, or 30 days; the API accepts 1–30. The band is a theoretical approximate 95% model interval under constant drift/volatility assumptions. It has not been empirically calibrated. The central curve is a log-return baseline, not an arithmetic expected-price estimate or a trained ML forecast.
 
-The separate **Trained models** tab fits daily autoregressive ridge models, with saved input, numbered versions, chronological held-out evaluation and empirical calibration. See [Trained forecasts with Chronos](forecasting.md). Neural/ARIMA and other model families remain pending.
+The separate **Trained models** tab fits daily ridge, fixed-scale Huber, native nonseasonal ARIMA and small neural models, with saved input, numbered versions, chronological held-out evaluation and empirical calibration. See [Trained forecasts with Chronos](forecasting.md). Additional neural/model families, seasonal/exogenous variants and larger real-market studies remain pending.
 
 ## Wiki: curated education
 
@@ -60,7 +60,11 @@ Sources: [CoinPaprika API](https://coinpaprika.com/api), [Wikipedia text extract
 
 The Block explorer tab supports explicit public mainnet transaction/address lookup, independent of account activation. Inspect confirmations, satoshi fees, sat/vB, paged inputs/outputs, confirmed address totals, pending changes and paginated activity. Smaller Demo links use clearly labeled synthetic backend examples without changing settings. Ask Explorer reads the selected reference through native ProtoLink tools. See the [Bitcoin explorer guide](bitcoin-explorer.md) for units, source privacy, exports and limits.
 
-Recent block summaries remain below the lookup. In live mode they come from mempool.space; the legacy global Demo research mode supplies labeled sample blocks. Choose 10, 25, 50 or 100 blocks, inspect the transaction-count chart, mean size/count and observed interval, or export CSV. The public lookup has its own explicit mainnet/Demo boundary. Additional chains, wallet aggregation and complete historical network datasets remain pending.
+Recent block summaries remain below the lookup. In live mode they come from mempool.space; the legacy global Demo research mode supplies labeled sample blocks. Choose 10, 25, 50 or 100 blocks, inspect the transaction-count chart, mean size/count and observed interval, or export CSV. The public lookup has its own explicit mainnet/Demo boundary. Wallet aggregation, complete historical network datasets and independent chain validation remain pending.
+
+### Ethereum mainnet
+
+Select **Ethereum** in Block explorer. Look up a block height or hash, or choose **Finalized head**. Transaction pages advance using the displayed block hash. Choose **Read receipt** for a transaction, or look up its hash directly. Values and execution gas costs are exact wei. Separate blob fees are outside the execution cost. PublicNode supplies the block and receipt observations, including reported finalized head status. [Ethereum JSON-RPC](https://ethereum.org/developers/docs/apis/json-rpc/) · [PublicNode Ethereum gateway](https://ethereum.publicnode.com/).
 
 ## Equities
 
@@ -68,8 +72,15 @@ The Equities tab has AAPL, MSFT, NVDA, and COIN fixtures in demo mode. In live m
 
 The view includes observed period return, sample high/low, annualized log-return volatility (252 sessions), and maximum drawdown. Available company profile fields include sector, industry, country, description, market capitalization, and trailing P/E. Fundamentals can fail independently of price history; the UI displays that limitation. Demo profiles are illustrative.
 
-Equity Analyst uses the selected ticker. Senator portfolio archives and disclosure filters are marked **Coming soon**. My research supports document ingestion and optional local semantic/hybrid retrieval now; cited web search remains planned.
+Equity Analyst uses the selected ticker. Official SEC filing filters and historical indices are available below the quote. Senator portfolio archives remain **Coming soon**. My research supports document ingestion and optional local semantic/hybrid retrieval now; cited web search remains planned.
 
 ## Your own sources
 
 **Research → My research** imports text PDFs, Markdown and text files, searches exact passages alongside retained news, and lets Wiki/Reporter retrieve attributable evidence through native tools. See [Your research library](research-library.md) for source privacy, citations, reindexing and deletion.
+
+
+## Find SEC filings
+
+Open **Research → Equities → SEC filings** and load a ticker or Central Index Key (CIK). Choose recent filings or a historical range, and filter by a form such as 10-K or 8-K. Each accession opens its official SEC index. The filing lookup is independent of the equity quote source and Demo prices.
+
+Set `SIBYL_SEC_CONTACT` to the workspace operator’s email in the Python backend environment and restart Sibyl to enable it. The backend includes that address in requests to the SEC under its fair-access policy. Equity Analyst can cite the latest loaded index while it remains in the local cache. [SEC EDGAR filing submissions](https://www.sec.gov/search-filings/edgar-application-programming-interfaces).

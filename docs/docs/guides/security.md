@@ -10,6 +10,12 @@ API responses select connection metadata, not secrets. Validation errors strip i
 
 Use read-only keys for portfolio access. Enable trading only for accounts you deliberately use with manual exchange execution. Never enable withdrawals for Sibyl.
 
+## Replacing and rotating keys
+
+To replace an exchange API key, open Settings → Exchanges → Saved accounts → Update keys. Deactivate the connection first, enter replacement credentials for the **same account and wallet**, and confirm the displayed phrase. History and the connection ID stay intact. Check access and explicitly reactivate when ready. Use a new connection for a different exchange account; existing venue orders are not cancelled.
+
+To rotate local encryption, open Settings → Workspace → Credential vault. Review the key ID and type the rotation phrase. Sibyl re-encrypts saved private profiles with a fresh wrapping key and retains recovery material until commit. An interrupted rotation can be completed through the same controls. Provider tokens are unchanged; revoke them at the provider separately when necessary. Existing encrypted backups keep their matching included keys. Review credential-bound funding sync controls after rotation. See [rotation contracts](../developers/credential-rotation.md).
+
 ## API access
 
 The default API listens on loopback. Starting on a non-loopback host requires `SIBYL_API_TOKEN`. Versioned API requests then require a bearer token; the browser can save this token for its session in Settings. Cross-origin requests are restricted to configured origins and the API's own origin.

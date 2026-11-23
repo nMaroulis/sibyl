@@ -40,12 +40,12 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'forecast',
       title: 'More forecasting models and evaluation',
-      text: 'ARIMA, other neural families, automatic recalibration and calibrated drift monitoring. Live prospective outcome tracking is implemented. Versioned ridge and bounded small neural models, chronological and historical rolling evaluation, empirical bands and saved forecasts are available now.',
+      text: 'Additional neural families, exogenous inputs and broader real-market validation. Seven-day and 14-day SARIMA, candidate recalibration and prospective outcome tracking are already available.',
     },
     {
       module: 'knowledge',
       title: 'Deeper research retrieval',
-      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, hosted embedding providers and cited web search. Private document/news ingestion, exact citations and optional local Ollama semantic/hybrid search are available now.',
+      text: 'Broader real-model relevance evaluation, calibrated no-answer thresholds, additional hosted providers and cited web search. Private documents/news, exact citations and optional local Ollama or consented OpenAI, Mistral, Gemini or Voyage AI semantic search are available now.',
     },
     {
       module: 'news',
@@ -55,12 +55,12 @@ export const futureFeatures: { module: string; title: string; text: string; defe
     {
       module: 'stocks',
       title: 'Public portfolio archive',
-      text: 'Senator portfolio aggregation, disclosure filters, and historical allocation views.',
+      text: 'Public-official portfolios and historical allocation views. SEC issuer filings are available in Equities.',
     },
     {
       module: 'explorer',
       title: 'Beyond Bitcoin',
-      text: 'Additional chains, complete historical network datasets and wallet aggregation. Bitcoin transaction/address inspection, paginated activity and source-labeled fee/confirmation evidence are available now.',
+      text: 'More networks, full historical datasets and wallet aggregation. Ethereum blocks and receipts and the Bitcoin inspector are available now.',
     },
     {
       module: 'markets',
@@ -174,8 +174,8 @@ export function Roadmap() {
                       <h2>{area.name}</h2>
                       <Badge
                         tone={
-                          area.status === 'deferred'
-                            ? 'neutral'
+                          area.status === 'complete'
+                            ? 'green'
                             : area.priority === 'next'
                               ? 'purple'
                               : 'neutral'
@@ -187,17 +187,19 @@ export function Roadmap() {
                     <p>
                       <strong>Working today</strong> {area.working}
                     </p>
-                    <details>
-                      <summary>
-                        {area.pending.length} pending workstreams{' '}
-                        {area.priority === 'next' && <span>· Foundations first</span>}
-                      </summary>
-                      <ul>
-                        {area.pending.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </details>
+                    {area.pending.length > 0 && (
+                      <details>
+                        <summary>
+                          {area.pending.length} pending workstreams{' '}
+                          {area.priority === 'next' && <span>· Foundations first</span>}
+                        </summary>
+                        <ul>
+                          {area.pending.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                     {area.note && <p className="footnote">{area.note}</p>}
                   </article>
                 ))}

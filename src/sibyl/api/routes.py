@@ -16,6 +16,7 @@ from sibyl.agents.utils.reporting import run_details
 from sibyl.agents.utils.requests import CancelSibylRequest
 from sibyl.agents.utils.streaming import retained_run, stream_reply
 from sibyl.api.app import Services
+from sibyl.credentials.connections import ConnectionCredentials, ReplaceCredentials
 from sibyl.exchanges.registry import provider_catalog
 from sibyl.market_data.backfills import (
     CandleRange,
@@ -264,6 +265,7 @@ def correlations(
     limit: int = Query(90, ge=30, le=720),
     method: Literal["pearson", "spearman", "distance"] = "pearson",
     transform: Literal["log_returns", "prices", "changes"] = "log_returns",
+    robust: bool = False,
     source: MarketSource | None = None,
 ):
     """Compare up to eight exact provider pairs on aligned closed candles from one feed."""
@@ -281,7 +283,7 @@ def correlations(
         return {
             **s.market.metadata(),
             "timeframe": timeframe,
-            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe]),
+            **correlation(histories, method, transform, seconds=TIMEFRAMES[timeframe], robust=robust),
         }
 
 
@@ -612,6 +614,28 @@ def add_connection(body: ConnectionCreate, s: S):
     return result
 
 
+@router.get("/connections/{connection_id}/credentials/status", tags=["Technician"])
+def saved_credential_status(connection_id: str, s: S, response: Response):
+    """Read only an opaque credential revision and actual replacement dates."""
+    response.headers["Cache-Control"] = "no-store"
+    return ConnectionCredentials(s.store).state(connection_id)
+
+
+@router.put("/connections/{connection_id}/credentials", tags=["Technician"])
+def replace_connection_credentials(connection_id: str, body: ReplaceCredentials, s: S, response: Response):
+    """Replace same-account secrets without deleting history, activating or probing the account."""
+    response.headers["Cache-Control"] = "no-store"
+    result = ConnectionCredentials(s.store).replace(connection_id, body)
+    s.account_sync.pause(connection_id)
+    s.funding_sync.pause(connection_id)
+    with s.store.db() as db:
+        discovery = s.trading.discovery.read(db, connection_id)
+    if discovery:
+        s.trading.discovery.pause(connection_id)
+    s.market.forget(connection_id)
+    return result
+
+
 @router.delete("/connections/{connection_id}", status_code=204, tags=["Technician"])
 def delete_connection(connection_id: str, s: S):
     """Disconnect a saved account and clear its cached decrypted client."""
@@ -858,6 +882,11 @@ def strategy_events(
         "ORDER_PLANNED",
         "ORDER_SUBMITTED",
         "FILL_CORRECTION",
+        "FEE_VALUATION",
+        "OWNERSHIP",
+        "OWNERSHIP_REPAIR",
+        "ARCHIVE",
+        "RESTORE",
         "STOP_CANCEL",
         "CANCEL_QUEUED",
         "CANCEL_BLOCKED",
@@ -865,6 +894,7 @@ def strategy_events(
         "CANCEL_UNKNOWN",
         "CANCEL_RECONCILING",
         "CANCEL_RECONCILED",
+        "LIQUIDATION",
         "CLOSE_APPROVED",
         "CLOSE_SUBMITTED",
         "CLOSE_UNKNOWN",
@@ -899,6 +929,11 @@ def strategy_events_export(
         "ORDER_PLANNED",
         "ORDER_SUBMITTED",
         "FILL_CORRECTION",
+        "FEE_VALUATION",
+        "OWNERSHIP",
+        "OWNERSHIP_REPAIR",
+        "ARCHIVE",
+        "RESTORE",
         "STOP_CANCEL",
         "CANCEL_QUEUED",
         "CANCEL_BLOCKED",
@@ -906,6 +941,7 @@ def strategy_events_export(
         "CANCEL_UNKNOWN",
         "CANCEL_RECONCILING",
         "CANCEL_RECONCILED",
+        "LIQUIDATION",
         "CLOSE_APPROVED",
         "CLOSE_SUBMITTED",
         "CLOSE_UNKNOWN",
@@ -1010,10 +1046,46 @@ def crypto_profile(asset_id: str, s: S):
     return s.research.crypto.profile(asset_id)
 
 
+@router.get("/ethereum/blocks/{reference}", tags=["Explorer"])
+def ethereum_block(
+    reference: str,
+    s: S,
+    offset: int = Query(default=0, ge=0, le=200000),
+    limit: int = Query(default=25, ge=1, le=50),
+):
+    """Read one Ethereum mainnet block and an ordered page of its transaction hashes."""
+    return s.research.ethereum.block(reference, offset=offset, limit=limit)
+
+
+@router.get("/ethereum/transactions/{transaction_hash}", tags=["Explorer"])
+def ethereum_transaction(transaction_hash: str, s: S):
+    """Read one Ethereum mainnet transaction and the matching receipt when available."""
+    return s.research.ethereum.transaction(transaction_hash)
+
+
 @router.get("/blocks", tags=["Explorer"])
 def blocks(s: S, count: int = Query(10, ge=1, le=100)):
     """Read recent Bitcoin block summaries."""
     return s.research.blocks(count)
+
+
+@router.get("/equities/disclosures/status", tags=["Stocks"])
+def disclosure_status(s: S):
+    """Read EDGAR setup without contacting its servers."""
+    return s.research.edgar.status()
+
+
+@router.get("/equities/disclosures", tags=["Stocks"])
+def stock_disclosures(
+    s: S,
+    issuer: str = Query(min_length=1, max_length=12),
+    archive: str | None = Query(default=None, max_length=64),
+    form: str | None = Query(default=None, max_length=24),
+    offset: int = Query(default=0, ge=0, le=15000),
+    limit: int = Query(default=25, ge=1, le=50),
+):
+    """Read a bounded page of one company's selected official SEC index."""
+    return s.research.edgar.page(issuer, archive, form, offset=offset, limit=limit)
 
 
 @router.get("/stocks/{symbol}", tags=["Stocks"])
@@ -1114,8 +1186,12 @@ async def ask_sibyl(body: SibylRequest, s: S):
 
 @router.get("/settings/messaging", tags=["Settings"])
 def messaging_settings(s: S):
-    """Describe unavailable channels and their future setup requirements."""
-    return s.messaging.public()
+    """Describe actual channel support and credential-free private connection state."""
+    result = s.messaging.public()
+    for channel in result["channels"]:
+        if channel["id"] in {"discord", "slack", "signal", "whatsapp", "email"}:
+            channel.update(s.private_channels.public(channel["id"]))
+    return result
 
 
 @router.post("/sibyl/ask/stream", tags=["Sibyl"])

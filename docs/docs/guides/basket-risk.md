@@ -13,6 +13,7 @@ In **Account**, expand **Historical basket risk** to study a basket with today's
 - **Annualized volatility** is the sample standard deviation of daily basket returns times √365. It describes this sample; it is not a future volatility forecast.
 - **Historical daily 95% VaR** is minus the empirical fifth-percentile daily return, using linear interpolation. **Tail mean loss** is minus the average of observed returns at or below that percentile, including ties. A negative loss means a gain in that historical tail; neither number guarantees a maximum loss or a future probability. The actual tail sample size is shown.
 - **Correlation** compares contemporaneous daily simple returns. Constant series have undefined correlations, including their diagonal. No significance or causal claim is made.
+- **Tail loss contribution** is each weighted asset’s average loss on the basket’s own tail days, in percentage points. These contributions add up to tail mean loss. An asset gain can offset losses elsewhere in that sample. Older saved studies show an empty contribution column.
 - **Share of variance** measures each weighted asset's contribution to sample basket variance. An offsetting asset may contribute negatively. Zero-risk variance shares and diversification ratios remain undefined.
 - **Hypothetical return and maximum drawdown** come from reapplying today's normalized weights every day, without fees or slippage. They are not the account's actual historical holdings, cash flows or execution performance.
 

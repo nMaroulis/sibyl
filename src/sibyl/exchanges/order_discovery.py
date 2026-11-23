@@ -4,8 +4,30 @@ from dataclasses import dataclass
 
 import ccxt
 
+from sibyl.exchanges import (
+    bitfinex_orders,
+    bitget_orders,
+    bitmart_activity,
+    bitstamp_orders,
+    coinex_activity,
+    cryptocom_orders,
+    gate_orders,
+    htx_orders,
+    kucoin_orders,
+    mexc_activity,
+    phemex_activity,
+    poloniex_orders,
+    upbit_orders,
+)
 from sibyl.exchanges.base import number
+from sibyl.exchanges.bybit_orders import (
+    OPEN,
+    TERMINAL,
+    read_spot_orders,
+    regular_spot_order,
+)
 from sibyl.exchanges.history import _token
+from sibyl.exchanges.venue_history import identity
 
 DISCOVERY_PROVIDERS = {
     "binance",
@@ -14,9 +36,55 @@ DISCOVERY_PROVIDERS = {
     "coinbase",
     "coinbase-sandbox",
     "kraken",
+    "okx",
+    "bybit",
+    "kucoin",
+    "bitstamp",
+    "gemini",
+    "gate",
+    "bitget",
+    "mexc",
+    "htx",
+    "coinex",
+    "bitmart",
+    "bitfinex",
+    "poloniex",
+    "upbit",
+    "phemex",
+    "cryptocom",
     "demo",
 }
 DAY_MS = 86_400_000
+DISCOVERY_OPEN_ONLY = {"bitstamp"}
+DISCOVERY_OPEN_PAIRS = {"phemex"}
+DISCOVERY_HISTORY_PAIRS = {
+    "binance",
+    "binanceus",
+    "binance-testnet",
+    "kucoin",
+    "mexc",
+    "htx",
+    "phemex",
+    "cryptocom",
+}
+DISCOVERY_NOTES = {
+    "cryptocom": "Crypto.com Exchange imports regular cash open orders and selected-pair recent terminal orders. Explicit execution flags exclude margin, liquidation and advanced instructions; missing scope evidence is excluded. Native day ranges split at saturation.",
+    "phemex": "Phemex requires selected pairs for both open and recent spot orders. Native spot endpoints exclude margin and derivatives. Recent pages use frozen creation-time bounds and offset checkpoints.",
+    "bitfinex": "Bitfinex imports ordinary unflagged EXCHANGE LIMIT/MARKET cash orders. Recent history filters creation time within the selected window; native closed history covers up to two weeks. Margin, linked, expiring and flagged orders are excluded.",
+    "upbit": "For Upbit Korea-only sync, choose up to 30 days in native seven-day creation windows. Upbit Korea imports regular open orders and closed orders created within the selected one-to-seven-day window. Reserved orders and regional API variants are excluded. Capped history windows split; saturated timestamp groups need review.",
+    "okx": "OKX retains unfilled cancellations for up to two hours. Recent history uses order creation time.",
+    "bybit": "Bybit UTA covers ordinary cash spot orders. Recent history limits canceled, rejected and deactivated orders to the last 24 hours.",
+    "kucoin": "KuCoin Classic open-order discovery uses Spot API permission. Recent history uses selected pairs, with up to two days for cancellations and seven days for filled orders.",
+    "bitstamp": "Bitstamp discovery covers account-wide open spot limit orders. Individual order and fill checks are available for imported orders.",
+    "gemini": "Gemini imports account-wide open spot limits and a bounded recent closed-order snapshot, including unfilled cancellations. Choose exact pairs for separate history pages if the account snapshot saturates. A full 500-row page reports a coverage limit; master-key subaccounts are excluded.",
+    "gate": "Gate scans open and recently finished cash spot orders. Recent history uses Gate’s finish time.",
+    "bitget": "Bitget discovery covers open and recent ordinary Classic spot orders. API-cancelled orders are retained for up to two hours. Managed subaccount history depends on its binding time.",
+    "poloniex": "Poloniex imports explicitly unborrowed cash spot orders. Recent history uses update time; cancelled orders are archived after seven days and other terminal orders after 90 days. Smart orders are excluded.",
+    "bitmart": "BitMart v4 reads cash spot orders with explicit date bounds and splits capped responses. API-cancelled orders without fills may become unavailable after 20 minutes.",
+    "coinex": "CoinEx imports cash spot orders. Recent discovery scans native finished pages and filters creation time locally. Cancelled orders without fills are not retained by CoinEx.",
+    "htx": "HTX reads the verified spot wallet’s open orders and selected-pair history in 48-hour windows. API-cancelled orders are available for up to two hours.",
+    "mexc": "MEXC reads account-wide open spot orders and up to seven days of history for selected pairs. A capped timestamp or open snapshot reports a coverage limit.",
+}
 
 
 def _binance_order(exchange, row):
@@ -117,6 +185,65 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
             [exchange.parse_order(row) for row in rows], {"after": token}, not rows or not token
         )
 
+    if provider == "okx":
+        return _okx_page(exchange, stream, cursor, start, end)
+
+    if provider == "bybit":
+        return _bybit_page(exchange, stream, cursor, start, end)
+
+    if provider == "kucoin":
+        return _kucoin_page(exchange, stream, cursor, start, end, symbols)
+
+    if provider == "bitstamp" and stream == "open":
+        return _bitstamp_open(exchange)
+
+    if provider == "gemini" and stream == "open":
+        return _gemini_open(exchange)
+
+    if provider == "gate":
+        return _gate_page(exchange, stream, cursor, start, end)
+
+    if provider == "bitget":
+        return OrderDiscoveryPage(
+            *bitget_orders.discover_page(exchange, stream == "recent", cursor, start, end)
+        )
+
+    if provider == "cryptocom":
+        return OrderDiscoveryPage(
+            *cryptocom_orders.discover_page(exchange, stream, cursor, start, end, symbols)
+        )
+
+    if provider == "phemex":
+        return OrderDiscoveryPage(
+            *phemex_activity.discover_page(exchange, stream, cursor, start, end, symbols)
+        )
+
+    if provider == "gemini" and stream == "recent":
+        from sibyl.exchanges.gemini_orders import recent_page
+
+        return OrderDiscoveryPage(*recent_page(exchange, cursor, start, end, symbols))
+
+    if provider == "bitfinex":
+        return OrderDiscoveryPage(*bitfinex_orders.discover_page(exchange, stream, cursor, start, end))
+
+    if provider == "upbit":
+        return OrderDiscoveryPage(*upbit_orders.discover_page(exchange, stream, cursor, start, end))
+
+    if provider == "poloniex":
+        return OrderDiscoveryPage(*poloniex_orders.discover_page(exchange, stream, cursor, start, end))
+
+    if provider == "bitmart":
+        return OrderDiscoveryPage(*bitmart_activity.discover_page(exchange, stream, cursor, start, end))
+
+    if provider == "coinex":
+        return OrderDiscoveryPage(*coinex_activity.discover_page(exchange, stream, cursor, start, end))
+
+    if provider == "htx":
+        return OrderDiscoveryPage(*htx_orders.discover_page(exchange, stream, cursor, start, end, symbols))
+
+    if provider == "mexc":
+        return OrderDiscoveryPage(*mexc_activity.discover_page(exchange, stream, cursor, start, end, symbols))
+
     if provider == "kraken":
         if stream == "open":
             rows = exchange.privatePostOpenOrders({"trades": False})["result"]["open"]
@@ -158,3 +285,172 @@ def discovery_page(exchange, provider, stream, cursor, start, end, symbols) -> O
             len(rows) - len(spot),
         )
     raise ccxt.NotSupported("Account order discovery is not reviewed for this provider.")
+
+
+def _okx_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
+    """Page cash spot orders by exact native ID, including pages with excluded orders."""
+    request = {"instType": "SPOT", "limit": "100"}
+    after = identity(cursor["after"]) if "after" in cursor else None
+    if after is not None:
+        request["after"] = after
+    if stream == "open":
+        result = exchange.privateGetTradeOrdersPending(request)
+        states = {"live", "partially_filled"}
+    else:
+        request.update(begin=str(start), end=str(end - 1))
+        result = exchange.privateGetTradeOrdersHistory(request)
+        states = {"filled", "canceled"}
+    rows = result.get("data") if isinstance(result, dict) and result.get("code") == "0" else None
+    if not isinstance(rows, list) or len(rows) > 100 or any(not isinstance(row, dict) for row in rows):
+        raise ccxt.ExchangeError("Invalid OKX account order page.")
+    ids = [identity(row.get("ordId")) for row in rows]
+    numeric_ids = list(map(int, ids))
+    before = int(after) if after is not None else None
+    if len(set(numeric_ids)) != len(ids) or any(
+        value <= 0 or (before is not None and value >= before) for value in numeric_ids
+    ):
+        raise ccxt.ExchangeError("OKX order IDs did not advance.")
+    selected = []
+    for order_id, row in zip(ids, rows, strict=True):
+        if row.get("instType") != "SPOT" or row.get("tdMode") != "cash":
+            continue
+        if row.get("state") not in states:
+            raise ccxt.ExchangeError("Unexpected OKX order state in the selected stream.")
+        if stream == "recent" and not start <= int(identity(row.get("cTime"))) < end:
+            raise ccxt.ExchangeError("OKX order is outside the selected creation window.")
+        parsed = exchange.parse_order(row)
+        # A triggered child is a regular order. CCXT may prefer its parent algo ID.
+        parsed["id"] = order_id
+        selected.append(parsed)
+    return OrderDiscoveryPage(
+        selected, {"after": min(ids, key=int)} if ids else {}, not rows, len(rows) - len(selected)
+    )
+
+
+def _bybit_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
+    """Use separate open and terminal streams with a fixed creation window for history."""
+    history = stream == "recent"
+    request = {"startTime": start, "endTime": end - 1} if history else {"openOnly": 0}
+    if cursor.get("page"):
+        request["cursor"] = cursor["page"]
+    rows, token = read_spot_orders(exchange, history=history, **request)
+    orders = []
+    states = TERMINAL if history else OPEN
+    for row in rows:
+        if not regular_spot_order(row):
+            continue
+        if row.get("orderStatus") not in states:
+            raise ccxt.ExchangeError("Unexpected Bybit order state in the selected stream.")
+        stamp = number(row.get("createdTime"))
+        if history and (stamp is None or not start <= stamp < end):
+            raise ccxt.ExchangeError("Bybit order is outside the selected creation window.")
+        market_id = row.get("symbol")
+        if not isinstance(market_id, str) or not market_id:
+            raise ccxt.ExchangeError("Missing Bybit spot instrument identity.")
+        market = exchange.safe_market(market_id, marketType="spot")
+        orders.append(exchange.parse_order(row, market))
+    return OrderDiscoveryPage(
+        orders, {"page": token} if token else {}, token is None, len(rows) - len(orders)
+    )
+
+
+def _kucoin_page(exchange, stream, cursor, start, end, symbols) -> OrderDiscoveryPage:
+    """Persist an active-market snapshot, then advance one exact market page per tick."""
+    recent = stream == "recent"
+    if not recent and not cursor:
+        markets, excluded = kucoin_orders.active_markets(exchange)
+        return OrderDiscoveryPage([], {"symbols": markets} if markets else {}, not markets, excluded)
+    markets = symbols if recent else cursor["symbols"]
+    index = cursor.get("market", 0)
+    if index >= len(markets):
+        return OrderDiscoveryPage([], {}, True)
+    orders, next_page, skipped = kucoin_orders.market_orders(
+        exchange, markets[index], recent=recent, cursor=cursor, start=start, end=end
+    )
+    following = {"market": index if next_page else index + 1, **next_page}
+    if not recent:
+        following["symbols"] = markets
+    return OrderDiscoveryPage(orders, following, following["market"] >= len(markets), skipped)
+
+
+def _bitstamp_open(exchange) -> OrderDiscoveryPage:
+    """Read the native account snapshot, retaining observed original size only."""
+    rows = exchange.request("open_orders/", "private", "POST", {}, config={"cost": 1})
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ccxt.ExchangeError("Invalid Bitstamp open-order snapshot.")
+    if len(rows) > 1000:
+        raise ccxt.NotSupported("Bitstamp open-order snapshot exceeds the reviewed budget.")
+    orders = []
+    for row in rows:
+        if not bitstamp_orders.cash_limit(row):
+            continue
+        side = str(row.get("type"))
+        if side not in ("0", "1"):
+            raise ccxt.ExchangeError("Unknown Bitstamp order side.")
+        pair = row.get("market") or row.get("currency_pair")
+        if not isinstance(pair, str) or "/" not in pair:
+            raise ccxt.ExchangeError("Missing Bitstamp spot market.")
+        orders.append(
+            {
+                "id": identity(row.get("id")),
+                "clientOrderId": row.get("client_order_id") or None,
+                "symbol": pair.upper(),
+                "side": "buy" if side == "0" else "sell",
+                "status": "open",
+                "type": "limit",
+                "timestamp": exchange.parse8601(row.get("datetime")),
+                "amount": row.get("amount_at_create"),
+                "price": row.get("price"),
+            }
+        )
+    return OrderDiscoveryPage(orders, {}, True, len(rows) - len(orders))
+
+
+def _gemini_open(exchange) -> OrderDiscoveryPage:
+    """Read the account's open snapshot, retaining only currently supported spot instruments."""
+    rows = exchange.privatePostV1Orders({})
+    if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+        raise ccxt.ExchangeError("Invalid Gemini open-order snapshot.")
+    if len(rows) > 1000:
+        raise ccxt.NotSupported("Gemini open-order snapshot exceeds the reviewed budget.")
+    markets = {
+        market["id"].upper(): market
+        for market in exchange.markets.values()
+        if market.get("spot") and market.get("active") is not False
+    }
+    orders = []
+    for row in rows:
+        instrument = row.get("symbol")
+        if not isinstance(instrument, str) or not instrument:
+            raise ccxt.ExchangeError("Missing Gemini order instrument.")
+        market = markets.get(instrument.upper())
+        if not market or row.get("type") != "exchange limit" or row.get("exchange") != "gemini":
+            continue
+        if row.get("is_live") is not True or row.get("is_cancelled") is not False:
+            raise ccxt.ExchangeError("Unexpected Gemini open-order status.")
+        native_id = identity(row.get("order_id"))
+        parsed = exchange.parse_order(row, market)
+        parsed["id"] = native_id
+        orders.append(parsed)
+    return OrderDiscoveryPage(orders, {}, True, len(rows) - len(orders))
+
+
+def _gate_page(exchange, stream, cursor, start, end) -> OrderDiscoveryPage:
+    """Import exact cash spot records from separate open and finished native streams."""
+    page = cursor.get("page", 1)
+    open_stream = stream == "open"
+    rows = (
+        gate_orders.open_page(exchange, page)
+        if open_stream
+        else gate_orders.finished_page(exchange, page, start, end)
+    )
+    following = gate_orders.next_page(rows, cursor)
+    items = []
+    for row in rows:
+        if not gate_orders.cash_order(row):
+            continue
+        if row.get("status") not in (("open",) if open_stream else ("closed", "cancelled")):
+            raise ccxt.ExchangeError("Unexpected Gate order status in the selected stream.")
+        market = exchange.safe_market(row["currency_pair"], marketType="spot")
+        items.append(exchange.parse_order(row, market))
+    return OrderDiscoveryPage(items, following, not rows, len(rows) - len(items))

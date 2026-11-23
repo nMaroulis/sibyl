@@ -1,43 +1,56 @@
 ---
 title: Alert delivery contracts
-description: Future-only Telegram opt-in, transactional inbox cursors and send authorization.
+description: Six checked private routes, future-only policies, transactional cursors and conservative native outcomes.
 ---
 
 # Alert delivery contracts
 
-`alerts/delivery/` separates external notification selection from the four alert evaluators. Its typed settings, plain-text formatting and `AlertDelivery` coordinator use the existing shared inbox and `messaging/outbound.py` queue. No model, new Telegram library or provider refresh is involved. Trigger evaluators still commit only local evidence.
+`alerts/delivery/` separates external selection from five rule evaluators: price, risk, strategy, connection and order/fill. Evaluators commit local evidence only. `AlertDelivery` admits explicitly selected future notices to the shared `messaging/outbound.py` queue. `messaging/delivery/` resolves the owning Telegram or private-channel native client without an LLM, send tool or new provider library.
 
-## Admission
+## Consent and admission
 
-`alert_delivery_policies` stores one optional policy per saved rule: kind, enabled flag, revision, exact bot/user binding, minimum interval, expiry window, inbox row cursor and last queued time. The table map is fixed to price/risk/strategy/connection rules. API writes compare both the reviewed policy revision and rule revision. Enabling requires an explicit `TelegramTarget` matching the checked profile; saves never call Telegram.
+One optional destination is stored per rule. Settings compare rule/policy revisions and the exact checked native identity. Telegram retains its typed bot/user target for existing clients. Other channels use `PrivateTarget`: channel, connection revision, bot/account ID, allowed recipient and checked native target ID. The server rejects arbitrary or stale destinations; it never probes a provider while saving a policy. A checked paused route can be selected, but notices admitted while paused are skipped.
 
-Every save baselines the cursor at the current global inbox tail. Enabling or resuming cannot send existing notices. A one-second worker admits up to twenty new notices from one policy with pending rows, using a thread so SQLite contention does not block the API event loop. Shutdown drains an admitted transaction before closing messaging. Within one `BEGIN IMMEDIATE` transaction it verifies the current rule revision/state, observation/receipt freshness and cooldown, inserts an idempotent `alert:<notification_id>` outbox record and advances the policy cursor. Rollback leaves neither an orphan send nor a consumed notice. Concurrent consumers cannot insert duplicates; deployment still requires one API worker.
+Every save baselines the cursor at the current inbox tail. Enabling/resuming or changing destinations never forwards existing notices. A bounded one-second worker processes at most twenty notices from one policy. Vault access precedes SQLite write admission consistently with credential rotation, avoiding inverted lock ordering. An immediate SQLite transaction validates event/rule versions, original freshness and cooldown, inserts an idempotent `alert:<notification_id>` delivery and advances the policy cursor. Rollback consumes neither the notice nor its delivery identity. The application remains a single-worker local deployment.
 
-Freshness uses the older of aware `observed_at` and `created_at`; missing, naive or more than sixty seconds future timestamps are rejected. Expiry defaults to ten minutes, configurable 60–3,600 seconds. Cooldown defaults to five minutes, configurable 60–86,400 seconds, measured from queue admission rather than successful HTTP delivery. Suppressed notices receive skipped receipts, not deferred sends. Failed or uncertain attempts cannot generate a later cooldown bypass.
+Freshness uses the older aware observation/receipt time; missing, naive or over-60-second future dates are rejected. Expiry is 60–3,600 seconds (default 600). Cooldown is 60–86,400 seconds (default 300), measured from queue admission. Suppressed events retain skipped receipts rather than deferred messages. A triggered one-time price rule can deliver its own current event. Edits/lifecycle changes invalidate older event revisions; policy changes withdraw only the preceding policy’s unsent parts.
 
-In-app unread state is independent. Policy pause withdraws old queued messages; later enabling starts at a fresh tail. Rule edits/lifecycle actions invalidate older queued event revisions. A one-time price rule in `triggered` state remains eligible for its current notice. Delivery selection continues for future edited rule revisions; the UI discloses that scope.
+## Owned native routing
 
-## Shared transport
+`NotificationOutbox` owns persistence, part ordering, expiry, uncertainty, history and review. `NotificationRoutes` owns checked identity projection, provider text limits and native client selection. The existing Telegram worker processes only Telegram rows; each private worker processes only its own rows under its existing client lock. A route cannot consume another route’s backlog. Conversation replies/accepted questions take priority, and a receive step follows at most four notification steps to prevent steady outbound traffic from starving inbound processing.
 
-`NotificationOutbox.enqueue_message` accepts domain metadata, reviewed binding, expiry and optional caller transaction. The briefing `enqueue` entry point remains a small adapter. Domain authorizers are registered under `briefing` or `alert`; legacy records without a kind retain briefing semantics. Unknown domains fail closed. Conversation replies keep their original separate queue. Queued chat replies and accepted questions take priority, and a zero-wait incoming poll follows every four app-notification steps so an outbound burst cannot starve incoming messages.
+Before every part the sender rechecks domain authorization, channel, connection revision/control, bot/account, allowed recipient, target and expiry. Private asynchronous client setup has another identity/policy fence before the actual native send. Pause remains responsive; an already admitted request cannot be undone. After a confirmed part, changed consent withdraws the remainder.
 
-Every part rechecks current policy revision, event availability, rule revision/state, bot/user binding, connection revision/control and expiry before send admission. Policy changes withdraw the preceding policy revision’s unsent messages, preserving a concurrently admitted new revision. In-flight HTTP cannot be undone; confirmed parts are retained. The shared queue permits twenty pending app deliveries and uses Telegram’s existing cooldown. Only explicit 429 rejections retry, up to five attempts; ambiguous writes are never replayed. See [briefing transport contracts](briefings.md#app-origin-telegram-outbox).
+Text uses the installed native clients’ limits, with code-point-safe UTF-16 chunking. Discord disables mentions; Slack disables markdown, link names and unfurls. Email uses one fixed SMTP recipient, `Sibyl notification` / `Auto-Submitted: auto-generated`, verified TLS and no incoming pairing phrase. WhatsApp requires the recipient’s authenticated private reply window at admission and send (24 hours minus 60 seconds); closed windows skip locally, without templates or delayed backfill. Documents remain Telegram-only, and scheduled research briefings use the same checked routes with acceptance-time control snapshots.
 
-Messages use retained trigger facts with source, original dates and Demo/test/paper attribution, and a navigation path rather than an invented phone-accessible localhost URL. Account-value drawdowns retain their cash-movement limitation. No message implies execution or a verified position close. The sender uses protected plain text and bounded UTF-16 parts.
+The queue is bounded to twenty pending app deliveries across routes. Only explicit nonambiguous 429/rate-limit rejections retry, at most five attempts, inside the original window. A private provider’s retry delay also holds its owning connection. Timeout, cancellation, unreadable/missing acceptance or interrupted send stays uncertain; later parts are blocked. Cancellation immediately retains uncertainty, and startup also reconciles interrupted sending rows without retrying them. None of these outcomes claims exactly-once provider delivery.
 
-Known-terminal receipts retain about 200 per rule; unresolved uncertain receipts are preserved. Queue bodies are local plaintext, while credentials stay in the vault. Read APIs return bounded previews and part outcomes, not full bodies or tokens. Chat replies, briefings and alerts have separate counters.
+## Receipts and privacy
+
+Messages contain retained trigger facts, actual source/date and Demo/test/paper labels, plus in-app navigation instructions rather than invented phone-accessible localhost URLs. Alert delivery does not imply an order/close happened and never changes financial permissions.
+
+Telegram retains integer native message IDs. Other providers use a separate **TEXT `provider_id`** column, preserving Slack decimal timestamp IDs and email Message-IDs exactly rather than allowing SQLite numeric affinity to alter them. A new nullable column is added safely to existing part tables. Legacy deliveries without a `channel` remain Telegram. No queue bodies are rewritten.
+
+History exposes channel, bounded preview and part outcomes. Explicit authenticated review exposes the queued text/target, unsent withdrawal and at most ten separate local-user acknowledgments. Review preserves native outcomes and never resends. Known-terminal receipts retain about 200 per rule; uncertain evidence remains protected. The local inbox and its unread/cursor retention guards remain independent. Credentials stay in encrypted profiles and never enter receipts, agent summaries or exported RunContext metadata. Native Technician evidence contains channel/outcome summaries, without private text or targets.
 
 ## HTTP API
 
-Paths use `/api/v1`, normal workspace authentication/origin checks and `Cache-Control: no-store`.
+All paths have the `/api/v1` prefix, normal workspace auth/origin controls and `Cache-Control: no-store`.
 
 | Method | Path | Contract |
 | --- | --- | --- |
-| GET | `/alert-delivery/policies` | Up to 200 active opt-in indicators; no private recipient IDs |
-| GET | `/alert-delivery/history` | Safe receipts, optional `rule_id`, limit 1–50, bounded offset |
-| GET | `/alert-delivery/{kind}/{id}` | Policy, live rule revision/status and latest twenty receipts |
-| POST | `/alert-delivery/{kind}/{id}` | Reviewed `revision`, `rule_revision`, `enabled`, optional checked `telegram_target`, cooldown and expiry seconds |
+| GET | `/alert-delivery/targets` | Checked private identity projections, paused state and WhatsApp window status; no probes |
+| GET | `/alert-delivery/policies` | Enabled rule/channel indicators without recipient IDs |
+| GET/POST | `/alert-delivery/{kind}/{rule_id}` | Current selection/history or revision-checked future-only consent |
+| GET | `/alert-delivery/history` | Paged safe receipts, optionally one rule |
+| GET | `/message-deliveries` | Paged alert/briefing outcomes across routes, or Telegram conversation replies |
+| GET | `/message-deliveries/{id}` | Exact queued-text/target review and optimistic evidence token |
+| POST | `/message-deliveries/{id}/review` | Withdraw/received/dismissed decisions, never resend |
 
-Kinds: `price`, `risk`, `strategy`, `connection`. Unknown kinds and invalid fields return 422, missing rules 404, stale editors/mismatched or unverified recipients 409. A paused Telegram connection may be selected; future admission while paused records skips. An archived rule cannot newly enable delivery. Native Technician page help explains the same controls without gaining mutation or messaging tools.
+Existing `/settings/messaging/telegram/deliveries/{id}` review paths remain compatible; new UI uses the provider-neutral route.
 
-Tests use real Demo price/risk transitions, strategy journals and connection read incidents, with mocked Telegram HTTP. They exercise future-only baselines, concurrency, atomic rollback, cooldown, stale/future observations, pause/revision/recipient fences, uncertain sends, shared outbox compatibility and HTTP/privacy contracts. Live external delivery remains a deployment acceptance check.
+## Verification and remaining work
+
+Offline checks exercise real native identity/send serializers for all five added routes, standard-library SMTP/TLS with controlled servers, exact IDs, future-only opt-in, channel switching, route isolation, stale/replaced recipients, WhatsApp window expiry, Unicode chunks, rate-limit rejection, pause/client-setup races, cancellation, uncertain restart/manual review, worker fairness and private HTTP APIs. Existing Telegram alert/briefing/review tests remain required. These are controlled provider fixtures, not live service acceptance.
+
+Media beyond Telegram, generic outbound webhooks/native push and deployment-specific live delivery acceptance remain in the general checklist.

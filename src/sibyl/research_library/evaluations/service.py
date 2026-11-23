@@ -6,7 +6,6 @@ commit. Stop fences late results; restart marks unfinished work interrupted and
 never replays it. A report evaluates retrieval, not answer correctness.
 """
 
-import hashlib
 import json
 import threading
 import time
@@ -15,6 +14,7 @@ from statistics import mean
 from uuid import uuid4
 
 from sibyl.research_library.evaluations.metrics import score
+from sibyl.research_library.snapshot import retrieval_snapshot
 
 
 def now():
@@ -104,29 +104,7 @@ class RetrievalEvaluations:
         return json.loads(row[0])
 
     def _snapshot(self, db, semantic):
-        # BM25 uses corpus-wide document statistics even when a kind filter is applied.
-        digest, count = hashlib.sha256(), 0
-        for row in db.execute(
-            "SELECT p.id,p.text,d.fingerprint,d.metadata FROM passages p JOIN documents d ON p.document_id=d.id ORDER BY p.id"
-        ):
-            digest.update(json.dumps(tuple(row), ensure_ascii=False).encode())
-            count += 1
-        result = {"corpus": digest.hexdigest(), "passages": count}
-        if semantic:
-            revision, profile = self.library.semantic.config(db)
-            vectors = hashlib.sha256()
-            for row in db.execute(
-                "SELECT passage_id,content_hash,vector FROM semantic_vectors ORDER BY passage_id"
-            ):
-                vectors.update(json.dumps(tuple(row)[:2]).encode())
-                vectors.update(row["vector"])
-            result.update(
-                semantic_revision=revision,
-                model=profile.get("model"),
-                model_digest=profile.get("model_digest"),
-                index=vectors.hexdigest(),
-            )
-        return result
+        return retrieval_snapshot(self.library, db, semantic)
 
     def start(self, identity, body):
         with self.library.db() as db:
@@ -159,7 +137,7 @@ class RetrievalEvaluations:
             coverage = self.library.semantic.coverage(db, suite["kind"])
             if semantic and (not self.library.semantic.config(db)[1] or not coverage["indexed"]):
                 raise ValueError(
-                    "Configure a local embedding model and index passages before comparing semantic methods."
+                    "Configure an embedding model and index passages before comparing semantic methods."
                 )
             item = {
                 "id": uuid4().hex,
@@ -182,7 +160,7 @@ class RetrievalEvaluations:
                 "summary": {},
                 "completed": 0,
                 "total": len(suite["cases"]) * len(body.methods),
-                "note": "Owner-labeled passage relevance, not factual verification or answer confidence. Partial indexes and incomplete gold labels limit comparisons. Latency includes local query embedding; shared-server load and caching can affect it.",
+                "note": "Owner-labeled passage relevance, not factual verification or answer confidence. Partial indexes and incomplete gold labels limit comparisons. Latency includes configured query embedding; hosted runs send queries under saved consent and may incur provider charges; shared-server load and caching can affect it.",
             }
             self._write(db, item)
         return item
@@ -239,7 +217,9 @@ class RetrievalEvaluations:
             task = item["plan"][item["completed"]]
             case = item["suite"]["cases"][task["case"]]
             started = time.monotonic()
-            found = self.library.search(case["query"], item["suite"]["kind"], item["k"], task["method"])
+            found = self.library.search(
+                case["query"], item["suite"]["kind"], item["k"], task["method"], False
+            )
             result = {
                 **task,
                 "query": case["query"],

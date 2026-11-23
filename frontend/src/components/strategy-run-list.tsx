@@ -6,12 +6,27 @@ import { number } from '../lib/api';
 import { date, monitorURL, runName, tone } from '../lib/strategy-monitor';
 import type { Job, Strategy } from '../lib/types';
 
-/** Searchable entry point for running, paused, completed, and stopped paper runs. */
+function requiresAttention(job: Job) {
+  return (
+    !!job.error ||
+    !!job.accounting_incomplete ||
+    !!job.unresolved_orders?.length ||
+    !!Object.keys(job.unvalued_fees ?? {}).length ||
+    (!!job.archived_at && job.quantity > 0)
+  );
+}
+
+/** Searchable entry point for paper and approved exchange runs. */
 export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy[] }) {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
+  const [archive, setArchive] = useState('current');
   const rows = jobs.filter(
     (job) =>
+      (archive === 'all' ||
+        (archive === 'archived'
+          ? !!job.archived_at
+          : !job.archived_at || requiresAttention(job))) &&
       (status === 'all' || job.status === status) &&
       `${runName(job, catalog)} ${job.parameters.symbol} ${job.id}`
         .toLowerCase()
@@ -53,6 +68,14 @@ export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy
                 {s === 'all' ? 'All statuses' : s[0].toUpperCase() + s.slice(1)}
               </option>
             ))}
+          </select>
+        </label>
+        <label>
+          Run visibility
+          <select value={archive} onChange={(event) => setArchive(event.target.value)}>
+            <option value="current">Current &amp; settled</option>
+            <option value="archived">Archived</option>
+            <option value="all">All runs</option>
           </select>
         </label>
       </div>
@@ -105,14 +128,21 @@ export function StrategyList({ jobs, catalog }: { jobs: Job[]; catalog: Strategy
                   <td>{date(job.created_at)}</td>
                   <td>
                     <Badge tone={tone(job.status)}>{job.status}</Badge>
-                    {job.error && <small className="table-subline negative">Needs attention</small>}
+                    {job.archived_at && <small className="table-subline">Archived</small>}
+                    {requiresAttention(job) && (
+                      <small className="table-subline negative">Needs attention</small>
+                    )}
                   </td>
                   <td>
                     {number(job.equity, job.parameters.symbol.endsWith('/BTC') ? 6 : 2)}{' '}
                     <small>{job.parameters.symbol.split('/')[1]}</small>
                   </td>
                   <td>
-                    <Change value={(job.equity / job.parameters.capital - 1) * 100} />
+                    {job.mode === 'exchange' ? (
+                      <small>See lifetime performance</small>
+                    ) : (
+                      <Change value={(job.equity / job.parameters.capital - 1) * 100} />
+                    )}
                   </td>
                   <td>{date(job.checked_at)}</td>
                   <td>

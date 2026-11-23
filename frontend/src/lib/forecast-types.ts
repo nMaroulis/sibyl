@@ -35,11 +35,17 @@ export type ForecastModel = {
     recorded_fit_matches_local: boolean;
   };
   parameters: {
-    family?: 'ridge' | 'mlp';
-    lags: number;
-    alpha: number;
+    family?: 'ridge' | 'mlp' | 'huber' | 'arima' | 'elastic_net';
+    arima_p?: number;
+    arima_q?: number;
+    arima_season?: 7 | 14;
+    difference?: number;
+    context_candles?: number;
+    huber_delta?: number;
+    lags?: number;
+    alpha?: number;
     max_horizon: number;
-    feature_set?: 'returns' | 'returns_context';
+    feature_set?: 'returns' | 'returns_context' | 'returns_volume';
   };
 };
 export type ForecastMetrics = { mae: number; rmse: number; mape_pct: number };
@@ -69,14 +75,8 @@ export type ForecastDetail = {
   nominal_coverage: number;
   notes: string[];
   partitions: Record<string, { start: string; end: string; candles: number }>;
-  training?: {
-    horizon: number;
-    epochs: number;
-    hidden_units: number;
-    optimizer: string;
-    initial_loss: number;
-    final_loss: number;
-  }[];
+  training?: (NeuralTraining | HuberTraining | ElasticTraining)[];
+  arima_training?: ARIMATraining;
   evaluation: ForecastEvaluation[];
   test_trace: ForecastChartPoint[];
   trace_horizon: number;
@@ -153,4 +153,58 @@ export type RollingReport = Omit<RollingHeader, 'aggregate'> & {
     }[];
     notes: string[];
   };
+};
+
+export type NeuralTraining = {
+  family?: 'mlp';
+  horizon: number;
+  epochs: number;
+  hidden_units: number;
+  optimizer: string;
+  initial_loss: number;
+  final_loss: number;
+};
+export type HuberTraining = {
+  family: 'huber';
+  horizon: number;
+  delta: number;
+  steps: number;
+  max_steps: number;
+  converged: boolean;
+  initial_loss: number;
+  final_loss: number;
+  target_center: number;
+  target_scale: number;
+  residual_threshold: number;
+  downweighted_samples: number;
+  training_samples: number;
+  effective_weight_sum: number;
+  minimum_weight: number;
+};
+
+export type ElasticTraining = {
+  family: 'elastic_net';
+  horizon: number;
+  library: string;
+  library_version: string;
+  l1_share: number;
+  penalty_weight: number;
+  active_features: number;
+  feature_count: number;
+};
+
+export type ARIMATraining = {
+  library: string;
+  library_version: string;
+  estimator: string;
+  converged: boolean;
+  iterations: number;
+  max_iterations: number;
+  training_returns: number;
+  aic: number;
+  bic: number;
+  log_likelihood: number;
+  warning_categories: string[];
+  parameter_values: Record<string, number>;
+  scale_units: string;
 };

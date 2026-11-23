@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     data_dir: Path = Field(default_factory=default_data_dir)
     dashboard_dir: Path | None = None
     mode: Literal["demo", "live"] = "demo"
+    sec_contact: SecretStr = SecretStr("")
     news_mode: Literal["auto", "demo", "live"] = "auto"
     news_refresh_seconds: int = Field(default=600, ge=60, le=86400)
     news_retention_days: int = Field(default=30, ge=1, le=365)
