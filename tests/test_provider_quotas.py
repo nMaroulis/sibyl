@@ -4,6 +4,7 @@ import json
 import time
 from email.utils import formatdate
 from http import HTTPStatus
+from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 import ccxt
@@ -541,7 +542,12 @@ def test_okx_bill_reads_share_local_profiles_but_keep_stream_and_environment_bud
     assert "key-a" not in json.dumps(observed)
 
 
-def test_actual_okx_funding_get_is_classified_before_native_signing():
+def test_actual_okx_funding_get_is_classified_before_native_signing(monkeypatch):
+    # Read the charge at the same instant it was applied, before the bucket refills.
+    monkeypatch.setattr(
+        "sibyl.market_data.control.time",
+        SimpleNamespace(monotonic=lambda: 100.0, time=lambda: WALL),
+    )
     control = ProviderControl(min_interval=0)
     meta = source("connection:okx-native", "okx", "production")
     client, captured, replies = native(
