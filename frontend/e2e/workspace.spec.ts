@@ -46,16 +46,18 @@ test('paper order review and fill update the virtual ledger', async ({ page }) =
   ).toBeVisible();
 });
 
-test('strategy studio runs a real API backtest', async ({ page }) => {
+test('strategy studio runs a demo backtest through the API', async ({ page }) => {
   await page.goto('/strategies');
   const result = page.waitForResponse(
     (response) =>
-      response.url().endsWith('/strategies/backtest') && response.request().method() === 'POST',
+      response.url().endsWith('/strategies/backtest/demo') &&
+      response.request().method() === 'POST',
   );
   await page.getByRole('button', { name: 'Run backtest', exact: true }).click();
   expect((await result).status()).toBe(200);
-  await expect(page.getByText('Total return', { exact: true })).toBeVisible();
-  await expect(page.getByText('Max drawdown', { exact: true })).toBeVisible();
+  const metrics = page.locator('.backtest-metrics');
+  await expect(metrics.getByText('Total return', { exact: true })).toBeVisible();
+  await expect(metrics.getByText('Max drawdown', { exact: true })).toBeVisible();
 });
 
 test('module Ask opens in place, uses page context, and retains its conversation', async ({
@@ -120,10 +122,13 @@ test('knowledge search and exchange setup are accessible', async ({ page }) => {
 test('navigation works on a narrow app viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'More tools' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   const more = page.getByRole('group', { name: 'More destinations' });
-  await expect(more.getByRole('link')).toHaveCount(3);
+  await expect(more.getByRole('link')).toHaveCount(4);
+  await expect(more.getByRole('link', { name: 'Alerts', exact: true })).toBeVisible();
   await more.getByRole('link', { name: 'Research', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Research', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'More tools' })).toHaveAttribute(
@@ -275,11 +280,11 @@ test('Settings groups connections and configuration with persistent drafts and k
   await expect(page).toHaveURL(/settings\?tab=models$/);
   await page.getByRole('button', { name: 'Local', exact: true }).click();
   await page.getByRole('button', { name: /^Ollama/ }).click();
-  await page.getByLabel('Model', { exact: true }).selectOption('__custom__');
+  await page.getByRole('combobox', { name: 'Model', exact: true }).selectOption('__custom__');
   await page.getByLabel('Custom model ID', { exact: true }).fill('draft-model');
   await tabs.getByRole('tab', { name: 'Market data', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Prices & market history', exact: true }),
+    page.getByRole('heading', { name: 'Market & research data', exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel('Custom model ID', { exact: true })).not.toBeVisible();
   await page.goBack();
