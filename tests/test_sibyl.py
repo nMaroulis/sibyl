@@ -1,5 +1,8 @@
 """Actual ProtoLink discovery, client tasks, bounded collaboration, and local chat settings."""
 
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
+
 import pytest
 from agent_helpers import coordinator_factory, delegate
 from fastapi.testclient import TestClient
@@ -391,32 +394,29 @@ def test_native_agent_call_is_sibyls_only_delegation_path(client, monkeypatch):
 
 
 def test_blocking_model_does_not_block_health_or_other_api_requests(client, monkeypatch):
-    import threading
-    import time
-
-    from sibyl.agents.utils.conversations import SibylRequest
-
     model(client)
-    started, release = (threading.Event(), threading.Event())
+    started, release = Event(), Event()
 
     def factory(*args, **kwargs):
-
         def response(history, system):
             started.set()
-            release.wait(timeout=3)
+            assert release.wait(timeout=30), "The test did not release the model"
             return "Completed the isolated test."
 
         return create_llm("mock", response_callback=response)
 
     coordinator_factory(monkeypatch, factory)
-    future = client.portal.start_task_soon(
-        client.app.state.services.agents.network.ask, SibylRequest(message="Test a slow model")
-    )
-    try:
-        assert started.wait(timeout=2)
-        before = time.monotonic()
-        assert client.get("/health").status_code == 200
-        assert time.monotonic() - before < 0.5
-    finally:
-        release.set()
-        future.result(timeout=5)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        ask = pool.submit(client.post, "/api/v1/sibyl/ask", json={"message": "Test a slow model"})
+        try:
+            assert started.wait(timeout=10), "The test model did not start"
+            # Both HTTP requests must finish before the model is released.
+            for path in ("/health", "/api/v1/system"):
+                response = pool.submit(client.get, path).result(timeout=10)
+                assert response.status_code == 200, response.text
+            assert not ask.done()
+        finally:
+            release.set()
+        answer = ask.result(timeout=10)
+    assert answer.status_code == 200, answer.text
+    assert answer.json()["answer"] == "Completed the isolated test."
