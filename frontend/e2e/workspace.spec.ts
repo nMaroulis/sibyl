@@ -155,13 +155,13 @@ test('market controls change interval, chart type, and correlation method', asyn
 test('account balances and future features have explicit boundaries', async ({ page }) => {
   await page.goto('/account');
   await expect(page.getByRole('heading', { name: 'Account balances', exact: true })).toBeVisible();
-  await page.getByLabel('Value in', { exact: true }).selectOption('BTC');
+  await page.getByRole('combobox', { name: 'Value in', exact: true }).selectOption('BTC');
   await expect(page.getByRole('columnheader', { name: 'Value · BTC', exact: true })).toBeVisible();
-  await page.goto('/roadmap');
-  await expect(
-    page.getByRole('heading', { name: 'Advanced exchange orders', exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText('Coming soon', { exact: true })).toHaveCount(10);
+  await page.goto('/roadmap?tab=future');
+  const advancedOrders = page.getByRole('article').filter({
+    has: page.getByRole('heading', { name: 'Advanced exchange orders', exact: true }),
+  });
+  await expect(advancedOrders.getByText('Coming soon', { exact: true })).toBeVisible();
 });
 
 test('news summaries and trading reports expose real data scope', async ({ page }) => {

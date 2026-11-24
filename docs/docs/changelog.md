@@ -47,6 +47,13 @@ docker compose up --build
 
 ## Release notes
 
+## [2.5.0] - Unreleased
+
+### Fixed
+
+- The floating bottom dock leaves scroll clearance below the workspace so the page ends cleanly and its last controls stay reachable.
+- Account gives Historical basket risk consistent spacing when collapsed and expanded, and uses compact status badges in Account balances.
+
 ## [2.4.0] - 2026-11-23
 
 :::note[Latest Release]

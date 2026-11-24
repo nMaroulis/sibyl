@@ -143,7 +143,7 @@ export function AccountBalances({ scope = 'all' }: { scope?: string }) {
                   <ExchangeMark exchange={a.exchange} size={20} />
                   {a.name}
                 </strong>
-                <span>
+                <span className="account-balance-total">
                   {value(a.total)} {effectiveQuote}
                 </span>
                 <Badge

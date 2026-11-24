@@ -204,13 +204,21 @@
   --bottom-dock-clearance: calc(var(--bottom-dock-height) + var(--bottom-dock-offset) + 14px);
   scroll-padding-bottom: var(--bottom-dock-clearance);
 }
+[data-navigation='bottom'] .app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
 [data-navigation='bottom'] .workspace-layout {
+  flex: 1;
   grid-template-columns: minmax(0, 1fr);
   padding-inline: max(12px, var(--bottom-dock-edge));
+  padding-bottom: var(--bottom-dock-clearance);
 }
 [data-navigation='bottom'] .workspace-surface {
   grid-column: 1;
-  padding-bottom: var(--bottom-dock-clearance);
+  align-self: stretch;
+  min-height: 0;
 }
 [data-navigation='bottom'] .toast {
   bottom: var(--bottom-dock-clearance);

@@ -50,11 +50,11 @@ for (const viewport of [
     expect(tab.x).toBeGreaterThanOrEqual(tabs.x);
     expect(tab.x + tab.width).toBeLessThanOrEqual(tabs.x + tabs.width);
 
-    const footer = page.getByRole('contentinfo');
+    const surface = page.locator('.workspace-surface');
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await expect
       .poll(async () => {
-        const bounds = (await footer.boundingBox())!;
+        const bounds = (await surface.boundingBox())!;
         return bounds.y + bounds.height;
       })
       .toBeLessThan(dock.y);

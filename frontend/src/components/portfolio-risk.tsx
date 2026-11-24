@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, ChevronDown } from 'lucide-react';
 import { AgentButton } from './agents';
 import { Badge, Change, Panel } from './ui';
 import { ValueChart } from './charts';
@@ -89,11 +89,14 @@ export function PortfolioRisk({ portfolio, scope }: { portfolio: Portfolio; scop
     <Panel className="full-panel">
       <details className="portfolio-risk" onToggle={(e) => setOpen(e.currentTarget.open)}>
         <summary>
-          <Activity size={18} />
-          <strong>Historical basket risk</strong>
-          <Badge>Advanced analysis</Badge>
+          <Activity size={18} aria-hidden="true" />
+          <span className="portfolio-risk-heading">
+            <strong>Historical basket risk</strong>
+            <Badge>Advanced analysis</Badge>
+          </span>
+          <ChevronDown size={16} className="portfolio-risk-chevron" aria-hidden="true" />
         </summary>
-        <p>
+        <p className="muted">
           Explore how a basket with today's holding weights behaved over past daily prices. This
           hypothetical, daily-rebalanced basket is separate from your account's measured
           performance.

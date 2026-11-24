@@ -51,7 +51,12 @@ test('historical basket study uses current Demo holdings, saves real metrics and
   page,
 }) => {
   await page.goto('/account');
-  await page.getByText('Historical basket risk', { exact: true }).click();
+  const risk = page.locator('.portfolio-risk');
+  const summary = risk.locator(':scope > summary');
+  await expect(summary).toContainText('Historical basket risk');
+  await expect(risk).not.toHaveAttribute('open', '');
+  await summary.click();
+  await expect(risk).toHaveAttribute('open', '');
   const saved = page.waitForResponse(
     (r) => new URL(r.url()).pathname === '/api/v1/account/risk' && r.request().method() === 'POST',
   );
@@ -63,9 +68,7 @@ test('historical basket study uses current Demo holdings, saves real metrics and
   expect(study.source.source).toBe('demo');
   const results = page.getByRole('region', { name: 'Basket risk results', exact: true });
   await expect(results.getByText('Demo reference history', { exact: true })).toBeVisible();
-  await results
-    .getByText('Weights, correlations & variance contributions', { exact: true })
-    .click();
+  await results.getByText('Weights, correlations & risk contributions', { exact: true }).click();
   await expect(
     results.getByRole('columnheader', { name: 'Share of variance', exact: true }),
   ).toBeVisible();

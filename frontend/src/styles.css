@@ -4056,12 +4056,14 @@ details[open] > summary {
   min-width: 180px;
   font-size: 12px;
 }
-.account-summary > div > span {
+.account-balance-total {
   font-size: 22px;
   letter-spacing: -0.5px;
 }
 .account-summary .badge {
   align-self: flex-start;
+  max-width: 100%;
+  white-space: normal;
 }
 .report-summary-grid {
   display: grid;
@@ -12136,7 +12138,71 @@ details[open] > summary {
   }
 }
 
-.portfolio-risk > summary,
+.portfolio-risk {
+  --risk-inset: 22px;
+  padding-inline: var(--risk-inset);
+}
+.portfolio-risk[open] {
+  padding-bottom: 20px;
+}
+.portfolio-risk > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-inline: calc(-1 * var(--risk-inset));
+  padding: 15px var(--risk-inset);
+  cursor: pointer;
+}
+.portfolio-risk > summary::before {
+  display: none;
+}
+.portfolio-risk > summary::-webkit-details-marker {
+  display: none;
+}
+.portfolio-risk > summary:focus-visible {
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+.portfolio-risk > summary > svg {
+  color: var(--muted);
+}
+.portfolio-risk-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 12px;
+}
+.portfolio-risk-heading strong {
+  margin-inline-end: auto;
+  font-size: 14px;
+}
+.portfolio-risk[open] > summary .portfolio-risk-chevron {
+  transform: rotate(180deg);
+}
+.portfolio-risk[open] > summary {
+  margin-bottom: 0;
+  box-shadow: inset 0 -1px var(--border);
+}
+.portfolio-risk > p,
+.portfolio-risk .form-row {
+  margin-block: 14px;
+}
+.portfolio-risk > .muted {
+  max-width: 82ch;
+  font-size: 13px;
+}
+.portfolio-risk > .form-error {
+  margin-bottom: 0;
+}
+.portfolio-risk > button {
+  white-space: normal;
+}
+.portfolio-risk .form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 .continuous-replay > summary {
   display: flex;
   align-items: center;
@@ -12144,17 +12210,7 @@ details[open] > summary {
   gap: 0.65rem;
   cursor: pointer;
 }
-.portfolio-risk > summary strong {
-  flex: 1;
-}
-.portfolio-risk > p,
 .continuous-replay > p {
-  margin: 1rem 0;
-}
-.portfolio-risk .form-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
   margin: 1rem 0;
 }
 .portfolio-risk label {
@@ -12233,6 +12289,9 @@ details[open] > summary {
   width: auto;
 }
 @media (max-width: 700px) {
+  .portfolio-risk {
+    --risk-inset: 14px;
+  }
   .portfolio-risk .form-row {
     grid-template-columns: 1fr;
   }
