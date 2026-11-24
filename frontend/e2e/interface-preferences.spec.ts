@@ -185,3 +185,97 @@ test('page transitions follow the dock, persist, and respect reduced motion', as
   await expect(page).toHaveURL(/\/strategies$/);
   await expect(view).not.toHaveAttribute('data-test-motion', /.+/);
 });
+
+test('dock finishes apply in both positions and survive reload', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/settings?tab=interface');
+  const styles = page.getByRole('group', { name: 'Dock style' });
+  const nav = page.getByRole('navigation', { name: 'Main navigation' });
+  await expect(styles.getByRole('radio', { name: 'Glass', exact: true })).toBeChecked();
+
+  const finishes = new Set<string>();
+  for (const label of ['Glass', 'Porcelain', 'Graphite', 'Aurora']) {
+    await styles.getByText(label, { exact: true }).click();
+    await expect(nav).toHaveAttribute('data-dock-style', label.toLowerCase());
+    await expect
+      .poll(() => nav.evaluate((element) => getComputedStyle(element, '::before').backdropFilter))
+      .toMatch(label === 'Glass' ? /^blur\(/ : /^none$/);
+    finishes.add(
+      await nav.evaluate((element) => {
+        const style = getComputedStyle(element, '::before');
+        return style.backgroundColor + style.backgroundImage;
+      }),
+    );
+  }
+  expect(finishes.size).toBe(4);
+
+  await page.getByText('Left', { exact: true }).click();
+  await page.getByText('Dark', { exact: true }).click();
+  await page.reload();
+  await expect(nav).toHaveCSS('flex-direction', 'column');
+  await expect(nav).toHaveAttribute('data-dock-style', 'aurora');
+  await expect(styles.getByRole('radio', { name: 'Aurora', exact: true })).toBeChecked();
+});
+
+test('unpinned pages move to More and Account stays pinned', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/settings?tab=interface');
+  const shortcuts = page.getByRole('group', { name: 'Dock shortcuts' });
+  const nav = page.getByRole('navigation', { name: 'Main navigation' });
+  const account = shortcuts.getByRole('checkbox', { name: 'Account', exact: true });
+  await expect(account).toBeChecked();
+  await expect(account).toBeDisabled();
+  await shortcuts.getByText('Trade', { exact: true }).click();
+  await shortcuts.getByText('Research', { exact: true }).click();
+  await expect(nav.getByRole('link', { name: 'Research', exact: true })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Trade', exact: true })).toHaveCount(0);
+
+  await page.reload();
+  await expect(shortcuts.getByRole('checkbox', { name: 'Trade', exact: true })).not.toBeChecked();
+  await expect(shortcuts.getByRole('checkbox', { name: 'Research', exact: true })).toBeChecked();
+  await nav.getByRole('button', { name: 'More tools' }).click();
+  const more = nav.getByRole('group', { name: 'More destinations' });
+  await expect(more.getByRole('link', { name: 'Research', exact: true })).toHaveCount(0);
+  await more.getByRole('link', { name: 'Trade', exact: true }).click();
+  await expect(page).toHaveURL(/\/trade$/);
+  await expect(nav.getByRole('button', { name: 'More tools' })).toHaveAttribute(
+    'data-current',
+    'true',
+  );
+});
+
+test('the dock fits narrow screens with only Account or every shortcut pinned', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 600 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('sibyl.interface', JSON.stringify({ pinnedPaths: ['/unknown'] }));
+  });
+  await page.goto('/settings?tab=interface');
+  const nav = page.getByRole('navigation', { name: 'Main navigation' });
+  await expect(nav.getByRole('link', { name: 'Account', exact: true })).toBeVisible();
+  await nav.getByRole('button', { name: 'More tools' }).click();
+  const more = nav.getByRole('group', { name: 'More destinations' });
+  await expect(more.getByRole('link')).toHaveCount(11);
+  const bounds = (await more.boundingBox())!;
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(320);
+  await page.setViewportSize({ width: 320, height: 280 });
+  const lastLink = more.getByRole('link', { name: 'Coming soon' });
+  await more.getByRole('link', { name: 'Sibyl', exact: true }).focus();
+  await page.keyboard.press('End');
+  await expect(lastLink).toBeFocused();
+  await expect(lastLink).toBeInViewport({ ratio: 0.9 });
+  expect(await more.evaluate((panel) => panel.scrollTop)).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 320, height: 600 });
+
+  const shortcuts = page.getByRole('group', { name: 'Dock shortcuts' });
+  for (const checkbox of await shortcuts.getByRole('checkbox').all()) {
+    if (await checkbox.isEnabled()) await checkbox.locator('..').click();
+  }
+  await expect(nav.getByRole('button', { name: 'More tools' })).toHaveCount(0);
+  await expect(nav.getByRole('link')).toHaveCount(12);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+});

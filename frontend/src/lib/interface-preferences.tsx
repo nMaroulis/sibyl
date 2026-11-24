@@ -2,10 +2,14 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { isPageTransition } from './page-transition';
 import type { DockPlacement, PageTransition } from './page-transition';
+import { defaultPinnedPaths, isDockStyle, normalizePinnedPaths } from './navigation-options';
+import type { DestinationPath, DockStyle } from './navigation-options';
 
 type Preferences = {
   theme: 'light' | 'dark';
   navigation: DockPlacement;
+  dockStyle: DockStyle;
+  pinnedPaths: readonly DestinationPath[];
   pageTransition: PageTransition;
   showLabels: boolean;
 };
@@ -13,6 +17,8 @@ type InterfaceState = Preferences & { update: (preferences: Partial<Preferences>
 const defaults: Preferences = {
   theme: 'light',
   navigation: 'bottom',
+  dockStyle: 'glass',
+  pinnedPaths: defaultPinnedPaths,
   pageTransition: 'zoom',
   showLabels: true,
 };
@@ -28,6 +34,8 @@ function readPreferences(): Preferences {
         saved?.navigation === 'left' || saved?.navigation === 'bottom'
           ? saved.navigation
           : defaults.navigation,
+      dockStyle: isDockStyle(saved?.dockStyle) ? saved.dockStyle : defaults.dockStyle,
+      pinnedPaths: normalizePinnedPaths(saved?.pinnedPaths),
       pageTransition: isPageTransition(saved?.pageTransition)
         ? saved.pageTransition
         : defaults.pageTransition,
@@ -54,7 +62,13 @@ applyPreferences(initialPreferences);
 export function InterfaceProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState(initialPreferences);
   const update = (changes: Partial<Preferences>) => {
-    const next = { ...preferences, ...changes };
+    const next = {
+      ...preferences,
+      ...changes,
+      pinnedPaths: changes.pinnedPaths
+        ? normalizePinnedPaths(changes.pinnedPaths)
+        : preferences.pinnedPaths,
+    };
     applyPreferences(next);
     setPreferences(next);
     try {

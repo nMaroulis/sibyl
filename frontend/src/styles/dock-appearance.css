@@ -1,0 +1,207 @@
+/* The dock, More panel, and previews share each finish's palette. */
+[data-dock-style] {
+  --dock-fill: linear-gradient(164deg, #ffffffa6, #f8fbff2e 58%, #dceafb60), #eff5fce8;
+  --dock-edge: light-dark(#fffffff0, #91a9d35e);
+  --dock-depth:
+    0 12px 32px light-dark(#263b5c2b, #03081185), inset 0 1px 0 light-dark(#fff, #c3d6ff44);
+  --dock-ink: light-dark(#51647d, #bbcae2);
+  --dock-current-ink: light-dark(#294983, #e3edff);
+  --dock-active: linear-gradient(
+    150deg,
+    light-dark(#b7cff1e6, #354c76),
+    light-dark(#e9f4ffe6, #5d79a8)
+  );
+  --dock-sibyl: linear-gradient(145deg, light-dark(#bdd1f4, #3c5686), light-dark(#ead6f4, #745785));
+  --dock-glow: light-dark(#bdd6fb85, #729cdf65);
+  --dock-focus: light-dark(#3768b8, #a5c7ff);
+  --dock-radius: 999px;
+  --dock-face-radius: 999px;
+}
+[data-theme='dark'] [data-dock-style='glass'] {
+  --dock-fill: linear-gradient(165deg, #91b8ff38, #48669719 55%, #08132939), #1b283eea;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-dock-style='glass'] {
+    --dock-blur: blur(22px) saturate(1.65);
+    --dock-fill: linear-gradient(164deg, #ffffffad, #f8fbff45 52%, #dae9fa69), #ecf4ff61;
+  }
+  [data-theme='dark'] [data-dock-style='glass'] {
+    --dock-fill: linear-gradient(165deg, #91b8ff39, #45649a29 58%, #0b173544), #141f36b0;
+  }
+}
+
+[data-dock-style='porcelain'] {
+  --dock-fill: light-dark(#fffdf9, #302e31);
+  --dock-edge: light-dark(#e8e1d9, #514b4e);
+  --dock-depth: 0 8px 23px light-dark(#64574621, #09070a65);
+  --dock-ink: light-dark(#6b6057, #d2c6be);
+  --dock-current-ink: light-dark(#604634, #fff2e7);
+  --dock-active: linear-gradient(
+    155deg,
+    light-dark(#eaddd0, #574138),
+    light-dark(#faf1e5, #6b5347)
+  );
+  --dock-sibyl: linear-gradient(155deg, light-dark(#e6d8ef, #55425d), light-dark(#f9edf4, #72546e));
+  --dock-glow: light-dark(#e5cdb076, #b4907373);
+  --dock-focus: light-dark(#9a6a47, #e7bca1);
+  --dock-radius: 24px;
+  --dock-face-radius: 15px;
+}
+
+[data-dock-style='graphite'] {
+  --dock-fill: linear-gradient(175deg, #293345, #161d2b);
+  --dock-edge: #485468;
+  --dock-depth: 0 10px 25px #10172555, inset 0 1px 0 #ffffff12;
+  --dock-ink: #c0cddd;
+  --dock-current-ink: #edf5ff;
+  --dock-active: linear-gradient(150deg, #344d77, #263954);
+  --dock-sibyl: linear-gradient(150deg, #46416f, #293855);
+  --dock-glow: #7fa3d964;
+  --dock-focus: #a8caff;
+  --dock-radius: 18px;
+  --dock-face-radius: 11px;
+}
+
+[data-dock-style='aurora'] {
+  --dock-fill: linear-gradient(
+    120deg,
+    light-dark(#d9f1eb, #203e40),
+    light-dark(#e8ecff, #2c3554) 49%,
+    light-dark(#f4deef, #4a2c4a)
+  );
+  --dock-edge: light-dark(#d6d8ed, #64607f);
+  --dock-depth: 0 9px 26px light-dark(#65589a38, #0c0a176e), inset 0 1px 0 #ffffff48;
+  --dock-ink: light-dark(#4f5676, #d4d7ef);
+  --dock-current-ink: light-dark(#473779, #f7ecff);
+  --dock-active: linear-gradient(
+    145deg,
+    light-dark(#ffffffed, #545a8f),
+    light-dark(#dfd4fa, #725581)
+  );
+  --dock-sibyl: linear-gradient(145deg, light-dark(#f8e8ff, #51467d), light-dark(#dfccfa, #835985));
+  --dock-glow: light-dark(#d5adf4a3, #d19ae564);
+  --dock-focus: light-dark(#684ab0, #ddbaef);
+  --dock-radius: 30px;
+  --dock-face-radius: 20px;
+}
+
+.side-dock[data-dock-style] {
+  background: none;
+  border-color: var(--dock-edge);
+  border-radius: var(--dock-radius);
+  box-shadow: var(--dock-depth);
+}
+.side-dock[data-dock-style]::before {
+  /* A separate layer lets the More panel blur its own backdrop. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--dock-fill);
+  -webkit-backdrop-filter: var(--dock-blur, none);
+  backdrop-filter: var(--dock-blur, none);
+  pointer-events: none;
+}
+.side-dock[data-dock-style] .dock-more-panel {
+  background: var(--dock-fill);
+  border-color: var(--dock-edge);
+  border-radius: min(22px, var(--dock-radius));
+  box-shadow: var(--dock-depth);
+  -webkit-backdrop-filter: var(--dock-blur, none);
+  backdrop-filter: var(--dock-blur, none);
+}
+.side-dock[data-dock-style] :is(.dock-item, .dock-more-link) {
+  border-radius: var(--dock-face-radius);
+  color: var(--dock-ink);
+}
+.side-dock[data-dock-style] :is(.dock-item, .dock-more-link)::before {
+  background: radial-gradient(ellipse, var(--dock-glow), transparent 70%);
+}
+.side-dock[data-dock-style] :is(.dock-item, .dock-more-link)::after {
+  border-radius: var(--dock-face-radius);
+  background: var(--dock-active);
+}
+.side-dock[data-dock-style] .dock-item.dock-sibyl::after {
+  background: var(--dock-sibyl);
+}
+.side-dock[data-dock-style]
+  :is(.dock-item, .dock-more-link):is(.active, :hover, :focus-visible, [aria-expanded='true'])
+  .dock-icon,
+.side-dock[data-dock-style] .dock-sibyl.active .sibyl-mark {
+  color: var(--dock-current-ink);
+}
+.side-dock[data-dock-style] :is(.dock-item, .dock-more-link):focus-visible {
+  outline: 2px solid var(--dock-focus);
+  outline-offset: -2px;
+}
+
+.dock-settings-group {
+  margin-top: 18px;
+}
+.dock-style-options,
+.dock-shortcut-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.dock-style-option {
+  gap: 6px;
+  padding: 6px 6px 8px;
+}
+.dock-style-option .dock-style-preview {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  min-height: 60px;
+  padding: 6px;
+  border-radius: 10px;
+  background: linear-gradient(140deg, light-dark(#dce7fa, #26334c), light-dark(#faf0f2, #412f49));
+}
+.dock-style-sample {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--dock-edge);
+  border-radius: min(12px, var(--dock-radius));
+  background: var(--dock-fill);
+  box-shadow: var(--dock-depth);
+  color: var(--dock-ink);
+  -webkit-backdrop-filter: var(--dock-blur, none);
+  backdrop-filter: var(--dock-blur, none);
+}
+.dock-style-sample > span {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  border-radius: min(8px, var(--dock-face-radius));
+}
+.dock-style-sample > span:nth-child(2) {
+  background: var(--dock-active);
+  color: var(--dock-current-ink);
+}
+.dock-shortcuts-note {
+  margin-bottom: 9px;
+}
+.dock-shortcut-option {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: 10px;
+}
+.interface-option.dock-shortcut-option > span {
+  padding-inline-start: 0;
+  overflow-wrap: anywhere;
+}
+.dock-shortcut-option:has(:disabled) {
+  cursor: default;
+}
+.dock-shortcut-option:has(:checked) .dock-shortcut-status {
+  color: var(--accent);
+}
+@media (max-width: 720px) {
+  .dock-style-options,
+  .dock-shortcut-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

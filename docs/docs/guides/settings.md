@@ -72,6 +72,8 @@ Open `/settings?tab=interface` to choose **Light** or **Dark** appearance and pl
 
 Turn off **Show labels** for icon-only navigation, including the **More** menu. The bottom dock also uses icons alone on narrow screens.
 
+Under **Dock style**, choose **Glass**, **Porcelain**, **Graphite**, or **Aurora**. All four finishes work in either dock position. Under **Dock shortcuts**, pick which pages are pinned. Account is always pinned. Every unpinned page is available in **More**, which appears whenever there are unpinned pages.
+
 Under **Page transition**, choose **Soft zoom** (the default), **Dock reveal**, **Slide**, or **Fade**. Dock reveal expands in a circle from the active navigation button. Slide moves the page in from the dock edge. Fade brings the page into view in place. Use **Preview** to replay the selected transition. Choices apply immediately and are saved in the current browser. The app respects the device's reduced-motion setting.
 
 ## Workspace

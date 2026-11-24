@@ -277,23 +277,19 @@
   bottom: var(--bottom-dock-clearance);
 }
 [data-navigation='bottom'] .side-dock {
-  --glass-fill: #f5f8fce8;
-  --glass-gradient: linear-gradient(165deg, #ffffff8c, #f7fbff38 64%, #dfeafa60);
-  --glass-edge: #ffffffdb;
-  --glass-shadow: 0 12px 32px #263b5c32, 0 2px 5px #263b5c16, inset 0 1px 0 #fffd;
   position: fixed;
   z-index: 40;
   inset: auto auto var(--bottom-dock-offset) 50%;
   transform: translateX(-50%);
-  width: min(680px, calc(100% - 2 * var(--bottom-dock-edge)));
+  width: min(
+    calc(14px + 74px * var(--dock-slots)),
+    820px,
+    calc(100% - 2 * var(--bottom-dock-edge))
+  );
   height: var(--bottom-dock-height);
   flex-direction: row;
   gap: 2px;
   padding: 6px;
-  border: 1px solid var(--glass-edge);
-  border-radius: 999px;
-  background: var(--glass-gradient), var(--glass-fill);
-  box-shadow: var(--glass-shadow);
 }
 [data-navigation='bottom'] .dock-selection {
   display: none;
@@ -315,6 +311,10 @@
 [data-navigation='bottom'] .dock-item .dock-label {
   opacity: 1;
   font-size: 10px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 [data-navigation='bottom'] .dock-item::before,
 [data-navigation='bottom'] .dock-item::after {
@@ -325,27 +325,14 @@
   translate: none;
   border-radius: inherit;
 }
-[data-navigation='bottom'] .dock-item::after {
-  background: linear-gradient(150deg, #b6cbeeae, #e5f0ffcf);
-}
-[data-navigation='bottom'] .dock-item.dock-sibyl::after {
-  background: linear-gradient(145deg, #b3c5efc9, #dfd0f2da);
-}
-[data-navigation='bottom'] .dock-item:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
 [data-navigation='bottom'] .dock-more-panel {
-  inset: auto 0 calc(100% + 10px) auto;
-  translate: none;
-  width: min(272px, 100%);
+  inset: auto auto calc(100% + 10px) 50%;
+  translate: -50% 0;
+  width: min(272px, calc(100vw - 2 * var(--bottom-dock-edge)));
   max-height: calc(100dvh - var(--bottom-dock-clearance) - 12px);
   overflow-y: auto;
   clip-path: none;
   transform: translateY(7px);
-  border-color: var(--glass-edge);
-  background: var(--glass-gradient), var(--glass-fill);
-  box-shadow: var(--glass-shadow);
 }
 [data-navigation='bottom'] .dock-more-panel[data-open='true'] {
   transform: none;
@@ -357,36 +344,8 @@
 [data-navigation='bottom'] .dock-more-link .dock-label {
   opacity: 1;
 }
-[data-navigation='bottom'] .dock-more-link:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
 [data-navigation='bottom'] .dock-more-panel[data-open='true'] .dock-more-link {
   transform: none;
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  [data-navigation='bottom'] .side-dock {
-    --glass-fill: #ecf4ff64;
-  }
-  /* Keep the blur on a sibling layer so the More panel can blur its own backdrop. */
-  [data-navigation='bottom'] .side-dock::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-  }
-  [data-navigation='bottom'] .side-dock::before,
-  [data-navigation='bottom'] .dock-more-panel {
-    -webkit-backdrop-filter: blur(22px) saturate(1.55);
-    backdrop-filter: blur(22px) saturate(1.55);
-  }
-  [data-navigation='bottom'] .side-dock {
-    background: none;
-  }
-  [data-navigation='bottom'] .side-dock::before {
-    background: var(--glass-gradient), var(--glass-fill);
-  }
 }
 @media (max-width: 580px) {
   :root[data-navigation='bottom'] {

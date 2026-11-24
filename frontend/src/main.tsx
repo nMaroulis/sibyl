@@ -10,6 +10,7 @@ import './styles/workspace-research.css';
 import './styles/sibyl.css';
 import './styles/interface.css';
 import './styles/dark.css';
+import './styles/dock-appearance.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

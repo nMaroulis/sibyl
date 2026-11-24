@@ -76,59 +76,6 @@
     box-shadow: 0 0 10px 2px #819fdf46;
   }
 }
-[data-theme='dark'] .dock-item::before,
-[data-theme='dark'] .dock-more-link::before {
-  background:
-    radial-gradient(ellipse at 32% 40%, #618dd04d, transparent 70%),
-    radial-gradient(ellipse at 70% 64%, #a9baff2b, transparent 66%);
-}
-[data-theme='dark'] .dock-item::after,
-[data-theme='dark'] .dock-more-link::after {
-  background: linear-gradient(145deg, #2f4572, #405a88 60%, #536b95);
-  box-shadow:
-    inset 1px 1px 3px #0f1a3280,
-    inset -1px -1px 2px #b8ceff2b;
-}
-[data-theme='dark'] .dock-item.dock-sibyl::after {
-  background: linear-gradient(145deg, #304777, #534777 62%, #6c5479);
-}
-[data-theme='dark'] .dock-item,
-[data-theme='dark'] .dock-more-link {
-  color: var(--muted);
-}
-[data-theme='dark']
-  :is(.side-dock .dock-item, .dock-more-link):is(
-    .active,
-    :hover,
-    :focus-visible,
-    [aria-expanded='true']
-  )
-  .dock-icon {
-  color: #d4e3ff;
-}
-[data-theme='dark'] .side-dock .dock-sibyl.active .sibyl-mark {
-  color: #f4eaff;
-}
-[data-theme='dark']:not([data-navigation='bottom']) .dock-more-panel {
-  background: #202c40f2;
-}
 [data-theme='dark'] .sibyl-conversation {
   background: radial-gradient(ellipse at 18% 5%, #30284790, transparent 50%), var(--surface);
-}
-:root[data-theme='dark'][data-navigation='bottom'] .side-dock {
-  --glass-fill: #1b263df0;
-  --glass-gradient: linear-gradient(165deg, #91b8ff32, #4b659827 58%, #0e18334d);
-  --glass-edge: #9ab8ef4d;
-  --glass-shadow: 0 15px 36px #03081177, 0 2px 5px #03081180, inset 0 1px 0 #d2e1ff33;
-}
-:root[data-theme='dark'][data-navigation='bottom'] .dock-item::after {
-  background: linear-gradient(145deg, #3b578abf, #6885b8a3);
-}
-:root[data-theme='dark'][data-navigation='bottom'] .dock-item.dock-sibyl::after {
-  background: linear-gradient(145deg, #4c62a3bb, #80649fba);
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :root[data-theme='dark'][data-navigation='bottom'] .side-dock {
-    --glass-fill: #141e34a3;
-  }
 }

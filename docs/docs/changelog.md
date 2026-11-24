@@ -52,6 +52,7 @@ docker compose up --build
 ### Added
 
 - Settings renames Interface to UI/UX and adds four page transitions with a live preview. Dock reveal expands from the selected button, Slide comes in from the dock edge, and Fade dissolves in place.
+- Navigation adds four dock finishes and lets you pin shortcuts in either dock position. Account stays pinned and unpinned shortcuts move to More.
 
 ### Changed
 

@@ -4,20 +4,13 @@ import {
   Activity,
   ArrowDownUp,
   ArrowUpRight,
-  BookOpen,
-  Bell,
-  Compass,
   Eye,
   EyeOff,
-  Globe2,
   History,
   Search,
   PanelsTopLeft,
-  Settings2,
-  Sparkles,
-  Waves,
 } from 'lucide-react';
-import { exchangeCategoryIcons } from './lib/category-icons';
+import { destinations } from './lib/navigation-options';
 import { DOCUMENTATION_URL } from './lib/docs';
 import { Badge, Loading, Modal } from './components/ui';
 import { WorkerHealthNotice } from './components/workspace/worker-health';
@@ -54,25 +47,6 @@ const Alerts = lazy(() => import('./pages/Alerts').then((module) => ({ default: 
 const Roadmap = lazy(() =>
   import('./components/coming-soon').then((module) => ({ default: module.Roadmap })),
 );
-const destinations = [
-  { path: '/sibyl', name: 'Sibyl', icon: Sparkles },
-  { path: '/account', name: 'Account', icon: exchangeCategoryIcons.account },
-  { path: '/markets', name: 'Markets', icon: exchangeCategoryIcons.market },
-  { path: '/trade', name: 'Trade', icon: ArrowDownUp },
-  { path: '/strategies', name: 'Strategies', icon: Waves },
-  { path: '/forecast', name: 'Forecasting', icon: Compass },
-  { path: '/news', name: 'News', icon: Globe2 },
-  { path: '/oracle', name: 'Agents', icon: Sparkles },
-  { path: '/alerts', name: 'Alerts', icon: Bell },
-  { path: '/research', name: 'Research', icon: BookOpen },
-  { path: '/settings', name: 'Settings', icon: Settings2 },
-  { path: '/roadmap', name: 'Coming soon', icon: Compass },
-];
-const secondary = destinations.filter((item) =>
-  ['/oracle', '/alerts', '/research', '/roadmap'].includes(item.path),
-);
-const primary = destinations.filter((item) => !secondary.includes(item));
-
 /** Keep bookmarked report/account filters while their home moves into Trade. */
 function LegacyReportsRedirect() {
   const location = useLocation();
@@ -223,7 +197,7 @@ export function App() {
         </div>
       </header>
       <div className="workspace-layout">
-        <NavigationDock items={primary} moreItems={secondary} />
+        <NavigationDock />
         <div className="workspace-surface">
           <main id="main-content" className="main-content" tabIndex={-1}>
             <WorkerHealthNotice />

@@ -5,20 +5,15 @@ import { NavigationIcon } from './navigation-icon';
 import { useInterfacePreferences } from '../lib/interface-preferences';
 import { playPageTransition } from '../lib/page-transition';
 import { LayoutGrid } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
-type Destination = { path: string; name: string; icon: LucideIcon };
+import { destinations } from '../lib/navigation-options';
 
 /** A floating dock whose selection and page marker follow the actual button geometry. */
-export function NavigationDock({
-  items,
-  moreItems,
-}: {
-  items: Destination[];
-  moreItems: Destination[];
-}) {
+export function NavigationDock() {
   const location = useLocation();
-  const { navigation, showLabels } = useInterfacePreferences();
+  const { navigation, showLabels, dockStyle, pinnedPaths } = useInterfacePreferences();
+  const items = destinations.filter(({ path }) => pinnedPaths.includes(path));
+  const moreItems = destinations.filter(({ path }) => !pinnedPaths.includes(path));
+  const hasMore = moreItems.length > 0;
   const dock = useRef<HTMLElement>(null);
   const moreButton = useRef<HTMLButtonElement>(null);
   const morePanel = useRef<HTMLDivElement>(null);
@@ -66,7 +61,7 @@ export function NavigationDock({
 
   useEffect(() => {
     setExpanded(false);
-  }, [location.pathname, location.search, navigation]);
+  }, [location.pathname, location.search, navigation, pinnedPaths]);
   useEffect(() => {
     if (!expanded) return;
     const outside = (event: PointerEvent) => {
@@ -101,13 +96,18 @@ export function NavigationDock({
       const active = element.querySelector<HTMLElement>(
         '[aria-current="page"], [data-current="true"]',
       );
+      const { top, right } = element.getBoundingClientRect();
       const more = moreButton.current;
-      if (more)
-        element.style.setProperty('--more-center', `${more.offsetTop + more.offsetHeight / 2}px`);
-      element.style.setProperty(
-        '--more-space',
-        `${Math.max(0, window.innerWidth - element.getBoundingClientRect().right - 16)}px`,
-      );
+      if (more && morePanel.current) {
+        const halfHeight = morePanel.current.offsetHeight / 2;
+        const center = more.offsetTop + more.offsetHeight / 2;
+        const inset = 12 + halfHeight;
+        element.style.setProperty(
+          '--more-center',
+          `${Math.min(window.innerHeight - inset - top, Math.max(inset - top, center))}px`,
+        );
+      }
+      element.style.setProperty('--more-space', `${Math.max(0, window.innerWidth - right - 16)}px`);
       if (!active) return;
       element.style.setProperty('--selection-y', `${active.offsetTop}px`);
       element.style.setProperty('--selection-x', `${active.offsetLeft}px`);
@@ -122,13 +122,14 @@ export function NavigationDock({
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
+    if (morePanel.current) observer.observe(morePanel.current);
     if (surface) observer.observe(surface);
     window.addEventListener('resize', measure);
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [location.pathname, navigation]);
+  }, [location.pathname, navigation, pinnedPaths]);
 
   return (
     <nav
@@ -136,6 +137,8 @@ export function NavigationDock({
       className="side-dock"
       aria-label="Main navigation"
       data-show-labels={showLabels}
+      data-dock-style={dockStyle}
+      style={{ '--dock-slots': items.length + Number(hasMore) } as CSSProperties}
     >
       <span className="dock-selection" aria-hidden="true">
         <span className="dock-connector">
@@ -144,7 +147,6 @@ export function NavigationDock({
       </span>
       {items.map((item) => (
         <NavLink
-          end={item.path === '/'}
           key={item.path}
           to={item.path}
           onClick={(event) => {
@@ -164,107 +166,111 @@ export function NavigationDock({
           </span>
         </NavLink>
       ))}
-      <button
-        className={`dock-item dock-more-trigger ${moreActive ? 'active' : ''}`}
-        ref={moreButton}
-        data-current={moreActive}
-        aria-label="More tools"
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onClick={(event) => {
-          press(event.currentTarget);
-          const opening = !expanded;
-          setExpanded(opening);
-          if (opening && event.detail === 0) {
-            requestAnimationFrame(() =>
-              morePanel.current
-                ?.querySelector<HTMLAnchorElement>('a')
-                ?.focus({ preventScroll: true }),
-            );
-          }
-        }}
-        onKeyDown={(event) => {
-          if (event.key === (navigation === 'bottom' ? 'ArrowUp' : 'ArrowRight')) {
-            event.preventDefault();
-            setExpanded(true);
-            requestAnimationFrame(() =>
-              morePanel.current
-                ?.querySelector<HTMLAnchorElement>('a')
-                ?.focus({ preventScroll: true }),
-            );
-          }
-        }}
-      >
-        <span className="dock-icon">
-          <NavigationIcon path="more" icon={LayoutGrid} />
-        </span>
-        <span className="dock-label" aria-hidden="true">
-          More
-        </span>
-      </button>
-      <div
-        ref={morePanel}
-        id={panelId}
-        className="dock-more-panel"
-        style={{
-          gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, Math.ceil(Math.sqrt(moreItems.length))))}, minmax(0, 1fr))`,
-        }}
-        data-open={expanded}
-        role="group"
-        aria-label="More destinations"
-        aria-hidden={!expanded}
-        inert={!expanded}
-        onKeyDown={(event) => {
-          const links = Array.from(
-            morePanel.current?.querySelectorAll<HTMLAnchorElement>('a') ?? [],
-          );
-          const index = links.indexOf(document.activeElement as HTMLAnchorElement);
-          if (
-            (navigation === 'left' && event.key === 'ArrowLeft' && index === 0) ||
-            (navigation === 'bottom' && event.key === 'ArrowDown')
-          ) {
-            event.preventDefault();
-            moreButton.current?.focus({ preventScroll: true });
-            return;
-          }
-          const next =
-            event.key === 'ArrowRight'
-              ? (index + 1) % links.length
-              : event.key === 'ArrowLeft'
-                ? (index - 1 + links.length) % links.length
-                : event.key === 'Home'
-                  ? 0
-                  : event.key === 'End'
-                    ? links.length - 1
-                    : null;
-          if (next !== null) {
-            event.preventDefault();
-            links[next]?.focus({ preventScroll: true });
-          }
-        }}
-      >
-        {moreItems.map((item, index) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            aria-label={item.name}
-            style={{ '--more-index': index } as CSSProperties}
+      {hasMore && (
+        <>
+          <button
+            className={`dock-item dock-more-trigger ${moreActive ? 'active' : ''}`}
+            ref={moreButton}
+            data-current={moreActive}
+            aria-label="More tools"
+            aria-expanded={expanded}
+            aria-controls={panelId}
             onClick={(event) => {
               press(event.currentTarget);
-              setExpanded(false);
-              moreButton.current?.focus({ preventScroll: true });
+              const opening = !expanded;
+              setExpanded(opening);
+              if (opening && event.detail === 0) {
+                requestAnimationFrame(() =>
+                  morePanel.current
+                    ?.querySelector<HTMLAnchorElement>('a')
+                    ?.focus({ preventScroll: true }),
+                );
+              }
             }}
-            className={({ isActive }) => `dock-more-link ${isActive ? 'active' : ''}`}
+            onKeyDown={(event) => {
+              if (event.key === (navigation === 'bottom' ? 'ArrowUp' : 'ArrowRight')) {
+                event.preventDefault();
+                setExpanded(true);
+                requestAnimationFrame(() =>
+                  morePanel.current
+                    ?.querySelector<HTMLAnchorElement>('a')
+                    ?.focus({ preventScroll: true }),
+                );
+              }
+            }}
           >
             <span className="dock-icon">
-              <NavigationIcon path={item.path} icon={item.icon} />
+              <NavigationIcon path="more" icon={LayoutGrid} />
             </span>
             <span className="dock-label" aria-hidden="true">
-              {item.name}
+              More
             </span>
-          </NavLink>
-        ))}
-      </div>
+          </button>
+          <div
+            ref={morePanel}
+            id={panelId}
+            className="dock-more-panel"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(1, Math.min(3, Math.ceil(Math.sqrt(moreItems.length))))}, minmax(0, 1fr))`,
+            }}
+            data-open={expanded}
+            role="group"
+            aria-label="More destinations"
+            aria-hidden={!expanded}
+            inert={!expanded}
+            onKeyDown={(event) => {
+              const links = Array.from(
+                morePanel.current?.querySelectorAll<HTMLAnchorElement>('a') ?? [],
+              );
+              const index = links.indexOf(document.activeElement as HTMLAnchorElement);
+              if (
+                (navigation === 'left' && event.key === 'ArrowLeft' && index === 0) ||
+                (navigation === 'bottom' && event.key === 'ArrowDown')
+              ) {
+                event.preventDefault();
+                moreButton.current?.focus({ preventScroll: true });
+                return;
+              }
+              const next =
+                event.key === 'ArrowRight'
+                  ? (index + 1) % links.length
+                  : event.key === 'ArrowLeft'
+                    ? (index - 1 + links.length) % links.length
+                    : event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? links.length - 1
+                        : null;
+              if (next !== null) {
+                event.preventDefault();
+                links[next]?.focus();
+              }
+            }}
+          >
+            {moreItems.map((item, index) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                aria-label={item.name}
+                style={{ '--more-index': index } as CSSProperties}
+                onClick={(event) => {
+                  press(event.currentTarget);
+                  setExpanded(false);
+                  moreButton.current?.focus({ preventScroll: true });
+                }}
+                className={({ isActive }) => `dock-more-link ${isActive ? 'active' : ''}`}
+              >
+                <span className="dock-icon">
+                  <NavigationIcon path={item.path} icon={item.icon} />
+                </span>
+                <span className="dock-label" aria-hidden="true">
+                  {item.name}
+                </span>
+              </NavLink>
+            ))}
+          </div>
+        </>
+      )}
     </nav>
   );
 }

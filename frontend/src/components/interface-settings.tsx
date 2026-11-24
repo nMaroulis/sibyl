@@ -1,6 +1,7 @@
 import { Check, Play } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Ref } from 'react';
+import { DockPreferences } from './dock-preferences';
 import { useInterfacePreferences } from '../lib/interface-preferences';
 import { pageTransitions, playPageTransition } from '../lib/page-transition';
 import type { PageTransition } from '../lib/page-transition';
@@ -77,6 +78,7 @@ export function InterfaceSettings() {
             onChange={(event) => update({ showLabels: event.currentTarget.checked })}
           />
         </label>
+        <DockPreferences />
       </fieldset>
       <fieldset className="interface-group">
         <legend>Page transition</legend>

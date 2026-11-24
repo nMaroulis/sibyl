@@ -271,7 +271,7 @@ kbd {
   padding: 0 32px 32px 36px;
 }
 .side-dock {
-  --dock-item-size: clamp(32px, calc((100dvh - 210px) / 10), 58px);
+  --dock-item-size: clamp(32px, calc((100dvh - 210px) / max(10, var(--dock-slots) + 1)), 58px);
   --selection-y: 9px;
   --selection-x: 9px;
   --selection-width: 68px;
@@ -3031,7 +3031,7 @@ details[open] > summary {
     padding: 0 10px 14px 12px;
   }
   .side-dock {
-    --dock-item-size: clamp(32px, calc((100dvh - 200px) / 10), 54px);
+    --dock-item-size: clamp(32px, calc((100dvh - 200px) / max(10, var(--dock-slots) + 1)), 54px);
     left: 12px;
     width: 64px;
     padding: 10px 5px;
@@ -3341,7 +3341,7 @@ details[open] > summary {
 }
 @media (max-height: 640px) {
   .side-dock {
-    --dock-item-size: clamp(24px, calc((100dvh - 190px) / 10), 44px);
+    --dock-item-size: clamp(24px, calc((100dvh - 190px) / max(10, var(--dock-slots) + 1)), 44px);
     gap: 3px;
   }
   .dock-item {
@@ -3359,6 +3359,9 @@ details[open] > summary {
   }
 }
 @media (max-height: 450px) {
+  .side-dock {
+    --dock-item-size: clamp(20px, calc((100dvh - 58px) / var(--dock-slots) - 3px), 28px);
+  }
   .dock-item {
     --dock-center-shift: 0px;
   }
@@ -5214,6 +5217,8 @@ details[open] > summary {
   translate: 0 -50%;
   width: min(282px, var(--more-space, 282px));
   max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
