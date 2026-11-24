@@ -1,8 +1,8 @@
 export const pageTransitions = [
-  { id: 'dock', label: 'Dock reveal', description: 'Unfolds from the selected dock button.' },
-  { id: 'slide', label: 'Slide', description: 'Moves in from the dock edge.' },
+  { id: 'dock', label: 'Dock reveal', description: 'Spreads outward from the selected button.' },
+  { id: 'slide', label: 'Slide', description: 'Glides in from the dock edge.' },
   { id: 'zoom', label: 'Soft zoom', description: 'Gently grows into place.' },
-  { id: 'fade', label: 'Fade', description: 'Appears with no movement.' },
+  { id: 'fade', label: 'Fade', description: 'Dissolves in place.' },
 ] as const;
 
 export type PageTransition = (typeof pageTransitions)[number]['id'];
@@ -12,8 +12,6 @@ export function isPageTransition(value: unknown): value is PageTransition {
   return pageTransitions.some(({ id }) => id === value);
 }
 
-const fullPage = 'inset(0px 0px 0px 0px round 0px)';
-const easing = 'cubic-bezier(.16,1,.3,1)';
 const within = (value: number, length: number) => Math.max(0, Math.min(length, value));
 
 /** Play the same transition on the workspace or on a miniature in Settings. */
@@ -37,52 +35,37 @@ export function playPageTransition(
     : bounds.height / 2;
   let frames: Keyframe[];
   let duration: number;
+  let easing = 'cubic-bezier(.16,1,.3,1)';
 
   switch (style) {
-    case 'dock':
-      duration = bottomDock ? 460 : 580;
-      if (bottomDock) {
-        // On a long page, begin at the visible dock edge rather than below the viewport.
-        const edge = origin ? within(origin.top - bounds.top, bounds.height) : bounds.height;
-        const radius = Math.min(48, bounds.width / 5);
-        const left = Math.max(0, x - radius);
-        const right = Math.max(0, bounds.width - x - radius);
-        const top = Math.max(0, edge - Math.min(34, bounds.height / 3));
-        frames = [
-          {
-            clipPath: `inset(${top}px ${right}px ${bounds.height - edge}px ${left}px round 20px)`,
-            opacity: 0.35,
-            transform: 'translateY(10px)',
-          },
-          {
-            clipPath: `inset(${edge * 0.16}px 0px 0px 0px round 12px)`,
-            opacity: 0.9,
-            transform: 'translateY(2px)',
-            offset: 0.45,
-          },
-          { clipPath: fullPage, opacity: 1, transform: 'translateY(0)' },
-        ];
-      } else {
-        const top = Math.max(0, y - 30);
-        const bottom = Math.max(0, bounds.height - y - 30);
-        const right = Math.max(0, bounds.width - 24);
-        frames = [
-          {
-            clipPath: `inset(${top}px ${right}px ${bottom}px 0px round 18px)`,
-            opacity: 0.3,
-            transform: 'translateX(-12px)',
-          },
-          { clipPath: fullPage, opacity: 1, transform: 'translateX(0)' },
-        ];
-      }
-      break;
-    case 'slide':
-      duration = 300;
+    case 'dock': {
+      duration = 520;
+      easing = 'cubic-bezier(.35,0,.2,1)';
+      // Size the circle to the visible workspace so long pages reveal at the same pace.
+      const height = within(window.innerHeight - bounds.top, bounds.height);
+      const centerX = bottomDock ? x : 0;
+      const centerY = within(bottomDock ? (origin?.top ?? bounds.bottom) - bounds.top : y, height);
+      const radius = Math.hypot(
+        Math.max(centerX, bounds.width - centerX),
+        Math.max(centerY, height - centerY),
+      );
+      const center = `${centerX}px ${centerY}px`;
       frames = [
-        { opacity: 0.55, transform: bottomDock ? 'translateY(24px)' : 'translateX(-24px)' },
-        { opacity: 1, transform: 'none' },
+        { clipPath: `circle(0px at ${center})` },
+        { clipPath: `circle(${Math.ceil(radius) + 2}px at ${center})` },
       ];
       break;
+    }
+    case 'slide': {
+      duration = 380;
+      easing = 'cubic-bezier(.2,.78,.26,1)';
+      const distance = Math.min(104, Math.round((bottomDock ? bounds.height : bounds.width) * 0.3));
+      frames = [
+        { transform: bottomDock ? `translateY(${distance}px)` : `translateX(-${distance}px)` },
+        { transform: 'none' },
+      ];
+      break;
+    }
     case 'zoom': {
       duration = 330;
       const transformOrigin = bottomDock ? `${x}px bottom` : `left ${y}px`;
@@ -93,8 +76,9 @@ export function playPageTransition(
       break;
     }
     case 'fade':
-      duration = 230;
-      frames = [{ opacity: 0.25 }, { opacity: 1 }];
+      duration = 470;
+      easing = 'ease-in-out';
+      frames = [{ opacity: 0 }, { opacity: 1 }];
       break;
   }
 

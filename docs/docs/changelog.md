@@ -51,7 +51,11 @@ docker compose up --build
 
 ### Added
 
-- Settings renames Interface to UI/UX and adds four page transitions with a live preview. Dock reveal opens from the selected button on the left or bottom dock.
+- Settings renames Interface to UI/UX and adds four page transitions with a live preview. Dock reveal expands from the selected button, Slide comes in from the dock edge, and Fade dissolves in place.
+
+### Changed
+
+- New browsers start with Light mode, the bottom dock, navigation labels enabled, and Soft zoom.
 
 ### Fixed
 

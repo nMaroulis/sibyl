@@ -12,8 +12,8 @@ type Preferences = {
 type InterfaceState = Preferences & { update: (preferences: Partial<Preferences>) => void };
 const defaults: Preferences = {
   theme: 'light',
-  navigation: 'left',
-  pageTransition: 'dock',
+  navigation: 'bottom',
+  pageTransition: 'zoom',
   showLabels: true,
 };
 const storageKey = 'sibyl.interface';
@@ -24,7 +24,10 @@ function readPreferences(): Preferences {
     const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
     return {
       theme: saved?.theme === 'dark' ? 'dark' : defaults.theme,
-      navigation: saved?.navigation === 'bottom' ? 'bottom' : defaults.navigation,
+      navigation:
+        saved?.navigation === 'left' || saved?.navigation === 'bottom'
+          ? saved.navigation
+          : defaults.navigation,
       pageTransition: isPageTransition(saved?.pageTransition)
         ? saved.pageTransition
         : defaults.pageTransition,

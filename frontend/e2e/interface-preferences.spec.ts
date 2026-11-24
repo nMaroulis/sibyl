@@ -5,26 +5,31 @@ test('appearance and navigation choices apply immediately and survive reload', a
   const root = page.locator('html');
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
   await expect(page.getByRole('radio', { name: 'Light' })).toBeChecked();
-  await expect(page.getByRole('radio', { name: 'Left' })).toBeChecked();
-  await expect(nav).toHaveCSS('flex-direction', 'column');
-
-  await page.getByText('Dark', { exact: true }).click();
-  await page.getByText('Bottom', { exact: true }).click();
-  await expect(root).toHaveCSS('color-scheme', 'dark');
+  await expect(root).toHaveCSS('color-scheme', 'light');
+  await expect(page.getByRole('radio', { name: 'Bottom' })).toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Show labels' })).toBeChecked();
+  await expect(nav.getByRole('link', { name: 'Markets' }).locator('.dock-label')).toBeVisible();
+  await expect(page.getByRole('radio', { name: /^Soft zoom/ })).toBeChecked();
   await expect(nav).toHaveCSS('flex-direction', 'row');
   await expect(nav).toHaveCSS('position', 'fixed');
 
+  await page.getByText('Dark', { exact: true }).click();
+  await page.getByText('Left', { exact: true }).click();
+  await expect(root).toHaveCSS('color-scheme', 'dark');
+  await expect(nav).toHaveCSS('flex-direction', 'column');
+
   await page.reload();
   await expect(page.getByRole('radio', { name: 'Dark' })).toBeChecked();
-  await expect(page.getByRole('radio', { name: 'Bottom' })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Left' })).toBeChecked();
+  await expect(nav).toHaveCSS('flex-direction', 'column');
   await nav.getByRole('link', { name: 'Sibyl', exact: true }).click();
   await expect(page).toHaveURL(/\/sibyl$/);
   await expect(root).toHaveCSS('color-scheme', 'dark');
 
   await page.goto('/settings?tab=interface');
-  await page.getByText('Left', { exact: true }).click();
+  await page.getByText('Bottom', { exact: true }).click();
   await page.getByText('Light', { exact: true }).click();
-  await expect(nav).toHaveCSS('flex-direction', 'column');
+  await expect(nav).toHaveCSS('flex-direction', 'row');
   await expect(root).toHaveCSS('color-scheme', 'light');
 });
 
@@ -83,6 +88,8 @@ test('navigation labels can be hidden in either dock and restored after reload',
   const showLabels = page.getByRole('switch', { name: 'Show labels' });
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
   const marketLabel = nav.getByRole('link', { name: 'Markets' }).locator('.dock-label');
+  await page.getByText('Left', { exact: true }).click();
+  await expect(nav).toHaveCSS('flex-direction', 'column');
   await expect(showLabels).toBeChecked();
   await expect(marketLabel).toBeVisible();
 
@@ -131,19 +138,33 @@ test('page transitions follow the dock, persist, and respect reduced motion', as
   const view = page.locator('.page-view');
   const preview = page.locator('.interface-motion-sample .interface-preview-content');
   await expect(page.getByRole('tab', { name: 'UI/UX' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('radio', { name: /^Dock reveal/ })).toBeChecked();
-  await expect(view).toHaveAttribute('data-test-motion', /"clipPath".*translateX/);
-  await page.getByText('Bottom', { exact: true }).click();
-  await page.getByRole('button', { name: 'Preview', exact: true }).click();
-  await expect(preview).toHaveAttribute('data-test-motion', /"clipPath".*translateY/);
+  await expect(page.getByRole('radio', { name: /^Soft zoom/ })).toBeChecked();
+  await expect(view).toHaveAttribute(
+    'data-test-motion',
+    /"opacity":0\.45,"transform":"scale\(.96\)"/,
+  );
+
+  await page.getByText('Dock reveal', { exact: true }).click();
+  const bottomCircle = /^\{"clipPath":"circle\(0px at [1-9][\d.]*px [1-9][\d.]*px\)"\}$/;
+  await expect(preview).toHaveAttribute('data-test-motion', bottomCircle);
   await nav.getByRole('link', { name: 'Strategies', exact: true }).click();
   await expect(page).toHaveURL(/\/strategies$/);
-  await expect(view).toHaveAttribute('data-test-motion', /"clipPath".*translateY/);
+  await expect(view).toHaveAttribute('data-test-motion', bottomCircle);
 
+  await page.goto('/settings?tab=interface');
+  await page.getByText('Left', { exact: true }).click();
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  const leftCircle = /^\{"clipPath":"circle\(0px at 0px [\d.]+px\)"\}$/;
+  await expect(preview).toHaveAttribute('data-test-motion', leftCircle);
+  await nav.getByRole('link', { name: 'Strategies', exact: true }).click();
+  await expect(view).toHaveAttribute('data-test-motion', leftCircle);
+
+  await page.goto('/settings?tab=interface');
+  await page.getByText('Bottom', { exact: true }).click();
   for (const [label, firstFrame] of [
-    ['Slide', /"transform":"translateY\(24px\)"/],
-    ['Soft zoom', /"transform":"scale\(.96\)"/],
-    ['Fade', /^\{"opacity":0\.25\}$/],
+    ['Slide', /^\{"transform":"translateY\([1-9]\d*px\)"\}$/],
+    ['Soft zoom', /"opacity":0\.45,"transform":"scale\(.96\)"/],
+    ['Fade', /^\{"opacity":0\}$/],
   ] as const) {
     await page.goto('/settings?tab=interface');
     await page.getByText(label, { exact: true }).click();

@@ -129,8 +129,8 @@ GUIDES = {
             "In Settings → UI/UX, choose Light or Dark under Appearance.",
             "Under Navigation, choose Left or Bottom. The bottom dock stays visible while scrolling, and the page has room to scroll its last controls above it. More opens above the dock.",
             "Turn off Show labels for icon-only navigation in either dock and its More menu.",
-            "Under Page transition, choose Dock reveal, Slide, Soft zoom or Fade and use Preview to replay it. Dock reveal follows the selected left or bottom dock. Device reduced motion suppresses animations.",
-            "The choices apply immediately and are saved in this browser. Light, Left and Dock reveal are the defaults.",
+            "Under Page transition, choose Dock reveal, Slide, Soft zoom or Fade and use Preview to replay it. Dock reveal expands in a circle from the active button. Slide moves in from the dock edge and Fade stays in place. Device reduced motion suppresses animations.",
+            "The choices apply immediately and are saved in this browser. New browsers start with Light appearance, the Bottom dock, labels on and Soft zoom.",
         ],
     },
     "workspace": {
