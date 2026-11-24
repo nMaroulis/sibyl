@@ -134,7 +134,7 @@ class EmailSettings(Request):
 
 class ChannelAction(Request):
     revision: str = Field(pattern=r"^[a-f0-9]{32}$")
-    action: Literal["check", "enable", "pause", "disconnect"]
+    action: Literal["check", "enable", "pause", "stop", "disconnect"]
 
 
 SETTINGS = {

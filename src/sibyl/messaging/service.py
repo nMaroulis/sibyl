@@ -9,8 +9,17 @@ from uuid import uuid4
 import httpx
 
 from sibyl.agents.utils.conversations import SibylRequest
+from sibyl.messaging.activity import recent_activity
 from sibyl.messaging.documents import add_document_columns, document_bytes
 from sibyl.messaging.media.service import TelegramMedia
+from sibyl.messaging.message_logs import (
+    add_message_log,
+    clear_message_logs,
+    initialize_message_logs,
+    log_storage,
+    message_finished,
+    update_message_log,
+)
 from sibyl.messaging.outbound import NotificationOutbox, chunks
 from sibyl.messaging.reply_review import ReplyReview, record_reply
 from sibyl.messaging.settings import MessagingSettings
@@ -48,6 +57,7 @@ class TelegramService:
                     UNIQUE(revision,update_id,part)
                 );
             """)
+            initialize_message_logs(db, telegram=True)
             add_document_columns(db, "telegram_outbox")
             db.execute(
                 "UPDATE telegram_outbox SET state='uncertain',error='Delivery was interrupted. Check Telegram before deciding to resend.' WHERE state='sending'"
@@ -81,8 +91,8 @@ class TelegramService:
 
     def public(self):
         """Return connection/delivery health without message bodies, tokens or native errors."""
-        result = self.settings.public()
         profile = self.settings.profile()
+        result = self.settings.public(profile)
         with self.store.db() as db:
             db.execute("BEGIN")
             rows = db.execute(
@@ -101,7 +111,11 @@ class TelegramService:
                 )""",
                 (profile.get("revision", ""),),
             ).fetchone()
+            activity = recent_activity(db, "telegram", profile)
+            logs = log_storage(db, "telegram", profile.get("revision"))
         result["telegram"] = {
+            "activity": activity,
+            "logs": logs,
             "briefings": self.notifications.summary(profile.get("revision", "")),
             "alerts": self.notifications.summary(profile.get("revision", ""), kind="alert"),
             "updates": dict(rows),
@@ -114,6 +128,14 @@ class TelegramService:
             },
         }
         return result
+
+    def clear_logs(self, revision):
+        """Clear settled diagnostics only for the selected connection revision."""
+        with self._lock, self.store.db() as db:
+            if self.settings.profile().get("revision") != revision:
+                raise ValueError("The saved connection changed. Refresh before clearing logs.")
+            db.execute("BEGIN IMMEDIATE")
+            return clear_message_logs(db, "telegram", revision)
 
     def save(self, body):
         """Serialize connection edits with local ingestion and checkpoint changes."""
@@ -175,7 +197,9 @@ class TelegramService:
             self._update(
                 profile["revision"],
                 enabled=True,
-                enabled_at=profile.get("enabled_at", time.time()),
+                enabled_at=time.time()
+                if profile.get("stopped_at", 0) > profile.get("enabled_at", 0)
+                else profile.get("enabled_at", time.time()),
                 error=None,
                 next_attempt=0,
                 control_id=uuid4().hex,
@@ -183,15 +207,36 @@ class TelegramService:
         return self.public()
 
     def pause(self):
-        """Stop future polls and sends; an already submitted HTTP send can still finish."""
-        profile = self.settings.profile()
-        if profile:
-            self._update(profile["revision"], enabled=False, control_id=uuid4().hex)
-            self.notifications.invalidate(
-                connection_revision=profile["revision"],
-                channel="telegram",
-                reason="Telegram was paused before this notification was sent.",
-            )
+        """Hold conversation work that has not started and suspend the listener."""
+        return self._suspend(stopped=False)
+
+    def stop(self):
+        """Suspend the listener and withdraw queued conversation work."""
+        return self._suspend(stopped=True)
+
+    def _suspend(self, *, stopped):
+        with self._lock:
+            profile = self.settings.profile()
+            if profile:
+                revision = profile["revision"]
+                changes = {"stopped_at": time.time()} if stopped else {}
+                self._update(revision, enabled=False, control_id=uuid4().hex, **changes)
+                reason = "stopped" if stopped else "paused"
+                self.notifications.invalidate(
+                    connection_revision=revision,
+                    channel="telegram",
+                    reason=f"Telegram was {reason} before this notification was sent.",
+                )
+                if stopped:
+                    with self.store.db() as db:
+                        db.execute(
+                            "UPDATE telegram_updates SET state='withdrawn' WHERE revision=? AND state='queued'",
+                            (revision,),
+                        )
+                        db.execute(
+                            "UPDATE telegram_outbox SET state='skipped',error='Telegram was stopped before this part was sent.' WHERE revision=? AND state='pending'",
+                            (revision,),
+                        )
         return self.public()
 
     def disconnect(self):
@@ -270,7 +315,7 @@ class TelegramService:
                         if accepted
                         else {}
                     )
-                    db.execute(
+                    inserted = db.execute(
                         "INSERT OR IGNORE INTO telegram_updates VALUES(?,?,?,?)",
                         (
                             profile["revision"],
@@ -279,6 +324,10 @@ class TelegramService:
                             json.dumps(payload),
                         ),
                     )
+                    if accepted and inserted.rowcount:
+                        add_message_log(
+                            db, "telegram", profile["revision"], inserted.lastrowid, payload["received_at"]
+                        )
             self._update(profile["revision"], offset=offset, error=None, last_poll_at=time.time())
 
     @staticmethod
@@ -315,9 +364,11 @@ class TelegramService:
 
     async def process(self, profile):
         """Send one queued question to the same ProtoLink coordinator used by the web app."""
-        with self.store.db() as db:
+        with self._lock, self.store.db() as db:
+            if not self._same_generation(profile):
+                return False
             row = db.execute(
-                "SELECT update_id,payload FROM telegram_updates WHERE revision=? AND state='queued' ORDER BY update_id LIMIT 1",
+                "SELECT update_id,payload,rowid AS log_sequence FROM telegram_updates WHERE revision=? AND state='queued' ORDER BY update_id LIMIT 1",
                 (profile["revision"],),
             ).fetchone()
             if not row:
@@ -326,6 +377,9 @@ class TelegramService:
                 "UPDATE telegram_updates SET state='processing' WHERE revision=? AND update_id=?",
                 (profile["revision"], row[0]),
             )
+            update_message_log(
+                db, "telegram", profile["revision"], row["log_sequence"], started_at=time.time()
+            )
         message = json.loads(row[1])
         try:
             answer = await self.answer(profile, message, row[0])
@@ -333,20 +387,23 @@ class TelegramService:
                 if self._same_generation(profile):
                     with self.store.db() as db:
                         self._complete(db, profile["revision"], row[0], message["chat_id"], answer)
+                        message_finished(db, "telegram", profile["revision"], row["log_sequence"])
                 else:
                     with self.store.db() as db:
                         db.execute(
                             "UPDATE telegram_updates SET state='interrupted' WHERE revision=? AND update_id=?",
                             (profile["revision"], row[0]),
                         )
+                        message_finished(db, "telegram", profile["revision"], row["log_sequence"])
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as error:
             with self.store.db() as db:
                 db.execute(
                     "UPDATE telegram_updates SET state='failed' WHERE revision=? AND update_id=?",
                     (profile["revision"], row[0]),
                 )
+                message_finished(db, "telegram", profile["revision"], row["log_sequence"], error)
             self._update(
                 profile["revision"],
                 error="Sibyl could not finish a Telegram answer. Check your model and send the question again.",
@@ -437,8 +494,11 @@ class TelegramService:
                 )
         except TelegramError as error:
             retry = error.retry_after and row["attempts"] < 5
-            state = "pending" if retry else "uncertain" if error.ambiguous else "failed"
-            with self.store.db() as db:
+            with self._lock, self.store.db() as db:
+                stopped = self.settings.profile().get("stopped_at") != profile.get("stopped_at")
+                state = "pending" if retry else "uncertain" if error.ambiguous else "failed"
+                if retry and stopped:
+                    state = "skipped"
                 db.execute(
                     "UPDATE telegram_outbox SET state=?,next_attempt=?,error=? WHERE id=?",
                     (state, time.time() + error.retry_after, str(error), row["id"]),

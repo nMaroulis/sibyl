@@ -16,12 +16,21 @@ import httpx
 from pydantic import SecretStr, ValidationError
 
 from sibyl.agents.utils.conversations import SibylRequest
+from sibyl.messaging.activity import recent_activity
 from sibyl.messaging.channels.contracts import SENDER_FIELD, SETTINGS, ChannelError, private_values
 from sibyl.messaging.channels.discord import DiscordClient
 from sibyl.messaging.channels.email import EmailClient
 from sibyl.messaging.channels.signal import SignalClient
 from sibyl.messaging.channels.slack import SlackClient
 from sibyl.messaging.channels.whatsapp import WhatsAppClient
+from sibyl.messaging.message_logs import (
+    add_message_log,
+    clear_message_logs,
+    initialize_message_logs,
+    log_storage,
+    message_finished,
+    update_message_log,
+)
 from sibyl.messaging.outbound import chunks
 
 CLIENTS = {
@@ -50,6 +59,7 @@ class PrivateChannels:
                 CREATE TABLE IF NOT EXISTS channel_messages(channel TEXT NOT NULL,revision TEXT NOT NULL,native_id TEXT NOT NULL,state TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(channel,revision,native_id));
                 CREATE TABLE IF NOT EXISTS channel_outbox(id TEXT PRIMARY KEY,channel TEXT NOT NULL,revision TEXT NOT NULL,native_id TEXT NOT NULL,part INTEGER NOT NULL,state TEXT NOT NULL,target TEXT NOT NULL,text TEXT NOT NULL,provider_id TEXT,error TEXT,attempts INTEGER NOT NULL DEFAULT 0,next_attempt REAL NOT NULL DEFAULT 0,created_at REAL NOT NULL,UNIQUE(channel,revision,native_id,part));
             """)
+            initialize_message_logs(db, telegram=False)
             db.execute(
                 "UPDATE channel_outbox SET state='uncertain',error='Delivery was interrupted. Check the recipient app before deciding what to do.' WHERE state='sending'"
             )
@@ -76,8 +86,10 @@ class PrivateChannels:
         return self.store.data_profile("messaging:" + channel)
 
     def public(self, channel):
+        """Read the channel state and recent activity without exporting private messages."""
         profile = self.profile(channel)
         with self.store.db() as db:
+            db.execute("BEGIN")
             counts = {
                 r[0]: r[1]
                 for r in db.execute(
@@ -92,12 +104,20 @@ class PrivateChannels:
                     (channel, profile.get("revision", "")),
                 )
             }
+            activity = recent_activity(
+                db, channel, profile, include_notifications=self.notifications is not None
+            )
+            logs = log_storage(db, channel, profile.get("revision"))
         return dict(
             id=channel,
+            activity=activity,
+            logs=logs,
             status="available",
             connected=bool(profile.get("verified")),
             configured=bool(profile.get("revision")),
             enabled=bool(profile.get("enabled")),
+            has_started=bool(profile.get("enabled_at")),
+            stopped=profile.get("stopped_at", 0) > profile.get("enabled_at", 0),
             revision=profile.get("revision"),
             bot_username=profile.get("bot_username"),
             last_checked_at=profile.get("last_checked_at"),
@@ -131,6 +151,14 @@ class PrivateChannels:
                 return False
             self.store.save_data_profile("messaging:" + channel, {**current, **changes})
             return True
+
+    def clear_logs(self, channel, revision):
+        """Clear settled diagnostics only for the selected connection revision."""
+        with self.lock, self.store.db() as db:
+            if self.profile(channel).get("revision") != revision:
+                raise ValueError("The saved connection changed. Refresh before clearing logs.")
+            db.execute("BEGIN IMMEDIATE")
+            return clear_message_logs(db, channel, revision)
 
     def save(self, channel, values, revision=None):
         if channel not in SETTINGS:
@@ -168,20 +196,23 @@ class PrivateChannels:
             )
         return self.public(channel)
 
-    def _invalidate(self, channel, revision):
+    def _invalidate(self, channel, revision, *, action="replace"):
+        """Withdraw bound notifications and cancel conversation work unless suspended."""
         if self.notifications:
             self.notifications.invalidate(
                 channel=channel,
                 connection_revision=revision,
-                reason="The private connection was paused or replaced before notification delivery.",
+                reason=f"The private connection control changed ({action}) before notification delivery.",
             )
+        if action == "pause":
+            return
         with self.store.db() as db:
             db.execute(
-                "UPDATE channel_outbox SET state='withdrawn',error='The saved connection was paused or replaced before sending.' WHERE channel=? AND revision=? AND state='pending'",
+                "UPDATE channel_outbox SET state='withdrawn',error='The private connection stopped before this part was sent.' WHERE channel=? AND revision=? AND state='pending'",
                 (channel, revision),
             )
             db.execute(
-                "UPDATE channel_messages SET state='interrupted' WHERE channel=? AND revision=? AND state='queued'",
+                "UPDATE channel_messages SET state='withdrawn' WHERE channel=? AND revision=? AND state='queued'",
                 (channel, revision),
             )
 
@@ -200,30 +231,35 @@ class PrivateChannels:
             raise LookupError("Messaging channel not implemented.")
         # Pause remains responsive while a receiver/model is awaiting I/O. It changes
         # the control generation first; late model output cannot queue a reply.
-        if action.action in {"pause", "disconnect"}:
+        if action.action in {"pause", "stop", "disconnect"}:
             with self.lock:
                 current = self.profile(channel)
                 if current.get("revision") != action.revision:
                     raise ValueError("This connection changed. Refresh its current state.")
-                self._invalidate(channel, current["revision"])
                 if action.action == "disconnect":
                     self.store.save_data_profile("messaging:" + channel, {})
                 else:
-                    self._update(channel, current["revision"], enabled=False, control=uuid4().hex)
+                    changes = {"stopped_at": time.time()} if action.action == "stop" else {}
+                    self._update(channel, current["revision"], enabled=False, control=uuid4().hex, **changes)
+                self._invalidate(channel, current["revision"], action=action.action)
             return self.public(channel)
         async with self.locks[channel]:
             initial = self.profile(channel)
             if initial.get("revision") != action.revision:
                 raise ValueError("This connection changed. Refresh its current state.")
-            if initial.get("enabled"):
-                if action.action == "enable":
-                    return self.public(channel)
-                raise ValueError("Pause this channel before checking its connection.")
+            if initial.get("enabled") and action.action == "enable":
+                return self.public(channel)
             try:
                 client = await self.client(channel, initial)
                 facts = await client.identity()
             except ChannelError as error:
-                self._update(channel, initial["revision"], error=str(error), verified=False, enabled=False)
+                with self.lock:
+                    current = self.profile(channel)
+                    if current.get("revision") == initial["revision"] and current.get(
+                        "control"
+                    ) == initial.get("control"):
+                        changes = {} if initial.get("enabled") else {"verified": False}
+                        self._update(channel, initial["revision"], error=str(error), **changes)
                 raise ValueError(str(error)) from None
             with self.lock:
                 current = self.profile(channel)
@@ -244,18 +280,15 @@ class PrivateChannels:
                         error="The native bot or recipient changed. Save the connection again.",
                     )
                     raise ValueError("The native bot or target changed. Save the connection again.")
-                enabled = action.action == "enable"
+                enabling = action.action == "enable"
                 changes = {
                     **facts,
                     "verified": True,
                     "last_checked_at": time.time(),
                     "error": None,
-                    "enabled": enabled,
-                    "control": uuid4().hex,
-                    "next_attempt": 0,
                 }
-                if enabled:
-                    changes["enabled_at"] = time.time()
+                if enabling:
+                    changes.update(enabled=True, control=uuid4().hex, next_attempt=0, enabled_at=time.time())
                     if channel == "discord":
                         changes["cursor"] = client.initial_cursor(changes["enabled_at"])
                 self._update(channel, initial["revision"], **changes)
@@ -313,7 +346,7 @@ class PrivateChannels:
                         chunk_units=CLIENTS[channel].chunk_units,
                         bot_id=profile.get("bot_id"),
                     )
-                    db.execute(
+                    inserted = db.execute(
                         "INSERT OR IGNORE INTO channel_messages VALUES(?,?,?,?,?)",
                         (
                             channel,
@@ -323,6 +356,10 @@ class PrivateChannels:
                             json.dumps(message, allow_nan=False),
                         ),
                     )
+                    if inserted.rowcount:
+                        add_message_log(
+                            db, channel, profile["revision"], inserted.lastrowid, message["received_at"]
+                        )
             self._update(
                 channel,
                 profile["revision"],
@@ -365,11 +402,21 @@ class PrivateChannels:
             (row["channel"], row["revision"], row["native_id"]),
         )
 
+    def _is_listening(self, channel, profile):
+        current = self.profile(channel)
+        return (
+            current.get("enabled")
+            and current.get("revision") == profile["revision"]
+            and current.get("control") == profile.get("control")
+        )
+
     async def process(self, channel, profile):
-        with self.store.db() as db:
+        with self.lock, self.store.db() as db:
+            if not self._is_listening(channel, profile):
+                return False
             db.execute("BEGIN IMMEDIATE")
             row = db.execute(
-                "SELECT * FROM channel_messages WHERE channel=? AND revision=? AND state='queued' ORDER BY rowid LIMIT 1",
+                "SELECT rowid AS log_sequence,* FROM channel_messages WHERE channel=? AND revision=? AND state='queued' ORDER BY rowid LIMIT 1",
                 (channel, profile["revision"]),
             ).fetchone()
             if not row:
@@ -378,6 +425,7 @@ class PrivateChannels:
                 "UPDATE channel_messages SET state='processing' WHERE channel=? AND revision=? AND native_id=?",
                 (channel, profile["revision"], row["native_id"]),
             )
+            update_message_log(db, channel, profile["revision"], row["log_sequence"], started_at=time.time())
         message = json.loads(row["payload"])
         try:
             text = message["text"]
@@ -409,19 +457,15 @@ class PrivateChannels:
                     result.get("answer") or "This request did not finish. Open the conversation in Sibyl."
                 )
             with self.lock, self.store.db() as db:
-                current = self.profile(channel)
-                if (
-                    current.get("enabled")
-                    and current.get("revision") == profile["revision"]
-                    and current.get("control") == profile.get("control")
-                ):
+                if self._is_listening(channel, profile):
                     self._complete(db, dict(row), answer)
                 else:
                     db.execute(
                         "UPDATE channel_messages SET state='interrupted' WHERE channel=? AND revision=? AND native_id=?",
                         (channel, profile["revision"], row["native_id"]),
                     )
-        except BaseException as error:
+                message_finished(db, channel, profile["revision"], row["log_sequence"])
+        except (asyncio.CancelledError, Exception) as error:
             with self.store.db() as db:
                 db.execute(
                     "UPDATE channel_messages SET state=? WHERE channel=? AND revision=? AND native_id=?",
@@ -431,6 +475,13 @@ class PrivateChannels:
                         profile["revision"],
                         row["native_id"],
                     ),
+                )
+                message_finished(
+                    db,
+                    channel,
+                    profile["revision"],
+                    row["log_sequence"],
+                    None if isinstance(error, asyncio.CancelledError) else error,
                 )
             if isinstance(error, asyncio.CancelledError):
                 raise
@@ -442,7 +493,9 @@ class PrivateChannels:
         return True
 
     async def deliver(self, channel, profile):
-        with self.store.db() as db:
+        with self.lock, self.store.db() as db:
+            if not self._is_listening(channel, profile):
+                return False
             db.execute("BEGIN IMMEDIATE")
             row = db.execute(
                 "SELECT * FROM channel_outbox WHERE channel=? AND revision=? AND state='pending' ORDER BY created_at,part LIMIT 1",
@@ -465,8 +518,11 @@ class PrivateChannels:
                 )
         except ChannelError as error:
             retry = bool(error.retry_after) and row["attempts"] < 4
-            outcome = "pending" if retry else "uncertain" if error.ambiguous else "failed"
-            with self.store.db() as db:
+            with self.lock, self.store.db() as db:
+                stopped = self.profile(channel).get("stopped_at") != profile.get("stopped_at")
+                outcome = "pending" if retry else "uncertain" if error.ambiguous else "failed"
+                if retry and stopped:
+                    outcome = "withdrawn"
                 db.execute(
                     "UPDATE channel_outbox SET state=?,next_attempt=?,error=? WHERE id=?",
                     (outcome, time.time() + error.retry_after, str(error), row["id"]),

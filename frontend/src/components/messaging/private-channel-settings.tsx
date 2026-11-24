@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { ArrowUpRight, Check, Edit3, Mail, Pause, Play, RefreshCw, Unplug } from 'lucide-react';
+import { ArrowUpRight, Check, Edit3, Mail, Unplug } from 'lucide-react';
 import { Badge, Modal, useToast } from '../ui';
 import { SecretField } from '../secret-field';
+import { ChannelActivity } from './channel-activity';
+import { ChannelControls } from './channel-controls';
+import type { ChannelAction } from './channel-controls';
 import type { MessagingChannel } from '../messaging-settings';
 import { api, post, refresh } from '../../lib/api';
 import { useResource } from '../../lib/hooks';
 
 type Channel = MessagingChannel & {
-  configured?: boolean;
   revision?: string;
   settings?: Record<string, string | number>;
-  updates?: Record<string, number>;
   delivery?: Record<string, number>;
-  last_message_at?: number;
+  updates?: Record<string, number>;
 };
 type Receipt = {
   id: string;
@@ -37,7 +38,7 @@ export function PrivateChannelSetup({ channel, done }: { channel: Channel; done:
     showReceipts,
   );
   const toast = useToast();
-  const action = async (action: 'check' | 'enable' | 'pause' | 'disconnect') => {
+  const action = async (action: ChannelAction | 'disconnect') => {
     if (!channel.revision) return;
     setBusy(action);
     setError('');
@@ -50,13 +51,13 @@ export function PrivateChannelSetup({ channel, done }: { channel: Channel; done:
       refresh();
       if (action === 'disconnect') setEditing(true);
       toast(
-        action === 'check'
-          ? 'Connection identity checked.'
-          : action === 'enable'
-            ? 'Private messaging enabled.'
-            : action === 'pause'
-              ? 'New receive and reply work paused.'
-              : 'Local connection removed.',
+        {
+          check: 'Connection identity checked.',
+          enable: 'Private messaging enabled.',
+          pause: 'New receive and reply work paused.',
+          stop: 'Listener stopped. Queued conversation work was cleared.',
+          disconnect: 'Local connection removed.',
+        }[action],
       );
     } catch (reason) {
       setError((reason as Error).message);
@@ -93,10 +94,19 @@ export function PrivateChannelSetup({ channel, done }: { channel: Channel; done:
       setBusy('');
     }
   };
-  const accepted = channel.delivery?.sent ?? 0,
-    waiting = (channel.delivery?.pending ?? 0) + (channel.delivery?.sending ?? 0);
+  const updates = channel.updates ?? {};
+  const delivery = channel.delivery ?? {};
+  const received = Object.values(updates).reduce((sum, count) => sum + count, 0);
+  const waiting =
+    (updates.queued ?? 0) +
+    (updates.processing ?? 0) +
+    (delivery.pending ?? 0) +
+    (delivery.sending ?? 0);
   return (
-    <section className={`messaging-card ${channel.enabled ? 'private-channel-active' : ''}`}>
+    <section
+      className={`messaging-card ${channel.configured ? 'private-channel-active' : ''}`}
+      aria-labelledby={`messaging-${channel.id}-title`}
+    >
       <div className="messaging-card-heading">
         <span className={`channel-icon channel-${channel.id}`}>
           {channel.id === 'email' ? (
@@ -106,7 +116,7 @@ export function PrivateChannelSetup({ channel, done }: { channel: Channel; done:
           )}
         </span>
         <div>
-          <h3>{channel.name}</h3>
+          <h3 id={`messaging-${channel.id}-title`}>{channel.name}</h3>
           <small>
             {channel.enabled
               ? 'Private replies enabled'
@@ -115,35 +125,38 @@ export function PrivateChannelSetup({ channel, done }: { channel: Channel; done:
                 : 'Not connected'}
           </small>
         </div>
-        <Badge tone={channel.enabled ? 'sage' : 'neutral'}>
-          {channel.enabled ? (
-            <>
-              <span className="channel-running-dot" />
-              Running
-            </>
-          ) : channel.connected ? (
-            'Checked'
-          ) : channel.configured ? (
-            'Saved'
-          ) : (
-            'Available'
-          )}
-        </Badge>
+        {!channel.configured && <Badge>Available</Badge>}
       </div>
       <p>{channel.description}</p>
-      {channel.enabled && (
-        <div className="channel-live-state">
-          <span className="channel-running-dot" />
-          <div>
-            <strong>Listening for your private messages</strong>
-            <small>
-              {channel.last_poll_at
-                ? `Receiver checked ${new Date(channel.last_poll_at * 1000).toLocaleTimeString()}`
-                : 'Waiting for the first receiver check'}{' '}
-              · {accepted} reply parts accepted · {waiting} queued
-            </small>
-          </div>
-        </div>
+      {channel.configured && (
+        <ChannelActivity
+          channelId={channel.id}
+          channelName={channel.name}
+          enabled={channel.enabled}
+          stopped={channel.stopped}
+          paused={channel.has_started}
+          logs={channel.logs}
+          lastReceive={channel.last_poll_at}
+          webhook={channel.id === 'whatsapp'}
+          attention={!!channel.error}
+          working={Boolean(updates.processing || delivery.sending)}
+          counts={[
+            { label: 'Messages received', value: received },
+            { label: 'Parts accepted', value: delivery.sent ?? 0 },
+            { label: 'In progress', value: waiting },
+          ]}
+          controls={
+            <ChannelControls
+              name={channel.name}
+              enabled={channel.enabled}
+              started={channel.has_started}
+              stopped={channel.stopped}
+              busy={busy}
+              editing={editing}
+              action={(kind) => void action(kind)}
+            />
+          }
+        />
       )}
       {!editing && channel.configured && (
         <>
@@ -162,46 +175,21 @@ export function PrivateChannelSetup({ channel, done }: { channel: Channel; done:
               </small>
             </div>
           </div>
-          <div className="inline-actions">
-            <button
-              className="button secondary tiny"
-              disabled={!!busy || channel.enabled}
-              onClick={() => {
-                setEditing(true);
-                setSecrets({});
-              }}
-            >
-              <Edit3 size={13} />
-              Edit connection
-            </button>
-            <button
-              className="button secondary tiny"
-              disabled={!!busy || channel.enabled}
-              onClick={() => action('check')}
-            >
-              <RefreshCw size={13} />
-              {busy === 'check' ? 'Checking…' : 'Check connection'}
-            </button>
-            {channel.enabled ? (
+          {!channel.enabled && (
+            <div className="inline-actions">
               <button
                 className="button secondary tiny"
                 disabled={!!busy}
-                onClick={() => action('pause')}
+                onClick={() => {
+                  setEditing(true);
+                  setSecrets({});
+                }}
               >
-                <Pause size={14} />
-                Pause replies
+                <Edit3 size={13} />
+                Edit connection
               </button>
-            ) : (
-              <button
-                className="button primary tiny"
-                disabled={!!busy}
-                onClick={() => action('enable')}
-              >
-                <Play size={14} />
-                {busy === 'enable' ? 'Enabling…' : 'Enable private replies'}
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
       {!channel.configured && !editing && (

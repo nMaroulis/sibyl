@@ -1,20 +1,16 @@
 import { TelegramAttachments } from './messaging/telegram-attachments';
+import { ChannelActivity } from './messaging/channel-activity';
+import { ChannelControls } from './messaging/channel-controls';
+import type { ChannelAction } from './messaging/channel-controls';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
   BellRing,
-  Check,
-  Clock3,
   CalendarClock,
   KeyRound,
   LoaderCircle,
-  MessageCircle,
-  Pause,
   Pencil,
-  Play,
-  Radio,
-  Send,
   ShieldCheck,
   Unplug,
   X,
@@ -24,7 +20,7 @@ import { useToast } from './ui';
 import type { MessagingChannel, MessagingSettingsData } from './messaging-settings';
 import '../styles/briefings.css';
 
-type Action = 'save' | 'check' | 'enable' | 'pause' | 'disconnect';
+type Action = ChannelAction | 'save' | 'disconnect';
 
 /** Separate encrypted setup from the polling controls; display only observed activity. */
 export function TelegramSetup({
@@ -61,22 +57,6 @@ export function TelegramSetup({
     );
   const waiting =
     (updates.queued ?? 0) + (updates.processing ?? 0) + (health?.summary?.replies_waiting ?? 0);
-  const mode = !saved
-    ? 'setup'
-    : enabled
-      ? channel.error
-        ? 'attention'
-        : 'running'
-      : channel.has_started
-        ? 'paused'
-        : 'ready';
-  const stateLabel = {
-    setup: 'Not connected',
-    ready: 'Ready to start',
-    paused: 'Paused',
-    running: 'Listening',
-    attention: 'Needs attention',
-  }[mode];
   const working = enabled && ((updates.processing ?? 0) > 0 || (delivery.sending ?? 0) > 0);
 
   useEffect(() => {
@@ -126,6 +106,7 @@ export function TelegramSetup({
           check: 'Bot identity checked successfully.',
           enable: 'Telegram is listening. Open your bot’s private chat to talk to Sibyl.',
           pause: 'Telegram paused. Your credentials and conversation are kept.',
+          stop: 'Telegram stopped. Queued conversation work was cleared.',
           disconnect: 'Telegram disconnected. Local conversation history is kept.',
         }[kind],
       );
@@ -143,10 +124,7 @@ export function TelegramSetup({
   };
 
   return (
-    <section
-      className={`messaging-card telegram-live-card telegram-mode-${mode}`}
-      aria-labelledby="telegram-title"
-    >
+    <section className="messaging-card telegram-live-card" aria-labelledby="telegram-title">
       <div className="messaging-card-heading">
         <span className="channel-icon channel-telegram">
           <img src="/messaging/telegram.svg" width="27" height="27" alt="" />
@@ -157,86 +135,48 @@ export function TelegramSetup({
             {channel.bot_username ? `@${channel.bot_username}` : 'Your private Sibyl bot'}
           </small>
         </div>
-        <span className={`telegram-state-pill ${mode}`} role="status">
-          <span className="telegram-status-dot" aria-hidden="true" />
-          {stateLabel}
-        </span>
       </div>
 
-      <div className="telegram-runtime">
-        <span className={`telegram-runtime-orb ${working ? 'working' : ''}`} aria-hidden="true">
-          {enabled ? <Radio size={24} /> : <Pause size={23} />}
-        </span>
-        <div className="telegram-runtime-copy">
-          <strong>
-            {enabled
-              ? channel.error
-                ? 'Your connection needs attention'
-                : working
-                  ? 'Sibyl is working on your message'
-                  : 'Listening for your messages'
-              : channel.has_started
-                ? 'Telegram is paused'
-                : saved
-                  ? 'Your bot is ready to connect'
-                  : 'Connect your personal bot'}
-          </strong>
-          <p>
-            {enabled
-              ? channel.error
-                ? 'Review the connection message below. Listening remains enabled.'
-                : 'Your Python backend is running this connection. Only your private account is accepted.'
-              : saved
-                ? 'Start listening when you’re ready. Your saved credentials stay encrypted.'
-                : 'Save your bot token and personal user ID below to unlock the controls.'}
-          </p>
-          {channel.last_poll_at && (
-            <small>
-              Last Telegram poll ·{' '}
-              {new Date(channel.last_poll_at * 1000).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              })}
-            </small>
-          )}
-        </div>
-        <div className="telegram-runtime-controls">
-          <button
-            className={`button ${enabled ? 'secondary' : 'primary'}`}
-            type="button"
-            disabled={!!busy || !saved || (!enabled && editorOpen)}
-            onClick={() => void action(enabled ? 'pause' : 'enable')}
-          >
-            {busy === 'enable' || busy === 'pause' ? (
-              <LoaderCircle size={15} className="spin" />
-            ) : enabled ? (
-              <Pause size={15} />
-            ) : (
-              <Play size={15} />
-            )}
-            {busy === 'enable'
-              ? 'Starting…'
-              : busy === 'pause'
-                ? 'Pausing…'
-                : enabled
-                  ? 'Pause Telegram'
-                  : channel.has_started
-                    ? 'Resume Telegram'
-                    : 'Enable Telegram'}
-          </button>
-          {enabled && channel.bot_username && (
-            <a
-              className="text-link"
-              href={`https://t.me/${encodeURIComponent(channel.bot_username)}`}
-              target="_blank"
-              rel="noreferrer"
+      {saved && (
+        <ChannelActivity
+          channelId={channel.id}
+          channelName={channel.name}
+          enabled={enabled}
+          stopped={channel.stopped}
+          paused={channel.has_started}
+          logs={health?.logs}
+          lastReceive={channel.last_poll_at}
+          attention={!!channel.error}
+          working={working}
+          counts={[
+            { label: 'Messages received', value: received },
+            { label: 'Replies delivered', value: health?.summary?.replies_delivered },
+            { label: 'In progress', value: waiting },
+          ]}
+          controls={
+            <ChannelControls
+              name={channel.name}
+              enabled={enabled}
+              started={channel.has_started}
+              stopped={channel.stopped}
+              busy={busy}
+              editing={editorOpen}
+              verified={channel.connected}
+              action={(kind) => void action(kind)}
             >
-              Open bot <ArrowUpRight size={12} />
-            </a>
-          )}
-        </div>
-      </div>
+              {channel.bot_username && (
+                <a
+                  href={`https://t.me/${encodeURIComponent(channel.bot_username)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open bot <ArrowUpRight size={12} />
+                </a>
+              )}
+            </ChannelControls>
+          }
+        />
+      )}
 
       {saved && !editorOpen && (
         <div className="telegram-saved-connection">
@@ -255,24 +195,7 @@ export function TelegramSetup({
               {String(channel.allowed_user_id ?? '').slice(-4)}
             </small>
           </div>
-          <span className={`telegram-check-state ${channel.connected ? 'verified' : ''}`}>
-            {channel.connected ? <Check size={13} /> : <Clock3 size={13} />}
-            {channel.connected ? 'Bot checked' : 'Not checked yet'}
-          </span>
           <div className="telegram-connection-actions">
-            <button
-              className="button secondary"
-              type="button"
-              disabled={!!busy}
-              onClick={() => void action('check')}
-            >
-              {busy === 'check' ? (
-                <LoaderCircle size={14} className="spin" />
-              ) : (
-                <ShieldCheck size={14} />
-              )}
-              {busy === 'check' ? 'Checking…' : 'Check bot'}
-            </button>
             <button
               className="text-button"
               type="button"
@@ -432,38 +355,6 @@ export function TelegramSetup({
         </p>
       )}
 
-      <dl className="telegram-activity" aria-label="Telegram activity">
-        <div>
-          <dt>
-            <MessageCircle size={14} />
-            Messages received
-          </dt>
-          <dd>{received.toLocaleString()}</dd>
-          <small>Your accepted messages and commands</small>
-        </div>
-        <div>
-          <dt>
-            <Send size={14} />
-            Replies delivered
-          </dt>
-          <dd>{health?.summary ? health.summary.replies_delivered.toLocaleString() : '—'}</dd>
-          <small>
-            {(delivery.sent ?? 0).toLocaleString()} message parts sent · long replies may split
-          </small>
-        </div>
-        <div>
-          <dt>
-            <Clock3 size={14} />
-            In progress
-          </dt>
-          <dd>{waiting.toLocaleString()}</dd>
-          <small>
-            {updates.processing
-              ? 'Answering your message'
-              : `${updates.queued ?? 0} messages queued · ${health?.summary?.replies_waiting ?? 0} replies waiting`}
-          </small>
-        </div>
-      </dl>
       {!!health?.briefings && Object.keys(health.briefings).length > 0 && (
         <div className="telegram-briefing-summary">
           <CalendarClock size={15} />
@@ -506,8 +397,7 @@ export function TelegramSetup({
       {(!!delivery.uncertain ||
         !!delivery.failed ||
         !!delivery.blocked ||
-        !!updates.interrupted ||
-        !!updates.failed) && (
+        !!updates.interrupted) && (
         <div className="telegram-delivery-review" role="status">
           {!!delivery.uncertain && (
             <span>
@@ -524,12 +414,11 @@ export function TelegramSetup({
           {!!updates.interrupted && (
             <span>{updates.interrupted} requests were interrupted. Send them again if needed.</span>
           )}
-          {!!updates.failed && <span>{updates.failed} requests could not be answered.</span>}
         </div>
       )}
       <TelegramAttachments />
 
-      <div className="messaging-card-footer telegram-footer">
+      <div className="messaging-card-footer">
         <p>
           {saved
             ? 'Pause keeps your credentials and conversation. Disconnect removes the saved token. An in-flight reply may still finish.'

@@ -60,9 +60,9 @@ class MessagingSettings:
         )
         return self.public()
 
-    def public(self) -> dict:
+    def public(self, profile: dict | None = None) -> dict:
         """Expose actual configuration alongside disabled fields for future transports."""
-        profile = self.profile()
+        profile = self.profile() if profile is None else profile
         channels = []
         for channel in CHANNELS:
             available = channel["id"] == "telegram"
@@ -75,6 +75,7 @@ class MessagingSettings:
                         {
                             "enabled": profile.get("enabled", False),
                             "has_started": bool(profile.get("enabled_at")),
+                            "stopped": profile.get("stopped_at", 0) > profile.get("enabled_at", 0),
                             "long_reply_document": profile.get("long_reply_document", False),
                             "has_token": bool(profile.get("bot_token")),
                             "allowed_user_id": profile.get("allowed_user_id"),

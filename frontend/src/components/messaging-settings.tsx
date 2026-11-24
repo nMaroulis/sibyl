@@ -4,6 +4,8 @@ import { useResource } from '../lib/hooks';
 import { Badge, ErrorState, Loading } from './ui';
 import { PrivateChannelSetup } from './messaging/private-channel-settings';
 import { MessageDeliveryReview } from './messaging/delivery-review';
+import type { ChannelActivityEvent } from './messaging/channel-activity';
+import type { MessageLogStorage } from './messaging/channel-logs';
 import { TelegramSetup } from './telegram-settings';
 
 export type MessagingChannel = {
@@ -16,6 +18,10 @@ export type MessagingChannel = {
   status: 'unavailable' | 'available';
   enabled?: boolean;
   has_started?: boolean;
+  stopped?: boolean;
+  configured?: boolean;
+  activity?: ChannelActivityEvent[];
+  logs?: MessageLogStorage;
   last_checked_at?: number;
   last_poll_at?: number;
   has_token?: boolean;
@@ -38,6 +44,8 @@ export type MessagingChannel = {
 export type MessagingSettingsData = {
   channels: MessagingChannel[];
   telegram?: {
+    activity?: ChannelActivityEvent[];
+    logs?: MessageLogStorage;
     updates: Record<string, number>;
     delivery: Record<string, number>;
     llm_ready: boolean;
@@ -47,7 +55,13 @@ export type MessagingSettingsData = {
   };
 };
 
-/** Show app icons and future setup fields; unavailable clients collect nothing. */
+function channelPriority(channel: MessagingChannel) {
+  if (channel.status === 'unavailable') return 3;
+  if (channel.enabled) return 0;
+  return channel.configured || channel.has_token || channel.connected ? 1 : 2;
+}
+
+/** Surface active connections ahead of setup and keep their activity updated. */
 export function MessagingSettings() {
   const resource = useResource<MessagingSettingsData>('/settings/messaging', 5000);
   return (
@@ -93,7 +107,7 @@ export function MessagingSettings() {
         <div className="messaging-grid">
           {resource.data?.channels
             .slice()
-            .sort((a, b) => Number(b.status === 'available') - Number(a.status === 'available'))
+            .sort((a, b) => channelPriority(a) - channelPriority(b))
             .map((channel) =>
               channel.id === 'telegram' ? (
                 <TelegramSetup

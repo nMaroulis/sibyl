@@ -88,7 +88,7 @@ Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated
 
 ## Messaging
 
-[Telegram](./telegram.md) supports private chat and opt-in [scheduled briefing delivery](briefings.md). Setup: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active. Other channels below remain unavailable previews with disabled fields.
+[Telegram](./telegram.md) supports private chat and opt-in [scheduled briefing delivery](briefings.md). Setup: save your encrypted bot token and numeric user ID, check the bot, then explicitly enable polling and replies. Setup and enabling work without an AI model. A single warning above the cards links to model settings; help/status commands work immediately, and ordinary questions receive setup guidance until a model is active.
 
 | App      | Setup                                                                                                           |
 | -------- | --------------------------------------------------------------------------------------------------------------- |
@@ -100,6 +100,10 @@ Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated
 | Email    | Dedicated TLS IMAP/SMTP mailbox, fixed personal sender and a private subject pairing phrase                     |
 
 Every implemented connection encrypts credentials locally and starts paused. Check its identity, then enable private replies. Setup works without an LLM; questions receive model guidance until one is active. Saved secrets remain hidden; Edit requires complete replacement credentials. Pause stays available during a model request. Receipts show actual acceptance/uncertainty rather than claiming the person read a reply.
+
+Enabled connections appear first. Their activity monitors refresh automatically and show connection checks, accepted inbound messages, reply-part outcomes, and alert or briefing deliveries. Message rows are timestamped when Sibyl received them, and their status updates as the reply is processed and sent. Choose **1h**, **1d**, **1w**, **30d**, or **All time** to change the timeline range. The trace counts all retained activity in the selected range and the list below shows its latest events. Expand earlier events below the timeline. Click a message to inspect its processing state, reply parts and delivery attempts. Use **Check status** to verify the provider. **Pause** keeps queued conversation work available for **Resume**, while **Stop** clears queued work and keeps credentials and activity history. The monitor keeps message content and recipient details out of the feed.
+
+**Message logs** opens older records and reports the stored diagnostic payload size for the current connection. Open a failure to inspect the recorded reason and suggested next steps. Older failures can use the retained ProtoLink run when one is available. **Clear logs** removes settled diagnostics after confirmation. Queued and active work, reply receipts, conversation history, and lifetime counters are preserved. SQLite can reuse the freed space even if the workspace file stays the same size.
 
 WhatsApp requires a signed public HTTPS webhook. Discord polls only your checked private DM; Slack uses native Socket Mode. Signal requires the separately linked **unofficial signal-cli** daemon; Sibyl never collects a Signal PIN or links an account. Email uses verified TLS, read-only IMAP UID cursors and a fixed reply address; each subject must start with `[Sibyl:YOUR_PAIRING_PHRASE]`, because From alone is not authentication. Provider OAuth mail sign-in is not implemented.
 

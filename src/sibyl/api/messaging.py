@@ -36,6 +36,12 @@ def pause(s: S):
     return s.messaging.pause()
 
 
+@router.post("/stop")
+def stop(s: S):
+    """Disable the listener and cancel queued conversation work."""
+    return s.messaging.stop()
+
+
 @router.delete("")
 def disconnect(s: S):
     """Remove the local bot credential; retain Sibyl conversation history."""

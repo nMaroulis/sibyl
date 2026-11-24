@@ -1185,8 +1185,9 @@ async def ask_sibyl(body: SibylRequest, s: S):
 
 
 @router.get("/settings/messaging", tags=["Settings"])
-def messaging_settings(s: S):
-    """Describe actual channel support and credential-free private connection state."""
+def messaging_settings(s: S, response: Response):
+    """Return each private connection and its recent operational activity."""
+    response.headers["Cache-Control"] = "no-store"
     result = s.messaging.public()
     for channel in result["channels"]:
         if channel["id"] in {"discord", "slack", "signal", "whatsapp", "email"}:

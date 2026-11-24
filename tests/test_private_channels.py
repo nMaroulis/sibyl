@@ -79,7 +79,13 @@ async def test_private_routing_deduplicates_events_and_retains_provider_acceptan
     assert len(sent) == 1
     assert json.loads(sent[0].content)["allowed_mentions"] == {"parse": []}
     assert channels.profile("discord")["cursor"] == "111"
-    public = json.dumps(channels.public("discord"))
+    state = channels.public("discord")
+    reply, checked = state["activity"]
+    assert (reply["kind"], reply["state"], reply["accepted_parts"]) == ("message", "sent", 1)
+    assert checked["kind"] == "check"
+    private = json.dumps(state["activity"])
+    assert all(value not in private for value in ("Explain my portfolio", OWNER, TARGET, TOKEN))
+    public = json.dumps(state)
     assert TOKEN not in public and "text" not in public
     with store.db() as db:
         raw = db.execute(
@@ -110,6 +116,30 @@ async def test_pending_budget_never_acknowledges_an_unstored_event(channels):
     with pytest.raises(ChannelError, match="pending budget"):
         channels.ingest("discord", profile, Batch([envelope("overflow")], cursor="101"))
     assert channels.profile("discord")["cursor"] == "100"
+
+
+async def test_live_check_preserves_controls_and_stop_withdraws_queued_work(channels):
+    profile = await enable(channels)
+    channel = "discord"
+    revision = profile["revision"]
+    channels.ingest(channel, profile, Batch([envelope("one"), envelope("two")], cursor="123"))
+    assert await channels.process(channel, profile)
+    checked = await channels.action(channel, ChannelAction(revision=revision, action="check"))
+    assert checked["enabled"]
+    assert channels.profile(channel)["control"] == profile["control"]
+    assert channels.profile(channel)["cursor"] == "123"
+
+    paused = await channels.action(channel, ChannelAction(revision=revision, action="pause"))
+    assert not paused["enabled"] and paused["delivery"]["pending"] == 1 and paused["updates"]["queued"] == 1
+    assert not await channels.deliver(channel, profile)
+    assert not await channels.process(channel, profile)
+    assert len([item for item in paused["activity"] if item["kind"] == "message"]) == 2
+
+    stopped = await channels.action(channel, ChannelAction(revision=revision, action="stop"))
+    assert stopped["stopped"] and stopped["configured"]
+    assert stopped["delivery"]["withdrawn"] == 1 and stopped["updates"]["withdrawn"] == 1
+    await enable(channels)
+    assert not channels.public(channel)["stopped"]
 
 
 async def test_pause_during_model_call_is_responsive_and_discards_late_answer(channels):
