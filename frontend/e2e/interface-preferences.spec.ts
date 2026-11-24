@@ -51,7 +51,7 @@ for (const viewport of [
     expect(dock.x + dock.width).toBeLessThan(viewport.width);
 
     const tabs = (await page.getByRole('tablist', { name: 'Settings sections' }).boundingBox())!;
-    const tab = (await page.getByRole('tab', { name: 'UI/UX' }).boundingBox())!;
+    const tab = (await page.getByRole('tab', { name: 'UI · UX' }).boundingBox())!;
     expect(tab.x).toBeGreaterThanOrEqual(tabs.x);
     expect(tab.x + tab.width).toBeLessThanOrEqual(tabs.x + tabs.width);
 
@@ -137,7 +137,7 @@ test('page transitions follow the dock, persist, and respect reduced motion', as
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
   const view = page.locator('.page-view');
   const preview = page.locator('.interface-motion-sample .interface-preview-content');
-  await expect(page.getByRole('tab', { name: 'UI/UX' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'UI · UX' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('radio', { name: /^Soft zoom/ })).toBeChecked();
   await expect(view).toHaveAttribute(
     'data-test-motion',
@@ -244,6 +244,35 @@ test('unpinned pages move to More and Account stays pinned', async ({ page }) =>
   );
 });
 
+for (const navigation of ['left', 'bottom'] as const) {
+  test(`More opens as one panel with room for every shortcut in the ${navigation} dock`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.addInitScript((placement) => {
+      localStorage.setItem(
+        'sibyl.interface',
+        JSON.stringify({ navigation: placement, pinnedPaths: ['/account'] }),
+      );
+    }, navigation);
+    await page.goto('/settings?tab=interface');
+    await page.getByRole('button', { name: 'More tools' }).click();
+    const menu = page.getByRole('group', { name: 'More destinations' });
+    const last = menu.getByRole('link', { name: 'Coming soon' });
+    await expect(last).toBeVisible();
+    const opening = await menu.evaluate((panel) => ({
+      overflows: panel.scrollWidth > panel.clientWidth || panel.scrollHeight > panel.clientHeight,
+      lastOpacity: getComputedStyle(panel.querySelector('a:last-child')!).opacity,
+    }));
+    expect(opening).toEqual({ overflows: false, lastOpacity: '1' });
+    await last.hover();
+    expect(await menu.evaluate((panel) => panel.scrollHeight)).toBe(
+      await menu.evaluate((panel) => panel.clientHeight),
+    );
+  });
+}
+
 test('the dock fits narrow screens with only Account or every shortcut pinned', async ({
   page,
 }) => {
@@ -268,6 +297,11 @@ test('the dock fits narrow screens with only Account or every shortcut pinned', 
   await expect(lastLink).toBeFocused();
   await expect(lastLink).toBeInViewport({ ratio: 0.9 });
   expect(await more.evaluate((panel) => panel.scrollTop)).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowUp');
+  const firstLink = more.getByRole('link', { name: 'Sibyl', exact: true });
+  await expect(firstLink).toBeFocused();
+  expect(await more.evaluate((panel) => panel.scrollTop)).toBe(0);
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 320, height: 600 });
 

@@ -44,7 +44,7 @@ const sections = [
   { id: 'news', label: 'News', icon: Newspaper },
   { id: 'market', label: 'Market data', icon: ChartNoAxesCombined },
   { id: 'messaging', label: 'Messaging', icon: MessageCircle },
-  { id: 'interface', label: 'UI/UX', icon: PanelsTopLeft },
+  { id: 'interface', label: 'UI · UX', icon: PanelsTopLeft },
   { id: 'workspace', label: 'Workspace', icon: Settings2 },
 ];
 

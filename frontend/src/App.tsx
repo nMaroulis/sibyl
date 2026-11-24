@@ -72,7 +72,7 @@ function WorkspaceSearch({ close }: { close: () => void }) {
     ...destinations,
     { path: '/trade?tab=executions', name: 'Trade · Executions', icon: ArrowDownUp },
     { path: '/trade?tab=history', name: 'Trade · Account history', icon: History },
-    { path: '/settings?tab=interface', name: 'Settings · UI/UX', icon: PanelsTopLeft },
+    { path: '/settings?tab=interface', name: 'Settings · UI · UX', icon: PanelsTopLeft },
   ].filter((item) =>
     `${item.name} ${item.path === '/account' ? 'portfolio balances holdings allocation' : item.path === '/settings' ? 'exchanges connections llm models apis workspace messaging whatsapp telegram signal email' : item.path === '/trade?tab=executions' ? 'trading report fills fees activity records' : ''}`
       .toLowerCase()

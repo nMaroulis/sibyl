@@ -5205,7 +5205,7 @@ details[open] > summary {
   }
 }
 
-/* More unfolds as a second, horizontal dock beside its trigger. */
+/* More opens from the dock edge as a single panel. */
 .dock-more-trigger[aria-expanded='true'] {
   color: var(--accent);
   background: transparent;
@@ -5217,8 +5217,9 @@ details[open] > summary {
   translate: 0 -50%;
   width: min(282px, var(--more-space, 282px));
   max-height: calc(100dvh - 24px);
-  overflow: auto;
+  overflow: hidden auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
@@ -5230,28 +5231,21 @@ details[open] > summary {
   box-shadow:
     0 12px 36px #334b761a,
     0 2px 6px #334b7609;
-  transform: translateX(-10px);
-  clip-path: inset(-24px 100% -24px -24px round 24px);
+  transform: var(--more-enter-from, translateX(-6px));
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity 180ms ease,
-    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    clip-path 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    visibility 0s linear 280ms;
+    opacity 140ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    visibility 0s linear 180ms;
 }
 .dock-more-panel[data-open='true'] {
-  transform: translateX(0);
-  clip-path: inset(-40px -40px -40px -40px round 24px);
+  transform: none;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transition:
-    opacity 180ms ease,
-    transform 380ms cubic-bezier(0.16, 1, 0.3, 1),
-    clip-path 380ms cubic-bezier(0.16, 1, 0.3, 1),
-    visibility 0s;
+  transition-delay: 0s;
 }
 .dock-more-link {
   --dock-item-size: 56px;
@@ -5270,13 +5264,9 @@ details[open] > summary {
   text-align: center;
   font-size: 10px;
   font-weight: 500;
-  opacity: 0;
-  transform: translateX(-7px);
-  transition:
-    opacity 120ms,
-    transform 160ms,
-    color 180ms,
-    background 180ms;
+  /* Keep the decorative glow out of the panel's scrollable area. */
+  overflow: clip;
+  transition: color 180ms;
 }
 .dock-more-link > span:first-child {
   display: grid;
@@ -5295,15 +5285,6 @@ details[open] > summary {
 .dock-more-link.active {
   color: var(--accent);
 }
-.dock-more-panel[data-open='true'] .dock-more-link {
-  opacity: 1;
-  transform: translateX(0);
-  transition:
-    opacity 240ms ease calc(var(--more-index) * 45ms + 60ms),
-    transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--more-index) * 45ms + 60ms),
-    color 180ms,
-    background 180ms;
-}
 @media (max-width: 700px) {
   .dock-more-panel {
     left: calc(100% + 9px);
@@ -5320,9 +5301,7 @@ details[open] > summary {
 }
 @media (prefers-reduced-motion: reduce) {
   .dock-more-panel,
-  .dock-more-panel[data-open='true'],
-  .dock-more-link,
-  .dock-more-panel[data-open='true'] .dock-more-link {
+  .dock-more-link {
     transition: none;
   }
 }

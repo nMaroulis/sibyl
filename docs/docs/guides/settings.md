@@ -66,7 +66,7 @@ CoinGecko supplies quotes only in this adapter. CryptoCompare and exchange feeds
 
 Saved choices take precedence over environment defaults. This tab also describes fixed research integrations for CoinPaprika, Wikipedia, mempool.space and optional yfinance. The old `/settings?tab=apis` bookmark opens Market data. See the [backend source contract](../developers/market-data.md).
 
-## UI/UX {#interface}
+## UI · UX {#interface}
 
 Open `/settings?tab=interface` to choose **Light** or **Dark** appearance and place the navigation on the **Left** or **Bottom**. A new browser starts in Light with the dock on the Bottom and labels enabled. The bottom dock floats over the workspace and stays visible while you scroll. Scroll to the end of a page to bring its last controls above the dock. **More** opens upward, and you can open it from the keyboard with ↑.
 

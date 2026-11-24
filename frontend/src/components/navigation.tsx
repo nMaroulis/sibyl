@@ -21,8 +21,8 @@ export function NavigationDock() {
   const [expanded, setExpanded] = useState(false);
   const presses = useRef(new Map<HTMLElement, Animation>());
 
-  /** A small press-and-release without overshoot; More retains its existing motion. */
-  const press = (button: HTMLElement, routeButton = false) => {
+  /** A small press-and-release for the dock’s direct shortcuts. */
+  const press = (button: HTMLElement) => {
     if (!button.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const current = getComputedStyle(button);
     const start = {
@@ -31,19 +31,12 @@ export function NavigationDock() {
     };
     presses.current.get(button)?.cancel();
     const animation = button.animate(
-      routeButton
-        ? [
-            start,
-            { scale: '.95', translate: '0 1px', offset: 0.36 },
-            { scale: '1', translate: '0 0', offset: 1 },
-          ]
-        : [
-            { scale: '1', translate: '0 0', offset: 0 },
-            { scale: '.88', translate: '0 2px', offset: 0.22 },
-            { scale: '1.025', translate: '0 -.3px', offset: 0.66 },
-            { scale: '1', translate: '0 0', offset: 1 },
-          ],
-      { duration: routeButton ? 280 : 520, easing: 'cubic-bezier(.2,.7,.2,1)' },
+      [
+        start,
+        { scale: '.95', translate: '0 1px', offset: 0.36 },
+        { scale: '1', translate: '0 0', offset: 1 },
+      ],
+      { duration: 280, easing: 'cubic-bezier(.2,.7,.2,1)' },
     );
     presses.current.set(button, animation);
     const clear = () => {
@@ -88,6 +81,16 @@ export function NavigationDock() {
   }, [expanded]);
   const moreActive = !items.some((item) => item.path === location.pathname);
 
+  const openMore = (focusFirst: boolean) => {
+    const panel = morePanel.current;
+    if (!panel) return;
+    panel.scrollTop = 0;
+    setExpanded(true);
+    if (focusFirst) {
+      requestAnimationFrame(() => panel.querySelector('a')?.focus({ preventScroll: true }));
+    }
+  };
+
   useLayoutEffect(() => {
     const element = dock.current;
     if (!element || navigation === 'bottom') return;
@@ -97,6 +100,7 @@ export function NavigationDock() {
         '[aria-current="page"], [data-current="true"]',
       );
       const { top, right } = element.getBoundingClientRect();
+      element.style.setProperty('--more-space', `${Math.max(0, window.innerWidth - right - 16)}px`);
       const more = moreButton.current;
       if (more && morePanel.current) {
         const halfHeight = morePanel.current.offsetHeight / 2;
@@ -107,7 +111,6 @@ export function NavigationDock() {
           `${Math.min(window.innerHeight - inset - top, Math.max(inset - top, center))}px`,
         );
       }
-      element.style.setProperty('--more-space', `${Math.max(0, window.innerWidth - right - 16)}px`);
       if (!active) return;
       element.style.setProperty('--selection-y', `${active.offsetTop}px`);
       element.style.setProperty('--selection-x', `${active.offsetLeft}px`);
@@ -151,7 +154,7 @@ export function NavigationDock() {
           to={item.path}
           onClick={(event) => {
             if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey)
-              press(event.currentTarget, true);
+              press(event.currentTarget);
           }}
           aria-label={item.name}
           className={({ isActive }) =>
@@ -176,26 +179,13 @@ export function NavigationDock() {
             aria-expanded={expanded}
             aria-controls={panelId}
             onClick={(event) => {
-              press(event.currentTarget);
-              const opening = !expanded;
-              setExpanded(opening);
-              if (opening && event.detail === 0) {
-                requestAnimationFrame(() =>
-                  morePanel.current
-                    ?.querySelector<HTMLAnchorElement>('a')
-                    ?.focus({ preventScroll: true }),
-                );
-              }
+              if (expanded) setExpanded(false);
+              else openMore(event.detail === 0);
             }}
             onKeyDown={(event) => {
               if (event.key === (navigation === 'bottom' ? 'ArrowUp' : 'ArrowRight')) {
                 event.preventDefault();
-                setExpanded(true);
-                requestAnimationFrame(() =>
-                  morePanel.current
-                    ?.querySelector<HTMLAnchorElement>('a')
-                    ?.focus({ preventScroll: true }),
-                );
+                openMore(true);
               }
             }}
           >
@@ -247,14 +237,12 @@ export function NavigationDock() {
               }
             }}
           >
-            {moreItems.map((item, index) => (
+            {moreItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 aria-label={item.name}
-                style={{ '--more-index': index } as CSSProperties}
-                onClick={(event) => {
-                  press(event.currentTarget);
+                onClick={() => {
                   setExpanded(false);
                   moreButton.current?.focus({ preventScroll: true });
                 }}

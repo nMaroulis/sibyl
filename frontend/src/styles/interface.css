@@ -17,6 +17,12 @@
   font-size: 13px;
   font-weight: 600;
 }
+.interface-settings > .interface-group > legend {
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
 .interface-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -326,26 +332,17 @@
   border-radius: inherit;
 }
 [data-navigation='bottom'] .dock-more-panel {
+  --more-enter-from: translateY(6px);
   inset: auto auto calc(100% + 10px) 50%;
   translate: -50% 0;
   width: min(272px, calc(100vw - 2 * var(--bottom-dock-edge)));
   max-height: calc(100dvh - var(--bottom-dock-clearance) - 12px);
-  overflow-y: auto;
-  clip-path: none;
-  transform: translateY(7px);
-}
-[data-navigation='bottom'] .dock-more-panel[data-open='true'] {
-  transform: none;
 }
 [data-navigation='bottom'] .dock-more-link {
   --dock-center-shift: 0px;
-  transform: translateY(4px);
 }
 [data-navigation='bottom'] .dock-more-link .dock-label {
   opacity: 1;
-}
-[data-navigation='bottom'] .dock-more-panel[data-open='true'] .dock-more-link {
-  transform: none;
 }
 @media (max-width: 580px) {
   :root[data-navigation='bottom'] {
