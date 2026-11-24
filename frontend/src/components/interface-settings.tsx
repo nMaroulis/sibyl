@@ -1,5 +1,9 @@
-import { Check } from 'lucide-react';
+import { Check, Play } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import type { Ref } from 'react';
 import { useInterfacePreferences } from '../lib/interface-preferences';
+import { pageTransitions, playPageTransition } from '../lib/page-transition';
+import type { PageTransition } from '../lib/page-transition';
 
 const themes = [
   { value: 'light', label: 'Light' },
@@ -12,7 +16,19 @@ const placements = [
 
 /** Live previews and controls for appearance and navigation preferences. */
 export function InterfaceSettings() {
-  const { theme, navigation, showLabels, update } = useInterfacePreferences();
+  const { theme, navigation, showLabels, pageTransition, update } = useInterfacePreferences();
+  const preview = useRef<HTMLSpanElement>(null);
+  const previewAnimation = useRef<Animation | undefined>(undefined);
+  useEffect(() => () => previewAnimation.current?.cancel(), []);
+
+  const playPreview = (style: PageTransition) => {
+    const content = preview.current?.querySelector<HTMLElement>('.interface-preview-content');
+    if (!content) return;
+    previewAnimation.current?.cancel();
+    const anchor = preview.current?.querySelector('.interface-preview-dock i:first-child');
+    previewAnimation.current = playPageTransition(content, style, navigation, anchor);
+  };
+
   return (
     <div className="interface-settings">
       <fieldset className="interface-group">
@@ -62,6 +78,45 @@ export function InterfaceSettings() {
           />
         </label>
       </fieldset>
+      <fieldset className="interface-group">
+        <legend>Page transition</legend>
+        <div className="interface-transition">
+          <div className="interface-options">
+            {pageTransitions.map(({ id, label, description }) => (
+              <label className="interface-option interface-transition-option" key={id}>
+                <input
+                  type="radio"
+                  name="interface-page-transition"
+                  value={id}
+                  checked={pageTransition === id}
+                  onChange={() => {
+                    update({ pageTransition: id });
+                    playPreview(id);
+                  }}
+                />
+                <span>
+                  <strong>{label}</strong>
+                  <small>{description}</small>
+                </span>
+                <Check size={15} className="interface-check" aria-hidden="true" />
+              </label>
+            ))}
+          </div>
+          <div className="interface-motion-sample">
+            <InterfacePreview theme={theme} navigation={navigation} previewRef={preview} />
+            <button
+              type="button"
+              className="button secondary tiny interface-motion-play"
+              onClick={() => playPreview(pageTransition)}
+            >
+              <Play size={13} aria-hidden="true" /> Preview
+            </button>
+            <p className="footnote interface-motion-reduced">
+              Your device has reduced motion enabled.
+            </p>
+          </div>
+        </div>
+      </fieldset>
       <p className="footnote">Your choices apply immediately and are saved in this browser.</p>
     </div>
   );
@@ -70,10 +125,14 @@ export function InterfaceSettings() {
 function InterfacePreview({
   theme,
   navigation,
-}: Pick<ReturnType<typeof useInterfacePreferences>, 'theme' | 'navigation'>) {
+  previewRef,
+}: Pick<ReturnType<typeof useInterfacePreferences>, 'theme' | 'navigation'> & {
+  previewRef?: Ref<HTMLSpanElement>;
+}) {
   return (
     <span
       className="interface-preview"
+      ref={previewRef}
       data-preview-theme={theme}
       data-preview-dock={navigation}
       aria-hidden="true"

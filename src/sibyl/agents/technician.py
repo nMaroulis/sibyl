@@ -45,7 +45,7 @@ GUIDES = {
     "overview": {
         "url": "/settings",
         "steps": [
-            "Settings has Exchanges, AI models, News, Market data, Messaging, Interface and Workspace sections.",
+            "Settings has Exchanges, AI models, News, Market data, Messaging, UI/UX and Workspace sections.",
             "Choose a section for its setup instructions. Alerts and Strategies have dedicated workspaces and help here too.",
             "Enter credentials only in the appropriate settings form, never in an assistant chat. Exchange/API keys are stored locally and encrypted on the Python backend machine.",
         ],
@@ -126,10 +126,11 @@ GUIDES = {
     "interface": {
         "url": "/settings?tab=interface",
         "steps": [
-            "In Settings → Interface, choose Light or Dark under Appearance.",
+            "In Settings → UI/UX, choose Light or Dark under Appearance.",
             "Under Navigation, choose Left or Bottom. The bottom dock stays visible while scrolling, and the page has room to scroll its last controls above it. More opens above the dock.",
             "Turn off Show labels for icon-only navigation in either dock and its More menu.",
-            "The choices apply immediately and are saved in this browser. Light and Left are the defaults.",
+            "Under Page transition, choose Dock reveal, Slide, Soft zoom or Fade and use Preview to replay it. Dock reveal follows the selected left or bottom dock. Device reduced motion suppresses animations.",
+            "The choices apply immediately and are saved in this browser. Light, Left and Dock reveal are the defaults.",
         ],
     },
     "workspace": {

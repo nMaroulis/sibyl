@@ -49,6 +49,10 @@ docker compose up --build
 
 ## [2.5.0] - Unreleased
 
+### Added
+
+- Settings renames Interface to UI/UX and adds four page transitions with a live preview. Dock reveal opens from the selected button on the left or bottom dock.
+
 ### Fixed
 
 - The floating bottom dock leaves scroll clearance below the workspace so the page ends cleanly and its last controls stay reachable.

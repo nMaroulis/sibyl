@@ -196,6 +196,59 @@
   background: color-mix(in srgb, var(--preview-surface) 84%, transparent);
 }
 
+.interface-transition {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.interface-transition-option {
+  padding-block: 12px;
+}
+.interface-transition-option strong,
+.interface-transition-option small {
+  display: block;
+}
+.interface-transition-option small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.interface-motion-sample {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 8px;
+  background: var(--surface);
+}
+.interface-motion-sample > .interface-preview {
+  flex: 1;
+  min-height: 74px;
+}
+.interface-motion-play {
+  align-self: flex-end;
+}
+.interface-motion-reduced {
+  display: none;
+}
+@media (max-width: 620px) {
+  .interface-transition {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .interface-motion-play {
+    display: none;
+  }
+  .interface-motion-reduced {
+    display: block;
+  }
+}
+
 /* Keep the dock geometry and the page's scroll clearance tied to one set of sizes. */
 :root[data-navigation='bottom'] {
   --bottom-dock-height: 62px;

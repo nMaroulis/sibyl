@@ -1,13 +1,21 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import { isPageTransition } from './page-transition';
+import type { DockPlacement, PageTransition } from './page-transition';
 
 type Preferences = {
   theme: 'light' | 'dark';
-  navigation: 'left' | 'bottom';
+  navigation: DockPlacement;
+  pageTransition: PageTransition;
   showLabels: boolean;
 };
 type InterfaceState = Preferences & { update: (preferences: Partial<Preferences>) => void };
-const defaults: Preferences = { theme: 'light', navigation: 'left', showLabels: true };
+const defaults: Preferences = {
+  theme: 'light',
+  navigation: 'left',
+  pageTransition: 'dock',
+  showLabels: true,
+};
 const storageKey = 'sibyl.interface';
 const InterfaceContext = createContext<InterfaceState | null>(null);
 
@@ -17,6 +25,9 @@ function readPreferences(): Preferences {
     return {
       theme: saved?.theme === 'dark' ? 'dark' : defaults.theme,
       navigation: saved?.navigation === 'bottom' ? 'bottom' : defaults.navigation,
+      pageTransition: isPageTransition(saved?.pageTransition)
+        ? saved.pageTransition
+        : defaults.pageTransition,
       showLabels: typeof saved?.showLabels === 'boolean' ? saved.showLabels : defaults.showLabels,
     };
   } catch {

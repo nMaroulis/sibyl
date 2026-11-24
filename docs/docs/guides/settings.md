@@ -66,11 +66,13 @@ CoinGecko supplies quotes only in this adapter. CryptoCompare and exchange feeds
 
 Saved choices take precedence over environment defaults. This tab also describes fixed research integrations for CoinPaprika, Wikipedia, mempool.space and optional yfinance. The old `/settings?tab=apis` bookmark opens Market data. See the [backend source contract](../developers/market-data.md).
 
-## Interface
+## UI/UX {#interface}
 
 Open `/settings?tab=interface` to choose **Light** or **Dark** appearance and place the navigation on the **Left** or **Bottom**. The bottom dock floats over the workspace and stays visible while you scroll. Scroll to the end of a page to bring its last controls above the dock. **More** opens upward, and you can open it from the keyboard with ↑.
 
-Turn off **Show labels** for icon-only navigation, including the **More** menu. The bottom dock also uses icons alone on narrow screens. Choices apply immediately and are saved in the current browser.
+Turn off **Show labels** for icon-only navigation, including the **More** menu. The bottom dock also uses icons alone on narrow screens.
+
+Under **Page transition**, choose **Dock reveal**, **Slide**, **Soft zoom**, or **Fade**. Dock reveal opens from the active navigation button, spreading from the left dock or rising from the bottom dock. Use **Preview** to replay the selected transition. Choices apply immediately and are saved in the current browser. The app respects the device's reduced-motion setting.
 
 ## Workspace
 

@@ -1,8 +1,9 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { NavigationIcon } from './navigation-icon';
 import { useInterfacePreferences } from '../lib/interface-preferences';
+import { playPageTransition } from '../lib/page-transition';
 import { LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -268,60 +269,28 @@ export function NavigationDock({
   );
 }
 
-/** Unfold the route from its dock connection, keeping text at its natural scale. */
+/** Play the chosen entrance on route changes, using the current dock position. */
 export function PageView({ children }: { children: ReactNode }) {
-  const location = useLocation();
+  const { pathname } = useLocation();
+  const { navigation, pageTransition } = useInterfacePreferences();
   const view = useRef<HTMLDivElement>(null);
+  const enter = useEffectEvent((element: HTMLDivElement) => {
+    const anchor = document.querySelector(
+      '.side-dock > [aria-current="page"], .side-dock > [data-current="true"]',
+    );
+    return playPageTransition(element, pageTransition, navigation, anchor);
+  });
+
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
-    const element = view.current;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (!element?.animate || reducedMotion.matches) return;
-    const reveal =
-      document.documentElement.dataset.navigation === 'bottom'
-        ? element.animate(
-            [
-              { opacity: 0.65, transform: 'translateY(6px)' },
-              { opacity: 1, transform: 'none' },
-            ],
-            { duration: 240, easing: 'ease-out' },
-          )
-        : revealFromSideDock(element);
-    if (!reveal) return;
-    const stop = () => reveal.cancel();
-    reducedMotion.addEventListener('change', stop);
-    return () => {
-      stop();
-      reducedMotion.removeEventListener('change', stop);
-    };
-  }, [location.pathname]);
+    if (!view.current) return;
+    const motion = enter(view.current);
+    return () => motion?.cancel();
+  }, [pathname]);
+
   return (
     <div ref={view} className="page-view">
       {children}
     </div>
-  );
-}
-
-function revealFromSideDock(element: HTMLElement) {
-  const button = document.querySelector(
-    '.side-dock [aria-current="page"], .side-dock [data-current="true"]',
-  );
-  if (!button) return;
-  const origin = button.getBoundingClientRect();
-  const bounds = element.getBoundingClientRect();
-  const y = Math.max(0, Math.min(bounds.height, origin.top + origin.height / 2 - bounds.top));
-  const top = Math.max(0, y - 30);
-  const bottom = Math.max(0, bounds.height - y - 30);
-  const right = Math.max(0, bounds.width - 24);
-  return element.animate(
-    [
-      {
-        clipPath: `inset(${top}px ${right}px ${bottom}px 0px round 18px)`,
-        opacity: 0.3,
-        transform: 'translateX(-12px)',
-      },
-      { clipPath: 'inset(0px 0px 0px 0px round 0px)', opacity: 1, transform: 'translateX(0)' },
-    ],
-    { duration: 580, easing: 'cubic-bezier(.16,1,.3,1)' },
   );
 }
