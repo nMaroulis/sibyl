@@ -10,11 +10,11 @@ Open `/settings?tab=exchanges` to search and add accounts from the 20-provider e
 
 ## AI models
 
-Open `/settings?tab=models`. **Added models** lists saved deployments. A deployment is a named provider connection with its own key, endpoint and selected model. Cards show **Active** when the deployment is the workspace default or assigned to an agent, and **Inactive** otherwise.
+Open `/settings?tab=models`. **Added models** lists saved deployments. A deployment is a named provider connection with its own key, endpoint and selected model. The badge beside each name shows **Active in workspace** for the workspace default, **Agent only** for a deployment used by individual agents, and **Inactive** for unused deployments.
 
 Under **Add a deployment**, choose **API** or **Local**. Fill in the connection details and accept or change the suggested name. You can save the connection and choose its model later. Add the same provider again for a different API key or local endpoint. Sibyl suggests names such as **OpenAI API model** and **OpenAI API model (1)**.
 
-Use **Choose model** on its card to finish setup. **Set default** routes agents following the workspace default through that deployment. **Edit** changes its connection settings. **Delete** removes its saved credentials. Agents assigned to a deleted deployment return to the workspace default. Deleting the default returns the workspace to tool mode.
+Use **Choose model** on its card to finish setup. **Activate model** routes agents following the workspace default through that deployment. **Edit** changes its connection settings. **Delete** removes its saved credentials. Agents assigned to a deleted deployment return to the workspace default. Deleting the default returns the workspace to tool mode.
 
 Local server cards have a full-width **Runtime monitor**. Ollama reports installed and loaded models, recent checks, and controls for supported local processes. LM Studio, vLLM and llama.cpp server show the models reported by their catalogs. These monitors read server metadata. [Ollama controls](ollama.md), [LM Studio catalog](https://lmstudio.ai/docs/developer/openai-compat/models), [vLLM catalog](https://github.com/vllm-project/vllm/blob/main/docs/getting_started/quickstart.md), [llama.cpp catalog](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#get-v1models-openai-compatible-model-info-api).
 

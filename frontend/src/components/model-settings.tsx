@@ -157,7 +157,7 @@ function ModelEditor({ data, visible }: { data: ModelWorkspace; visible: boolean
       saved(
         result,
         deployment
-          ? `${deployment.name} is now the default.`
+          ? `${deployment.name} is now active in the workspace.`
           : 'Workspace default set to tool mode.',
       );
     } catch (reason) {

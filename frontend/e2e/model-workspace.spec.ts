@@ -62,7 +62,10 @@ test('a provider can have separate named deployments with independent routing', 
   await page.getByRole('button', { name: 'Add deployment', exact: true }).click();
 
   const first = page.getByRole('article', { name: 'OpenAI API model', exact: true });
-  await expect(first.getByText('Inactive', { exact: true })).toBeVisible();
+  const firstHeader = first.locator('header');
+  await expect(firstHeader.getByText('Inactive', { exact: true })).toBeVisible();
+  const activate = firstHeader.getByRole('button', { name: 'Activate model', exact: true });
+  await expect(activate).toBeDisabled();
   await expect(first.getByText('No model selected', { exact: true })).toBeVisible();
   await expect(first.getByText('sk-••••••1234')).toBeVisible();
   await first.getByRole('button', { name: 'Choose model', exact: true }).click();
@@ -72,14 +75,15 @@ test('a provider can have separate named deployments with independent routing', 
   await expect(first.getByText('chosen-after-add', { exact: true })).toBeVisible();
   await first.getByRole('button', { name: 'Check status' }).click();
   await expect(first.getByRole('status')).toHaveText('The model answered a test request.');
-  await first.getByRole('button', { name: 'Set default', exact: true }).click();
-  await expect(first.getByText('Workspace default', { exact: true })).toBeVisible();
+  await activate.click();
+  await expect(firstHeader.getByText('Active in workspace', { exact: true })).toBeVisible();
   await first.getByText('Request activity', { exact: true }).click();
   await expect(
     first.getByText('No recent requests are attributed to this deployment yet.'),
   ).toBeVisible();
   await first.getByText('Request activity', { exact: true }).click();
-  await expect(first.getByText('Active', { exact: true })).toBeVisible();
+  await expect(activate).toHaveCount(0);
+  await expect(localCard.locator('header').getByText('Inactive', { exact: true })).toBeVisible();
 
   await picker.getByRole('button', { name: 'OpenAI 1 added' }).click();
   await expect(page.getByLabel('Deployment name')).toHaveValue('OpenAI API model (1)');
@@ -93,7 +97,7 @@ test('a provider can have separate named deployments with independent routing', 
   const second = page.getByRole('article', { name: 'OpenAI API model (1)', exact: true });
   await expect(second.getByText('Inactive', { exact: true })).toBeVisible();
   await expect(second.getByText('sk-••••••5678')).toBeVisible();
-  await expect(first.getByText('Workspace default', { exact: true })).toBeVisible();
+  await expect(firstHeader.getByText('Active in workspace', { exact: true })).toBeVisible();
 
   await second.getByRole('button', { name: 'Edit OpenAI API model (1)' }).click();
   const edit = page.getByRole('dialog', { name: 'Edit OpenAI API model (1)', exact: true });
@@ -117,7 +121,10 @@ test('a provider can have separate named deployments with independent routing', 
   await research.getByText('Request activity', { exact: true }).click();
   await expect(research.getByText('Custom · 64,000 tokens')).toBeVisible();
   await expect(research.getByText('2,560 tokens', { exact: true })).toBeVisible();
-  await expect(research.getByText('Active', { exact: true })).toBeVisible();
+  await expect(research.locator('header').getByText('Agent only', { exact: true })).toBeVisible();
+  await expect(
+    research.locator('header').getByRole('button', { name: 'Activate model' }),
+  ).toBeEnabled();
 
   await first.getByRole('button', { name: 'Delete OpenAI API model' }).click();
   await page

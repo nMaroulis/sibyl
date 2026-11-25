@@ -1,6 +1,6 @@
 # Ollama in Sibyl
 
-Open **Settings → AI models → Add a deployment → Local → Ollama**. Save the named connection, optionally choosing a model. **Choose model** and **Change model** on the saved card list the models installed on that server. Use **Custom model…** to enter an exact model ID, including when the server is offline. Its full-width runtime monitor appears under **Added models** and shows the available and loaded models. Use **Set default** to route new requests from agents following the workspace default, or select the model under **Agent models** for one specialist.
+Open **Settings → AI models → Add a deployment → Local → Ollama**. Save the named connection, optionally choosing a model. **Choose model** and **Change model** on the saved card list the models installed on that server. Use **Custom model…** to enter an exact model ID, including when the server is offline. Its full-width runtime monitor appears under **Added models** and shows the available and loaded models. Use **Activate model** to route new requests from agents following the workspace default, or select the model under **Agent models** for one specialist.
 
 **Check status** probes the native version, model catalog and loaded-model endpoints without running inference. A reachable server with an installed model may still have insufficient resources or unsuitable tool-calling behavior; these checks do not evaluate model answers.
 

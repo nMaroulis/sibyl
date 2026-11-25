@@ -55,8 +55,8 @@
   --deployment-tint: light-dark(#9584c5, #a093cd);
 }
 
-.added-model-card[data-active='true'] {
-  --deployment-tint-strength: 13%;
+.added-model-card[data-workspace-default='true'] {
+  --deployment-tint-strength: 16%;
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
@@ -97,6 +97,18 @@
 .added-model-provider {
   flex: 1;
   min-width: 0;
+}
+
+.added-model-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+}
+
+.added-model-heading .badge {
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .added-model-provider h3,
@@ -178,7 +190,6 @@
   overflow-wrap: anywhere;
 }
 
-.added-model-actions .text-button,
 .added-model-tool-mode {
   font-size: 11px;
 }

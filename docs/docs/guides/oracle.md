@@ -45,7 +45,7 @@ Instructions do not read your balances or claim a feature is configured. Ask for
 
 ## Connect a provider
 
-Open **Settings → AI models → Add a deployment**. Choose API or Local, pick a provider, and enter its connection details. Choose the model during setup or on the saved deployment card. Use **Set default** on the model's card or assign it to an individual agent. No restart is needed. All providers in the installed ProtoLink factory are supported, including local servers, embedded GGUF inference, and a clearly labeled Mock runtime. See the [Settings guide](./settings.md).
+Open **Settings → AI models → Add a deployment**. Choose API or Local, pick a provider, and enter its connection details. Choose the model during setup or on the saved deployment card. Use **Activate model** on the model's card or assign it to an individual agent. No restart is needed. All providers in the installed ProtoLink factory are supported, including local servers, embedded GGUF inference, and a clearly labeled Mock runtime. See the [Settings guide](./settings.md).
 
 Install the optional SDK for hosted providers when needed:
 

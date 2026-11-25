@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Cloud, KeyRound, Pencil, RefreshCw, Star, Trash2 } from 'lucide-react';
+import { Check, Cloud, KeyRound, Pencil, Power, RefreshCw, Trash2 } from 'lucide-react';
 import { post } from '../../lib/api';
 import type { ModelDeployment, ModelProvider, ModelWorkspace } from '../../lib/types';
 import { Badge, Panel, PanelTitle } from '../ui';
@@ -79,8 +79,12 @@ function DeploymentCard({
   const [draft, setDraft] = useState<ModelDraft>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const active = deployment.default || deployment.agents.length > 0;
   const missingKey = provider.requires_key && deployment.key_source === 'none';
+  const activationHint = !deployment.model
+    ? 'Choose a model to activate this deployment.'
+    : missingKey
+      ? 'Add an API key to activate this deployment.'
+      : 'Use this model as the workspace default.';
   const ollama = provider.id === 'ollama';
   const installed = catalog ?? [];
   const options = [
@@ -112,7 +116,7 @@ function DeploymentCard({
     <article
       className="added-model-card"
       data-kind={provider.kind}
-      data-active={active}
+      data-workspace-default={deployment.default}
       id={`added-model-${deployment.id}`}
       aria-label={deployment.name}
     >
@@ -121,13 +125,35 @@ function DeploymentCard({
           <ProviderMark provider={provider.id} size={20} />
         </span>
         <div className="added-model-provider">
-          <h3>{deployment.name}</h3>
+          <div className="added-model-heading">
+            <h3>{deployment.name}</h3>
+            {deployment.default ? (
+              <Badge tone="lime">
+                <Check size={11} aria-hidden="true" /> Active in workspace
+              </Badge>
+            ) : deployment.agents.length ? (
+              <Badge tone="purple">Agent only</Badge>
+            ) : (
+              <Badge>Inactive</Badge>
+            )}
+          </div>
           {(deployment.base_url || !deployment.name.startsWith(provider.name)) && (
             <small title={deployment.base_url}>{deployment.base_url || provider.name}</small>
           )}
         </div>
         <div className="added-model-admin">
-          <Badge tone={active ? 'lime' : 'neutral'}>{active ? 'Active' : 'Inactive'}</Badge>
+          {!deployment.default && (
+            <button
+              className="button primary tiny"
+              type="button"
+              disabled={busy || saving || !deployment.model || missingKey}
+              title={activationHint}
+              aria-description={activationHint}
+              onClick={() => onDefault(deployment)}
+            >
+              <Power size={13} aria-hidden="true" /> Activate model
+            </button>
+          )}
           <button
             className="button secondary tiny"
             type="button"
@@ -172,7 +198,6 @@ function DeploymentCard({
       <div className="added-model-row">
         <div className="added-model-name">
           <strong>{deployment.model || 'No model selected'}</strong>
-          {deployment.default && <Badge tone="purple">Workspace default</Badge>}
           {!!deployment.agents.length && (
             <span className="added-model-assignments">
               {deployment.agents.length}{' '}
@@ -196,16 +221,6 @@ function DeploymentCard({
           </button>
           {(provider.kind === 'api' || provider.id === 'llama.cpp-local') && deployment.model && (
             <ModelCheck key={deployment.model} deployment={deployment} />
-          )}
-          {!deployment.default && deployment.model && (
-            <button
-              className="text-button"
-              type="button"
-              disabled={busy || saving || missingKey}
-              onClick={() => onDefault(deployment)}
-            >
-              <Star size={13} /> Set default
-            </button>
           )}
         </div>
       </div>

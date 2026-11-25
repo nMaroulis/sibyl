@@ -76,7 +76,7 @@ GUIDES = {
         "steps": [
             "Choose API or Local and a ProtoLink provider.",
             "Use Add a deployment for an API key or local endpoint. A provider can have multiple named deployments with different credentials. Added models shows which deployments are active. Edit and Delete affect only that deployment.",
-            "Choose a model during addition or later on the deployment card. Use Set default on a configured deployment or assign it to an individual agent. Check status sends a short API test; local servers have a runtime monitor.",
+            "Choose a model during addition or later on the deployment card. Use Activate model on a configured deployment to make it the workspace default, or assign it to an individual agent. Check status sends a short API test; local servers have a runtime monitor.",
             "Expand Agent models to select a named deployment for Sibyl or a specialist. Follow workspace default removes the override. Deleting a deployment clears its overrides and returns the workspace to tool mode if it was the default.",
             "For API providers, enter the key in Settings. For a local server, set the endpoint; for llama.cpp-local, supply an existing GGUF path.",
             "For Ollama, use Check status to detect the server and installed models, Start Ollama for an installed local CLI, and the download/setup links if it is missing. Model installation is separate. Save a connection or change an assignment to apply configuration to new turns; already queued/running requests keep their frozen team choices. No provider call is made just by saving. None leaves module snapshots available; Sibyl requires a model. Mock produces simulated answers.",
