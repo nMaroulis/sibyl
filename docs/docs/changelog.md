@@ -51,6 +51,8 @@ docker compose up --build
 
 ### Added
 
+- Strategies offers algorithm cards and a dedicated exchange setup with production and test accounts. Trade follows the selected execution account and pair, with optional live WebSocket depth and an explicit Binance comparison.
+
 - Settings → Workspace adds separate, persistent switches for manual spot orders and exchange strategies. Switching automation off pauses exchange runs. Trade and Strategies link to Workspace when their permission is off.
 
 - AI model settings supports multiple named deployments per provider, each with its own credentials and model selection. Cards show active routing, masked keys, connection checks, and full-width local runtime monitors.

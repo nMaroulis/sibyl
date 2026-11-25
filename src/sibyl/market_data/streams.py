@@ -11,11 +11,14 @@ import math
 import random
 import re
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 import aiohttp
+import ccxt
+
+from sibyl.market_data.streaming.orderbook import PublicOrderBook, supports_live_book
 
 ENDPOINTS = {
     "production": "wss://data-stream.binance.vision/stream",
@@ -78,7 +81,7 @@ class Channel:
     identity: dict
     native_symbol: str
     symbol: str
-    timeframe: str
+    timeframe: str | None
     queues: set = field(default_factory=set)
     task: asyncio.Task | None = None
     state: str = "connecting"
@@ -102,7 +105,9 @@ class Channel:
             "last_received_at": datetime.fromtimestamp(self.last_received, UTC).isoformat()
             if self.last_received
             else None,
-            "fallback": "REST snapshots remain available; indicators use closed candles.",
+            "fallback": "Same-exchange REST snapshots remain available."
+            if self.timeframe is None
+            else "REST snapshots remain available; indicators use closed candles.",
         }
 
     def publish(self, event):
@@ -155,6 +160,14 @@ class LiveMarkets:
                 key: identity[key] for key in ("source", "source_label", "provider", "environment")
             }, native
 
+    def orderbook_selection(self, source, symbol):
+        """Resolve a public book source and verify that its stream is supported."""
+        with self.market.snapshot(source):
+            identity = self.market.metadata()
+            if not supports_live_book(identity, symbol):
+                raise ValueError("Live depth is unavailable for this exchange and pair. Use snapshots.")
+            return {key: identity[key] for key in ("source", "source_label", "provider", "environment")}
+
     @asynccontextmanager
     async def subscribe(self, selection, native, symbol, timeframe):
         if self.closed:
@@ -170,7 +183,8 @@ class LiveMarkets:
         queue = asyncio.Queue(maxsize=8)
         channel.queues.add(queue)
         if channel.task is None:
-            channel.task = asyncio.create_task(self._run(channel), name="sibyl-market-stream")
+            run = self._run_book if timeframe is None else self._run
+            channel.task = asyncio.create_task(run(channel), name="sibyl-market-stream")
         try:
             yield channel, queue
         finally:
@@ -268,6 +282,46 @@ class LiveMarkets:
                 attempt += 1
                 await asyncio.sleep(min(30, 2 ** min(attempt, 5)) + random.random())
 
+    async def _run_book(self, channel):
+        """Maintain a shared exact-pair book and publish at most ten display snapshots per second."""
+        attempt = 0
+        while True:
+            channel.latest.clear()
+            channel.publish(channel.status())
+            native = PublicOrderBook(channel.identity)
+            try:
+                await asyncio.wait_for(native.validate_market(channel.symbol), 15)
+                last_publish = float("-inf")
+                while True:
+                    try:
+                        event = await asyncio.wait_for(native.receive(channel.symbol), 30)
+                    except (ValueError, TypeError, KeyError, OverflowError):
+                        channel.invalid += 1
+                        continue
+                    channel.received += 1
+                    channel.last_received, attempt = time.time(), 0
+                    if time.monotonic() - last_publish < 0.095:
+                        # CCXT keeps applying deltas while the browser skips intermediate snapshots.
+                        continue
+                    last_publish = time.monotonic()
+                    channel.latest["book"] = {**event, **channel.identity}
+                    channel.state = "live"
+                    channel.publish(channel.latest["book"])
+            except (ccxt.BadSymbol, ccxt.NotSupported, ValueError):
+                channel.state = "unavailable"
+                channel.publish(channel.status())
+                return
+            except Exception:
+                channel.reconnects += 1
+                channel.state = "reconnecting"
+                channel.latest.clear()
+                channel.publish(channel.status())
+                attempt += 1
+            finally:
+                with suppress(Exception):
+                    await native.close()
+            await asyncio.sleep(min(30, 2 ** min(attempt, 5)) + random.random())
+
     def snapshot(self, source=None):
         """Inspect observed stream health; never open a socket or refresh provider data."""
         return {
@@ -278,7 +332,7 @@ class LiveMarkets:
                     "forming_candle": channel.latest.get("candle"),
                 }
                 for channel in tuple(self.channels.values())
-                if not source or channel.identity["source"] == source
+                if channel.timeframe is not None and (not source or channel.identity["source"] == source)
             ],
             "scope": "Only viewed Binance/Testnet, Coinbase and Kraken public market streams. Coinbase candles are native 5m only; envelope timing does not prove last-trade freshness. Kraken receipt-timed data does not prove last-trade freshness. Account/order tracking and analysis remain REST-based.",
         }

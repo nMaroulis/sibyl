@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { Badge, Modal } from '../ui';
@@ -22,7 +22,6 @@ type Options = {
   server_enabled: boolean;
   controls: { halted: boolean };
   accounts: (Connection & { supported: boolean })[];
-  providers: { id: string; name: string }[];
   handoff_sources: {
     id: string;
     connection_id: string;
@@ -44,16 +43,19 @@ type Review = {
   handoff?: { source_id: string; quantity: number; cost_basis: number; reference_value: number };
 };
 
-/** A collapsed execution setup keeps research simple and requires a separate scoped approval. */
+/** Present the exchange and exact market before any advanced execution controls. */
 export function ExchangeStrategySetup({
+  active,
   parameters,
   onStarted,
+  children,
 }: {
+  active: boolean;
   parameters: StrategyParams;
   onStarted: (job: Job) => void;
+  children: ReactNode;
 }) {
   const [search] = useSearchParams();
-  const [open, setOpen] = useState(!!search.get('handoff'));
   const [handoff, setHandoff] = useState(search.get('handoff') ?? '');
   const [account, setAccount] = useState('');
   const [pair, setPair] = useState('');
@@ -72,11 +74,11 @@ export function ExchangeStrategySetup({
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const options = useResource<Options>('/strategies/exchange/options', 0, open);
+  const options = useResource<Options>('/strategies/exchange/options', 0, active);
   const markets = useResource<{ symbols: string[]; timeframes: string[] }>(
     `/strategies/exchange/markets/${account}`,
     0,
-    open && !!account,
+    active && !!account,
   );
   const symbol = pair || parameters.symbol;
   const interval = timeframe || parameters.timeframe || '1d';
@@ -133,20 +135,8 @@ export function ExchangeStrategySetup({
     }
   };
   return (
-    <details
-      className="advanced-options strategy-exchange-setup"
-      open={open}
-      onToggle={(e) => setOpen(e.currentTarget.open)}
-    >
-      <summary>
-        <ShieldCheck size={15} /> Run on a connected exchange
-      </summary>
+    <div className="strategy-exchange-setup">
       <div className="form exchange-setup-fields">
-        <p className="footnote">
-          Use the algorithm and indicator settings above with a real exchange account. Prices and
-          candles come from that exact exchange, independently of the backtest input. Demo paper
-          runs remain separate.
-        </p>
         {options.loading && <p className="footnote">Checking execution support…</p>}
         {(options.error || markets.error) && (
           <p className="form-error" role="alert">
@@ -182,143 +172,173 @@ export function ExchangeStrategySetup({
             exchange strategy.
           </p>
         )}
-        <label>
-          Execution account
-          <select
-            aria-label="Execution account"
-            value={account}
-            onChange={(e) => {
-              setAccount(e.target.value);
-              setHandoff('');
-              setPair('');
-              setTimeframe('');
-              setError('');
-            }}
-          >
-            <option value="">Choose an active account</option>
-            {accounts.map((row) => (
-              <option key={row.id} value={row.id}>
-                {row.label} · {row.exchange} · {row.sandbox ? 'Test funds' : 'Real funds'}
-              </option>
-            ))}
-          </select>
-        </label>
-        {!!account && (
-          <>
-            <label>
-              Exact exchange pair
-              <select
-                aria-label="Exact exchange pair"
-                value={markets.data?.symbols.includes(symbol) ? symbol : ''}
-                onChange={(e) => setPair(e.target.value)}
-                disabled={markets.loading}
-              >
-                <option value="">Choose a pair on this exchange</option>
-                {markets.data?.symbols.map((value) => (
-                  <option value={value} key={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Execution timeframe
-              <select
-                aria-label="Execution timeframe"
-                value={markets.data?.timeframes.includes(interval) ? interval : ''}
-                onChange={(e) => setTimeframe(e.target.value)}
-                disabled={markets.loading}
-              >
-                <option value="">Choose an interval</option>
-                {markets.data?.timeframes
-                  .filter((value) =>
-                    ['1m', '5m', '15m', '30m', '1h', '4h', '12h', '1d', '1w'].includes(value),
+        <div className="exchange-run-fields">
+          <label>
+            Exchange account
+            <select
+              aria-label="Exchange account"
+              value={account}
+              onChange={(e) => {
+                setAccount(e.target.value);
+                setHandoff('');
+                setPair('');
+                setTimeframe('');
+                setError('');
+              }}
+            >
+              <option value="">Choose an active account</option>
+              {[
+                { label: 'Real funds', sandbox: false },
+                { label: 'Test funds', sandbox: true },
+              ].map(({ label, sandbox }) => {
+                const group = accounts.filter((row) => row.sandbox === sandbox);
+                return (
+                  group.length > 0 && (
+                    <optgroup key={label} label={label}>
+                      {group.map((row) => (
+                        <option key={row.id} value={row.id}>
+                          {row.label} · {row.exchange} · {label}
+                        </option>
+                      ))}
+                    </optgroup>
                   )
-                  .map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              {handoff ? 'Additional quote budget' : 'Allocated budget'} · {quote}
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Existing strategy position
-              <select
-                aria-label="Position handoff source"
-                value={handoff}
-                onChange={(e) => setHandoff(e.target.value)}
-              >
-                <option value="">Start without adopting existing units</option>
-                {options.data?.handoff_sources
-                  .filter((s) => s.connection_id === account && s.symbol === symbol)
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.id.slice(0, 8)} · {number(s.quantity, 8)} {symbol.split('/')[0]}
+                );
+              })}
+            </select>
+          </label>
+          {!!account && (
+            <>
+              <label>
+                Exact exchange pair
+                <select
+                  aria-label="Exact exchange pair"
+                  value={markets.data?.symbols.includes(symbol) ? symbol : ''}
+                  onChange={(e) => {
+                    setPair(e.target.value);
+                    setHandoff('');
+                  }}
+                  disabled={markets.loading}
+                >
+                  <option value="">Choose a pair on this exchange</option>
+                  {markets.data?.symbols.map((value) => (
+                    <option value={value} key={value}>
+                      {value}
                     </option>
                   ))}
-              </select>
-              {!!handoff && (
-                <small>
-                  The new run receives all retained units and original basis after review, plus the
-                  additional quote budget above. No exchange trade or transfer occurs.
-                </small>
-              )}
-            </label>
-            <label>
-              Maximum order value · {quote}
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={risk.max_order_quote}
-                onChange={(e) => setRisk({ ...risk, max_order_quote: Number(e.target.value) })}
-              />
-            </label>
-            <label>
-              Pause at allocated loss · %
-              <input
-                type="number"
-                min="0.1"
-                max="90"
-                step="any"
-                value={risk.max_loss_pct}
-                onChange={(e) => setRisk({ ...risk, max_loss_pct: Number(e.target.value) })}
-              />
-            </label>
-            <label>
-              Cancel unfilled orders after
-              <select
-                value={risk.order_lifetime_seconds ?? ''}
-                onChange={(event) =>
-                  setRisk({
-                    ...risk,
-                    order_lifetime_seconds: event.target.value ? Number(event.target.value) : null,
-                  })
-                }
-              >
-                <option value="">No automatic expiry · GTC</option>
-                <option value={60}>1 minute</option>
-                <option value={300}>5 minutes</option>
-                <option value={900}>15 minutes</option>
-                <option value={3600}>1 hour</option>
-                <option value={86400}>1 day</option>
-              </select>
-            </label>
-            <p className="footnote">
-              Best-effort cancellation by the running backend, not exchange-native expiry. Partial
-              fills remain owned. An approved expiry continues while paused or stopped and after
-              restart, subject to account access and execution flags.
-            </p>
+                </select>
+              </label>
+              <label>
+                Execution timeframe
+                <select
+                  aria-label="Execution timeframe"
+                  value={markets.data?.timeframes.includes(interval) ? interval : ''}
+                  onChange={(e) => setTimeframe(e.target.value)}
+                  disabled={markets.loading}
+                >
+                  <option value="">Choose an interval</option>
+                  {markets.data?.timeframes
+                    .filter((value) =>
+                      ['1m', '5m', '15m', '30m', '1h', '4h', '12h', '1d', '1w'].includes(value),
+                    )
+                    .map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                </select>
+              </label>
+            </>
+          )}
+        </div>
+        {!!account && (
+          <>
+            <div className="exchange-run-fields">
+              <label>
+                {handoff ? 'Additional quote budget' : 'Allocated budget'} · {quote}
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={budget}
+                  onChange={(e) => setBudget(Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Maximum order value · {quote}
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={risk.max_order_quote}
+                  onChange={(e) => setRisk({ ...risk, max_order_quote: Number(e.target.value) })}
+                />
+                {risk.max_order_quote > budget && (
+                  <small>Use an order cap at or below the budget.</small>
+                )}
+              </label>
+              <label>
+                Pause at allocated loss · %
+                <input
+                  type="number"
+                  min="0.1"
+                  max="90"
+                  step="any"
+                  value={risk.max_loss_pct}
+                  onChange={(e) => setRisk({ ...risk, max_loss_pct: Number(e.target.value) })}
+                />
+              </label>
+            </div>
+            {children}
             <details className="advanced-options">
-              <summary>Execution limits</summary>
+              <summary>Advanced execution</summary>
+              <label>
+                Existing strategy position
+                <select
+                  aria-label="Position handoff source"
+                  value={handoff}
+                  onChange={(e) => setHandoff(e.target.value)}
+                >
+                  <option value="">Start without adopting existing units</option>
+                  {options.data?.handoff_sources
+                    .filter((s) => s.connection_id === account && s.symbol === symbol)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.id.slice(0, 8)} · {number(s.quantity, 8)} {symbol.split('/')[0]}
+                      </option>
+                    ))}
+                </select>
+                {!!handoff && (
+                  <small>
+                    The new run receives all retained units and original basis after review, plus
+                    the additional quote budget above. No exchange trade or transfer occurs.
+                  </small>
+                )}
+              </label>
+              <label>
+                Cancel unfilled orders after
+                <select
+                  value={risk.order_lifetime_seconds ?? ''}
+                  onChange={(event) =>
+                    setRisk({
+                      ...risk,
+                      order_lifetime_seconds: event.target.value
+                        ? Number(event.target.value)
+                        : null,
+                    })
+                  }
+                >
+                  <option value="">No automatic expiry · GTC</option>
+                  <option value={60}>1 minute</option>
+                  <option value={300}>5 minutes</option>
+                  <option value={900}>15 minutes</option>
+                  <option value={3600}>1 hour</option>
+                  <option value={86400}>1 day</option>
+                </select>
+              </label>
+              <p className="footnote">
+                The running backend requests cancellation at the deadline. Partial fills remain
+                owned. An approved expiry continues while paused or stopped and after restart while
+                the required execution permission is enabled.
+              </p>
+
               <label>
                 Modeled entry risk · % of strategy equity · optional
                 <input
@@ -361,14 +381,11 @@ export function ExchangeStrategySetup({
               ))}
             </details>
             <p className="footnote">
-              Price-capped GTC limits can remain open. One unresolved order blocks the run. Budgets
-              are tracked locally and do not reserve exchange funds. Pause/Stop disable future
-              orders. Approved expiry can still cancel outstanding orders. Stop &amp; cancel has its
-              own review and retains holdings. Close position requires a separate sell approval.
-              Loss guards are not guaranteed stop orders.
+              Candles and prices come from the selected exchange. Each approval is scoped to this
+              account, pair and budget.
             </p>
             <button
-              className="button secondary full-width"
+              className="button primary exchange-run-review"
               type="button"
               disabled={
                 busy ||
@@ -387,12 +404,6 @@ export function ExchangeStrategySetup({
               {busy ? 'Checking the account…' : 'Review exchange strategy'}
             </button>
           </>
-        )}
-        {!!options.data && (
-          <p className="footnote">
-            Implemented: {options.data.providers.map((row) => row.name).join(', ')}. Account
-            permissions and exchange availability are checked when reviewing.
-          </p>
         )}
         {error && !review && (
           <p className="form-error" role="alert">
@@ -500,6 +511,6 @@ export function ExchangeStrategySetup({
           </div>
         </Modal>
       )}
-    </details>
+    </div>
   );
 }

@@ -1,8 +1,17 @@
 import { queueResearch } from '../../lib/research-jobs';
 import { useState } from 'react';
-import { FlaskConical, Download, RefreshCw, Trash2, Clock3 } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Braces,
+  ChevronDown,
+  Clock3,
+  Download,
+  FlaskConical,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
 import { AgentButton } from '../agents';
-import { Badge, ErrorState, Loading, Panel, PanelTitle, useToast } from '../ui';
+import { Badge, ErrorState, Loading, PanelTitle, useToast } from '../ui';
 import { BacktestChart } from './backtest-chart';
 import { api, downloadFile, number, post } from '../../lib/api';
 import { useResource } from '../../lib/hooks';
@@ -116,11 +125,19 @@ export function CustomStrategies({
   };
   return (
     <details
-      className="strategy-advanced custom-strategy-research"
+      className="panel full-panel custom-strategy-research"
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
-      <summary>Custom Python strategies</summary>
-      <Panel>
+      <summary>
+        <span className="validation-symbol">
+          <Braces size={20} aria-hidden="true" />
+        </span>
+        <span>
+          <strong>Custom Python strategies</strong>
+        </span>
+        <ChevronDown size={16} className="validation-chevron" aria-hidden="true" />
+      </summary>
+      <div className="custom-strategy-content">
         <PanelTitle
           title="Your custom research"
           subtitle="Installed local extensions · historical backtests only"
@@ -137,16 +154,17 @@ export function CustomStrategies({
           <ErrorState message={catalog.error} retry={catalog.retry} />
         ) : (
           <>
-            <p className="footnote">
-              {catalog.data?.note}{' '}
+            <div className="custom-strategy-guidance">
+              <p className="footnote">{catalog.data?.note}</p>
               <a
+                className="text-link"
                 href="https://nmaroulis.github.io/sibyl/developers/strategy-plugins/"
                 target="_blank"
                 rel="noreferrer"
               >
-                Plugin setup & example ↗
+                Plugin setup &amp; example <ArrowUpRight size={13} aria-hidden="true" />
               </a>
-            </p>
+            </div>
             {!ready.length && (
               <p className="inline-alert">
                 No custom strategies are enabled. Install a trusted package with a{' '}
@@ -404,7 +422,7 @@ export function CustomStrategies({
             </div>
           </section>
         )}
-      </Panel>
+      </div>
     </details>
   );
 }

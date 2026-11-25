@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Dices, Play, LoaderCircle, Download, RefreshCw, Trash2 } from 'lucide-react';
+import { ChevronDown, Dices, Play, LoaderCircle, Download, RefreshCw, Trash2 } from 'lucide-react';
 import { api, downloadFile, number, post, refresh } from '../../lib/api';
 import { useResource } from '../../lib/hooks';
 import { queueResearch, type ResearchJobRun } from '../../lib/research-jobs';
@@ -155,12 +155,15 @@ export function AdaptiveWorkspace({
       onToggle={(event) => setOpen(event.currentTarget.open)}
     >
       <summary>
-        <Dices size={17} />
+        <span className="validation-symbol">
+          <Dices size={20} aria-hidden="true" />
+        </span>
         <span>
           <strong>Adaptive search</strong>
           <small>Numeric distributions · Bayesian TPE · trusted plugins</small>
         </span>
         <Badge>Advanced research</Badge>
+        <ChevronDown size={16} className="validation-chevron" aria-hidden="true" />
       </summary>
       {open && (
         <div className="adaptive-content">

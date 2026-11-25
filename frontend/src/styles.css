@@ -1603,6 +1603,27 @@ details[open] > summary {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
+.exchange-ticket-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+.exchange-ticket-layout .exchange-execution-grid {
+  display: block;
+}
+.exchange-ticket-help {
+  margin: 0 22px 22px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media (max-width: 970px) {
+  .exchange-ticket-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
 .exchange-review-notes {
   padding: 8px 24px 24px;
   color: var(--muted);
@@ -4218,6 +4239,11 @@ details[open] > summary {
 .book-table td {
   font-variant-numeric: tabular-nums;
   width: 25%;
+}
+.orderbook-source-note {
+  margin: 0 22px 14px;
+  color: var(--muted);
+  font-size: 12px;
 }
 .workspace-controls .inline-check {
   flex-direction: row;
@@ -8979,7 +9005,9 @@ details[open] > summary {
 .strategy-form > .footnote {
   display: block;
 }
-.strategy-validation > summary {
+.strategy-validation > summary,
+.adaptive-workspace > summary,
+.custom-strategy-research > summary {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -8987,31 +9015,41 @@ details[open] > summary {
   cursor: pointer;
   list-style: none;
 }
-.strategy-validation > summary::-webkit-details-marker {
+.strategy-validation > summary::-webkit-details-marker,
+.adaptive-workspace > summary::-webkit-details-marker,
+.custom-strategy-research > summary::-webkit-details-marker {
   display: none;
 }
-.strategy-validation > summary::before {
+.strategy-validation > summary::before,
+.adaptive-workspace > summary::before,
+.custom-strategy-research > summary::before {
   display: none;
 }
 .validation-symbol {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  flex: 0 0 38px;
+  height: 38px;
+  border-radius: 12px;
   color: var(--accent);
-  background: var(--surface);
+  background: var(--surface-soft);
 }
-.strategy-validation > summary > span:nth-child(2) {
+.strategy-validation > summary > span:nth-child(2),
+.adaptive-workspace > summary > span:nth-child(2),
+.custom-strategy-research > summary > span:nth-child(2) {
   flex: 1;
+  min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
-.strategy-validation > summary strong {
+.strategy-validation > summary strong,
+.adaptive-workspace > summary strong,
+.custom-strategy-research > summary strong {
   font-size: 14px;
   font-weight: 500;
 }
 .strategy-validation > summary small,
+.adaptive-workspace > summary small,
 .validation-intro,
 .validation-result-heading p,
 .validation-caption,
@@ -9023,15 +9061,25 @@ details[open] > summary {
   color: var(--muted);
 }
 .validation-chevron {
+  flex: none;
   color: var(--subtle);
   transition: transform 180ms ease;
 }
-.strategy-validation[open] .validation-chevron {
+.strategy-validation[open] > summary .validation-chevron,
+.adaptive-workspace[open] > summary .validation-chevron,
+.custom-strategy-research[open] > summary .validation-chevron {
   transform: rotate(180deg);
 }
-.validation-content {
+.validation-content,
+.adaptive-content,
+.custom-strategy-content {
   border-top: 1px solid var(--border);
-  padding: 20px 22px;
+  padding: 18px 22px 22px;
+}
+.strategy-validation[open] > summary,
+.adaptive-workspace[open] > summary,
+.custom-strategy-research[open] > summary {
+  margin-bottom: 0;
 }
 .validation-saved {
   margin: 18px 0;
@@ -9148,7 +9196,18 @@ details[open] > summary {
   .validation-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .strategy-validation > summary > .badge {
+  .strategy-validation > summary,
+  .adaptive-workspace > summary,
+  .custom-strategy-research > summary {
+    padding-inline: 16px;
+  }
+  .validation-content,
+  .adaptive-content,
+  .custom-strategy-content {
+    padding-inline: 16px;
+  }
+  .strategy-validation > summary > .badge,
+  .adaptive-workspace > summary > .badge {
     display: none;
   }
 }
@@ -12412,32 +12471,10 @@ details[open] > summary {
 }
 .adaptive-workspace {
   border-top: 1px solid var(--border);
-  padding-top: 16px;
-  margin-top: 16px;
-}
-.adaptive-workspace > summary {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  cursor: pointer;
-}
-.adaptive-workspace > summary > span:not(.badge) {
-  display: grid;
-  gap: 4px;
-  flex: 1;
-}
-.adaptive-workspace > summary strong {
-  font-size: 13px;
-  font-weight: 600;
-}
-.adaptive-workspace > summary small {
-  font-size: 11px;
-  color: var(--muted);
 }
 .adaptive-content {
   display: grid;
-  gap: 18px;
-  margin-top: 18px;
+  gap: 16px;
 }
 .adaptive-axes {
   display: grid;
@@ -12530,6 +12567,10 @@ details[open] > summary {
 
 .adaptive-workspace > summary > .badge {
   flex: none;
+}
+.adaptive-content > .inline-alert {
+  display: block;
+  margin: 0;
 }
 .adaptive-content label {
   display: grid;

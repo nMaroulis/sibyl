@@ -98,8 +98,7 @@ function TradingActive({ selection }: { selection: AccountSelection }) {
             <AccountSetup selection={selection} page="trading workspace" />
           ) : selection.mode !== 'demo' ? (
             <>
-              <ExchangeExecution active={tab === 'trade'} />
-              <OrderBook symbol={`${asset}/USDT`} active={tab === 'trade'} />
+              <ExchangeExecution initialSymbol={`${asset}/USDT`} active={tab === 'trade'} />
               <ComingSoon module="trade" />
             </>
           ) : (
@@ -361,7 +360,7 @@ function TradeWorkspace({
         </Panel>
       </div>
       <ExchangeExecution demo active={active} />
-      <OrderBook symbol={`${asset}/USDT`} active={active} />
+      <OrderBook symbol={`${asset}/USDT`} source="demo" sourceLabel="Demo" active={active} />
       <ComingSoon module="trade" />
     </>
   );

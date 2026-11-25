@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import SecretStr
 
+from sibyl.market_data.streaming.orderbook import PublicOrderBook
 from sibyl.market_data.streams import Channel, LiveMarkets, observation
 
 
@@ -101,6 +102,80 @@ async def test_shared_socket_last_viewer_cleanup_and_test_endpoint():
     with pytest.raises(ValueError, match="shutting down"):
         async with hub.subscribe(selection, "BTCUSDT", "BTC/USDT", "1d"):
             pass
+
+
+def test_public_book_preserves_coinbase_market_discovery(monkeypatch):
+    def make_client(config):
+        assert "fetchMarkets" not in config["options"]
+        assert not {"apiKey", "secret", "password"} & config.keys()
+        return SimpleNamespace()
+
+    monkeypatch.setattr("sibyl.market_data.streaming.orderbook.pro.coinbase", make_client)
+    PublicOrderBook({"provider": "coinbase", "environment": "production"})
+
+
+@pytest.mark.asyncio
+async def test_order_books_share_one_public_client_and_close_with_last_viewer(monkeypatch):
+    hub, opened, closed = LiveMarkets(None), [], []
+    wait_for_next = asyncio.Event()
+    selection = {
+        "source": "connection:spot-test",
+        "source_label": "Testnet",
+        "provider": "binance-testnet",
+        "environment": "test",
+    }
+
+    class BookClient:
+        def __init__(self, identity):
+            opened.append(identity)
+            self.sent = False
+
+        async def validate_market(self, symbol):
+            assert symbol == "ETH/USDT"
+
+        async def receive(self, symbol):
+            if self.sent:
+                await wait_for_next.wait()
+            self.sent = True
+            return {"type": "book", "symbol": symbol, "bids": [[100, 2]], "asks": [[101, 3]]}
+
+        async def close(self):
+            closed.append(True)
+
+    monkeypatch.setattr("sibyl.market_data.streams.PublicOrderBook", BookClient)
+    async with hub.subscribe(selection, "ETH/USDT", "ETH/USDT", None) as (first, queue):
+        async with hub.subscribe(selection, "ETH/USDT", "ETH/USDT", None) as (second, other):
+            assert first is second
+            assert (await asyncio.wait_for(queue.get(), 2))["type"] == "status"
+            book = await asyncio.wait_for(queue.get(), 2)
+            assert (await asyncio.wait_for(other.get(), 2))["type"] == "status"
+            assert book == await asyncio.wait_for(other.get(), 2)
+            assert book["source"] == "connection:spot-test" and book["environment"] == "test"
+            assert opened == [selection]
+        assert not closed
+    assert closed == [True] and not hub.channels
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "changes", [{"symbol": "BTC/USD"}, {"bids": [[float("nan"), 1]]}, {"asks": [[90, 1]]}]
+)
+async def test_stream_refuses_mismatched_crossed_and_nonfinite_depth(changes):
+    async def watch(symbol, depth):
+        return {"symbol": symbol, "bids": [[100, 2]], "asks": [[101, 3]], **changes}
+
+    public = object.__new__(PublicOrderBook)
+    public.native = SimpleNamespace(watch_order_book=watch)
+    with pytest.raises(ValueError):
+        await public.receive("BTC/USDT")
+
+
+def test_orderbook_live_requires_explicit_supported_source(client):
+    path = "/api/v1/markets/orderbook/live?symbol=BTC%2FUSDT"
+    assert client.get(path).status_code == 422
+    assert client.get(path + "&source=demo").status_code == 400
+    book = client.get("/api/v1/markets/orderbook?source=demo").json()
+    assert book["source"] == "demo" and not book["stream_available"]
 
 
 @pytest.mark.asyncio

@@ -66,7 +66,9 @@ OKX funding history includes on-chain deposits and withdrawals and posted transf
 
 ## Public order book
 
-The Trade screen shows bids, asks, spread, provider, and observation time for the chart's selected market. Choose 5, 10, 25, or 50 levels. Refresh manually or opt into ten-second polling. Live snapshots cache for five seconds. Demo levels are explicitly synthetic. A snapshot is not an executable quote or a slippage guarantee.
+The order book follows the selected execution account and exact pair. It shows bids, asks, spread, the source, and the observation time. Choose 5, 10, 25, or 50 displayed levels, then select manual snapshots, ten-second refresh, or **Live WebSocket** when available. Live depth is implemented for Binance, Binance Spot Testnet, Coinbase Advanced Trade, and Kraken spot. Coinbase pairs affected by public quote aliasing use exact-pair snapshots. Live updates follow the venue cadence and are displayed up to about ten times per second.
+
+Choose **Binance · USDT comparison** to view that venue's USDT pair for the same base asset. This changes the displayed book only. The execution account and order remain as selected. If a live feed reconnects, the panel can display same-source snapshots while it waits. Demo uses synthetic snapshots. Displayed depth is public market information and carries no execution-price guarantee.
 
 ## Execution records and account history
 

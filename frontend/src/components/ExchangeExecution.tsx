@@ -5,6 +5,7 @@ import { Badge, Empty, Panel, PanelTitle, useToast } from './ui';
 import { number, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import type { Connection, ExchangeCatalog, System } from '../lib/types';
+import { OrderBook } from './orderbook';
 import { OrderMonitor, type ManagedOrder } from './order-monitor';
 import { OCOForm } from './trading/advanced-orders';
 
@@ -12,9 +13,11 @@ import { OCOForm } from './trading/advanced-orders';
 export function ExchangeExecution({
   demo = false,
   active = true,
+  initialSymbol = 'BTC/USDT',
 }: {
   demo?: boolean;
   active?: boolean;
+  initialSymbol?: string;
 }) {
   const system = useResource<System>('/system');
   const connections = useResource<Connection[]>('/connections');
@@ -27,7 +30,7 @@ export function ExchangeExecution({
         catalog.data?.items.some((provider) => provider.id === c.exchange && provider.limit_orders),
     ) ?? [];
   const [connectionId, setConnectionId] = useState('');
-  const [symbol, setSymbol] = useState('BTC/USDT');
+  const [symbol, setSymbol] = useState(initialSymbol);
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState('0.001');
   const [quoteBudget, setQuoteBudget] = useState('');
@@ -42,8 +45,9 @@ export function ExchangeExecution({
   const [error, setError] = useState('');
   const toast = useToast();
   const accountId = connectionId || (demo ? eligible[0]?.id : '');
+  const executionAccount = eligible.find((account) => account.id === accountId);
   const selectedProvider = catalog.data?.items.find(
-    (provider) => provider.id === eligible.find((account) => account.id === accountId)?.exchange,
+    (provider) => provider.id === executionAccount?.exchange,
   );
   const marketAvailable =
     !demo &&
@@ -101,323 +105,350 @@ export function ExchangeExecution({
   const enabled = demo || system.data?.manual_spot_trading?.enabled;
   return (
     <>
-      <Panel className="full-panel">
-        <PanelTitle
-          title={demo ? 'Paper limit orders' : 'Exchange execution'}
-          subtitle={
-            demo
-              ? 'Resting GTC orders · shared Demo wallet'
-              : 'Reviewed spot market & GTC limit orders'
-          }
-          action={
-            <Badge tone={demo ? 'demo' : enabled ? 'rose' : system.data ? 'sand' : 'neutral'}>
-              {demo
-                ? 'Demo · virtual funds'
-                : enabled
-                  ? 'Execution enabled'
-                  : system.data
-                    ? 'Trading off'
-                    : 'Status unavailable'}
-            </Badge>
-          }
-        />
-        {enabled ? (
-          eligible.length ? (
-            <div className="exchange-execution-grid">
-              <form
-                className="form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  submit();
-                }}
-              >
-                <label>
-                  Account
-                  <select
-                    required
-                    value={accountId || ''}
-                    disabled={busy}
-                    onChange={(event) => {
-                      const nextId = event.target.value;
-                      const exchange = eligible.find((account) => account.id === nextId)?.exchange;
-                      const provider = catalog.data?.items.find((item) => item.id === exchange);
-                      if (
-                        requestedOrderType === 'market' &&
-                        provider?.market_order_sides?.join() === 'sell'
-                      ) {
-                        setOrderType('limit');
-                      }
-                      setConnectionId(nextId);
-                      setQuoteBudget('');
-                      reset();
-                    }}
-                  >
-                    <option value="">Choose an active account</option>
-                    {eligible.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label} · {demo ? 'Demo' : c.sandbox ? 'test' : 'production'}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="form-row">
+      <div className={!demo && enabled && eligible.length ? 'exchange-ticket-layout' : undefined}>
+        <Panel className="full-panel">
+          <PanelTitle
+            title={demo ? 'Paper limit orders' : 'Exchange execution'}
+            subtitle={
+              demo
+                ? 'Resting GTC orders · shared Demo wallet'
+                : 'Reviewed spot market & GTC limit orders'
+            }
+            action={
+              <Badge tone={demo ? 'demo' : enabled ? 'rose' : system.data ? 'sand' : 'neutral'}>
+                {demo
+                  ? 'Demo · virtual funds'
+                  : enabled
+                    ? 'Execution enabled'
+                    : system.data
+                      ? 'Trading off'
+                      : 'Status unavailable'}
+              </Badge>
+            }
+          />
+          {enabled ? (
+            eligible.length ? (
+              <div className="exchange-execution-grid">
+                <form
+                  className="form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    submit();
+                  }}
+                >
                   <label>
-                    Market
-                    <input
-                      required
-                      value={symbol}
-                      disabled={busy}
-                      onChange={(event) => {
-                        setSymbol(event.target.value);
-                        setQuoteBudget('');
-                        reset();
-                      }}
-                      placeholder="BTC/USDT"
-                    />
-                  </label>
-                  <label>
-                    Side
+                    Account
                     <select
-                      value={side}
+                      required
+                      value={accountId || ''}
                       disabled={busy}
                       onChange={(event) => {
-                        const nextSide = event.target.value as 'buy' | 'sell';
+                        const nextId = event.target.value;
+                        const exchange = eligible.find(
+                          (account) => account.id === nextId,
+                        )?.exchange;
+                        const provider = catalog.data?.items.find((item) => item.id === exchange);
                         if (
-                          marketSellsOnly &&
-                          nextSide === 'buy' &&
-                          requestedOrderType === 'market'
+                          requestedOrderType === 'market' &&
+                          provider?.market_order_sides?.join() === 'sell'
                         ) {
                           setOrderType('limit');
                         }
-                        setSide(nextSide);
+                        setConnectionId(nextId);
+                        setQuoteBudget('');
                         reset();
                       }}
                     >
-                      <option value="buy">Buy</option>
-                      <option value="sell">Sell</option>
-                    </select>
-                  </label>
-                </div>
-                <div className="form-row">
-                  <label>
-                    Order type
-                    <select
-                      value={orderType}
-                      disabled={busy || demo}
-                      onChange={(event) => {
-                        setOrderType(event.target.value as typeof requestedOrderType);
-                        reset();
-                      }}
-                    >
-                      {marketAvailable && (
-                        <option value="market">
-                          {selectedProvider?.id === 'gate' ? 'Market · IOC' : 'Market'}
+                      <option value="">Choose an active account</option>
+                      {eligible.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.label} · {demo ? 'Demo' : c.sandbox ? 'test' : 'production'}
                         </option>
-                      )}
-                      <option value="limit">Limit · GTC</option>
-                      {selectedProvider?.conditional_orders && (
-                        <>
-                          <option value="stop_loss_limit">Stop-loss limit · GTC</option>
-                          <option value="take_profit_limit">Take-profit limit · GTC</option>
-                        </>
-                      )}
+                      ))}
                     </select>
                   </label>
-                  <label>
-                    {quoteSized
-                      ? `Quote budget · ${symbol.split('/')[1] || 'quote asset'}`
-                      : 'Base asset quantity'}
-                    <input
-                      required
-                      type="number"
-                      min="0.00000001"
-                      step="any"
-                      value={quoteSized ? quoteBudget : quantity}
-                      disabled={busy}
-                      onChange={(event) => {
-                        (quoteSized ? setQuoteBudget : setQuantity)(event.target.value);
-                        reset();
-                      }}
-                    />
-                  </label>
-                </div>
-                {marketSellsOnly && side === 'buy' && (
-                  <small>
-                    {selectedProvider?.name} market buys require a quote budget. Choose a GTC limit
-                    buy.
-                  </small>
-                )}
-                {orderType !== 'market' && (
-                  <label>
-                    Limit price · {symbol.split('/')[1] || 'quote currency'}
-                    <input
-                      required
-                      type="number"
-                      min="0.00000001"
-                      step="any"
-                      value={limitPrice}
-                      disabled={busy}
-                      onChange={(event) => {
-                        setLimitPrice(event.target.value);
-                        reset();
-                      }}
-                    />
-                  </label>
-                )}
-                {['stop_loss_limit', 'take_profit_limit'].includes(orderType) && (
-                  <label>
-                    Trigger price · {symbol.split('/')[1]}
-                    <input
-                      required
-                      type="number"
-                      min="0.00000001"
-                      step="any"
-                      value={triggerPrice}
-                      onChange={(event) => {
-                        setTriggerPrice(event.target.value);
-                        reset();
-                      }}
-                      disabled={busy}
-                    />
-                    <small>
-                      Native last-trade trigger. The resulting limit can remain unfilled; this is
-                      not a guaranteed exit.
-                    </small>
-                  </label>
-                )}
-                {intent?.status === 'preview' && (
-                  <>
-                    <div className="order-preview">
-                      <div>
-                        <span>Account</span>
-                        <strong>
-                          {intent.account} · {intent.environment}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>{orderType !== 'market' ? 'Limit price' : 'Reference price'}</span>
-                        <strong>
-                          {intent.price == null ? '—' : number(intent.price, 8)}{' '}
-                          {intent.request.symbol.split('/')[1]}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>
-                          {quoteSized
-                            ? 'Reviewed quote budget'
-                            : orderType !== 'market'
-                              ? 'Order notional'
-                              : 'Reference notional'}
-                        </span>
-                        <strong>
-                          {intent.notional == null ? '—' : number(intent.notional, 8)}{' '}
-                          {intent.request.symbol.split('/')[1]}
-                        </strong>
-                      </div>
-                      <small>
-                        {demo
-                          ? '0.1% paper fee. Available funds are reserved on confirmation.'
-                          : 'Exchange fees apply. Buys require a 1% free-balance buffer.'}{' '}
-                        Review expires at {new Date(intent.expires_at).toLocaleTimeString()}.{' '}
-                        {orderType !== 'market'
-                          ? 'Once submitted, GTC remains open until filled or canceled.'
-                          : quoteSized
-                            ? 'The budget covers the order amount. Exchange fees are separate.'
-                            : 'Market fills may differ from this quote.'}
-                      </small>
-                    </div>
+                  <div className="form-row">
                     <label>
-                      Type {intent.confirmation} to confirm
+                      Market
                       <input
                         required
-                        value={confirmation}
-                        autoComplete="off"
-                        onChange={(event) => setConfirmation(event.target.value)}
+                        value={symbol}
+                        disabled={busy}
+                        onChange={(event) => {
+                          setSymbol(event.target.value);
+                          setQuoteBudget('');
+                          reset();
+                        }}
+                        placeholder="BTC/USDT"
                       />
                     </label>
-                  </>
-                )}
-                {intent && intent.status !== 'preview' && (
-                  <div className="inline-alert">
-                    <span>{intent.message || `Status: ${intent.status}`}</span>
+                    <label>
+                      Side
+                      <select
+                        value={side}
+                        disabled={busy}
+                        onChange={(event) => {
+                          const nextSide = event.target.value as 'buy' | 'sell';
+                          if (
+                            marketSellsOnly &&
+                            nextSide === 'buy' &&
+                            requestedOrderType === 'market'
+                          ) {
+                            setOrderType('limit');
+                          }
+                          setSide(nextSide);
+                          reset();
+                        }}
+                      >
+                        <option value="buy">Buy</option>
+                        <option value="sell">Sell</option>
+                      </select>
+                    </label>
                   </div>
+                  <div className="form-row">
+                    <label>
+                      Order type
+                      <select
+                        value={orderType}
+                        disabled={busy || demo}
+                        onChange={(event) => {
+                          setOrderType(event.target.value as typeof requestedOrderType);
+                          reset();
+                        }}
+                      >
+                        {marketAvailable && (
+                          <option value="market">
+                            {selectedProvider?.id === 'gate' ? 'Market · IOC' : 'Market'}
+                          </option>
+                        )}
+                        <option value="limit">Limit · GTC</option>
+                        {selectedProvider?.conditional_orders && (
+                          <>
+                            <option value="stop_loss_limit">Stop-loss limit · GTC</option>
+                            <option value="take_profit_limit">Take-profit limit · GTC</option>
+                          </>
+                        )}
+                      </select>
+                    </label>
+                    <label>
+                      {quoteSized
+                        ? `Quote budget · ${symbol.split('/')[1] || 'quote asset'}`
+                        : 'Base asset quantity'}
+                      <input
+                        required
+                        type="number"
+                        min="0.00000001"
+                        step="any"
+                        value={quoteSized ? quoteBudget : quantity}
+                        disabled={busy}
+                        onChange={(event) => {
+                          (quoteSized ? setQuoteBudget : setQuantity)(event.target.value);
+                          reset();
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {marketSellsOnly && side === 'buy' && (
+                    <small>
+                      {selectedProvider?.name} market buys require a quote budget. Choose a GTC
+                      limit buy.
+                    </small>
+                  )}
+                  {orderType !== 'market' && (
+                    <label>
+                      Limit price · {symbol.split('/')[1] || 'quote currency'}
+                      <input
+                        required
+                        type="number"
+                        min="0.00000001"
+                        step="any"
+                        value={limitPrice}
+                        disabled={busy}
+                        onChange={(event) => {
+                          setLimitPrice(event.target.value);
+                          reset();
+                        }}
+                      />
+                    </label>
+                  )}
+                  {['stop_loss_limit', 'take_profit_limit'].includes(orderType) && (
+                    <label>
+                      Trigger price · {symbol.split('/')[1]}
+                      <input
+                        required
+                        type="number"
+                        min="0.00000001"
+                        step="any"
+                        value={triggerPrice}
+                        onChange={(event) => {
+                          setTriggerPrice(event.target.value);
+                          reset();
+                        }}
+                        disabled={busy}
+                      />
+                      <small>
+                        Native last-trade trigger. The resulting limit can remain unfilled; this is
+                        not a guaranteed exit.
+                      </small>
+                    </label>
+                  )}
+                  {intent?.status === 'preview' && (
+                    <>
+                      <div className="order-preview">
+                        <div>
+                          <span>Account</span>
+                          <strong>
+                            {intent.account} · {intent.environment}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>{orderType !== 'market' ? 'Limit price' : 'Reference price'}</span>
+                          <strong>
+                            {intent.price == null ? '—' : number(intent.price, 8)}{' '}
+                            {intent.request.symbol.split('/')[1]}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>
+                            {quoteSized
+                              ? 'Reviewed quote budget'
+                              : orderType !== 'market'
+                                ? 'Order notional'
+                                : 'Reference notional'}
+                          </span>
+                          <strong>
+                            {intent.notional == null ? '—' : number(intent.notional, 8)}{' '}
+                            {intent.request.symbol.split('/')[1]}
+                          </strong>
+                        </div>
+                        <small>
+                          {demo
+                            ? '0.1% paper fee. Available funds are reserved on confirmation.'
+                            : 'Exchange fees apply. Buys require a 1% free-balance buffer.'}{' '}
+                          Review expires at {new Date(intent.expires_at).toLocaleTimeString()}.{' '}
+                          {orderType !== 'market'
+                            ? 'Once submitted, GTC remains open until filled or canceled.'
+                            : quoteSized
+                              ? 'The budget covers the order amount. Exchange fees are separate.'
+                              : 'Market fills may differ from this quote.'}
+                        </small>
+                      </div>
+                      <label>
+                        Type {intent.confirmation} to confirm
+                        <input
+                          required
+                          value={confirmation}
+                          autoComplete="off"
+                          onChange={(event) => setConfirmation(event.target.value)}
+                        />
+                      </label>
+                    </>
+                  )}
+                  {intent && intent.status !== 'preview' && (
+                    <div className="inline-alert">
+                      <span>{intent.message || `Status: ${intent.status}`}</span>
+                    </div>
+                  )}
+                  {error && (
+                    <p role="alert" className="form-error">
+                      {error}
+                    </p>
+                  )}
+                  {(!intent || intent.status === 'preview') && (
+                    <button
+                      className={`button ${demo ? 'primary' : 'rose-button'}`}
+                      disabled={
+                        busy ||
+                        (intent?.status === 'preview' && confirmation !== intent.confirmation)
+                      }
+                      type="submit"
+                    >
+                      <KeyRound size={14} />
+                      {busy
+                        ? 'Working…'
+                        : intent
+                          ? `Confirm ${demo ? 'paper' : 'exchange'} ${orderType.replaceAll('_', ' ')} order`
+                          : `Review ${demo ? 'paper limit' : 'exchange'} order`}
+                    </button>
+                  )}
+                  {intent && (
+                    <button type="button" className="text-button" disabled={busy} onClick={reset}>
+                      Prepare a new order
+                    </button>
+                  )}
+                </form>
+                {demo ? (
+                  <div className="exchange-review-notes">
+                    <ShieldCheck size={24} />
+                    <h3>Room to let an order rest.</h3>
+                    <p>
+                      A buy reserves quote currency plus its paper fee. A sell reserves the base
+                      asset.
+                    </p>
+                    <p>
+                      The Demo bid and ask feed advances orders when checked or tracked. Crossing
+                      fills the entire quantity at your limit.
+                    </p>
+                  </div>
+                ) : (
+                  <details className="exchange-ticket-help">
+                    <summary>Order review and tracking</summary>
+                    <p>
+                      Check the account, environment, pair, side, and quantity in review. Use the
+                      Order monitor to check fills, request cancellation, and inspect uncertain
+                      outcomes.
+                    </p>
+                  </details>
                 )}
-                {error && (
-                  <p role="alert" className="form-error">
-                    {error}
+              </div>
+            ) : (
+              <Empty title="Activate a supported account first">
+                <Link className="text-link" to="/settings?tab=exchanges">
+                  Manage accounts <ArrowUpRight size={13} />
+                </Link>
+              </Empty>
+            )
+          ) : (
+            <div className="execution-disabled">
+              <span className="execution-disabled-icon">
+                <ShieldCheck size={20} aria-hidden="true" />
+              </span>
+              <div className="execution-disabled-copy">
+                <strong>
+                  {system.data
+                    ? 'Manual spot trading is off'
+                    : system.error
+                      ? 'Workspace settings unavailable'
+                      : 'Loading workspace settings…'}
+                </strong>
+                {system.data && (
+                  <p>
+                    Turn it on to review and submit spot orders from a connected exchange account.
                   </p>
                 )}
-                {(!intent || intent.status === 'preview') && (
-                  <button
-                    className={`button ${demo ? 'primary' : 'rose-button'}`}
-                    disabled={
-                      busy || (intent?.status === 'preview' && confirmation !== intent.confirmation)
-                    }
-                    type="submit"
-                  >
-                    <KeyRound size={14} />
-                    {busy
-                      ? 'Working…'
-                      : intent
-                        ? `Confirm ${demo ? 'paper' : 'exchange'} ${orderType.replaceAll('_', ' ')} order`
-                        : `Review ${demo ? 'paper limit' : 'exchange'} order`}
-                  </button>
-                )}
-                {intent && (
-                  <button type="button" className="text-button" disabled={busy} onClick={reset}>
-                    Prepare a new order
-                  </button>
-                )}
-              </form>
-              <div className="exchange-review-notes">
-                <ShieldCheck size={24} />
-                <h3>{demo ? 'Room to let an order rest.' : 'Review, submit, follow.'}</h3>
-                <p>
-                  {demo
-                    ? 'A buy reserves quote currency plus its paper fee. A sell reserves the base asset. Market orders cannot spend those funds until the limit fills or is canceled.'
-                    : 'Review your account, environment, market, side, quantity and price. Order types depend on the selected exchange; inspect its feature tabs in Settings for support and history/recovery limits.'}
-                </p>
-                <p>
-                  {demo
-                    ? 'The Demo bid/ask feed advances orders when checked or tracked. Crossing fills the entire quantity at your limit; this is a simple simulation without liquidity or queue modeling.'
-                    : 'Track cumulative fills and request cancellation below. Unknown submissions or cancellations are never automatically retried. Check the native order and displayed client ID before placing another.'}
-                </p>
-                <p>
-                  Tracking survives a server restart. Agents and strategy jobs cannot place these
-                  orders.
-                </p>
               </div>
-            </div>
-          ) : (
-            <Empty title="Activate a supported account first">
-              <Link className="text-link" to="/settings?tab=exchanges">
-                Manage accounts <ArrowUpRight size={13} />
+              <Link
+                className="button secondary execution-settings-link"
+                to="/settings?tab=workspace"
+              >
+                Open Workspace settings <ArrowUpRight size={14} />
               </Link>
-            </Empty>
-          )
-        ) : (
-          <div className="execution-disabled">
-            <span className="execution-disabled-icon">
-              <ShieldCheck size={20} aria-hidden="true" />
-            </span>
-            <div className="execution-disabled-copy">
-              <strong>
-                {system.data
-                  ? 'Manual spot trading is off'
-                  : system.error
-                    ? 'Workspace settings unavailable'
-                    : 'Loading workspace settings…'}
-              </strong>
-              {system.data && (
-                <p>Turn it on to review and submit spot orders from a connected exchange account.</p>
-              )}
             </div>
-            <Link className="button secondary execution-settings-link" to="/settings?tab=workspace">
-              Open Workspace settings <ArrowUpRight size={14} />
-            </Link>
-          </div>
+          )}
+        </Panel>
+        {!demo && (
+          <OrderBook
+            symbol={symbol.trim().toUpperCase()}
+            source={executionAccount ? 'connection:' + executionAccount.id : undefined}
+            sourceLabel={
+              executionAccount
+                ? executionAccount.label + (executionAccount.sandbox ? ' · Test funds' : '')
+                : undefined
+            }
+            active={active}
+          />
         )}
-      </Panel>
+      </div>
       {enabled && selectedProvider?.oco_orders && accountId && (
         <OCOForm
           key={`${accountId}:${symbol}:${side}:${quantity}`}

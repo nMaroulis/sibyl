@@ -1,7 +1,8 @@
+import '../styles/strategy-setup.css';
 import { PortfolioResearch } from '../components/strategies/portfolio-research';
 import { CustomStrategies } from '../components/strategies/custom-strategies';
 import { BenchmarkComparison } from '../components/strategies/benchmark-comparison';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FlaskConical, Layers3, Play, Radio } from 'lucide-react';
 import {
@@ -23,6 +24,8 @@ import { AccountContext, AccountSetup, useAccounts } from '../components/account
 import { MarketSelector, TimeframeSelect } from '../components/market-controls';
 import type { SpotCatalog } from '../components/market-controls';
 import { BacktestChart } from '../components/strategies/backtest-chart';
+import { StrategyPicker } from '../components/strategies/strategy-picker';
+import { StrategySignalSettings } from '../components/strategies/strategy-signal-settings';
 import { ExchangeStrategySetup } from '../components/strategies/exchange-execution';
 import { ExecutionControls } from '../components/strategies/execution-controls';
 import { ValidationWorkspace } from '../components/strategies/validation-workspace';
@@ -54,6 +57,13 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [selectedView, selectedJob]);
+  const handoff = search.get('handoff');
+  const [runMode, setRunMode] = useState<'research' | 'exchange'>(
+    handoff ? 'exchange' : 'research',
+  );
+  useEffect(() => {
+    if (handoff) setRunMode('exchange');
+  }, [handoff]);
   const catalog = useResource<Strategy[]>('/strategies');
   const jobs = useResource<Job[]>('/strategies/jobs', 30000);
   const history = useResource<Run[]>('/runs?kind=backtest');
@@ -82,6 +92,20 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
   });
   const datasetId = search.get('dataset') || '';
   const demoInput = selection.mode === 'demo';
+  const exchangeMode = !demoInput && runMode === 'exchange';
+  const exchangeSetup = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!exchangeMode || (selectedView && selectedView !== 'build' && selectedView !== 'studio'))
+      return;
+    const frame = window.requestAnimationFrame(() => {
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      exchangeSetup.current?.scrollIntoView({
+        behavior: reduced ? 'instant' : 'smooth',
+        block: 'start',
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [exchangeMode, selectedView]);
   const demoCatalog = useResource<SpotCatalog>('/markets/symbols?source=demo', 0, demoInput);
   const [compareId, setCompareId] = useState('');
   const datasets = useResource<DatasetList>('/market-history/datasets');
@@ -315,18 +339,62 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
       <ExecutionControls />
       <SectionPanel id="strategies" value={view}>
         {catalog.error && <ErrorState message={catalog.error} retry={catalog.retry} />}
-        <div className="strategy-studio-intro">
-          <div>
-            <Badge tone="blue">Historical research</Badge>
-            <h2>Start with a clear idea.</h2>
-            <p>
-              Choose an algorithm and data, test it, then inspect every decision. Expand the
-              settings when you need more control.
-            </p>
+        <StrategyPicker
+          strategies={catalog.data ?? []}
+          value={params.strategy}
+          onChange={(value) => update('strategy', value)}
+        />
+        {!demoInput && (
+          <fieldset className="strategy-run-mode">
+            <legend>How do you want to run it?</legend>
+            <label>
+              <input
+                className="sr-only"
+                type="radio"
+                name="strategy-run-mode"
+                checked={!exchangeMode}
+                onChange={() => setRunMode('research')}
+              />
+              <FlaskConical size={17} aria-hidden="true" />
+              <span>
+                <strong>Backtest &amp; paper</strong>
+                <small>Historical data or virtual funds</small>
+              </span>
+            </label>
+            <label>
+              <input
+                className="sr-only"
+                type="radio"
+                name="strategy-run-mode"
+                checked={exchangeMode}
+                onChange={() => setRunMode('exchange')}
+              />
+              <Play size={17} aria-hidden="true" />
+              <span>
+                <strong>Run on an exchange</strong>
+                <small>Connected production or test account</small>
+              </span>
+            </label>
+          </fieldset>
+        )}
+        {!demoInput && (
+          <div className="strategy-exchange-target" hidden={!exchangeMode} ref={exchangeSetup}>
+            <Panel>
+              <PanelTitle
+                title="Exchange strategy setup"
+                subtitle={catalog.data?.find((item) => item.id === params.strategy)?.name}
+              />
+              <ExchangeStrategySetup
+                active={exchangeMode}
+                parameters={draftParams}
+                onStarted={(job) => setSearch({ view: 'monitor', job: job.id })}
+              >
+                <StrategySignalSettings params={draftParams} update={update} exchange />
+              </ExchangeStrategySetup>
+            </Panel>
           </div>
-          {demoInput && <Badge tone="sand">Demo preview</Badge>}
-        </div>
-        <div className="strategy-workspace">
+        )}
+        <div className="strategy-workspace" hidden={exchangeMode}>
           <Panel>
             <PanelTitle
               title="Configure your strategy"
@@ -376,22 +444,6 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
                 <ErrorState message={selectedDataset.error} retry={selectedDataset.retry} />
               )}
               {datasets.error && <ErrorState message={datasets.error} retry={datasets.retry} />}
-              <label>
-                Strategy
-                <select
-                  value={params.strategy}
-                  onChange={(event) => update('strategy', event.target.value)}
-                >
-                  {catalog.data?.map((strategy) => (
-                    <option key={strategy.id} value={strategy.id}>
-                      {strategy.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="footnote">
-                {catalog.data?.find((strategy) => strategy.id === params.strategy)?.description}
-              </p>
               <div className="form-row">
                 {datasetId ? (
                   <label>
@@ -448,174 +500,7 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
                   onChange={(value) => update('timeframe', value)}
                 />
               )}
-              <details className="advanced-options">
-                <summary>Indicator parameters</summary>{' '}
-                <label>
-                  Bollinger / CMF window
-                  <input
-                    type="number"
-                    min="5"
-                    max="120"
-                    value={params.window}
-                    onChange={(event) => update('window', Number(event.target.value))}
-                  />
-                </label>
-                <div className="form-row">
-                  {(['fast_period', 'slow_period', 'rsi_period'] as const).map((key) => (
-                    <label key={key}>
-                      {
-                        {
-                          fast_period: 'Fast EMA',
-                          slow_period: 'Slow EMA',
-                          rsi_period: 'RSI period',
-                        }[key]
-                      }
-                      <input
-                        type="number"
-                        min={key === 'slow_period' ? 3 : 2}
-                        max={key === 'slow_period' ? 200 : 100}
-                        value={params[key]}
-                        onChange={(e) => update(key, Number(e.target.value))}
-                      />
-                    </label>
-                  ))}
-                </div>
-                <div className="form-row">
-                  {(['rsi_lower', 'rsi_upper', 'band_std', 'volume_multiplier'] as const).map(
-                    (key) => (
-                      <label key={key}>
-                        {
-                          {
-                            rsi_lower: 'RSI buy threshold',
-                            rsi_upper: 'RSI sell threshold',
-                            band_std: 'Band deviations',
-                            volume_multiplier: 'Volume multiplier',
-                          }[key]
-                        }
-                        <input
-                          type="number"
-                          step="any"
-                          min={key === 'rsi_lower' ? 1 : key === 'rsi_upper' ? 51 : 0.5}
-                          max={
-                            key === 'rsi_lower'
-                              ? 49
-                              : key === 'rsi_upper'
-                                ? 99
-                                : key === 'band_std'
-                                  ? 5
-                                  : 10
-                          }
-                          placeholder={
-                            key === 'rsi_lower'
-                              ? params.strategy === 'impulse-breakout'
-                                ? '35'
-                                : '30'
-                              : key === 'rsi_upper'
-                                ? params.strategy === 'impulse-breakout'
-                                  ? '65'
-                                  : '70'
-                                : ''
-                          }
-                          value={params[key] ?? ''}
-                          onChange={(e) =>
-                            update(key, e.target.value === '' ? null : Number(e.target.value))
-                          }
-                        />
-                      </label>
-                    ),
-                  )}
-                </div>
-                <p className="footnote">
-                  Only parameters used by the chosen algorithm affect its signals. Leave RSI
-                  thresholds blank for the algorithm defaults.
-                </p>
-              </details>
-              <details className="advanced-options">
-                <summary>MACD, ADX, ATR, CMF & TSI periods</summary>
-                <div className="form-row">
-                  {(
-                    [
-                      'macd_fast_period',
-                      'macd_slow_period',
-                      'macd_signal_period',
-                      'adx_period',
-                      'atr_period',
-                      'cmf_period',
-                      'tsi_short_period',
-                      'tsi_long_period',
-                    ] as const
-                  ).map((key) => (
-                    <label key={key}>
-                      {
-                        {
-                          macd_fast_period: 'MACD fast',
-                          macd_slow_period: 'MACD slow',
-                          macd_signal_period: 'MACD signal',
-                          adx_period: 'ADX period',
-                          atr_period: 'ATR period',
-                          cmf_period: 'CMF period',
-                          tsi_short_period: 'TSI short',
-                          tsi_long_period: 'TSI long',
-                        }[key]
-                      }
-                      <input
-                        type="number"
-                        min={key === 'macd_slow_period' || key === 'tsi_long_period' ? 3 : 2}
-                        max={
-                          key === 'macd_slow_period' || key === 'tsi_long_period'
-                            ? 200
-                            : key === 'cmf_period'
-                              ? 120
-                              : 100
-                        }
-                        value={params[key] ?? ''}
-                        placeholder={key === 'cmf_period' ? 'Use rolling window' : ''}
-                        onChange={(e) =>
-                          update(key, e.target.value === '' ? null : Number(e.target.value))
-                        }
-                      />
-                    </label>
-                  ))}
-                </div>
-                <p className="footnote">
-                  These control the multi-factor strategies. Fast MACD and short TSI periods must be
-                  smaller than their slow / long periods. The sample must exceed every configured
-                  period.
-                </p>
-              </details>
-              <details className="advanced-options">
-                <summary>Risk exits & run limits</summary>
-                <div className="form-row">
-                  {(['stop_loss_pct', 'take_profit_pct', 'max_trades'] as const).map((key) => (
-                    <label key={key}>
-                      {
-                        {
-                          stop_loss_pct: 'Stop loss · %',
-                          take_profit_pct: 'Take profit · %',
-                          max_trades: 'Maximum round trips',
-                        }[key]
-                      }
-                      <input
-                        type="number"
-                        step={key === 'max_trades' ? 1 : 'any'}
-                        min={key === 'max_trades' ? 1 : 0.01}
-                        max={
-                          key === 'stop_loss_pct' ? 90 : key === 'take_profit_pct' ? 1000 : 10000
-                        }
-                        placeholder="No limit"
-                        value={params[key] ?? ''}
-                        onChange={(e) =>
-                          update(key, e.target.value === '' ? null : Number(e.target.value))
-                        }
-                      />
-                    </label>
-                  ))}
-                </div>
-                <p className="footnote">
-                  Risk thresholds are evaluated at the close. Backtests exit at the next open; paper
-                  jobs use the next observed quote. These are not intrabar exchange stop orders.
-                </p>
-              </details>
+              <StrategySignalSettings params={params} update={update} />
               <details className="advanced-options">
                 <summary>Execution assumptions</summary>
                 <div className="form-row">
@@ -686,12 +571,6 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
                 at most once per new closed candle.
               </p>
             </form>
-            {!demoInput && (
-              <ExchangeStrategySetup
-                parameters={params}
-                onStarted={(job) => setSearch({ view: 'monitor', job: job.id })}
-              />
-            )}
           </Panel>
           <Panel className="backtest-panel">
             <div className="backtest-history-selector">
@@ -1111,17 +990,21 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
             )}
           </Panel>
         </div>
-        <ValidationWorkspace
-          dataset={activeResult?.dataset ?? dataset}
-          parameters={activeResult?.parameters ?? params}
-          demo={demoInput}
-        />
+        <div hidden={exchangeMode}>
+          <ValidationWorkspace
+            dataset={activeResult?.dataset ?? dataset}
+            parameters={activeResult?.parameters ?? params}
+            demo={demoInput}
+          />
+        </div>
         {jobs.error ? (
           <ErrorState message={jobs.error} retry={jobs.retry} />
         ) : (
           <StrategyList jobs={jobs.data ?? []} catalog={catalog.data ?? []} />
         )}
-        <CustomStrategies params={params} datasetId={datasetId} demo={demoInput} />
+        <div hidden={exchangeMode}>
+          <CustomStrategies params={params} datasetId={datasetId} demo={demoInput} />
+        </div>
         <ComingSoon module="strategies" />
       </SectionPanel>
     </>

@@ -20,6 +20,7 @@ from sibyl.exchanges.data import STABLES, TIMEFRAMES
 from sibyl.market_data.archive import CandleArchive
 from sibyl.market_data.control import ProviderControl, ProviderDeferred
 from sibyl.market_data.health_history import ProviderHistory
+from sibyl.market_data.streaming.orderbook import supports_live_book
 from sibyl.market_data.streams import LiveMarkets
 from sibyl.models import Candle, Connection
 from sibyl.services.research.crypto_library import ASSETS as RESEARCH_ASSETS
@@ -514,18 +515,21 @@ class Market:
             raise ValueError("This source has no exchange order book. Choose an exchange source.")
 
         def load():
-            return self.client().fetch_order_book(self.provider_symbol(symbol), limit=depth)
+            book = self.client().fetch_order_book(symbol, limit=depth)
+            return {**book, "as_of": datetime.now(UTC).isoformat()}
 
         book = self._cached(f"book:{symbol}:{depth}", load, 5)
         bids, asks = book["bids"][:depth], book["asks"][:depth]
         spread = float(asks[0][0] - bids[0][0]) if bids and asks else None
+        identity = self.metadata()
         return {
             "symbol": symbol,
-            **self.metadata(),
+            **identity,
             "bids": bids,
             "asks": asks,
             "spread": spread,
-            "as_of": datetime.now(UTC).isoformat(),
+            "as_of": book["as_of"],
+            "stream_available": supports_live_book(identity, symbol),
         }
 
     def account_balances(self, connection: Connection) -> list[dict]:

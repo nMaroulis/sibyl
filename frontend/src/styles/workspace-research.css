@@ -635,6 +635,39 @@
   gap: 12px;
 }
 
+.custom-strategy-content {
+  display: grid;
+  gap: 14px;
+}
+.custom-strategy-content > .panel-title {
+  padding: 0;
+}
+.custom-strategy-content .footnote,
+.custom-strategy-content > .inline-alert {
+  display: block;
+  margin: 0;
+}
+.custom-strategy-content > .inline-alert {
+  overflow-wrap: anywhere;
+}
+.custom-strategy-guidance .text-link {
+  width: fit-content;
+  margin-top: 7px;
+}
+.custom-strategy-content > label,
+.custom-strategy-content > .form-row > label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.custom-strategy-content > label {
+  max-width: 520px;
+}
+.custom-strategy-content > .button {
+  justify-self: start;
+}
 .custom-strategy-research .workspace-actions {
   display: flex;
   flex-wrap: wrap;
