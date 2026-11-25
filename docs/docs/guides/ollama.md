@@ -1,6 +1,6 @@
 # Ollama in Sibyl
 
-Choose **Settings → AI models → Local → Ollama**. Sibyl checks the endpoint shown in the form and lists installed models and models currently loaded in memory. Choose an installed model, then **Save as workspace default**. Presets and custom IDs remain available; a preset is not proof that a model has been downloaded.
+Open **Settings → AI models → Add a deployment → Local → Ollama**. Save the named connection, optionally choosing a model. **Choose model** and **Change model** on the saved card list the models installed on that server. Use **Custom model…** to enter an exact model ID, including when the server is offline. Its full-width runtime monitor appears under **Added models** and shows the available and loaded models. Use **Set default** to route new requests from agents following the workspace default, or select the model under **Agent models** for one specialist.
 
 **Check status** probes the native version, model catalog and loaded-model endpoints without running inference. A reachable server with an installed model may still have insufficient resources or unsuitable tool-calling behavior; these checks do not evaluate model answers.
 
@@ -8,7 +8,7 @@ If Ollama is installed locally but stopped, **Start Ollama** launches its instal
 
 ## Context window
 
-Expand **Advanced model settings** to set the context window in tokens. It holds instructions, the specialist directory, tool results, conversation and reply. The default is **32,768**; choose a value supported by the model and available memory. Larger windows use more memory. Sibyl's full specialist directory needs more room than a basic chat, so small windows can prevent coordinator requests. An input that cannot fit produces setup guidance. Save the profile to apply the value to new requests; running turns keep their previous configuration.
+Open **Edit** on your Ollama card and expand **Advanced** to set the context window in tokens. It holds instructions, the specialist directory, tool results, conversation and reply. The default is **32,768**; choose a value supported by the model and available memory. Larger windows use more memory. Sibyl's full specialist directory needs more room than a basic chat, so small windows can prevent coordinator requests. An input that cannot fit produces setup guidance. Save the profile to apply the value to new requests; running turns keep their previous configuration.
 
 Sibyl uses ProtoLink's capability-based native tool selection for Ollama. Model tool-following and answer quality still vary. See [acceptance observations](../developers/agent-acceptance.md) for the actual local-model checks.
 

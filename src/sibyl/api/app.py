@@ -457,7 +457,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(whatsapp_router)
     from sibyl.api.local_models import router as local_models_router
+    from sibyl.api.model_deployments import router as model_deployments_router
 
+    app.include_router(model_deployments_router)
     app.include_router(local_models_router)
     from sibyl.api.strategy_alerts import router as strategy_alerts_router
 

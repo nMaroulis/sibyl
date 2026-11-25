@@ -783,6 +783,8 @@ export type ModelProvider = {
   docs_url: string;
 };
 export type ModelProfile = {
+  models: string[];
+  key_preview: string;
   context_window?: number;
   model: string;
   base_url: string;
@@ -793,7 +795,7 @@ export type ModelProfile = {
 export type AgentModelSelection = {
   id: string;
   name: string;
-  selection: { provider: string; model: string } | null;
+  selection: { provider: string; model?: string; deployment?: string } | null;
   provider: string;
   model: string;
   inherited: boolean;
@@ -801,9 +803,27 @@ export type AgentModelSelection = {
   reason: string;
   simulated: boolean;
 };
+export type ModelDeployment = {
+  id: string;
+  provider: string;
+  name: string;
+  model: string;
+  legacy_models: string[];
+  base_url: string;
+  context_window: number | null;
+  key_source: ModelProfile['key_source'];
+  key_preview: string;
+  default: boolean;
+  agents: string[];
+  reason: string;
+  removable: boolean;
+};
+
 export type ModelWorkspace = {
   active_provider: string;
   active_model: string;
+  active_deployment: string | null;
+  deployments: ModelDeployment[];
   source: 'workspace' | 'environment';
   profiles: Record<string, ModelProfile>;
   providers: ModelProvider[];

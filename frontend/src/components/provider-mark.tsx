@@ -94,16 +94,16 @@ export function ProviderMark({ provider, size = 24 }: { provider: string; size?:
       );
     case 'ollama':
       return (
-        <svg
-          {...props}
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M10 16C7 8 9 2 12 3c2 1 2 6 2 10h4c0-4 0-9 2-10 3-1 5 5 2 13 4 2 5 8 2 11-4 4-12 4-16 0-3-3-2-9 2-11Z" />
-          <path d="M12 21h.1M20 21h.1M14 25c1 1 3 1 4 0" strokeWidth="2.5" />
-        </svg>
+        <img
+          className="provider-ollama-logo"
+          src="/brand/ollama.svg"
+          width={size}
+          height={size}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          style={{ objectFit: 'contain' }}
+        />
       );
     case 'lmstudio':
       return (

@@ -293,3 +293,70 @@ def test_ollama_context_rejects_invalid_limits(client, value):
 @pytest.mark.parametrize("value", [32768, None])
 def test_other_providers_do_not_accept_ollama_context_option(client, value):
     assert save(client, "mock", context_window=value).status_code == 422
+
+
+def test_model_library_adds_multiple_models_and_reuses_encrypted_connection(client, settings):
+    token = "sk-private-known-placeholder-91zy"
+    assert save(client, api_key=token).is_success
+    path = "/api/v1/settings/llm/models"
+    added = client.post(
+        path, json={"provider": "openai", "model": "second", "api_key": "ignored-replacement"}
+    )
+    assert added.status_code == 200
+    state = added.json()
+    assert state["active_model"] == "custom-model"
+    assert state["profiles"]["openai"]["models"] == ["custom-model", "second"]
+    assert state["profiles"]["openai"]["key_preview"] == "sk-••••••91zy"
+    assert token not in added.text
+    assert client.post(path, json={"provider": "openai", "model": "second"}).status_code == 409
+    select = client.post("/api/v1/settings/llm/default", json={"provider": "openai", "model": "second"})
+    assert select.json()["active_model"] == "second"
+    with TestClient(create_app(settings)) as restarted:
+        state = restarted.get("/api/v1/settings/llm").json()
+        assert state["profiles"]["openai"]["models"] == ["custom-model", "second"]
+        assert state["active_model"] == "second"
+        assert restarted.app.state.services.agents.models.resolve()["api_key"] == token
+
+
+def test_explicit_model_check_uses_saved_model_and_safe_test_message(client, monkeypatch):
+    from sibyl.services.workspace import model_checks
+
+    monkeypatch.setattr("sibyl.agents.utils.providers.find_spec", lambda _: object())
+    calls = []
+    token = "only-the-adapter-knows-this-key"
+
+    class Model:
+        def chat(self, message):
+            calls.append(message)
+            return "ok"
+
+    def factory(provider, **kwargs):
+        calls.append((provider, kwargs))
+        return Model()
+
+    monkeypatch.setattr(model_checks, "create_llm", factory)
+    assert save(client, api_key=token).is_success
+    assert not calls
+    path = "/api/v1/settings/llm/check"
+    assert client.post(path, json={"provider": "openai", "model": "unconfigured"}).status_code == 400
+    assert not calls
+    result = client.post(path, json={"provider": "openai", "model": "custom-model"})
+    assert result.status_code == 200
+    assert result.json()["status"] == "ready"
+    assert result.headers["cache-control"] == "no-store"
+    assert calls == [
+        ("openai", {"model": "custom-model", "api_key": token, "model_params": {"max_output_tokens": 128}}),
+        model_checks.CHECK_PROMPT,
+    ]
+    assert token not in result.text
+
+    def denied(config):
+        error = RuntimeError(config["api_key"])
+        error.status_code = 401
+        raise error
+
+    monkeypatch.setattr(model_checks, "_sample", denied)
+    result = client.post(path, json={"provider": "openai", "model": "custom-model"})
+    assert result.json()["status"] == "failed"
+    assert "permission" in result.json()["detail"]
+    assert token not in result.text

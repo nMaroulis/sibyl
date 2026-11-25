@@ -89,13 +89,34 @@ class OllamaService:
             return {"Authorization": f"Bearer {saved['api_key']}"}
         return {}
 
-    def check(self, request: OllamaRequest):
+    def _loaded_models(self, endpoint, headers):
+        """Read the loaded list independently of the server version and catalog."""
+        try:
+            response = self.http.get(endpoint + "/api/ps", headers=headers)
+            response.raise_for_status()
+            payload = response.json()
+            rows = payload.get("models") if isinstance(payload, dict) else None
+            if isinstance(rows, list):
+                return [
+                    row["name"] for row in rows if isinstance(row, dict) and isinstance(row.get("name"), str)
+                ]
+        except (httpx.HTTPError, ValueError):
+            pass
+        return None
+
+    def check(self, request: OllamaRequest, *, api_key: str | None = None):
         """Read native version, available models and loaded models without inference."""
         endpoint = request.base_url
         executable = self.executable()
-        models, loaded, version, error = [], [], None, None
+        models, loaded, version, error = [], None, None, None
         try:
-            headers = self._headers(endpoint)
+            headers = (
+                self._headers(endpoint)
+                if api_key is None
+                else {"Authorization": f"Bearer {api_key}"}
+                if api_key
+                else {}
+            )
             response = self.http.get(endpoint + "/api/version", headers=headers)
             response.raise_for_status()
             version = response.json()["version"]
@@ -115,13 +136,7 @@ class OllamaService:
                 for row in raw
                 if isinstance(row, dict) and isinstance(row.get("name"), str)
             ]
-            response = self.http.get(endpoint + "/api/ps", headers=headers)
-            if response.is_success:
-                loaded = [
-                    row["name"]
-                    for row in response.json().get("models", [])
-                    if isinstance(row, dict) and isinstance(row.get("name"), str)
-                ]
+            loaded = self._loaded_models(endpoint, headers)
         except (httpx.HTTPError, ValueError, KeyError, TypeError):
             error = "Ollama could not be reached or did not return its model catalog. Check the endpoint and start the server."
             version = None
@@ -149,7 +164,8 @@ class OllamaService:
             else "unreachable",
             "version": version,
             "models": models,
-            "loaded_models": loaded,
+            "loaded_models": loaded or [],
+            "loaded_models_checked": loaded is not None,
             "selected_model_installed": present,
             "managed": bool(owned and endpoint == self._owned_endpoint),
             "can_start": bool(executable and self.local_target(endpoint) and not owned and version is None),
@@ -161,12 +177,12 @@ class OllamaService:
             "note": "Checks run on the machine hosting Sibyl’s Python backend. Starting Ollama does not install or download a model. Only a process started by Sibyl can be stopped here.",
         }
 
-    def start(self, request):
+    def start(self, request, *, api_key: str | None = None):
         """Launch exactly `ollama serve` on loopback; repeated starts reuse the same child."""
         with self._lock:
             if not self.local_target(request.base_url):
                 raise ValueError("Sibyl can only start Ollama at a plain local HTTP endpoint.")
-            status = self.check(request)
+            status = self.check(request, api_key=api_key)
             if status["status"] in {"running", "starting"}:
                 return status
             executable = self.executable()
@@ -215,9 +231,9 @@ class OllamaService:
                 raise ValueError(
                     "Ollama could not start. Check its installation on the backend machine."
                 ) from None
-            return self.check(request)
+            return self.check(request, api_key=api_key)
 
-    def stop(self, request):
+    def stop(self, request, *, api_key: str | None = None):
         """Stop only the child owned by this application; external servers are untouched."""
         with self._lock:
             if (
@@ -227,7 +243,7 @@ class OllamaService:
             ):
                 raise ValueError("This Ollama server was not started by Sibyl. Stop it in Ollama itself.")
             self._stop_owned()
-        return self.check(request)
+        return self.check(request, api_key=api_key)
 
     def _stop_owned(self):
         process = self._process

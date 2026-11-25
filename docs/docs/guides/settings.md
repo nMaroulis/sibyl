@@ -10,7 +10,13 @@ Open `/settings?tab=exchanges` to search and add accounts from the 20-provider e
 
 ## AI models
 
-Open `/settings?tab=models` to select **API** or **Local**, then choose a provider by its icon. The workspace default is used by agents without a custom assignment. Sibyl and each specialist can select a different provider/model under **Agent models**. **Tool mode** works without an LLM.
+Open `/settings?tab=models`. **Added models** lists saved deployments. A deployment is a named provider connection with its own key, endpoint and selected model. Cards show **Active** when the deployment is the workspace default or assigned to an agent, and **Inactive** otherwise.
+
+Under **Add a deployment**, choose **API** or **Local**. Fill in the connection details and accept or change the suggested name. You can save the connection and choose its model later. Add the same provider again for a different API key or local endpoint. Sibyl suggests names such as **OpenAI API model** and **OpenAI API model (1)**.
+
+Use **Choose model** on its card to finish setup. **Set default** routes agents following the workspace default through that deployment. **Edit** changes its connection settings. **Delete** removes its saved credentials. Agents assigned to a deleted deployment return to the workspace default. Deleting the default returns the workspace to tool mode.
+
+Local server cards have a full-width **Runtime monitor**. Ollama reports installed and loaded models, recent checks, and controls for supported local processes. LM Studio, vLLM and llama.cpp server show the models reported by their catalogs. These monitors read server metadata. [Ollama controls](ollama.md), [LM Studio catalog](https://lmstudio.ai/docs/developer/openai-compat/models), [vLLM catalog](https://github.com/vllm-project/vllm/blob/main/docs/getting_started/quickstart.md), [llama.cpp catalog](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#get-v1models-openai-compatible-model-info-api).
 
 | API                                                                              | Local                                                                       |
 | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -18,16 +24,16 @@ Open `/settings?tab=models` to select **API** or **Local**, then choose a provid
 
 Choose a model from the provider's presets or select **Custom model…** and enter an exact model ID. Presets are suggestions, not a fetched list of models available to your account. Local server presets must match a model already installed or loaded. The embedded llama.cpp adapter requires an existing `.gguf` file on the Python server; enter its file path. The Mock runtime is for testing and returns a labeled simulated answer.
 
-For an API provider, enter its API key. Local servers and custom endpoints can also save a key if authentication is required. Enter the server URL where shown. **Save as workspace default** encrypts the provider profile and selects it for agents following the default. **Save profile only** saves the key/model/endpoint for later assignment without changing that default. Both apply to subsequent requests without restarting the API. Saving does not send a test request or verify provider access. Install any optional dependency shown by the editor before asking the agents to use that adapter.
+API models have a **Check status** button. It sends a short test prompt to that model using the saved credential. The test may count toward provider usage. Saving and opening Settings never sends a paid test request. Install any optional dependency shown by the editor before using that adapter.
 
-Keys stay with their provider when you switch. Leaving the key field blank preserves its saved value; entering a new key replaces it. Saved keys are never returned by the API or placed in browser storage, prompts, or agent run records. The editor shows only whether a key is saved or supplied by the server environment. **Remove saved key** deletes the stored key; an independently configured environment key remains available. If the workspace default requires a key and none remains, that default returns to tool mode. Explicit overrides stay selected and show **Needs setup**; they never silently switch providers.
+A saved API key is encrypted locally. Its preview shows a few characters at each end for sufficiently long keys. The API never returns a complete key. Environment keys are labeled and have no preview. Leave the key input blank to keep the saved key, or enter a replacement. Delete the deployment to remove its saved key and configuration from Sibyl.
 
 **Use tool mode** sets the workspace default to tool mode while preserving provider profiles and agent overrides. Requests already queued or running keep their original team/provider/model/key/endpoint snapshot. Saved workspace selections take precedence over the environment after a restart. See [Module agents](./oracle.md) for setup and data boundaries. Downloading, quantizing, and deploying local models from the app is **Coming soon**.
 
 ### Choose models per agent
 
-1. Save each provider's profile above, using **Save profile only** when you want to keep the existing workspace default. Keys and endpoints are shared by all agents assigned to that provider.
-2. Expand **Agent models → Customize agents**, then Configure Sibyl or a specialist. Choose a provider and one of its presets, or enter a custom model ID/GGUF path. Local models must already be available on the server. Save the assignment.
+1. Add the connection under **Add a deployment** and select its model.
+2. Expand **Agent models → Customize agents**, then Configure Sibyl or a specialist. Choose the named deployment, then save the assignment. The agent uses that deployment's key and selected model.
 3. **Default** means the agent follows future workspace-default changes. **Custom** fixes that agent's provider/model. Choose **Follow workspace default** in the dialog to remove an override.
 
 For example, Sibyl can use one configured API model while Reporter uses an installed local model. Direct module dialogs and Sibyl's consultations use the same specialist configuration. Each new request freezes the whole team's choices; edits during a conversation affect subsequent requests, not an answer already running. Reply and consultation history retain their original model attribution.

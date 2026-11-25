@@ -280,7 +280,7 @@ test('Settings groups connections and configuration with persistent drafts and k
   await expect(page).toHaveURL(/settings\?tab=models$/);
   await page.getByRole('button', { name: 'Local', exact: true }).click();
   await page.getByRole('button', { name: /^Ollama/ }).click();
-  await page.getByRole('combobox', { name: 'Model', exact: true }).selectOption('__custom__');
+  await page.getByRole('combobox', { name: 'Model · optional', exact: true }).selectOption('__custom__');
   await page.getByLabel('Custom model ID', { exact: true }).fill('draft-model');
   await tabs.getByRole('tab', { name: 'Market data', exact: true }).click();
   await expect(

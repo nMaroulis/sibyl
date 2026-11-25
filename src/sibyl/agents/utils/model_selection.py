@@ -1,7 +1,7 @@
 """Validated model assignments and passive readiness for native ProtoLink agents."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
@@ -49,6 +49,7 @@ class AgentModelRequest(Request):
 
     revision: int = Field(ge=0, strict=True)
     provider: ProviderId | None = None
+    deployment: Annotated[str, Field(pattern=r"^[a-z0-9.-]{1,40}$")] | None = None
     model: str = Field(default="", max_length=500)
 
     @model_validator(mode="after")
@@ -56,7 +57,10 @@ class AgentModelRequest(Request):
         if any(ord(char) < 32 or ord(char) == 127 for char in self.model):
             raise ValueError("Model IDs must not contain control characters.")
         self.model = self.model.strip()
-        if self.provider is None or self.provider == "none":
+        if self.deployment:
+            if self.provider is not None or self.model:
+                raise ValueError("Choose either a saved deployment or a provider and model.")
+        elif self.provider is None or self.provider == "none":
             if self.model:
                 raise ValueError("Inherited and tool-only selections do not take a model ID.")
         elif self.provider != "mock" and not self.model:

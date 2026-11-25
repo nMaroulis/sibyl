@@ -74,11 +74,7 @@ export function SettingsPage({ system }: { system?: System }) {
           <ExchangeConnections />
         </div>
         <div hidden={tab !== 'models'}>
-          <SectionIntro
-            title="A model for your agents"
-            description="Choose how your ProtoLink specialists reason with their module tools."
-          />
-          <ModelSettings />
+          <ModelSettings visible={tab === 'models'} />
           <ComingSoon module="settings" />
         </div>
         <div hidden={tab !== 'news'}>

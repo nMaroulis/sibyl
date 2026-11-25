@@ -241,17 +241,52 @@ class Store:
                     (provider, encrypted),
                 )
                 if activate or fallback_to_tools:
-                    db.execute(
-                        "INSERT INTO workspace_settings VALUES ('llm_provider', ?) ON CONFLICT(key) "
-                        "DO UPDATE SET value = excluded.value",
-                        ("none" if fallback_to_tools else provider,),
+                    self._set_default_model(
+                        db,
+                        "none" if fallback_to_tools else provider,
+                        "" if fallback_to_tools else profile.get("model", ""),
                     )
-                    model = "" if fallback_to_tools else profile.get("model", "")
-                    db.execute(
-                        "INSERT INTO workspace_settings VALUES('llm_default_model',?) "
-                        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                        (self.cipher.encrypt(json.dumps(model).encode()),),
+
+    def delete_model_profile(self, reference: str, *, is_default: bool) -> None:
+        """Remove one encrypted deployment and clear its routing references atomically."""
+        with self.vault.lock, self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("DELETE FROM model_profiles WHERE provider=?", (reference,))
+            if is_default:
+                self._set_default_model(db, "none", "")
+            row = db.execute("SELECT value FROM workspace_settings WHERE key='data:agent-models'").fetchone()
+            if row is not None:
+                assignments = json.loads(self.cipher.decrypt(row[0]))
+                kept = {
+                    agent: choice
+                    for agent, choice in assignments["agents"].items()
+                    if (choice.get("deployment") or choice["provider"]) != reference
+                }
+                if len(kept) != len(assignments["agents"]):
+                    encrypted = self.cipher.encrypt(
+                        json.dumps({"revision": assignments["revision"] + 1, "agents": kept}).encode()
                     )
+                    db.execute(
+                        "UPDATE workspace_settings SET value=? WHERE key='data:agent-models'", (encrypted,)
+                    )
+
+    def select_default_model(self, provider: str, model: str) -> None:
+        """Change the workspace default without updating the provider profile."""
+        with self.vault.lock, self.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self._set_default_model(db, provider, model)
+
+    def _set_default_model(self, db: sqlite3.Connection, provider: str, model: str) -> None:
+        db.execute(
+            "INSERT INTO workspace_settings VALUES ('llm_provider', ?) ON CONFLICT(key) "
+            "DO UPDATE SET value = excluded.value",
+            (provider,),
+        )
+        db.execute(
+            "INSERT INTO workspace_settings VALUES('llm_default_model',?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (self.cipher.encrypt(json.dumps(model).encode()),),
+        )
 
     def connections(self) -> list[Connection]:
         """Return connection metadata without selecting encrypted credential columns."""

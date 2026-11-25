@@ -120,3 +120,48 @@ def test_api_rejects_shell_fields_and_invalid_endpoints(client):
         "http://localhost:11434?token=secret",
     ]:
         assert client.post("/api/v1/settings/ollama/check", json={"base_url": endpoint}).status_code == 422
+
+
+def test_unavailable_loaded_models_endpoint_keeps_reachable_catalog(service):
+    original = service.http.get
+
+    def get(url, **kwargs):
+        if url.endswith("/api/ps"):
+            return httpx.Response(200, content=b"invalid JSON", request=httpx.Request("GET", url))
+        return original(url, **kwargs)
+
+    service.http.get = get
+    snapshot = service.check(OllamaRequest(model="qwen3:8b"))
+    assert snapshot["status"] == "running" and snapshot["selected_model_installed"]
+    assert not snapshot["loaded_models_checked"] and snapshot["loaded_models"] == []
+
+
+@pytest.mark.parametrize(
+    ("provider", "base_url"),
+    [
+        ("lmstudio", "http://localhost:1234/v1"),
+        ("vllm", "http://localhost:1234"),
+        ("llama.cpp-server", "http://localhost:1234"),
+    ],
+)
+def test_local_catalog_reads_only_the_saved_profile_endpoint(settings, store, provider, base_url):
+    from sibyl.local_models.catalog import check_catalog
+    from sibyl.services.workspace.llm_settings import ModelSettingsRequest
+
+    models = ModelSettings(settings, store)
+    models.save(
+        ModelSettingsRequest(provider=provider, model="local-model", base_url=base_url, api_key="TEST-VALUE")
+    )
+
+    def respond(request):
+        assert request.method == "GET" and request.url == "http://localhost:1234/v1/models"
+        assert request.headers["authorization"] == "Bearer TEST-VALUE"
+        return httpx.Response(200, json={"data": [{"id": "local-model", "secret": "NOT-PUBLIC"}]})
+
+    result = check_catalog(models, provider, transport=httpx.MockTransport(respond))
+    assert result == {"status": "running", "models": [{"name": "local-model"}], "error": None}
+
+
+def test_catalog_route_rejects_paid_providers(client):
+    response = client.get("/api/v1/settings/llm/local/openai/check")
+    assert response.status_code == 422

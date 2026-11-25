@@ -51,6 +51,8 @@ docker compose up --build
 
 ### Added
 
+- AI model settings supports multiple named deployments per provider, each with its own credentials and model selection. Cards show active routing, masked keys, connection checks, and full-width local runtime monitors.
+
 - Settings renames Interface to UI · UX and adds four page transitions with a live preview. Dock reveal expands from the selected button, Slide comes in from the dock edge, and Fade dissolves in place.
 - Navigation adds four dock finishes and lets you pin shortcuts in either dock position. Account stays pinned and unpinned shortcuts move to More.
 - Enabled messaging connections appear first and show a live timeline of connection checks, received messages, and reply, alert and briefing outcomes. Per-message logs explain recorded failures, and each card shows log storage and can clear settled diagnostics.

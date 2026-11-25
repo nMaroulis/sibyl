@@ -10,23 +10,37 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, m
 from sibyl.agents.utils.model_selection import AGENT_NAMES, AgentModelRequest, ModelConflict, readiness
 from sibyl.agents.utils.providers import PROVIDERS, ProviderId
 from sibyl.config import Settings
+from sibyl.services.workspace.model_deployments import ModelDeployments
 from sibyl.storage import Store
 
 OLLAMA_CONTEXT_WINDOW = 32768
 
 
-class ModelSettingsRequest(BaseModel):
-    """Save and activate a provider; omitting a key preserves its saved credential."""
+class ModelChoice(BaseModel):
+    """Identify one model without accepting credentials or endpoint overrides."""
 
     model_config = ConfigDict(extra="forbid")
     provider: ProviderId
-    activate: bool = Field(default=True, strict=True)
     model: str = Field(default="", max_length=500)
+
+    @field_validator("model")
+    @classmethod
+    def clean_model(cls, value: str) -> str:
+        """Reject control characters before a model ID reaches an adapter."""
+        if any(ord(char) < 32 or ord(char) == 127 for char in value):
+            raise ValueError("Model IDs must not contain control characters.")
+        return value.strip()
+
+
+class ModelSettingsRequest(ModelChoice):
+    """Save and activate a provider; omitting a key preserves its saved credential."""
+
+    activate: bool = Field(default=True, strict=True)
     base_url: str = Field(default="", max_length=2048)
     api_key: SecretStr | None = Field(default=None, min_length=1, max_length=8192)
     context_window: int | None = Field(default=None, ge=4096, le=131072, strict=True)
 
-    @field_validator("model", "base_url")
+    @field_validator("base_url")
     @classmethod
     def clean_text(cls, value: str) -> str:
         """Reject control characters before configuration can reach an adapter."""
@@ -72,9 +86,42 @@ class ModelSettingsRequest(BaseModel):
                 raise ValueError("Use a valid server port.") from exc
         if self.api_key is not None and self.provider in {"none", "mock", "llama.cpp-local"}:
             raise ValueError("This provider does not accept an API key.")
+        return self
+
+    @model_validator(mode="after")
+    def require_model(self):
         if self.provider not in {"none", "mock"} and not self.model:
             raise ValueError("Choose a model or enter a custom model ID.")
         return self
+
+
+class DeploymentRequest(ModelSettingsRequest):
+    """Create or edit one named deployment. A new connection may defer model selection."""
+
+    name: str = Field(default="", max_length=80)
+
+    @field_validator("name")
+    @classmethod
+    def clean_name(cls, value: str) -> str:
+        return cls.clean_text(value)
+
+    @model_validator(mode="after")
+    def require_model(self):
+        if self.provider == "none":
+            raise ValueError("Choose an AI model provider.")
+        return self
+
+
+class DeploymentModel(BaseModel):
+    """Set a configured deployment's model ID."""
+
+    model_config = ConfigDict(extra="forbid")
+    model: str = Field(max_length=500)
+
+    @field_validator("model")
+    @classmethod
+    def clean_model(cls, value: str) -> str:
+        return ModelChoice.clean_model(value)
 
 
 class ModelSettings:
@@ -88,6 +135,7 @@ class ModelSettings:
     def __init__(self, settings: Settings, store: Store):
         self.settings, self.store = settings, store
         self._lock = threading.RLock()
+        self.deployments = ModelDeployments(self)
 
     def _environment_key(self, provider: str) -> str:
         return next((os.environ[name] for name in PROVIDERS[provider].key_env if os.getenv(name)), "")
@@ -125,24 +173,25 @@ class ModelSettings:
 
     def _resolved(self, active, default_model, profiles, assignments) -> tuple[dict, dict]:
         """Resolve every agent from one read, never mixing credentials across providers."""
-        default_provider = active if active is not None else self.settings.llm_provider
-        configs = {}
-        for provider in {default_provider, *(item["provider"] for item in assignments["agents"].values())}:
-            configs[provider] = self._provider(provider, profiles)
-        default = configs[default_provider].copy()
-        default["model"] = (
-            default_model
-            if default_model is not None
-            else self.settings.llm_model
-            if active is None
-            else default["model"]
-        )
+        reference = active if active is not None else self.settings.llm_provider
+        default = self.deployments.config(reference, profiles)
+        if reference in PROVIDERS:
+            default["model"] = (
+                default_model
+                if default_model is not None
+                else self.settings.llm_model
+                if active is None
+                else default["model"]
+            )
         agents = {}
         for agent in AGENT_NAMES:
             override = assignments["agents"].get(agent)
-            agents[agent] = (
-                {**configs[override["provider"]], "model": override["model"]} if override else default.copy()
-            )
+            if not override:
+                agents[agent] = default.copy()
+            elif override.get("deployment"):
+                agents[agent] = self.deployments.config(override["deployment"], profiles)
+            else:
+                agents[agent] = {**self._provider(override["provider"], profiles), "model": override["model"]}
         return default, agents
 
     def resolve(self, agent: str | None = None) -> dict:
@@ -176,7 +225,11 @@ class ModelSettings:
         with self._lock:
             active, default_model, profiles, assignments = self.store.model_snapshot()
             selection = None
-            if body.provider is not None:
+            if body.deployment:
+                config = self.deployments.lookup(body.deployment, profiles)
+                self.deployments.require_usable(config)
+                selection = {"provider": config["provider"], "deployment": body.deployment}
+            elif body.provider is not None:
                 selection = {"provider": body.provider, "model": body.model}
                 provider = PROVIDERS[body.provider]
                 if (
@@ -204,8 +257,48 @@ class ModelSettings:
                 raise ModelConflict("Agent models changed. Refresh before saving this assignment.")
             return self.public()
 
+    def _model_ids(self, provider: str, profile: dict | None, current: dict, agents: dict) -> list[str]:
+        """Include saved, inherited legacy and explicitly assigned models once each."""
+        profile = profile or {}
+        candidates = [*profile.get("models", ())]
+        if "model" in profile:
+            candidates.append(profile["model"])
+        if provider == self.settings.llm_provider:
+            candidates.append(self.settings.llm_model)
+        if current["provider"] == provider and not current.get("_deployment"):
+            candidates.append(current["model"])
+        candidates.extend(
+            config["model"]
+            for config in agents.values()
+            if config["provider"] == provider and not config.get("_deployment")
+        )
+        return list(dict.fromkeys(model for model in candidates if model or provider == "mock"))
+
+    def saved_config(self, choice: ModelChoice) -> dict:
+        """Resolve an added model against the latest saved connection."""
+        with self._lock:
+            active, model, profiles, assignments = self.store.model_snapshot()
+            default, agents = self._resolved(active, model, profiles, assignments)
+            if choice.provider == "none" or choice.model not in self._model_ids(
+                choice.provider, profiles.get(choice.provider), default, agents
+            ):
+                raise ValueError("Add this model before using it.")
+            return {**self._provider(choice.provider, profiles), "model": choice.model}
+
+    def select_default(self, choice: ModelChoice) -> dict:
+        """Change only workspace routing. Both credentials and assignments are preserved."""
+        with self._lock, self.store.vault.lock:
+            if choice.provider != "none":
+                config = self.saved_config(choice)
+                if PROVIDERS[choice.provider].requires_key and not config["api_key"]:
+                    raise ValueError("Add an API key for this provider before setting a default.")
+            self.store.select_default_model(
+                choice.provider, choice.model if choice.provider != "none" else ""
+            )
+            return self.public()
+
     def public(self) -> dict:
-        """Return provider profiles, key presence, and runtime metadata, never key values."""
+        """Return saved model IDs, a partial vault-key preview, and runtime metadata."""
         with self._lock:
             active, default_model, profiles, assignments = self.store.model_snapshot()
             current, agents = self._resolved(active, default_model, profiles, assignments)
@@ -218,7 +311,10 @@ class ModelSettings:
                     if saved and saved.get("api_key")
                     else ("environment" if self._environment_key(provider) else "none")
                 )
+                key = saved.get("api_key", "") if key_source == "saved" else ""
                 safe_profiles[provider] = {
+                    "models": self._model_ids(provider, saved, current, agents) if provider != "none" else [],
+                    "key_preview": self.deployments.preview(key),
                     "model": config.get("model", ""),
                     "base_url": config.get("base_url") or definition.base_url,
                     "has_api_key": key_source != "none",
@@ -233,6 +329,10 @@ class ModelSettings:
             return {
                 "active_provider": current["provider"],
                 "active_model": current["model"],
+                "active_deployment": (active or current["provider"])
+                if current["provider"] != "none"
+                else None,
+                "deployments": self.deployments.public(active, current, profiles, assignments, safe_profiles),
                 "source": "workspace" if active is not None else "environment",
                 "profiles": safe_profiles,
                 "providers": [p.public() for p in PROVIDERS.values()],
@@ -253,13 +353,21 @@ class ModelSettings:
                 ],
             }
 
-    def save(self, body: ModelSettingsRequest) -> dict:
-        """Encrypt a provider profile; optionally select it as the workspace default."""
-        with self._lock:
-            _, profiles = self.store.model_profiles()
+    def save(self, body: ModelSettingsRequest, *, add_only: bool = False) -> dict:
+        """Save encrypted model settings, or append a model under an existing connection."""
+        with self._lock, self.store.vault.lock:
+            active, default_model, profiles, assignments = self.store.model_snapshot()
+            default, agents = self._resolved(active, default_model, profiles, assignments)
             existing = profiles.get(body.provider, {})
             definition = PROVIDERS[body.provider]
-            key = body.api_key.get_secret_value() if body.api_key is not None else existing.get("api_key", "")
+            known = self._model_ids(body.provider, existing, default, agents)
+            reuse_connection = add_only and (bool(existing) or default["provider"] == body.provider)
+            base_url = (
+                self._provider(body.provider, profiles)["base_url"] if reuse_connection else body.base_url
+            )
+            key = existing.get("api_key", "")
+            if body.api_key is not None and not reuse_connection:
+                key = body.api_key.get_secret_value()
             if definition.requires_key and not (key or self._environment_key(body.provider)):
                 raise ValueError("Add an API key for this provider before saving.")
             if body.provider == "llama.cpp-local":
@@ -269,22 +377,31 @@ class ModelSettings:
                 model = str(path.resolve())
             else:
                 model = body.model
+            if add_only and body.provider == "none":
+                raise ValueError("Choose a model provider.")
+            if add_only and model in known:
+                raise ModelConflict("This model is already added.")
             self.store.save_model_profile(
                 body.provider,
                 {
-                    "model": model,
-                    "base_url": body.base_url or definition.base_url,
+                    "model": existing.get("model", model) if reuse_connection else model,
+                    "models": list(dict.fromkeys([*known, model])) if body.provider != "none" else [],
+                    "base_url": base_url or definition.base_url,
                     "api_key": key,
                     **(
                         {
-                            "context_window": body.context_window
-                            or existing.get("context_window", OLLAMA_CONTEXT_WINDOW)
+                            "context_window": (
+                                existing.get("context_window", OLLAMA_CONTEXT_WINDOW)
+                                if reuse_connection
+                                else body.context_window
+                                or existing.get("context_window", OLLAMA_CONTEXT_WINDOW)
+                            )
                         }
                         if body.provider == "ollama"
                         else {}
                     ),
                 },
-                activate=body.activate,
+                activate=body.activate and not add_only,
             )
             return self.public()
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ChevronDown, Settings2, Sparkles } from 'lucide-react';
+import { Check, ChevronDown, Settings2 } from 'lucide-react';
 import { post, refresh } from '../lib/api';
 import type { AgentModelSelection, ModelWorkspace } from '../lib/types';
 import { Badge, Modal, Panel, PanelTitle } from './ui';
@@ -7,7 +7,7 @@ import { ProviderMark } from './provider-mark';
 
 type Review = { agent: AgentModelSelection; revision: number };
 
-/** Optional overrides share provider credentials, without changing native agent declarations. */
+/** Route individual agents to a named connection and its selected model. */
 export function AgentModelSettings({
   workspace,
   onSaved,
@@ -15,81 +15,58 @@ export function AgentModelSettings({
   workspace: ModelWorkspace;
   onSaved: (workspace: ModelWorkspace, message: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(() =>
-    workspace.agents.some((agent) => !agent.inherited),
-  );
+  const [expanded, setExpanded] = useState(false);
   const [review, setReview] = useState<Review>();
-  const [provider, setProvider] = useState('');
-  const [model, setModel] = useState('');
-  const [custom, setCustom] = useState(false);
+  const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const overrides = workspace.agents.filter((agent) => !agent.inherited).length;
-  const definition = workspace.providers.find((item) => item.id === provider);
-  const profile = workspace.profiles[provider];
-  const configured =
-    !definition ||
-    ['none', 'mock'].includes(provider) ||
-    profile?.saved ||
-    (workspace.source === 'environment' && workspace.active_provider === provider);
-  const missingKey = definition?.requires_key && !profile?.has_api_key;
+  const selected = workspace.deployments.find((deployment) => deployment.id === value);
+  const original = review?.agent.selection?.deployment ?? review?.agent.selection?.provider ?? '';
   const changed = review && workspace.agent_revision !== review.revision;
-  const open = (agent: AgentModelSelection) => {
+
+  function open(agent: AgentModelSelection) {
     setReview({ agent, revision: workspace.agent_revision });
-    setProvider(agent.selection?.provider ?? '');
-    setModel(agent.selection?.model ?? '');
-    setCustom(
-      !!agent.selection?.model &&
-        !workspace.providers
-          .find((item) => item.id === agent.selection?.provider)
-          ?.models.includes(agent.selection.model),
-    );
+    setValue(agent.selection?.deployment ?? agent.selection?.provider ?? '');
     setError('');
-  };
-  const chooseProvider = (value: string) => {
-    const next = workspace.providers.find((item) => item.id === value);
-    const nextModel = ['none', 'mock'].includes(value)
-      ? ''
-      : workspace.profiles[value]?.model || next?.models[0] || '';
-    setProvider(value);
-    setModel(nextModel);
-    setCustom(!!next && !next.models.includes(nextModel));
-    setError('');
-  };
-  const save = async () => {
+  }
+
+  async function save() {
     if (!review) return;
     setBusy(true);
     setError('');
     try {
       const result = await post<ModelWorkspace>(`/settings/llm/agents/${review.agent.id}`, {
         revision: review.revision,
-        provider: provider || null,
-        model: provider ? model.trim() : '',
+        ...(value === 'none'
+          ? { provider: 'none' }
+          : value
+            ? { deployment: value }
+            : { provider: null }),
       });
-      onSaved(
-        result,
-        `${review.agent.name} ${provider ? 'model saved' : 'now follows the workspace default'}. Applies to new requests.`,
-      );
+      onSaved(result, `${review.agent.name} model updated.`);
       setReview(undefined);
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (reason) {
+      setError((reason as Error).message);
       refresh();
     } finally {
       setBusy(false);
     }
-  };
+  }
+
   return (
     <Panel className="agent-model-panel">
       <PanelTitle
         title="Agent models"
         subtitle={
           overrides
-            ? `${overrides} custom ${overrides === 1 ? 'assignment' : 'assignments'} · other agents follow the workspace default`
-            : 'All agents follow the workspace default. Customize only where you need to.'
+            ? `${overrides} custom ${overrides === 1 ? 'assignment' : 'assignments'}`
+            : 'All agents follow the workspace default.'
         }
         action={
           <button
             className="button secondary tiny"
+            type="button"
             aria-expanded={expanded}
             aria-controls="agent-model-grid"
             onClick={() => setExpanded(!expanded)}
@@ -100,14 +77,13 @@ export function AgentModelSettings({
         }
       />
       {expanded && (
-        <>
-          <p className="footnote agent-model-intro">
-            Sibyl and each specialist can use a different provider or model. Overrides share that
-            provider’s saved endpoint and encrypted key. Save provider profiles below first.
-            Configuration checks do not verify model access or server availability.
-          </p>
-          <div className="agent-model-grid" id="agent-model-grid">
-            {workspace.agents.map((agent) => (
+        <div className="agent-model-grid" id="agent-model-grid">
+          {workspace.agents.map((agent) => {
+            const reference = agent.inherited
+              ? workspace.active_deployment
+              : (agent.selection?.deployment ?? agent.provider);
+            const deployment = workspace.deployments.find((item) => item.id === reference);
+            return (
               <article className="agent-model-card" key={agent.id}>
                 <div className="agent-model-card-heading">
                   <span className={`provider-mark provider-${agent.provider}`}>
@@ -119,7 +95,7 @@ export function AgentModelSettings({
                   </Badge>
                 </div>
                 <p>
-                  {workspace.providers.find((item) => item.id === agent.provider)?.name}
+                  {deployment?.name || 'Tool mode'}
                   {agent.model && ` · ${agent.model}`}
                 </p>
                 <div className="agent-model-card-footer">
@@ -134,6 +110,7 @@ export function AgentModelSettings({
                   </span>
                   <button
                     className="text-button"
+                    type="button"
                     onClick={() => open(agent)}
                     aria-label={`Configure ${agent.name} model`}
                   >
@@ -141,16 +118,9 @@ export function AgentModelSettings({
                   </button>
                 </div>
               </article>
-            ))}
-          </div>
-          <p className="footnote agent-model-intro">
-            New requests freeze the team’s configuration, including delegated consultations. Saving
-            a change affects subsequent requests. Tool-only specialists still expose their tools,
-            but cannot complete delegated reasoning tasks. An unavailable override never silently
-            switches to another provider. Messages and tool evidence can be shared with selected
-            providers, including when Sibyl delegates.
-          </p>
-        </>
+            );
+          })}
+        </div>
       )}
       {review && (
         <Modal title={`${review.agent.name} model`} onClose={() => !busy && setReview(undefined)}>
@@ -162,125 +132,29 @@ export function AgentModelSettings({
             }}
           >
             <label>
-              Model provider
+              Deployment
               <select
-                value={provider}
-                onChange={(event) => chooseProvider(event.target.value)}
+                value={value}
                 disabled={busy}
+                onChange={(event) => {
+                  setValue(event.target.value);
+                  setError('');
+                }}
               >
                 <option value="">Follow workspace default</option>
-                {(['api', 'local', 'tools'] as const).map((kind) => (
-                  <optgroup
-                    key={kind}
-                    label={
-                      kind === 'api'
-                        ? 'API providers'
-                        : kind === 'local'
-                          ? 'Local providers'
-                          : 'Tools'
-                    }
-                  >
-                    {workspace.providers
-                      .filter((item) => item.kind === kind)
-                      .map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name}
-                          {!['none', 'mock'].includes(item.id) &&
-                          !workspace.profiles[item.id].saved &&
-                          !(
-                            workspace.source === 'environment' &&
-                            workspace.active_provider === item.id
-                          )
-                            ? ' · save profile first'
-                            : ''}
-                        </option>
-                      ))}
-                  </optgroup>
+                {workspace.deployments.map((deployment) => (
+                  <option key={deployment.id} value={deployment.id} disabled={!deployment.model}>
+                    {deployment.name}
+                    {deployment.model ? ` · ${deployment.model}` : ' · Choose a model first'}
+                  </option>
                 ))}
+                <option value="none">Tool mode</option>
               </select>
             </label>
-            {!provider ? (
-              <p className="monitor-notice">
-                This agent follows the current workspace default, including future changes to that
-                default.
-              </p>
-            ) : (
-              <div className="agent-model-provider-note">
-                <span className={`provider-mark provider-${provider}`}>
-                  <ProviderMark provider={provider} />
-                </span>
-                <p>
-                  {definition?.name}
-                  {profile?.base_url && <small>Shared endpoint: {profile.base_url}</small>}
-                </p>
-              </div>
-            )}
-            {!!provider && !['none', 'mock'].includes(provider) && (
-              <>
-                <label>
-                  Model
-                  <select
-                    value={custom ? '__custom__' : model}
-                    disabled={busy}
-                    onChange={(event) => {
-                      if (event.target.value === '__custom__') {
-                        setCustom(true);
-                        setModel('');
-                      } else {
-                        setCustom(false);
-                        setModel(event.target.value);
-                      }
-                    }}
-                  >
-                    {definition?.models.map((value) => (
-                      <option key={value}>{value}</option>
-                    ))}
-                    <option value="__custom__">
-                      {provider === 'llama.cpp-local' ? 'Custom GGUF file…' : 'Custom model…'}
-                    </option>
-                  </select>
-                </label>
-                {custom && (
-                  <label>
-                    {provider === 'llama.cpp-local' ? 'GGUF file path' : 'Custom model ID'}
-                    <input
-                      required
-                      value={model}
-                      onChange={(event) => setModel(event.target.value)}
-                      maxLength={500}
-                      disabled={busy}
-                      autoComplete="off"
-                      spellCheck={false}
-                    />
-                  </label>
-                )}
-                <p className="footnote">
-                  Presets are suggestions. Use a model available to your account or already
-                  installed on the selected server. The provider profile’s key and endpoint apply to
-                  every agent assigned to it.
-                </p>
-              </>
-            )}
-            {(!configured || missingKey) && (
-              <p className="monitor-notice">
-                {missingKey ? 'Add this provider’s key' : 'Save this provider profile'} in the
-                provider settings below before assigning it. You can save a profile without changing
-                the workspace default.
-              </p>
-            )}
-            {provider === 'mock' && (
-              <p className="monitor-notice">Mock produces simulated answers for testing.</p>
-            )}
-            {provider === 'none' && (
-              <p className="monitor-notice">
-                Direct module requests return read-only snapshots. Native tool calls remain
-                available; reasoning requests are unavailable. Sibyl requires a model and will be
-                unavailable in tool mode.
-              </p>
-            )}
+            {selected?.reason && <p className="monitor-notice">{selected.reason}</p>}
             {changed && (
               <p className="form-error" role="alert">
-                Agent assignments changed. Close and reopen this dialog before saving.
+                Agent assignments changed. Reopen this dialog before saving.
               </p>
             )}
             {error && (
@@ -290,20 +164,10 @@ export function AgentModelSettings({
             )}
             <button
               className="button primary full-width"
-              disabled={
-                busy ||
-                !configured ||
-                missingKey ||
-                !!changed ||
-                (!!provider && !['none', 'mock'].includes(provider) && !model.trim())
-              }
+              disabled={busy || !!changed || value === original || (!!selected && !selected.model)}
             >
               <Check size={14} /> {busy ? 'Saving…' : 'Save agent model'}
             </button>
-            <p className="footnote">
-              <Sparkles size={12} /> Applies to new requests. Messages and tool evidence may be sent
-              to the selected provider.
-            </p>
           </form>
         </Modal>
       )}

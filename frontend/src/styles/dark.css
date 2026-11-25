@@ -36,6 +36,9 @@
 [data-theme='dark'] .app-brand > img {
   filter: brightness(0) invert(0.92);
 }
+[data-theme='dark'] .provider-ollama-logo {
+  filter: invert(1);
+}
 [data-theme='dark'] .workspace-surface {
   background: #151e2d;
   box-shadow: 0 6px 30px #06091229;

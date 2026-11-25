@@ -5,5 +5,11 @@
     "guidelines": "https://github.com/deepseek-ai/awesome-deepseek-integration/blob/main/docs/_logo%20svg/guidelines.md",
     "sha256": "b15083e3cbb398bd35619b758c43adc0a632efccc7e2d69f2481a860862910fe",
     "note": "Unmodified official DeepSeek icon. Marks belong to their respective owners."
+  },
+  "ollama": {
+    "file": "ollama.svg",
+    "source": "https://github.com/ollama/ollama/blob/main/docs/ollama-logo.svg",
+    "sha256": "397a6ee071cce1496edd8a86dd1c91ce005712ec161690e411b3dc7f151181f5",
+    "note": "Official Ollama mark. The dashboard inverts the mark for dark mode."
   }
 }

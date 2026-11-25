@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
   Activity,
   BellRing,
@@ -13,7 +13,7 @@ import { useResource } from '../../lib/hooks';
 import { MessageLogDialog } from './message-log';
 import { ChannelLogs } from './channel-logs';
 import type { MessageLogStorage } from './channel-logs';
-import '../../styles/messaging-activity.css';
+import { MonitorTrace } from '../monitor-trace';
 
 const kinds = {
   message: { label: 'Message received', icon: MessageCircle },
@@ -107,20 +107,7 @@ function ReceiverAge({ at }: { at: number }) {
 function ActivityTrace({ timeline, live }: { timeline: ActivityTimeline; live: boolean }) {
   return (
     <div className="channel-activity-trace" aria-hidden="true">
-      <div
-        className="channel-activity-trace-track"
-        data-live={live}
-        style={{ '--trace-ticks': timeline.bins.length } as CSSProperties}
-      >
-        {timeline.bins.map(({ count, attention }, index) => (
-          <i
-            key={index}
-            data-recorded={count > 0}
-            data-attention={attention}
-            style={{ '--tick-count': count } as CSSProperties}
-          />
-        ))}
-      </div>
+      <MonitorTrace bins={timeline.bins} live={live} />
       <div className="channel-activity-trace-range">
         <ActivityTime at={timeline.start} compact />
         <span>Now</span>

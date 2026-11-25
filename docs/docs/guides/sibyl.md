@@ -8,7 +8,7 @@ Sibyl uses [ProtoLink](https://github.com/nMaroulis/protolink)’s automatic reg
 
 ## Connect a model first
 
-Open **Settings → AI models**, select an API or local provider, then **Save as workspace default**. Sibyl shows a setup message and link until a model is configured. A missing required key, model ID, or installed provider dependency also shows a setup state. Configuration readiness does not verify that a remote model server is reachable or that your provider accepts the model.
+Open **Settings → AI models**, add an API or local deployment and choose a model, then select **Set default** on its card or assign it to Sibyl under **Agent models**. Sibyl shows a setup message and link until a model is configured. A missing required key, model ID, or installed provider dependency also shows a setup state. Configuration readiness does not verify that a remote model server is reachable or that your provider accepts the model.
 
 The Mock runtime is available for interface testing and is explicitly labeled simulated. Its ordinary default response does not perform real reasoning or automatically consult specialists. Use an API or local model that supports tool calling for useful collaboration. Model settings apply immediately without restarting the agent network.
 

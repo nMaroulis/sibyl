@@ -52,7 +52,8 @@ from sibyl.services.trading.examples import order_examples
 from sibyl.services.trading.reporting import trading_report
 from sibyl.services.transfers.reconciliation import TransferConfirm, TransferPair
 from sibyl.services.workspace.data_settings import MarketSettingsRequest, NewsSettingsRequest
-from sibyl.services.workspace.llm_settings import ModelSettingsRequest
+from sibyl.services.workspace.llm_settings import ModelChoice, ModelSettingsRequest
+from sibyl.services.workspace.model_checks import check_model
 from sibyl.services.workspace.roadmap import implementation_status
 from sibyl.strategies import CATALOG
 
@@ -92,7 +93,7 @@ def system(s: S):
 
 @router.get("/settings/llm", tags=["Settings"])
 def model_settings(s: S, response: Response):
-    """List supported providers and saved metadata without exposing API keys."""
+    """List added models and the masked previews of saved provider credentials."""
     response.headers["Cache-Control"] = "no-store"
     return s.agents.models.public()
 
@@ -102,6 +103,27 @@ def save_model_settings(body: ModelSettingsRequest, s: S, response: Response):
     """Encrypt a provider key and activate its model for subsequent requests."""
     response.headers["Cache-Control"] = "no-store"
     return s.agents.models.save(body)
+
+
+@router.post("/settings/llm/models", tags=["Settings"])
+def add_model(body: ModelSettingsRequest, s: S, response: Response):
+    """Add a model without changing the workspace default or an existing connection."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.agents.models.save(body, add_only=True)
+
+
+@router.post("/settings/llm/default", tags=["Settings"])
+def select_model_default(body: ModelChoice, s: S, response: Response):
+    """Set the workspace default to an added model or tool mode."""
+    response.headers["Cache-Control"] = "no-store"
+    return s.agents.models.select_default(body)
+
+
+@router.post("/settings/llm/check", tags=["Settings"])
+async def check_saved_model(body: ModelChoice, s: S, response: Response):
+    """Explicitly check one added model without sending conversation or tool data."""
+    response.headers["Cache-Control"] = "no-store"
+    return await check_model(s.agents.models, body)
 
 
 @router.post("/settings/llm/agents/{agent}", tags=["Settings"])
