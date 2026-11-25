@@ -128,8 +128,47 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
-.exchange-run-fields > label:only-child {
+.exchange-run-fields > :only-child {
   grid-column: 1 / -1;
+}
+.strategy-account-picker:only-child {
+  max-width: 520px;
+}
+.strategy-account-picker .search-picker-label {
+  margin-bottom: 9px;
+  font-size: 12px;
+}
+.strategy-account-picker .search-picker-trigger {
+  min-height: 56px;
+}
+.strategy-account-picker .search-picker-trigger:disabled {
+  cursor: default;
+}
+.exchange-run-fields:has(.strategy-account-picker) > label select {
+  min-height: 56px;
+}
+.strategy-account-mark {
+  display: grid;
+  flex: 0 0 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+.strategy-account-mark .exchange-mark {
+  border-radius: 5px;
+}
+.strategy-account-menu {
+  max-width: 520px;
+}
+.strategy-account-menu .search-picker-options {
+  padding: 8px;
+}
+.strategy-account-picker .badge,
+.strategy-account-menu .badge {
+  font-size: 9px;
+  padding: 3px 6px;
 }
 .exchange-run-review {
   align-self: flex-start;
@@ -157,6 +196,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .strategy-account-menu {
+    animation: none;
+  }
   .strategy-picker-heading button svg,
   .strategy-picker-card,
   .strategy-run-mode label {

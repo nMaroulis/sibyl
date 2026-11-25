@@ -34,7 +34,9 @@ export function SearchPicker({
   loading = false,
   hint,
   footer,
+  messages,
   className = '',
+  menuClassName = '',
 }: {
   label: string;
   value: string;
@@ -45,7 +47,9 @@ export function SearchPicker({
   loading?: boolean;
   hint?: string;
   footer?: ReactNode;
+  messages?: { prompt?: string; loading?: string; empty?: string };
   className?: string;
+  menuClassName?: string;
 }) {
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -194,7 +198,9 @@ export function SearchPicker({
         {selected?.icon}
         <span className="search-picker-copy">
           <span className="search-picker-name" id={`${id}-value`}>
-            {loading ? 'Loading markets…' : selected?.label || value || 'Choose a market'}{' '}
+            {loading
+              ? (messages?.loading ?? 'Loading markets…')
+              : selected?.label || value || (messages?.prompt ?? 'Choose a market')}{' '}
             {selected?.badge}
           </span>
           <small>{selected?.description || hint}</small>
@@ -208,7 +214,7 @@ export function SearchPicker({
             id={`${id}-menu`}
             role="dialog"
             aria-label={`${label} options`}
-            className="search-picker-menu"
+            className={['search-picker-menu', menuClassName].filter(Boolean).join(' ')}
             style={position}
           >
             <div className="search-picker-search">
@@ -305,7 +311,8 @@ export function SearchPicker({
               ))}
               {!count && (
                 <div className="search-picker-empty">
-                  No matching markets or sources. Try a ticker or another feed.
+                  {messages?.empty ??
+                    'No matching markets or sources. Try a ticker or another feed.'}
                 </div>
               )}
             </div>

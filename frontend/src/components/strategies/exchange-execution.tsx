@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { Badge, Modal } from '../ui';
+import { ExchangeMark } from '../exchange-mark';
+import { SearchPicker } from '../search-picker';
 import { useResource } from '../../lib/hooks';
 import { number, post, refresh } from '../../lib/api';
 import type { Connection, Job, StrategyParams } from '../../lib/types';
@@ -22,6 +24,7 @@ type Options = {
   server_enabled: boolean;
   controls: { halted: boolean };
   accounts: (Connection & { supported: boolean })[];
+  providers: { id: string; name: string }[];
   handoff_sources: {
     id: string;
     connection_id: string;
@@ -84,6 +87,32 @@ export function ExchangeStrategySetup({
   const interval = timeframe || parameters.timeframe || '1d';
   const quote = symbol.split('/')[1];
   const accounts = options.data?.accounts.filter((row) => row.active && row.supported) ?? [];
+  const providerNames = new Map(options.data?.providers.map(({ id, name }) => [id, name]));
+  const accountGroups = [
+    { label: 'Production', sandbox: false },
+    { label: 'Test environments', sandbox: true },
+  ].map(({ label, sandbox }) => ({
+    label,
+    options: accounts
+      .filter((row) => row.sandbox === sandbox)
+      .map((row) => {
+        const provider = providerNames.get(row.exchange) ?? row.exchange;
+        return {
+          value: row.id,
+          label: row.label,
+          description: row.label === provider ? 'Spot account' : provider,
+          keywords: row.exchange + (sandbox ? ' sandbox testnet' : ' production'),
+          icon: (
+            <span className="strategy-account-mark">
+              <ExchangeMark exchange={row.exchange} size={22} />
+            </span>
+          ),
+          badge: (
+            <Badge tone={sandbox ? 'sand' : 'rose'}>{sandbox ? 'Test funds' : 'Real funds'}</Badge>
+          ),
+        };
+      }),
+  }));
   useEffect(() => {
     if (!account && handoff) {
       const source = options.data?.handoff_sources.find((s) => s.id === handoff);
@@ -173,39 +202,29 @@ export function ExchangeStrategySetup({
           </p>
         )}
         <div className="exchange-run-fields">
-          <label>
-            Exchange account
-            <select
-              aria-label="Exchange account"
-              value={account}
-              onChange={(e) => {
-                setAccount(e.target.value);
-                setHandoff('');
-                setPair('');
-                setTimeframe('');
-                setError('');
-              }}
-            >
-              <option value="">Choose an active account</option>
-              {[
-                { label: 'Real funds', sandbox: false },
-                { label: 'Test funds', sandbox: true },
-              ].map(({ label, sandbox }) => {
-                const group = accounts.filter((row) => row.sandbox === sandbox);
-                return (
-                  group.length > 0 && (
-                    <optgroup key={label} label={label}>
-                      {group.map((row) => (
-                        <option key={row.id} value={row.id}>
-                          {row.label} · {row.exchange} · {label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )
-                );
-              })}
-            </select>
-          </label>
+          <SearchPicker
+            className="strategy-account-picker"
+            menuClassName="strategy-account-menu"
+            label="Exchange account"
+            value={account}
+            groups={accountGroups}
+            loading={options.loading}
+            disabled={busy || accounts.length === 0}
+            placeholder="Search accounts or exchanges…"
+            messages={{
+              prompt: 'Choose an exchange account',
+              loading: 'Loading exchange accounts…',
+              empty: 'No accounts match your search.',
+            }}
+            onChange={(next) => {
+              if (next === account) return;
+              setAccount(next);
+              setHandoff('');
+              setPair('');
+              setTimeframe('');
+              setError('');
+            }}
+          />
           {!!account && (
             <>
               <label>
