@@ -3,7 +3,7 @@
 import json
 from uuid import uuid4
 
-from protolink import RunBudget, Task, create_llm, current_request_context, request_context
+from protolink import RunBudget, Task, current_request_context, request_context
 
 from sibyl.agents import (
     accountant,
@@ -18,6 +18,7 @@ from sibyl.agents import (
     wiki,
 )
 from sibyl.agents.utils.common import Services, freeze
+from sibyl.agents.utils.model_factory import create_llm
 from sibyl.agents.utils.model_selection import readiness
 from sibyl.agents.utils.network import AgentNetwork
 from sibyl.agents.utils.snapshots import snapshot_answer, tool_arguments

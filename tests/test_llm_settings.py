@@ -4,6 +4,7 @@ import inspect
 import json
 import sqlite3
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from protolink import create_llm
@@ -360,3 +361,62 @@ def test_explicit_model_check_uses_saved_model_and_safe_test_message(client, mon
     assert result.json()["status"] == "failed"
     assert "permission" in result.json()["detail"]
     assert token not in result.text
+
+
+def test_openai_status_and_agent_requests_omit_unsupported_sampling_parameters(client, monkeypatch):
+    """Exercise real ProtoLink and SDK request serialization against a stubbed Responses API."""
+    import openai
+
+    native_client = openai.OpenAI
+    samples = []
+    model = "gpt-6.1-sol"
+
+    def reply(request):
+        if request.method == "GET":
+            assert request.url.path == f"/v1/models/{model}"
+            return httpx.Response(200, json={"id": model, "object": "model"})
+        assert request.url.path == "/v1/responses"
+        payload = json.loads(request.content)
+        samples.append(payload)
+        assert payload["model"] == model
+        assert not {"temperature", "top_p", "top_logprobs"}.intersection(payload)
+        if payload.get("stream"):
+            event = {
+                "type": "response.output_text.delta",
+                "item_id": "msg_test",
+                "output_index": 0,
+                "content_index": 0,
+                "sequence_number": 1,
+                "delta": "A controlled model response.",
+            }
+            return httpx.Response(
+                200,
+                headers={"Content-Type": "text/event-stream"},
+                text=f"event: {event['type']}\ndata: {json.dumps(event)}\n\n",
+            )
+        return httpx.Response(
+            200,
+            json={
+                "status": "completed",
+                "output": [
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [{"type": "output_text", "text": "A controlled model response."}],
+                    }
+                ],
+            },
+        )
+
+    with httpx.Client(transport=httpx.MockTransport(reply)) as transport:
+        monkeypatch.setattr(openai, "OpenAI", lambda **kwargs: native_client(**kwargs, http_client=transport))
+        assert save(client, model=model, api_key="test-only-key").is_success
+        assert not samples
+        checked = client.post("/api/v1/settings/llm/deployments/openai/check")
+        assert checked.json()["status"] == "ready"
+        answer = client.post("/api/v1/agents/ask", json={"module": "wiki", "message": "Say hello."})
+        assert answer.status_code == 200, answer.text
+
+    assert len(samples) == 2
+    assert samples[0]["max_output_tokens"] == 128
+    assert samples[1]["stream"] and samples[1]["tools"]

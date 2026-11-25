@@ -59,9 +59,13 @@ docker compose up --build
 
 ### Changed
 
+- Refresh hosted AI model presets against current provider catalogs and use each custom endpoint's own model ID.
+
 - New browsers start with Light mode, the bottom dock, navigation labels enabled, and Soft zoom.
 
 ### Fixed
+
+- OpenAI status checks and agent chats omit sampling parameters rejected by newer reasoning models.
 
 - The floating bottom dock leaves scroll clearance below the workspace so the page ends cleanly and its last controls stay reachable.
 - More opens in one motion, with scrolling available when its shortcuts exceed the viewport.

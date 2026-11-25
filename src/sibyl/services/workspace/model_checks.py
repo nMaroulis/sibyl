@@ -5,8 +5,8 @@ from threading import BoundedSemaphore
 from urllib.error import HTTPError
 
 import httpx
-from protolink import create_llm
 
+from sibyl.agents.utils.model_factory import create_llm
 from sibyl.agents.utils.model_selection import readiness
 from sibyl.agents.utils.providers import PROVIDERS
 from sibyl.services.workspace.llm_settings import ModelChoice, ModelSettings
@@ -61,6 +61,19 @@ def _api_check(config: dict) -> dict:
             detail = "The provider could not find this model for the configured connection."
         elif status in (402, 429):
             detail = "Check the provider's billing, quota, or rate limits."
+        elif status == 400:
+            parameter = getattr(error, "param", None)
+            if parameter in (
+                "temperature",
+                "top_p",
+                "top_logprobs",
+                "max_output_tokens",
+                "max_tokens",
+                "reasoning",
+            ):
+                detail = f"The provider rejected the {parameter} request parameter."
+            else:
+                detail = "The provider rejected the request. Check the model ID and its supported settings."
         else:
             detail = "The provider did not complete the test. Check the model ID and connection."
         return {"status": "failed", "detail": detail}

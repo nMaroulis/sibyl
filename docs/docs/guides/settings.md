@@ -44,10 +44,10 @@ Messages and evidence can be sent to the selected providers when Sibyl consults 
 
 ### Model catalogs
 
-Preset families were reviewed against provider documentation on October 19, 2026. Local server IDs are examples and may need to be replaced by the alias exposed by your runtime. Account access, retirement dates, and server model aliases can differ. The custom option remains available for new IDs.
+API presets were reviewed against provider catalogs on November 25, 2026. Access can vary by account and region. For OpenAI-compatible connections, enter a custom model ID from your endpoint. The model picker on a saved Ollama deployment lists installed models. Other local server IDs in the setup form are examples.
 
-- [OpenAI](https://developers.openai.com/api/docs/models), [Anthropic](https://platform.claude.com/docs/en/models/overview), [Gemini](https://ai.google.dev/gemini-api/docs/models)
-- [DeepSeek](https://api-docs.deepseek.com), [xAI](https://docs.x.ai/developers/models), [Hugging Face](https://huggingface.co/inference/models)
+- [OpenAI](https://developers.openai.com/api/docs/models), [Anthropic](https://platform.claude.com/docs/en/models/overview), [Gemini](https://aistudio.google.com/docs/models)
+- [DeepSeek](https://api-docs.deepseek.com/quick_start/pricing), [xAI](https://docs.x.ai/developers/models), [Hugging Face](https://huggingface.co/inference/models)
 - [Ollama](https://ollama.com/library), [LM Studio](https://lmstudio.ai/docs), [vLLM](https://docs.vllm.ai), [llama.cpp](https://github.com/ggml-org/llama.cpp)
 
 ## News
