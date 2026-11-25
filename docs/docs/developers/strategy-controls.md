@@ -29,9 +29,9 @@ Release requires the displayed revision and exact `RELEASE STRATEGY HALT` confir
 | --- | --- |
 | Automatic strategy entries and signal-based exits, new Start reviews, Start and Resume | Blocked |
 | Existing native orders and late fill/fee imports | Remain live / continue tracking |
-| Previously approved local order expiry | Continues with its existing account and two-flag requirements |
+| Previously approved local order expiry | Continues while account access and the relevant workspace permission are available |
 | Separately approved Stop & cancel and manual cancellation | Available with existing permissions |
-| Separately reviewed Close position sell | Available with its existing ownership/evidence checks and live-order flag |
+| Separately reviewed Close position sell | Available with the existing ownership and evidence checks and either workspace trading permission |
 | Manual Trade orders | Existing per-order approval and permissions apply |
 | Paper jobs and historical research | Unaffected |
 
@@ -41,6 +41,6 @@ The halt is neither an exchange-wide order-writing ban nor liquidation. Separate
 
 `GET /api/v1/strategies/exchange/controls` is local-only and provider-free. `POST` at the same path accepts `{ "action": "halt" | "release", "revision": 0, "reason": "optional note", "confirmation": "required phrase for release" }`. Revision is a strict nonnegative integer, notes are limited to 240 characters, and unknown fields are rejected. Success/conflict responses use `Cache-Control: no-store`; the existing workspace token/origin checks apply.
 
-`GET /strategies/exchange/options` distinguishes `server_enabled` (both flags) from `enabled` (flags plus released latch), and includes the control state. Broker's native ProtoLink `execution_controls` tool reads state/history without mutating it or probing providers. No agent has a halt/release tool.
+`GET /strategies/exchange/options` distinguishes `server_enabled` (workspace automation permission) from `enabled` (permission plus released latch), and includes the control state. Broker's native ProtoLink `execution_controls` tool reads state/history without mutating it or probing providers. No agent has a halt/release tool.
 
 Tests in `tests/test_strategy_controls.py` exercise rollback, revision conflicts, invalidated reviews, restart, a halt during provider work, the native-write race, retained partial fills, expiry/Stop & cancel/Close position, manual/paper isolation, HTTP access controls, audit retention and native ProtoLink tool access.

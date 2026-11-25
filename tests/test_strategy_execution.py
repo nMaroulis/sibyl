@@ -413,7 +413,7 @@ def test_server_flags_and_wrong_expired_confirmation_are_enforced(execution):
     with pytest.raises(ValueError, match="Type START TEST"):
         strategies.execution.start(review["id"], "yes")
     trading.market.settings.allow_strategy_execution = False
-    with pytest.raises(ValueError, match="SIBYL_ALLOW_STRATEGY_EXECUTION"):
+    with pytest.raises(ValueError, match="Exchange strategy execution is off"):
         strategies.execution.start(review["id"], review["confirmation"])
     trading.market.settings.allow_strategy_execution = True
     review["expires_at"] = (datetime.now(UTC) - timedelta(seconds=1)).isoformat()
@@ -554,9 +554,11 @@ def test_provider_failures_never_expose_private_exception_text(execution, monkey
     assert current["status"] == "paused" and "PRIVATE-KEY" not in json.dumps(current)
 
 
-def test_full_http_approval_creates_one_scoped_job(client, monkeypatch):
+def test_full_http_approval_creates_one_scoped_job(manual_client, monkeypatch):
+    client = manual_client
     services = client.app.state.services
-    services.settings.allow_live_trading = services.settings.allow_strategy_execution = True
+    toggle = "/api/v1/workspace/exchange-strategy-execution"
+    options = "/api/v1/strategies/exchange/options"
     connection = services.store.add_connection(
         ConnectionCreate(exchange="binance-testnet", label="API fixture", api_key="FAKE", secret="FAKE")
     )
@@ -564,7 +566,16 @@ def test_full_http_approval_creates_one_scoped_job(client, monkeypatch):
     services.market._clients[connection.id] = native
     monkeypatch.setattr(venue, "time", SimpleNamespace(time=lambda: native.clock))
     body = request(connection).model_dump()
-    review = client.post("/api/v1/strategies/exchange/preview", json=body)
+    assert not client.get(options).json()["server_enabled"]
+    preview = "/api/v1/strategies/exchange/preview"
+    assert client.post(preview, json=body).status_code == 400
+    assert client.post(toggle, json={"enabled": "true"}).status_code == 422
+    assert client.post(toggle, json={"enabled": True}).json() == {"enabled": True, "locked": False}
+    assert client.get(options).json()["enabled"]
+    system = client.get("/api/v1/system").json()
+    assert system["exchange_strategy_execution"]["enabled"]
+    assert not system["manual_spot_trading"]["enabled"]
+    review = client.post(preview, json=body)
     assert review.status_code == 200 and not native.calls
     approval = review.json()
     url = f"/api/v1/strategies/exchange/reviews/{approval['id']}/start"
@@ -573,7 +584,16 @@ def test_full_http_approval_creates_one_scoped_job(client, monkeypatch):
     second = client.post(url, json={"confirmation": approval["confirmation"]})
     assert first.status_code == second.status_code == 201
     assert first.json()["id"] == second.json()["id"]
-    assert client.get(f"/api/v1/strategies/jobs/{first.json()['id']}").json()["job"]["mode"] == "exchange"
+    identity = first.json()["id"]
+    path = f"/api/v1/strategies/jobs/{identity}"
+    assert client.get(path).json()["job"]["mode"] == "exchange"
+
+    assert client.post(toggle, json={"enabled": False}).json()["enabled"] is False
+    assert client.get(path).json()["job"]["status"] == "paused"
+    assert client.post(f"{path}/resume").status_code == 400
+    assert client.post(toggle, json={"enabled": True}).json()["enabled"]
+    assert client.get(path).json()["job"]["status"] == "paused"
+    assert services.store.trading_permission("exchange_strategy_execution", default=False)
     assert not native.calls
 
 

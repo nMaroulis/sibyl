@@ -4,16 +4,18 @@ import json
 import math
 import os
 import sqlite3
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from sibyl.credentials.vault import CredentialVault
 from sibyl.exchanges.catalog import exchange_spec
 from sibyl.exchanges.data import DEMO_BALANCES
 from sibyl.models import Connection, ConnectionCreate, OrderRequest
+
+TradingPermission = Literal["manual_spot_trading", "exchange_strategy_execution"]
 
 
 class Store:
@@ -183,6 +185,24 @@ class Store:
                     (value,),
                 )
             return True
+
+    def trading_permission(
+        self, name: TradingPermission, *, default: bool, db: sqlite3.Connection | None = None
+    ) -> bool:
+        """Resolve a workspace permission inside the order transaction when provided."""
+        with self.db() if db is None else nullcontext(db) as connection:
+            row = connection.execute("SELECT value FROM workspace_settings WHERE key=?", (name,)).fetchone()
+        return default if row is None else row[0] == "true"
+
+    def save_trading_permission(
+        self, name: TradingPermission, enabled: bool, *, db: sqlite3.Connection | None = None
+    ) -> None:
+        """Persist a permission using the SQLite write lock shared with order admission."""
+        with self.db() if db is None else nullcontext(db) as connection:
+            connection.execute(
+                "INSERT INTO workspace_settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (name, "true" if enabled else "false"),
+            )
 
     def data_profile(self, name: str) -> dict:
         """Decrypt one server-owned data-source profile, never exposed directly by routes."""

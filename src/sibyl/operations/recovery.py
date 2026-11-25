@@ -146,6 +146,8 @@ def prepare_recovery(store, backup_id):
             db.execute(
                 "UPDATE telegram_updates SET state='interrupted' WHERE state IN ('pending','processing')"
             )
+        store.save_trading_permission("manual_spot_trading", False, db=db)
+        store.save_trading_permission("exchange_strategy_execution", False, db=db)
     for run_id in workflow_snapshots:
         store.save_data_profile("workflow-models:" + run_id, {})
     profile = store.data_profile("messaging:telegram")

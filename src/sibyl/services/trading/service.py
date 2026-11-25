@@ -30,13 +30,14 @@ class ExchangeTrading:
     """Submit reviewed orders and retain uncertain outcomes without automatic retries.
 
     Native execution is restricted to the reviewed provider allowlist and the
-    server execution flag. Demo limit orders share the explicit Demo wallet.
+    workspace's manual and strategy permissions. Demo limit orders share the explicit Demo wallet.
     Agent tools may read retained monitor/reconciliation evidence, but never expose
     submission, cancellation or tracking controls. Approved strategies use the same durable intents.
     """
 
-    def __init__(self, market: Market, store: Store):
+    def __init__(self, market: Market, store: Store, *, recovery_required: bool = False):
         self.market, self.store = market, store
+        self.recovery_required = recovery_required
         self.strategy_limits = None
         with store.db() as db:
             db.execute(
@@ -52,11 +53,52 @@ class ExchangeTrading:
         self.discovery = OrderDiscovery(self)
         self.advanced = AdvancedOrders(self)
 
-    def _enabled(self):
-        if not self.market.settings.allow_live_trading:
-            raise ValueError(
-                "Exchange orders are disabled. Enable SIBYL_ALLOW_LIVE_TRADING on the server first."
+    def manual_enabled(self, db: sqlite3.Connection | None = None) -> bool:
+        """Read the manual order permission, respecting restored workspace quarantine."""
+        return not self.recovery_required and self.store.trading_permission(
+            "manual_spot_trading", default=self.market.settings.allow_live_trading, db=db
+        )
+
+    def manual_settings(self) -> dict[str, bool]:
+        """Expose the current workspace permission and whether it can be changed."""
+        return {"enabled": self.manual_enabled(), "locked": self.recovery_required}
+
+    def strategy_enabled(self, db: sqlite3.Connection | None = None) -> bool:
+        """Read exchange automation permission independently of the manual workspace choice."""
+        settings = self.market.settings
+        return not self.recovery_required and self.store.trading_permission(
+            "exchange_strategy_execution",
+            default=settings.allow_live_trading and settings.allow_strategy_execution,
+            db=db,
+        )
+
+    def strategy_settings(self) -> dict[str, bool]:
+        """Expose exchange automation permission and the recovery lock."""
+        return {"enabled": self.strategy_enabled(), "locked": self.recovery_required}
+
+    def require_strategy_execution(self, db: sqlite3.Connection | None = None):
+        """Require the automation permission for new strategy submissions."""
+        if not self.strategy_enabled(db):
+            raise ExecutionGuard("Exchange strategy execution is off. Enable it in Settings → Workspace.")
+
+    def require_strategy_management(self, db: sqlite3.Connection | None = None):
+        """Allow explicit stop/cancel and one-off exits with either exchange permission."""
+        if not (self.manual_enabled(db) or self.strategy_enabled(db)):
+            raise ExecutionGuard(
+                "Enable Manual spot trading or Exchange strategy execution in Settings → Workspace."
             )
+
+    def _enabled(self, *, db: sqlite3.Connection | None = None):
+        if not self.manual_enabled(db):
+            raise ValueError("Manual spot trading is disabled. Enable it in Settings → Workspace.")
+
+    def _require_order_permission(self, strategy_job_id, close_review_id, *, db=None):
+        if strategy_job_id is None:
+            self._enabled(db=db)
+        elif close_review_id:
+            self.require_strategy_management(db)
+        else:
+            self.require_strategy_execution(db)
 
     def _connection(self, connection_id: str, *, allow_demo: bool = False):
         connection = next((item for item in self.store.connections() if item.id == connection_id), None)
@@ -164,14 +206,12 @@ class ExchangeTrading:
         GTC limits use their explicit price for notional checks. Market orders use
         the current side of the book. The exchange rechecks funds at submission.
         """
-        if request.connection_id != "demo":
-            self._enabled()
         connection = self._connection(request.connection_id, allow_demo=True)
         demo = connection.exchange == "demo"
         if demo and request.order_type != "limit":
             raise ValueError("Demo market orders use paper orders in the separate market-order form.")
         if not demo:
-            self._enabled()
+            self._require_order_permission(strategy_job_id, strategy_close_review_id)
         if not connection.active:
             raise ValueError("Activate this exchange account in Settings before reviewing an order.")
         spec = exchange_spec(connection.exchange)
@@ -386,7 +426,11 @@ class ExchangeTrading:
                 return intent
             connection = self._connection(intent["request"]["connection_id"], allow_demo=True)
             if connection.exchange != "demo":
-                self._enabled()
+                self._require_order_permission(
+                    intent.get("strategy_job_id") if intent.get("origin") == "strategy" else None,
+                    intent.get("strategy_close_review_id"),
+                    db=db,
+                )
             if not connection.active:
                 raise ValueError(
                     "This account is inactive. Activate it and review the order before confirming."
@@ -395,8 +439,6 @@ class ExchangeTrading:
                 raise ValueError("Order preview expired. Review a fresh quote before confirming.")
             if intent.get("origin") == "strategy" and not intent.get("strategy_close_review_id"):
                 require_submissions(db, intent.get("strategy_control_revision", 0))
-                if not self.market.settings.allow_strategy_execution:
-                    raise ValueError("Automated execution is disabled on this backend.")
                 row = db.execute(
                     "SELECT payload FROM strategy_jobs WHERE id=?", (strategy_job_id,)
                 ).fetchone()

@@ -123,7 +123,7 @@ class AdvancedOrders:
                     raise ValueError("Type " + group["confirmation"] + " to confirm.")
                 if group["status"] != "preview":
                     return self.detail(identity)
-                self.trading._enabled()
+                self.trading._enabled(db=db)
                 connection = self.trading._connection(group["request"]["connection_id"])
                 if not connection.active or connection.exchange not in ADVANCED_PROVIDERS:
                     raise ValueError("Review an active supported account before submitting.")

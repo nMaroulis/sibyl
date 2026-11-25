@@ -102,7 +102,9 @@ async function tradeFixture(page: Page, original = false, exchange = 'binance-te
       });
     if (path === '/connections') return route.fulfill({ json: [connection] });
     if (path === '/system') {
-      return route.fulfill({ json: { ...system, allow_live_trading: true } });
+      return route.fulfill({
+        json: { ...system, manual_spot_trading: { enabled: true, locked: false } },
+      });
     }
     if (path === '/exchange-orders/monitor')
       return route.fulfill({

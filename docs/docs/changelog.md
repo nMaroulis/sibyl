@@ -51,6 +51,8 @@ docker compose up --build
 
 ### Added
 
+- Settings → Workspace adds separate, persistent switches for manual spot orders and exchange strategies. Switching automation off pauses exchange runs. Trade and Strategies link to Workspace when their permission is off.
+
 - AI model settings supports multiple named deployments per provider, each with its own credentials and model selection. Cards show active routing, masked keys, connection checks, and full-width local runtime monitors.
 
 - Settings renames Interface to UI · UX and adds four page transitions with a live preview. Dock reveal expands from the selected button, Slide comes in from the dock edge, and Fade dissolves in place.

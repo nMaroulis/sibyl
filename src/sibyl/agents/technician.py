@@ -68,7 +68,7 @@ GUIDES = {
             "Open Account after activating the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
             "To replace API credentials for the same account, use Saved accounts → Update keys, deactivate the connection, enter a complete key set and confirm the same-account assertion/phrase. Check access and reactivate explicitly. History remains attached to this account ID. Use a new connection for a different account; existing venue orders are not cancelled.",
             "For a preview, explicitly enable Demo. Actual active accounts turn Demo off; test environments remain clearly labeled.",
-            "For automated spot strategies, open Strategies and expand Run on a connected exchange. Both SIBYL_ALLOW_LIVE_TRADING and SIBYL_ALLOW_STRATEGY_EXECUTION must be enabled on the backend. Review the exact account, pair, budget and limits, then type the confirmation. Start with test funds. Pause/Stop do not cancel venue orders or liquidate holdings.",
+            "For automated spot strategies, open Strategies and expand Run on a connected exchange. Turn on Exchange strategy execution in Settings → Workspace first. Review the exact account, pair, budget and limits, then type the confirmation. Start with test funds. Pause/Stop do not cancel venue orders or liquidate holdings.",
         ],
     },
     "models": {
@@ -174,7 +174,7 @@ def create_agent(services: Services, **runtime) -> Agent:
             "connections": [item.model_dump(mode="json") for item in services.store.connections()],
             "mode": services.settings.mode,
             "market_exchange": services.settings.market_exchange,
-            "permissions": "Agents are read-only. Manual spot trading depends on provider support, API permissions and the server execution setting.",
+            "permissions": "Agents are read-only. Manual spot trading requires a supported provider, a trading-enabled API key and Manual spot trading enabled in Settings → Workspace.",
             "history_imports": services.account_sync.snapshot()["jobs"] if services.account_sync else [],
             "history_help": "Trade → Account history → Fills & imports. Sync resumes saved pages. Pause active work before Rescan available history to refresh older fees/fills within provider retention; retained observations are never deleted.",
             "history_scope": "Imports cover selected spot markets and provider retention, not reconciled account history or exchange P&L.",
@@ -273,7 +273,10 @@ def create_agent(services: Services, **runtime) -> Agent:
             **GUIDES["exchanges"],
             "required_fields": ["label", *fields],
             "key_storage": catalog["key_storage"],
-            "manual_execution_enabled": services.settings.allow_live_trading,
+            "manual_execution_enabled": services.strategies.execution.trading.manual_enabled()
+            if services.strategies.execution
+            else services.settings.allow_live_trading,
+            "execution_settings": "/settings?tab=workspace",
             "note": "Demo accepts no credentials." if spec.simulated else spec.note,
             "test_environment": spec.test_environment,
             "exchange": exchange_info,

@@ -151,7 +151,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         messaging.notifications.use_channels(private_channels)
         briefings = BriefingScheduler(investigations, messaging)
         ollama = OllamaService(agents.models)
-        trading = ExchangeTrading(market, store)
+        trading = ExchangeTrading(market, store, recovery_required=recovery)
         account_streams = PrivateAccountStreams(store, trading)
         trading.account_streams = account_streams
         strategies.attach_execution(trading)

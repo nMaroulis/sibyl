@@ -49,7 +49,7 @@ Binance and Binance Testnet add stop-loss/take-profit GTC limits, linked native 
 
 ## Durable submission
 
-`ExchangeTrading.preview()` records an intent with a 60-second confirmation deadline. Limit notional is quantity × limit price; market notional is a side-of-book reference. A preview reserves nothing. Confirmation must match the displayed phrase and the account must still be active. New native orders also require `SIBYL_ALLOW_LIVE_TRADING=true`.
+`ExchangeTrading.preview()` records an intent with a 60-second confirmation deadline. Limit notional is quantity × limit price; market notional is a side-of-book reference. A preview reserves nothing. Confirmation must match the displayed phrase and the account must still be active. New manual orders require the workspace's manual spot trading permission. New automated strategy orders require the separate exchange strategy execution permission.
 
 Before sending, SQLite commits `submitting`, the submission time, tracking preference and the client ID. Duplicate confirmation returns the persisted intent without sending again. A network timeout or unclear response becomes `unknown`, never a retry. The application may have stopped after the venue accepted but before its ID was saved. Reviewed clients now offer bounded [client-ID recovery](order-recovery.md). Only an exact ID/details match is attached; missing or ambiguous evidence still requires venue inspection.
 

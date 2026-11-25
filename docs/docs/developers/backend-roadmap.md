@@ -201,7 +201,7 @@ Known orders now import native execution pages into the shared Account history l
 [Exchange strategy execution](../guides/strategy-execution.md) is implemented for nine provider/environment variants, alongside the isolated paper worker.
 
 - [x] Bind a run to a fixed account, environment, exact pair and allocated budget with expiring typed approval.
-- [x] Keep paper as the default; require both execution flags for exchange test/production runs.
+- [x] Keep paper as the default; require the workspace automation permission for exchange test and production runs.
 - [x] Submit price-capped GTC intents through the shared at-most-once order pipeline and derive ownership from native fills/fees.
 - [x] Persist plans/client IDs and pause on restart; reconcile existing orders without replaying old signals or uncertain writes.
 - [x] Define Pause/Stop: prevent future submissions and retain holdings; previously approved expiry continues.

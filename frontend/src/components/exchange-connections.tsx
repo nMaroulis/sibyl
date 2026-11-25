@@ -260,7 +260,7 @@ function ExchangeDetails({
                       ? 'Checking server execution setting…'
                       : system.error
                         ? 'Server execution setting unavailable'
-                        : system.data?.allow_live_trading
+                        : system.data?.manual_spot_trading?.enabled
                           ? 'Manual execution enabled on this server'
                           : 'Manual execution disabled on this server'
                     : 'Trading is not implemented for this exchange'}

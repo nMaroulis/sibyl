@@ -5,7 +5,7 @@ Strategies supports isolated paper runs and explicitly approved exchange runs. E
 ## Start a run
 
 1. Connect and activate an account in **Settings → Exchanges**. Use spot trading and order/fill read permissions. Keep withdrawals and transfers disabled. Prefer an exchange test environment for acceptance testing.
-2. Enable both `SIBYL_ALLOW_LIVE_TRADING=true` and `SIBYL_ALLOW_STRATEGY_EXECUTION=true` on the Python backend and restart it. Both default to false; test environments also require them. Agents cannot change these flags or approve execution.
+2. Turn on **Exchange strategy execution** in **Settings → Workspace**. Production and test accounts both use this permission. Changes take effect immediately and are saved locally.
 3. In **Strategies → Build & backtest**, choose the algorithm and indicator/risk-exit settings. Expand **Run on a connected exchange**. Choose an account, its exact spot pair and execution timeframe. The execution exchange supplies its own candles and order book; the research feed and Demo input are never used for real exchange execution.
 4. Set an allocated budget in the pair's **quote asset**, an order cap and a loss-pause threshold. Choose **Cancel unfilled orders after**: one minute to one day, or GTC with no automatic expiry. The UI starts at five minutes; the approval explicitly includes this policy. Expand execution limits for rolling 24-hour order count, spread, limit-price allowance and fee reserve. Native quote budgets can be fractional, including BTC/ETH quote assets.
 5. Select **Review exchange strategy**. This reads balances and market evidence without placing an order. Check the account, test/production badge, pair, budget and limits. Type the displayed confirmation and approve the two-minute review. One review creates one run, including when the start request is repeated.
@@ -30,7 +30,7 @@ Signals create **price-capped GTC limit orders**, with rounded-down base quantit
 
 ## Order lifetime and cancellation
 
-An approved lifetime starts when the shared pipeline commits its submission attempt. The deadline persists before the native write, including when its response is lost. At expiry, the backend reads the exact native order and uses the shared cancellation pipeline once. This is **best-effort local policy**, not native time-in-force: the backend must be running, the account must be active, and both execution flags must permit automatic expiry writes. The strategy worker normally checks every 30 seconds; outages, provider limits and errors can delay cancellation. A partial fill remains owned; only the unfilled remainder can be canceled.
+An approved lifetime starts when the shared pipeline commits its submission attempt. The deadline persists before the native write, including when its response is lost. At expiry, the backend reads the exact native order and uses the shared cancellation pipeline once. This is **best-effort local policy**, not native time-in-force: the backend must be running, the account must be active, and Exchange strategy execution must permit automatic expiry writes. The strategy worker normally checks every 30 seconds; outages, provider limits and errors can delay cancellation. A partial fill remains owned; only the unfilled remainder can be canceled.
 
 The approved policy continues while the run is paused, stopped or awaiting explicit Resume after restart. Existing jobs and API requests with no `risk.order_lifetime_seconds` have **no automatic expiry**; they gain no new cancellation authority. API clients may explicitly choose `null` or an integer from 60 through 86,400 seconds.
 
@@ -66,6 +66,10 @@ Approve the displayed batch of up to 25 fills. Sibyl checks the current fee fact
 
 Approved prices affect marked equity and strategy loss limits. Positive charges reserve quote budget for new entries. Rebates improve marked P&L without increasing quote buying power. Native quote cash and acquisition or disposal basis stay tied to actual fills. Review and Resume remain separate actions.
 
+## Turn off exchange automation
+
+Switch off **Exchange strategy execution** in Workspace to pause running exchange strategies and end active liquidation plans. Orders already sent to an exchange stay there until filled or cancelled. Inspect or cancel open orders in Trade. Turn the switch back on and explicitly resume each paused run. Merely enabling the switch leaves the global halt and portfolio risk controls in place.
+
 ## Close a retained position
 
 **Close position** in the monitor is a separate one-order sell approval. It is implemented for the same nine execution provider/environment variants. It never restarts the strategy or adopts unrelated account holdings.
@@ -79,15 +83,15 @@ The sell quantity is capped by reconciled strategy ownership, the base-fee reser
 
 Residual ownership keeps the account/pair assigned to this retained run, so it can block a new strategy on that same account/pair. Dust below native minimums cannot currently be sold. Use [Position ownership](strategy-ownership.md) for separately reviewed release to unmanaged holdings or original-basis handoff to a new run; units are never silently discarded or adopted.
 
-This explicit exit approval has its own limits. It can exceed the original automated entry-order value cap and is available with a latched loss guard or strategy-submission permission off; `SIBYL_ALLOW_LIVE_TRADING=true` and active account access are still required. Ownership, account/environment, flags and review expiry are rechecked immediately before committing the shared `submitting` boundary. A ledger change invalidates the review. Unrelated manual account activity can still consume funds; the exchange has the final balance/permission check.
+This explicit exit approval has its own limits. It can exceed the original automated entry-order value cap. A one-off reviewed exit needs a connected active account and either **Manual spot trading** or **Exchange strategy execution** enabled in Workspace. It can still be reviewed with the strategy halt or loss guard active. Ownership, account/environment, flags and review expiry are rechecked immediately before committing the shared `submitting` boundary. A ledger change invalidates the review. Unrelated manual account activity can still consume funds; the exchange has the final balance/permission check.
 
-Closing reviews never execute by themselves. Repeated confirmations return retained progress and never send another native write. After process loss an unsubmitted prepared exit is abandoned; a submitted or uncertain one only rejoins status/recovery/fill reads. The earlier Stop & cancel approval **does not cancel a later closing order**. Its separately approved expiry can cancel its remainder, with active account access and live-order permission, even while strategy-submission permission is off. Ordinary expiry timing/uncertainty limitations still apply. Manual cancellation remains available in Trade.
+Closing reviews never execute by themselves. Repeated confirmations return retained progress and never send another native write. After process loss an unsubmitted prepared exit is abandoned; a submitted or uncertain one only rejoins status/recovery/fill reads. The earlier Stop & cancel approval **does not cancel a later closing order**. Its separately approved expiry can cancel its remainder, with active account access and either trading permission. Ordinary expiry timing/uncertainty limitations still apply. Manual cancellation remains available in Trade.
 
 Readiness and a current reconciliation match do not establish final settlement. Later fills, fee changes, exchange busts and manual account changes can require further inspection; no finality is invented.
 
 ## Run a bounded liquidation plan
 
-For a stopped or completed exchange run, choose **Liquidation plan** in its monitor. This workflow requires both exchange execution flags. Resolve outstanding orders, fee valuations and cancellation follow-ups first.
+For a stopped or completed exchange run, choose **Liquidation plan** in its monitor. This workflow requires **Exchange strategy execution** in Workspace. Resolve outstanding orders, fee valuations and cancellation follow-ups first.
 
 1. Set the plan’s maximum order count (2–5), duration (5–60 minutes), optional maximum base units per sell, and per-order safeguards. **Review sell sequence** reads the exact account’s book and balances. The review shows the fixed sell limit, first-order cap, total owned units, spread guard, fee reserve and expiry.
 2. Type the displayed confirmation. Approval grants the worker authority to start the sequence. Each GTC limit uses the same price floor, expires individually after 60–300 seconds, and can only sell within remaining reconciled ownership and the approved size. The venue may fill at a better price.
@@ -111,7 +115,7 @@ The code is in `src/sibyl/strategies/execution/`: `contracts.py`, `approvals.py`
 
 | Method | `/api/v1` path | Purpose |
 | --- | --- | --- |
-| GET | `/strategies/exchange/options` | Implemented providers, account activation and execution flags |
+| GET | `/strategies/exchange/options` | Implemented providers, account activation and workspace permission |
 | GET | `/strategies/exchange/markets/{account_id}` | Exact spot pairs and available timeframes |
 | POST | `/strategies/exchange/preview` | Read-only, expiring account/budget review |
 | POST | `/strategies/exchange/reviews/{id}/start` | Typed approval of the immutable review |

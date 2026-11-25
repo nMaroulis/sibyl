@@ -31,7 +31,7 @@ New workspaces have no active accounts. Multiple exchanges can be active togethe
 
 Twenty production exchange adapters share an interface, but their order, history and automation coverage differs. The Settings feature dialog reflects the implementation for the selected provider/environment. Balance-read access does not establish trading permission. See [exchange coverage](../developers/exchange-clients.md) and [acceptance evidence](../developers/exchange-acceptance.md).
 
-Paper strategies use isolated virtual capital even with real market prices. Exchange strategies require account-bound approval and both execution flags. Manual exchange orders have their own review. AI agents cannot submit orders or access credentials.
+Paper strategies use isolated virtual capital even with real market prices. Exchange strategies require account-bound approval and the Exchange strategy execution setting in Workspace. Manual exchange orders have their own review. AI agents cannot submit orders or access credentials.
 
 ## Evidence and accounting scope
 

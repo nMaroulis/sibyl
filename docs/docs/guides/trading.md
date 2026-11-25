@@ -16,17 +16,13 @@ Order history persists locally in **Executions** and can be exported as CSV. Man
 
 ## Exchange orders
 
-Exchange execution is disabled by default. To enable it, set:
-
-```dotenv
-SIBYL_ALLOW_LIVE_TRADING=true
-```
+Manual spot trading is off by default. Open **Settings → Workspace** and turn on **Manual spot trading**. The choice takes effect immediately and is saved in your local workspace. Turn it off to stop new manual orders. Existing orders can still be checked and cancelled through the reviewed cancellation flow.
 
 Market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic, Bitstamp, Bitfinex, Phemex, Crypto.com Exchange, MEXC and CoinEx, plus the dedicated test clients. Bitget Classic, Poloniex, Upbit Korea, Gate, HTX and BitMart support market buys with an explicit quote budget and market sells with a base quantity. Gemini supports reviewed GTC limits and cancellation. Settings → Exchanges shows the current support and gaps for each provider.
 
 For a quote-budget market buy, enter the amount in the pair’s quote currency. Trade shows that amount in review and in the order monitor. The eventual base fill depends on execution prices. Fees are separate from the order budget.
 
-Restart the API, connect an account with the appropriate spot trading permission, and use the separate **Exchange execution** section. Choose the account and its production/sandbox environment carefully. This flow can spend actual exchange funds.
+Connect an account with spot trading permission and use the separate **Exchange execution** section. Choose the account and its production/sandbox environment carefully. This flow can spend actual exchange funds.
 
 The preview validates market availability, active spot status, base-quantity precision, amount/cost limits, and available balance. Buy previews require a 1% balance buffer for price movement and fees. It creates a server-side intent that expires after **60 seconds**. It does not reserve funds or submit a provider test order.
 

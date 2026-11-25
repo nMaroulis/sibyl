@@ -98,7 +98,7 @@ export function ExchangeExecution({
       setBusy(false);
     }
   };
-  const enabled = demo || system.data?.allow_live_trading;
+  const enabled = demo || system.data?.manual_spot_trading?.enabled;
   return (
     <>
       <Panel className="full-panel">
@@ -110,12 +110,14 @@ export function ExchangeExecution({
               : 'Reviewed spot market & GTC limit orders'
           }
           action={
-            <Badge tone={enabled && !demo ? 'rose' : 'neutral'}>
+            <Badge tone={demo ? 'demo' : enabled ? 'rose' : system.data ? 'sand' : 'neutral'}>
               {demo
                 ? 'Demo · virtual funds'
                 : enabled
                   ? 'Execution enabled'
-                  : 'Disabled by default'}
+                  : system.data
+                    ? 'Trading off'
+                    : 'Status unavailable'}
             </Badge>
           }
         />
@@ -395,16 +397,23 @@ export function ExchangeExecution({
           )
         ) : (
           <div className="execution-disabled">
-            <ShieldCheck size={21} />
-            <div>
-              <strong>Exchange execution is switched off.</strong>
-              <p>
-                Enable it in server configuration to submit new orders. Existing status checks and
-                reviewed cancellations remain available.
-              </p>
+            <span className="execution-disabled-icon">
+              <ShieldCheck size={20} aria-hidden="true" />
+            </span>
+            <div className="execution-disabled-copy">
+              <strong>
+                {system.data
+                  ? 'Manual spot trading is off'
+                  : system.error
+                    ? 'Workspace settings unavailable'
+                    : 'Loading workspace settings…'}
+              </strong>
+              {system.data && (
+                <p>Turn it on to review and submit spot orders from a connected exchange account.</p>
+              )}
             </div>
-            <Link className="text-link" to="/settings?tab=workspace">
-              Configuration <ArrowUpRight size={13} />
+            <Link className="button secondary execution-settings-link" to="/settings?tab=workspace">
+              Open Workspace settings <ArrowUpRight size={14} />
             </Link>
           </div>
         )}

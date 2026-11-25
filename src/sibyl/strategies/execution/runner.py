@@ -68,18 +68,23 @@ class ExchangeStrategies:
     def jobs(self):
         return [job for job in self.host.jobs() if job.get("mode") == "exchange"]
 
-    def enabled(self, *, submissions=True):
-        """Check server permissions; only new signal orders consult the global halt."""
+    def enabled(self, *, submissions=True, db=None):
+        """Check workspace permission and the global halt for new signal orders."""
         if submissions:
             self.controls.require()
-        if not self.market.settings.allow_live_trading:
-            raise ExecutionGuard(
-                "Exchange orders are disabled. Enable SIBYL_ALLOW_LIVE_TRADING on the backend first."
-            )
-        if not self.market.settings.allow_strategy_execution:
-            raise ExecutionGuard(
-                "Automated execution is disabled. Enable SIBYL_ALLOW_STRATEGY_EXECUTION on the backend as well as SIBYL_ALLOW_LIVE_TRADING."
-            )
+        self.trading.require_strategy_execution(db)
+
+    def set_enabled(self, enabled: bool) -> dict[str, bool]:
+        """Save permission and pause exchange runs atomically when switched off."""
+        with self.lock, self.store.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self.store.save_trading_permission("exchange_strategy_execution", enabled, db=db)
+            if not enabled:
+                self.controls.pause_submissions(
+                    db,
+                    "Exchange strategy execution switched off in Workspace. Enable it and explicitly resume.",
+                )
+        return self.trading.strategy_settings()
 
     def account(self, identity):
         connection = self.trading._connection(identity)
@@ -95,15 +100,11 @@ class ExchangeStrategies:
         """Advertise code-backed support and actual activation; never probe private accounts."""
         controls = self.controls.state()
         return {
-            "enabled": self.market.settings.allow_live_trading
-            and self.market.settings.allow_strategy_execution
-            and not controls["halted"],
-            "server_enabled": self.market.settings.allow_live_trading
-            and self.market.settings.allow_strategy_execution,
+            "enabled": controls["server_enabled"] and not controls["halted"],
+            "server_enabled": controls["server_enabled"],
             "controls": controls,
             "handoff_sources": self.ownership.sources(),
             "portfolio_limits": self.portfolio_limits.state(),
-            "required_flags": ["SIBYL_ALLOW_LIVE_TRADING", "SIBYL_ALLOW_STRATEGY_EXECUTION"],
             "providers": [
                 {"id": spec.id, "name": spec.name} for spec in CATALOG.values() if supported(spec.id)
             ],

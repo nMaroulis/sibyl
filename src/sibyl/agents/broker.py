@@ -239,7 +239,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Explain supported strategy rules and the backtest, paper and approved exchange modes."""
         return {
             "catalog": CATALOG,
-            "execution": "Paper runs use isolated virtual capital. Approved exchange runs use account-bound price-capped GTC limits and native fills; both backend execution flags are required. This agent cannot approve, start or submit orders.",
+            "execution": "Paper runs use isolated virtual capital. Approved exchange runs use account-bound price-capped GTC limits and native fills; Exchange strategy execution must be enabled in Settings → Workspace. This agent cannot approve, start or submit orders.",
             "backtests": "Next-open fills, configured fees and slippage; no look-ahead signal fills.",
             "validation": "Fixed settings, a small exhaustive grid, or seeded random sampling of explicit finite parameter choices on expanding training prefixes, followed by disjoint test windows. Candidate plans, coverage and training rankings are retained. Tests start in cash; fixed settings and cost-aware buy-and-hold are compared. Settings are never applied to jobs automatically.",
             "url": "/strategies",
@@ -295,10 +295,13 @@ def create_agent(services: Services, **runtime) -> Agent:
         provider = next((item for item in provider_catalog()["items"] if item["id"] == exchange), None)
         return {
             "provider": provider,
-            "manual_execution_enabled": services.settings.allow_live_trading,
+            "manual_execution_enabled": strategies.execution.trading.manual_enabled()
+            if strategies.execution
+            else services.settings.allow_live_trading,
+            "execution_settings": "/settings?tab=workspace",
             "permissions": "Balance/order-history reads; spot trading permission only for supported manual orders. Withdrawals and transfers stay disabled.",
             "url": "/settings?tab=exchanges",
-            "note": "Manual orders require per-order review. Supported automated strategies require their own fixed-scope account/budget approval and execution flags. Agents cannot submit or approve orders. Private account acceptance is pending.",
+            "note": "Manual orders require per-order review. Supported automated strategies require their own fixed-scope account/budget approval and the Exchange strategy execution setting. Agents cannot submit or approve orders. Private account acceptance is pending.",
         }
 
     def adaptive_report(study_id: str | None = None, window: int | None = None) -> dict:

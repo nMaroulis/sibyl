@@ -85,6 +85,8 @@ def system(s: S):
         "agent_engine": "ProtoLink",
         "agents": len(s.agents.network.cards),
         "agent_runtime": s.agents.network.group.snapshot().to_dict(),
+        "manual_spot_trading": s.trading.manual_settings(),
+        "exchange_strategy_execution": s.trading.strategy_settings(),
         "allow_live_trading": s.settings.allow_live_trading,
         "allow_strategy_execution": s.settings.allow_strategy_execution,
         "accounts": s.accounts.public(),

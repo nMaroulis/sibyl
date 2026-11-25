@@ -75,10 +75,9 @@ class ClosePositions:
         digest = hashlib.sha256(json.dumps([self._scope(job), evidence], sort_keys=True).encode()).hexdigest()
         return values, digest
 
-    def _account(self, job):
-        """One-off reviewed exits need live-order permission, not strategy-submission permission."""
-        if not self.runner.market.settings.allow_live_trading:
-            raise ExecutionGuard("Enable SIBYL_ALLOW_LIVE_TRADING on the backend before reviewing an exit.")
+    def _account(self, job, db):
+        """A one-off reviewed exit can use manual trading permission."""
+        self.trading.require_strategy_management(db)
         connection = self.runner.account(job["connection_id"])
         if (connection.exchange, connection.sandbox) != (job["exchange"], job["sandbox"]):
             raise ExecutionGuard("The account environment changed. No exit is allowed.")
@@ -106,7 +105,7 @@ class ClosePositions:
             raise ExecutionGuard(
                 "Wait for cancellation reconciliation and all three late native status checks in the monitor."
             )
-        return self._account(job)
+        return self._account(job, db)
 
     def context(self, identity):
         """Explain readiness using local evidence only; no exchange or order mutation."""

@@ -6,7 +6,9 @@ from datetime import UTC, datetime, timedelta
 
 import ccxt
 import pytest
+from fastapi.testclient import TestClient
 
+from sibyl.api.app import create_app
 from sibyl.models import ConnectionCreate, ExchangeOrderRequest
 from sibyl.services.markets.service import Market
 from sibyl.services.trading.service import ExchangeTrading
@@ -26,6 +28,9 @@ class FakeExchange:
         self.calls = 0
         self.failure = None
         self.free = {"USDT": 100000, "BTC": 2}
+
+    def close(self):
+        pass
 
     def format_client_order_id(self, identity):
         return identity
@@ -76,6 +81,50 @@ def request(connection, **changes):
             **changes,
         }
     )
+
+
+def test_workspace_manual_switch_persists_and_rechecks_existing_review(settings, store):
+    settings.allow_strategy_execution = True
+    connection = store.add_connection(
+        ConnectionCreate(
+            exchange="binance", label="Local test", api_key="fake-key", secret="fake-secret", sandbox=True
+        )
+    )
+    venue = FakeExchange()
+    endpoint = "/api/v1/workspace/manual-spot-trading"
+    payload = request(connection).model_dump(mode="json")
+    with TestClient(create_app(settings)) as client:
+        services = client.app.state.services
+        services.market._clients[connection.id] = venue
+        assert client.post("/api/v1/exchange-orders/preview", json=payload).status_code == 400
+        assert client.post(endpoint, json={"enabled": "true"}).status_code == 422
+        enabled = client.post(endpoint, json={"enabled": True})
+        assert enabled.json() == {"enabled": True, "locked": False}
+        assert enabled.headers["Cache-Control"] == "no-store"
+        state = client.get("/api/v1/system").json()
+        assert state["manual_spot_trading"]["enabled"]
+        assert not state["allow_live_trading"]
+        review = client.post("/api/v1/exchange-orders/preview", json=payload)
+        assert review.status_code == 200, review.text
+        assert client.post(endpoint, json={"enabled": False}).json()["enabled"] is False
+        intent = review.json()
+        denied = client.post(
+            f"/api/v1/exchange-orders/{intent['id']}/confirm",
+            json={"confirmation": intent["confirmation"]},
+        )
+        assert denied.status_code == 400 and "Settings" in denied.json()["detail"]
+        assert venue.calls == 0
+
+    # A saved off overrides even an enabled environment default after restart.
+    settings.allow_live_trading = True
+    with TestClient(create_app(settings)) as client:
+        assert not client.get("/api/v1/system").json()["manual_spot_trading"]["enabled"]
+        assert client.post("/api/v1/exchange-orders/preview", json=payload).status_code == 400
+        client.post(endpoint, json={"enabled": True}).raise_for_status()
+
+    settings.allow_live_trading = False
+    with TestClient(create_app(settings)) as client:
+        assert client.get("/api/v1/system").json()["manual_spot_trading"]["enabled"]
 
 
 def test_preview_validates_without_sending(trading):

@@ -163,11 +163,18 @@ export function ExchangeStrategySetup({
           </p>
         )}
         {options.data && !options.data.server_enabled && (
-          <p className="monitor-notice">
-            Execution is disabled on this backend. Both <code>SIBYL_ALLOW_LIVE_TRADING=true</code>{' '}
-            and <code>SIBYL_ALLOW_STRATEGY_EXECUTION=true</code> are required, including for
-            exchange test environments. Restart the backend after changing them.
-          </p>
+          <div className="execution-disabled">
+            <span className="execution-disabled-icon">
+              <ShieldCheck size={20} aria-hidden="true" />
+            </span>
+            <div className="execution-disabled-copy">
+              <strong>Exchange strategy execution is off</strong>
+              <p>Turn it on to review and approve a strategy for a connected exchange.</p>
+            </div>
+            <Link className="button secondary execution-settings-link" to="/settings?tab=workspace">
+              Open Workspace settings <ArrowUpRight size={14} />
+            </Link>
+          </div>
         )}
         {options.data?.controls.halted && (
           <p className="monitor-notice">

@@ -79,7 +79,7 @@ After saving, use **Check access** to read the test account. Test accounts appea
 
 The original Binance card still accepts its testnet checkbox for existing workflows. Optional sandboxes also remain configured for OKX, Bybit, Gate, Crypto.com Exchange, Gemini and Phemex. Instruments and credentials can differ from production. Sandbox routing is applied before the first provider request; there is no production fallback.
 
-Manual market orders for the two dedicated test providers use the existing 60-second preview, typed confirmation and server execution setting. This server setting currently guards all exchange submission, including test funds. No test or real orders are sent automatically when a connection is saved or checked. Production market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic and Bitstamp. Gemini supports GTC limits and cancellation only. Other clients remain read-only. Module agents have no submission or credential tools.
+Manual market orders for the two dedicated test providers require a 60-second review, typed confirmation and the **Manual spot trading** permission in Workspace. No test or real orders are sent automatically when a connection is saved or checked. Production market/GTC limit orders and cancellation are implemented for Binance, Binance.US, Coinbase Advanced, Kraken, OKX, Bybit UTA, KuCoin classic and Bitstamp. Gemini supports GTC limits and cancellation only. Other clients remain read-only. Module agents have no submission or credential tools.
 
 ## Disconnect
 
@@ -99,7 +99,7 @@ Public reference prices can resolve a missing USDT pair through USD or USDC at a
 
 Click any exchange card to inspect **Account overview**, **Spot trading**, **History & synchronization**, **Market data**, and **Automation & limits**. Each row explicitly states Supported, Simulated, Not implemented or Unavailable. Supported describes Sibyl's code; it does not confirm your credentials, regional access or trading permissions. **Check access** verifies balance reads only. Saved accounts also have a **Features** button.
 
-Spot trading additionally shows whether execution is enabled on your server. Manual orders remain disabled by default, require a trading-enabled key and an explicit review in Trade. Supported automated strategies have a separate account/budget approval and require both execution flags; see [exchange strategies](strategy-execution.md). A supported manual order does not imply durable historical imports, detailed fill reconciliation or recovery is implemented; check the History category for each provider.
+Spot trading additionally shows whether execution is enabled on your server. Manual orders remain disabled by default, require a trading-enabled key and an explicit review in Trade. Supported automated strategies have a separate account/budget approval and require Exchange strategy execution in Workspace; see [exchange strategies](strategy-execution.md). A supported manual order does not imply durable historical imports, detailed fill reconciliation or recovery is implemented; check the History category for each provider.
 
 **API keys are stored locally and encrypted on the machine running Sibyl's Python backend** (the `.sibyl` workspace by default). A separate local vault key unlocks them. They are not returned by the API or passed to AI agents. The backend uses the credentials to authenticate requests to the exchange. Saving or checking a connection never places an order.
 

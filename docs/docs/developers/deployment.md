@@ -16,7 +16,7 @@ docker compose up --build
 
 Open `http://127.0.0.1:8000`, then enter the token in Settings. Compose binds the published port to loopback and stores the workspace in the `sibyl-data` volume. Container startup refuses to bind publicly without an API token.
 
-Exchange execution remains disabled unless you explicitly set `SIBYL_ALLOW_LIVE_TRADING=true`. Demo/live data selection is independent. Preserve the database and vault key together when moving the volume.
+Manual spot trading and exchange strategy execution are off by default. Their independent switches are in **Settings → Workspace**. Environment flags supply initial defaults before a workspace choice is saved. Demo/live data selection is independent. Preserve the database and vault key together when moving the volume.
 
 To use optional runtime packages in the image, pass the Docker build argument `SIBYL_EXTRAS`, for example `--extra stocks --extra openai`. Use an explicit model-server address reachable from the container; container loopback is not your host's loopback.
 

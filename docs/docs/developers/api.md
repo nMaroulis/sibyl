@@ -44,7 +44,7 @@ Saved investigation endpoints are documented in [Investigation reports](investig
 | GET        | `/strategies`                                       | Algorithm catalog                                                                          |
 | POST       | `/strategies/backtest`                              | Historical simulation and persisted result                                                 |
 | GET / POST | `/strategies/jobs`                                  | List paper/exchange runs / start isolated paper jobs                                       |
-| GET        | `/strategies/exchange/options`                      | Actual automation support, account activation and execution flags                          |
+| GET        | `/strategies/exchange/options`                      | Actual automation support, account activation and workspace execution permission                          |
 | GET / POST | `/strategies/exchange/controls`                     | Passive global halt/history or revision-bound Halt / typed Release; resumes no runs        |
 | GET        | `/strategies/exchange/markets/{id}`                 | Exact account-exchange pairs/timeframes                                                    |
 | POST       | `/strategies/exchange/preview`                      | Read-only account/budget review                                                            |
@@ -109,7 +109,7 @@ Closing readiness reads no native endpoints. `close-preview` accepts `price_limi
 
 The run's `close_position` contains `review_id`, `intent_id`, state/message, check time, native status, requested/filled units and remaining owned units. Order rows include `strategy_action: close` and `strategy_close_review_id`. Event/CSV filters additionally accept `CLOSE_APPROVED`, `CLOSE_SUBMITTED`, `CLOSE_UNKNOWN`, `CLOSE_RECONCILING`, `CLOSE_RECONCILED`, `CLOSE_INTERRUPTED` and `CLOSE_REJECTED`, carrying `close_review_id` and `order_id`. No close request is replayed after restart. See [exit scope and residuals](../guides/strategy-execution.md#close-a-retained-position).
 
-Global controls are documented in the [submission-halt contract](strategy-controls.md). `options.enabled` includes the halt; `options.server_enabled` reports the two server flags separately. Global pause journal/CSV records carry `control_revision`.
+Global controls are documented in the [submission-halt contract](strategy-controls.md). `options.enabled` includes the halt; `options.server_enabled` reports the workspace automation permission. `POST /workspace/exchange-strategy-execution` accepts `{"enabled": true}` or `{"enabled": false}`. Global pause journal/CSV records carry `control_revision`.
 
 ## Examples
 

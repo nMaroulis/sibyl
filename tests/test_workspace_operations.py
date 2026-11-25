@@ -171,6 +171,8 @@ def test_archive_is_encrypted_authenticates_and_restores_database_and_vault(stor
 def test_restore_is_paused_and_does_not_enable_background_or_exchange_work(client):
     services = client.app.state.services
     job = services.strategies.start(BacktestRequest(), source="demo")
+    services.store.save_trading_permission("manual_spot_trading", True)
+    services.store.save_trading_permission("exchange_strategy_execution", True)
     item = services.archives.create(PASSWORD)
     restored = services.archives.restore(item["id"], PASSWORD)
     with TestClient(
@@ -187,6 +189,12 @@ def test_restore_is_paused_and_does_not_enable_background_or_exchange_work(clien
         result = other.get("/api/v1/workspace/health").json()
         assert result["recovery_required"] and all(w["state"] == "paused" for w in result["workers"])
         assert not runtime.settings.allow_live_trading and not runtime.settings.allow_strategy_execution
+        system = other.get("/api/v1/system").json()
+        for setting in ("manual_spot_trading", "exchange_strategy_execution"):
+            assert not runtime.store.trading_permission(setting, default=True)
+            assert system[setting] == {"enabled": False, "locked": True}
+            endpoint = "/api/v1/workspace/" + setting.replace("_", "-")
+            assert other.post(endpoint, json={"enabled": True}).status_code == 409
         assert runtime.strategies.journal.job(job["id"])["status"] == "paused"
         assert not runtime.workers.tasks
         assert other.post(

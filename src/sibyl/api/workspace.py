@@ -2,9 +2,9 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, StrictBool
 from starlette.concurrency import run_in_threadpool
 
 from sibyl.api.routes import S
@@ -31,6 +31,28 @@ class Restore(Unlock):
 
 class RecoveryReview(BaseModel):
     confirmation: Literal["I REVIEWED THE RESTORED WORKSPACE"]
+
+
+class TradingPermissionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: StrictBool
+
+
+@router.post("/manual-spot-trading")
+def manual_spot_trading(body: TradingPermissionRequest, s: S):
+    """Save the permission for new manual exchange orders in this workspace."""
+    if s.trading.recovery_required:
+        raise HTTPException(409, "Complete the workspace recovery review and restart Sibyl first.")
+    s.store.save_trading_permission("manual_spot_trading", body.enabled)
+    return s.trading.manual_settings()
+
+
+@router.post("/exchange-strategy-execution")
+def exchange_strategy_execution(body: TradingPermissionRequest, s: S):
+    """Save the automation permission without granting any individual run approval."""
+    if s.trading.recovery_required:
+        raise HTTPException(409, "Complete the workspace recovery review and restart Sibyl first.")
+    return s.strategies.execution.set_enabled(body.enabled)
 
 
 @router.get("/service")

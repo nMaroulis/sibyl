@@ -140,7 +140,7 @@ def test_halt_and_epoch_survive_restart_and_server_flags_can_stay_disabled(execu
     assert state["halted"] and state["revision"] == 1 and not state["server_enabled"]
     change(restarted, "release")
     assert restarted.journal.job(job["id"])["status"] == "paused"
-    with pytest.raises(ValueError, match="SIBYL_ALLOW_LIVE_TRADING"):
+    with pytest.raises(ValueError, match="Exchange strategy execution is off"):
         restarted.status(job["id"], "running")
 
 

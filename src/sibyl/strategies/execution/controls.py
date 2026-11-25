@@ -77,14 +77,14 @@ class StrategyControls:
             events = db.execute(
                 "SELECT payload FROM strategy_control_events ORDER BY revision DESC LIMIT 20"
             ).fetchall()
+            server_enabled = self.runner.trading.strategy_enabled(db)
             counts = db.execute(
                 "SELECT json_extract(payload,'$.status'),COUNT(*) FROM strategy_jobs "
                 "WHERE json_extract(payload,'$.mode')='exchange' GROUP BY 1"
             ).fetchall()
         return {
             **state,
-            "server_enabled": self.runner.market.settings.allow_live_trading
-            and self.runner.market.settings.allow_strategy_execution,
+            "server_enabled": server_enabled,
             "exchange_runs": dict(counts),
             "history": [json.loads(row[0]) for row in events],
             "history_limit": 20,
@@ -96,6 +96,36 @@ class StrategyControls:
         """Check admission before provider reads as well as at submission."""
         with self.store.db() as db:
             return require_submissions(db, revision)
+
+    def pause_submissions(self, db, reason: str, *, revision: int | None = None) -> list[str]:
+        """Pause exchange runs and revoke unsent automation in the caller's write transaction."""
+        self.runner.liquidation.interrupt_all(db, reason)
+        timestamp = datetime.now(UTC).isoformat()
+        paused = []
+        for row in db.execute(
+            "SELECT id,payload FROM strategy_jobs WHERE json_extract(payload,'$.mode')='exchange' "
+            "AND json_extract(payload,'$.status')='running'"
+        ).fetchall():
+            job = json.loads(row["payload"])
+            job.update(status="paused", error=reason, updated_at=timestamp)
+            if revision is not None:
+                job["halt_revision"] = revision
+            details = {"control_revision": revision} if revision is not None else {}
+            event = self.runner.host._event(job, "PAUSE", reason, **details)
+            db.execute("UPDATE strategy_jobs SET payload=? WHERE id=?", (json.dumps(job), row["id"]))
+            db.execute(
+                "INSERT INTO strategy_events(job_id,payload) VALUES(?,?)", (row["id"], json.dumps(event))
+            )
+            paused.append(row["id"])
+        for row in db.execute(
+            "SELECT payload FROM exchange_orders WHERE json_extract(payload,'$.origin')='strategy' "
+            "AND json_extract(payload,'$.status')='preview' "
+            "AND json_extract(payload,'$.strategy_close_review_id') IS NULL"
+        ).fetchall():
+            intent = json.loads(row["payload"])
+            intent.update(strategy_abandoned=True, tracking=False)
+            self.runner.trading.lifecycle.write(db, intent)
+        return paused
 
     def change(self, request: ControlAction) -> dict:
         """Halt without a provider call, or release with an exact typed confirmation."""
@@ -116,35 +146,7 @@ class StrategyControls:
                     "changed_at": timestamp,
                     "reason": request.reason.strip(),
                 }
-                paused = []
-                if halted:
-                    self.runner.liquidation.interrupt_all(db, HALT_MESSAGE)
-                    for row in db.execute(
-                        "SELECT id,payload FROM strategy_jobs WHERE json_extract(payload,'$.mode')='exchange' "
-                        "AND json_extract(payload,'$.status')='running'"
-                    ).fetchall():
-                        job = json.loads(row["payload"])
-                        job.update(
-                            status="paused", error=HALT_MESSAGE, updated_at=timestamp, halt_revision=revision
-                        )
-                        event = self.runner.host._event(job, "PAUSE", HALT_MESSAGE, control_revision=revision)
-                        db.execute(
-                            "UPDATE strategy_jobs SET payload=? WHERE id=?", (json.dumps(job), row["id"])
-                        )
-                        db.execute(
-                            "INSERT INTO strategy_events(job_id,payload) VALUES(?,?)",
-                            (row["id"], json.dumps(event)),
-                        )
-                        paused.append(row["id"])
-                    # Unsent signal intents acquire no authority from a later release.
-                    for row in db.execute(
-                        "SELECT id,payload FROM exchange_orders WHERE json_extract(payload,'$.origin')='strategy' "
-                        "AND json_extract(payload,'$.status')='preview' "
-                        "AND json_extract(payload,'$.strategy_close_review_id') IS NULL"
-                    ).fetchall():
-                        intent = json.loads(row["payload"])
-                        intent.update(strategy_abandoned=True, tracking=False)
-                        self.runner.trading.lifecycle.write(db, intent)
+                paused = self.pause_submissions(db, HALT_MESSAGE, revision=revision) if halted else []
                 audit = {
                     **state,
                     "action": request.action,

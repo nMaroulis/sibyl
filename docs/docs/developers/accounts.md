@@ -30,7 +30,7 @@ Frontend pages use the selection signature as a remount boundary, clearing stale
 
 ## Execution and imports
 
-Manual paper balance reads/previews/fills require explicit Demo activation. Fills recheck activation inside the ledger transaction. Exchange previews require an active account; confirmation checks selection before transitioning a preview to submitting. Already submitted intent status reads and retained records remain inspectable. Account activation never changes `SIBYL_ALLOW_LIVE_TRADING` or bypasses review/confirmation.
+Manual paper balance reads/previews/fills require explicit Demo activation. Fills recheck activation inside the ledger transaction. Exchange previews require an active account; confirmation checks selection before transitioning a preview to submitting. Already submitted intent status reads and retained records remain inspectable. Account activation leaves the workspace's manual spot trading permission and the per-order review and confirmation requirements in place.
 
 Deactivation pauses imports, and the worker independently checks activation before reading a page. A page already in flight may finish and checkpoint. Reactivation does not automatically resume a paused import. Saved inactive accounts retain history, and can be activated before another import is requested. Connected-account market feeds become unavailable when their account is inactive; independently configured public feeds remain usable.
 

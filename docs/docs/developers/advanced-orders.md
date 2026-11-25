@@ -16,7 +16,7 @@ Binance and the dedicated Binance Spot Testnet adapter implement native stop-los
 | `POST /exchange-orders/{id}/replace/preview` | New total `quantity`, `limit_price`, fresh `idempotency_key`; reads original native status. |
 | `POST /exchange-orders/{new-id}/confirm` | Existing confirmation contract for the saved replacement review. |
 
-All paths above have the `/api/v1` prefix and existing workspace origin/token checks. Execution still requires an active account, `SIBYL_ALLOW_LIVE_TRADING=true`, an unexpired sixty-second review and its typed phrase. Reviews reserve no funds. Exact quantities/prices, market limits and a buy fee buffer are checked; the venue rechecks its actual dynamic filters at submission.
+All paths above have the `/api/v1` prefix and existing workspace origin/token checks. Execution still requires an active account, the workspace's manual spot trading permission, an unexpired sixty-second review and its typed phrase. Reviews reserve no funds. Exact quantities/prices, market limits and a buy fee buffer are checked; the venue rechecks its actual dynamic filters at submission.
 
 ## Conditional limits
 

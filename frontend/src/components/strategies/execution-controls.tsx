@@ -64,7 +64,7 @@ export function ExecutionControls() {
               ? 'New strategy orders are blocked across all accounts. Existing orders and holdings remain live.'
               : state?.server_enabled
                 ? 'One control to pause strategy submissions across every exchange account.'
-                : 'Strategy submissions are disabled by backend settings. Paper research is available.'}
+                : 'Exchange strategy execution is off in Workspace. Paper strategies are available.'}
           </p>
         </div>
       </div>

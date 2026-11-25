@@ -79,7 +79,7 @@ class StrategyCancellations:
     def _allowed(self, job, *, explicit):
         """Recheck access before reads and again immediately before a native write."""
         if explicit:
-            self.trading._enabled()
+            self.trading.require_strategy_management()
         else:
             self.runner.enabled(submissions=False)
         return self._readable(job)

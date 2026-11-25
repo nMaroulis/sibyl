@@ -695,6 +695,10 @@ kbd {
   color: light-dark(#6165ab, var(--dark-info-text));
   background: light-dark(#f0effa, var(--dark-blue));
 }
+.badge.sand {
+  background: light-dark(#faf0dc, #3d311f);
+  color: light-dark(#875819, var(--dark-warning-text));
+}
 .badge.rose {
   color: light-dark(#b05267, var(--rose));
   background: light-dark(#fceff2, var(--dark-red));
@@ -1618,21 +1622,40 @@ details[open] > summary {
 .execution-disabled {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 22px 24px;
-  color: var(--muted);
+  gap: 13px;
+  margin: 0 22px 22px;
+  padding: 14px 15px;
+  border: 1px solid light-dark(#eddbbc, #514332);
+  border-radius: 14px;
+  background: linear-gradient(110deg, light-dark(#fff4df, #312917), var(--surface));
 }
-.execution-disabled > div {
+.execution-disabled-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 37px;
+  height: 37px;
+  border-radius: 11px;
+  background: light-dark(#f7e5bc, #4b3b22);
+  color: light-dark(#845414, var(--dark-warning-text));
+}
+.execution-disabled-copy {
   flex: 1;
 }
 .execution-disabled strong {
+  display: block;
   font-size: 13px;
   color: var(--text);
-  display: block;
-  margin-bottom: 8px;
 }
 .execution-disabled p {
+  margin: 5px 0 0;
+  color: var(--muted);
   font-size: 12px;
+}
+.execution-settings-link {
+  flex: none;
+}
+.exchange-setup-fields .execution-disabled {
+  margin: 0;
 }
 .exchange-execution-grid .inline-alert {
   margin: 0;
@@ -2638,6 +2661,21 @@ details[open] > summary {
   grid-template-columns: 1fr 1fr;
   gap: 22px;
 }
+.workspace-trading-controls {
+  display: grid;
+  gap: 13px;
+  margin: 0 22px;
+}
+.workspace-trading-control .interface-label-switch {
+  margin-top: 0;
+}
+.workspace-trading-control .footnote {
+  margin: 8px 0 0;
+}
+.workspace-trading-control input:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
 .settings-list {
   padding-bottom: 0;
 }
@@ -3299,10 +3337,14 @@ details[open] > summary {
   }
   .execution-disabled {
     flex-wrap: wrap;
-    padding: 0 16px 20px;
+    margin-inline: 16px;
+    padding: 12px;
   }
-  .execution-disabled > svg {
-    width: 22px;
+  .execution-disabled .execution-settings-link {
+    margin-inline-start: 50px;
+  }
+  .workspace-trading-controls {
+    margin-inline: 16px;
   }
   .settings-list {
     padding-inline: 16px;

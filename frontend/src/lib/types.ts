@@ -7,10 +7,13 @@ export type Source = {
   environment?: string;
   capabilities?: { candles: boolean; order_book: boolean };
 };
+export type TradingPermission = { enabled: boolean; locked: boolean };
 export type System = {
   version: string;
   mode: 'demo' | 'live';
   execution: 'paper';
+  manual_spot_trading: TradingPermission;
+  exchange_strategy_execution: TradingPermission;
   allow_live_trading: boolean;
   allow_strategy_execution: boolean;
   llm_provider: string;

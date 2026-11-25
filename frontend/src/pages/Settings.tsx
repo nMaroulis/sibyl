@@ -34,9 +34,9 @@ import { ModelSettings } from '../components/model-settings';
 import { ExchangeConnections } from '../components/exchange-connections';
 import { SectionPanel, SectionTabs } from '../components/section-tabs';
 import { Badge, PageTitle, Panel, PanelTitle, useToast } from '../components/ui';
-import { setToken } from '../lib/api';
+import { post, refresh, setToken } from '../lib/api';
 import { DOCUMENTATION_URL } from '../lib/docs';
-import type { System } from '../lib/types';
+import type { System, TradingPermission } from '../lib/types';
 
 const sections = [
   { id: 'exchanges', label: 'Exchanges', icon: PlugZap },
@@ -169,6 +169,62 @@ function AccessNote() {
   );
 }
 
+function TradingPermissionSwitch({
+  permission,
+  setting,
+  label,
+  description,
+}: {
+  permission?: TradingPermission;
+  setting: 'manual-spot-trading' | 'exchange-strategy-execution';
+  label: string;
+  description: string;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const toast = useToast();
+
+  async function change(enabled: boolean) {
+    setSaving(true);
+    setError('');
+    try {
+      await post('/workspace/' + setting, { enabled });
+      toast(enabled ? label + ' enabled.' : label + ' disabled.');
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not update this trading permission.');
+    } finally {
+      refresh();
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="workspace-trading-control">
+      <label className="interface-label-switch">
+        <span>{label}</span>
+        <input
+          type="checkbox"
+          role="switch"
+          checked={permission?.enabled ?? false}
+          disabled={!permission || permission.locked || saving}
+          aria-describedby={setting + '-help'}
+          onChange={(event) => void change(event.currentTarget.checked)}
+        />
+      </label>
+      <p id={setting + '-help'} className="footnote">
+        {permission?.locked
+          ? 'Complete the workspace recovery review and restart Sibyl to change this setting.'
+          : description}
+      </p>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function WorkspaceSettings({ system }: { system?: System }) {
   const [token, setDraftToken] = useState('');
   const [saved, setSaved] = useState(false);
@@ -181,7 +237,21 @@ function WorkspaceSettings({ system }: { system?: System }) {
       />
       <div className="settings-grid">
         <Panel>
-          <PanelTitle title="Workspace configuration" subtitle="Current server settings" />
+          <PanelTitle title="Workspace configuration" subtitle="Trading permissions and current server settings" />
+          <div className="workspace-trading-controls">
+            <TradingPermissionSwitch
+              setting="manual-spot-trading"
+              label="Manual spot trading"
+              description="Allow individually reviewed spot orders on connected exchanges."
+              permission={system?.manual_spot_trading}
+            />
+            <TradingPermissionSwitch
+              setting="exchange-strategy-execution"
+              label="Exchange strategy execution"
+              description="Allow approved strategies to trade on connected exchanges. Turning this off pauses exchange runs."
+              permission={system?.exchange_strategy_execution}
+            />
+          </div>
           <div className="stat-list settings-list">
             <div>
               <span>Application</span>
@@ -202,26 +272,8 @@ function WorkspaceSettings({ system }: { system?: System }) {
               <strong>{system?.market_source?.name ?? system?.market_exchange ?? '—'}</strong>
             </div>
             <div>
-              <span>Order execution</span>
-              <Badge>
-                {system
-                  ? system.allow_live_trading
-                    ? 'Manual exchange orders enabled'
-                    : 'Exchange execution disabled'
-                  : 'Unavailable'}
-              </Badge>
-            </div>
-            <div>
               <span>Agent engine</span>
               <strong>ProtoLink · {system?.agents ?? '—'} agents</strong>
-            </div>
-            <div>
-              <span>Automated exchange strategies</span>
-              <Badge>
-                {system?.allow_live_trading && system?.allow_strategy_execution
-                  ? 'Scoped approvals enabled'
-                  : 'Disabled on this backend'}
-              </Badge>
             </div>
             <div>
               <span>Workspace model default</span>

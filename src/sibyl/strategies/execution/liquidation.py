@@ -96,7 +96,7 @@ class LiquidationPlans:
 
     def _authority(self, db, job, plan, *, child=False):
         require_submissions(db, plan["control_revision"])
-        self.runner.enabled(submissions=False)
+        self.runner.enabled(submissions=False, db=db)
         if job["status"] not in {"stopped", "completed"}:
             raise ExecutionGuard("Liquidation requires a stopped or completed strategy.")
         if self.runner.ownership._credential_version(db, job["connection_id"]) != plan["credential_version"]:

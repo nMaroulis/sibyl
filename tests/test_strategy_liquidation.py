@@ -98,7 +98,7 @@ def test_waits_for_cancellation_late_checks_before_another_sell(execution):
 
 
 @pytest.mark.parametrize(
-    "cause", ["bid", "correction", "halt", "withdrawn", "restart", "expiry", "credentials"]
+    "cause", ["bid", "correction", "halt", "permission", "withdrawn", "restart", "expiry", "credentials"]
 )
 def test_plan_cannot_send_more_after_its_authority_changes(execution, cause):
     strategies, trading, native, connection = execution
@@ -115,6 +115,9 @@ def test_plan_cannot_send_more_after_its_authority_changes(execution, cause):
         controls = strategies.execution.controls
         controls.change(ControlAction(action="halt", revision=0))
         controls.change(ControlAction(action="release", revision=1, confirmation=RELEASE_CONFIRMATION))
+    elif cause == "permission":
+        strategies.execution.set_enabled(False)
+        strategies.execution.set_enabled(True)
     elif cause == "withdrawn":
         strategies.execution.liquidation.stop(job["id"], plan["id"])
     elif cause == "restart":

@@ -92,7 +92,7 @@ Under **Page transition**, choose **Soft zoom** (the default), **Dock reveal**, 
 
 Open `/settings?tab=workspace` for [background-worker activity](worker-health.md), [encrypted backup/recovery](workspace-backups.md), the actual server configuration, browser session access token, documentation, API reference, and ProtoLink links. Saving a workspace token updates this tab's browser session; clearing it does not remove the API's server-side token requirement. Exchange credentials belong in Exchanges.
 
-Exchange order permission is controlled by `SIBYL_ALLOW_LIVE_TRADING`. Automated exchange strategies additionally require `SIBYL_ALLOW_STRATEGY_EXECUTION` and an explicit account/budget approval; see [exchange strategy execution](strategy-execution.md). Paper strategy accounts always remain virtual. Workspace displays both permission states. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
+Turn **Manual spot trading** on or off in Workspace. The setting applies immediately and persists locally. **Exchange strategy execution** is a separate switch. Each run still requires explicit account and budget approval. Switching it off pauses exchange runs and ends active liquidation plans. Enable it again and explicitly resume each run. See [exchange strategy execution](strategy-execution.md). Paper strategy accounts always remain virtual. See [Configuration](../getting-started/configuration.md) and [Security](./security.md).
 
 ## Source health
 
