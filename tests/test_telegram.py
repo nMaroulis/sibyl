@@ -296,6 +296,7 @@ def test_message_log_is_scoped_to_current_binding_and_excludes_private_text(clie
     assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
     result = response.json()
     assert result["state"] == "failed" and result["parts"] == []
+    assert result["selected_model"] == {"provider": "ollama", "id": "fixture"}
     assert result["failure"] == {
         "code": "context_limit",
         "provider": "ollama",

@@ -4,6 +4,7 @@ Presets are suggestions, not availability checks. Local servers must already
 have the chosen model installed. See the linked provider catalogs for changes.
 """
 
+import re
 from dataclasses import asdict, dataclass
 from importlib.util import find_spec
 from typing import Literal
@@ -48,7 +49,12 @@ class Provider:
             installed = not self.dependency or find_spec(self.dependency) is not None
         except ModuleNotFoundError:
             installed = False
-        return {**asdict(self), "installed": installed}
+        return {
+            **asdict(self),
+            "installed": installed,
+            "context_windows": API_CONTEXT_WINDOWS.get(self.id, {}),
+            "supports_output_limit": self.id in API_OUTPUT_PARAMETERS,
+        }
 
 
 PROVIDERS = {
@@ -211,3 +217,47 @@ PROVIDERS = {
         ),
     ]
 }
+
+
+# Published API model context sizes. A hosting route can impose a lower cap.
+API_CONTEXT_WINDOWS = {
+    "openai": {
+        "gpt-6.2-sol": 1_050_000,
+        "gpt-6.2-astra": 1_050_000,
+        "gpt-6.1-terra": 1_050_000,
+        "gpt-6-luna": 1_050_000,
+        "gpt-6.1-sol": 1_050_000,
+        "gpt-4.1-mini": 1_047_576,
+    },
+    "anthropic": dict.fromkeys(PROVIDERS["anthropic"].models, 1_000_000),
+    "gemini": dict.fromkeys(PROVIDERS["gemini"].models, 1_048_576),
+    "deepseek": dict.fromkeys(PROVIDERS["deepseek"].models, 1_000_000),
+    "grok": dict.fromkeys(PROVIDERS["grok"].models, 500_000),
+    "huggingface": {
+        "Qwen/Qwen3.6-35B-A3B": 262_144,
+        "zai-org/GLM-5.3": 1_048_576,
+        "zai-org/GLM-5.3-Flash": 1_048_576,
+        "moonshotai/Kimi-K2.6": 262_144,
+        "openai/gpt-oss-120b": 131_072,
+    },
+}
+
+# Names accepted by each installed ProtoLink adapter. Its Hugging Face
+# implementation does not forward a reply token limit in 0.8.4.
+API_OUTPUT_PARAMETERS = {
+    "openai": "max_output_tokens",
+    "anthropic": "max_tokens",
+    "gemini": "max_output_tokens",
+    "deepseek": "max_tokens",
+    "grok": "max_tokens",
+    "openai-compatible": "max_tokens",
+}
+
+
+def published_context_window(provider: str, model: str) -> int | None:
+    """Return the catalog limit for a known model, without probing an inference endpoint."""
+    if provider == "openai":
+        model = re.sub(r"-\d{4}-\d{2}-\d{2}$", "", model)
+    elif provider == "huggingface":
+        model = model.partition(":")[0]
+    return API_CONTEXT_WINDOWS.get(provider, {}).get(model)

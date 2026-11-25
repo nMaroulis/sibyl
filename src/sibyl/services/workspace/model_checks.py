@@ -106,5 +106,6 @@ def _sample(config: dict) -> str:
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"].strip()
     limit = "max_output_tokens" if provider in {"openai", "gemini"} else "max_tokens"
-    model = create_llm(provider, **kwargs, model_params={limit: OUTPUT_TOKENS})
+    params = kwargs.pop("model_params", {})
+    model = create_llm(provider, **kwargs, model_params={**params, limit: OUTPUT_TOKENS})
     return (model.chat(CHECK_PROMPT) or "").strip()

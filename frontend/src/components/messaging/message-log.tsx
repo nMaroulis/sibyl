@@ -17,6 +17,7 @@ type MessageLog = {
   finished_at?: number | null;
   failure?: { code: string; provider?: string; estimated_tokens?: number; prompt_tokens?: number };
   parts: ReplyPart[];
+  selected_model?: { provider: string; id: string };
 };
 
 const processingLabels: Record<string, string> = {
@@ -41,8 +42,8 @@ const partLabels: Record<string, string> = {
 
 const failureCopy: Record<string, { title: string; next: string; settings?: boolean }> = {
   context_limit: {
-    title: 'The request exceeded the model’s context allowance',
-    next: 'Start a fresh conversation with /new, shorten the request, or increase the context window if your model and available memory allow it.',
+    title: 'The request exceeded Sibyl’s context allowance',
+    next: 'Start a fresh conversation with /new or shorten the request.',
     settings: true,
   },
   provider_unreachable: {
@@ -107,7 +108,12 @@ function FailureDetail({ failure }: { failure: NonNullable<MessageLog['failure']
           {failure.prompt_tokens.toLocaleString()} tokens.
         </p>
       )}
-      <p>{copy.next}</p>
+      <p>
+        {copy.next}
+        {failure.code === 'context_limit' &&
+          failure.provider === 'ollama' &&
+          ' You can also increase Ollama’s context window if your model and available memory allow it.'}
+      </p>
       {copy.settings && (
         <Link className="text-link" to="/settings?tab=models">
           AI model settings
@@ -159,6 +165,11 @@ export function MessageLogDialog({
               ) : null}
             </li>
           </ol>
+          {data.selected_model && (
+            <p className="footnote">
+              Selected model · {data.selected_model.provider} / {data.selected_model.id}
+            </p>
+          )}
           {data.failure && <FailureDetail failure={data.failure} />}
           <h3>Reply delivery</h3>
           {data.parts.length ? (

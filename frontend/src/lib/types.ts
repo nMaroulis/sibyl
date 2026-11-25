@@ -781,6 +781,8 @@ export type ModelProvider = {
   installed: boolean;
   extra: string;
   docs_url: string;
+  context_windows: Record<string, number>;
+  supports_output_limit: boolean;
 };
 export type ModelProfile = {
   models: string[];
@@ -811,6 +813,8 @@ export type ModelDeployment = {
   legacy_models: string[];
   base_url: string;
   context_window: number | null;
+  auto_context_window: number | null;
+  max_output_tokens: number | null;
   key_source: ModelProfile['key_source'];
   key_preview: string;
   default: boolean;

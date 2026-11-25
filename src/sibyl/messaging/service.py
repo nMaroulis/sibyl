@@ -7,6 +7,7 @@ import time
 from uuid import uuid4
 
 import httpx
+from protolink import request_context
 
 from sibyl.agents.utils.conversations import SibylRequest
 from sibyl.messaging.activity import recent_activity
@@ -451,9 +452,10 @@ class TelegramService:
         if not session:
             session = self.network.conversations.create()["id"]
             self._update(profile["revision"], session_id=session)
-        result = await self.network.ask(
-            SibylRequest(message=text, session_id=session, request_id=message["request_id"])
-        )
+        with request_context({"request_source": "telegram"}):
+            result = await self.network.ask(
+                SibylRequest(message=text, session_id=session, request_id=message["request_id"])
+            )
         answer = result.get("answer") or "This request did not finish. Please ask again in Sibyl."
         if receipt:
             answer += (

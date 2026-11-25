@@ -74,6 +74,11 @@ test('a provider can have separate named deployments with independent routing', 
   await expect(first.getByRole('status')).toHaveText('The model answered a test request.');
   await first.getByRole('button', { name: 'Set default', exact: true }).click();
   await expect(first.getByText('Workspace default', { exact: true })).toBeVisible();
+  await first.getByText('Request activity', { exact: true }).click();
+  await expect(
+    first.getByText('No recent requests are attributed to this deployment yet.'),
+  ).toBeVisible();
+  await first.getByText('Request activity', { exact: true }).click();
   await expect(first.getByText('Active', { exact: true })).toBeVisible();
 
   await picker.getByRole('button', { name: 'OpenAI 1 added' }).click();
@@ -94,6 +99,11 @@ test('a provider can have separate named deployments with independent routing', 
   const edit = page.getByRole('dialog', { name: 'Edit OpenAI API model (1)', exact: true });
   await expect(edit.getByLabel('API key', { exact: true })).toHaveValue('');
   await edit.getByLabel('Deployment name').fill('Research key');
+  await edit.getByText('Advanced', { exact: true }).click();
+  await expect(edit.getByLabel('Context window · tokens')).toHaveValue('');
+  await expect(edit.getByText('Auto · 1,047,576 tokens', { exact: true })).toBeVisible();
+  await edit.getByLabel('Context window · tokens').fill('64000');
+  await edit.getByLabel('Max output tokens').fill('2560');
   await edit.getByRole('button', { name: 'Save connection' }).click();
 
   await page.getByRole('button', { name: 'Customize agents' }).click();
@@ -104,6 +114,9 @@ test('a provider can have separate named deployments with independent routing', 
     .selectOption({ label: 'Research key · gpt-4.1-mini' });
   await assign.getByRole('button', { name: 'Save agent model' }).click();
   const research = page.getByRole('article', { name: 'Research key', exact: true });
+  await research.getByText('Request activity', { exact: true }).click();
+  await expect(research.getByText('Custom · 64,000 tokens')).toBeVisible();
+  await expect(research.getByText('2,560 tokens', { exact: true })).toBeVisible();
   await expect(research.getByText('Active', { exact: true })).toBeVisible();
 
   await first.getByRole('button', { name: 'Delete OpenAI API model' }).click();

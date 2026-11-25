@@ -57,6 +57,8 @@ docker compose up --build
 - Navigation adds four dock finishes and lets you pin shortcuts in either dock position. Account stays pinned and unpinned shortcuts move to More.
 - Enabled messaging connections appear first and show a live timeline of connection checks, received messages, and reply, alert and briefing outcomes. Per-message logs explain recorded failures, and each card shows log storage and can clear settled diagnostics.
 
+- API model cards show recent request outcomes, recorded model calls, and available token totals. API deployments also have automatic context sizing and optional context and output limits in Advanced. Message logs show the model selected for the request.
+
 ### Changed
 
 - Refresh hosted AI model presets against current provider catalogs and use each custom endpoint's own model ID.
@@ -65,7 +67,7 @@ docker compose up --build
 
 ### Fixed
 
-- OpenAI status checks and agent chats omit sampling parameters rejected by newer reasoning models.
+- OpenAI status checks and agent chats omit sampling parameters rejected by newer reasoning models. Supported OpenAI models use their published context windows instead of the generic fallback.
 
 - The floating bottom dock leaves scroll clearance below the workspace so the page ends cleanly and its last controls stay reachable.
 - More opens in one motion, with scrolling available when its shortcuts exceed the viewport.

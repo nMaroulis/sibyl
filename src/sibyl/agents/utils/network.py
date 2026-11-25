@@ -14,6 +14,7 @@ from protolink import (
     RedactionPolicy,
     RunAdmissionError,
     RunBudget,
+    RunContext,
     SQLiteRunStore,
     Task,
     current_request_context,
@@ -158,6 +159,21 @@ class AgentNetwork:
             row["api_key"] for row in configuration.get("_agents", {}).values() if row.get("api_key")
         )
         policy = RedactionPolicy(sensitive_values=secrets)
+        context = RunContext.ensure_task_context(task)
+        context.metadata["sibyl_activity"] = {
+            "root": module,
+            "source": private.get("request_source")
+            or ("investigation" if private.get("investigation_id") else "app"),
+            "models": {
+                agent: {
+                    "deployment": model.get("_deployment") or model["provider"],
+                    "model": model["model"],
+                }
+                for agent, model in configuration.get("_agents", {}).items()
+                if model["provider"] != "none"
+            },
+        }
+        context.attach_to_task(task)
         handle = self.group.run(
             self.agents[module],
             task,

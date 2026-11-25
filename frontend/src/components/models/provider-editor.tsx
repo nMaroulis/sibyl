@@ -7,7 +7,8 @@ export type Draft = ModelDraft & {
   name: string;
   base_url: string;
   key: string;
-  context_window: number;
+  context_window: number | null;
+  max_output_tokens: number | null;
 };
 
 export function ProviderEditor({
@@ -29,6 +30,9 @@ export function ProviderEditor({
 }) {
   const needsKey = provider.requires_key && (!deployment || deployment.key_source === 'none');
   const supportsKey = !['mock', 'llama.cpp-local'].includes(provider.id);
+  const publishedContext =
+    deployment?.auto_context_window ?? provider.context_windows?.[draft.model];
+  const ollama = provider.id === 'ollama';
   return (
     <form
       className="form model-provider-form"
@@ -85,22 +89,57 @@ export function ProviderEditor({
       {!deployment && (
         <ModelChoice provider={provider} draft={draft} disabled={busy} optional update={update} />
       )}
-      {provider.id === 'ollama' && (
-        <details>
+      {(ollama || provider.kind === 'api') && (
+        <details className="model-provider-advanced">
           <summary>Advanced</summary>
-          <label>
-            Context window · tokens
-            <input
-              type="number"
-              min={4096}
-              max={131072}
-              step={1}
-              required
-              disabled={busy}
-              value={draft.context_window}
-              onChange={(event) => update({ context_window: Number(event.target.value) })}
-            />
-          </label>
+          <div className="model-advanced-fields">
+            <label>
+              Context window · tokens
+              <input
+                type="number"
+                min={ollama ? 4096 : 2049}
+                max={ollama ? 131072 : 2147483647}
+                step={1}
+                required={ollama}
+                disabled={busy}
+                placeholder="Auto"
+                value={draft.context_window ?? ''}
+                onChange={(event) =>
+                  update({
+                    context_window: event.target.value === '' ? null : Number(event.target.value),
+                  })
+                }
+              />
+              {!ollama && (
+                <small className="footnote">
+                  {publishedContext
+                    ? `Auto · ${publishedContext.toLocaleString()} tokens`
+                    : 'Auto uses the published limit when known. Enter a value for a custom endpoint.'}
+                </small>
+              )}
+            </label>
+            {provider.supports_output_limit && (
+              <label>
+                Max output tokens
+                <input
+                  type="number"
+                  min={provider.id === 'openai' ? 16 : 1}
+                  max={2147483647}
+                  step={1}
+                  disabled={busy}
+                  placeholder="Adapter default"
+                  value={draft.max_output_tokens ?? ''}
+                  onChange={(event) =>
+                    update({
+                      max_output_tokens:
+                        event.target.value === '' ? null : Number(event.target.value),
+                    })
+                  }
+                />
+                <small className="footnote">Upper limit per model response.</small>
+              </label>
+            )}
+          </div>
         </details>
       )}
       {!provider.installed && (

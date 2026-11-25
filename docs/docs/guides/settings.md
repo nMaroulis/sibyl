@@ -26,6 +26,12 @@ Choose a model from the provider's presets or select **Custom model…** and ent
 
 API models have a **Check status** button. It sends a short test prompt to that model using the saved credential. The test may count toward provider usage. Saving and opening Settings never sends a paid test request. Install any optional dependency shown by the editor before using that adapter.
 
+**Request activity** on an API deployment summarizes its usage in the latest 40 saved Sibyl runs. It shows recent outcomes, the request source, and model calls. Provider-reported tokens and estimates appear separately when available. It reads the existing local run store and omits conversation text and credentials. Older runs may lack a deployment ID.
+
+Under **Advanced** on an API deployment, **Context window** defaults to **Auto**. Sibyl uses the published window for its hosted presets and accepts a manual override for custom endpoints or stricter account limits. Clear the field to return to Auto. An unknown custom model uses ProtoLink's conservative fallback unless its adapter supplies a window. Ollama keeps its own configured window.
+
+**Max output tokens** is a separate per-response cap. Leaving it blank uses the adapter default. Sibyl forwards it for OpenAI, Anthropic, Gemini, DeepSeek, xAI, and OpenAI-compatible endpoints using the proper parameter for each adapter. ProtoLink 0.8.4's Hugging Face adapter currently exposes only the context setting in this panel.
+
 A saved API key is encrypted locally. Its preview shows a few characters at each end for sufficiently long keys. The API never returns a complete key. Environment keys are labeled and have no preview. Leave the key input blank to keep the saved key, or enter a replacement. Delete the deployment to remove its saved key and configuration from Sibyl.
 
 **Use tool mode** sets the workspace default to tool mode while preserving provider profiles and agent overrides. Requests already queued or running keep their original team/provider/model/key/endpoint snapshot. Saved workspace selections take precedence over the environment after a restart. See [Module agents](./oracle.md) for setup and data boundaries. Downloading, quantizing, and deploying local models from the app is **Coming soon**.

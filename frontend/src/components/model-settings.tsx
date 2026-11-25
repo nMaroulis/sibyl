@@ -44,7 +44,8 @@ function makeDraft(
     model: '',
     custom: false,
     base_url: deployment?.base_url || provider.base_url,
-    context_window: deployment?.context_window ?? 32768,
+    context_window: deployment?.context_window ?? (provider.id === 'ollama' ? 32768 : null),
+    max_output_tokens: deployment?.max_output_tokens ?? null,
     key: '',
   };
 }
@@ -113,7 +114,10 @@ function ModelEditor({ data, visible }: { data: ModelWorkspace; visible: boolean
             name: draft.name.trim(),
             model: draft.model.trim(),
             base_url: draft.base_url.trim(),
-            ...(provider.id === 'ollama' ? { context_window: draft.context_window } : {}),
+            ...((provider.kind === 'api' || provider.id === 'ollama') && {
+              context_window: draft.context_window,
+            }),
+            ...(provider.supports_output_limit && { max_output_tokens: draft.max_output_tokens }),
             ...(draft.key.trim() ? { api_key: draft.key.trim() } : {}),
           }),
         },

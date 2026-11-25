@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from sibyl.agents.utils.model_selection import ModelConflict, readiness
-from sibyl.agents.utils.providers import PROVIDERS
+from sibyl.agents.utils.providers import PROVIDERS, published_context_window
 
 if TYPE_CHECKING:
     from sibyl.services.workspace.llm_settings import DeploymentRequest, ModelSettings
@@ -41,7 +41,9 @@ class ModelDeployments:
             "base_url": profile["base_url"],
             "api_key": profile.get("api_key", ""),
             "_deployment": reference,
-            **({"context_window": profile["context_window"]} if "context_window" in profile else {}),
+            **{
+                field: profile[field] for field in ("context_window", "max_output_tokens") if field in profile
+            },
         }
 
     def lookup(self, reference: str, profiles: dict) -> dict:
@@ -106,6 +108,8 @@ class ModelDeployments:
                     "legacy_models": safe_profiles[provider]["models"] if legacy else [],
                     "base_url": config["base_url"],
                     "context_window": config.get("context_window"),
+                    "auto_context_window": published_context_window(provider, config["model"]),
+                    "max_output_tokens": config.get("max_output_tokens"),
                     "key_source": source,
                     "key_preview": self.preview(key),
                     "default": reference == default,
@@ -157,6 +161,7 @@ class ModelDeployments:
                 else self.read(reference)["model"],
                 "base_url": body.base_url or definition.base_url,
                 "api_key": key,
+                **body.api_limits(existing),
             }
             if body.provider == "ollama":
                 result["context_window"] = (

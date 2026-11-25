@@ -4,6 +4,8 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Response
 
+from sibyl.agents.utils.model_activity import deployment_activity
+from sibyl.agents.utils.providers import PROVIDERS, published_context_window
 from sibyl.api.routes import S
 from sibyl.local_models.catalog import read_catalog
 from sibyl.local_models.ollama import OllamaRequest
@@ -55,6 +57,21 @@ def delete(reference: str, s: S):
 async def check(reference: str, s: S):
     """Test the chosen model with this deployment's saved configuration."""
     return await check_configuration(s.agents.models.deployments.read(reference))
+
+
+@router.get("/{reference}/activity")
+def activity(reference: str, s: S):
+    """Return recent local model usage, without probing the provider."""
+    config = s.agents.models.deployments.read(reference)
+    if PROVIDERS[config["provider"]].kind != "api":
+        raise LookupError("API deployment not found.")
+    return {
+        **deployment_activity(s.agents.network.run_store, reference),
+        "context_window": config.get("context_window")
+        or published_context_window(config["provider"], config["model"]),
+        "context_mode": "manual" if config.get("context_window") is not None else "auto",
+        "max_output_tokens": config.get("max_output_tokens"),
+    }
 
 
 @router.get("/{reference}/runtime")

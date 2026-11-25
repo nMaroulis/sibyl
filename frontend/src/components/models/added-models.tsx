@@ -5,6 +5,7 @@ import type { ModelDeployment, ModelProvider, ModelWorkspace } from '../../lib/t
 import { Badge, Panel, PanelTitle } from '../ui';
 import { ProviderMark } from '../provider-mark';
 import { LocalModelMonitor, sameModel, supportsModelMonitor } from './local-model-monitor';
+import { DeploymentActivity } from './deployment-activity';
 import { ModelChoice } from './model-choice';
 import type { ModelDraft } from './model-choice';
 
@@ -162,7 +163,7 @@ function DeploymentCard({
           )}
         </div>
       )}
-      {deployment.context_window && (
+      {provider.id === 'ollama' && deployment.context_window && (
         <small className="added-model-context">
           {deployment.context_window.toLocaleString()} token context window
         </small>
@@ -250,6 +251,9 @@ function DeploymentCard({
         </form>
       )}
 
+      {provider.kind === 'api' && (
+        <DeploymentActivity deployment={deployment.id} model={deployment.model} visible={visible} />
+      )}
       {supportsModelMonitor(provider.id) && (
         <LocalModelMonitor
           deployment={deployment.id}

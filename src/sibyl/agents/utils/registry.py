@@ -21,6 +21,7 @@ from sibyl.agents.utils.common import Services, freeze
 from sibyl.agents.utils.model_factory import create_llm
 from sibyl.agents.utils.model_selection import readiness
 from sibyl.agents.utils.network import AgentNetwork
+from sibyl.agents.utils.providers import published_context_window
 from sibyl.agents.utils.snapshots import snapshot_answer, tool_arguments
 from sibyl.models import AgentRequest
 from sibyl.services.workspace.llm_settings import ModelSettings
@@ -88,8 +89,14 @@ class AgentRegistry:
             raise ValueError(reason)
         provider, kwargs = self.models.constructor(configuration)
         model = create_llm(provider, **kwargs)
-        if provider == "ollama":
-            model.configure_metrics(context_window=kwargs["model_params"]["num_ctx"])
+        context_window = (
+            kwargs["model_params"]["num_ctx"]
+            if provider == "ollama"
+            else configuration.get("context_window")
+            or published_context_window(provider, configuration["model"])
+        )
+        if context_window is not None:
+            model.configure_metrics(context_window=context_window)
         return model
 
     def model_for(self, module: str):

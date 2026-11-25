@@ -214,7 +214,7 @@ test('enabled messaging cards lead the page and their monitors update without a 
     .getByRole('dialog', { name: 'Telegram message logs' })
     .getByRole('button', { name: /failed/i })
     .click();
-  await expect(log.getByText('The request exceeded the model’s context allowance')).toBeVisible();
+  await expect(log.getByText('The request exceeded Sibyl’s context allowance')).toBeVisible();
   await expect(
     log.getByText('Prompt estimate 4,000 tokens · allowance 1,000 tokens.'),
   ).toBeVisible();

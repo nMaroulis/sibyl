@@ -217,29 +217,30 @@ def message_log(db, channel, revision, sequence, *, run_store=None):
         "state": message["state"],
         "parts": [dict(part) for part in db.execute(parts_query, (*scope, message[0]))],
     }
-    if result["state"] == "failed":
-        request = (
-            db.execute(
-                """SELECT json_extract(payload,'$.provider'),json_extract(payload,'$.run_id'),
-                      json_extract(payload,'$.started_at'),json_extract(payload,'$.finished_at')
+    request = (
+        db.execute(
+            """SELECT json_extract(payload,'$.provider'),json_extract(payload,'$.model'),
+                      json_extract(payload,'$.run_id'),json_extract(payload,'$.started_at'),
+                      json_extract(payload,'$.finished_at')
                FROM sibyl_requests WHERE id=?""",
-                (message["request_id"],),
-            ).fetchone()
-            if message["request_id"] and run_store is not None
-            else None
-        )
+            (message["request_id"],),
+        ).fetchone()
+        if message["request_id"]
+        else None
+    )
+    provider, model, run_id, run_start, run_finish = request or (None, None, None, None, None)
+    if provider and model:
+        result["selected_model"] = {"provider": provider, "id": model}
+    if not started_at and run_start:
+        result["started_at"] = datetime.fromisoformat(run_start).timestamp()
+    if not finished_at and run_finish:
+        result["finished_at"] = datetime.fromisoformat(run_finish).timestamp()
+    if result["state"] == "failed":
         report = None
-        provider = None
-        if request:
-            provider, run_id, run_start, run_finish = request
-            if not started_at and run_start:
-                result["started_at"] = datetime.fromisoformat(run_start).timestamp()
-            if not finished_at and run_finish:
-                result["finished_at"] = datetime.fromisoformat(run_finish).timestamp()
-            if run_id:
-                try:
-                    report = run_store.get_report(run_id)
-                except (DatabaseError, ValueError):
-                    pass
+        if run_id and run_store is not None:
+            try:
+                report = run_store.get_report(run_id)
+            except (DatabaseError, ValueError):
+                pass
         result["failure"] = failure_detail(failure_code, provider, report)
     return result

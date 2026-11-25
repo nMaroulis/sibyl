@@ -13,6 +13,7 @@ from uuid import uuid4
 
 import aiohttp
 import httpx
+from protolink import request_context
 from pydantic import SecretStr, ValidationError
 
 from sibyl.agents.utils.conversations import SibylRequest
@@ -450,9 +451,10 @@ class PrivateChannels:
                 if not session:
                     session = self.network.conversations.create()["id"]
                     self._update(channel, profile["revision"], session_id=session)
-                result = await self.network.ask(
-                    SibylRequest(message=text, session_id=session, request_id=message["request_id"])
-                )
+                with request_context({"request_source": channel}):
+                    result = await self.network.ask(
+                        SibylRequest(message=text, session_id=session, request_id=message["request_id"])
+                    )
                 answer = (
                     result.get("answer") or "This request did not finish. Open the conversation in Sibyl."
                 )

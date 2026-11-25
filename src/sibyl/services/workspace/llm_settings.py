@@ -8,7 +8,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 from sibyl.agents.utils.model_selection import AGENT_NAMES, AgentModelRequest, ModelConflict, readiness
-from sibyl.agents.utils.providers import PROVIDERS, ProviderId
+from sibyl.agents.utils.providers import API_OUTPUT_PARAMETERS, PROVIDERS, ProviderId
 from sibyl.config import Settings
 from sibyl.services.workspace.model_deployments import ModelDeployments
 from sibyl.storage import Store
@@ -38,7 +38,8 @@ class ModelSettingsRequest(ModelChoice):
     activate: bool = Field(default=True, strict=True)
     base_url: str = Field(default="", max_length=2048)
     api_key: SecretStr | None = Field(default=None, min_length=1, max_length=8192)
-    context_window: int | None = Field(default=None, ge=4096, le=131072, strict=True)
+    context_window: int | None = Field(default=None, gt=2048, le=2_147_483_647, strict=True)
+    max_output_tokens: int | None = Field(default=None, gt=0, le=2_147_483_647, strict=True)
 
     @field_validator("base_url")
     @classmethod
@@ -63,8 +64,18 @@ class ModelSettingsRequest(ModelChoice):
     def validate_provider_fields(self):
         """Validate provider-specific endpoint and context fields before saving."""
         provider = PROVIDERS[self.provider]
-        if "context_window" in self.model_fields_set and self.provider != "ollama":
-            raise ValueError("Context window configuration is currently available for Ollama only.")
+        if "context_window" in self.model_fields_set and self.provider != "ollama" and provider.kind != "api":
+            raise ValueError("Context settings are available for API deployments and Ollama.")
+        if (
+            self.provider == "ollama"
+            and self.context_window is not None
+            and not 4096 <= self.context_window <= 131072
+        ):
+            raise ValueError("Ollama context must be between 4,096 and 131,072 tokens.")
+        if "max_output_tokens" in self.model_fields_set and self.provider not in API_OUTPUT_PARAMETERS:
+            raise ValueError("This adapter does not expose a reply token limit.")
+        if self.provider == "openai" and self.max_output_tokens is not None and self.max_output_tokens < 16:
+            raise ValueError("OpenAI requires a reply limit of at least 16 tokens.")
         if self.base_url:
             try:
                 url = urlsplit(self.base_url)
@@ -87,6 +98,18 @@ class ModelSettingsRequest(ModelChoice):
         if self.api_key is not None and self.provider in {"none", "mock", "llama.cpp-local"}:
             raise ValueError("This provider does not accept an API key.")
         return self
+
+    def api_limits(self, existing: dict, *, preserve: bool = False) -> dict:
+        """Keep omitted overrides and reset explicit nulls to Auto."""
+        if PROVIDERS[self.provider].kind != "api":
+            return {}
+        return {
+            field: getattr(self, field)
+            if field in self.model_fields_set and not preserve
+            else existing[field]
+            for field in ("context_window", "max_output_tokens")
+            if field in existing or (field in self.model_fields_set and not preserve)
+        }
 
     @model_validator(mode="after")
     def require_model(self):
@@ -161,7 +184,11 @@ class ModelSettings:
             **(
                 {"context_window": profile.get("context_window", OLLAMA_CONTEXT_WINDOW)}
                 if provider == "ollama"
-                else {}
+                else {
+                    field: profile[field]
+                    for field in ("context_window", "max_output_tokens")
+                    if field in profile
+                }
             ),
         }
 
@@ -388,6 +415,7 @@ class ModelSettings:
                     "models": list(dict.fromkeys([*known, model])) if body.provider != "none" else [],
                     "base_url": base_url or definition.base_url,
                     "api_key": key,
+                    **body.api_limits(existing, preserve=reuse_connection),
                     **(
                         {
                             "context_window": (
@@ -440,6 +468,9 @@ class ModelSettings:
                 "num_ctx": config.get("context_window", OLLAMA_CONTEXT_WINDOW),
                 "num_predict": 2048,
             }
+        output_limit = config.get("max_output_tokens")
+        if output_limit is not None and provider in API_OUTPUT_PARAMETERS:
+            kwargs["model_params"] = {API_OUTPUT_PARAMETERS[provider]: output_limit}
         if provider == "mock":
             kwargs["default_response"] = "Mock runtime: this is a simulated model response, not analysis."
         return provider, kwargs
