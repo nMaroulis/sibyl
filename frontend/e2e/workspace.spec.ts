@@ -53,6 +53,16 @@ test('strategy studio runs a configured demo backtest through the API', async ({
   await expect(modes.getByRole('radio', { name: 'Backtest', exact: true })).toBeChecked();
   await expect(page.getByRole('radio', { name: /Deploy strategy/ })).not.toBeChecked();
   await expect(page.getByText('Account required', { exact: true })).toBeVisible();
+  const backtestMode = modes.getByRole('radio', { name: 'Backtest', exact: true });
+  const paperMode = modes.getByRole('radio', { name: 'Paper strategy', exact: true });
+  await expect(modes.getByText(/historical candles with simulated funds/)).toBeVisible();
+  await backtestMode.focus();
+  await backtestMode.press('ArrowRight');
+  await expect(paperMode).toBeChecked();
+  await expect(modes.locator('.strategy-run-glass')).toHaveAttribute('data-mode', 'paper');
+  await expect(modes.getByText(/incoming prices with a virtual balance/)).toBeVisible();
+  await paperMode.press('ArrowLeft');
+  await expect(backtestMode).toBeChecked();
   const help = page.getByRole('button', { name: 'Help for Amount' });
   const amountCaption = page.getByText(/Starting virtual capital for a backtest or paper run/);
   await expect(amountCaption).toBeHidden();
