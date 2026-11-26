@@ -19,7 +19,6 @@ export function BacktestPerformance({ result }: { result: Backtest }) {
   const position = result.execution_limits?.open_position;
   const { metrics, summary } = result;
   const headline = [
-    ['Total return', <Change key="return" value={result.return_pct} />],
     ['Max drawdown', metric(result.max_drawdown, '%')],
     ['Sharpe ratio', metric(result.sharpe)],
     ['Win rate', result.trades ? metric(result.win_rate, '%') : '—'],
@@ -49,6 +48,10 @@ export function BacktestPerformance({ result }: { result: Backtest }) {
         <div>
           <dt>Starting capital</dt>
           <dd>{amount(result.initial_capital)}</dd>
+          <dd className="backtest-start-return">
+            <span>Total return</span>
+            <Change value={result.return_pct} />
+          </dd>
         </div>
         <ArrowRight className="backtest-balance-arrow" size={18} aria-hidden="true" />
         <div>

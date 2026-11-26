@@ -3,7 +3,8 @@ import { api } from './api';
 
 /** Fetch on navigation, manual refresh, and optional polling; ignore stale responses. */
 export function useResource<T>(path: string, interval = 0, enabled = true) {
-  const [data, setData] = useState<T>();
+  const [response, setResponse] = useState<{ path: string; data: T }>();
+  const data = response?.data;
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
@@ -13,7 +14,7 @@ export function useResource<T>(path: string, interval = 0, enabled = true) {
   useEffect(() => {
     const id = ++generation.current;
     if (resourcePath.current !== path) {
-      setData(undefined);
+      setResponse(undefined);
       setLoading(true);
       resourcePath.current = path;
     } else if (!data) {
@@ -21,7 +22,7 @@ export function useResource<T>(path: string, interval = 0, enabled = true) {
     }
     setError('');
     if (!enabled) {
-      setData(undefined);
+      setResponse(undefined);
       setLoading(false);
       return;
     }
@@ -34,7 +35,7 @@ export function useResource<T>(path: string, interval = 0, enabled = true) {
       api<T>(path, { signal: controller.signal })
         .then((result) => {
           if (generation.current === id && requestId === latestRequest) {
-            setData(result);
+            setResponse({ path, data: result });
             setError('');
           }
         })
@@ -61,5 +62,5 @@ export function useResource<T>(path: string, interval = 0, enabled = true) {
       window.removeEventListener('sibyl-refresh', fetchData);
     };
   }, [path, interval, revision, enabled]);
-  return { data, error, loading, retry };
+  return { data, dataPath: response?.path, error, loading, retry };
 }

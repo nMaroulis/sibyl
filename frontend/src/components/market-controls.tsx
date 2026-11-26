@@ -1,5 +1,5 @@
 import { useResource } from '../lib/hooks';
-import { AssetIcon } from './ui';
+import { AssetPairIcon } from './asset-icons';
 import { SearchPicker } from './search-picker';
 import type { Source, Timeframe } from '../lib/types';
 
@@ -82,7 +82,7 @@ export function MarketSelector({
               label: item.symbol,
               description: `${item.name || item.base} · quoted in ${item.quote}`,
               keywords: `${item.base} ${item.quote} ${item.name || ''}`,
-              icon: <AssetIcon asset={item.base} color={item.color ?? undefined} />,
+              icon: <AssetPairIcon base={item.base} quote={item.quote} color={item.color} />,
             })),
           },
         ]}

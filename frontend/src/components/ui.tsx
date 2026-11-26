@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { percent } from '../lib/api';
 
+export { AssetIcon } from './asset-icons';
+
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: string }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }
@@ -21,29 +23,6 @@ export function Change({ value }: { value: number | null | undefined }) {
     <span className={`change ${value >= 0 ? 'positive' : 'negative'}`}>
       <Icon size={13} />
       {percent(value)}
-    </span>
-  );
-}
-export function AssetIcon({ asset, color }: { asset: string; color?: string }) {
-  return (
-    <span
-      className={`asset-icon asset-${asset}`}
-      style={{
-        background: `${color || '#f6a94d'}18`,
-        color: color || '#f6a94d',
-      }}
-    >
-      {(
-        {
-          BTC: '₿',
-          ETH: 'Ξ',
-          SOL: '≋',
-          USDT: '₮',
-          LINK: '⬡',
-          AVAX: '▲',
-          DOT: '●',
-        } as Record<string, string>
-      )[asset] ?? asset[0]}
     </span>
   );
 }

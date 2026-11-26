@@ -53,7 +53,7 @@ test('strategy studio runs a configured demo backtest through the API', async ({
   await expect(modes.getByRole('radio', { name: 'Backtest', exact: true })).toBeChecked();
   await expect(page.getByRole('radio', { name: /Deploy strategy/ })).not.toBeChecked();
   await expect(page.getByText('Account required', { exact: true })).toBeVisible();
-  const help = page.getByRole('button', { name: 'Help for Amount · USDT' });
+  const help = page.getByRole('button', { name: 'Help for Amount' });
   const amountCaption = page.getByText(/Starting virtual capital for a backtest or paper run/);
   await expect(amountCaption).toBeHidden();
   await help.click();
@@ -70,6 +70,11 @@ test('strategy studio runs a configured demo backtest through the API', async ({
   const market = page.locator('section.panel').filter({
     has: page.getByRole('heading', { name: '3. Set market and amount', exact: true }),
   });
+  const pair = market.getByRole('button', { name: /^Spot pair / });
+  const pairUse = pair.locator('.asset-pair-icon use');
+  await expect(pairUse).toHaveCount(2);
+  await expect(pairUse.nth(0)).toHaveAttribute('href', /#asset-btc$/);
+  await expect(pairUse.nth(1)).toHaveAttribute('href', /#asset-usdt$/);
   await market.getByRole('button', { name: /^Indicator lookback / }).click();
   await page
     .getByRole('dialog', { name: 'Indicator lookback options' })
@@ -141,7 +146,11 @@ test('strategy studio runs a configured demo backtest through the API', async ({
   await expect(report.getByText('2,400 USDT', { exact: true })).toBeVisible();
   await expect(report.getByText('Ending equity', { exact: true })).toBeVisible();
   await expect(report.getByText('Net P&L', { exact: true })).toBeVisible();
-  await expect(report.getByText('Total return', { exact: true })).toBeVisible();
+  const starting = report.locator('.backtest-balance-flow > div').filter({
+    has: page.getByText('Starting capital', { exact: true }),
+  });
+  await expect(starting.getByText('Total return', { exact: true })).toBeVisible();
+  await expect(report.getByText('Total return', { exact: true })).toHaveCount(1);
   await expect(report.getByText('Max drawdown', { exact: true })).toBeVisible();
   await report.getByText('More performance metrics', { exact: true }).click();
   await expect(report.getByText('Sortino ratio', { exact: true })).toBeVisible();
@@ -174,6 +183,144 @@ test('strategy studio runs a configured demo backtest through the API', async ({
   await page.getByRole('button', { name: 'Use latest candles' }).click();
   await expect(page.getByRole('button', { name: /^Indicator lookback / })).toBeVisible();
   await expect(page.getByText('From saved dataset', { exact: true })).toHaveCount(0);
+});
+
+test('strategy picker keeps keyboard selection, guides and settings in sync', async ({ page }) => {
+  await page.goto('/strategies');
+  const picker = page.getByRole('group', { name: 'Strategy algorithm' });
+  const first = picker.getByRole('radio', { name: 'EMA Crossover' });
+  const rsi = picker.getByRole('radio', { name: 'RSI Reversion' });
+  const preview = picker.locator('.strategy-picker-preview');
+  const indicator = picker.locator('.strategy-picker-selection');
+
+  await expect(first).toBeChecked();
+  const startingPosition = await indicator.evaluate((element) => element.style.transform);
+  await first.focus();
+  await first.press('ArrowRight');
+  await expect(rsi).toBeFocused();
+  await expect(rsi).toBeChecked();
+  await expect(preview.getByRole('heading', { name: 'RSI Reversion' })).toBeVisible();
+  await expect(preview.getByText(/Wilder-smoothed RSI/)).toBeVisible();
+  await expect
+    .poll(() => indicator.evaluate((element) => element.style.transform))
+    .not.toBe(startingPosition);
+
+  const comparison = picker.locator('.strategy-picker-comparison');
+  await expect(comparison).toHaveAttribute('inert', '');
+  await picker.getByRole('button', { name: 'Compare algorithms' }).click();
+  await expect(comparison.getByRole('heading')).toHaveCount(
+    await picker.getByRole('radio').count(),
+  );
+  await expect(comparison.getByText(/Enter when RSI closes below the buy threshold/)).toBeVisible();
+  await expect(rsi).toBeChecked();
+  await picker.getByRole('button', { name: 'Hide comparison' }).click();
+  await expect(comparison).toHaveAttribute('inert', '');
+
+  await page.getByText('Advanced algorithm settings', { exact: true }).click();
+  await expect(page.getByRole('spinbutton', { name: 'RSI period', exact: true })).toBeVisible();
+  await expect(page.getByRole('spinbutton', { name: 'Fast EMA', exact: true })).toHaveCount(0);
+});
+
+test('strategy sizing uses the free quote balance of the selected account', async ({ page }) => {
+  const accounts = ['A', 'B'].map((name) => ({
+    id: 'sizing-' + name.toLowerCase(),
+    exchange: 'binance-testnet',
+    label: 'Wallet ' + name,
+    provider_name: 'Binance Testnet',
+    sandbox: true,
+    active: true,
+    supported: true,
+  }));
+  await page.route('**/api/v1/accounts', (route) =>
+    route.fulfill({
+      json: {
+        mode: 'test',
+        accounts,
+        active_ids: accounts.map((account) => account.id),
+        signature: 'sizing-test',
+      },
+    }),
+  );
+  await page.route('**/api/v1/strategies/exchange/options', (route) =>
+    route.fulfill({
+      json: {
+        accounts,
+        enabled: true,
+        server_enabled: true,
+        controls: { halted: false },
+        handoff_sources: [],
+      },
+    }),
+  );
+  await page.route('**/api/v1/markets/symbols?source=*', (route) =>
+    route.fulfill({
+      json: {
+        source: new URL(route.request().url()).searchParams.get('source'),
+        timeframes: ['1d'],
+        items: [
+          { symbol: 'BTC/USDT', base: 'BTC', quote: 'USDT', name: 'Bitcoin' },
+          { symbol: 'ETH/USDC', base: 'ETH', quote: 'USDC', name: 'Ethereum' },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/v1/connections/sizing-*/balances', (route) => {
+    const first = route.request().url().endsWith('sizing-a/balances');
+    return route.fulfill({
+      json: {
+        items: [
+          { asset: 'USDT', total: 5000, free: first ? 650 : 1800 },
+          ...(!first ? [{ asset: 'USDC', total: 2400, free: null }] : []),
+        ],
+      },
+    });
+  });
+  await page.goto('/strategies');
+  const chooseAccount = async (name: string) => {
+    await page.getByRole('button', { name: /Account or feed/ }).click();
+    await page.getByRole('option', { name: new RegExp(name) }).click();
+  };
+  await chooseAccount('Wallet A');
+  const balance = page.locator('#strategy-amount-balance');
+  const amount = page.getByRole('spinbutton', { name: 'Amount · USDT', exact: true });
+  await expect(balance).toContainText('650 USDT');
+  const warning = page.locator('#strategy-amount-warning');
+  const entry = page.locator('.strategy-amount-entry');
+  await expect(warning).toHaveText(
+    'Amount exceeds available USDT balance. This amount can only be used for a backtest or paper strategy.',
+  );
+  await expect(entry).toHaveAttribute('data-over-balance', 'true');
+  await expect(amount).toHaveAttribute('aria-invalid', 'false');
+  await expect(page.getByRole('button', { name: 'Run backtest', exact: true })).toBeEnabled();
+
+  await page.getByText('Paper strategy', { exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Start paper strategy', exact: true }),
+  ).toBeEnabled();
+  await page.getByText('Deploy strategy', { exact: true }).click();
+  const review = page.getByRole('button', { name: 'Review deployment', exact: true });
+  await expect(amount).toHaveAttribute('aria-invalid', 'true');
+  await expect(warning).toBeVisible();
+  await expect(review).toBeDisabled();
+  await amount.fill('650');
+  await expect(warning).toHaveCount(0);
+  await expect(entry).not.toHaveAttribute('data-over-balance', 'true');
+  await expect(review).toBeEnabled();
+
+  const choosePair = async (pair: string) => {
+    await page.getByRole('button', { name: /^Spot pair / }).click();
+    await page.getByRole('option', { name: new RegExp(pair) }).click();
+  };
+  await choosePair('ETH/USDC');
+  await expect(balance).toContainText('0 USDC');
+  await expect(review).toBeDisabled();
+
+  await chooseAccount('Wallet B');
+  await expect(balance).toHaveText('Free balance unavailable');
+  await choosePair('BTC/USDT');
+  await expect(balance).toContainText('1,800 USDT');
+  await amount.fill('1500');
+  await expect(review).toBeEnabled();
 });
 
 test('backtest custom dates use completed UTC candles and save the exact window', async ({

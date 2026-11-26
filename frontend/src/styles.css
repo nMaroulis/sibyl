@@ -931,11 +931,49 @@ tbody tr:hover {
   font-size: 23px;
   font-family: Arial, sans-serif;
 }
-.asset-SOL {
-  font-size: 27px;
+.asset-icon-branded,
+.asset-pair-icon {
+  overflow: hidden;
 }
-.asset-LINK {
-  font-size: 24px;
+.asset-icon-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.asset-icon-fallback {
+  background: color-mix(in srgb, currentColor 14%, var(--surface));
+  font-size: 16px;
+  font-weight: 650;
+}
+.asset-pair-icon {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+.asset-pair-icon > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.asset-pair-base {
+  padding-right: 50%;
+  clip-path: polygon(0 0, calc(69% - 1px) 0, calc(31% - 1px) 100%, 0 100%);
+}
+.asset-pair-quote {
+  padding-left: 50%;
+  clip-path: polygon(calc(69% + 1px) 0, 100% 0, 100% 100%, calc(31% + 1px) 100%);
+}
+.asset-pair-icon > span > .asset-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+.asset-pair-icon .asset-icon-fallback {
+  background: transparent;
 }
 .holding-quantity {
   display: block;

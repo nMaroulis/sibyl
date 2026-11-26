@@ -144,14 +144,6 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
     ...(!useRiskOverrides && { stop_loss_pct: null, take_profit_pct: null, max_trades: null }),
   };
   const amount = draftParams.capital;
-  const amountError =
-    !Number.isFinite(amount) || amount > maximumStrategyAmount
-      ? 'Enter an amount of up to 10,000,000.'
-      : action === 'deploy' && amount <= 0
-        ? 'Enter a positive amount for deployment.'
-        : action !== 'deploy' && amount < 100
-          ? 'Enter at least 100 in the quote currency for a simulation.'
-          : '';
   const validOrderLimits =
     orderLimits.max_order_quote > 0 &&
     orderLimits.max_order_quote <= amount &&
@@ -215,6 +207,27 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
         candles: backtestDataset.count,
       }
     : draftParams;
+  const quote = params.symbol.split('/')[1];
+  const balancePath = '/connections/' + encodeURIComponent(account?.id ?? '') + '/balances';
+  const balances = useResource<{ items: { asset: string; free: number | null }[] }>(
+    balancePath,
+    30000,
+    view === 'build' && !!account,
+  );
+  const observedBalances =
+    balances.dataPath === balancePath && !balances.error ? balances.data?.items : undefined;
+  const quoteBalance = observedBalances?.find((item) => item.asset === quote);
+  const free = quoteBalance ? quoteBalance.free : observedBalances ? 0 : null;
+  const available = free !== null && Number.isFinite(free) && free >= 0 ? free : undefined;
+  const exceedsBalance = available !== undefined && amount > available;
+  const amountError =
+    !Number.isFinite(amount) || amount > maximumStrategyAmount
+      ? 'Enter an amount of up to 10,000,000.'
+      : action === 'deploy' && amount <= 0
+        ? 'Enter a positive amount for deployment.'
+        : action !== 'deploy' && amount < 100
+          ? 'Enter at least 100 in the quote currency for a simulation.'
+          : '';
   const backtestParams: StrategyParams = { ...params, backtest_limits: orderLimits };
   const chooseDataset = (id: string, openBuilder = false) => {
     const next = new URLSearchParams(search);
@@ -605,10 +618,15 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
                       deploy={action === 'deploy'}
                       help={help}
                       amountError={amountError}
+                      funding={
+                        account
+                          ? { available, loading: balances.loading, exceedsBalance }
+                          : undefined
+                      }
                     />
                     <StrategyRiskSettings
                       params={configuredParams}
-                      quote={params.symbol.split('/')[1]}
+                      quote={quote}
                       limits={orderLimits}
                       onLimitsChange={setOrderLimits}
                       enabled={useRiskOverrides}
@@ -735,7 +753,13 @@ function StrategyWorkspace({ selection }: { selection: AccountSelection }) {
                         parameters={draftParams}
                         limits={orderLimits}
                         options={execution.data}
-                        canDeploy={exactMarket && !invalidRisk && !amountError && validOrderLimits}
+                        canDeploy={
+                          exactMarket &&
+                          !invalidRisk &&
+                          !amountError &&
+                          !exceedsBalance &&
+                          validOrderLimits
+                        }
                         preferredHandoff={handoff ?? undefined}
                         help={help}
                         onStarted={(job) => setSearch({ view: 'monitor', job: job.id })}

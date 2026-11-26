@@ -1,6 +1,9 @@
-import { CalendarRange, ChartNoAxesCombined, History } from 'lucide-react';
+import { CalendarRange, ChartNoAxesCombined, CircleAlert, History, Wallet } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { number } from '../../lib/api';
 import { frameSeconds, type Dataset } from '../../lib/market-history';
 import type { StrategyParams, Timeframe } from '../../lib/types';
+import { AssetIcon, AssetPairIcon } from '../asset-icons';
 import { MarketSelector, type SpotCatalog } from '../market-controls';
 import { SearchPicker } from '../search-picker';
 import { StrategyTimeframePicker } from './strategy-timeframe-picker';
@@ -90,7 +93,16 @@ function StrategyLookbackPicker({
   );
 }
 
-function SavedMarket({ dataset, onUseLatest }: { dataset: Dataset; onUseLatest: () => void }) {
+function SavedMarket({
+  dataset,
+  amount,
+  onUseLatest,
+}: {
+  dataset: Dataset;
+  amount: ReactNode;
+  onUseLatest: () => void;
+}) {
+  const [base, quote] = dataset.symbol.split('/');
   return (
     <div className="strategy-saved-market">
       <div className="strategy-saved-market-header">
@@ -101,21 +113,25 @@ function SavedMarket({ dataset, onUseLatest }: { dataset: Dataset; onUseLatest: 
           Use latest candles
         </button>
       </div>
-      <dl className="strategy-market-grid">
+      <div className="strategy-market-inputs">
         <div>
-          <dt>Spot pair</dt>
-          <dd>{dataset.symbol}</dd>
+          <span className="search-picker-label">Spot pair</span>
+          <div className="strategy-saved-value">
+            <AssetPairIcon base={base} quote={quote} />
+            <strong>{dataset.symbol}</strong>
+          </div>
+        </div>
+        {amount}
+        <div>
+          <span className="search-picker-label">Timeframe</span>
+          <strong className="strategy-saved-value">{dataset.timeframe}</strong>
         </div>
         <div>
-          <dt>Timeframe</dt>
-          <dd>{dataset.timeframe}</dd>
+          <span className="search-picker-label">Indicator lookback</span>
+          <strong className="strategy-saved-value">{dataset.count.toLocaleString()} candles</strong>
         </div>
-        <div>
-          <dt>Indicator lookback</dt>
-          <dd>{dataset.count.toLocaleString()} candles</dd>
-        </div>
-      </dl>
-      <small>
+      </div>
+      <small className="strategy-saved-source">
         {dataset.source_label} · {new Date(dataset.start).toLocaleDateString()} to{' '}
         {new Date(dataset.end).toLocaleDateString()} (end excluded)
       </small>
@@ -135,6 +151,7 @@ export function StrategyMarketSettings({
   deploy,
   help,
   amountError,
+  funding,
 }: {
   catalog?: SpotCatalog;
   dataset?: Dataset;
@@ -146,78 +163,118 @@ export function StrategyMarketSettings({
   deploy: boolean;
   help: ParameterHelp;
   amountError: string;
+  funding?: { available?: number; loading: boolean; exceedsBalance: boolean };
 }) {
   const frame = params.timeframe ?? '1d';
   const quote = (dataset?.symbol ?? params.symbol).split('/')[1];
-  const amountInvalid = !!amountError;
+  const overBalance = !!funding?.exceedsBalance && !amountError;
+  const descriptions = [
+    funding && 'strategy-amount-balance',
+    overBalance && 'strategy-amount-warning',
+    amountError && 'strategy-amount-error',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const amount = (
+    <StrategyField label="Amount" caption={help.capital}>
+      <span className="strategy-amount-entry" data-over-balance={overBalance || undefined}>
+        <input
+          type="number"
+          min={deploy ? 0 : 100}
+          max={maximumStrategyAmount}
+          step="any"
+          value={params.capital === 0 ? '' : params.capital}
+          onChange={(event) => update('capital', Number(event.currentTarget.value))}
+          aria-label={'Amount · ' + quote}
+          aria-invalid={!!amountError || (deploy && overBalance)}
+          aria-describedby={descriptions || undefined}
+        />
+        <span className="strategy-amount-unit" aria-hidden="true">
+          <AssetIcon asset={quote} />
+          {quote}
+        </span>
+      </span>
+      {funding && (
+        <small className="strategy-amount-balance" id="strategy-amount-balance" role="status">
+          <Wallet size={13} aria-hidden="true" />
+          {funding.available === undefined ? (
+            <span>{funding.loading ? 'Checking free balance…' : 'Free balance unavailable'}</span>
+          ) : (
+            <span>
+              Free in selected account{' '}
+              <strong>
+                {number(funding.available, 12)} {quote}
+              </strong>
+            </span>
+          )}
+        </small>
+      )}
+      {overBalance && (
+        <small className="strategy-amount-warning" id="strategy-amount-warning" role="status">
+          <CircleAlert size={13} aria-hidden="true" />
+          <span>
+            <strong>Amount exceeds available {quote} balance.</strong> This amount can only be used
+            for a backtest or paper strategy.
+          </span>
+        </small>
+      )}
+      {amountError && (
+        <small className="negative" id="strategy-amount-error">
+          {amountError}
+        </small>
+      )}
+    </StrategyField>
+  );
   return (
     <>
       {dataset ? (
-        <SavedMarket dataset={dataset} onUseLatest={onUseLatest} />
-      ) : (
-        catalog && (
-          <div className="strategy-market-grid">
-            <div className="strategy-field">
-              <MarketSelector
-                catalog={catalog}
-                label="Spot pair"
-                value={
-                  catalog.items.some((item) => item.symbol === params.symbol) ? params.symbol : ''
-                }
-                onChange={(value) => update('symbol', value)}
-              />
-              <StrategyHelp label="Spot pair" caption={help.symbol} />
-            </div>
-            <div className="strategy-field">
-              <StrategyTimeframePicker
-                frames={catalog.timeframes}
-                value={catalog.timeframes.includes(frame) ? frame : ''}
-                onChange={(value: Timeframe) => update('timeframe', value)}
-              />
-              <StrategyHelp label="Timeframe" caption={help.timeframe} />
-            </div>
-            <div className="strategy-field">
-              <StrategyLookbackPicker
-                value={params.candles}
-                timeframe={frame}
-                onChange={(value) => {
-                  onDatesChange?.(undefined);
-                  update('candles', value);
-                }}
-                chooseDates={
-                  onDatesChange
-                    ? () => onDatesChange(dates ?? initialBacktestDates(frame, params.candles))
-                    : undefined
-                }
-                datesSelected={!!dates}
-              />
-              <StrategyHelp label="Indicator lookback" caption={help.candles} />
-            </div>
+        <SavedMarket dataset={dataset} amount={amount} onUseLatest={onUseLatest} />
+      ) : catalog ? (
+        <div className="strategy-market-inputs">
+          <div className="strategy-field">
+            <MarketSelector
+              catalog={catalog}
+              label="Spot pair"
+              value={
+                catalog.items.some((item) => item.symbol === params.symbol) ? params.symbol : ''
+              }
+              onChange={(value) => update('symbol', value)}
+            />
+            <StrategyHelp label="Spot pair" caption={help.symbol} />
           </div>
-        )
+          {amount}
+          <div className="strategy-field">
+            <StrategyTimeframePicker
+              frames={catalog.timeframes}
+              value={catalog.timeframes.includes(frame) ? frame : ''}
+              onChange={(value: Timeframe) => update('timeframe', value)}
+            />
+            <StrategyHelp label="Timeframe" caption={help.timeframe} />
+          </div>
+          <div className="strategy-field">
+            <StrategyLookbackPicker
+              value={params.candles}
+              timeframe={frame}
+              onChange={(value) => {
+                onDatesChange?.(undefined);
+                update('candles', value);
+              }}
+              chooseDates={
+                onDatesChange
+                  ? () => onDatesChange(dates ?? initialBacktestDates(frame, params.candles))
+                  : undefined
+              }
+              datesSelected={!!dates}
+            />
+            <StrategyHelp label="Indicator lookback" caption={help.candles} />
+          </div>
+        </div>
+      ) : (
+        amount
       )}
       {dates && onDatesChange && (
         <StrategyBacktestDates range={dates} timeframe={frame} onChange={onDatesChange} />
       )}
-      <div className="strategy-market-grid">
-        <StrategyField label={'Amount · ' + quote} caption={help.capital}>
-          <input
-            type="number"
-            min={deploy ? 0 : 100}
-            max={maximumStrategyAmount}
-            step="any"
-            value={params.capital === 0 ? '' : params.capital}
-            onChange={(event) => update('capital', Number(event.currentTarget.value))}
-            aria-invalid={amountInvalid}
-            aria-describedby={amountInvalid ? 'strategy-amount-error' : undefined}
-          />
-          {amountInvalid && (
-            <small className="negative" id="strategy-amount-error">
-              {amountError}
-            </small>
-          )}
-        </StrategyField>
-      </div>
     </>
   );
 }
