@@ -8,12 +8,13 @@ from uuid import uuid4
 
 from sibyl.alerts.strategies import StrategyAlerts
 from sibyl.exchanges.data import TIMEFRAMES
-from sibyl.models import BacktestRequest
+from sibyl.models import PaperStrategyRequest
 from sibyl.services.markets.analytics import performance_metrics
 from sibyl.services.markets.service import Market
 from sibyl.storage import Store
 from sibyl.strategies.journal import StrategyJournal
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
+from sibyl.strategies.simulation_accounting import buy_size, loss_floor, sell_size
 from sibyl.strategies.validation import StrategyValidation
 
 
@@ -77,8 +78,14 @@ class Strategies:
             **details,
         }
 
-    def start(self, request: BacktestRequest, *, source: str | None = None) -> dict:
+    def start(self, request: PaperStrategyRequest, *, source: str | None = None) -> dict:
         """Allocate isolated paper capital and persist the start event without trading."""
+        if source and source != "demo":
+            with self.market.snapshot(source):
+                client = self.market.client()
+                if request.timeframe not in client.timeframes:
+                    raise ValueError("Choose a timeframe supported by the selected paper feed.")
+                client.market(request.symbol)
         with self._lock:
             if sum(job["status"] == "running" for job in self.jobs()) >= 10:
                 raise ValueError("Pause a strategy before starting more than ten paper jobs.")
@@ -86,7 +93,7 @@ class Strategies:
             job = {
                 "id": uuid4().hex,
                 "mode": "paper",
-                "parameters": request.model_dump(),
+                "parameters": request.model_dump(by_alias=True),
                 "status": "running",
                 "cash": request.capital,
                 "quantity": 0.0,
@@ -128,6 +135,10 @@ class Strategies:
                     "A completed or stopped job cannot change state. Start a new paper strategy."
                 )
             if state == "running":
+                if job.get("paper_loss_pause"):
+                    raise ValueError(
+                        "The allocated loss pause is latched. Start a new paper strategy to trade again."
+                    )
                 if not job.get("source_pinned") and job["source"] != self.market.source:
                     raise ValueError("Price source changed. Start a new strategy for the current source.")
                 if sum(run["status"] == "running" for run in self.jobs()) >= 10:
@@ -144,6 +155,10 @@ class Strategies:
             }[state]
             return self.journal.save(job, self._event(job, action, reason))
 
+    @staticmethod
+    def _tracks_prices(job: dict) -> bool:
+        return job["status"] == "running" or (job["status"] == "paused" and bool(job.get("paper_loss_pause")))
+
     def tick(self) -> None:
         """Read providers without blocking controls, then commit once per closed candle.
 
@@ -152,23 +167,29 @@ class Strategies:
         from that pending observation. Duplicate signals/candles never double-fill.
         """
         for snapshot in self.jobs():
-            if snapshot.get("mode") == "exchange" or snapshot["status"] != "running":
+            if snapshot.get("mode") == "exchange" or not self._tracks_prices(snapshot):
                 continue
             try:
                 with self._lock:
                     current = self.journal.job(snapshot["id"])
-                    if current["status"] != "running" or self._pause_changed_source(current):
+                    if not self._tracks_prices(current) or self._pause_changed_source(current):
                         continue
-                params = BacktestRequest(**snapshot["parameters"])
+                params = PaperStrategyRequest(**snapshot["parameters"])
                 # Network I/O intentionally stays outside the lifecycle lock.
                 with self.market.snapshot(snapshot["source"] if snapshot.get("source_pinned") else None):
-                    candles = self.market.candles(params.symbol, params.candles, params.timeframe)
+                    if snapshot.get("source_pinned") and snapshot["source"] != "demo":
+                        self.market.client().market(params.symbol)
+                    candles = (
+                        self.market.candles(params.symbol, params.candles, params.timeframe)
+                        if current["status"] == "running"
+                        else None
+                    )
                     price = self.market.price(params.symbol)
                 self._observe(snapshot["id"], params, candles, price)
             except Exception:
                 with self._lock:
                     job = self.journal.job(snapshot["id"])
-                    if job["status"] != "running":
+                    if not self._tracks_prices(job):
                         continue
                     message = "Evaluation failed. Check the exchange, symbol, and market availability."
                     event = self._event(job, "ERROR", message) if job.get("error") != message else None
@@ -183,23 +204,46 @@ class Strategies:
             return False
         if job["source"] == self.market.source:
             return False
-        job.update(status="paused", error="Price source changed. Start a new job for this source.")
-        self.journal.save(job, self._event(job, "PAUSE", job["error"]))
+        message = "Price source changed. Start a new job for this source."
+        if job.get("error") != message:
+            job.update(status="paused", error=message)
+            self.journal.save(job, self._event(job, "PAUSE", message))
         return True
 
-    def _observe(self, job_id: str, params: BacktestRequest, candles: list[dict], price: float) -> None:
+    def _check_loss_pause(self, job: dict, params: PaperStrategyRequest, now: str) -> dict | None:
+        """Latch the paper loss guard against a current marked observation."""
+        limits = params.backtest_limits
+        if job["status"] != "running" or limits is None:
+            return None
+        floor = loss_floor(params.capital, limits)
+        if job["equity"] > floor:
+            return None
+        job.update(
+            status="paused",
+            updated_at=now,
+            paper_loss_pause={"timestamp": now, "equity": job["equity"], "threshold": floor},
+        )
+        return self._event(
+            job, "PAUSE", "Allocated loss pause reached. Holdings remain marked and paper orders are blocked."
+        )
+
+    def _observe(
+        self, job_id: str, params: PaperStrategyRequest, candles: list[dict] | None, price: float
+    ) -> None:
         """Atomically apply an observation only if the run still permits evaluation."""
         with self._lock:
             original = self.journal.job(job_id)
-            if original["status"] != "running" or self._pause_changed_source(original):
+            if not self._tracks_prices(original) or self._pause_changed_source(original):
                 return
             job = deepcopy(original)
             now = datetime.now(UTC).isoformat()
             job.setdefault("monitoring_since", now)
             job.update(equity=job["cash"] + job["quantity"] * price, reference_price=price, observed_at=now)
-            event = None
-            if job["last_candle"] != candles[-1]["timestamp"]:
+            event = self._check_loss_pause(job, params, now)
+            followup = None
+            if job["status"] == "running" and candles and job["last_candle"] != candles[-1]["timestamp"]:
                 event = self._decision(job, params, candles, price)
+                followup = self._check_loss_pause(job, params, now)
             if not job.get("journal_started"):
                 event = event or self._event(
                     job,
@@ -220,9 +264,9 @@ class Strategies:
                 "cash": job["cash"],
                 "position": job["quantity"],
             }
-            self.journal.save(job, event, sample)
+            self.journal.save(job, event, sample, followup=followup)
 
-    def _decision(self, job: dict, params: BacktestRequest, candles: list[dict], price: float) -> dict:
+    def _decision(self, job: dict, params: PaperStrategyRequest, candles: list[dict], price: float) -> dict:
         """Apply one closed-candle signal and return its auditable paper decision."""
         direction = int(signals(strategy_indicators(candles, params), params.strategy, params).iloc[-1])
         signal = {1: "BUY", -1: "SELL", 0: "HOLD"}[direction]
@@ -234,6 +278,7 @@ class Strategies:
         action, reason = "HOLD", "No entry or exit signal on this closed candle."
         fill = None
         fee_rate, slip = params.fee_bps / 10000, params.slippage_bps / 10000
+        cap = params.backtest_limits.max_order_quote if params.backtest_limits else None
         completed = job.get("completed_returns", [])
         round_trips = job.get("round_trips", len(completed))
         if direction == 1:
@@ -246,28 +291,45 @@ class Strategies:
                 action, reason = "SKIP_BUY", "No virtual cash available."
             else:
                 fill_price = price * (1 + slip)
-                job["entry_cost"], job["entry_price"] = job["cash"], fill_price
-                job["quantity"] = job["cash"] / (fill_price * (1 + fee_rate))
-                job["cash"] = 0.0
+                quantity, debit, capped = buy_size(job["cash"], fill_price, fee_rate, cap)
+                job.update(
+                    entry_cost=debit,
+                    entry_price=fill_price,
+                    entry_quantity=quantity,
+                    entry_realized_pnl=0.0,
+                    quantity=quantity,
+                    cash=job["cash"] - debit,
+                )
                 action, reason = "BUY", "Strategy entry signal."
-                fill = self._fill(job, action, price, fill_price, job["quantity"], fee_rate, reason)
+                if capped:
+                    reason += " Maximum order value applied."
+                fill = self._fill(job, action, price, fill_price, quantity, fee_rate, reason)
         elif direction == -1:
             if job["quantity"] <= 0:
                 action, reason = "SKIP_SELL", "No open paper position to sell."
             else:
-                fill_price, quantity = price * (1 - slip), job["quantity"]
-                job["cash"] = quantity * fill_price * (1 - fee_rate)
-                if job.get("entry_cost"):
-                    pnl = job["cash"] - job["entry_cost"]
-                    completed.append(pnl / job["entry_cost"] * 100)
+                fill_price = price * (1 - slip)
+                holding = job["quantity"]
+                quantity = sell_size(holding, fill_price, cap)
+                proceeds = quantity * fill_price * (1 - fee_rate)
+                job["cash"] += proceeds
+                job["quantity"] -= quantity
+                if entry_cost := job.get("entry_cost"):
+                    basis = entry_cost * quantity / job.get("entry_quantity", holding)
+                    pnl = proceeds - basis
                     job["realized_pnl"] = job.get("realized_pnl", 0) + pnl
-                job["completed_returns"], job["round_trips"] = completed, round_trips + 1
-                job["quantity"] = 0.0
+                    job["entry_realized_pnl"] = job.get("entry_realized_pnl", 0) + pnl
+                    if not job["quantity"]:
+                        completed.append(job["entry_realized_pnl"] / entry_cost * 100)
                 action, reason = "SELL", risk or "Strategy exit signal."
+                if job["quantity"]:
+                    reason += " Maximum order value applied. Residual units remain open."
+                else:
+                    job["completed_returns"], job["round_trips"] = completed, round_trips + 1
+                    if params.max_trades is not None and job["round_trips"] >= params.max_trades:
+                        job["status"] = "completed"
+                        reason += " Round-trip limit reached; run completed."
                 fill = self._fill(job, action, price, fill_price, quantity, fee_rate, reason)
-                if params.max_trades is not None and job["round_trips"] >= params.max_trades:
-                    job["status"] = "completed"
-                    reason += " Round-trip limit reached; run completed."
         job["equity"] = job["cash"] + job["quantity"] * price
         job["last_candle"] = candles[-1]["timestamp"]
         curve = [*job.get("curve", []), {"timestamp": job["last_candle"], "value": job["equity"]}]

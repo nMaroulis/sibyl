@@ -12,6 +12,14 @@ export const frameSeconds: Record<Timeframe, number> = {
   '1d': 86400,
   '1w': 604800,
 };
+export function candleBoundary(ms: number, timeframe: Timeframe): number {
+  const step = frameSeconds[timeframe] * 1000;
+  const anchor = timeframe === '1w' ? 345600000 : 0;
+  return Math.floor((ms - anchor) / step) * step + anchor;
+}
+
+export const utcInput = (ms: number) => new Date(ms).toISOString().slice(0, 16);
+
 export type Dataset = {
   id: string;
   digest: string;

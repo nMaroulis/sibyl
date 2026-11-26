@@ -186,6 +186,12 @@ export type Strategy = {
   tag: string;
   description: string;
   risk: string;
+  parameters: string[];
+  guide: { idea: string; entry: string; exit: string; tradeoff: string };
+};
+export type StrategyOrderLimits = {
+  max_order_quote: number;
+  max_loss_pct: number;
 };
 export type StrategyParams = {
   strategy: string;
@@ -215,6 +221,7 @@ export type StrategyParams = {
   stop_loss_pct?: number | null;
   take_profit_pct?: number | null;
   max_trades?: number | null;
+  backtest_limits?: StrategyOrderLimits;
 };
 export type Performance = {
   sharpe: number;
@@ -309,6 +316,20 @@ export type Backtest = Source & {
   curve: Point[];
   fills: Fill[];
   execution: string;
+  execution_limits?: StrategyOrderLimits & {
+    capped_orders: number;
+    partial_exits: number;
+    loss_pause: { timestamp: string; equity: number; threshold: number } | null;
+    ending_cash: number;
+    realized_pnl: number;
+    open_position: {
+      quantity: number;
+      price: number;
+      market_value: number;
+      cost_basis: number;
+      unrealized_pnl: number;
+    } | null;
+  };
   parameters: StrategyParams;
 };
 export type Job = Source & {
@@ -326,6 +347,7 @@ export type Job = Source & {
   archived_at?: string;
   unresolved_orders?: { id: string; reconciliation?: string }[];
   risk_locked?: boolean;
+  paper_loss_pause?: { timestamp: string; equity: number; threshold: number };
   fee_assets?: Record<string, number>;
   unvalued_fees?: Record<string, number>;
   foreign_fees_quote?: number;
@@ -383,7 +405,7 @@ export type Job = Source & {
   metrics?: Performance;
   curve?: Point[];
   id: string;
-  parameters: StrategyParams;
+  parameters: StrategyParams & { order_limits?: StrategyOrderLimits };
   status: string;
   cash: number;
   quantity: number;

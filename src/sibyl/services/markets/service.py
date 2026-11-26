@@ -17,7 +17,7 @@ from sibyl.config import Settings
 from sibyl.exchanges import ExchangeClient, create_client
 from sibyl.exchanges.base import number
 from sibyl.exchanges.data import STABLES, TIMEFRAMES
-from sibyl.market_data.archive import CandleArchive
+from sibyl.market_data.archive import CandleArchive, InsufficientClosedCandles
 from sibyl.market_data.control import ProviderControl, ProviderDeferred
 from sibyl.market_data.health_history import ProviderHistory
 from sibyl.market_data.streaming.orderbook import supports_live_book
@@ -315,8 +315,9 @@ class Market:
                 for row in rows
                 if row[0] + seconds * 1000 <= now
             ]
-            if self.source != "demo" and len(candles) < min(30, limit):
-                raise ValueError("The exchange returned fewer than 30 closed candles.")
+            minimum = min(30, limit)
+            if self.source != "demo" and len(candles) < minimum:
+                raise InsufficientClosedCandles(len(candles), minimum)
             selected = candles[-limit:]
             self.archive.capture(self.metadata(), self.provider_symbol(symbol), timeframe, selected)
             return selected

@@ -86,17 +86,26 @@ class StrategyJournal:
                 CREATE INDEX IF NOT EXISTS strategy_observations_job ON strategy_observations(job_id, id);
             """)
 
-    def save(self, job: dict, event: dict | None = None, sample: dict | None = None) -> dict:
-        """Atomically commit balances, the processed candle, and any event/sample."""
+    def save(
+        self,
+        job: dict,
+        event: dict | None = None,
+        sample: dict | None = None,
+        *,
+        followup: dict | None = None,
+    ) -> dict:
+        """Atomically commit balances, the processed candle, and journal evidence."""
         with self.store.db() as db:
             db.execute(
                 "INSERT INTO strategy_jobs VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload",
                 (job["id"], json.dumps(job, allow_nan=False)),
             )
-            if event:
+            for entry in (event, followup):
+                if not entry:
+                    continue
                 db.execute(
                     "INSERT INTO strategy_events(job_id, payload) VALUES (?, ?)",
-                    (job["id"], json.dumps(event, allow_nan=False)),
+                    (job["id"], json.dumps(entry, allow_nan=False)),
                 )
             if sample:
                 db.execute(

@@ -108,10 +108,12 @@ export function StrategyMonitor({
     base = job.parameters.symbol.split('/')[0];
   const precision = ['BTC', 'ETH'].includes(quote) ? 8 : 2;
   const terminal = ['completed', 'stopped'].includes(job.status);
+  const lossPause = job.status === 'paused' ? job.paper_loss_pause : undefined;
+  const { order_limits: paperLimits, ...parameters } = job.parameters;
   const age = job.observed_at
     ? Math.max(0, Math.round((clock - Date.parse(job.observed_at)) / 1000))
     : null;
-  const stale = live && job.status === 'running' && (age == null || age > 90);
+  const stale = live && (job.status === 'running' || !!lossPause) && (age == null || age > 90);
   const awaitingFirstTick = clock - Date.parse(job.updated_at ?? job.created_at) < 45000;
   const latest = data.markers.filter((row) => row.fill_price != null).slice(-1)[0];
   const returns = job.completed_returns ?? [];
@@ -179,6 +181,7 @@ export function StrategyMonitor({
                 className="button secondary"
                 disabled={
                   !!busy ||
+                  !!lossPause ||
                   (exchangeRun &&
                     job.status !== 'running' &&
                     (!executionControls.data ||
@@ -186,9 +189,11 @@ export function StrategyMonitor({
                       executionControls.data.halted))
                 }
                 title={
-                  exchangeRun && executionControls.data?.halted
-                    ? 'Release the global halt above before resuming this run.'
-                    : undefined
+                  lossPause
+                    ? 'Start a new paper strategy after an allocated loss pause.'
+                    : exchangeRun && executionControls.data?.halted
+                      ? 'Release the global halt above before resuming this run.'
+                      : undefined
                 }
                 onClick={() => control(job.status === 'running' ? 'pause' : 'resume')}
               >
@@ -253,9 +258,21 @@ export function StrategyMonitor({
       )}
       {job.status === 'paused' && (
         <div className="monitor-notice">
-          {exchangeRun
-            ? 'New submissions are paused. Native orders remain live until confirmed otherwise; an approved expiry policy still runs. Resume requires resolved orders and complete fill/fee evidence, then waits for the next closed candle.'
-            : 'Evaluation and price sampling are paused. Your virtual position is retained; Resume continues from the latest closed candle.'}
+          {exchangeRun ? (
+            'New submissions are paused. Native orders remain live until confirmed otherwise; an approved expiry policy still runs. Resume requires resolved orders and complete fill/fee evidence, then waits for the next closed candle.'
+          ) : lossPause ? (
+            <>
+              <strong>Allocated loss pause</strong> · Equity reached{' '}
+              {number(lossPause.equity, precision)} {quote} at{' '}
+              <time dateTime={lossPause.timestamp}>
+                {new Date(lossPause.timestamp).toLocaleString()}
+              </time>
+              . The threshold was {number(lossPause.threshold, precision)} {quote}. Paper orders are
+              locked and holdings are still being valued.
+            </>
+          ) : (
+            'Evaluation and price sampling are paused. Your virtual position is retained; Resume continues from the latest closed candle.'
+          )}
         </div>
       )}
       {!job.statistics_complete && (
@@ -553,7 +570,7 @@ export function StrategyMonitor({
               subtitle="Fixed for this run. Build another strategy to try a different configuration."
             />
             <dl className="monitor-parameters">
-              {Object.entries(job.parameters).map(([key, value]) => (
+              {Object.entries({ ...parameters, ...paperLimits }).map(([key, value]) => (
                 <div key={key}>
                   <dt>{key.replaceAll('_', ' ')}</dt>
                   <dd>{value == null ? 'Off / default' : String(value)}</dd>

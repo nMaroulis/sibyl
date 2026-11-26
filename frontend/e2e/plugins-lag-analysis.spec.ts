@@ -65,7 +65,7 @@ test('installed momentum package backtests, replays and exports through real plu
     ),
     'Requires the reviewed example installed in the disposable environment.',
   );
-  await page.goto('/strategies');
+  await page.goto('/strategies?view=experiments');
   const summary = page.getByText('Custom Python strategies', { exact: true });
   await summary.click();
   const workspace = summary.locator('..');

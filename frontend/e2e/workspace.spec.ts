@@ -46,18 +46,172 @@ test('paper order review and fill update the virtual ledger', async ({ page }) =
   ).toBeVisible();
 });
 
-test('strategy studio runs a demo backtest through the API', async ({ page }) => {
+test('strategy studio runs a configured demo backtest through the API', async ({ page }) => {
   await page.goto('/strategies');
+  const modes = page.getByRole('group', { name: 'Run mode' });
+  await expect(modes.getByRole('radio')).toHaveCount(3);
+  await expect(modes.getByRole('radio', { name: 'Backtest', exact: true })).toBeChecked();
+  await expect(page.getByRole('radio', { name: /Deploy strategy/ })).not.toBeChecked();
+  await expect(page.getByText('Account required', { exact: true })).toBeVisible();
+  const help = page.getByRole('button', { name: 'Help for Amount · USDT' });
+  const amountCaption = page.getByText(/Starting virtual capital for a backtest or paper run/);
+  await expect(amountCaption).toBeHidden();
+  await help.click();
+  await expect(amountCaption).toBeVisible();
+  await expect(page.getByText(/Caps the gross value of each order/)).toBeHidden();
+  await help.click();
+  await expect(amountCaption).toBeHidden();
+
+  await page.getByRole('button', { name: /^Timeframe / }).click();
+  const intervals = page.getByRole('dialog', { name: 'Timeframe options' });
+  await intervals.getByRole('combobox', { name: 'Search timeframe' }).fill('4h');
+  await intervals.getByRole('option', { name: /4 hours/ }).click();
+
+  const market = page.locator('section.panel').filter({
+    has: page.getByRole('heading', { name: '3. Set market and amount', exact: true }),
+  });
+  await market.getByRole('button', { name: /^Indicator lookback / }).click();
+  await page
+    .getByRole('dialog', { name: 'Indicator lookback options' })
+    .getByRole('option', { name: /365 candles/ })
+    .click();
+  const amount = market.getByRole('spinbutton', { name: 'Amount · USDT', exact: true });
+  await amount.fill('2400');
+  await page.getByText('Paper strategy', { exact: true }).click();
+  await expect(modes.getByRole('radio', { name: 'Paper strategy', exact: true })).toBeChecked();
+  await expect(modes.locator('input:checked')).toHaveCount(1);
+  await expect(amount).toHaveValue('2400');
+  await page.getByText('Backtest', { exact: true }).click();
+  await expect(amount).toHaveValue('2400');
+  const riskPanel = market.getByRole('group', { name: 'Risk & order limits' });
+  const risk = riskPanel.getByRole('switch', { name: 'Custom exits' });
+  const stopLoss = page.getByRole('spinbutton', { name: 'Stop loss · %' });
+  const takeProfit = page.getByRole('spinbutton', { name: 'Take profit · %' });
+  const exitLimit = page.getByRole('spinbutton', { name: 'Completed exit limit' });
+  const backtest = page.getByRole('button', { name: 'Run backtest', exact: true });
+  const orderCap = riskPanel.getByRole('spinbutton', { name: /^Maximum order value · USDT/ });
+  const lossPause = riskPanel.getByRole('spinbutton', { name: /^Pause at allocated loss · %/ });
+  await orderCap.fill('2500');
+  await expect(backtest).toBeDisabled();
+  await orderCap.fill('400');
+  await lossPause.fill('12');
+  await expect(page.getByRole('spinbutton', { name: 'Fee · basis points' })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: /Historical input|Backtest data/ })).toHaveCount(
+    0,
+  );
+  await expect(risk).not.toBeChecked();
+  await expect(stopLoss).toHaveCount(0);
+  await risk.check();
+  await expect(takeProfit).toBeVisible();
+  await expect(exitLimit).toBeVisible();
+  await expect(backtest).toBeEnabled();
+  await stopLoss.fill('91');
+  await expect(backtest).toBeDisabled();
+  await risk.uncheck();
+  await expect(stopLoss).toHaveCount(0);
+  await expect(backtest).toBeEnabled();
+  await risk.check();
+  await expect(stopLoss).toHaveValue('91');
+  await expect(backtest).toBeDisabled();
+  await stopLoss.fill('5');
   const result = page.waitForResponse(
     (response) =>
       response.url().endsWith('/strategies/backtest/demo') &&
       response.request().method() === 'POST',
   );
   await page.getByRole('button', { name: 'Run backtest', exact: true }).click();
-  expect((await result).status()).toBe(200);
-  const metrics = page.locator('.backtest-metrics');
-  await expect(metrics.getByText('Total return', { exact: true })).toBeVisible();
-  await expect(metrics.getByText('Max drawdown', { exact: true })).toBeVisible();
+  const response = await result;
+  expect(response.status()).toBe(200);
+  expect(response.request().postDataJSON()).toMatchObject({
+    timeframe: '4h',
+    candles: 365,
+    capital: 2400,
+    stop_loss_pct: 5,
+    backtest_limits: { max_order_quote: 400, max_loss_pct: 12 },
+  });
+  const saved = await response.json();
+  expect(saved).toMatchObject({
+    parameters: { stop_loss_pct: 5, take_profit_pct: null, max_trades: null },
+  });
+  await expect(page).toHaveURL(/\/strategies$/);
+  const report = page.getByRole('region', { name: 'Backtest results' });
+  await expect(report).toBeVisible();
+  await expect(report.getByLabel('Saved backtest ID')).toHaveText(saved.id);
+  await expect(report.getByText('Starting capital', { exact: true })).toBeVisible();
+  await expect(report.getByText('2,400 USDT', { exact: true })).toBeVisible();
+  await expect(report.getByText('Ending equity', { exact: true })).toBeVisible();
+  await expect(report.getByText('Net P&L', { exact: true })).toBeVisible();
+  await expect(report.getByText('Total return', { exact: true })).toBeVisible();
+  await expect(report.getByText('Max drawdown', { exact: true })).toBeVisible();
+  await report.getByText('More performance metrics', { exact: true }).click();
+  await expect(report.getByText('Sortino ratio', { exact: true })).toBeVisible();
+  await expect(report.getByRole('heading', { name: 'Simulated order limits' })).toBeVisible();
+  await report.getByRole('button', { name: 'Ask Broker about this run' }).click();
+  const broker = page.getByRole('dialog', { name: 'Ask Broker' });
+  await broker.getByLabel('Message Broker').fill('What was the result of this backtest?');
+  const question = page.waitForRequest((req) => req.url().endsWith('/agents/ask/stream'));
+  await broker.getByRole('button', { name: 'Send message' }).click();
+  expect((await question).postDataJSON()).toMatchObject({
+    module: 'broker',
+    context: { backtest_id: saved.id },
+  });
+  await broker.getByText('Inspect backtest_report evidence', { exact: true }).click();
+  const evidence = broker.locator('.evidence-details pre');
+  await expect(evidence).toContainText('"initial_capital": 2400');
+  await expect(evidence).toContainText(saved.id);
+  await expect(evidence).not.toContainText('drawdown_curve');
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await report.getByRole('link', { name: 'View in Experiments' }).click();
+  await expect(page).toHaveURL(new RegExp('view=experiments&backtest=' + saved.id));
+  await page.reload();
+  await expect(page.getByRole('combobox', { name: 'Open saved experiment' })).toHaveValue(saved.id);
+  await expect(page.getByText('Starting capital', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Load settings' }).click();
+  await expect(risk).toBeChecked();
+  await expect(stopLoss).toHaveValue('5');
+  await expect(amount).toHaveValue('2400');
+  await expect(page.getByText('From saved dataset', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Use latest candles' }).click();
+  await expect(page.getByRole('button', { name: /^Indicator lookback / })).toBeVisible();
+  await expect(page.getByText('From saved dataset', { exact: true })).toHaveCount(0);
+});
+
+test('backtest custom dates use completed UTC candles and save the exact window', async ({
+  page,
+}) => {
+  await page.goto('/strategies');
+  const picker = page.getByRole('button', { name: /^Indicator lookback / });
+  const submit = page.getByRole('button', { name: 'Run backtest', exact: true });
+  await expect(page.getByRole('group', { name: 'Backtest dates · UTC' })).toHaveCount(0);
+  await picker.click();
+  await page.getByRole('option', { name: 'Custom dates', exact: true }).click();
+  const dates = page.getByRole('group', { name: 'Backtest dates · UTC' });
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  end.setUTCDate(end.getUTCDate() - 5);
+  const start = new Date(end.getTime());
+  start.setUTCDate(start.getUTCDate() - 70);
+  const input = (date: Date) => date.toISOString().slice(0, 16);
+  await dates.getByLabel('From', { exact: true }).fill(input(start));
+  await dates.getByLabel('Until', { exact: true }).fill(input(start));
+  await expect(submit).toBeDisabled();
+  await dates.getByLabel('Until', { exact: true }).fill(input(end));
+  await expect(dates.getByRole('status')).toContainText('70 whole candles');
+  const result = page.waitForResponse((response) =>
+    new URL(response.url()).pathname.endsWith('/strategies/backtest/range'),
+  );
+  await submit.click();
+  const response = await result;
+  expect(response.status(), await response.text()).toBe(200);
+  expect(await response.json()).toMatchObject({
+    dataset: {
+      source: 'demo',
+      count: 70,
+      start: input(start) + ':00+00:00',
+      end: input(end) + ':00+00:00',
+    },
+  });
+  await expect(page.getByRole('region', { name: 'Backtest results' })).toBeVisible();
 });
 
 test('module Ask opens in place, uses page context, and retains its conversation', async ({
@@ -86,7 +240,7 @@ test('Broker overlay reads the selected form without clearing or executing it', 
 }) => {
   await page.goto('/strategies');
   await page.getByRole('button', { name: /RSI Reversion/ }).click();
-  await page.getByLabel('Virtual capital · USDT').fill('2500');
+  await page.getByRole('spinbutton', { name: /^Amount · USDT/ }).fill('2500');
   await page.getByRole('button', { name: 'Ask Broker', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Ask Broker' });
   await dialog.getByLabel('Message Broker').fill('Explain these simulation settings.');
@@ -96,7 +250,7 @@ test('Broker overlay reads the selected form without clearing or executing it', 
   await expect(dialog.locator('.evidence-details pre')).toContainText('"strategy": "rsi"');
   await dialog.getByRole('button', { name: 'Close dialog' }).click();
   await expect(page).toHaveURL(/strategies$/);
-  await expect(page.getByLabel('Virtual capital · USDT')).toHaveValue('2500');
+  await expect(page.getByRole('spinbutton', { name: /^Amount · USDT/ })).toHaveValue('2500');
 });
 
 test('knowledge search and exchange setup are accessible', async ({ page }) => {
@@ -253,15 +407,44 @@ test('a strategy opens in its monitor with controls, journal, and fixed paramete
   }
 });
 
+test('Paper starts with the shared risk limits', async ({ page, request }) => {
+  await page.goto('/strategies');
+  await page.getByText('Paper strategy', { exact: true }).click();
+  const risk = page.getByRole('group', { name: 'Risk & order limits' });
+  await risk.getByRole('spinbutton', { name: /^Maximum order value/ }).fill('375');
+  await risk.getByRole('spinbutton', { name: /^Pause at allocated loss/ }).fill('8');
+  const started = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname.endsWith('/strategies/jobs/demo') &&
+      response.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Start paper strategy', exact: true }).click();
+  const response = await started;
+  expect(response.status(), await response.text()).toBe(201);
+  const job = await response.json();
+  try {
+    expect(job.parameters.order_limits).toEqual({ max_order_quote: 375, max_loss_pct: 8 });
+    await expect(
+      page.getByRole('heading', { name: 'Strategy monitor', exact: true }),
+    ).toBeVisible();
+    await page.getByRole('tab', { name: 'Run parameters', exact: true }).click();
+    const parameters = page.locator('.monitor-parameters');
+    await expect(parameters.getByText('max order quote')).toBeVisible();
+    await expect(parameters.getByText('375', { exact: true })).toBeVisible();
+  } finally {
+    await request.post(`/api/v1/strategies/jobs/${job.id}/stop`);
+  }
+});
+
 test('switching to Monitor preserves the builder draft', async ({ page }) => {
   await page.goto('/strategies');
-  await page.getByLabel('Virtual capital · USDT').fill('3210');
+  await page.getByRole('spinbutton', { name: /^Amount · USDT/ }).fill('3210');
   await page.getByRole('tab', { name: /^Monitor/ }).click();
   await expect(
     page.getByRole('heading', { name: 'Your strategy runs', exact: true }),
   ).toBeVisible();
-  await page.getByRole('tab', { name: 'Build & backtest', exact: true }).click();
-  await expect(page.getByLabel('Virtual capital · USDT')).toHaveValue('3210');
+  await page.getByRole('tab', { name: 'Build strategy', exact: true }).click();
+  await expect(page.getByRole('spinbutton', { name: /^Amount · USDT/ })).toHaveValue('3210');
 });
 
 test('Settings groups connections and configuration with persistent drafts and keyboard tabs', async ({
@@ -280,7 +463,9 @@ test('Settings groups connections and configuration with persistent drafts and k
   await expect(page).toHaveURL(/settings\?tab=models$/);
   await page.getByRole('button', { name: 'Local', exact: true }).click();
   await page.getByRole('button', { name: /^Ollama/ }).click();
-  await page.getByRole('combobox', { name: 'Model · optional', exact: true }).selectOption('__custom__');
+  await page
+    .getByRole('combobox', { name: 'Model · optional', exact: true })
+    .selectOption('__custom__');
   await page.getByLabel('Custom model ID', { exact: true }).fill('draft-model');
   await tabs.getByRole('tab', { name: 'Market data', exact: true }).click();
   await expect(

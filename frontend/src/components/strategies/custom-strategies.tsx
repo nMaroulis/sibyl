@@ -144,9 +144,9 @@ export function CustomStrategies({
           action={<Badge>Advanced</Badge>}
         />
         <p className="footnote">
-          Use the pair, interval, input, virtual capital, costs and close-based risk limits
-          configured above. Custom parameters belong to the selected plugin. Signals see only their
-          current/past candles and fill at the next open.
+          Uses the pair, interval, historical input, capital, and costs from Build strategy. Custom
+          parameters belong to the selected plugin. Signals use data through the current candle and
+          the backtest fills at the next open.
         </p>
         {catalog.loading ? (
           <Loading />

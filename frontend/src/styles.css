@@ -6537,27 +6537,6 @@ details[open] > summary {
   border-color: light-dark(#d7e8df, var(--border));
   background: light-dark(#edf6f0, var(--dark-green));
 }
-.demo-settings-invitation {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  margin: 20px 0 24px;
-  color: var(--muted);
-}
-.demo-settings-invitation > div {
-  flex: 1;
-}
-.demo-settings-invitation h3 {
-  color: var(--text);
-  font-size: 13px;
-  margin: 0 0 6px;
-}
-.demo-settings-invitation p {
-  font-size: 11px;
-  line-height: 1.7;
-  margin: 0;
-}
 .holding-contributors {
   margin-top: 5px;
   color: var(--muted);
@@ -6588,9 +6567,6 @@ details[open] > summary {
     padding: 32px 20px 24px;
   }
   .account-demo-invitation,
-  .demo-settings-invitation {
-    flex-wrap: wrap;
-  }
   .account-demo-invitation button {
     margin-left: 31px;
   }

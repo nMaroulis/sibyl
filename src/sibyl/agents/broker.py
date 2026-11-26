@@ -12,8 +12,9 @@ from sibyl.agents.guides import read_guide
 from sibyl.agents.guides.broker import STRATEGIES, TRADE, StrategyTopic, TradeTopic
 from sibyl.agents.utils.common import COMMON_PROMPT, Services, selected
 from sibyl.exchanges.registry import provider_catalog
-from sibyl.models import BacktestRequest
+from sibyl.models import BacktestRequest, StrategyId
 from sibyl.strategies import CATALOG
+from sibyl.strategies.guidance import PARAMETER_HELP
 
 NAME = "Broker"
 TAGLINE = "Build with discipline"
@@ -29,6 +30,8 @@ SYSTEM_PROMPT = (
     "the user's saved order status and reconciliation evidence. Its order_id is Sibyl's record ID, "
     "not a venue ID; ask or list records if unclear. This tool reads retained observations, not current "
     "exchange state. Never suggest an uncertain order is safe to resubmit. "
+    "Use strategy_guide with the chosen algorithm to explain its real entry, exit and trade-offs. "
+    "Use strategy_parameters for the meaning of individual settings or an algorithm's indicators. "
     "Explain strategy rules, recorded backtests, running paper strategy jobs and execution risk. "
     "In an exchange run, approved historical other-asset fees reduce marked equity and count in shared losses. "
     "Positive charges also reserve the quote budget; rebates in another asset never add quote buying power. "
@@ -152,6 +155,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                         "read_only",
                         "risk",
                         "risk_locked",
+                        "paper_loss_pause",
                         "stop_cancellation",
                         "close_position",
                         "orders",
@@ -235,13 +239,40 @@ def create_agent(services: Services, **runtime) -> Agent:
         """Inspect strategy capital and exposure limits, daily losses and lock history for an account."""
         return {**strategies.execution.portfolio_limits.state(), "url": "/strategies?view=monitor"}
 
-    def strategy_guide() -> dict:
-        """Explain supported strategy rules and the backtest, paper and approved exchange modes."""
+    def strategy_guide(algorithm: StrategyId | None = None) -> dict:
+        """Compare algorithms, or explain one algorithm's exact entry and exit rules and trade-offs."""
+        catalog = (
+            [row for row in CATALOG if row["id"] == algorithm]
+            if algorithm
+            else [{key: row[key] for key in ("id", "name", "description")} for row in CATALOG]
+        )
         return {
-            "catalog": CATALOG,
-            "execution": "Paper runs use isolated virtual capital. Approved exchange runs use account-bound price-capped GTC limits and native fills; Exchange strategy execution must be enabled in Settings → Workspace. This agent cannot approve, start or submit orders.",
-            "backtests": "Next-open fills, configured fees and slippage; no look-ahead signal fills.",
+            "catalog": catalog,
+            "execution": "Paper runs use isolated virtual capital, capped simulated orders and an allocated-loss pause that keeps marking holdings. Approved exchange runs use account-bound price-capped GTC limits and native fills; Exchange strategy execution must be enabled in Settings → Workspace. This agent cannot approve, start or submit orders.",
+            "backtests": "Previous-close signals fill at the next open with fees and slippage. Configured order caps apply to buys and sells, and the allocated-loss pause stops new orders from the triggering close. Remaining units are marked through the end.",
             "validation": "Fixed settings, a small exhaustive grid, or seeded random sampling of explicit finite parameter choices on expanding training prefixes, followed by disjoint test windows. Candidate plans, coverage and training rankings are retained. Tests start in cash; fixed settings and cost-aware buy-and-hold are compared. Settings are never applied to jobs automatically.",
+            "url": "/strategies",
+        }
+
+    def strategy_parameters(algorithm: StrategyId | None = None, parameter: str | None = None) -> dict:
+        """Explain a setting by key, or list the settings that affect a chosen algorithm.
+
+        Examples for parameter are stop_loss_pct, fast_period, fee_bps and max_order_quote.
+        Supply an algorithm when comparing its indicators. Omit both to list all settings.
+        """
+        if parameter:
+            key = parameter.strip().lower().replace(" ", "_").replace("-", "_")
+            if key not in PARAMETER_HELP:
+                raise ToolRejectedError("Unknown strategy setting. Use a listed parameter key.")
+            fields = [key]
+        elif algorithm:
+            entry = next(row for row in CATALOG if row["id"] == algorithm)
+            fields = [*entry["parameters"], "stop_loss_pct", "take_profit_pct", "max_trades"]
+        else:
+            fields = list(PARAMETER_HELP)
+        return {
+            "algorithm": algorithm,
+            "parameters": {key: PARAMETER_HELP[key] for key in fields},
             "url": "/strategies",
         }
 
@@ -256,9 +287,10 @@ def create_agent(services: Services, **runtime) -> Agent:
                 (run_id,),
             ).fetchone()
         if not row:
-            return {"note": "Choose a saved backtest first.", "url": "/strategies"}
+            return {"note": "Choose a saved backtest first.", "url": "/strategies?view=experiments"}
         result = json.loads(row[0])
         return {
+            "run_id": run_id,
             **{
                 key: value
                 for key, value in result.items()
@@ -268,12 +300,17 @@ def create_agent(services: Services, **runtime) -> Agent:
                     "price_series",
                     "benchmark_curve",
                     "benchmarks",
+                    "metrics",
+                    "trade_returns",
                     "fills",
                     "round_trips",
                     "plugin_signals",
                     "allocations",
                     "rebalance_events",
                 }
+            },
+            "metrics": {
+                key: value for key, value in (result.get("metrics") or {}).items() if key != "drawdown_curve"
             },
             "benchmarks": {
                 name: {
@@ -309,7 +346,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         identity = selected("adaptive_study_id", study_id, "")
         window = selected("adaptive_window", window, 1)
         if not identity:
-            return {"items": strategies.adaptive.list()["items"][:5], "url": "/strategies"}
+            return {"items": strategies.adaptive.list()["items"][:5], "url": "/strategies?view=experiments"}
         try:
             result = strategies.adaptive.get(identity)
         except LookupError as error:
@@ -352,14 +389,14 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "recent_test_round_trips": test["round_trips"][-10:] if test else [],
             },
             "simulation": True,
-            "url": "/strategies",
+            "url": "/strategies?view=experiments",
         }
 
     def validation_report(validation_id: str = "", window: int = 1) -> dict:
         """Read a saved walk-forward study’s training ranks, selected parameters, later tests and benchmarks."""
         validation_id = selected("validation_id", validation_id or None, "")
         if not validation_id:
-            return {"note": "Choose a saved walk-forward study first.", "url": "/strategies"}
+            return {"note": "Choose a saved walk-forward study first.", "url": "/strategies?view=experiments"}
         result = strategies.validation.get(validation_id)
         if not 1 <= window <= len(result["folds"]):
             return {"note": "Choose one of the study's recorded test windows."}
@@ -407,7 +444,7 @@ def create_agent(services: Services, **runtime) -> Agent:
                 "recent_test_round_trips": fold["out_of_sample"]["round_trips"][-10:],
             },
             "simulation": True,
-            "url": "/strategies",
+            "url": "/strategies?view=experiments",
         }
 
     def position_ownership(job_id: str | None = None) -> dict:
@@ -587,6 +624,7 @@ def create_agent(services: Services, **runtime) -> Agent:
         tools=[
             strategy_context,
             Tool.from_callable(strategy_guide, sync_execution="inline"),
+            Tool.from_callable(strategy_parameters, sync_execution="inline"),
             execution_controls,
             portfolio_limits,
             strategy_alerts,

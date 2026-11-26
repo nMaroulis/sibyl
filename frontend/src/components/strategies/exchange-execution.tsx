@@ -1,37 +1,21 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { Badge, Modal } from '../ui';
-import { ExchangeMark } from '../exchange-mark';
-import { SearchPicker } from '../search-picker';
-import { useResource } from '../../lib/hooks';
 import { number, post, refresh } from '../../lib/api';
-import type { Connection, Job, StrategyParams } from '../../lib/types';
+import type { Job, StrategyOrderLimits, StrategyParams } from '../../lib/types';
+import type { StrategyAccount, StrategyExecutionOptions } from './strategy-account-picker';
+import type { ParameterHelp } from './strategy-signal-settings';
+import { StrategyField } from './strategy-field';
 import type { LimitPolicy } from '../../lib/portfolio-limits';
 
-type Risk = {
+type Risk = StrategyOrderLimits & {
   risk_per_entry_pct?: number | null;
-  max_order_quote: number;
-  max_loss_pct: number;
   max_orders_per_day: number;
   max_spread_bps: number;
   price_limit_bps: number;
   fee_reserve_bps: number;
   order_lifetime_seconds: number | null;
-};
-type Options = {
-  enabled: boolean;
-  server_enabled: boolean;
-  controls: { halted: boolean };
-  accounts: (Connection & { supported: boolean })[];
-  providers: { id: string; name: string }[];
-  handoff_sources: {
-    id: string;
-    connection_id: string;
-    symbol: string;
-    quantity: number;
-    cost_basis: number;
-  }[];
 };
 type Review = {
   id: string;
@@ -46,27 +30,28 @@ type Review = {
   handoff?: { source_id: string; quantity: number; cost_basis: number; reference_value: number };
 };
 
-/** Present the exchange and exact market before any advanced execution controls. */
+/** Review and deploy the already selected account, algorithm and exact market. */
 export function ExchangeStrategySetup({
-  active,
+  account,
   parameters,
+  limits,
+  options,
+  canDeploy,
+  preferredHandoff,
+  help,
   onStarted,
-  children,
 }: {
-  active: boolean;
+  account: StrategyAccount;
   parameters: StrategyParams;
+  limits: StrategyOrderLimits;
+  options: StrategyExecutionOptions;
+  canDeploy: boolean;
+  preferredHandoff?: string;
+  help: ParameterHelp;
   onStarted: (job: Job) => void;
-  children: ReactNode;
 }) {
-  const [search] = useSearchParams();
-  const [handoff, setHandoff] = useState(search.get('handoff') ?? '');
-  const [account, setAccount] = useState('');
-  const [pair, setPair] = useState('');
-  const [timeframe, setTimeframe] = useState('');
-  const [budget, setBudget] = useState(1000);
-  const [risk, setRisk] = useState<Risk>({
-    max_order_quote: 500,
-    max_loss_pct: 10,
+  const [chosenHandoff, setHandoff] = useState(preferredHandoff ?? '');
+  const [risk, setRisk] = useState<Omit<Risk, keyof StrategyOrderLimits>>({
     max_orders_per_day: 6,
     max_spread_bps: 50,
     price_limit_bps: 25,
@@ -77,66 +62,21 @@ export function ExchangeStrategySetup({
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const options = useResource<Options>('/strategies/exchange/options', 0, active);
-  const markets = useResource<{ symbols: string[]; timeframes: string[] }>(
-    `/strategies/exchange/markets/${account}`,
-    0,
-    active && !!account,
+  const { symbol } = parameters;
+  const handoffSources = options.handoff_sources.filter(
+    (source) => source.connection_id === account.id && source.symbol === symbol,
   );
-  const symbol = pair || parameters.symbol;
-  const interval = timeframe || parameters.timeframe || '1d';
-  const quote = symbol.split('/')[1];
-  const accounts = options.data?.accounts.filter((row) => row.active && row.supported) ?? [];
-  const providerNames = new Map(options.data?.providers.map(({ id, name }) => [id, name]));
-  const accountGroups = [
-    { label: 'Production', sandbox: false },
-    { label: 'Test environments', sandbox: true },
-  ].map(({ label, sandbox }) => ({
-    label,
-    options: accounts
-      .filter((row) => row.sandbox === sandbox)
-      .map((row) => {
-        const provider = providerNames.get(row.exchange) ?? row.exchange;
-        return {
-          value: row.id,
-          label: row.label,
-          description: row.label === provider ? 'Spot account' : provider,
-          keywords: row.exchange + (sandbox ? ' sandbox testnet' : ' production'),
-          icon: (
-            <span className="strategy-account-mark">
-              <ExchangeMark exchange={row.exchange} size={22} />
-            </span>
-          ),
-          badge: (
-            <Badge tone={sandbox ? 'sand' : 'rose'}>{sandbox ? 'Test funds' : 'Real funds'}</Badge>
-          ),
-        };
-      }),
-  }));
-  useEffect(() => {
-    if (!account && handoff) {
-      const source = options.data?.handoff_sources.find((s) => s.id === handoff);
-      if (source) {
-        setAccount(source.connection_id);
-        setPair(source.symbol);
-      }
-    }
-  }, [options.data, account, handoff]);
+  const handoff = handoffSources.some((source) => source.id === chosenHandoff) ? chosenHandoff : '';
+  const needsStopLoss = risk.risk_per_entry_pct != null && !parameters.stop_loss_pct;
   const reviewRun = async () => {
     setBusy(true);
     setError('');
     try {
       const result = await post<Review>('/strategies/exchange/preview', {
-        connection_id: account,
+        connection_id: account.id,
         handoff_from: handoff || null,
-        parameters: {
-          ...parameters,
-          symbol,
-          timeframe: interval,
-          capital: budget,
-          candles: Math.min(parameters.candles, 720),
-        },
-        risk,
+        parameters,
+        risk: { ...risk, ...limits },
       });
       setConfirmation('');
       setReview(result);
@@ -166,22 +106,7 @@ export function ExchangeStrategySetup({
   return (
     <div className="strategy-exchange-setup">
       <div className="form exchange-setup-fields">
-        {options.loading && <p className="footnote">Checking execution support…</p>}
-        {(options.error || markets.error) && (
-          <p className="form-error" role="alert">
-            {options.error || markets.error}
-          </p>
-        )}
-        {options.data && !accounts.length && (
-          <p className="monitor-notice">
-            Connect and activate a supported exchange account to use automated execution. You can
-            connect several accounts.{' '}
-            <Link to="/settings?tab=exchanges">
-              Open exchange settings <ArrowUpRight size={12} />
-            </Link>
-          </p>
-        )}
-        {options.data && !options.data.server_enabled && (
+        {!options.server_enabled && (
           <div className="execution-disabled">
             <span className="execution-disabled-icon">
               <ShieldCheck size={20} aria-hidden="true" />
@@ -195,235 +120,101 @@ export function ExchangeStrategySetup({
             </Link>
           </div>
         )}
-        {options.data?.controls.halted && (
+        {options.controls.halted && (
           <p className="monitor-notice">
             Global halt is active. Release it using the controls above before reviewing a new
             exchange strategy.
           </p>
         )}
-        <div className="exchange-run-fields">
-          <SearchPicker
-            className="strategy-account-picker"
-            menuClassName="strategy-account-menu"
-            label="Exchange account"
-            value={account}
-            groups={accountGroups}
-            loading={options.loading}
-            disabled={busy || accounts.length === 0}
-            placeholder="Search accounts or exchanges…"
-            messages={{
-              prompt: 'Choose an exchange account',
-              loading: 'Loading exchange accounts…',
-              empty: 'No accounts match your search.',
-            }}
-            onChange={(next) => {
-              if (next === account) return;
-              setAccount(next);
-              setHandoff('');
-              setPair('');
-              setTimeframe('');
-              setError('');
-            }}
-          />
-          {!!account && (
-            <>
-              <label>
-                Exact exchange pair
-                <select
-                  aria-label="Exact exchange pair"
-                  value={markets.data?.symbols.includes(symbol) ? symbol : ''}
-                  onChange={(e) => {
-                    setPair(e.target.value);
-                    setHandoff('');
-                  }}
-                  disabled={markets.loading}
-                >
-                  <option value="">Choose a pair on this exchange</option>
-                  {markets.data?.symbols.map((value) => (
-                    <option value={value} key={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Execution timeframe
-                <select
-                  aria-label="Execution timeframe"
-                  value={markets.data?.timeframes.includes(interval) ? interval : ''}
-                  onChange={(e) => setTimeframe(e.target.value)}
-                  disabled={markets.loading}
-                >
-                  <option value="">Choose an interval</option>
-                  {markets.data?.timeframes
-                    .filter((value) =>
-                      ['1m', '5m', '15m', '30m', '1h', '4h', '12h', '1d', '1w'].includes(value),
-                    )
-                    .map((value) => (
-                      <option key={value}>{value}</option>
-                    ))}
-                </select>
-              </label>
-            </>
-          )}
-        </div>
-        {!!account && (
-          <>
-            <div className="exchange-run-fields">
-              <label>
-                {handoff ? 'Additional quote budget' : 'Allocated budget'} · {quote}
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
-                />
-              </label>
-              <label>
-                Maximum order value · {quote}
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={risk.max_order_quote}
-                  onChange={(e) => setRisk({ ...risk, max_order_quote: Number(e.target.value) })}
-                />
-                {risk.max_order_quote > budget && (
-                  <small>Use an order cap at or below the budget.</small>
-                )}
-              </label>
-              <label>
-                Pause at allocated loss · %
-                <input
-                  type="number"
-                  min="0.1"
-                  max="90"
-                  step="any"
-                  value={risk.max_loss_pct}
-                  onChange={(e) => setRisk({ ...risk, max_loss_pct: Number(e.target.value) })}
-                />
-              </label>
-            </div>
-            {children}
-            <details className="advanced-options">
-              <summary>Advanced execution</summary>
-              <label>
-                Existing strategy position
-                <select
-                  aria-label="Position handoff source"
-                  value={handoff}
-                  onChange={(e) => setHandoff(e.target.value)}
-                >
-                  <option value="">Start without adopting existing units</option>
-                  {options.data?.handoff_sources
-                    .filter((s) => s.connection_id === account && s.symbol === symbol)
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.id.slice(0, 8)} · {number(s.quantity, 8)} {symbol.split('/')[0]}
-                      </option>
-                    ))}
-                </select>
-                {!!handoff && (
-                  <small>
-                    The new run receives all retained units and original basis after review, plus
-                    the additional quote budget above. No exchange trade or transfer occurs.
-                  </small>
-                )}
-              </label>
-              <label>
-                Cancel unfilled orders after
-                <select
-                  value={risk.order_lifetime_seconds ?? ''}
-                  onChange={(event) =>
-                    setRisk({
-                      ...risk,
-                      order_lifetime_seconds: event.target.value
-                        ? Number(event.target.value)
-                        : null,
-                    })
-                  }
-                >
-                  <option value="">No automatic expiry · GTC</option>
-                  <option value={60}>1 minute</option>
-                  <option value={300}>5 minutes</option>
-                  <option value={900}>15 minutes</option>
-                  <option value={3600}>1 hour</option>
-                  <option value={86400}>1 day</option>
-                </select>
-              </label>
-              <p className="footnote">
-                The running backend requests cancellation at the deadline. Partial fills remain
-                owned. An approved expiry continues while paused or stopped and after restart while
-                the required execution permission is enabled.
-              </p>
-
-              <label>
-                Modeled entry risk · % of strategy equity · optional
-                <input
-                  type="number"
-                  min="0.01"
-                  max="10"
-                  step="any"
-                  value={risk.risk_per_entry_pct ?? ''}
-                  onChange={(event) =>
-                    setRisk({
-                      ...risk,
-                      risk_per_entry_pct: event.target.value ? Number(event.target.value) : null,
-                    })
-                  }
-                />
-              </label>
-              <p className="footnote">
-                Requires an algorithm stop-loss distance. Entry size is reduced using that distance
-                and the fee reserve, within the order cap. It does not place a protective stop;
-                gaps, spread and fills can exceed the modeled loss.
-              </p>
-              {(
-                [
-                  ['max_orders_per_day', 'Orders per rolling 24 hours', 1, 100],
-                  ['max_spread_bps', 'Maximum spread · basis points', 1, 500],
-                  ['price_limit_bps', 'Limit price allowance · basis points', 1, 200],
-                  ['fee_reserve_bps', 'Fee reserve · basis points', 10, 500],
-                ] as const
-              ).map(([key, label, min, max]) => (
-                <label key={key}>
-                  {label}
-                  <input
-                    type="number"
-                    min={min}
-                    max={max}
-                    value={risk[key]}
-                    onChange={(e) => setRisk({ ...risk, [key]: Number(e.target.value) })}
-                  />
-                </label>
-              ))}
-            </details>
-            <p className="footnote">
-              Candles and prices come from the selected exchange. Each approval is scoped to this
-              account, pair and budget.
-            </p>
-            <button
-              className="button primary exchange-run-review"
-              type="button"
-              disabled={
-                busy ||
-                !options.data?.enabled ||
-                markets.loading ||
-                !!markets.error ||
-                !markets.data?.symbols.includes(symbol) ||
-                !markets.data?.timeframes.includes(interval) ||
-                budget <= 0 ||
-                risk.max_order_quote <= 0 ||
-                risk.max_order_quote > budget
-              }
-              onClick={reviewRun}
+        <details className="advanced-options">
+          <summary>Advanced execution</summary>
+          <StrategyField label="Existing strategy position" caption={help.handoff_from}>
+            <select
+              aria-label="Position handoff source"
+              value={handoff}
+              onChange={(e) => setHandoff(e.target.value)}
             >
-              <ShieldCheck size={14} />{' '}
-              {busy ? 'Checking the account…' : 'Review exchange strategy'}
-            </button>
-          </>
-        )}
+              <option value="">Start without adopting existing units</option>
+              {handoffSources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.id.slice(0, 8)} · {number(s.quantity, 8)} {symbol.split('/')[0]}
+                </option>
+              ))}
+            </select>
+          </StrategyField>
+          <StrategyField label="Cancel unfilled orders after" caption={help.order_lifetime_seconds}>
+            <select
+              value={risk.order_lifetime_seconds ?? ''}
+              onChange={(event) =>
+                setRisk({
+                  ...risk,
+                  order_lifetime_seconds: event.target.value ? Number(event.target.value) : null,
+                })
+              }
+            >
+              <option value="">No automatic expiry · GTC</option>
+              <option value={60}>1 minute</option>
+              <option value={300}>5 minutes</option>
+              <option value={900}>15 minutes</option>
+              <option value={3600}>1 hour</option>
+              <option value={86400}>1 day</option>
+            </select>
+          </StrategyField>
+
+          <StrategyField
+            label="Modeled entry risk · % of strategy equity · optional"
+            caption={help.risk_per_entry_pct}
+          >
+            <input
+              type="number"
+              min="0.01"
+              max="10"
+              step="any"
+              value={risk.risk_per_entry_pct ?? ''}
+              onChange={(event) =>
+                setRisk({
+                  ...risk,
+                  risk_per_entry_pct: event.target.value ? Number(event.target.value) : null,
+                })
+              }
+            />
+            {needsStopLoss && (
+              <small className="negative">
+                Set a stop loss under Custom exits to use this sizing rule.
+              </small>
+            )}
+          </StrategyField>
+          {(
+            [
+              ['max_orders_per_day', 'Orders per rolling 24 hours', 1, 100],
+              ['max_spread_bps', 'Maximum spread · basis points', 1, 500],
+              ['price_limit_bps', 'Limit price allowance · basis points', 1, 200],
+              ['fee_reserve_bps', 'Fee reserve · basis points', 10, 500],
+            ] as const
+          ).map(([key, label, min, max]) => (
+            <StrategyField key={key} label={label} caption={help[key]}>
+              <input
+                type="number"
+                min={min}
+                max={max}
+                value={risk[key]}
+                onChange={(e) => setRisk({ ...risk, [key]: Number(e.target.value) })}
+              />
+            </StrategyField>
+          ))}
+        </details>
+        <p className="footnote">
+          Candles and prices come from the selected exchange. Each approval is scoped to this
+          account, pair and budget.
+        </p>
+        <button
+          className="button primary exchange-run-review"
+          type="button"
+          disabled={busy || !options.enabled || !canDeploy || needsStopLoss}
+          onClick={reviewRun}
+        >
+          <ShieldCheck size={14} /> {busy ? 'Checking the account…' : 'Review deployment'}
+        </button>
         {error && !review && (
           <p className="form-error" role="alert">
             {error}
@@ -466,7 +257,7 @@ export function ExchangeStrategySetup({
               {review.request.risk.risk_per_entry_pct != null && (
                 <>
                   Modeled entry risk: {review.request.risk.risk_per_entry_pct}% of strategy equity
-                  using the algorithm stop distance.{' '}
+                  using the configured stop distance.{' '}
                 </>
               )}
               {review.execution}

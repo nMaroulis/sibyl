@@ -29,6 +29,23 @@ def test_demo_backtest_has_prices_trades_metrics_and_replays_without_provider_re
     assert repeated["dataset"]["digest"] == run["dataset"]["digest"]
 
 
+def test_saved_backtest_link_reads_beyond_recent_history(client, monkeypatch):
+    response = client.post("/api/v1/strategies/backtest/demo", json={"symbol": "BTC/USDT"})
+    assert response.status_code == 200
+    run = response.json()
+    service = client.app.state.services
+    for _ in range(50):
+        service.store.record("backtest", {})
+    monkeypatch.setattr(
+        service.market, "client", lambda *args: pytest.fail("Reading a backtest contacted a feed")
+    )
+    link = client.get(f"/api/v1/strategies/backtests/{run['id']}")
+    assert link.status_code == 200 and link.json() == run
+    assert link.headers["Cache-Control"] == "no-store"
+    wrong_kind = service.store.record("agent", {})["id"]
+    assert client.get(f"/api/v1/strategies/backtests/{wrong_kind}").status_code == 404
+
+
 def test_research_rejects_missing_saved_run(client):
     assert client.post("/api/v1/strategies/backtests/missing/rerun").status_code == 404
 

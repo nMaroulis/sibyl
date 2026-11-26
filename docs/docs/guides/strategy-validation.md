@@ -1,6 +1,6 @@
 # Walk-forward strategy validation
 
-Open **Strategies → Build & backtest → Validate on unseen data**. This optional panel uses the exact immutable dataset from your selected experiment or saved research input. It works offline and follows the workspace's real-data or clearly labeled Demo boundary.
+Open **Strategies → Experiments → Validate on unseen data**. This optional panel uses the exact immutable dataset from your selected experiment or saved research input. It works offline and follows the workspace's real-data or clearly labeled Demo boundary.
 
 1. Run a backtest or choose a saved dataset. Check the pair, source, timeframe and input fingerprint.
 2. Keep your fixed settings, compare a small grid of indicator parameters, or choose **Sample a larger parameter space**. Grid search accepts up to two parameters with one to four explicit values each. Random search accepts up to four parameters with one to eight values each, an evaluated-candidate budget and a reproducibility seed. The backend lists only parameters used by that algorithm. These choices are not recommended trading settings.

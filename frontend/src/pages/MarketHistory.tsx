@@ -27,7 +27,9 @@ import { MarketSourcePicker } from '../components/market-source-picker';
 import { downloadFile, post, refresh } from '../lib/api';
 import { useResource } from '../lib/hooks';
 import {
+  candleBoundary,
   frameSeconds,
+  utcInput,
   type CandleHistory,
   type Dataset,
   type DatasetList,
@@ -36,12 +38,7 @@ import {
 import type { MarketSettings, Timeframe } from '../lib/types';
 
 const stamp = (value: string | null) => (value ? new Date(value).toLocaleString() : 'None yet');
-const utcInput = (ms: number) => new Date(ms).toISOString().slice(0, 16);
-const wholeNow = (frame: Timeframe) => {
-  const step = frameSeconds[frame] * 1000,
-    anchor = frame === '1w' ? 345600000 : 0;
-  return Math.floor((Date.now() - anchor) / step) * step + anchor;
-};
+const wholeNow = (frame: Timeframe) => candleBoundary(Date.now(), frame);
 
 /** Local history reads never open an exchange client. Imports are explicit, checkpointed jobs. */
 export function MarketHistoryPage({ settings }: { settings: MarketSettings }) {

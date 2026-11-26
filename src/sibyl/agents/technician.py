@@ -68,7 +68,7 @@ GUIDES = {
             "Open Account after activating the account to include it in the portfolio. Connect and activate more accounts to view combined balances or select one account.",
             "To replace API credentials for the same account, use Saved accounts → Update keys, deactivate the connection, enter a complete key set and confirm the same-account assertion/phrase. Check access and reactivate explicitly. History remains attached to this account ID. Use a new connection for a different account; existing venue orders are not cancelled.",
             "For a preview, explicitly enable Demo. Actual active accounts turn Demo off; test environments remain clearly labeled.",
-            "For automated spot strategies, open Strategies and expand Run on a connected exchange. Turn on Exchange strategy execution in Settings → Workspace first. Review the exact account, pair, budget and limits, then type the confirmation. Start with test funds. Pause/Stop do not cancel venue orders or liquidate holdings.",
+            "For automated spot strategies, open Strategies → Build strategy, choose an account and algorithm, then select Deploy strategy. Turn on Exchange strategy execution in Settings → Workspace first. Review the exact account, pair, budget and limits, then type the confirmation. Start with test funds. Pause/Stop do not cancel venue orders or liquidate holdings.",
         ],
     },
     "models": {

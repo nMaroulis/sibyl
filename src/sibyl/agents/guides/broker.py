@@ -207,7 +207,7 @@ STRATEGIES = {
     ),
     "benchmarks": Guide(
         "Compare cost-aware reference portfolios",
-        "/strategies",
+        "/strategies?view=experiments",
         (
             "Run a backtest and open Reference portfolios below the execution chart. Buy & hold, cash, scheduled installments and 50/50 asset/cash use exactly the same evaluation window and initial capital.",
             "Execution assumptions → Reference portfolio cadence sets the candle spacing for installment purchases and 50/50 rebalances. Capital is present from the start; uninvested cash earns zero. It is not new periodic income.",
@@ -235,8 +235,9 @@ STRATEGIES = {
         "Build and inspect a strategy",
         "/strategies",
         (
-            "Choose a strategy, exact pair, timeframe, observations and initial virtual capital in the studio.",
-            "Expand indicator, risk or execution settings only when needed. Backtest historical behavior before considering a paper or exchange run.",
+            "Choose an exchange account or the Workspace market feed, then configure the algorithm. In Set market and amount, select the exact pair, timeframe and candle lookback, and enter Amount once.",
+            "Open Advanced algorithm settings to see what each variable does. Choose Run backtest, Start paper strategy or Deploy strategy in the final step.",
+            "Use Experiments for saved backtests, exact-input reruns, comparisons and validation.",
             "Use Monitor to open a saved run and inspect its journal, observations and fills.",
         ),
     ),
@@ -244,8 +245,9 @@ STRATEGIES = {
         "Run a reproducible backtest",
         "/strategies",
         (
-            "Choose current feed or an immutable saved dataset under Research input, then configure the strategy and trading costs.",
-            "Run the backtest and inspect the retained input provenance, fingerprint and engine version.",
+            "Choose an account or the Workspace market feed, configure the algorithm and select Run backtest. A new backtest uses the selected feed. For an exact period, choose Custom dates in Indicator lookback and enter the start and exclusive end in UTC. You can also use a saved dataset from Markets → History or choose Reuse input in Experiments.",
+            "Set the simulation fees, slippage and reference cadence, then run the backtest. Stop loss, take profit and completed exit limits are simulated. Backtests, paper runs and deployments share one Risk & order limits section. In backtests, capped exits can leave units open, and a loss-triggered pause stops new orders while those units remain marked.",
+            "Read the report beneath the run controls. Ask Broker about this run uses the saved result ID. View in Experiments opens its retained input, engine version and comparisons.",
             "Custom Python strategies expands research-only installed plugins with separate controls, source revisions, saved results and exact-input reruns. Install reviewed code in the backend environment, explicitly set SIBYL_STRATEGY_PLUGINS and restart; pinned queued backtests and adaptive Optuna training/test studies are available as one-off research, without paper/exchange deployment.",
             "Rerun exact input recomputes the same saved data/settings with the current engine; Load settings lets you edit a new experiment.",
         ),
@@ -255,7 +257,7 @@ STRATEGIES = {
     ),
     "results": Guide(
         "Inspect buys, sells and performance metrics",
-        "/strategies",
+        "/strategies?view=experiments",
         (
             "Open a saved experiment. Price & trades shows buy/sell markers; select a marker for quantity, price, fees and exit reason.",
             "Use the time brush to inspect an interval, Equity & benchmark to compare cost-aware buy-and-hold, and Drawdown for peak declines.",
@@ -267,7 +269,7 @@ STRATEGIES = {
     ),
     "validation": Guide(
         "Validate on later unseen candles",
-        "/strategies",
+        "/strategies?view=experiments",
         (
             "Expand Validate on unseen data and choose the bounded parameter search and chronological holdout/walk-forward windows.",
             "Choose a small exhaustive grid, fixed settings, or a seeded sample of a larger finite parameter space. For random search, inspect the evaluated count, coverage, seed and recorded candidate plan.",
@@ -284,9 +286,9 @@ STRATEGIES = {
         "Run a monitored paper strategy",
         "/strategies",
         (
-            "Choose current-feed input and review parameters before starting a paper run.",
+            "Choose the account or Workspace market feed and configure the algorithm. Set the starting Amount and Risk & order limits, then select Paper strategy and Start paper strategy.",
             "Open its Monitor to inspect signals, virtual fills, equity, costs and events. Paper capital is separate from manual Demo wallet funds.",
-            "Pause retains its virtual position. Completed/stopped paper runs cannot resume.",
+            "An allocated-loss pause locks paper orders and keeps pricing holdings. Use Stop to freeze valuation. A loss-paused, completed or stopped paper run requires a new run to trade again.",
         ),
         ("Paper runs spend no exchange funds and do not simulate venue queues or liquidity exactly.",),
     ),
@@ -294,7 +296,7 @@ STRATEGIES = {
         "Review exchange-connected automation",
         "/strategies",
         (
-            "Connect an active supported account, then expand Run on a connected exchange. The backend must enable both live trading and strategy execution.",
+            "Choose an active supported exchange account first. Configure the algorithm, then set the spot pair, timeframe, lookback, quote Amount, maximum order value and loss pause before selecting Deploy strategy. Exchange strategy execution must be enabled in Settings → Workspace.",
             "Review the exact account, environment, pair, budget, order caps, risk limits and any cancellation policy; type the displayed approval phrase.",
             "Inspect native order and fill evidence in Monitor. Check implemented capabilities in Settings → Exchanges and start with test funds where available.",
         ),

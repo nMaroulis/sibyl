@@ -124,10 +124,11 @@ class AdaptiveStudies:
             raise ValueError("Another adaptive study is running. Wait for its retained outcome.")
         try:
             optuna = optuna_module()
+            engine_revision = BacktestEngine.revision_for(recipe.parameters)
             if previous and (
                 previous["method"] != VERSION
                 or previous["sampler"]["version"] != optuna.__version__
-                or previous["engine_revision"] != BacktestEngine.version
+                or previous["engine_revision"] != engine_revision
             ):
                 raise ValueError(
                     "The sampler or backtest version changed. Start a new study; exact replay is unavailable."
@@ -149,7 +150,7 @@ class AdaptiveStudies:
                 source=dataset["source"],
                 environment=dataset["environment"],
                 engine_version=__version__,
-                engine_revision=BacktestEngine.version,
+                engine_revision=engine_revision,
                 plugin=plugin_metadata,
             )
             if previous:

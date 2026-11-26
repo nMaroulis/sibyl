@@ -68,7 +68,20 @@ export function StrategyPicker({
               <span className="strategy-picker-copy">
                 <strong>{item.name}</strong>
                 <small>{item.tag}</small>
-                {details && <span>{item.description}</span>}
+                {details && item.guide && (
+                  <span className="strategy-card-guide">
+                    <span>{item.guide.idea}</span>
+                    <span>
+                      <strong>Entry</strong> {item.guide.entry}
+                    </span>
+                    <span>
+                      <strong>Exit</strong> {item.guide.exit}
+                    </span>
+                    <span>
+                      <strong>Trade-off</strong> {item.guide.tradeoff}
+                    </span>
+                  </span>
+                )}
               </span>
               {selected && <Check className="strategy-picker-check" size={16} aria-hidden="true" />}
             </label>

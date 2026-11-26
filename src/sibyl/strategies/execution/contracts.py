@@ -26,6 +26,7 @@ class ExecutionParameters(BacktestRequest):
     """Native quote units can be fractional, including BTC/ETH-quoted markets."""
 
     capital: float = Field(gt=0, le=10_000_000)
+    backtest_limits: None = Field(default=None, exclude=True)
 
 
 class ExchangeStrategyRequest(Request):

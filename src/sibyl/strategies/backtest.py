@@ -7,6 +7,7 @@ from sibyl.models import BacktestRequest
 from sibyl.services.markets.analytics import performance_metrics
 from sibyl.strategies.research.benchmarks import references
 from sibyl.strategies.signals import exit_reason, signals, strategy_indicators
+from sibyl.strategies.simulation_accounting import BacktestLedger, loss_floor
 
 
 def _simulate(
@@ -14,9 +15,9 @@ def _simulate(
 ) -> dict:
     """Run a long-only simulation with previous-close signals and next-open fills.
 
-    Fee and slippage apply on both sides. The last position is liquidated at the
-    final close. Sharpe uses candle equity returns, timeframe annualization, and a zero risk-free
-    rate. Drawdown is reported as a nonnegative percentage from the running peak.
+    Fee and slippage apply on both sides. Capped runs pause on closing marks and
+    retain any open holdings through the final mark. Legacy runs liquidate at the
+    final close. Sharpe uses candle equity returns and a zero risk-free rate.
     """
     frame = (
         pd.DataFrame(candles)
@@ -35,12 +36,13 @@ def _simulate(
         context = strategy_indicators(candles[:right], parameters)
         selected.append((left, right, parameters, context, signals(context, parameters.strategy, parameters)))
     segment, transitions = 0, []
-    cash, quantity = request.capital, 0.0
     fee, slip = request.fee_bps / 10_000, request.slippage_bps / 10_000
-    fills, curve, completed_returns = [], [], []
-    entry_cost, entry_price = 0.0, 0.0
-    warmup = start
-    for i in range(warmup, len(frame)):
+    limits = request.backtest_limits
+    ledger = BacktestLedger(request.capital, fee, limits)
+    threshold = loss_floor(request.capital, limits) if limits else None
+    loss_pause = None
+    curve, exposed = [], 0
+    for i in range(start, len(frame)):
         row = frame.iloc[i]
         parameters, active_frame, active_signal = request, frame, signal
         if selected:
@@ -52,100 +54,88 @@ def _simulate(
                     {
                         "index": segment + 1,
                         "timestamp": row["timestamp"],
-                        "cash": cash,
-                        "quantity": quantity,
-                        "entry_price": entry_price if quantity else None,
-                        "equity_at_open": cash + quantity * float(row["open"]),
+                        "cash": ledger.cash,
+                        "quantity": ledger.quantity,
+                        "entry_price": ledger.position.entry["price"] if ledger.position else None,
+                        "equity_at_open": ledger.equity(float(row["open"])),
                         "parameters": parameters.model_dump(exclude={"dataset_id"}),
                     }
                 )
-        direction = int(active_signal.iloc[i - 1])
-        reason = (
-            exit_reason(float(active_frame.iloc[i - 1]["close"]), entry_price, parameters)
-            if quantity
-            else None
-        )
-        if reason:
-            direction = -1
-        if (
-            direction == 1
-            and quantity == 0
-            and (parameters.max_trades is None or len(completed_returns) < parameters.max_trades)
-        ):
-            price = float(row["open"]) * (1 + slip)
-            quantity = cash / (price * (1 + fee))
-            entry_cost, entry_price = cash, price
-            fills.append(
-                {
-                    "timestamp": row["timestamp"],
-                    "side": "buy",
-                    "price": price,
-                    "quantity": quantity,
-                    "fee": price * quantity * fee,
-                }
+        if loss_pause is None:
+            position = ledger.position
+            direction = int(active_signal.iloc[i - 1])
+            reason = (
+                exit_reason(float(active_frame.iloc[i - 1]["close"]), position.entry["price"], parameters)
+                if position
+                else None
             )
-            cash = 0.0
-        elif direction == -1 and quantity > 0:
-            price = float(row["open"]) * (1 - slip)
-            cash = quantity * price * (1 - fee)
-            completed_returns.append((cash / entry_cost - 1) * 100)
-            fills.append(
-                {
-                    "timestamp": row["timestamp"],
-                    "side": "sell",
-                    "price": price,
-                    "quantity": quantity,
-                    "fee": price * quantity * fee,
-                    "reason": reason or "Strategy signal",
-                }
-            )
-            quantity = 0.0
-        curve.append({"timestamp": row["timestamp"], "value": cash + quantity * float(row["close"])})
-    if not curve:
-        raise ValueError("Not enough candles after strategy warm-up.")
-    if quantity:
-        price = float(frame.iloc[-1]["close"]) * (1 - slip)
-        cash = quantity * price * (1 - fee)
-        fills.append(
-            {
-                "timestamp": frame.iloc[-1]["timestamp"],
-                "side": "sell",
-                "price": price,
-                "quantity": quantity,
-                "fee": price * quantity * fee,
-                "reason": "End of backtest",
-            }
-        )
-        completed_returns.append((cash / entry_cost - 1) * 100)
-        curve[-1]["value"] = cash
-    equity = pd.Series([request.capital, *[point["value"] for point in curve]])
-    metrics = performance_metrics(
-        equity.tolist(), completed_returns, 365 * 86400 / TIMEFRAMES[request.timeframe]
-    )
-    benchmark = request.capital / (float(frame.iloc[warmup]["open"]) * (1 + slip) * (1 + fee))
-    benchmark *= float(frame.iloc[-1]["close"]) * (1 - slip) * (1 - fee)
+            if reason:
+                direction = -1
+            if (
+                direction == 1
+                and position is None
+                and (parameters.max_trades is None or len(ledger.round_trips) < parameters.max_trades)
+            ):
+                ledger.buy(row["timestamp"], float(row["open"]) * (1 + slip))
+            elif direction == -1 and position is not None:
+                ledger.sell(row["timestamp"], float(row["open"]) * (1 - slip), reason or "Strategy signal")
+        mark = ledger.equity(float(row["close"]))
+        curve.append({"timestamp": row["timestamp"], "value": mark})
+        exposed += ledger.position is not None
+        if loss_pause is None and threshold is not None and mark <= threshold:
+            close = pd.Timestamp(row["timestamp"]) + pd.Timedelta(seconds=TIMEFRAMES[request.timeframe])
+            loss_pause = {"timestamp": close.isoformat(), "equity": mark, "threshold": threshold}
+    last_close = float(frame.iloc[-1]["close"])
+    if ledger.position and limits is None:
+        ledger.sell(frame.iloc[-1]["timestamp"], last_close * (1 - slip), "End of backtest")
+        curve[-1]["value"] = ledger.cash
+    final_equity = ledger.equity(last_close)
+    execution_limits = None
+    if limits is not None:
+        execution_limits = {
+            **limits.model_dump(),
+            "capped_orders": ledger.capped_orders,
+            "partial_exits": ledger.partial_exits,
+            "loss_pause": loss_pause,
+            "ending_cash": ledger.cash,
+            "realized_pnl": sum(trade["pnl"] for trade in ledger.round_trips)
+            + (ledger.position.realized_pnl if ledger.position else 0.0),
+            "open_position": ledger.position.marked(last_close) if ledger.position else None,
+        }
+    equity = [request.capital, *[point["value"] for point in curve]]
+    metrics = performance_metrics(equity, ledger.trade_returns, 365 * 86400 / TIMEFRAMES[request.timeframe])
+    benchmark = request.capital / (float(frame.iloc[start]["open"]) * (1 + slip) * (1 + fee))
+    benchmark *= last_close * (1 - slip) * (1 - fee)
     return {
         **({"transitions": transitions} if schedule else {}),
+        **({"execution_limits": execution_limits} if execution_limits is not None else {}),
         "strategy": request.strategy,
         "symbol": request.symbol,
         "initial_capital": request.capital,
-        "final_equity": cash,
-        "return_pct": (cash / request.capital - 1) * 100,
+        "final_equity": final_equity,
+        "return_pct": (final_equity / request.capital - 1) * 100,
         "benchmark_pct": (benchmark / request.capital - 1) * 100,
         "sharpe": metrics["sharpe"],
         "max_drawdown": metrics["max_drawdown"],
         "metrics": metrics,
-        "trade_returns": completed_returns,
+        "trade_returns": ledger.trade_returns,
         "timeframe": request.timeframe,
-        "trades": len(completed_returns),
-        "win_rate": sum(r > 0 for r in completed_returns) / len(completed_returns) * 100
-        if completed_returns
+        "trades": len(ledger.round_trips),
+        "win_rate": sum(r > 0 for r in ledger.trade_returns) / len(ledger.trade_returns) * 100
+        if ledger.trade_returns
         else 0,
-        "fees": sum(fill["fee"] for fill in fills),
+        "fees": sum(fill["fee"] for fill in ledger.fills),
         "curve": curve,
-        "fills": fills,
+        "fills": ledger.fills,
+        "round_trips": ledger.round_trips,
+        "exposed_bars": exposed,
         "parameters": request.model_dump(exclude={"dataset_id"}),
-        "execution": "Previous-close signals and close-based risk exits fill at next open; final liquidation at last close. No intrabar stop guarantee.",
+        "execution": (
+            "Previous-close signals fill at the next open with fees, slippage and a per-order cap. "
+            "The loss pause uses candle-close marks. Any remaining holdings are valued at the final close."
+            if limits
+            else "Previous-close signals and close-based risk exits fill at next open; final liquidation at last close. No intrabar stop guarantee."
+        ),
     }
 
 
@@ -154,10 +144,16 @@ class BacktestEngine:
 
     There is no random performance generator. Source candles and parameter values
     fully determine fills. Indicators see only their candle prefix; entries use
-    the following open and the final position closes at the final close.
+    the following open. Limited runs mark any position remaining at the end.
     """
 
     version = "next-open-v2"
+    limited_version = "next-open-v3-limits"
+
+    @classmethod
+    def revision_for(cls, request: BacktestRequest) -> str:
+        """Use the recorded legacy revision for runs without order-level limits."""
+        return cls.limited_version if request.backtest_limits is not None else cls.version
 
     def run(
         self,
@@ -203,6 +199,7 @@ class BacktestEngine:
                 "max_trades",
                 "stop_loss_pct",
                 "take_profit_pct",
+                "backtest_limits",
             )
             for left, right, parameters in parameter_schedule:
                 if (
@@ -228,30 +225,8 @@ class BacktestEngine:
         ):
             raise ValueError("Use one valid direction per candle, without a parameter schedule.")
         result = _simulate(candles, request, start, parameter_schedule, signal_override)
-        fills, trades = result["fills"], []
-        for index in range(0, len(fills), 2):
-            entry, exit = fills[index : index + 2]
-            cost = entry["quantity"] * entry["price"] + entry["fee"]
-            proceeds = exit["quantity"] * exit["price"] - exit["fee"]
-            pnl = proceeds - cost
-            trades.append(
-                {
-                    "id": index // 2 + 1,
-                    "entry_time": entry["timestamp"],
-                    "exit_time": exit["timestamp"],
-                    "entry_price": entry["price"],
-                    "exit_price": exit["price"],
-                    "quantity": entry["quantity"],
-                    "entry_fee": entry["fee"],
-                    "exit_fee": exit["fee"],
-                    "pnl": pnl,
-                    "return_pct": pnl / cost * 100,
-                    "reason": exit.get("reason", "Strategy signal"),
-                    "holding_seconds": (
-                        pd.Timestamp(exit["timestamp"]) - pd.Timestamp(entry["timestamp"])
-                    ).total_seconds(),
-                }
-            )
+        fills, trades = result["fills"], result["round_trips"]
+        active = result.pop("exposed_bars")
         first = candles[start]
         fee, slip = request.fee_bps / 10000, request.slippage_bps / 10000
         units = request.capital / (first["open"] * (1 + slip) * (1 + fee))
@@ -263,29 +238,13 @@ class BacktestEngine:
         gross_losses = abs(sum(min(0, trade["pnl"]) for trade in trades))
         duration = len(result["curve"]) * step
         annual_exponent = math.log(result["final_equity"] / request.capital) * 365 * 86400 / duration
-        active = 0
-        held = False
-        by_time = {}
-        for fill in fills:
-            by_time.setdefault(fill["timestamp"], []).append(fill)
-        for point in result["curve"]:
-            events = by_time.get(point["timestamp"], [])
-            for fill in events:
-                if fill["side"] == "buy":
-                    held = True
-                elif fill.get("reason") != "End of backtest":
-                    held = False
-            active += held
-            if any(fill.get("reason") == "End of backtest" for fill in events):
-                held = False
         result.update(
-            engine_revision=self.version,
+            engine_revision=self.revision_for(request),
             price_series=[
                 {k: bar[k] for k in ("timestamp", "open", "high", "low", "close", "volume")}
                 for bar in (candles if evaluation_start is None else candles[start:])
             ],
             benchmark_curve=benchmark,
-            round_trips=trades,
             summary={
                 "net_profit": result["final_equity"] - request.capital,
                 "gross_profit": gross_wins,

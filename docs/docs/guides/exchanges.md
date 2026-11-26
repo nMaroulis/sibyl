@@ -50,7 +50,7 @@ Saving is not verification. Accounts display **Saved · unverified** until check
 
 ## Develop with demo data
 
-Choose **Preview with Demo** from Account, Trade, or the smaller Demo section in Exchanges. No account is activated automatically at startup. The `DemoClient` supplies its persistent virtual wallet through the same client interface as exchanges. For fully offline reference prices, also select **Demo prices** in Market data. These choices are separate from the legacy `SIBYL_MODE` research default.
+Open **Account** and choose **Preview with Demo**. The **Saved accounts** list in Exchange settings contains your saved exchange connections. No account is activated automatically at startup. The `DemoClient` supplies its persistent virtual wallet through the same client interface as exchanges. For fully offline reference prices, also select **Demo prices** in Market data. These choices are separate from the legacy `SIBYL_MODE` research default.
 
 The preview is explicitly labeled in the header and account-dependent pages. Only one virtual wallet exists per workspace. Reconnecting or previewing again keeps quantities and paper trades. **Exit preview** deactivates it without deleting records. Demo stays unavailable while exchange accounts are active; activating an exchange automatically turns it off. Actual-funds order entry never lists Demo.
 

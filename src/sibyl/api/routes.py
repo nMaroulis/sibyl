@@ -25,7 +25,7 @@ from sibyl.market_data.backfills import (
     ImportAction,
     RetentionRequest,
 )
-from sibyl.market_data.research import current_backtest, saved_backtest
+from sibyl.market_data.research import RangeBacktest, current_backtest, range_backtest, saved_backtest
 from sibyl.models import (
     AccountActivation,
     AgentRequest,
@@ -37,6 +37,7 @@ from sibyl.models import (
     ExchangeOrderRequest,
     OrderRequest,
     OrderTracking,
+    PaperStrategyRequest,
     Timeframe,
 )
 from sibyl.research_library.semantic.contracts import SemanticNotReady
@@ -56,6 +57,7 @@ from sibyl.services.workspace.llm_settings import ModelChoice, ModelSettingsRequ
 from sibyl.services.workspace.model_checks import check_model
 from sibyl.services.workspace.roadmap import implementation_status
 from sibyl.strategies import CATALOG
+from sibyl.strategies.guidance import PARAMETER_HELP
 
 router = APIRouter()
 
@@ -859,10 +861,25 @@ def strategies():
     return CATALOG
 
 
+@router.get("/strategies/parameters", tags=["Broker"])
+def strategy_parameters():
+    """Explain the strategy builder's indicators, simulation assumptions and limits."""
+    return PARAMETER_HELP
+
+
 @router.post("/strategies/backtest", tags=["Broker"])
-def run_backtest(body: BacktestRequest, s: S):
-    """Simulate a strategy with next-open fills, fees, and slippage; persist its result."""
-    return current_backtest(s.market, s.store, body)
+def run_backtest(body: BacktestRequest, s: S, source: MarketSource | None = None):
+    """Retain a historical simulation from the selected exact feed."""
+    with s.market.snapshot(source):
+        return current_backtest(s.market, s.store, body)
+
+
+@router.post("/strategies/backtest/range", tags=["Broker"])
+def run_range_backtest(body: RangeBacktest, s: S, response: Response, source: MarketSource | None = None):
+    """Fetch or reuse a complete closed UTC range and save the exact simulation input."""
+    response.headers["Cache-Control"] = "no-store"
+    with s.market.snapshot(source):
+        return range_backtest(s.market, s.store, body)
 
 
 @router.get("/strategies/jobs", tags=["Broker"])
@@ -872,9 +889,9 @@ def strategy_jobs(s: S):
 
 
 @router.post("/strategies/jobs", status_code=201, tags=["Broker"])
-def start_strategy(body: BacktestRequest, s: S):
-    """Start a paper-only job with its own virtual capital."""
-    return s.strategies.start(body)
+def start_strategy(body: PaperStrategyRequest, s: S, source: MarketSource | None = None):
+    """Start a virtual strategy, optionally pinned to a selected price source."""
+    return s.strategies.start(body, source=source)
 
 
 @router.get("/strategies/jobs/{job_id}", tags=["Broker"])

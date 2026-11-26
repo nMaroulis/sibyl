@@ -11,7 +11,6 @@ import {
   Network,
   Plus,
   Power,
-  FlaskConical,
   RefreshCw,
   ShieldCheck,
   Trash2,
@@ -322,7 +321,10 @@ export function ExchangeConnections() {
   const selection = useAccounts();
   const connections = useResource<Connection[]>('/connections');
   const catalog = useResource<ExchangeCatalog>('/exchanges');
-  const exchanges = catalog.data?.items ?? [];
+  const exchanges = catalog.data?.items.filter((provider) => !provider.simulated) ?? [];
+  const savedAccounts =
+    connections.data?.filter((connection) => connection.exchange !== 'demo') ?? [];
+  const activeCount = savedAccounts.filter((connection) => connection.active).length;
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<string>();
   const [selectedSection, setSelectedSection] = useState('account');
@@ -334,9 +336,7 @@ export function ExchangeConnections() {
   const [updating, setUpdating] = useState<Connection>();
   const [busy, setBusy] = useState('');
   const [handoff, setHandoff] = useState<{ id: string }>();
-  const accountArrived = Boolean(
-    handoff && connections.data?.some((item) => item.id === handoff.id),
-  );
+  const accountArrived = Boolean(handoff && savedAccounts.some((item) => item.id === handoff.id));
   useEffect(() => {
     if (!handoff || !accountArrived) return;
     const row = document.getElementById(`saved-account-${handoff.id}`);
@@ -365,9 +365,7 @@ export function ExchangeConnections() {
       toast(
         connection.active
           ? 'Account deactivated. Saved credentials and records are retained.'
-          : connection.exchange === 'demo'
-            ? 'Demo preview is active.'
-            : 'Account activated. Demo preview is off.',
+          : 'Account activated. Demo preview is off.',
       );
     } catch (reason) {
       toast((reason as Error).message, true);
@@ -433,7 +431,7 @@ export function ExchangeConnections() {
           </div>
         </div>
       )}
-      {selection.data && <AccountContext selection={selection.data} />}
+      {selection.data?.mode === 'test' && <AccountContext selection={selection.data} />}
       <div className="exchange-catalog-heading">
         <label className="exchange-search">
           Find an exchange
@@ -445,9 +443,8 @@ export function ExchangeConnections() {
           />
         </label>
         <span className="muted">
-          {exchanges.filter((provider) => !provider.simulated && !provider.test_environment).length}{' '}
-          exchanges · {exchanges.filter((provider) => provider.test_environment).length} test
-          environments · {exchanges.filter((provider) => provider.simulated).length} demo
+          {exchanges.filter((provider) => !provider.test_environment).length} exchanges ·{' '}
+          {exchanges.filter((provider) => provider.test_environment).length} test environments
         </span>
       </div>
       <div className="exchange-coverage-legend" aria-label="Implementation coverage legend">
@@ -469,7 +466,6 @@ export function ExchangeConnections() {
       ) : (
         <div className="exchange-client-grid" data-card-style="brand">
           {exchanges
-            .filter((provider) => !provider.simulated)
             .filter((provider) =>
               `${provider.name} ${provider.id}`.toLowerCase().includes(query.trim().toLowerCase()),
             )
@@ -493,8 +489,7 @@ export function ExchangeConnections() {
           subtitle="Active accounts appear in Account and Trade. Deactivating keeps credentials and history."
           action={
             <Badge>
-              {selection.data?.active_ids.length ?? 0} active · {connections.data?.length ?? 0}{' '}
-              saved
+              {activeCount} active · {savedAccounts.length} saved
             </Badge>
           }
         />
@@ -502,24 +497,20 @@ export function ExchangeConnections() {
           <Loading />
         ) : connections.error ? (
           <ErrorState message={connections.error} retry={connections.retry} />
-        ) : connections.data?.length ? (
-          connections.data.map((connection) => (
+        ) : savedAccounts.length ? (
+          savedAccounts.map((connection) => (
             <div
               className={`connection-account ${handoff?.id === connection.id ? 'connection-arrival' : ''}`}
               id={`saved-account-${connection.id}`}
               key={connection.id}
             >
-              <span
-                className={`provider-logo small-logo ${connection.exchange === 'demo' ? 'demo-exchange-mark' : ''}`}
-              >
+              <span className="provider-logo small-logo">
                 <ExchangeMark exchange={connection.exchange} />
               </span>
               <div className="account-description">
                 <strong>{connection.label}</strong>
                 <small>
-                  {connection.exchange === 'demo'
-                    ? 'Simulated funds'
-                    : `${exchanges.find((provider) => provider.id === connection.exchange)?.name ?? connection.exchange} · ${connection.sandbox ? 'test funds' : 'production'}`}{' '}
+                  {`${exchanges.find((provider) => provider.id === connection.exchange)?.name ?? connection.exchange} · ${connection.sandbox ? 'test funds' : 'production'}`}{' '}
                   · saved {new Date(connection.created_at).toLocaleDateString()}
                 </small>
                 {handoff?.id === connection.id && (
@@ -531,7 +522,6 @@ export function ExchangeConnections() {
                   <small className="negative">{checks[connection.id].message}</small>
                 )}
               </div>
-              {connection.exchange === 'demo' && <Badge tone="demo">Demo</Badge>}
               {connection.sandbox && (
                 <Badge tone="purple">
                   {connection.exchange === 'binance-testnet' || connection.exchange === 'binance'
@@ -543,29 +533,24 @@ export function ExchangeConnections() {
                 className={`account-activation ${connection.active ? 'is-active' : ''}`}
                 aria-pressed={connection.active}
                 aria-label={`${connection.active ? 'Deactivate' : 'Activate'} ${connection.label}`}
-                disabled={
-                  !!busy ||
-                  (connection.exchange === 'demo' &&
-                    !connection.active &&
-                    !selection.data?.demo_available)
-                }
+                disabled={!!busy}
                 onClick={() => activate(connection)}
               >
                 <Power size={13} /> {connection.active ? 'Active' : 'Inactive'}
               </button>
               <Badge
                 tone={
-                  connection.exchange === 'demo' || checks[connection.id]?.status === 'connected'
+                  checks[connection.id]?.status === 'connected'
                     ? 'lime'
                     : checks[connection.id]?.status === 'error'
                       ? 'rose'
                       : 'neutral'
                 }
               >
-                {connection.exchange === 'demo' || checks[connection.id]?.status === 'connected' ? (
+                {checks[connection.id]?.status === 'connected' ? (
                   <>
                     <Check size={11} />
-                    {connection.exchange === 'demo' ? 'Connected' : 'Verified'}
+                    Verified
                   </>
                 ) : checks[connection.id]?.status === 'error' ? (
                   'Check failed'
@@ -580,18 +565,16 @@ export function ExchangeConnections() {
                 onClick={() => check(connection.id)}
               >
                 <RefreshCw size={13} className={busy === connection.id ? 'spin' : ''} />
-                {connection.exchange === 'demo' ? 'Check account' : 'Check access'}
+                Check access
               </button>
-              {connection.exchange !== 'demo' && (
-                <button
-                  className="button secondary tiny"
-                  disabled={!!busy}
-                  onClick={() => setUpdating(connection)}
-                >
-                  <KeyRound size={13} />
-                  Update keys
-                </button>
-              )}
+              <button
+                className="button secondary tiny"
+                disabled={!!busy}
+                onClick={() => setUpdating(connection)}
+              >
+                <KeyRound size={13} />
+                Update keys
+              </button>
               <button
                 className="button secondary tiny"
                 onClick={() => openExchange(connection.exchange)}
@@ -621,37 +604,6 @@ export function ExchangeConnections() {
           </Empty>
         )}
       </Panel>
-      {selection.data?.mode !== 'demo' && (
-        <Panel className="demo-settings-invitation">
-          <FlaskConical size={21} />
-          <div>
-            <h3>Explore with Demo</h3>
-            <p>
-              {selection.data?.demo_available
-                ? 'An optional virtual wallet to preview Sibyl. Your saved balances are retained when you leave.'
-                : 'Demo stays off while exchange accounts are active. Deactivate them first to preview virtual funds.'}
-            </p>
-          </div>
-          <button
-            className="button secondary tiny"
-            disabled={!!busy || !selection.data?.demo_available}
-            onClick={async () => {
-              setBusy('demo');
-              try {
-                await post('/accounts/demo');
-                refresh();
-                toast('Demo preview is active.');
-              } catch (reason) {
-                toast((reason as Error).message, true);
-              } finally {
-                setBusy('');
-              }
-            }}
-          >
-            Preview with Demo <ArrowUpRight size={12} />
-          </button>
-        </Panel>
-      )}
       <div className="connection-notes">
         <Panel>
           <ShieldCheck size={22} />
@@ -720,9 +672,8 @@ export function ExchangeConnections() {
       {removing && (
         <Modal title="Disconnect this account?" onClose={() => setRemoving(undefined)}>
           <p className="muted">
-            {removing.exchange === 'demo'
-              ? `Disconnect ${removing.label} from this workspace. Its paper balances and trades are retained for reconnection.`
-              : `Remove ${removing.label} and its encrypted credentials from this workspace. Your exchange account is unaffected.`}
+            Remove {removing.label} and its encrypted credentials from this workspace. Your exchange
+            account is unaffected.
           </p>
           <div className="modal-actions">
             <button className="button secondary" onClick={() => setRemoving(undefined)}>

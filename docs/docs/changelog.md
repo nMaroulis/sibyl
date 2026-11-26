@@ -51,6 +51,8 @@ docker compose up --build
 
 ### Added
 
+- Strategy studio starts with an account or feed, shares algorithm settings across backtest, paper, and exchange deployment, and places historical work in Experiments. Broker can explain the actual strategies and parameters from the same definitions used by the UI.
+
 - Strategies offers algorithm cards and a dedicated exchange setup with production and test accounts. Trade follows the selected execution account and pair, with optional live WebSocket depth and an explicit Binance comparison.
 
 - Settings → Workspace adds separate, persistent switches for manual spot orders and exchange strategies. Switching automation off pauses exchange runs. Trade and Strategies link to Workspace when their permission is off.
@@ -64,6 +66,8 @@ docker compose up --build
 - API model cards show recent request outcomes, recorded model calls, and available token totals. API deployments also have automatic context sizing and optional context and output limits in Advanced. Message logs show the model selected for the request.
 
 ### Changed
+
+- Strategies puts Deploy first with an explicit real-funds or test-funds badge. The four-step builder shares one Amount across run modes and groups timeframe and indicator lookback in the market setup. Backtests can use the latest closed candles or a custom UTC date range with an exact saved input. They also model per-order caps, partial exits and the allocated-loss pause, with open-position valuation and limit evidence in Experiments. Order limits also apply to paper strategies. Strategy risk controls share one panel, and field help opens from small inline disclosures. The single-choice run selector keeps backtest results in the builder with starting and ending balances, performance ratios, saved experiment links, and run-specific Broker chat.
 
 - Refresh hosted AI model presets against current provider catalogs and use each custom endpoint's own model ID.
 

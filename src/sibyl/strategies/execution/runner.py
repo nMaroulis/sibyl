@@ -109,7 +109,11 @@ class ExchangeStrategies:
                 {"id": spec.id, "name": spec.name} for spec in CATALOG.values() if supported(spec.id)
             ],
             "accounts": [
-                {**row.model_dump(mode="json"), "supported": supported(row.exchange)}
+                {
+                    **row.model_dump(mode="json"),
+                    "provider_name": CATALOG[row.exchange].name,
+                    "supported": supported(row.exchange),
+                }
                 for row in self.store.connections()
                 if row.exchange != "demo"
             ],

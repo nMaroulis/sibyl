@@ -17,6 +17,16 @@ FIELDS = ("open", "high", "low", "close", "volume")
 MAX_RANGE = 50_000
 
 
+class InsufficientClosedCandles(ValueError):
+    """A provider returned a valid page with too few completed candles."""
+
+    def __init__(self, available: int, required: int):
+        self.available = available
+        super().__init__(
+            f"The selected feed returned {available} closed candles. At least {required} are required."
+        )
+
+
 def now_ms():
     """Return current UTC milliseconds; all storage boundaries use integer times."""
     return int(datetime.now(UTC).timestamp() * 1000)

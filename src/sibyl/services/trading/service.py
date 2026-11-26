@@ -206,12 +206,12 @@ class ExchangeTrading:
         GTC limits use their explicit price for notional checks. Market orders use
         the current side of the book. The exchange rechecks funds at submission.
         """
+        if request.connection_id != "demo":
+            self._require_order_permission(strategy_job_id, strategy_close_review_id)
         connection = self._connection(request.connection_id, allow_demo=True)
         demo = connection.exchange == "demo"
         if demo and request.order_type != "limit":
             raise ValueError("Demo market orders use paper orders in the separate market-order form.")
-        if not demo:
-            self._require_order_permission(strategy_job_id, strategy_close_review_id)
         if not connection.active:
             raise ValueError("Activate this exchange account in Settings before reviewing an order.")
         spec = exchange_spec(connection.exchange)

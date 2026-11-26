@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Depends, Response
 
 from sibyl.api.routes import S
-from sibyl.market_data.research import current_backtest, rerun_backtest
-from sibyl.models import BacktestRequest
+from sibyl.market_data.research import current_backtest, rerun_backtest, retained_backtest
+from sibyl.models import BacktestRequest, PaperStrategyRequest
 from sibyl.strategies.plugins.contracts import PluginBacktest
 from sibyl.strategies.portfolio.contracts import PortfolioStudy
 from sibyl.strategies.research.adaptive.contracts import AdaptiveStudy
@@ -25,6 +25,12 @@ def demo_backtest(body: BacktestRequest, s: S):
         return current_backtest(s.market, s.store, body)
 
 
+@router.get("/backtests/{identity}")
+def open_backtest(identity: str, s: S):
+    """Open the immutable result linked from the builder or Experiments."""
+    return retained_backtest(s.store, identity)
+
+
 @router.post("/backtests/{identity}/rerun")
 def rerun(identity: str, s: S):
     """Recompute an old run using its retained dataset and original parameters."""
@@ -32,7 +38,7 @@ def rerun(identity: str, s: S):
 
 
 @router.post("/jobs/demo", status_code=201)
-def demo_paper(body: BacktestRequest, s: S):
+def demo_paper(body: PaperStrategyRequest, s: S):
     """Run the real paper evaluator on explicit Demo prices without changing account/feed settings."""
     return s.strategies.start(body, source="demo")
 

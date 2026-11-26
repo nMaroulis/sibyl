@@ -122,6 +122,10 @@ export const money = (value: number, digits = 2) =>
   }).format(value);
 export const number = (value: number, digits = 2) =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: digits }).format(value);
+export const quoteAmount = (value: number, quote: string) =>
+  number(value, ['USD', 'USDT', 'USDC', 'EUR'].includes(quote) && Math.abs(value) >= 1 ? 2 : 8) +
+  ' ' +
+  quote;
 export const percent = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 export const shortDate = (value: string) =>
   new Date(value).toLocaleDateString('en-GB', {

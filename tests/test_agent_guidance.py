@@ -67,7 +67,7 @@ def forbid_reads(client, monkeypatch):
         ("accountant", "page_help", "performance", "/trade?tab=history", "Opening inventory"),
         ("analyst", "page_help", "chart", "/markets", "Shift+drag"),
         ("broker", "trade_help", "history", "/trade?tab=history", "Fills & imports"),
-        ("broker", "strategy_help", "results", "/strategies", "Price & trades"),
+        ("broker", "strategy_help", "results", "/strategies?view=experiments", "Price & trades"),
         ("broker", "strategy_help", "limits", "/strategies", "SAVE STRATEGY LIMITS"),
         ("chronos", "page_help", "models", "/forecast?tab=models", "new numbered version"),
         ("reporter", "page_help", "articles", "/news", "Read full article"),
@@ -84,6 +84,23 @@ def test_specialists_have_actionable_help_without_domain_reads(
     assert result["kind"] == "page_help" and result["url"] == url
     assert result["topic"] == topic and phrase in " ".join(result["steps"])
     assert "overview" in {item["id"] for item in result["topics"]}
+
+
+def test_broker_and_strategy_builder_share_read_only_algorithm_and_parameter_help(client, monkeypatch):
+    guide = client.get("/api/v1/strategies")
+    help_settings = client.get("/api/v1/strategies/parameters")
+    forbid_reads(client, monkeypatch)
+    selected = next(row for row in guide.json() if row["id"] == "impulse-breakout")
+    rules = tool_call(client, "broker", "strategy_guide", algorithm="impulse-breakout")
+    assert rules["catalog"] == [selected]
+    assert "ADX above 25" in selected["guide"]["entry"]
+    params = tool_call(client, "broker", "strategy_parameters", algorithm="impulse-breakout")
+    assert set(selected["parameters"]) <= params["parameters"].keys()
+    assert "tsi_short_period" not in params["parameters"]
+    explanation = tool_call(client, "broker", "strategy_parameters", parameter="order_lifetime_seconds")
+    assert (
+        explanation["parameters"]["order_lifetime_seconds"] == help_settings.json()["order_lifetime_seconds"]
+    )
 
 
 def test_technician_has_complete_settings_orientation_without_account_reads(client, monkeypatch):

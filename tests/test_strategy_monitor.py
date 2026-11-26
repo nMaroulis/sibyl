@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 
-from sibyl.models import BacktestRequest
+from sibyl.models import BacktestRequest, PaperStrategyRequest
 from sibyl.services.markets.service import Market
 from sibyl.strategies import Strategies, strategy_indicators
 
@@ -82,6 +82,96 @@ def test_journal_records_skips_holds_and_net_realized_pnl(engine):
     assert result["markers"][-1]["action"] == "SELL"
     assert result["markers"][-1]["slippage_bps"] == pytest.approx(-5)
     assert "limit" in result["markers"][-1]["reason"]
+
+
+def paper_limits(**overrides):
+    return PaperStrategyRequest(
+        capital=1000,
+        **{
+            "fee_bps": 100,
+            "slippage_bps": 0,
+            "order_limits": {"max_order_quote": 500, "max_loss_pct": 10},
+            **overrides,
+        },
+    )
+
+
+def test_paper_order_caps_keep_partial_basis_over_a_worker_restart(engine):
+    service, history, quote, signal = engine
+    job = service.start(paper_limits(max_trades=1))
+    assert job["parameters"]["order_limits"] == {"max_order_quote": 500, "max_loss_pct": 10}
+    service.tick()
+    bought = service.journal.job(job["id"])
+    assert bought["cash"] == pytest.approx(495)
+    assert bought["quantity"] == pytest.approx(5)
+
+    signal[0], quote[0] = -1, 250
+    advance(history)
+    service.tick()
+    partial = service.journal.job(job["id"])
+    assert partial["cash"] == pytest.approx(990)
+    assert partial["quantity"] == pytest.approx(3)
+    assert partial["realized_pnl"] == pytest.approx(293)
+    assert partial["round_trips"] == 0
+    assert "Residual units remain open" in partial["fills"][-1]["reason"]
+
+    restarted = Strategies(service.market, service.store)
+    restarted.tick()
+    assert restarted.journal.job(job["id"])["quantity"] == pytest.approx(3)
+    quote[0] = 150
+    advance(history)
+    restarted.tick()
+    closed = restarted.journal.job(job["id"])
+    assert closed["status"] == "completed"
+    assert closed["cash"] == pytest.approx(1435.5)
+    assert closed["quantity"] == 0
+    assert closed["realized_pnl"] == pytest.approx(435.5)
+    assert closed["completed_returns"] == pytest.approx([435.5 / 505 * 100])
+    assert all(fill["price"] * fill["quantity"] <= 500 + 1e-9 for fill in closed["fills"])
+
+
+def test_paper_loss_pause_blocks_fills_but_revalues_retained_units(engine, monkeypatch):
+    service, history, quote, signal = engine
+    job = service.start(paper_limits(fee_bps=0))
+    service.tick()
+    signal[0], quote[0] = -1, 80
+    advance(history)
+    service.tick()
+    paused = service.journal.job(job["id"])
+    assert paused["status"] == "paused"
+    assert paused["paper_loss_pause"]["equity"] == paused["paper_loss_pause"]["threshold"] == 900
+    assert len(paused["fills"]) == 1
+
+    restarted = Strategies(service.market, service.store)
+    monkeypatch.setattr(
+        service.market, "candles", lambda *args: pytest.fail("Read indicators after a loss pause")
+    )
+    quote[0] = 120
+    restarted.tick()
+    current = restarted.journal.monitor(job["id"])
+    assert current["job"]["equity"] == 1100 and current["job"]["quantity"] == 5
+    assert current["observations"][-1]["equity"] == 1100
+    assert len(current["job"]["fills"]) == 1
+    assert restarted.journal.events(job["id"], action="PAUSE")["matching_count"] == 1
+    with pytest.raises(ValueError, match="allocated loss pause is latched"):
+        restarted.status(job["id"], "running")
+    restarted.status(job["id"], "stopped")
+    quote[0] = 1
+    restarted.tick()
+    assert restarted.journal.job(job["id"])["equity"] == 1100
+
+
+def test_fill_costs_can_latch_paper_loss_pause_in_the_same_commit(engine):
+    service, _, _, _ = engine
+    job = service.start(paper_limits(fee_bps=200, order_limits={"max_order_quote": 500, "max_loss_pct": 1}))
+    service.tick()
+    result = service.journal.job(job["id"])
+    assert result["status"] == "paused" and result["equity"] == pytest.approx(990)
+    assert [event["action"] for event in service.journal.events(job["id"])["items"]] == [
+        "PAUSE",
+        "BUY",
+        "START",
+    ]
 
 
 def test_stop_is_terminal_preserves_position_and_is_idempotent(engine):

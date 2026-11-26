@@ -110,7 +110,9 @@ def test_saved_account_client_reuses_test_environment(settings, store, monkeypat
 
 def test_page_source_override_isolated_and_exact_quote_labels(client, monkeypatch):
     market = client.app.state.services.market
-    monkeypatch.setattr("sibyl.services.markets.service.create_client", lambda *a, **kw: DemoClient(market.store))
+    monkeypatch.setattr(
+        "sibyl.services.markets.service.create_client", lambda *a, **kw: DemoClient(market.store)
+    )
     response = client.get("/api/v1/markets?source=kraken")
     assert response.status_code == 200 and response.json()["source"] == "kraken"
     assert client.get("/api/v1/settings/market").json()["active"]["id"] == "demo"
@@ -118,6 +120,36 @@ def test_page_source_override_isolated_and_exact_quote_labels(client, monkeypatc
     assert all(item["symbol"].split("/")[1] == item["quote"] for item in response.json()["items"])
     # No USD->USDT substitution in exact-pair analysis endpoints.
     assert client.get("/api/v1/markets/analysis?symbol=BTC/EUR").status_code == 502
+
+
+def test_strategy_actions_keep_the_selected_account_prices_and_virtual_paper_funds(
+    manual_client, monkeypatch
+):
+    client = manual_client
+    services = client.app.state.services
+    account = services.store.add_connection(
+        ConnectionCreate(exchange="binance-testnet", label="Test", api_key="a", secret="b")
+    )
+    fixture = DemoClient(services.store)
+    services.market._clients[account.id] = fixture
+    query = "?source=connection:" + account.id
+    body = {"strategy": "ema", "symbol": "BTC/USDT"}
+
+    backtest = client.post("/api/v1/strategies/backtest" + query, json=body)
+    assert backtest.status_code == 200, backtest.text
+    dataset = backtest.json()["dataset"]
+    assert dataset["source"] == "connection:" + account.id and dataset["environment"] == "test"
+    started = client.post("/api/v1/strategies/jobs" + query, json=body)
+    assert started.status_code == 201, started.text
+    job = started.json()
+    assert job["mode"] == "paper" and job["source_pinned"] and job["source"] == dataset["source"]
+    assert client.get("/api/v1/settings/market").json()["active"]["id"] == "demo"
+    assert not client.get("/api/v1/system").json()["exchange_strategy_execution"]["enabled"]
+
+    monkeypatch.setattr(fixture, "market", lambda symbol: pytest.fail("Read an inactive account"))
+    services.store.activate_account(account.id, False)
+    assert client.post("/api/v1/strategies/backtest" + query, json=body).status_code == 400
+    assert client.post("/api/v1/strategies/jobs" + query, json=body).status_code == 400
 
 
 def test_source_snapshot_survives_concurrent_settings_change(settings, store, monkeypatch):
@@ -310,7 +342,9 @@ def test_cache_does_not_mix_sources_and_quote_survives_history_failure(settings,
 
     preferences = DataSettings(settings, store)
     market = Market(settings, store, preferences)
-    monkeypatch.setattr("sibyl.services.markets.service.create_client", lambda provider, **kwargs: Quotes(provider))
+    monkeypatch.setattr(
+        "sibyl.services.markets.service.create_client", lambda provider, **kwargs: Quotes(provider)
+    )
     for source, expected in [("kraken", 123), ("coinbase", 456), ("kraken", 123)]:
         with market.snapshot(source):
             overview = market.quotes(["BTC/USDT", "ETH/USDT"])

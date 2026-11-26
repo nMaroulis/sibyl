@@ -22,6 +22,7 @@ from sibyl.market_data.archive import (
 from sibyl.market_data.backfills import CandleHistory, CandleRange, DatasetBacktest
 from sibyl.market_data.clients import CryptoCompareClient
 from sibyl.market_data.research import saved_backtest
+from sibyl.models import ConnectionCreate
 from sibyl.services.markets.service import Market
 from sibyl.services.workspace.data_settings import DataSettings
 
@@ -352,6 +353,99 @@ def test_current_backtest_saves_input_and_rejects_exact_pair_substitution(client
         ).status_code
         >= 400
     )
+
+
+def test_range_backtest_imports_only_missing_pages_and_replays_exact_input(client, monkeypatch):
+    market = client.app.state.services.market
+    end = floor_time(now_ms(), "1d") - 3 * DAY
+    start = end - 250 * DAY
+    insert(market.archive, rows(200, start))
+    adapter = market.client()
+    seen = []
+
+    def page(symbol, timeframe, left, right):
+        seen.append((symbol, timeframe, left, right))
+        return rows(50, left)
+
+    monkeypatch.setattr(adapter, "fetch_candle_page", page)
+    request = {"symbol": "BTC/USDT", "timeframe": "1d", "start": iso(start), "end": iso(end)}
+    response = client.post("/api/v1/strategies/backtest/range", params={"source": "demo"}, json=request)
+    assert response.status_code == 200, response.text
+    original = response.json()
+    assert seen == [("BTC/USDT", "1d", start + 200 * DAY, end)]
+    dataset = original["dataset"]
+    assert (dataset["source"], dataset["count"], dataset["start"], dataset["end"]) == (
+        "demo",
+        250,
+        iso(start),
+        iso(end),
+    )
+    assert original["parameters"]["candles"] == 250
+    assert "start" not in original["parameters"] and "end" not in original["parameters"]
+    monkeypatch.setattr(adapter, "fetch_candle_page", lambda *args: pytest.fail("Read a complete range"))
+    repeated = client.post("/api/v1/strategies/backtest/range", params={"source": "demo"}, json=request)
+    assert repeated.status_code == 200 and repeated.json()["dataset"]["id"] == dataset["id"]
+
+
+@pytest.mark.parametrize(("count", "slow", "available"), [(90, 21, 49), (60, 75, 60), (721, 21, 0)])
+def test_range_backtest_refuses_incomplete_or_unsupported_lengths(
+    client, monkeypatch, count, slow, available
+):
+    market = client.app.state.services.market
+    end = floor_time(now_ms(), "1d") - DAY
+    start = end - count * DAY
+    adapter = market.client()
+    calls = []
+
+    def page(symbol, timeframe, left, right):
+        calls.append(left)
+        return rows(available, left)
+
+    monkeypatch.setattr(adapter, "fetch_candle_page", page)
+    response = client.post(
+        "/api/v1/strategies/backtest/range",
+        params={"source": "demo"},
+        json={"start": iso(start), "end": iso(end), "slow_period": slow},
+    )
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    if count == 90:
+        assert "49 of 90 required closed candles" in detail
+        assert calls == [start]
+    else:
+        assert f"{count} complete 1d candles" in detail
+        assert calls == []
+    assert client.get("/api/v1/market-history/datasets").json()["total"] == 0
+
+
+@pytest.mark.parametrize(("available", "slow_period", "minimum"), [(20, 21, 60), (49, 21, 60), (60, 75, 76)])
+def test_short_backtest_history_reports_feed_and_required_candles(
+    manual_client, monkeypatch, available, slow_period, minimum
+):
+    services = manual_client.app.state.services
+    account = services.store.add_connection(
+        ConnectionCreate(exchange="binance-testnet", label="Sandbox prices", api_key="test", secret="test")
+    )
+    adapter = DemoClient(services.store)
+    services.market._clients[account.id] = adapter
+    end = floor_time(now_ms(), "1d")
+    monkeypatch.setattr(
+        adapter, "fetch_ohlcv", lambda *args, **kwargs: rows(available, end - available * DAY)
+    )
+
+    response = manual_client.post(
+        "/api/v1/strategies/backtest",
+        params={"source": "connection:" + account.id},
+        json={"symbol": "BTC/USDT", "timeframe": "1d", "candles": 180, "slow_period": slow_period},
+    )
+
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    assert f"Sandbox prices (test feed) returned {available} of 180 requested" in detail
+    assert "BTC/USDT (1d)" in detail
+    assert f"at least {minimum}" in detail
+    assert "Choose a shorter timeframe" in detail
+    assert manual_client.get("/api/v1/market-history/datasets").json()["total"] == 0
 
 
 @pytest.mark.parametrize(

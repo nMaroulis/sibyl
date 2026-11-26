@@ -6,7 +6,7 @@ Open **Strategies → Monitor**, then choose **Open monitor** on any run. Starti
 
 Search the run table by strategy name, market, or run ID. Filter by status. Each row shows creation time, source market/timeframe, paper equity, return, and last worker check. The header counts running and total jobs. The selector inside a monitor switches directly between runs; **All strategy runs** returns to the list.
 
-The **Build & backtest** and **Monitor** tabs share the workspace, preserving the current builder form while you inspect a run.
+The **Build strategy** and **Monitor** tabs share the workspace, preserving the current builder form while you inspect a run.
 
 ## Live view
 

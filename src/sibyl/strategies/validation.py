@@ -286,7 +286,7 @@ class WalkForwardEngine:
         returns = [f["out_of_sample"]["return_pct"] for f in folds]
         result = {
             "method": "nested-next-open-v1" if inner_windows else self.version,
-            "engine_revision": engine.version,
+            "engine_revision": engine.revision_for(request.parameters),
             "engine_version": __version__,
             "request": request.model_dump(),
             "candidate_count": len(candidates),

@@ -110,6 +110,13 @@ class OrderRequest(Request):
         return value
 
 
+class BacktestLimits(Request):
+    """Historical equivalents of the per-order value cap and allocated loss pause."""
+
+    max_order_quote: float = Field(gt=0, le=10_000_000)
+    max_loss_pct: float = Field(gt=0, le=90)
+
+
 class BacktestRequest(Request):
     """Parameters for a long-only, next-open, fee-aware historical simulation."""
 
@@ -140,6 +147,7 @@ class BacktestRequest(Request):
     stop_loss_pct: float | None = Field(default=None, gt=0, le=90)
     take_profit_pct: float | None = Field(default=None, gt=0, le=1000)
     max_trades: int | None = Field(default=None, ge=1, le=10000)
+    backtest_limits: BacktestLimits | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def valid_periods(self):
@@ -152,6 +160,8 @@ class BacktestRequest(Request):
             raise ValueError("Short TSI must be shorter than long TSI.")
         if self.warmup >= self.candles:
             raise ValueError("Choose more observations than the longest indicator period.")
+        if self.backtest_limits and self.backtest_limits.max_order_quote > self.capital:
+            raise ValueError("Maximum order value cannot exceed the allocated amount.")
         return self
 
     @property
@@ -171,6 +181,14 @@ class BacktestRequest(Request):
         )
 
     _symbol = field_validator("symbol")(OrderRequest.valid_symbol.__func__)
+
+
+class PaperStrategyRequest(BacktestRequest):
+    """Parameters for monitored paper execution with the same validated order limits."""
+
+    backtest_limits: BacktestLimits | None = Field(
+        default=None, alias="order_limits", exclude_if=lambda value: value is None
+    )
 
 
 class ExchangeOrderRequest(OrderRequest):
